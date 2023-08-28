@@ -1,0 +1,7 @@
+[package]
+name = "whitehole"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["DiscreteTom <discrete_tom@outlook.com>"]
+repository = "https://github.com/DiscreteTom/whitehole"
