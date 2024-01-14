@@ -36,14 +36,9 @@ where
 mod tests {
   use super::*;
 
-  #[derive(Clone)]
-  enum MyKind {
-    Simple,
-  }
-
   #[test]
   fn regex_start() {
-    let output = RegexAction::new(MyKind::Simple, r"^\d+").exec(
+    let output = RegexAction::new((), r"^\d+").exec(
       &(ActionInput {
         buffer: "123",
         start: 0,
@@ -58,7 +53,7 @@ mod tests {
       end,
     } = output
     {
-      assert!(matches!(kind, MyKind::Simple));
+      assert_eq!(kind, ());
       assert_eq!(buffer, "123");
       assert_eq!(start, 0);
       assert_eq!(end, 3);
@@ -67,7 +62,7 @@ mod tests {
 
   #[test]
   fn regex_middle() {
-    let output = RegexAction::new(MyKind::Simple, r"^\d+").exec(
+    let output = RegexAction::new((), r"^\d+").exec(
       &(ActionInput {
         buffer: "abc123",
         start: 3,
@@ -82,7 +77,7 @@ mod tests {
       end,
     } = output
     {
-      assert!(matches!(kind, MyKind::Simple));
+      assert_eq!(kind, ());
       assert_eq!(buffer, "abc123");
       assert_eq!(start, 3);
       assert_eq!(end, 6);
