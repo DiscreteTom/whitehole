@@ -1,4 +1,7 @@
-pub struct ActionInput<ActionState: 'static> {
+pub struct ActionInput<ActionState>
+where
+  ActionState: 'static,
+{
   /// The whole input text.
   pub buffer: &'static str,
   /// From where to lex.
