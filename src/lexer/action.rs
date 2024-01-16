@@ -6,5 +6,5 @@ pub mod simple;
 use self::{input::ActionInput, output::ActionOutput};
 
 pub trait Action<Kind, ActionState> {
-  fn exec(&self, input: &'static ActionInput<ActionState>) -> ActionOutput<Kind>;
+  fn exec(&self, input: &mut ActionInput<ActionState>) -> ActionOutput<Kind>;
 }

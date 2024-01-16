@@ -19,13 +19,13 @@ impl<Kind, ActionState> Action<Kind, ActionState> for RegexAction<Kind>
 where
   Kind: Clone,
 {
-  fn exec(&self, input: &'static ActionInput<ActionState>) -> ActionOutput<Kind> {
+  fn exec(&self, input: &mut ActionInput<ActionState>) -> ActionOutput<Kind> {
     match self.re.find(input.rest()) {
       Some(m) => ActionOutput::Accepted {
         kind: self.kind.clone(),
-        buffer: input.buffer,
-        start: input.start + m.start(),
-        end: input.start + m.end(),
+        buffer: input.buffer(),
+        start: input.start() + m.start(),
+        end: input.start() + m.end(),
       },
       None => ActionOutput::Rejected,
     }
@@ -38,13 +38,7 @@ mod tests {
 
   #[test]
   fn regex_start() {
-    let output = RegexAction::new((), r"^\d+").exec(
-      &(ActionInput {
-        buffer: "123",
-        start: 0,
-        state: &(),
-      }),
-    );
+    let output = RegexAction::new((), r"^\d+").exec(&mut ActionInput::new("123", 0, &mut ()));
     assert!(matches!(output, ActionOutput::Accepted { .. }));
     if let ActionOutput::Accepted {
       kind,
@@ -62,13 +56,7 @@ mod tests {
 
   #[test]
   fn regex_middle() {
-    let output = RegexAction::new((), r"^\d+").exec(
-      &(ActionInput {
-        buffer: "abc123",
-        start: 3,
-        state: &(),
-      }),
-    );
+    let output = RegexAction::new((), r"^\d+").exec(&mut (ActionInput::new("abc123", 3, &mut ())));
     assert!(matches!(output, ActionOutput::Accepted { .. }));
     if let ActionOutput::Accepted {
       kind,
