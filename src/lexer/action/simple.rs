@@ -21,7 +21,10 @@ impl<Kind, ActionState> Action<Kind, ActionState> for SimpleAction<Kind, ActionS
 where
   Kind: Clone,
 {
-  fn exec(&self, input: &mut ActionInput<ActionState>) -> ActionOutput<Kind> {
+  fn exec<'buffer, 'state>(
+    &self,
+    input: &mut ActionInput<'buffer, 'state, ActionState>,
+  ) -> ActionOutput<'buffer, Kind> {
     let n = (self.executor)(input);
     if n > 0 {
       ActionOutput::Accepted {

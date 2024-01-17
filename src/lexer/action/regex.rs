@@ -19,7 +19,10 @@ impl<Kind, ActionState> Action<Kind, ActionState> for RegexAction<Kind>
 where
   Kind: Clone,
 {
-  fn exec(&self, input: &mut ActionInput<ActionState>) -> ActionOutput<Kind> {
+  fn exec<'buffer, 'state>(
+    &self,
+    input: &mut ActionInput<'buffer, 'state, ActionState>,
+  ) -> ActionOutput<'buffer, Kind> {
     match self.re.find(input.rest()) {
       Some(m) => ActionOutput::Accepted {
         kind: self.kind.clone(),

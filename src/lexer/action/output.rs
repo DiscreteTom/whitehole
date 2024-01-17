@@ -1,7 +1,8 @@
-pub enum ActionOutput<Kind> {
+// TODO: just use Option<T>?
+pub enum ActionOutput<'buffer, Kind> {
   Accepted {
     kind: Kind,
-    buffer: &'static str,
+    buffer: &'buffer str,
     start: usize,
     end: usize,
   },
