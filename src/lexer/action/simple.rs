@@ -1,40 +1,20 @@
 use super::{input::ActionInput, output::ActionOutput, Action};
 
-pub struct SimpleAction<Kind, ActionState> {
-  pub kind: Kind,
-  pub executor: Box<dyn Fn(&mut ActionInput<ActionState>) -> usize>,
-}
-
-impl<Kind, ActionState> SimpleAction<Kind, ActionState> {
-  pub fn new<F>(kind: Kind, f: F) -> Self
+impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
+  pub fn simple<F>(f: F) -> Self
   where
     F: Fn(&mut ActionInput<ActionState>) -> usize + 'static,
   {
-    SimpleAction {
-      kind,
-      executor: Box::new(f),
-    }
-  }
-}
-
-impl<Kind, ActionState> Action<Kind, ActionState> for SimpleAction<Kind, ActionState>
-where
-  Kind: Clone,
-{
-  fn exec<'buffer, 'state>(
-    &self,
-    input: &mut ActionInput<'buffer, 'state, ActionState>,
-  ) -> ActionOutput<'buffer, Kind> {
-    let n = (self.executor)(input);
-    if n > 0 {
-      ActionOutput::Accepted {
-        kind: self.kind.clone(),
-        buffer: input.buffer(),
-        start: input.start(),
-        end: input.start() + n,
-      }
-    } else {
-      ActionOutput::Rejected
+    Action {
+      exec: Box::new(move |input| match f(input) {
+        digested if digested > 0 => Some(ActionOutput {
+          kind: (),
+          digested,
+          muted: false,
+          error: None,
+        }),
+        _ => return None,
+      }),
     }
   }
 }
@@ -45,53 +25,52 @@ mod tests {
 
   #[test]
   fn accept_all() {
-    let output = SimpleAction::new((), |input| input.buffer().len()).exec(&mut ActionInput::new(
+    let output = (Action::simple(|input| input.buffer().len()).exec)(&mut ActionInput::new(
       "123",
       0,
       &mut (),
       false,
     ));
-    assert!(matches!(output, ActionOutput::Accepted { .. }));
-    if let ActionOutput::Accepted {
+    if let Some(ActionOutput {
       kind,
-      buffer,
-      start,
-      end,
-    } = output
+      digested,
+      muted,
+      error,
+    }) = output
     {
       assert_eq!(kind, ());
-      assert_eq!(buffer, "123");
-      assert_eq!(start, 0);
-      assert_eq!(end, 3);
+      assert_eq!(digested, 3);
+      assert_eq!(muted, false);
+      assert_eq!(error, None::<()>);
     }
   }
 
   #[test]
   fn accept_rest() {
-    let output = SimpleAction::new((), |input| input.rest().len()).exec(&mut ActionInput::new(
+    let output = (Action::simple(|input| input.rest().len()).exec)(&mut ActionInput::new(
       "123",
       1,
       &mut (),
       false,
     ));
-    assert!(matches!(output, ActionOutput::Accepted { .. }));
-    if let ActionOutput::Accepted {
+    if let Some(ActionOutput {
       kind,
-      buffer,
-      start,
-      end,
-    } = output
+      digested,
+      muted,
+      error,
+    }) = output
     {
       assert_eq!(kind, ());
-      assert_eq!(buffer, "123");
-      assert_eq!(start, 1);
-      assert_eq!(end, 3);
+      assert_eq!(digested, 2);
+      assert_eq!(muted, false);
+      assert_eq!(error, None::<()>);
     }
   }
 
   #[test]
   fn reject() {
-    let output = SimpleAction::new((), |_| 0).exec(&mut ActionInput::new("123", 0, &mut (), false));
-    assert!(matches!(output, ActionOutput::Rejected));
+    let output: Option<ActionOutput<(), ()>> =
+      (Action::simple(|_| 0).exec)(&mut ActionInput::new("123", 0, &mut (), false));
+    assert!(matches!(output, None));
   }
 }

@@ -1,36 +1,19 @@
-use super::{input::ActionInput, output::ActionOutput, Action};
+use super::{output::ActionOutput, Action};
 use regex::Regex;
 
-pub struct RegexAction<Kind> {
-  pub kind: Kind,
-  pub re: Regex,
-}
-
-impl<Kind> RegexAction<Kind> {
-  pub fn new(kind: Kind, re: &str) -> Self {
-    RegexAction {
-      kind,
-      re: Regex::new(re).unwrap(),
-    }
-  }
-}
-
-impl<Kind, ActionState> Action<Kind, ActionState> for RegexAction<Kind>
-where
-  Kind: Clone,
-{
-  fn exec<'buffer, 'state>(
-    &self,
-    input: &mut ActionInput<'buffer, 'state, ActionState>,
-  ) -> ActionOutput<'buffer, Kind> {
-    match self.re.find(input.rest()) {
-      Some(m) => ActionOutput::Accepted {
-        kind: self.kind.clone(),
-        buffer: input.buffer(),
-        start: input.start() + m.start(),
-        end: input.start() + m.end(),
-      },
-      None => ActionOutput::Rejected,
+impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
+  pub fn regex(re: &str) -> Self {
+    let regex = Regex::new(re).unwrap();
+    Action {
+      exec: Box::new(move |input| match regex.find(input.rest()) {
+        Some(m) => Some(ActionOutput {
+          kind: (),
+          digested: m.end(),
+          muted: false,
+          error: None,
+        }),
+        None => None,
+      }),
     }
   }
 }
@@ -38,42 +21,44 @@ where
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::lexer::action::input::ActionInput;
 
   #[test]
   fn regex_start() {
-    let output =
-      RegexAction::new((), r"^\d+").exec(&mut ActionInput::new("123", 0, &mut (), false));
-    assert!(matches!(output, ActionOutput::Accepted { .. }));
-    if let ActionOutput::Accepted {
+    let action: Action<(), (), _> = Action::regex(r"^\d+");
+    let output: Option<ActionOutput<(), _>> =
+      (action.exec)(&mut ActionInput::new("123", 0, &mut (), false));
+    assert!(matches!(output, Some { .. }));
+    if let Some(ActionOutput {
       kind,
-      buffer,
-      start,
-      end,
-    } = output
+      digested,
+      muted,
+      error,
+    }) = output
     {
       assert_eq!(kind, ());
-      assert_eq!(buffer, "123");
-      assert_eq!(start, 0);
-      assert_eq!(end, 3);
+      assert_eq!(digested, 3);
+      assert_eq!(muted, false);
+      assert_eq!(error, None::<()>);
     }
   }
 
   #[test]
   fn regex_middle() {
     let output =
-      RegexAction::new((), r"^\d+").exec(&mut (ActionInput::new("abc123", 3, &mut (), false)));
-    assert!(matches!(output, ActionOutput::Accepted { .. }));
-    if let ActionOutput::Accepted {
+      (Action::regex(r"^\d+").exec)(&mut (ActionInput::new("abc123", 3, &mut (), false)));
+    assert!(matches!(output, Some { .. }));
+    if let Some(ActionOutput {
       kind,
-      buffer,
-      start,
-      end,
-    } = output
+      digested,
+      muted,
+      error,
+    }) = output
     {
       assert_eq!(kind, ());
-      assert_eq!(buffer, "abc123");
-      assert_eq!(start, 3);
-      assert_eq!(end, 6);
+      assert_eq!(digested, 3);
+      assert_eq!(muted, false);
+      assert_eq!(error, None::<()>);
     }
   }
 }
