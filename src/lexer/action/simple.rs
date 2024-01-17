@@ -25,12 +25,13 @@ mod tests {
 
   #[test]
   fn accept_all() {
-    let output = (Action::simple(|input| input.buffer().len()).exec)(&mut ActionInput::new(
+    let output = Action::simple(|input| input.buffer().len()).exec(&mut ActionInput::new(
       "123",
       0,
       &mut (),
       false,
     ));
+    assert!(matches!(output, Some { .. }));
     if let Some(ActionOutput {
       kind,
       digested,
@@ -47,12 +48,13 @@ mod tests {
 
   #[test]
   fn accept_rest() {
-    let output = (Action::simple(|input| input.rest().len()).exec)(&mut ActionInput::new(
+    let output = Action::simple(|input| input.rest().len()).exec(&mut ActionInput::new(
       "123",
       1,
       &mut (),
       false,
     ));
+    assert!(matches!(output, Some { .. }));
     if let Some(ActionOutput {
       kind,
       digested,
@@ -70,7 +72,7 @@ mod tests {
   #[test]
   fn reject() {
     let output: Option<ActionOutput<(), ()>> =
-      (Action::simple(|_| 0).exec)(&mut ActionInput::new("123", 0, &mut (), false));
+      Action::simple(|_| 0).exec(&mut ActionInput::new("123", 0, &mut (), false));
     assert!(matches!(output, None));
   }
 }

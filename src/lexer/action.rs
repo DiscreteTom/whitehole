@@ -12,7 +12,16 @@ use self::{input::ActionInput, output::ActionOutput};
 // }
 
 pub struct Action<Kind, ActionState, ErrorType> {
-  // pub possible_kinds: HashSet<Kind>,
-  // pub maybe_muted: bool,
-  pub exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
+  // possible_kinds: HashSet<Kind>,
+  // maybe_muted: bool,
+  exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
+}
+
+impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
+  pub fn exec(
+    &self,
+    input: &mut ActionInput<ActionState>,
+  ) -> Option<ActionOutput<Kind, ErrorType>> {
+    (self.exec)(input)
+  }
 }
