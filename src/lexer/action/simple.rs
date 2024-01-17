@@ -1,4 +1,5 @@
 use super::{input::ActionInput, output::ActionOutput, Action};
+use std::collections::HashSet;
 
 impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   pub fn simple<F>(f: F) -> Self
@@ -6,6 +7,8 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
     F: Fn(&mut ActionInput<ActionState>) -> usize + 'static,
   {
     Action {
+      possible_kinds: HashSet::new(),
+      maybe_muted: false,
       exec: Box::new(move |input| match f(input) {
         digested if digested > 0 => Some(ActionOutput {
           kind: (),

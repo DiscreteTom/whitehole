@@ -4,7 +4,7 @@ pub mod regex;
 pub mod simple;
 
 use self::{input::ActionInput, output::ActionOutput};
-// use std::collections::HashSet;
+use std::collections::HashSet;
 
 // pub struct AcceptedActionDecoratorContext<'buffer, 'state, Kind, Data, ActionState, ErrorType> {
 //   input: ActionInput<'buffer, 'state, ActionState>,
@@ -12,12 +12,23 @@ use self::{input::ActionInput, output::ActionOutput};
 // }
 
 pub struct Action<Kind, ActionState, ErrorType> {
-  // possible_kinds: HashSet<Kind>,
-  // maybe_muted: bool,
+  /// This flag is to indicate whether this action's output might be muted.
+  /// The lexer will based on this flag to accelerate the lexing process.
+  /// If `true`, this action's output may be muted.
+  /// If `false`, this action's output will never be muted.
+  /// For most cases this field will be set automatically,
+  /// so don't set this field unless you know what you are doing.
+  pub maybe_muted: bool,
+
+  possible_kinds: HashSet<Kind>,
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
 }
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
+  pub fn possible_kinds(&self) -> &HashSet<Kind> {
+    &self.possible_kinds
+  }
+
   pub fn exec(
     &self,
     input: &mut ActionInput<ActionState>,

@@ -1,10 +1,13 @@
 use super::{output::ActionOutput, Action};
 use regex::Regex;
+use std::collections::HashSet;
 
 impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   pub fn regex(re: &str) -> Self {
     let regex = Regex::new(re).unwrap();
     Action {
+      possible_kinds: HashSet::new(),
+      maybe_muted: false,
       exec: Box::new(move |input| match regex.find(input.rest()) {
         Some(m) => Some(ActionOutput {
           kind: (),
