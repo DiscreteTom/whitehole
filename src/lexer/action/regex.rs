@@ -41,7 +41,8 @@ mod tests {
 
   #[test]
   fn regex_start() {
-    let output = RegexAction::new((), r"^\d+").exec(&mut ActionInput::new("123", 0, &mut ()));
+    let output =
+      RegexAction::new((), r"^\d+").exec(&mut ActionInput::new("123", 0, &mut (), false));
     assert!(matches!(output, ActionOutput::Accepted { .. }));
     if let ActionOutput::Accepted {
       kind,
@@ -59,7 +60,8 @@ mod tests {
 
   #[test]
   fn regex_middle() {
-    let output = RegexAction::new((), r"^\d+").exec(&mut (ActionInput::new("abc123", 3, &mut ())));
+    let output =
+      RegexAction::new((), r"^\d+").exec(&mut (ActionInput::new("abc123", 3, &mut (), false)));
     assert!(matches!(output, ActionOutput::Accepted { .. }));
     if let ActionOutput::Accepted {
       kind,

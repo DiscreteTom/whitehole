@@ -49,6 +49,7 @@ mod tests {
       "123",
       0,
       &mut (),
+      false,
     ));
     assert!(matches!(output, ActionOutput::Accepted { .. }));
     if let ActionOutput::Accepted {
@@ -71,6 +72,7 @@ mod tests {
       "123",
       1,
       &mut (),
+      false,
     ));
     assert!(matches!(output, ActionOutput::Accepted { .. }));
     if let ActionOutput::Accepted {
@@ -89,7 +91,7 @@ mod tests {
 
   #[test]
   fn reject() {
-    let output = SimpleAction::new((), |_| 0).exec(&mut ActionInput::new("123", 0, &mut ()));
+    let output = SimpleAction::new((), |_| 0).exec(&mut ActionInput::new("123", 0, &mut (), false));
     assert!(matches!(output, ActionOutput::Rejected));
   }
 }

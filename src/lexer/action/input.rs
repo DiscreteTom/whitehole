@@ -1,26 +1,31 @@
 pub struct ActionInput<'buffer, 'state, ActionState> {
-  /// The whole input text.
   buffer: &'buffer str,
-  /// From where to lex.
   start: usize,
-  // TODO: add comment
   state: &'state mut ActionState,
-  // TODO: add peek/rest
+  peek: bool,
 }
 
 impl<'buffer, 'state, ActionState> ActionInput<'buffer, 'state, ActionState> {
-  pub fn new(buffer: &'buffer str, start: usize, state: &'state mut ActionState) -> Self {
+  pub fn new(
+    buffer: &'buffer str,
+    start: usize,
+    state: &'state mut ActionState,
+    peek: bool,
+  ) -> Self {
     ActionInput {
       buffer,
       start,
       state,
+      peek,
     }
   }
 
+  /// The whole input text.
   pub fn buffer(&self) -> &'buffer str {
     self.buffer
   }
 
+  /// From where to lex.
   pub fn start(&self) -> usize {
     self.start
   }
@@ -29,6 +34,14 @@ impl<'buffer, 'state, ActionState> ActionInput<'buffer, 'state, ActionState> {
     self.state
   }
 
+  /// Whether this evaluation is a peek.
+  /// If `true`, you may NOT want to mutate the action state.
+  pub fn peek(&self) -> bool {
+    self.peek
+  }
+
+  /// The rest of the input text.
+  /// This is a shortcut for `&self.buffer[self.start..]`.
   pub fn rest(&self) -> &'buffer str {
     &self.buffer[self.start..]
   }
