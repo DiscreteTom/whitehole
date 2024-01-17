@@ -3,13 +3,11 @@ pub mod output;
 pub mod regex;
 pub mod simple;
 
-use self::{input::ActionInput, output::ActionOutput};
+use self::{
+  input::ActionInput,
+  output::{ActionOutput, EnhancedActionOutput},
+};
 use std::collections::HashSet;
-
-// pub struct AcceptedActionDecoratorContext<'buffer, 'state, Kind, Data, ActionState, ErrorType> {
-//   input: ActionInput<'buffer, 'state, ActionState>,
-//   output: WrappedActionOutput<'buffer, Kind, Data, ErrorType>,
-// }
 
 pub struct Action<Kind, ActionState, ErrorType> {
   /// This flag is to indicate whether this action's output might be muted.
@@ -24,7 +22,7 @@ pub struct Action<Kind, ActionState, ErrorType> {
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
 }
 
-impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
+impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, ActionState, ErrorType> {
   pub fn possible_kinds(&self) -> &HashSet<Kind> {
     &self.possible_kinds
   }
@@ -34,5 +32,28 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     input: &mut ActionInput<ActionState>,
   ) -> Option<ActionOutput<Kind, ErrorType>> {
     (self.exec)(input)
+  }
+
+  pub fn apply<F>(self, decorator: F) -> Action<Kind, ActionState, ErrorType>
+  where
+    F: Fn(
+        &mut ActionInput<ActionState>,
+        EnhancedActionOutput<Kind, ErrorType>,
+      ) -> Option<ActionOutput<Kind, ErrorType>>
+      + 'static,
+  {
+    let exec = self.exec;
+    Action {
+      exec: Box::new(
+        move |input: &mut ActionInput<ActionState>| 
+        // exec(input),
+        match exec(input) {
+          Some(output) => decorator(input, EnhancedActionOutput::new(input, output)),
+          None => None,
+        },
+      ),
+      maybe_muted: self.maybe_muted,
+      possible_kinds: self.possible_kinds,
+    }
   }
 }
