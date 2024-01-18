@@ -3,6 +3,7 @@ use super::{
   output::{ActionOutput, EnhancedActionOutput},
   Action,
 };
+use std::{collections::HashSet, hash::Hash};
 
 /// `input.state` is not mutable. `output` is consumed.
 pub struct AcceptedActionDecoratorContext<'input, 'buffer, 'state, Kind, ActionState, ErrorType> {
@@ -180,5 +181,14 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
       maybe_muted: self.maybe_muted || another.maybe_muted,
       possible_kinds: self.possible_kinds, // these two actions should have the same possible kinds
     }
+  }
+
+  pub fn bind<NewKinds>(self, kind: NewKinds) -> Action<NewKinds, ActionState, ErrorType>
+  where
+    NewKinds: Clone + Eq + Hash + 'static,
+  {
+    let mut possible_kinds = HashSet::new();
+    possible_kinds.insert(kind.clone());
+    self.kinds(possible_kinds).select(move |_| kind.clone())
   }
 }
