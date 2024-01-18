@@ -44,7 +44,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// Apply a decorator to this action.
   /// Usually used to modify the `ActionOutput`.
   /// Return a new action.
-  pub fn apply<F, NewErrorType>(self, decorator: F) -> Action<Kind, ActionState, NewErrorType>
+  pub fn apply<NewErrorType, F>(self, decorator: F) -> Action<Kind, ActionState, NewErrorType>
   where
     F: Fn(
         AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>,
@@ -96,7 +96,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
 
   /// Set `ActionOutput.error` if the action is accepted.
   /// Return a new action.
-  pub fn check<F, NewError>(self, condition: F) -> Action<Kind, ActionState, NewError>
+  pub fn check<NewError, F>(self, condition: F) -> Action<Kind, ActionState, NewError>
   where
     F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> Option<NewError>
       + 'static,
