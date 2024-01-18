@@ -183,9 +183,11 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
     }
   }
 
-  pub fn bind<NewKinds>(self, kind: NewKinds) -> Action<NewKinds, ActionState, ErrorType>
+  /// Set the kind and the data binding for this action.
+  /// Use this if your action can only yield one kind.
+  pub fn bind<NewKind>(self, kind: NewKind) -> Action<NewKind, ActionState, ErrorType>
   where
-    NewKinds: Clone + Eq + Hash + 'static,
+    NewKind: Clone + Eq + Hash + 'static,
   {
     let mut possible_kinds = HashSet::new();
     possible_kinds.insert(kind.clone());
