@@ -24,13 +24,13 @@ pub struct MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
   action: Action<Kind, ActionState, ErrorType>,
 }
 
-impl<NewKinds, Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  MultiKindAction<NewKinds, Kind, ActionState, ErrorType>
+impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
+  MultiKindAction<NewKind, Kind, ActionState, ErrorType>
 {
   /// Define a selector to select a kind from action's kinds by action's input and output.
-  pub fn select<F>(self, selector: F) -> Action<NewKinds, ActionState, ErrorType>
+  pub fn select<F>(self, selector: F) -> Action<NewKind, ActionState, ErrorType>
   where
-    F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> NewKinds + 'static,
+    F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> NewKind + 'static,
   {
     let exec = self.action.exec;
     Action {
