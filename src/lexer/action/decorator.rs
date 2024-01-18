@@ -41,6 +41,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   }
 
   /// Apply a decorator to this action.
+  /// Usually used to modify the `ActionOutput`.
   /// Return a new action.
   pub fn apply<F, NewErrorType>(self, decorator: F) -> Action<Kind, ActionState, NewErrorType>
   where
