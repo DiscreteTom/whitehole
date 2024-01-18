@@ -9,6 +9,11 @@ use self::{
 };
 use std::collections::HashSet;
 
+pub struct AcceptedActionDecoratorContext<'input, 'buffer, 'state, Kind, ActionState, ErrorType> {
+  pub input: &'input mut ActionInput<'buffer, 'state, ActionState>,
+  pub output: EnhancedActionOutput<'buffer, Kind, ErrorType>,
+}
+
 pub struct Action<Kind, ActionState, ErrorType> {
   /// This flag is to indicate whether this action's output might be muted.
   /// The lexer will based on this flag to accelerate the lexing process.
@@ -37,18 +42,18 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   pub fn apply<F>(self, decorator: F) -> Action<Kind, ActionState, ErrorType>
   where
     F: Fn(
-        &mut ActionInput<ActionState>,
-        EnhancedActionOutput<Kind, ErrorType>,
+        AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>,
       ) -> Option<ActionOutput<Kind, ErrorType>>
       + 'static,
   {
     let exec = self.exec;
     Action {
       exec: Box::new(
-        move |input: &mut ActionInput<ActionState>| 
-        // exec(input),
-        match exec(input) {
-          Some(output) => decorator(input, EnhancedActionOutput::new(input, output)),
+        move |input: &mut ActionInput<ActionState>| match exec(input) {
+          Some(output) => decorator(AcceptedActionDecoratorContext {
+            output: EnhancedActionOutput::new(input, output),
+            input,
+          }),
           None => None,
         },
       ),
