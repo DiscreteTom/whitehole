@@ -166,4 +166,19 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
       possible_kinds: self.possible_kinds,
     }
   }
+
+  /// Execute another action if current action can't be accepted.
+  /// Return a new action.
+  pub fn or(self, another: Self) -> Self {
+    let exec = self.exec;
+    let another_exec = another.exec;
+    Action {
+      exec: Box::new(move |input| match exec(input) {
+        Some(output) => Some(output),
+        None => another_exec(input),
+      }),
+      maybe_muted: self.maybe_muted || another.maybe_muted,
+      possible_kinds: self.possible_kinds, // these two actions should have the same possible kinds
+    }
+  }
 }
