@@ -4,9 +4,16 @@ use super::{
   Action,
 };
 
+/// `input.state` is not mutable. `output` is consumed.
 pub struct AcceptedActionDecoratorContext<'input, 'buffer, 'state, Kind, ActionState, ErrorType> {
-  pub input: &'input mut ActionInput<'buffer, 'state, ActionState>,
+  pub input: &'input ActionInput<'buffer, 'state, ActionState>,
   pub output: EnhancedActionOutput<'buffer, Kind, ErrorType>,
+}
+
+/// `input.state` is mutable. `output` is not mutable and not consumed.
+pub struct ActionCallbackContext<'input, 'buffer, 'state, 'output, Kind, ActionState, ErrorType> {
+  pub input: &'input mut ActionInput<'buffer, 'state, ActionState>,
+  pub output: &'output EnhancedActionOutput<'buffer, Kind, ErrorType>,
 }
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, ActionState, ErrorType> {
@@ -137,13 +144,25 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// Return a new action.
   pub fn then<F>(self, callback: F) -> Self
   where
-    F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) + 'static,
+    F: Fn(ActionCallbackContext<Kind, ActionState, ErrorType>) + 'static,
   {
-    self.apply(move |ctx| {
-      if !ctx.input.peek() {
-        callback(&ctx);
-      }
-      ctx.output.into()
-    })
+    let exec = self.exec;
+    Action {
+      exec: Box::new(move |input| match exec(input) {
+        Some(output) => {
+          let output = EnhancedActionOutput::new(&input, output);
+          if !input.peek() {
+            callback(ActionCallbackContext {
+              output: &output,
+              input,
+            });
+          }
+          output.into()
+        }
+        None => None,
+      }),
+      maybe_muted: self.maybe_muted,
+      possible_kinds: self.possible_kinds,
+    }
   }
 }
