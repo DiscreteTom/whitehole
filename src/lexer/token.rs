@@ -56,21 +56,22 @@ mod tests {
 
   #[derive(TokenKind)]
   enum MyKind {
-    Simple,
-    WithData(i32),
+    UnitField,
+    UnnamedField(i32),
+    NamedField { _a: i32 },
   }
 
   #[test]
   fn simple() {
     let buffer = "123";
     let token = Token {
-      kind: MyKind::Simple,
+      kind: MyKind::UnitField,
       buffer,
       start: 0,
       end: 3,
       error: None::<()>,
     };
-    assert!(matches!(token.kind(), MyKind::Simple));
+    assert!(matches!(token.kind(), MyKind::UnitField));
     assert_eq!(token.buffer(), buffer);
     assert_eq!(token.start(), 0);
     assert_eq!(token.end(), 3);
@@ -82,13 +83,13 @@ mod tests {
   fn with_data() {
     let buffer = "123";
     let token = Token {
-      kind: MyKind::WithData(42),
+      kind: MyKind::UnnamedField(42),
       buffer,
       start: 0,
       end: 3,
       error: None::<()>,
     };
-    assert!(matches!(token.kind(), MyKind::WithData(42)));
+    assert!(matches!(token.kind(), MyKind::UnnamedField(42)));
     assert_eq!(token.buffer(), buffer);
     assert_eq!(token.start(), 0);
     assert_eq!(token.end(), 3);
@@ -98,7 +99,8 @@ mod tests {
 
   #[test]
   fn token_kind_id() {
-    assert_eq!(MyKind::Simple.id(), 0);
-    assert_eq!(MyKind::WithData(42).id(), 1);
+    assert_eq!(MyKind::UnitField.id(), 0);
+    assert_eq!(MyKind::UnnamedField(42).id(), 1);
+    assert_eq!(MyKind::NamedField { _a: 1 }.id(), 2);
   }
 }
