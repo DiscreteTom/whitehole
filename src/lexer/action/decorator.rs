@@ -192,4 +192,8 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   {
     self.kinds(&[&kind]).select(move |_| kind.clone())
   }
+
+  // there is no `Action.map` or `Action.data` like in retsac since rust doesn't support value-level type or type union,
+  // so we have to provide `possible_kinds` manually if we implement `Action.map` or `Action.data`,
+  // which is the same as calling `Action.kinds().select()`.
 }
