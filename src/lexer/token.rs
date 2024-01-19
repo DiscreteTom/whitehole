@@ -3,7 +3,6 @@
 pub type TokenKindId = usize;
 
 pub trait TokenKind {
-  // TODO: add a macro to generate this method for enums
   fn id(&self) -> TokenKindId;
 }
 
@@ -53,7 +52,9 @@ impl<'buffer, Kind, ErrorType> Token<'buffer, Kind, ErrorType> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use whitehole_macros::TokenKind;
 
+  #[derive(TokenKind)]
   enum MyKind {
     Simple,
     WithData(i32),
@@ -93,5 +94,11 @@ mod tests {
     assert_eq!(token.end(), 3);
     assert_eq!(token.content(), "123");
     assert_eq!(token.error(), None);
+  }
+
+  #[test]
+  fn token_kind_id() {
+    assert_eq!(MyKind::Simple.id(), 0);
+    assert_eq!(MyKind::WithData(42).id(), 1);
   }
 }
