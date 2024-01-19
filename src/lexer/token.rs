@@ -1,4 +1,4 @@
-pub struct Token<'buffer, Kind> {
+pub struct Token<'buffer, Kind, ErrorType> {
   /// The kind and the binding data.
   kind: Kind,
   /// The whole input text.
@@ -7,11 +7,11 @@ pub struct Token<'buffer, Kind> {
   start: usize,
   /// The index of the last character of the token in the whole input text.
   end: usize,
-  // TODO: add error
+  error: Option<ErrorType>,
 }
 
-impl<'buffer, Kind> Token<'buffer, Kind> {
-  /// Returns the kind of the token.
+impl<'buffer, Kind, ErrorType> Token<'buffer, Kind, ErrorType> {
+  /// Returns the kind (and the binding data) of the token.
   pub fn kind(&self) -> &Kind {
     &self.kind
   }
@@ -29,6 +29,10 @@ impl<'buffer, Kind> Token<'buffer, Kind> {
   /// Returns the index of the last character of the token in the whole input text.
   pub fn end(&self) -> usize {
     self.end
+  }
+
+  pub fn error(&self) -> Option<&ErrorType> {
+    self.error.as_ref()
   }
 
   /// Returns the content of the token.
@@ -54,12 +58,14 @@ mod tests {
       buffer,
       start: 0,
       end: 3,
+      error: None::<()>,
     };
     assert!(matches!(token.kind(), MyKind::Simple));
     assert_eq!(token.buffer(), buffer);
     assert_eq!(token.start(), 0);
     assert_eq!(token.end(), 3);
     assert_eq!(token.content(), "123");
+    assert_eq!(token.error(), None);
   }
 
   #[test]
@@ -70,11 +76,13 @@ mod tests {
       buffer,
       start: 0,
       end: 3,
+      error: None::<()>,
     };
     assert!(matches!(token.kind(), MyKind::WithData(42)));
     assert_eq!(token.buffer(), buffer);
     assert_eq!(token.start(), 0);
     assert_eq!(token.end(), 3);
     assert_eq!(token.content(), "123");
+    assert_eq!(token.error(), None);
   }
 }
