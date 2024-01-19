@@ -6,6 +6,7 @@ pub mod select;
 pub mod simple;
 
 use self::{input::ActionInput, output::ActionOutput};
+use super::token::TokenKindId;
 use std::collections::HashSet;
 
 pub struct Action<Kind, ActionState, ErrorType> {
@@ -17,12 +18,12 @@ pub struct Action<Kind, ActionState, ErrorType> {
   /// so don't set this field unless you know what you are doing.
   pub maybe_muted: bool,
 
-  possible_kinds: HashSet<Kind>,
+  possible_kinds: HashSet<TokenKindId>,
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
 }
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, ActionState, ErrorType> {
-  pub fn possible_kinds(&self) -> &HashSet<Kind> {
+  pub fn possible_kinds(&self) -> &HashSet<TokenKindId> {
     &self.possible_kinds
   }
 
