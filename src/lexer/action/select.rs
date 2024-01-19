@@ -14,25 +14,39 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   ) -> MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
     MultiKindAction {
       possible_kinds,
-      action: self,
+      maybe_muted: self.maybe_muted,
+      exec: self.exec,
     }
   }
 }
 
 pub struct MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
   possible_kinds: HashSet<NewKind>,
-  action: Action<Kind, ActionState, ErrorType>,
+  maybe_muted: bool,
+  exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
 }
 
 impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
   MultiKindAction<NewKind, Kind, ActionState, ErrorType>
 {
+  pub fn new(
+    possible_kinds: HashSet<NewKind>,
+    maybe_muted: bool,
+    exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
+  ) -> Self {
+    MultiKindAction {
+      possible_kinds,
+      maybe_muted,
+      exec,
+    }
+  }
+
   /// Define a selector to select a kind from action's kinds by action's input and output.
   pub fn select<F>(self, selector: F) -> Action<NewKind, ActionState, ErrorType>
   where
-    F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> NewKind + 'static,
+    F: Fn(AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> NewKind + 'static,
   {
-    let exec = self.action.exec;
+    let exec = self.exec;
     Action {
       exec: Box::new(
         move |input: &mut ActionInput<ActionState>| match exec(input) {
@@ -42,7 +56,7 @@ impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
               input,
             };
             Some(ActionOutput {
-              kind: selector(&ctx),
+              kind: selector(ctx),
               digested: ctx.output.digested,
               muted: ctx.output.muted,
               error: ctx.output.error,
@@ -51,7 +65,7 @@ impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
           None => None,
         },
       ),
-      maybe_muted: self.action.maybe_muted,
+      maybe_muted: self.maybe_muted,
       possible_kinds: self.possible_kinds,
     }
   }
