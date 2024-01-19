@@ -1,3 +1,12 @@
+/// The unique identifier of a token kind.
+/// Usually we use enum variants as token kinds, and the identifier is the variant's index.
+pub type TokenKindId = usize;
+
+pub trait TokenKind {
+  // TODO: add a macro to generate this method for enums
+  fn id(&self) -> TokenKindId;
+}
+
 pub struct Token<'buffer, Kind, ErrorType> {
   /// The kind and the binding data.
   kind: Kind,
