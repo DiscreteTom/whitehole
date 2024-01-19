@@ -1,9 +1,10 @@
+use crate::lexer::token::TokenKind;
+
 use super::{
   input::ActionInput,
   output::{ActionOutput, EnhancedActionOutput},
   Action,
 };
-use std::{collections::HashSet, hash::Hash};
 
 /// `input.state` is not mutable. `output` is consumed.
 pub struct AcceptedActionDecoratorContext<'input, 'buffer, 'state, Kind, ActionState, ErrorType> {
@@ -187,10 +188,8 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// Use this if your action can only yield one kind.
   pub fn bind<NewKind>(self, kind: NewKind) -> Action<NewKind, ActionState, ErrorType>
   where
-    NewKind: Clone + Eq + Hash + 'static,
+    NewKind: TokenKind + Clone + 'static,
   {
-    let mut possible_kinds = HashSet::new();
-    possible_kinds.insert(kind.clone());
-    self.kinds(possible_kinds).select(move |_| kind.clone())
+    self.kinds(&[&kind]).select(move |_| kind.clone())
   }
 }
