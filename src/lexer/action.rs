@@ -34,6 +34,10 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
     }
   }
 
+  pub fn never_muted(&self) -> bool {
+    !self.maybe_muted
+  }
+
   pub fn possible_kinds(&self) -> &HashSet<TokenKindId> {
     &self.possible_kinds
   }
