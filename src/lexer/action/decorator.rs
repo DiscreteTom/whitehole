@@ -75,7 +75,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
     F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> bool + 'static,
   {
     let mut res = self.apply(move |mut ctx| {
-      ctx.output.muted = condition(&ctx);
+      ctx.output.raw.muted = condition(&ctx);
       ctx.output.into()
     });
     // we can't know whether the output will be muted
@@ -88,7 +88,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// Return a new action.
   pub fn mute(self, muted: bool) -> Self {
     let mut res = self.apply(move |mut ctx| {
-      ctx.output.muted = muted;
+      ctx.output.raw.muted = muted;
       ctx.output.into()
     });
     res.maybe_muted = muted; // we know this
@@ -105,9 +105,9 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
     self.apply(move |ctx| {
       Some(ActionOutput {
         error: condition(&ctx),
-        kind: ctx.output.kind,
-        digested: ctx.output.digested,
-        muted: ctx.output.muted,
+        kind: ctx.output.raw.kind,
+        digested: ctx.output.raw.digested,
+        muted: ctx.output.raw.muted,
       })
     })
   }
