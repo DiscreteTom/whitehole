@@ -23,6 +23,17 @@ pub struct Action<Kind, ActionState, ErrorType> {
 }
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, ActionState, ErrorType> {
+  pub fn new<F>(exec: F) -> Action<(), ActionState, ErrorType>
+  where
+    F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<(), ErrorType>> + 'static,
+  {
+    Action {
+      maybe_muted: false,
+      possible_kinds: HashSet::new(),
+      exec: Box::new(exec),
+    }
+  }
+
   pub fn possible_kinds(&self) -> &HashSet<TokenKindId> {
     &self.possible_kinds
   }
