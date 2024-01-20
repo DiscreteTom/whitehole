@@ -3,9 +3,9 @@ use regex::Regex;
 use std::collections::HashSet;
 
 impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
-  pub fn regex(re: &str) -> Self {
-    let regex = Regex::new(re).unwrap();
-    Action {
+  pub fn regex(re: &str) -> Result<Self, regex::Error> {
+    let regex = Regex::new(re)?;
+    Ok(Action {
       possible_kinds: HashSet::new(),
       maybe_muted: false,
       exec: Box::new(move |input| match regex.find(input.rest()) {
@@ -17,7 +17,7 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
         }),
         None => None,
       }),
-    }
+    })
   }
 }
 
@@ -29,7 +29,7 @@ mod tests {
   #[test]
   fn regex_start() {
     let mut state = ();
-    let action: Action<(), (), _> = Action::regex(r"^\d+");
+    let action: Action<(), (), _> = Action::regex(r"^\d+").unwrap();
     let mut input = ActionInput::new("123", 0, &mut state, false);
     let output: Option<ActionOutput<(), _>> = action.exec(&mut input);
     assert!(matches!(output, Some { .. }));
@@ -50,7 +50,7 @@ mod tests {
   #[test]
   fn regex_middle() {
     let mut state = ();
-    let action = Action::regex(r"^\d+");
+    let action = Action::regex(r"^\d+").unwrap();
     let mut input = ActionInput::new("abc123", 3, &mut state, false);
     let output = action.exec(&mut input);
     assert!(matches!(output, Some { .. }));
