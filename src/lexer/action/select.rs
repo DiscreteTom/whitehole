@@ -8,7 +8,8 @@ use crate::lexer::token::{TokenKind, TokenKindId};
 use std::{collections::HashSet, marker::PhantomData};
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, ActionState, ErrorType> {
-  /// Set kinds for this action. This is used if your action can yield multiple kinds.
+  /// Set possible kinds for this action.
+  /// This is used to accelerate the lexing process when lexing with expected kinds.
   pub fn kinds<NewKind>(
     self,
     possible_kinds: &[&NewKind],
