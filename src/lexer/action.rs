@@ -22,7 +22,7 @@ pub struct Action<Kind, ActionState, ErrorType> {
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
 }
 
-impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, ActionState, ErrorType> {
+impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   pub fn new<F>(exec: F) -> Action<(), ActionState, ErrorType>
   where
     F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<(), ErrorType>> + 'static,

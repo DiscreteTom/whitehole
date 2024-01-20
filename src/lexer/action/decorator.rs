@@ -1,10 +1,9 @@
-use crate::lexer::token::TokenKind;
-
 use super::{
   input::ActionInput,
   output::{ActionOutput, EnhancedActionOutput},
   Action,
 };
+use crate::lexer::token::TokenKind;
 
 /// `input.state` is not mutable. `output` is consumed.
 pub struct AcceptedActionDecoratorContext<'input, 'buffer, 'state, Kind, ActionState, ErrorType> {
