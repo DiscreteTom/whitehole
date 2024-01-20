@@ -65,9 +65,9 @@ impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
             };
             Some(ActionOutput {
               kind: selector(&ctx),
-              digested: ctx.output.digested,
-              muted: ctx.output.muted,
-              error: ctx.output.error,
+              digested: ctx.output.raw.digested,
+              muted: ctx.output.raw.muted,
+              error: ctx.output.raw.error,
             })
           }
           None => None,
