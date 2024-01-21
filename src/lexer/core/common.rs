@@ -5,15 +5,17 @@ use crate::lexer::{
 };
 use std::rc::Rc;
 
-pub struct Validator<'validator, Kind, ActionState, ErrorType> {
+pub struct Validator<'validator, Kind: 'static, ActionState: 'static, ErrorType: 'static> {
+  /// If return `true`, the action will be skipped.
   pub skip_before_exec: Box<dyn Fn(&Action<Kind, ActionState, ErrorType>) -> bool>,
+  /// If return `true`, the action will be accepted.
   pub accept_after_exec: Box<
     dyn Fn(
         &Action<Kind, ActionState, ErrorType>,
         &ActionInput<ActionState>,
         &ActionOutput<Kind, ErrorType>,
       ) -> bool
-      + 'validator,
+      + 'validator, // make sure validator is not outlive the checker
   >,
 }
 

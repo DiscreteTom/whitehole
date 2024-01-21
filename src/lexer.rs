@@ -13,7 +13,7 @@ use self::{
 use std::rc::Rc;
 
 #[derive(Clone)]
-pub struct Lexer<Kind, ActionState, ErrorType> {
+pub struct Lexer<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
   core: LexerCore<Kind, ActionState, ErrorType>,
   buffer: String,
   digested: usize,

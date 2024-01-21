@@ -5,8 +5,8 @@ use super::action::Action;
 use std::rc::Rc;
 
 #[derive(Clone)]
-pub struct LexerCore<Kind, ActionState, ErrorType> {
-  actions: Rc<Vec<Action<Kind, ActionState, ErrorType>>>,
+pub struct LexerCore<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
+  actions: Rc<Vec<Action<Kind, ActionState, ErrorType>>>, // use Rc to make this clone-able
   initial_state: ActionState,
   state: ActionState,
 }
@@ -33,6 +33,9 @@ where
   pub fn state(&self) -> &ActionState {
     &self.state
   }
+  pub fn state_mut(&mut self) -> &mut ActionState {
+    &mut self.state
+  }
 
   pub fn reset(&mut self) -> &mut Self {
     self.state = self.initial_state.clone();
@@ -43,7 +46,7 @@ where
     LexerCore {
       actions: self.actions.clone(),
       initial_state: self.initial_state.clone(),
-      state: self.initial_state.clone(),
+      state: self.initial_state.clone(), // use the initial state
     }
   }
 

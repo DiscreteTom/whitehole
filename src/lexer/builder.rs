@@ -1,6 +1,6 @@
 use super::{action::Action, token::TokenKind, Lexer};
 
-pub struct Builder<Kind, ActionState, ErrorType> {
+pub struct Builder<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
   actions: Vec<Action<Kind, ActionState, ErrorType>>,
   initial_state: ActionState,
 }

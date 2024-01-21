@@ -21,47 +21,46 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// Check the `ActionInput` before the action is executed.
   /// Reject the action if the `condition` returns `true`.
   /// Return a new action.
-  pub fn prevent<F>(self, condition: F) -> Self
+  pub fn prevent<F>(mut self, condition: F) -> Self
   where
     F: Fn(&ActionInput<ActionState>) -> bool + 'static,
   {
     let exec = self.exec;
-    Action {
-      exec: Box::new(
-        move |input: &mut ActionInput<ActionState>| {
-          if condition(input) {
-            None
-          } else {
-            exec(input)
-          }
-        },
-      ),
-      maybe_muted: self.maybe_muted,
-      possible_kinds: self.possible_kinds,
-    }
+    self.exec = Box::new(
+      move |input| {
+        if condition(input) {
+          None
+        } else {
+          exec(input)
+        }
+      },
+    );
+    self
   }
 
   /// Apply a decorator to this action.
   /// Usually used to modify the `ActionOutput`.
   /// Return a new action.
-  pub fn apply<NewErrorType, F>(self, decorator: F) -> Action<Kind, ActionState, NewErrorType>
+  pub fn apply<NewKind, NewErrorType, F>(
+    self,
+    decorator: F,
+  ) -> Action<NewKind, ActionState, NewErrorType>
   where
     F: Fn(
         AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>,
-      ) -> Option<ActionOutput<Kind, NewErrorType>>
+      ) -> Option<ActionOutput<NewKind, NewErrorType>>
       + 'static,
   {
     let exec = self.exec;
     Action {
-      exec: Box::new(
-        move |input: &mut ActionInput<ActionState>| match exec(input) {
-          Some(output) => decorator(AcceptedActionDecoratorContext {
+      exec: Box::new(move |input: &mut ActionInput<ActionState>| {
+        exec(input).and_then(|output| {
+          decorator(AcceptedActionDecoratorContext {
             output: EnhancedActionOutput::new(input, output),
             input,
-          }),
-          None => None,
-        },
-      ),
+          })
+        })
+      }),
       maybe_muted: self.maybe_muted,
       possible_kinds: self.possible_kinds,
     }
@@ -86,6 +85,8 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// Set `ActionOutput.muted` if the action is accepted.
   /// Return a new action.
   pub fn mute(self, muted: bool) -> Self {
+    // reminder: DON'T use `self.mute_if(move |_| muted)`
+    // because we can set `maybe_muted` to `muted` directly
     let mut res = self.apply(move |mut ctx| {
       ctx.output.raw.muted = muted;
       ctx.output.into()
@@ -144,43 +145,35 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// Call the `callback` if the action is accepted and `peek` is `false`.
   /// You can modify the action state in the `callback`.
   /// Return a new action.
-  pub fn then<F>(self, callback: F) -> Self
+  pub fn then<F>(mut self, callback: F) -> Self
   where
     F: Fn(ActionCallbackContext<Kind, ActionState, ErrorType>) + 'static,
   {
     let exec = self.exec;
-    Action {
-      exec: Box::new(move |input| match exec(input) {
-        Some(output) => {
-          let output = EnhancedActionOutput::new(&input, output);
-          if !input.peek() {
-            callback(ActionCallbackContext {
-              output: &output,
-              input,
-            });
-          }
-          output.into()
+    self.exec = Box::new(move |input| {
+      exec(input).and_then(|output| {
+        let output = EnhancedActionOutput::new(&input, output);
+        if !input.peek() {
+          callback(ActionCallbackContext {
+            output: &output,
+            input,
+          });
         }
-        None => None,
-      }),
-      maybe_muted: self.maybe_muted,
-      possible_kinds: self.possible_kinds,
-    }
+        output.into()
+      })
+    });
+    self
   }
 
   /// Execute another action if current action can't be accepted.
   /// Return a new action.
-  pub fn or(self, another: Self) -> Self {
+  pub fn or(mut self, another: Self) -> Self {
     let exec = self.exec;
     let another_exec = another.exec;
-    Action {
-      exec: Box::new(move |input| match exec(input) {
-        Some(output) => Some(output),
-        None => another_exec(input),
-      }),
-      maybe_muted: self.maybe_muted || another.maybe_muted,
-      possible_kinds: self.possible_kinds, // these two actions should have the same possible kinds
-    }
+    self.exec = Box::new(move |input| exec(input).or_else(|| another_exec(input)));
+    self.maybe_muted = self.maybe_muted || another.maybe_muted;
+    self.possible_kinds.extend(another.possible_kinds); // merge possible kinds
+    self
   }
 
   /// Set the kind and the data binding for this action.
@@ -194,5 +187,5 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
 
   // there is no `Action.map` or `Action.data` like in retsac since rust doesn't support value-level type or type union,
   // so we have to provide `possible_kinds` manually if we implement `Action.map` or `Action.data`,
-  // which is the same as calling `Action.kinds().select()`.
+  // which is the same as calling `action.kinds().select()`.
 }

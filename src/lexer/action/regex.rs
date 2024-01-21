@@ -1,24 +1,18 @@
 use super::{output::ActionOutput, Action};
 use regex::Regex;
-use std::collections::HashSet;
 
 // TODO: only in feature `regex`
 impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   pub fn regex(re: &str) -> Result<Self, regex::Error> {
-    let regex = Regex::new(re)?;
-    Ok(Action {
-      possible_kinds: HashSet::new(),
-      maybe_muted: false,
-      exec: Box::new(move |input| match regex.find(input.rest()) {
-        Some(m) => Some(ActionOutput {
-          kind: (),
-          digested: m.end(),
-          muted: false,
-          error: None,
-        }),
-        None => None,
-      }),
-    })
+    let re = Regex::new(re)?;
+    Ok(Action::new(move |input| {
+      re.find(input.rest()).map(|m| ActionOutput {
+        kind: (),
+        digested: m.end(),
+        muted: false,
+        error: None,
+      })
+    }))
   }
 }
 

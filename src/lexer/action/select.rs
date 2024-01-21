@@ -10,7 +10,7 @@ use std::{collections::HashSet, marker::PhantomData};
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Set possible kinds for this action.
   /// This is used to accelerate the lexing process when lexing with expected kinds.
-  pub fn kinds<NewKind>(
+  pub fn kinds<NewKind: 'static>(
     self,
     possible_kinds: &[&NewKind],
   ) -> MultiKindAction<NewKind, Kind, ActionState, ErrorType>
@@ -56,23 +56,20 @@ impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
   {
     let exec = self.exec;
     Action {
-      exec: Box::new(
-        move |input: &mut ActionInput<ActionState>| match exec(input) {
-          Some(output) => {
-            let ctx = AcceptedActionDecoratorContext {
-              output: EnhancedActionOutput::new(input, output),
-              input,
-            };
-            Some(ActionOutput {
-              kind: selector(&ctx),
-              digested: ctx.output.raw.digested,
-              muted: ctx.output.raw.muted,
-              error: ctx.output.raw.error,
-            })
+      exec: Box::new(move |input: &mut ActionInput<ActionState>| {
+        exec(input).map(|output| {
+          let ctx = AcceptedActionDecoratorContext {
+            output: EnhancedActionOutput::new(input, output),
+            input,
+          };
+          ActionOutput {
+            kind: selector(&ctx),
+            digested: ctx.output.raw.digested,
+            muted: ctx.output.raw.muted,
+            error: ctx.output.raw.error,
           }
-          None => None,
-        },
-      ),
+        })
+      }),
       maybe_muted: self.maybe_muted,
       possible_kinds: self.possible_kinds,
     }
