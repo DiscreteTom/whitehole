@@ -28,11 +28,8 @@ pub struct OutputHandler {
   pub create_token: bool,
 }
 
-impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType> LexerCore<Kind, ActionState, ErrorType>
-where
-  // TODO: remove these?
-  'buffer: 'input,
-  'state: 'input,
+impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType>
+  LexerCore<Kind, ActionState, ErrorType>
 {
   pub fn execute_actions<'validator, F>(
     actions: &[Action<Kind, ActionState, ErrorType>],
