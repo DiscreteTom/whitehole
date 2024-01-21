@@ -19,15 +19,13 @@ pub struct Validator<'validator, Kind: 'static, ActionState: 'static, ErrorType:
   >,
 }
 
-pub enum UpdateContext {
-  Yes { stop: bool },
-  No,
-}
-
-pub struct CallbackOutput<'buffer, Kind, ErrorType> {
-  // TODO: add comments, optimize name
-  pub update_ctx: UpdateContext,
-  pub token: Option<Token<'buffer, Kind, ErrorType>>,
+/// OutputHandler controls the behaviour of `execute_actions`
+/// when an un-muted action is accepted.
+pub struct OutputHandler {
+  /// If `true`, fields in `LexerCoreLexOutput` (like `digested`) should be updated.
+  pub update_lex_output: bool,
+  /// If `true`, the `LexerCoreLexOutput` should have a token created by the `ActionOutput`.
+  pub create_token: bool,
 }
 
 impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType> LexerCore<Kind, ActionState, ErrorType>
@@ -36,24 +34,20 @@ where
   'buffer: 'input,
   'state: 'input,
 {
-  pub fn execute_actions<'validator, F, C>(
+  pub fn execute_actions<'validator, F>(
     actions: &[Action<Kind, ActionState, ErrorType>],
     validator_factory: F,
     buffer: &'buffer str,
     start: usize,
     peek: bool,
     state: &'state mut ActionState,
-    callback: C,
+    handler: &OutputHandler,
   ) -> LexerCoreLexOutput<Rc<Token<'buffer, Kind, ErrorType>>>
   where
     F: Fn(&ActionInput<ActionState>) -> Validator<'validator, Kind, ActionState, ErrorType>,
-    C: Fn(
-      &ActionInput<'buffer, '_, ActionState>,
-      ActionOutput<Kind, ErrorType>,
-    ) -> CallbackOutput<'buffer, Kind, ErrorType>,
   {
     let mut res = LexerCoreLexOutput {
-      token: None,
+      token: None, // should only be updated before return
       digested: 0,
       errors: Vec::new(),
     };
@@ -71,42 +65,56 @@ where
       let validator = validator_factory(&input);
       let output = Self::traverse_actions(&mut input, actions, validator);
 
-      if let Some(output) = output {
-        let digested = output.digested;
-        let cb_res = callback(&input, output);
-        let token = cb_res.token.map(Rc::new);
-
-        // collect errors
-        if let Some(token) = &token {
-          if token.error.is_some() {
-            res.errors.push(token.clone());
-          }
-        }
-
-        // update digested
-        if let UpdateContext::Yes { stop: _ } = cb_res.update_ctx {
-          res.digested += digested;
-        }
-
-        // stop lexing
-        // TODO: optimize code
-        if let UpdateContext::No = cb_res.update_ctx {
-          // stop lexing
-          res.token = token;
-          return res;
-        }
-        if let UpdateContext::Yes { stop } = cb_res.update_ctx {
-          if stop {
-            // stop lexing
-            res.token = token;
-            return res;
-          }
-        }
-      } else {
+      match output {
         // all definition checked, no accepted action
         // but the digested and errors might be updated by the last iteration
         // so we have to return them
-        return res;
+        None => return res,
+        Some(output) => {
+          if output.error.is_some() {
+            // copy values before output is consumed
+            let muted = output.muted;
+            let digested = output.digested;
+
+            // create token and collect errors
+            let token = Rc::new(Self::output2token(&input, output));
+            res.errors.push(token.clone());
+
+            if muted {
+              // don't emit token
+              // just update state and continue
+              res.digested += digested;
+              continue;
+            }
+
+            // else, not muted, check output handler
+            if handler.update_lex_output {
+              res.digested += digested;
+            }
+            if handler.create_token {
+              res.token = Some(token);
+            }
+            return res;
+          } else {
+            // else, no error
+
+            if output.muted {
+              // don't emit token
+              // just update state and continue
+              res.digested += output.digested;
+              continue;
+            }
+
+            // else, not muted, check output handler
+            if handler.update_lex_output {
+              res.digested += output.digested;
+            }
+            if handler.create_token {
+              res.token = Some(Rc::new(Self::output2token(&input, output)));
+            }
+            return res;
+          }
+        }
       }
     }
   }

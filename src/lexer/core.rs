@@ -1,4 +1,4 @@
-pub mod common;
+mod common;
 pub mod lex;
 
 use super::action::Action;

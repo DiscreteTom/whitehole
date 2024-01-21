@@ -2,11 +2,11 @@ pub mod expectation;
 pub mod options;
 
 use self::{expectation::Expectation, options::LexerCoreLexOptions};
-use super::{
-  common::{CallbackOutput, UpdateContext, Validator},
-  LexerCore,
+use super::{common::Validator, LexerCore};
+use crate::lexer::{
+  core::common::OutputHandler,
+  token::{Token, TokenKind},
 };
-use crate::lexer::token::{Token, TokenKind};
 use std::rc::Rc;
 
 pub struct LexerCoreLexOutput<TokenType> {
@@ -28,6 +28,12 @@ where
   where
     'buffer: 'expect_text,
   {
+    // use static to avoid allocation in each call
+    static OUTPUT_HANDLER: OutputHandler = OutputHandler {
+      update_lex_output: true,
+      create_token: true,
+    };
+
     let buffer: &str = buffer.into();
     let options: LexerCoreLexOptions<Kind> = options.into();
 
@@ -58,25 +64,7 @@ where
       options.start,
       options.peek,
       &mut self.state,
-      move |input, output| {
-        if output.muted {
-          let token = if output.error.is_some() {
-            Some(Self::output2token(input, output)) // record the error token
-          } else {
-            None
-          };
-          return CallbackOutput {
-            update_ctx: UpdateContext::Yes { stop: false },
-            token,
-          };
-        }
-
-        let token = Self::output2token(input, output);
-        CallbackOutput {
-          update_ctx: UpdateContext::Yes { stop: true },
-          token: Some(token),
-        }
-      },
+      &OUTPUT_HANDLER,
     )
   }
 }
