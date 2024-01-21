@@ -1,7 +1,7 @@
 use super::{lex::LexerCoreLexOutput, LexerCore};
 use crate::lexer::{
   action::{input::ActionInput, output::ActionOutput, Action},
-  token::{buffer::CowString, Token},
+  token::Token,
 };
 use std::rc::Rc;
 
@@ -28,18 +28,18 @@ pub struct OutputHandler {
   pub create_token: bool,
 }
 
-impl<'buffer, 'input, 'state, Kind, ActionState, ErrorType>
+impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType>
   LexerCore<Kind, ActionState, ErrorType>
 {
   pub fn execute_actions<'validator, F>(
     actions: &[Action<Kind, ActionState, ErrorType>],
     validator_factory: F,
-    buffer: &CowString,
+    buffer: &'buffer str,
     start: usize,
     peek: bool,
     state: &'state mut ActionState,
     handler: &OutputHandler,
-  ) -> LexerCoreLexOutput<Rc<Token<Kind, ErrorType>>>
+  ) -> LexerCoreLexOutput<Rc<Token<'buffer, Kind, ErrorType>>>
   where
     F: Fn(&ActionInput<ActionState>) -> Validator<'validator, Kind, ActionState, ErrorType>,
   {
@@ -52,13 +52,13 @@ impl<'buffer, 'input, 'state, Kind, ActionState, ErrorType>
     loop {
       // first, ensure rest is not empty
       // since maybe some token is muted in the last iteration which cause the rest is empty
-      if start + res.digested >= buffer.value().len() {
+      if start + res.digested >= buffer.len() {
         return res;
       }
 
       // all actions will reuse this action input to reuse lazy values
       // so we have to create it outside of the loop
-      let mut input = ActionInput::new(buffer.value(), start + res.digested, state, peek);
+      let mut input = ActionInput::new(buffer, start + res.digested, state, peek);
       let validator = validator_factory(&input);
       let output = Self::traverse_actions(&mut input, actions, validator);
 
@@ -74,7 +74,7 @@ impl<'buffer, 'input, 'state, Kind, ActionState, ErrorType>
             let digested = output.digested;
 
             // create token and collect errors
-            let token = Rc::new(Self::create_token(buffer, input.start(), output));
+            let token = Rc::new(Self::output2token(&input, output));
             res.errors.push(token.clone());
 
             if muted {
@@ -107,7 +107,7 @@ impl<'buffer, 'input, 'state, Kind, ActionState, ErrorType>
               res.digested += output.digested;
             }
             if handler.create_token {
-              res.token = Some(Rc::new(Self::create_token(buffer, input.start(), output)));
+              res.token = Some(Rc::new(Self::output2token(&input, output)));
             }
             return res;
           }
@@ -150,16 +150,15 @@ impl<'buffer, 'input, 'state, Kind, ActionState, ErrorType>
     None
   }
 
-  fn create_token(
-    buffer: &CowString,
-    start: usize,
+  pub fn output2token(
+    input: &ActionInput<'buffer, '_, ActionState>,
     output: ActionOutput<Kind, ErrorType>,
-  ) -> Token<Kind, ErrorType> {
+  ) -> Token<'buffer, Kind, ErrorType> {
     Token {
       kind: output.kind,
-      buffer: buffer.clone(),
-      start,
-      end: start + output.digested,
+      buffer: input.buffer(),
+      start: input.start(),
+      end: input.start() + output.digested,
       error: output.error,
     }
   }
