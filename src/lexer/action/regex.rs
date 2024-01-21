@@ -2,6 +2,7 @@ use super::{output::ActionOutput, Action};
 use regex::Regex;
 use std::collections::HashSet;
 
+// TODO: only in feature `regex`
 impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   pub fn regex(re: &str) -> Result<Self, regex::Error> {
     let regex = Regex::new(re)?;
