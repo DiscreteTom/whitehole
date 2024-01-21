@@ -1,3 +1,7 @@
+pub mod buffer;
+
+use self::buffer::CowString;
+
 /// The unique identifier of a token kind.
 /// Usually we use enum variants as token kinds, and the identifier is the variant's index.
 pub type TokenKindId = usize;
@@ -6,11 +10,12 @@ pub trait TokenKind {
   fn id(&self) -> TokenKindId;
 }
 
-pub struct Token<'buffer, Kind, ErrorType> {
+pub struct Token<Kind, ErrorType> {
+  // TODO: make fields private
   /// The kind and the binding data.
   pub kind: Kind,
   /// The whole input text.
-  pub buffer: &'buffer str,
+  pub buffer: CowString,
   /// The index of the first character of the token in the whole input text.
   pub start: usize,
   /// The index of the last character of the token in the whole input text.
@@ -18,10 +23,10 @@ pub struct Token<'buffer, Kind, ErrorType> {
   pub error: Option<ErrorType>,
 }
 
-impl<'buffer, Kind, ErrorType> Token<'buffer, Kind, ErrorType> {
+impl<Kind, ErrorType> Token<Kind, ErrorType> {
   /// Returns the content of the token.
   pub fn content(&self) -> &str {
-    &self.buffer[self.start..self.end]
+    &self.buffer.value()[self.start..self.end]
   }
 }
 
@@ -39,16 +44,16 @@ mod tests {
 
   #[test]
   fn simple() {
-    let buffer = "123";
+    let buffer = CowString::new("123");
     let token = Token {
       kind: MyKind::UnitField,
-      buffer,
+      buffer: buffer.clone(),
       start: 0,
       end: 3,
       error: None::<()>,
     };
     assert!(matches!(token.kind, MyKind::UnitField));
-    assert_eq!(token.buffer, buffer);
+    assert_eq!(token.buffer.value(), buffer.value());
     assert_eq!(token.start, 0);
     assert_eq!(token.end, 3);
     assert_eq!(token.content(), "123");
@@ -57,16 +62,16 @@ mod tests {
 
   #[test]
   fn with_data() {
-    let buffer = "123";
+    let buffer = CowString::new("123");
     let token = Token {
       kind: MyKind::UnnamedField(42),
-      buffer,
+      buffer: buffer.clone(),
       start: 0,
       end: 3,
       error: None::<()>,
     };
     assert!(matches!(token.kind, MyKind::UnnamedField(42)));
-    assert_eq!(token.buffer, buffer);
+    assert_eq!(token.buffer.value(), buffer.value());
     assert_eq!(token.start, 0);
     assert_eq!(token.end, 3);
     assert_eq!(token.content(), "123");

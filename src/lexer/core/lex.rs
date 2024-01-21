@@ -5,7 +5,7 @@ use self::{expectation::Expectation, options::LexerCoreLexOptions};
 use super::{common::Validator, LexerCore};
 use crate::lexer::{
   core::common::OutputHandler,
-  token::{Token, TokenKind},
+  token::{buffer::CowString, Token, TokenKind},
 };
 use std::rc::Rc;
 
@@ -22,9 +22,9 @@ where
 {
   pub fn lex<'buffer, 'expect_text>(
     &mut self,
-    buffer: &'buffer str,
+    buffer: &CowString,
     options: impl Into<LexerCoreLexOptions<'expect_text, Kind>>,
-  ) -> LexerCoreLexOutput<Rc<Token<'buffer, Kind, ErrorType>>>
+  ) -> LexerCoreLexOutput<Rc<Token<Kind, ErrorType>>>
   where
     'buffer: 'expect_text,
   {
@@ -34,9 +34,7 @@ where
       create_token: true,
     };
 
-    let buffer: &str = buffer.into();
     let options: LexerCoreLexOptions<Kind> = options.into();
-
     let Expectation {
       kind: exp_kind,
       text: exp_text,

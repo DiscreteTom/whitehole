@@ -8,7 +8,7 @@ use self::{
   action::Action,
   core::{lex::options::LexerCoreLexOptions, LexerCore},
   options::LexerLexOptions,
-  token::{Token, TokenKind},
+  token::{buffer::CowString, Token, TokenKind},
 };
 use std::rc::Rc;
 
@@ -18,7 +18,7 @@ pub struct Lexer<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
   // use Rc to lazy-clone the buffer
   // so that every `lexer.clone` won't clone the buffer
   // only when the buffer is modified, it will be cloned
-  buffer: Rc<String>,
+  buffer: CowString,
   digested: usize,
 }
 
@@ -30,21 +30,20 @@ where
   pub fn new(actions: Vec<Action<Kind, ActionState, ErrorType>>, state: ActionState) -> Self {
     Lexer {
       core: LexerCore::new(actions, state),
-      buffer: Rc::new(String::new()),
+      buffer: CowString::default(),
       digested: 0,
     }
   }
 
   pub fn reset(&mut self) -> &mut Self {
     self.core.reset();
-    self.buffer = Rc::new(String::new());
+    self.buffer.reset();
     self.digested = 0;
     self
   }
 
   pub fn feed(&mut self, s: &str) -> &mut Self {
-    let buffer = self.buffer.clone();
-    self.buffer = Rc::new((*buffer).clone() + s);
+    self.buffer.feed(s);
     self
   }
 
@@ -64,7 +63,7 @@ where
     }
 
     let res = self.core.lex(
-      self.buffer.as_str(),
+      &self.buffer,
       LexerCoreLexOptions {
         start: self.digested,
         peek: options.peek,

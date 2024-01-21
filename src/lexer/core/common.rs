@@ -1,7 +1,7 @@
 use super::{lex::LexerCoreLexOutput, LexerCore};
 use crate::lexer::{
   action::{input::ActionInput, output::ActionOutput, Action},
-  token::Token,
+  token::{buffer::CowString, Token},
 };
 use std::rc::Rc;
 
@@ -28,18 +28,18 @@ pub struct OutputHandler {
   pub create_token: bool,
 }
 
-impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType>
+impl<'buffer, 'input, 'state, Kind, ActionState, ErrorType>
   LexerCore<Kind, ActionState, ErrorType>
 {
   pub fn execute_actions<'validator, F>(
     actions: &[Action<Kind, ActionState, ErrorType>],
     validator_factory: F,
-    buffer: &'buffer str,
+    buffer: &CowString,
     start: usize,
     peek: bool,
     state: &'state mut ActionState,
     handler: &OutputHandler,
-  ) -> LexerCoreLexOutput<Rc<Token<'buffer, Kind, ErrorType>>>
+  ) -> LexerCoreLexOutput<Rc<Token<Kind, ErrorType>>>
   where
     F: Fn(&ActionInput<ActionState>) -> Validator<'validator, Kind, ActionState, ErrorType>,
   {
@@ -52,13 +52,13 @@ impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType>
     loop {
       // first, ensure rest is not empty
       // since maybe some token is muted in the last iteration which cause the rest is empty
-      if start + res.digested >= buffer.len() {
+      if start + res.digested >= buffer.value().len() {
         return res;
       }
 
       // all actions will reuse this action input to reuse lazy values
       // so we have to create it outside of the loop
-      let mut input = ActionInput::new(buffer, start + res.digested, state, peek);
+      let mut input = ActionInput::new(&buffer, start + res.digested, state, peek);
       let validator = validator_factory(&input);
       let output = Self::traverse_actions(&mut input, actions, validator);
 
@@ -153,10 +153,10 @@ impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType>
   pub fn output2token(
     input: &ActionInput<'buffer, '_, ActionState>,
     output: ActionOutput<Kind, ErrorType>,
-  ) -> Token<'buffer, Kind, ErrorType> {
+  ) -> Token<Kind, ErrorType> {
     Token {
       kind: output.kind,
-      buffer: input.buffer(),
+      buffer: input.buffer().clone(),
       start: input.start(),
       end: input.start() + output.digested,
       error: output.error,
