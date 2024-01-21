@@ -15,36 +15,26 @@ use self::{
 use std::rc::Rc;
 
 #[derive(Clone)]
-pub struct Lexer<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
-  buffer: String,
+pub struct Lexer<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static> {
   core: LexerCore<Kind, ActionState, ErrorType>,
-  state: LexerState,
+  state: LexerState<'buffer>,
 }
 
-impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Lexer<Kind, ActionState, ErrorType>
+impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
+  Lexer<'buffer, Kind, ActionState, ErrorType>
 where
   Kind: TokenKind,
   ActionState: Clone,
 {
-  pub fn new(actions: Vec<Action<Kind, ActionState, ErrorType>>, state: ActionState) -> Self {
+  pub fn new(
+    actions: Vec<Action<Kind, ActionState, ErrorType>>,
+    state: ActionState,
+    buffer: &'buffer str,
+  ) -> Self {
     Lexer {
-      buffer: String::default(),
       core: LexerCore::new(actions, state),
-      state: LexerState::default(),
+      state: LexerState::new(buffer),
     }
-  }
-
-  pub fn reset(&mut self) -> &mut Self {
-    self.buffer.clear();
-    self.core.reset();
-    self.state.reset();
-    self
-  }
-
-  pub fn feed(&mut self, s: &str) -> &mut Self {
-    self.buffer += s;
-    self.state.on_feed();
-    self
   }
 
   pub fn lex(&mut self) -> Option<Rc<Token<Kind, ErrorType>>> {
@@ -57,13 +47,8 @@ where
   ) -> Option<Rc<Token<Kind, ErrorType>>> {
     let options: LexerLexOptions<Kind> = options.into();
 
-    // feed input if any
-    if let Some(input) = options.input {
-      self.feed(input);
-    }
-
     let res = self.core.lex(
-      &self.buffer,
+      self.state.buffer(),
       LexerCoreLexOptions {
         start: self.state.digested(),
         peek: options.peek,
@@ -73,13 +58,13 @@ where
 
     // update state if not peek
     if !options.peek {
-      self.state.on_digest(res.digested, &self.buffer);
+      self.state.digest(res.digested);
     }
 
     res.token
   }
 
   pub fn rest(&self) -> &str {
-    &self.buffer[self.state.digested()..]
+    &self.state.buffer()[self.state.digested()..]
   }
 }

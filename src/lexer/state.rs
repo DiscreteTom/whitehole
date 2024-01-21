@@ -1,21 +1,22 @@
 #[derive(Clone)]
-pub struct LexerState {
-  // when `lexer.lex` we want to change state but not the buffer
-  // so we have to separate mutable states and buffer in different structs
+pub struct LexerState<'buffer> {
+  buffer: &'buffer str,
   digested: usize,
   trimmed: bool,
 }
 
-impl Default for LexerState {
-  fn default() -> Self {
+impl<'buffer> LexerState<'buffer> {
+  pub fn new(buffer: &'buffer str) -> Self {
     LexerState {
+      buffer,
       digested: 0,
-      trimmed: true, // no input, so it's trimmed
+      trimmed: buffer.len() == 0, // if buffer is empty, no need to trim
     }
   }
-}
 
-impl LexerState {
+  pub fn buffer(&self) -> &'buffer str {
+    self.buffer
+  }
   pub fn digested(&self) -> usize {
     self.digested
   }
@@ -23,23 +24,13 @@ impl LexerState {
     self.trimmed
   }
 
-  pub fn reset(&mut self) {
-    self.digested = 0;
-    self.trimmed = true; // no input, so it's trimmed
-  }
-
-  // TODO: better name?
-  pub fn on_feed(&mut self) {
-    self.trimmed = false; // maybe the new feed chars can make muted actions accept
-  }
-
-  pub fn on_digest(&mut self, n: usize, buffer: &str) {
+  pub fn digest(&mut self, n: usize) {
     if n == 0 {
       return;
     }
 
     // update other states
     self.digested += n;
-    self.trimmed = self.digested == buffer.len(); // if all chars are digested, no need to trim
+    self.trimmed = self.digested == self.buffer.len(); // if all chars are digested, no need to trim
   }
 }

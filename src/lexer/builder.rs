@@ -34,8 +34,11 @@ where
     self
   }
 
-  pub fn build(self) -> Lexer<Kind, ActionState, ErrorType> {
-    Lexer::new(self.actions, self.initial_state)
+  pub fn build<'buffer>(
+    self,
+    buffer: &'buffer str,
+  ) -> Lexer<'buffer, Kind, ActionState, ErrorType> {
+    Lexer::new(self.actions, self.initial_state, buffer)
   }
 }
 
@@ -55,9 +58,9 @@ mod tests {
   fn simple_lexer_builder() {
     let mut lexer: Lexer<MyKind, (), ()> = Builder::new(())
       .define(Action::regex("a+").unwrap().bind(MyKind::UnitField))
-      .build();
+      .build("aaa");
 
-    let res = lexer.feed("aaa").lex();
+    let res = lexer.lex();
     assert!(res.is_some());
     let token = res.unwrap();
     assert!(matches!(token.kind, MyKind::UnitField));
