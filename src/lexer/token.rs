@@ -8,41 +8,17 @@ pub trait TokenKind {
 
 pub struct Token<'buffer, Kind, ErrorType> {
   /// The kind and the binding data.
-  kind: Kind,
+  pub kind: Kind,
   /// The whole input text.
-  buffer: &'buffer str,
+  pub buffer: &'buffer str,
   /// The index of the first character of the token in the whole input text.
-  start: usize,
+  pub start: usize,
   /// The index of the last character of the token in the whole input text.
-  end: usize,
-  error: Option<ErrorType>,
+  pub end: usize,
+  pub error: Option<ErrorType>,
 }
 
 impl<'buffer, Kind, ErrorType> Token<'buffer, Kind, ErrorType> {
-  /// Returns the kind (and the binding data) of the token.
-  pub fn kind(&self) -> &Kind {
-    &self.kind
-  }
-
-  /// Returns the whole input text.
-  pub fn buffer(&self) -> &'buffer str {
-    self.buffer
-  }
-
-  /// Returns the index of the first character of the token in the whole input text.
-  pub fn start(&self) -> usize {
-    self.start
-  }
-
-  /// Returns the index of the last character of the token in the whole input text.
-  pub fn end(&self) -> usize {
-    self.end
-  }
-
-  pub fn error(&self) -> Option<&ErrorType> {
-    self.error.as_ref()
-  }
-
   /// Returns the content of the token.
   pub fn content(&self) -> &str {
     &self.buffer[self.start..self.end]
@@ -71,12 +47,12 @@ mod tests {
       end: 3,
       error: None::<()>,
     };
-    assert!(matches!(token.kind(), MyKind::UnitField));
-    assert_eq!(token.buffer(), buffer);
-    assert_eq!(token.start(), 0);
-    assert_eq!(token.end(), 3);
+    assert!(matches!(token.kind, MyKind::UnitField));
+    assert_eq!(token.buffer, buffer);
+    assert_eq!(token.start, 0);
+    assert_eq!(token.end, 3);
     assert_eq!(token.content(), "123");
-    assert_eq!(token.error(), None);
+    assert_eq!(token.error, None);
   }
 
   #[test]
@@ -89,12 +65,12 @@ mod tests {
       end: 3,
       error: None::<()>,
     };
-    assert!(matches!(token.kind(), MyKind::UnnamedField(42)));
-    assert_eq!(token.buffer(), buffer);
-    assert_eq!(token.start(), 0);
-    assert_eq!(token.end(), 3);
+    assert!(matches!(token.kind, MyKind::UnnamedField(42)));
+    assert_eq!(token.buffer, buffer);
+    assert_eq!(token.start, 0);
+    assert_eq!(token.end, 3);
     assert_eq!(token.content(), "123");
-    assert_eq!(token.error(), None);
+    assert_eq!(token.error, None);
   }
 
   #[test]
