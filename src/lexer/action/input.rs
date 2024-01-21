@@ -1,7 +1,5 @@
-use crate::lexer::token::buffer::CowString;
-
 pub struct ActionInput<'buffer, 'state, ActionState> {
-  buffer: &'buffer CowString,
+  buffer: &'buffer str,
   start: usize,
   state: &'state mut ActionState,
   peek: bool,
@@ -9,7 +7,7 @@ pub struct ActionInput<'buffer, 'state, ActionState> {
 
 impl<'buffer, 'state, ActionState> ActionInput<'buffer, 'state, ActionState> {
   pub fn new(
-    buffer: &'buffer CowString,
+    buffer: &'buffer str,
     start: usize,
     state: &'state mut ActionState,
     peek: bool,
@@ -23,8 +21,8 @@ impl<'buffer, 'state, ActionState> ActionInput<'buffer, 'state, ActionState> {
   }
 
   /// The whole input text.
-  pub fn buffer(&self) -> &'buffer CowString {
-    &self.buffer
+  pub fn buffer(&self) -> &'buffer str {
+    self.buffer
   }
 
   /// From where to lex.
@@ -44,7 +42,7 @@ impl<'buffer, 'state, ActionState> ActionInput<'buffer, 'state, ActionState> {
 
   /// The rest of the input text.
   /// This is a shortcut for `&self.buffer[self.start..]`.
-  pub fn rest(&self) -> &str {
-    &self.buffer.value()[self.start..]
+  pub fn rest(&self) -> &'buffer str {
+    &self.buffer[self.start..]
   }
 }

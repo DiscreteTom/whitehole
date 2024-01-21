@@ -58,7 +58,7 @@ impl<'buffer, 'input, 'state, Kind, ActionState, ErrorType>
 
       // all actions will reuse this action input to reuse lazy values
       // so we have to create it outside of the loop
-      let mut input = ActionInput::new(&buffer, start + res.digested, state, peek);
+      let mut input = ActionInput::new(buffer.value(), start + res.digested, state, peek);
       let validator = validator_factory(&input);
       let output = Self::traverse_actions(&mut input, actions, validator);
 
@@ -74,7 +74,7 @@ impl<'buffer, 'input, 'state, Kind, ActionState, ErrorType>
             let digested = output.digested;
 
             // create token and collect errors
-            let token = Rc::new(Self::output2token(&input, output));
+            let token = Rc::new(Self::create_token(buffer, input.start(), output));
             res.errors.push(token.clone());
 
             if muted {
@@ -107,7 +107,7 @@ impl<'buffer, 'input, 'state, Kind, ActionState, ErrorType>
               res.digested += output.digested;
             }
             if handler.create_token {
-              res.token = Some(Rc::new(Self::output2token(&input, output)));
+              res.token = Some(Rc::new(Self::create_token(buffer, input.start(), output)));
             }
             return res;
           }
@@ -150,15 +150,16 @@ impl<'buffer, 'input, 'state, Kind, ActionState, ErrorType>
     None
   }
 
-  pub fn output2token(
-    input: &ActionInput<'buffer, '_, ActionState>,
+  fn create_token(
+    buffer: &CowString,
+    start: usize,
     output: ActionOutput<Kind, ErrorType>,
   ) -> Token<Kind, ErrorType> {
     Token {
       kind: output.kind,
-      buffer: input.buffer().clone(),
-      start: input.start(),
-      end: input.start() + output.digested,
+      buffer: buffer.clone(),
+      start,
+      end: start + output.digested,
       error: output.error,
     }
   }

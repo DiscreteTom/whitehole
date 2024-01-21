@@ -19,16 +19,13 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
 
 #[cfg(test)]
 mod tests {
-  use crate::lexer::token::buffer::CowString;
-
   use super::*;
 
   #[test]
   fn accept_all() {
     let mut state = ();
-    let action = Action::simple(|input| input.buffer().value().len());
-    let buffer = CowString::new("123");
-    let mut input = ActionInput::new(&buffer, 0, &mut state, false);
+    let action = Action::simple(|input| input.buffer().len());
+    let mut input = ActionInput::new("123", 0, &mut state, false);
     let output = action.exec(&mut input);
 
     assert!(matches!(output, Some { .. }));
@@ -50,8 +47,7 @@ mod tests {
   fn accept_rest() {
     let mut state = ();
     let action = &Action::simple(|input| input.rest().len());
-    let buffer = CowString::new("123");
-    let mut input = ActionInput::new(&buffer, 1, &mut state, false);
+    let mut input = ActionInput::new("123", 1, &mut state, false);
     let output = action.exec(&mut input);
     assert!(matches!(output, Some { .. }));
     if let Some(ActionOutput {
@@ -72,8 +68,7 @@ mod tests {
   fn reject() {
     let mut state = ();
     let action = &Action::simple(|_| 0);
-    let buffer = CowString::new("123");
-    let mut input = ActionInput::new(&buffer, 0, &mut state, false);
+    let mut input = ActionInput::new("123", 0, &mut state, false);
     let output: Option<ActionOutput<(), ()>> = action.exec(&mut input);
     assert!(matches!(output, None));
   }

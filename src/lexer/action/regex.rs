@@ -19,14 +19,13 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::{action::input::ActionInput, token::buffer::CowString};
+  use crate::lexer::action::input::ActionInput;
 
   #[test]
   fn regex_start() {
     let mut state = ();
     let action: Action<(), (), _> = Action::regex(r"^\d+").unwrap();
-    let buffer = CowString::new("123");
-    let mut input = ActionInput::new(&buffer, 0, &mut state, false);
+    let mut input = ActionInput::new("123", 0, &mut state, false);
     let output: Option<ActionOutput<(), _>> = action.exec(&mut input);
     assert!(matches!(output, Some { .. }));
     if let Some(ActionOutput {
@@ -47,8 +46,7 @@ mod tests {
   fn regex_middle() {
     let mut state = ();
     let action = Action::regex(r"^\d+").unwrap();
-    let buffer = CowString::new("abc123");
-    let mut input = ActionInput::new(&buffer, 3, &mut state, false);
+    let mut input = ActionInput::new("abc123", 3, &mut state, false);
     let output = action.exec(&mut input);
     assert!(matches!(output, Some { .. }));
     if let Some(ActionOutput {

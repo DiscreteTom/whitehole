@@ -1,5 +1,4 @@
 use super::input::ActionInput;
-use crate::lexer::token::buffer::CowString;
 
 pub struct ActionOutput<Kind, ErrorType> {
   pub kind: Kind,
@@ -15,7 +14,7 @@ pub struct EnhancedActionOutput<'buffer, Kind, ErrorType> {
   /// The original [ActionOutput].
   pub raw: ActionOutput<Kind, ErrorType>,
   /// [ActionInput.buffer](ActionInput).
-  pub buffer: &'buffer CowString,
+  pub buffer: &'buffer str,
   /// [ActionInput.start](ActionInput).
   pub start: usize,
 }
@@ -51,11 +50,11 @@ impl<'buffer, Kind, ErrorType> EnhancedActionOutput<'buffer, Kind, ErrorType> {
   }
 
   pub fn content(&self) -> &'buffer str {
-    &self.buffer.value()[self.start..self.end()]
+    &self.buffer[self.start..self.end()]
   }
 
   pub fn rest(&self) -> &'buffer str {
-    &self.buffer.value()[self.end()..]
+    &self.buffer[self.end()..]
   }
 }
 
