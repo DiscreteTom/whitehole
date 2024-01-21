@@ -42,7 +42,6 @@ where
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::token::TokenKindId;
   use whitehole_macros::TokenKind;
 
   #[derive(TokenKind, Clone)]
