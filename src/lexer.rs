@@ -15,7 +15,10 @@ use std::rc::Rc;
 #[derive(Clone)]
 pub struct Lexer<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
   core: LexerCore<Kind, ActionState, ErrorType>,
-  buffer: String,
+  // use Rc to lazy-clone the buffer
+  // so that every `lexer.clone` won't clone the buffer
+  // only when the buffer is modified, it will be cloned
+  buffer: Rc<String>,
   digested: usize,
 }
 
@@ -27,20 +30,21 @@ where
   pub fn new(actions: Vec<Action<Kind, ActionState, ErrorType>>, state: ActionState) -> Self {
     Lexer {
       core: LexerCore::new(actions, state),
-      buffer: String::new(),
+      buffer: Rc::new(String::new()),
       digested: 0,
     }
   }
 
   pub fn reset(&mut self) -> &mut Self {
     self.core.reset();
-    self.buffer.clear();
+    self.buffer = Rc::new(String::new());
     self.digested = 0;
     self
   }
 
   pub fn feed(&mut self, s: &str) -> &mut Self {
-    self.buffer.push_str(s);
+    let buffer = self.buffer.clone();
+    self.buffer = Rc::new((*buffer).clone() + s);
     self
   }
 
