@@ -41,6 +41,16 @@ where
     }
   }
 
+  pub fn dry_clone<'new_buffer>(
+    &self,
+    buffer: &'new_buffer str,
+  ) -> Lexer<'new_buffer, Kind, ActionState, ErrorType> {
+    Lexer {
+      core: self.core.dry_clone(),
+      state: LexerState::new(buffer),
+    }
+  }
+
   pub fn rest(&self) -> &str {
     &self.state.buffer()[self.state.digested()..]
   }
