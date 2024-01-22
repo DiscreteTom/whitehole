@@ -9,7 +9,7 @@ use crate::lexer::{
 };
 use std::rc::Rc;
 
-pub struct LexerCoreLexOutput<TokenType> {
+pub struct LexOutput<TokenType> {
   pub token: Option<TokenType>,
   pub digested: usize,
   pub errors: Vec<TokenType>,
@@ -24,7 +24,7 @@ where
     &mut self,
     buffer: &'buffer str,
     options: impl Into<LexerCoreLexOptions<'expect_text, Kind>>,
-  ) -> LexerCoreLexOutput<Rc<Token<'buffer, Kind, ErrorType>>>
+  ) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>>
   where
     'buffer: 'expect_text,
   {

@@ -7,7 +7,10 @@ pub mod token;
 
 use self::{
   action::Action,
-  core::{lex::options::LexerCoreLexOptions, LexerCore},
+  core::{
+    lex::{options::LexerCoreLexOptions, LexOutput},
+    LexerCore,
+  },
   options::LexerLexOptions,
   state::LexerState,
   token::{Token, TokenKind},
@@ -37,14 +40,14 @@ where
     }
   }
 
-  pub fn lex(&mut self) -> Option<Rc<Token<Kind, ErrorType>>> {
+  pub fn lex(&mut self) -> LexOutput<Rc<Token<Kind, ErrorType>>> {
     self.lex_with(LexerLexOptions::default())
   }
 
   pub fn lex_with<'expect>(
     &mut self,
     options: impl Into<LexerLexOptions<'expect, Kind>>,
-  ) -> Option<Rc<Token<Kind, ErrorType>>> {
+  ) -> LexOutput<Rc<Token<Kind, ErrorType>>> {
     let options: LexerLexOptions<Kind> = options.into();
 
     let res = self.core.lex(
@@ -61,7 +64,7 @@ where
       self.state.digest(res.digested);
     }
 
-    res.token
+    res
   }
 
   pub fn rest(&self) -> &str {

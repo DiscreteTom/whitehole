@@ -61,8 +61,10 @@ mod tests {
       .build("aaa");
 
     let res = lexer.lex();
-    assert!(res.is_some());
-    let token = res.unwrap();
+    assert_eq!(res.digested, 3);
+    assert_eq!(res.errors.len(), 0);
+    assert!(res.token.is_some());
+    let token = res.token.unwrap();
     assert!(matches!(token.kind, MyKind::UnitField));
     assert_eq!(token.start, 0);
     assert_eq!(token.end, 3);

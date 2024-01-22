@@ -1,4 +1,4 @@
-use super::{lex::LexerCoreLexOutput, LexerCore};
+use super::{lex::LexOutput, LexerCore};
 use crate::lexer::{
   action::{input::ActionInput, output::ActionOutput, Action},
   token::Token,
@@ -39,11 +39,11 @@ impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType>
     peek: bool,
     state: &'state mut ActionState,
     handler: &OutputHandler,
-  ) -> LexerCoreLexOutput<Rc<Token<'buffer, Kind, ErrorType>>>
+  ) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>>
   where
     F: Fn(&ActionInput<ActionState>) -> Validator<'validator, Kind, ActionState, ErrorType>,
   {
-    let mut res = LexerCoreLexOutput {
+    let mut res = LexOutput {
       token: None, // should only be updated before return
       digested: 0,
       errors: Vec::new(),
