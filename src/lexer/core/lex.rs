@@ -15,6 +15,12 @@ pub struct LexOutput<TokenType> {
   pub errors: Vec<TokenType>,
 }
 
+pub struct LexAllOutput<TokenType> {
+  pub tokens: Vec<TokenType>,
+  pub digested: usize,
+  pub errors: Vec<TokenType>,
+}
+
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
   LexerCore<Kind, ActionState, ErrorType>
 where

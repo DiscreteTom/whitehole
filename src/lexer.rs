@@ -8,7 +8,7 @@ pub mod token;
 use self::{
   action::Action,
   core::{
-    lex::{options::LexerCoreLexOptions, LexOutput},
+    lex::{options::LexerCoreLexOptions, LexAllOutput, LexOutput},
     LexerCore,
   },
   options::LexerLexOptions,
@@ -40,14 +40,18 @@ where
     }
   }
 
-  pub fn lex(&mut self) -> LexOutput<Rc<Token<Kind, ErrorType>>> {
+  pub fn rest(&self) -> &str {
+    &self.state.buffer()[self.state.digested()..]
+  }
+
+  pub fn lex(&mut self) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
     self.lex_with(LexerLexOptions::default())
   }
 
   pub fn lex_with<'expect>(
     &mut self,
     options: impl Into<LexerLexOptions<'expect, Kind>>,
-  ) -> LexOutput<Rc<Token<Kind, ErrorType>>> {
+  ) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
     let options: LexerLexOptions<Kind> = options.into();
 
     let res = self.core.lex(
@@ -67,7 +71,24 @@ where
     res
   }
 
-  pub fn rest(&self) -> &str {
-    &self.state.buffer()[self.state.digested()..]
+  pub fn lex_all(&mut self) -> LexAllOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
+    let mut output = LexAllOutput {
+      tokens: Vec::new(),
+      digested: 0,
+      errors: Vec::new(),
+    };
+
+    loop {
+      let res = self.lex();
+
+      output.digested += res.digested;
+      output.errors.extend(res.errors);
+
+      if let Some(token) = res.token {
+        output.tokens.push(token);
+      } else {
+        return output;
+      }
+    }
   }
 }
