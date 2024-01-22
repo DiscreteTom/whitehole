@@ -1,5 +1,6 @@
 mod common;
 pub mod lex;
+pub mod trim;
 
 use super::{action::Action, token::TokenKind};
 use std::rc::Rc;
