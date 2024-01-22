@@ -134,7 +134,7 @@ impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType>
     action: &Action<Kind, ActionState, ErrorType>,
     validator: &Validator<Kind, ActionState, ErrorType>,
   ) -> Option<ActionOutput<Kind, ErrorType>> {
-    if !(validator.skip_before_exec)(action) {
+    if (validator.skip_before_exec)(action) {
       return None;
     }
 
