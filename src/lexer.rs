@@ -18,7 +18,11 @@ use self::{
 use std::rc::Rc;
 
 #[derive(Clone)]
-pub struct Lexer<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static> {
+pub struct Lexer<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
+where
+  Kind: TokenKind,
+  ActionState: Clone + Default,
+{
   core: LexerCore<Kind, ActionState, ErrorType>,
   state: LexerState<'buffer>,
 }
@@ -27,15 +31,11 @@ impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
   Lexer<'buffer, Kind, ActionState, ErrorType>
 where
   Kind: TokenKind,
-  ActionState: Clone,
+  ActionState: Clone + Default,
 {
-  pub fn new(
-    actions: Vec<Action<Kind, ActionState, ErrorType>>,
-    state: ActionState,
-    buffer: &'buffer str,
-  ) -> Self {
+  pub fn new(actions: Vec<Action<Kind, ActionState, ErrorType>>, buffer: &'buffer str) -> Self {
     Lexer {
-      core: LexerCore::new(actions, state),
+      core: LexerCore::new(actions),
       state: LexerState::new(buffer),
     }
   }

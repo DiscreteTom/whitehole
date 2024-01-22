@@ -1,28 +1,28 @@
 mod common;
 pub mod lex;
 
-use super::action::Action;
+use super::{action::Action, token::TokenKind};
 use std::rc::Rc;
 
 #[derive(Clone)]
-pub struct LexerCore<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
+pub struct LexerCore<Kind: 'static, ActionState: 'static, ErrorType: 'static>
+where
+  Kind: TokenKind,
+  ActionState: Clone + Default,
+{
   actions: Rc<Vec<Action<Kind, ActionState, ErrorType>>>, // use Rc to make this clone-able
-  initial_state: ActionState,
   state: ActionState,
 }
 
 impl<Kind, ActionState, ErrorType> LexerCore<Kind, ActionState, ErrorType>
 where
-  ActionState: Clone,
+  Kind: TokenKind,
+  ActionState: Clone + Default,
 {
-  pub fn new(
-    actions: Vec<Action<Kind, ActionState, ErrorType>>,
-    initial_state: ActionState,
-  ) -> Self {
+  pub fn new(actions: Vec<Action<Kind, ActionState, ErrorType>>) -> Self {
     LexerCore {
       actions: Rc::new(actions),
-      state: initial_state.clone(),
-      initial_state,
+      state: ActionState::default(),
     }
   }
 
@@ -38,15 +38,14 @@ where
   }
 
   pub fn reset(&mut self) -> &mut Self {
-    self.state = self.initial_state.clone();
+    self.state = ActionState::default();
     self
   }
 
   pub fn dry_clone(&self) -> Self {
     LexerCore {
       actions: self.actions.clone(),
-      initial_state: self.initial_state.clone(),
-      state: self.initial_state.clone(), // use the initial state
+      state: ActionState::default(),
     }
   }
 

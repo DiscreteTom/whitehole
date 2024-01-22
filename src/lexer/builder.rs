@@ -1,18 +1,21 @@
 use super::{action::Action, token::TokenKind, Lexer};
 
-pub struct Builder<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
+pub struct Builder<Kind: 'static, ActionState: 'static, ErrorType: 'static>
+where
+  Kind: TokenKind,
+  ActionState: Clone + Default,
+{
   actions: Vec<Action<Kind, ActionState, ErrorType>>,
-  initial_state: ActionState,
 }
 
 impl<Kind, ActionState, ErrorType> Default for Builder<Kind, ActionState, ErrorType>
 where
-  ActionState: Default,
+  Kind: TokenKind,
+  ActionState: Clone + Default,
 {
   fn default() -> Self {
     Builder {
       actions: Vec::new(),
-      initial_state: ActionState::default(),
     }
   }
 }
@@ -20,15 +23,8 @@ where
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Builder<Kind, ActionState, ErrorType>
 where
   Kind: TokenKind,
-  ActionState: Clone,
+  ActionState: Clone + Default,
 {
-  pub fn new(state: ActionState) -> Builder<Kind, ActionState, ErrorType> {
-    Builder {
-      actions: Vec::new(),
-      initial_state: state,
-    }
-  }
-
   pub fn append(mut self, action: Action<Kind, ActionState, ErrorType>) -> Self {
     self.actions.push(action);
     self
@@ -44,7 +40,7 @@ where
     self,
     buffer: &'buffer str,
   ) -> Lexer<'buffer, Kind, ActionState, ErrorType> {
-    Lexer::new(self.actions, self.initial_state, buffer)
+    Lexer::new(self.actions, buffer)
   }
 }
 
@@ -62,7 +58,7 @@ mod tests {
 
   #[test]
   fn append() {
-    let mut lexer: Lexer<MyKind, (), ()> = Builder::new(())
+    let mut lexer: Lexer<MyKind, (), ()> = Builder::default()
       .append(Action::regex("a+").unwrap().bind(MyKind::UnitField))
       .build("aaa");
 
@@ -80,7 +76,7 @@ mod tests {
 
   #[test]
   fn ignore() {
-    let mut lexer: Lexer<MyKind, (), ()> = Builder::new(())
+    let mut lexer: Lexer<MyKind, (), ()> = Builder::default()
       .ignore(Action::regex("a+").unwrap().bind(MyKind::UnitField))
       .build("aaa");
 

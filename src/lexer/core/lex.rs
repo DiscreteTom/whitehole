@@ -19,6 +19,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
   LexerCore<Kind, ActionState, ErrorType>
 where
   Kind: TokenKind,
+  ActionState: Clone + Default,
 {
   pub fn lex<'buffer, 'expect_text>(
     &mut self,

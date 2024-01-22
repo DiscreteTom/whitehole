@@ -1,7 +1,7 @@
 use super::{lex::LexOutput, LexerCore};
 use crate::lexer::{
   action::{input::ActionInput, output::ActionOutput, Action},
-  token::Token,
+  token::{Token, TokenKind},
 };
 use std::rc::Rc;
 
@@ -28,8 +28,10 @@ pub struct OutputHandler {
   pub create_token: bool,
 }
 
-impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType>
-  LexerCore<Kind, ActionState, ErrorType>
+impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType> LexerCore<Kind, ActionState, ErrorType>
+where
+  Kind: TokenKind,
+  ActionState: Clone + Default,
 {
   pub fn execute_actions<'validator, F>(
     actions: &[Action<Kind, ActionState, ErrorType>],
