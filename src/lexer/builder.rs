@@ -29,8 +29,14 @@ where
     }
   }
 
-  pub fn define(mut self, action: Action<Kind, ActionState, ErrorType>) -> Self {
+  pub fn append(mut self, action: Action<Kind, ActionState, ErrorType>) -> Self {
     self.actions.push(action);
+    self
+  }
+
+  /// Define muted action.
+  pub fn ignore(mut self, action: Action<Kind, ActionState, ErrorType>) -> Self {
+    self.actions.push(action.mute(true));
     self
   }
 
@@ -55,9 +61,9 @@ mod tests {
   }
 
   #[test]
-  fn simple_lexer_builder() {
+  fn append() {
     let mut lexer: Lexer<MyKind, (), ()> = Builder::new(())
-      .define(Action::regex("a+").unwrap().bind(MyKind::UnitField))
+      .append(Action::regex("a+").unwrap().bind(MyKind::UnitField))
       .build("aaa");
 
     let res = lexer.lex();
@@ -70,5 +76,17 @@ mod tests {
     assert_eq!(token.end, 3);
     assert_eq!(token.content(), "aaa");
     assert_eq!(token.error, None);
+  }
+
+  #[test]
+  fn ignore() {
+    let mut lexer: Lexer<MyKind, (), ()> = Builder::new(())
+      .ignore(Action::regex("a+").unwrap().bind(MyKind::UnitField))
+      .build("aaa");
+
+    let res = lexer.lex();
+    assert_eq!(res.digested, 3);
+    assert_eq!(res.errors.len(), 0);
+    assert!(res.token.is_none());
   }
 }
