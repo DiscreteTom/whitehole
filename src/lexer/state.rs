@@ -33,4 +33,9 @@ impl<'buffer> LexerState<'buffer> {
     self.digested += n;
     self.trimmed = self.digested == self.buffer.len(); // if all chars are digested, no need to trim
   }
+
+  pub fn trim(&mut self, digested: usize) {
+    self.digested += digested;
+    self.trimmed = true;
+  }
 }

@@ -9,6 +9,7 @@ use self::{
   action::Action,
   core::{
     lex::{options::LexerCoreLexOptions, LexAllOutput, LexOutput},
+    trim::TrimOutput,
     LexerCore,
   },
   options::LexerLexOptions,
@@ -90,5 +91,19 @@ where
         return output;
       }
     }
+  }
+
+  pub fn trim(&mut self) -> TrimOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
+    // if already trimmed, return empty output
+    if self.state.trimmed() {
+      return TrimOutput {
+        digested: 0,
+        errors: Vec::new(),
+      };
+    }
+
+    let res = self.core.trim(self.state.buffer(), self.state.digested());
+    self.state.trim(res.digested);
+    res
   }
 }
