@@ -36,11 +36,14 @@ impl<'expect_text, Kind> From<&'expect_text str> for Expectation<'expect_text, K
 }
 
 impl<'expect_text, Kind> Expectation<'expect_text, Kind> {
+  /// Set the expected kind of the token.
+  /// Only the kind id will be compared, data will be ignored.
   pub fn kind(mut self, kind: impl Into<Kind>) -> Self {
     self.kind = Some(kind.into());
     self
   }
 
+  /// Set the expected text content of the token.
   pub fn text(mut self, text: impl Into<&'expect_text str>) -> Self {
     self.text = Some(text.into());
     self

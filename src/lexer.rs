@@ -41,9 +41,9 @@ where
     self.lex_with(LexerLexOptions::default())
   }
 
-  pub fn lex_with<'input_text, 'expect>(
+  pub fn lex_with<'expect>(
     &mut self,
-    options: impl Into<LexerLexOptions<'input_text, 'expect, Kind>>,
+    options: impl Into<LexerLexOptions<'expect, Kind>>,
   ) -> Option<Rc<Token<Kind, ErrorType>>> {
     let options: LexerLexOptions<Kind> = options.into();
 
