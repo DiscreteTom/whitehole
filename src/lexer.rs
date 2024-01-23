@@ -4,6 +4,7 @@ pub mod core;
 pub mod options;
 pub mod state;
 pub mod token;
+pub mod trimmed;
 
 use self::{
   action::Action,
@@ -15,6 +16,7 @@ use self::{
   options::LexerLexOptions,
   state::LexerState,
   token::{Token, TokenKind},
+  trimmed::TrimmedLexer,
 };
 use std::rc::Rc;
 
@@ -41,6 +43,7 @@ where
     }
   }
 
+  // TODO: better name?
   pub fn dry_clone<'new_buffer>(
     &self,
     buffer: &'new_buffer str,
@@ -51,7 +54,7 @@ where
     }
   }
 
-  pub fn rest(&self) -> &str {
+  pub fn rest(&self) -> &'buffer str {
     &self.state.buffer()[self.state.digested()..]
   }
 
@@ -103,17 +106,27 @@ where
     }
   }
 
-  pub fn trim(&mut self) -> TrimOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
+  pub fn trim(
+    mut self,
+  ) -> TrimOutput<
+    Rc<Token<'buffer, Kind, ErrorType>>,
+    TrimmedLexer<'buffer, Kind, ActionState, ErrorType>,
+  > {
     // if already trimmed, return empty output
     if self.state.trimmed() {
       return TrimOutput {
         digested: 0,
         errors: Vec::new(),
+        trimmed: TrimmedLexer::new(self),
       };
     }
 
     let res = self.core.trim(self.state.buffer(), self.state.digested());
     self.state.trim(res.digested);
-    res
+    TrimOutput {
+      digested: res.digested,
+      errors: res.errors,
+      trimmed: TrimmedLexer::new(self),
+    }
   }
 }
