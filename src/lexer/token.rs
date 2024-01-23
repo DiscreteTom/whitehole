@@ -7,19 +7,50 @@ pub trait TokenKind {
 }
 
 pub struct Token<'buffer, Kind, ErrorType> {
-  // TODO: make fields private
   /// The kind and the binding data.
-  pub kind: Kind,
+  kind: Kind,
   /// The whole input text.
-  pub buffer: &'buffer str,
+  buffer: &'buffer str,
   /// The index of the first character of the token in the whole input text.
-  pub start: usize,
+  start: usize,
   /// The index of the last character of the token in the whole input text.
-  pub end: usize,
-  pub error: Option<ErrorType>,
+  end: usize,
+  error: Option<ErrorType>,
 }
 
 impl<'buffer, Kind, ErrorType> Token<'buffer, Kind, ErrorType> {
+  pub fn new(
+    kind: Kind,
+    buffer: &'buffer str,
+    start: usize,
+    end: usize,
+    error: Option<ErrorType>,
+  ) -> Self {
+    Token {
+      kind,
+      buffer,
+      start,
+      end,
+      error,
+    }
+  }
+
+  pub fn kind(&self) -> &Kind {
+    &self.kind
+  }
+  pub fn buffer(&self) -> &'buffer str {
+    self.buffer
+  }
+  pub fn start(&self) -> usize {
+    self.start
+  }
+  pub fn end(&self) -> usize {
+    self.end
+  }
+  pub fn error(&self) -> &Option<ErrorType> {
+    &self.error
+  }
+
   /// Returns the content of the token.
   pub fn content(&self) -> &str {
     &self.buffer[self.start..self.end]

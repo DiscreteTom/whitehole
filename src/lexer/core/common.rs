@@ -156,12 +156,12 @@ where
     input: &ActionInput<'buffer, '_, ActionState>,
     output: ActionOutput<Kind, ErrorType>,
   ) -> Token<'buffer, Kind, ErrorType> {
-    Token {
-      kind: output.kind,
-      buffer: input.buffer(),
-      start: input.start(),
-      end: input.start() + output.digested,
-      error: output.error,
-    }
+    Token::new(
+      output.kind,
+      input.buffer(),
+      input.start(),
+      input.start() + output.digested,
+      output.error,
+    )
   }
 }
