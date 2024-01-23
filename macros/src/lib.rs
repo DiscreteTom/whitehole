@@ -13,7 +13,7 @@ pub fn token_kind_macro_derive(input: TokenStream) -> TokenStream {
   }
   .variants;
 
-  let crate_name = if std::env::var("CARGO_PKG_NAME").unwrap() == "whitehole" {
+  let crate_name = if std::env::var("CARGO_CRATE_NAME").unwrap() == "whitehole" {
     quote! { crate }
   } else {
     quote! { whitehole }
