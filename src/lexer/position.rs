@@ -9,7 +9,7 @@ pub struct Position {
 }
 
 #[derive(Debug)]
-struct Range {
+pub struct Range {
   /// 0-based index.
   from: usize,
   /// 0-based index. Exclusive.
@@ -29,6 +29,16 @@ impl Default for PositionTransformer {
 }
 
 impl PositionTransformer {
+  pub fn new(string: &str) -> Self {
+    let mut transformer = PositionTransformer::default();
+    transformer.update(string);
+    transformer
+  }
+
+  pub fn line_ranges(&self) -> &[Range] {
+    &self.line_ranges
+  }
+
   pub fn update(&mut self, digested: &str) {
     let mut current_line_range = self.line_ranges.pop().unwrap();
     let start = current_line_range.to;
