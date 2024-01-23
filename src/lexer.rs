@@ -2,6 +2,7 @@ pub mod action;
 pub mod builder;
 pub mod core;
 pub mod options;
+pub mod position;
 pub mod state;
 pub mod token;
 pub mod trimmed;
