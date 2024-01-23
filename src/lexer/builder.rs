@@ -1,4 +1,8 @@
-use super::{action::Action, token::TokenKind, Lexer};
+use super::{
+  action::{builder::ActionBuilder, Action},
+  token::TokenKind,
+  Lexer,
+};
 
 pub struct Builder<Kind: 'static, ActionState: 'static, ErrorType: 'static>
 where
@@ -25,11 +29,16 @@ where
   Kind: TokenKind,
   ActionState: Clone + Default,
 {
-  pub fn append(mut self, action: Action<Kind, ActionState, ErrorType>) -> Self {
-    self.actions.push(action);
+  //  TODO: maybe use Into<Action> as parameter?
+  pub fn append<F>(mut self, action: F) -> Self
+  where
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
+  {
+    self.actions.push(action(ActionBuilder::default()));
     self
   }
 
+  //  TODO: maybe use Into<Action> as parameter?
   /// Define muted action.
   pub fn ignore(mut self, action: Action<Kind, ActionState, ErrorType>) -> Self {
     self.actions.push(action.mute(true));
@@ -59,7 +68,7 @@ mod tests {
   #[test]
   fn append() {
     let mut lexer: Lexer<MyKind, (), ()> = Builder::default()
-      .append(Action::regex("a+").unwrap().bind(MyKind::UnitField))
+      .append(|a| a.regex("a+").unwrap().bind(MyKind::UnitField))
       .build("aaa");
 
     let res = lexer.lex();

@@ -7,8 +7,10 @@ pub mod state;
 pub mod token;
 pub mod trimmed;
 
+pub use action::Action;
+pub use builder::Builder;
+
 use self::{
-  action::Action,
   core::{
     lex::{options::LexerCoreLexOptions, LexAllOutput, LexOutput},
     trim::{IntoTrimmedOutput, TrimOutput},
