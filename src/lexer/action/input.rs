@@ -30,7 +30,10 @@ impl<'buffer, 'state, ActionState> ActionInput<'buffer, 'state, ActionState> {
     self.start
   }
 
-  pub fn state(&mut self) -> &mut ActionState {
+  pub fn state(&self) -> &ActionState {
+    self.state
+  }
+  pub fn state_mut(&mut self) -> &mut ActionState {
     self.state
   }
 
