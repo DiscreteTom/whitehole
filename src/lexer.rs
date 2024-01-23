@@ -46,6 +46,13 @@ where
     }
   }
 
+  pub fn core(&self) -> &LexerCore<Kind, ActionState, ErrorType> {
+    &self.core
+  }
+  pub fn core_mut(&mut self) -> &mut LexerCore<Kind, ActionState, ErrorType> {
+    &mut self.core
+  }
+
   // TODO: better name?
   pub fn dry_clone<'new_buffer>(
     &self,
