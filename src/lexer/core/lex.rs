@@ -51,11 +51,11 @@ where
     Self::execute_actions(
       &self.actions,
       move |input| {
-        let text_mismatch = exp_text.is_some_and(|text| input.rest().starts_with(text));
+        let text_mismatch = exp_text.is_some_and(|text| !input.rest().starts_with(text));
         Validator {
           skip_before_exec: Box::new(move |action| {
             action.never_muted()
-              && (!(exp_kind.is_some_and(|kind| action.possible_kinds().contains(&kind)))
+              && ((exp_kind.is_some_and(|kind| !action.possible_kinds().contains(&kind)))
                 || text_mismatch)
           }),
           accept_after_exec: Box::new(move |action, input, output| {
