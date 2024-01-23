@@ -59,8 +59,8 @@ impl PositionTransformer {
     self.line_ranges.push(current_line_range);
   }
 
-  /// Index to position.
-  pub fn get(&self, index: usize) -> Option<Position> {
+  /// Transform 0-based index to 1-based line and column.
+  pub fn transform(&self, index: usize) -> Option<Position> {
     match self.line_ranges.binary_search_by(|Range { from, to }| {
       if index < *from {
         Ordering::Greater
@@ -86,24 +86,33 @@ mod tests {
   #[test]
   fn default() {
     let transformer = PositionTransformer::default();
-    assert_eq!(transformer.get(0), None);
+    assert_eq!(transformer.transform(0), None);
   }
 
   #[test]
   fn empty() {
     let mut transformer = PositionTransformer::default();
     transformer.update("");
-    assert_eq!(transformer.get(0), None);
+    assert_eq!(transformer.transform(0), None);
   }
 
   #[test]
   fn new_line_only() {
     let mut transformer = PositionTransformer::default();
     transformer.update("\n\n\n");
-    assert_eq!(transformer.get(0), Some(Position { line: 1, column: 1 }));
-    assert_eq!(transformer.get(1), Some(Position { line: 2, column: 1 }));
-    assert_eq!(transformer.get(2), Some(Position { line: 3, column: 1 }));
-    assert_eq!(transformer.get(3), None);
+    assert_eq!(
+      transformer.transform(0),
+      Some(Position { line: 1, column: 1 })
+    );
+    assert_eq!(
+      transformer.transform(1),
+      Some(Position { line: 2, column: 1 })
+    );
+    assert_eq!(
+      transformer.transform(2),
+      Some(Position { line: 3, column: 1 })
+    );
+    assert_eq!(transformer.transform(3), None);
   }
 
   #[test]
@@ -112,34 +121,34 @@ mod tests {
     let s = "abc\ndef\n123\n345";
     transformer.update(s);
     assert_eq!(
-      transformer.get(s.find("a").unwrap()),
+      transformer.transform(s.find("a").unwrap()),
       Some(Position { line: 1, column: 1 })
     );
     assert_eq!(
-      transformer.get(s.find("c").unwrap()),
+      transformer.transform(s.find("c").unwrap()),
       Some(Position { line: 1, column: 3 })
     );
     assert_eq!(
-      transformer.get(s.find("\n").unwrap()),
+      transformer.transform(s.find("\n").unwrap()),
       Some(Position { line: 1, column: 4 })
     );
     assert_eq!(
-      transformer.get(s.find("d").unwrap()),
+      transformer.transform(s.find("d").unwrap()),
       Some(Position { line: 2, column: 1 })
     );
     assert_eq!(
-      transformer.get(s.find("f").unwrap()),
+      transformer.transform(s.find("f").unwrap()),
       Some(Position { line: 2, column: 3 })
     );
     assert_eq!(
-      transformer.get(s.find("1").unwrap()),
+      transformer.transform(s.find("1").unwrap()),
       Some(Position { line: 3, column: 1 })
     );
     assert_eq!(
-      transformer.get(s.find("5").unwrap()),
+      transformer.transform(s.find("5").unwrap()),
       Some(Position { line: 4, column: 3 })
     );
 
-    assert_eq!(transformer.get(s.len()), None);
+    assert_eq!(transformer.transform(s.len()), None);
   }
 }
