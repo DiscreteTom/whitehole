@@ -5,13 +5,13 @@ use crate::lexer::{
 };
 use std::rc::Rc;
 
-pub struct TrimOutput<TokenType, TrimmedLexer> {
+pub struct IntoTrimmedOutput<TokenType, TrimmedLexer> {
   pub digested: usize,
   pub errors: Vec<TokenType>,
   pub trimmed: TrimmedLexer,
 }
 
-pub struct LexerCoreTrimOutput<TokenType> {
+pub struct TrimOutput<TokenType> {
   pub digested: usize,
   pub errors: Vec<TokenType>,
 }
@@ -26,7 +26,7 @@ where
     &mut self,
     buffer: &'buffer str,
     start: usize,
-  ) -> LexerCoreTrimOutput<Rc<Token<'buffer, Kind, ErrorType>>>
+  ) -> TrimOutput<Rc<Token<'buffer, Kind, ErrorType>>>
   where
     'buffer: 'expect_text,
   {
@@ -49,7 +49,7 @@ where
       &OUTPUT_HANDLER,
     );
 
-    LexerCoreTrimOutput {
+    TrimOutput {
       digested: output.digested,
       errors: output.errors,
     }

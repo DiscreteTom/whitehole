@@ -10,7 +10,7 @@ use self::{
   action::Action,
   core::{
     lex::{options::LexerCoreLexOptions, LexAllOutput, LexOutput},
-    trim::TrimOutput,
+    trim::{IntoTrimmedOutput, TrimOutput},
     LexerCore,
   },
   options::LexerLexOptions,
@@ -106,24 +106,28 @@ where
     }
   }
 
-  pub fn trim(
-    mut self,
-  ) -> TrimOutput<
-    Rc<Token<'buffer, Kind, ErrorType>>,
-    TrimmedLexer<'buffer, Kind, ActionState, ErrorType>,
-  > {
+  pub fn trim(&mut self) -> TrimOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
     // if already trimmed, return empty output
     if self.state.trimmed() {
       return TrimOutput {
         digested: 0,
         errors: Vec::new(),
-        trimmed: TrimmedLexer::new(self),
       };
     }
 
     let res = self.core.trim(self.state.buffer(), self.state.digested());
     self.state.trim(res.digested);
-    TrimOutput {
+    res
+  }
+
+  pub fn into_trimmed(
+    mut self,
+  ) -> IntoTrimmedOutput<
+    Rc<Token<'buffer, Kind, ErrorType>>,
+    TrimmedLexer<'buffer, Kind, ActionState, ErrorType>,
+  > {
+    let res = self.trim();
+    IntoTrimmedOutput {
       digested: res.digested,
       errors: res.errors,
       trimmed: TrimmedLexer::new(self),
