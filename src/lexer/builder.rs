@@ -32,7 +32,6 @@ where
   pub fn define<AnyKind>(
     mut self,
     kind: Kind,
-    //  TODO: maybe use Into<Action> as parameter?
     action: Action<AnyKind, ActionState, ErrorType>,
   ) -> Self
   where
@@ -42,19 +41,44 @@ where
     self
   }
 
-  //  TODO: maybe use Into<Action> as parameter?
-  pub fn append<F>(mut self, action: F) -> Self
+  pub fn define_from<AnyKind: 'static, F>(mut self, kind: Kind, factory: F) -> Self
   where
-    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
+    Kind: Clone,
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<AnyKind, ActionState, ErrorType>,
   {
-    self.actions.push(action(ActionBuilder::default()));
+    self
+      .actions
+      .push(factory(ActionBuilder::default()).bind(kind));
     self
   }
 
-  //  TODO: maybe use Into<Action> as parameter?
+  pub fn append(mut self, action: Action<Kind, ActionState, ErrorType>) -> Self {
+    self.actions.push(action);
+    self
+  }
+
+  pub fn append_from<F>(mut self, factory: F) -> Self
+  where
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
+  {
+    self.actions.push(factory(ActionBuilder::default()));
+    self
+  }
+
   /// Define muted action.
   pub fn ignore(mut self, action: Action<Kind, ActionState, ErrorType>) -> Self {
     self.actions.push(action.mute(true));
+    self
+  }
+
+  /// Define muted action.
+  pub fn ignore_from<F>(mut self, factory: F) -> Self
+  where
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
+  {
+    self
+      .actions
+      .push(factory(ActionBuilder::default()).mute(true));
     self
   }
 
@@ -81,7 +105,7 @@ mod tests {
   #[test]
   fn append() {
     let mut lexer: Lexer<MyKind, (), ()> = Builder::default()
-      .append(|a| a.regex("a+").unwrap().bind(MyKind::UnitField))
+      .append_from(|a| a.regex("a+").unwrap().bind(MyKind::UnitField))
       .build("aaa");
 
     let res = lexer.lex();
