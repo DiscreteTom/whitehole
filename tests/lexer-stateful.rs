@@ -15,7 +15,8 @@ struct MyState {
   reject: bool,
 }
 
-pub fn test() {
+#[test]
+fn stateful() {
   let mut lexer = Builder::<MyKind, MyState, ()>::default()
     .append(|a| {
       a.regex("123")
