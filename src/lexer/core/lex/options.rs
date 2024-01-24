@@ -4,5 +4,4 @@ use super::expectation::Expectation;
 pub struct LexerCoreLexOptions<'expect, Kind> {
   pub start: usize,
   pub expectation: Expectation<'expect, Kind>,
-  pub peek: bool,
 }

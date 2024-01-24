@@ -5,9 +5,9 @@ use super::{
 };
 use crate::lexer::token::TokenKind;
 
-/// `input.state` is not mutable. `output` is consumed.
+/// `input.state` is mutable. `output` is consumed.
 pub struct AcceptedActionDecoratorContext<'input, 'buffer, 'state, Kind, ActionState, ErrorType> {
-  pub input: &'input ActionInput<'buffer, 'state, ActionState>,
+  pub input: &'input mut ActionInput<'buffer, 'state, ActionState>,
   pub output: EnhancedActionOutput<'buffer, Kind, ErrorType>,
 }
 
@@ -142,8 +142,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
     self.reject_if(move |_| rejected)
   }
 
-  /// Call the `callback` if the action is accepted and `peek` is `false`.
-  /// You can modify the action state in the `callback`.
+  /// Call the `callback` if the action is accepted.
   /// Return a new action.
   pub fn then<F>(mut self, callback: F) -> Self
   where
@@ -153,12 +152,10 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
     self.exec = Box::new(move |input| {
       exec(input).and_then(|output| {
         let output = EnhancedActionOutput::new(&input, output);
-        if !input.peek() {
-          callback(ActionCallbackContext {
-            output: &output,
-            input,
-          });
-        }
+        callback(ActionCallbackContext {
+          output: &output,
+          input,
+        });
         output.into()
       })
     });

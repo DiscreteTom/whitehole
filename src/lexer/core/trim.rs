@@ -44,7 +44,6 @@ where
       },
       buffer,
       start,
-      false,
       &mut self.state,
       &OUTPUT_HANDLER,
     );

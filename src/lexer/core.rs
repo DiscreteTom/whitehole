@@ -5,7 +5,6 @@ pub mod trim;
 use super::{action::Action, token::TokenKind};
 use std::rc::Rc;
 
-#[derive(Clone)]
 pub struct LexerCore<Kind: 'static, ActionState: 'static, ErrorType: 'static>
 where
   Kind: TokenKind,
@@ -13,6 +12,20 @@ where
 {
   actions: Rc<Vec<Action<Kind, ActionState, ErrorType>>>, // use Rc to make this clone-able
   state: ActionState,
+}
+
+impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Clone
+  for LexerCore<Kind, ActionState, ErrorType>
+where
+  Kind: TokenKind,
+  ActionState: Clone + Default,
+{
+  fn clone(&self) -> Self {
+    LexerCore {
+      actions: self.actions.clone(),
+      state: self.state.clone(),
+    }
+  }
 }
 
 impl<Kind, ActionState, ErrorType> LexerCore<Kind, ActionState, ErrorType>
@@ -36,6 +49,9 @@ where
   }
   pub fn state_mut(&mut self) -> &mut ActionState {
     &mut self.state
+  }
+  pub fn take_state(self) -> ActionState {
+    self.state
   }
 
   pub fn reset(&mut self) -> &mut Self {

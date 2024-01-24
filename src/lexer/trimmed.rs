@@ -1,5 +1,5 @@
 use super::{
-  options::LexerLexOptions,
+  core::lex::expectation::Expectation,
   token::{Token, TokenKind},
   Lexer,
 };
@@ -55,17 +55,17 @@ where
     Rc<Token<'buffer, Kind, ErrorType>>,
     Lexer<'buffer, Kind, ActionState, ErrorType>,
   > {
-    self.lex_with(LexerLexOptions::default())
+    self.lex_with(Expectation::default())
   }
 
-  pub fn lex_with(
+  pub fn lex_with<'expect_text>(
     mut self,
-    options: impl Into<LexerLexOptions<'buffer, Kind>>,
+    expectation: impl Into<Expectation<'expect_text, Kind>>,
   ) -> TrimmedLexerLexOutput<
     Rc<Token<'buffer, Kind, ErrorType>>,
     Lexer<'buffer, Kind, ActionState, ErrorType>,
   > {
-    let output = self.lexer.lex_with(options);
+    let output = self.lexer.lex_with(expectation);
     TrimmedLexerLexOutput {
       token: output.token,
       digested: output.digested,

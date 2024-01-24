@@ -24,7 +24,7 @@ mod tests {
   fn regex_start() {
     let mut state = ();
     let action: Action<(), (), _> = Action::regex(r"^\d+").unwrap();
-    let mut input = ActionInput::new("123", 0, &mut state, false);
+    let mut input = ActionInput::new("123", 0, &mut state);
     let output: Option<ActionOutput<(), _>> = action.exec(&mut input);
     assert!(matches!(output, Some { .. }));
     if let Some(ActionOutput {
@@ -45,7 +45,7 @@ mod tests {
   fn regex_middle() {
     let mut state = ();
     let action = Action::regex(r"^\d+").unwrap();
-    let mut input = ActionInput::new("abc123", 3, &mut state, false);
+    let mut input = ActionInput::new("abc123", 3, &mut state);
     let output = action.exec(&mut input);
     assert!(matches!(output, Some { .. }));
     if let Some(ActionOutput {

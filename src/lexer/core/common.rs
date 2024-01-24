@@ -38,7 +38,6 @@ where
     validator_factory: F,
     buffer: &'buffer str,
     start: usize,
-    peek: bool,
     state: &'state mut ActionState,
     handler: &OutputHandler,
   ) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>>
@@ -60,7 +59,7 @@ where
 
       // all actions will reuse this action input to reuse lazy values
       // so we have to create it outside of the loop
-      let mut input = ActionInput::new(buffer, start + res.digested, state, peek);
+      let mut input = ActionInput::new(buffer, start + res.digested, state);
       let validator = validator_factory(&input);
       let output = Self::traverse_actions(&mut input, actions, validator);
 

@@ -15,6 +15,13 @@ pub struct LexOutput<TokenType> {
   pub errors: Vec<TokenType>,
 }
 
+pub struct PeekOutput<TokenType, ActionState> {
+  pub token: Option<TokenType>,
+  pub digested: usize,
+  pub errors: Vec<TokenType>,
+  pub state: ActionState,
+}
+
 pub struct LexAllOutput<TokenType> {
   pub tokens: Vec<TokenType>,
   pub digested: usize,
@@ -67,7 +74,6 @@ where
       },
       buffer,
       options.start,
-      options.peek,
       &mut self.state,
       &OUTPUT_HANDLER,
     )

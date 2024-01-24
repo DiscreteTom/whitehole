@@ -1,7 +1,6 @@
 pub mod action;
 pub mod builder;
 pub mod core;
-pub mod options;
 pub mod position;
 pub mod state;
 pub mod token;
@@ -12,11 +11,12 @@ pub use builder::Builder;
 
 use self::{
   core::{
-    lex::{options::LexerCoreLexOptions, LexAllOutput, LexOutput},
+    lex::{
+      expectation::Expectation, options::LexerCoreLexOptions, LexAllOutput, LexOutput, PeekOutput,
+    },
     trim::{IntoTrimmedOutput, TrimOutput},
     LexerCore,
   },
-  options::LexerLexOptions,
   state::LexerState,
   token::{Token, TokenKind},
   trimmed::TrimmedLexer,
@@ -68,29 +68,52 @@ where
     &self.state.buffer()[self.state.digested()..]
   }
 
-  pub fn lex(&mut self) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
-    self.lex_with(LexerLexOptions::default())
+  /// Peek the next token without updating the state.
+  /// This will clone the ActionState and return it.
+  pub fn peek(&self) -> PeekOutput<Rc<Token<'buffer, Kind, ErrorType>>, ActionState> {
+    self.peek_with(Expectation::default())
   }
 
-  pub fn lex_with<'expect>(
-    &mut self,
-    options: impl Into<LexerLexOptions<'expect, Kind>>,
-  ) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
-    let options: LexerLexOptions<Kind> = options.into();
+  /// Peek the next token without updating the state.
+  /// This will clone the ActionState and return it.
+  pub fn peek_with<'expect_text>(
+    &self,
+    expectation: impl Into<Expectation<'expect_text, Kind>>,
+  ) -> PeekOutput<Rc<Token<'buffer, Kind, ErrorType>>, ActionState> {
+    let mut core = self.core.clone();
+    let output = core.lex(
+      self.state.buffer(),
+      LexerCoreLexOptions {
+        start: self.state.digested(),
+        expectation: expectation.into(),
+      },
+    );
+    PeekOutput {
+      token: output.token,
+      digested: output.digested,
+      errors: output.errors,
+      state: core.take_state(),
+    }
+  }
 
+  pub fn lex(&mut self) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
+    self.lex_with(Expectation::default())
+  }
+
+  pub fn lex_with<'expect_text>(
+    &mut self,
+    expectation: impl Into<Expectation<'expect_text, Kind>>,
+  ) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
     let res = self.core.lex(
       self.state.buffer(),
       LexerCoreLexOptions {
         start: self.state.digested(),
-        peek: options.peek,
-        expectation: options.expectation,
+        expectation: expectation.into(),
       },
     );
 
     // update state if not peek
-    if !options.peek {
-      self.state.digest(res.digested);
-    }
+    self.state.digest(res.digested);
 
     res
   }

@@ -2,21 +2,14 @@ pub struct ActionInput<'buffer, 'state, ActionState> {
   buffer: &'buffer str,
   start: usize,
   state: &'state mut ActionState,
-  peek: bool,
 }
 
 impl<'buffer, 'state, ActionState> ActionInput<'buffer, 'state, ActionState> {
-  pub fn new(
-    buffer: &'buffer str,
-    start: usize,
-    state: &'state mut ActionState,
-    peek: bool,
-  ) -> Self {
+  pub fn new(buffer: &'buffer str, start: usize, state: &'state mut ActionState) -> Self {
     ActionInput {
       buffer,
       start,
       state,
-      peek,
     }
   }
 
@@ -35,12 +28,6 @@ impl<'buffer, 'state, ActionState> ActionInput<'buffer, 'state, ActionState> {
   }
   pub fn state_mut(&mut self) -> &mut ActionState {
     self.state
-  }
-
-  /// Whether this evaluation is a peek.
-  /// If `true`, you may NOT want to mutate the action state.
-  pub fn peek(&self) -> bool {
-    self.peek
   }
 
   /// The rest of the input text.
