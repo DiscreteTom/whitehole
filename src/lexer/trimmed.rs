@@ -55,17 +55,17 @@ where
     Rc<Token<'buffer, Kind, ErrorType>>,
     Lexer<'buffer, Kind, ActionState, ErrorType>,
   > {
-    self.lex_with(Expectation::default())
+    self.lex_expect(Expectation::default())
   }
 
-  pub fn lex_with<'expect_text>(
+  pub fn lex_expect<'expect_text>(
     mut self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
   ) -> TrimmedLexerLexOutput<
     Rc<Token<'buffer, Kind, ErrorType>>,
     Lexer<'buffer, Kind, ActionState, ErrorType>,
   > {
-    let output = self.lexer.lex_with(expectation);
+    let output = self.lexer.lex_expect(expectation);
     TrimmedLexerLexOutput {
       token: output.token,
       digested: output.digested,

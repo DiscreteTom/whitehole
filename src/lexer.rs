@@ -74,12 +74,12 @@ where
   /// Peek the next token without updating the state.
   /// This will clone the ActionState and return it.
   pub fn peek(&self) -> PeekOutput<Rc<Token<'buffer, Kind, ErrorType>>, ActionState> {
-    self.peek_with(Expectation::default())
+    self.peek_expect(Expectation::default())
   }
 
   /// Peek the next token without updating the state.
   /// This will clone the ActionState and return it.
-  pub fn peek_with<'expect_text>(
+  pub fn peek_expect<'expect_text>(
     &self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
   ) -> PeekOutput<Rc<Token<'buffer, Kind, ErrorType>>, ActionState> {
@@ -100,10 +100,10 @@ where
   }
 
   pub fn lex(&mut self) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
-    self.lex_with(Expectation::default())
+    self.lex_expect(Expectation::default())
   }
 
-  pub fn lex_with<'expect_text>(
+  pub fn lex_expect<'expect_text>(
     &mut self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
   ) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
