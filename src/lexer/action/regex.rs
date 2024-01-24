@@ -8,7 +8,7 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
     Ok(Action::new(move |input| {
       re.find(input.rest()).map(|m| ActionOutput {
         kind: (),
-        digested: m.end(),
+        digested: m.len(),
         muted: false,
         error: None,
       })
