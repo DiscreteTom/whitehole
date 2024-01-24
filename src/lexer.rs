@@ -142,6 +142,14 @@ where
     }
   }
 
+  /// Digest the next n chars and set the action state.
+  /// If the `state` is not provided, the action state will be reset to default.
+  pub fn take(&mut self, n: usize, state: Option<ActionState>) -> &mut Self {
+    self.state.digest(n);
+    *self.core.state_mut() = state.unwrap_or(ActionState::default());
+    self
+  }
+
   pub fn trim(&mut self) -> TrimOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
     // if already trimmed, return empty output
     if self.state.trimmed() {
