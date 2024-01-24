@@ -6,7 +6,10 @@ pub mod regex;
 pub mod select;
 pub mod simple;
 
-use self::{input::ActionInput, output::ActionOutput};
+use self::{
+  input::ActionInput,
+  output::{ActionOutput, ActionOutputWithoutKind},
+};
 use super::token::TokenKindId;
 use std::collections::HashSet;
 
@@ -26,12 +29,12 @@ pub struct Action<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
 impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   pub fn new<F>(exec: F) -> Self
   where
-    F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<(), ErrorType>> + 'static,
+    F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutputWithoutKind<ErrorType>> + 'static,
   {
     Action {
       maybe_muted: false,
       possible_kinds: HashSet::new(),
-      exec: Box::new(exec),
+      exec: Box::new(move |input| exec(input).map(|output| output.into())),
     }
   }
 }

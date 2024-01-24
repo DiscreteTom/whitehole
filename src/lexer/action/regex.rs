@@ -1,4 +1,4 @@
-use super::{output::ActionOutput, Action};
+use super::{output::ActionOutputWithoutKind, Action};
 use regex::Regex;
 
 // TODO: only in feature `regex`
@@ -6,8 +6,7 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   pub fn regex(re: &str) -> Result<Self, regex::Error> {
     let re = Regex::new(re)?;
     Ok(Action::new(move |input| {
-      re.find(input.rest()).map(|m| ActionOutput {
-        kind: (),
+      re.find(input.rest()).map(|m| ActionOutputWithoutKind {
         digested: m.len(),
         muted: false,
         error: None,
@@ -19,7 +18,7 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::input::ActionInput;
+  use crate::lexer::action::{input::ActionInput, output::ActionOutput};
 
   #[test]
   fn regex_start() {

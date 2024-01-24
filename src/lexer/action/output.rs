@@ -10,6 +10,23 @@ pub struct ActionOutput<Kind, ErrorType> {
   pub error: Option<ErrorType>,
 }
 
+pub struct ActionOutputWithoutKind<ErrorType> {
+  pub digested: usize,
+  pub muted: bool,
+  pub error: Option<ErrorType>,
+}
+
+impl<ErrorType> Into<ActionOutput<(), ErrorType>> for ActionOutputWithoutKind<ErrorType> {
+  fn into(self) -> ActionOutput<(), ErrorType> {
+    ActionOutput {
+      kind: (),
+      digested: self.digested,
+      muted: self.muted,
+      error: self.error,
+    }
+  }
+}
+
 pub struct EnhancedActionOutput<'buffer, Kind, ErrorType> {
   /// The original [ActionOutput].
   pub raw: ActionOutput<Kind, ErrorType>,

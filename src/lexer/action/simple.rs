@@ -1,4 +1,4 @@
-use super::{input::ActionInput, output::ActionOutput, Action};
+use super::{input::ActionInput, output::ActionOutputWithoutKind, Action};
 
 impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   pub fn simple<F>(f: F) -> Self
@@ -6,8 +6,7 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
     F: Fn(&mut ActionInput<ActionState>) -> usize + 'static,
   {
     Action::new(move |input| match f(input) {
-      digested if digested > 0 => Some(ActionOutput {
-        kind: (),
+      digested if digested > 0 => Some(ActionOutputWithoutKind {
         digested,
         muted: false,
         error: None,
@@ -20,6 +19,7 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::lexer::action::output::ActionOutput;
 
   #[test]
   fn accept_all() {

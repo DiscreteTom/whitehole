@@ -1,6 +1,5 @@
+use super::{input::ActionInput, output::ActionOutputWithoutKind, Action};
 use std::marker::PhantomData;
-
-use super::{input::ActionInput, output::ActionOutput, Action};
 
 pub struct ActionBuilder<ActionState: 'static, ErrorType: 'static> {
   _action_state: PhantomData<ActionState>,
@@ -19,7 +18,7 @@ impl<ActionState: 'static, ErrorType: 'static> Default for ActionBuilder<ActionS
 impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
   pub fn new<F>(self, exec: F) -> Action<(), ActionState, ErrorType>
   where
-    F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<(), ErrorType>> + 'static,
+    F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutputWithoutKind<ErrorType>> + 'static,
   {
     Action::new(exec)
   }
