@@ -1,11 +1,22 @@
 use super::core::lex::expectation::Expectation;
 
-pub struct LexerLexOptions<'expect, Kind> {
+pub struct LexerLexOptions<'expect_text, Kind> {
   pub peek: bool,
-  pub expectation: Expectation<'expect, Kind>,
+  pub expectation: Expectation<'expect_text, Kind>,
 }
 
-impl<'expect, Kind> Default for LexerLexOptions<'expect, Kind> {
+impl<'expect_text, Kind> From<Expectation<'expect_text, Kind>>
+  for LexerLexOptions<'expect_text, Kind>
+{
+  fn from(expectation: Expectation<'expect_text, Kind>) -> Self {
+    LexerLexOptions {
+      peek: false,
+      expectation,
+    }
+  }
+}
+
+impl<'expect_text, Kind> Default for LexerLexOptions<'expect_text, Kind> {
   fn default() -> Self {
     LexerLexOptions {
       peek: false,
@@ -14,13 +25,13 @@ impl<'expect, Kind> Default for LexerLexOptions<'expect, Kind> {
   }
 }
 
-impl<'expect, Kind> LexerLexOptions<'expect, Kind> {
+impl<'expect_text, Kind> LexerLexOptions<'expect_text, Kind> {
   pub fn peek(mut self, peek: impl Into<bool>) -> Self {
     self.peek = peek.into();
     self
   }
 
-  pub fn expect(mut self, expectation: impl Into<Expectation<'expect, Kind>>) -> Self {
+  pub fn expect(mut self, expectation: impl Into<Expectation<'expect_text, Kind>>) -> Self {
     let Expectation { text, kind } = expectation.into();
     if let Some(text) = text {
       self.expectation = self.expectation.text(text);
