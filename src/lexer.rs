@@ -52,6 +52,9 @@ where
   pub fn core_mut(&mut self) -> &mut LexerCore<Kind, ActionState, ErrorType> {
     &mut self.core
   }
+  pub fn state(&self) -> &LexerState<'buffer> {
+    &self.state
+  }
 
   // TODO: better name?
   pub fn dry_clone<'new_buffer>(
