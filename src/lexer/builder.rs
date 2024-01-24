@@ -29,6 +29,19 @@ where
   Kind: TokenKind,
   ActionState: Clone + Default,
 {
+  pub fn define<AnyKind>(
+    mut self,
+    kind: Kind,
+    //  TODO: maybe use Into<Action> as parameter?
+    action: Action<AnyKind, ActionState, ErrorType>,
+  ) -> Self
+  where
+    Kind: Clone,
+  {
+    self.actions.push(action.bind(kind));
+    self
+  }
+
   //  TODO: maybe use Into<Action> as parameter?
   pub fn append<F>(mut self, action: F) -> Self
   where
