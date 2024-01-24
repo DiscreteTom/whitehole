@@ -2,7 +2,7 @@ use whitehole::lexer::Builder;
 use whitehole_macros::TokenKind;
 
 // define token kinds
-// make sure it implements `TokenKind`
+// make sure it implements `TokenKind` and `Clone`.
 #[derive(TokenKind, Clone)]
 enum MyKind {
   A,
@@ -16,21 +16,19 @@ struct MyState {
 }
 
 #[test]
-fn stateful() {
+fn stateful_lexer() {
   let mut lexer = Builder::<MyKind, MyState, ()>::default()
-    .append(|a| {
-      a.regex("123")
+    .append_from(|a| {
+      a.regex("^123")
         .unwrap()
         .bind(MyKind::A)
         // access lexer's action state by `input.state()` or `input.state_mut()`.
         // in this example we reject the action if the state's `reject` field is `true`.
-        .reject_if(|ctx| ctx.input.state().reject)
-        // if the action is accepted and not peek, set the state's `reject` field to `true`.
-        // you can only mutate the action state in `then`.
+        .prevent(|input| input.state().reject)
+        // if the action is accepted, set the state's `reject` field to `true`.
         .then(|ctx| ctx.input.state_mut().reject = true)
     })
-    // load the lexer with a buffer
-    // so that the lexer can lex twice
+    // with this input text the lexer can lex twice
     .build("123123");
 
   // by default `state.reject` is `false`
