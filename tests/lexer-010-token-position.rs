@@ -1,0 +1,48 @@
+use whitehole::lexer::{
+  position::{Position, PositionTransformer, Range},
+  Action, Builder,
+};
+use whitehole_macros::TokenKind;
+
+// define token kinds
+// make sure it implements `TokenKind` and `Clone`.
+#[derive(TokenKind, Clone)]
+enum MyKind {
+  Anonymous,
+  A,
+}
+
+#[test]
+fn token_position() {
+  // for a better performance, lexer doesn't keep track of the position of each token.
+  // token is ephemeral, it has information about the index of the buffer when it is created.
+
+  // to get the position of a token (instead of an index)
+  // we can use PositionTransformer
+  let text = "123\n123\n";
+  // the position transformer will calculate the index of each line
+  // so we can use it to get the position of a token
+  let pt = PositionTransformer::new(text);
+
+  let lexer = Builder::<MyKind, (), ()>::default()
+    .ignore(Action::regex(r"^\n").unwrap().bind(MyKind::Anonymous))
+    .define(MyKind::A, Action::regex(r"^123").unwrap())
+    .build(text);
+
+  let peek = lexer.peek();
+  let token = peek.token.unwrap();
+
+  // use `transform` to get the position from the index
+  // it will use binary search to find the line index
+  let position = pt.transform(token.start()).unwrap();
+  assert!(matches!(position, Position { line: 1, column: 1 }));
+
+  // however, if we want to batch transform the positions of all tokens
+  // calling `transform` for each token is not efficient
+  // we can get the line ranges and calculate them by ourselves
+  let line_ranges = pt.line_ranges();
+  assert_eq!(line_ranges.len(), 3);
+  assert!(matches!(line_ranges[0], Range { from: 0, to: 4 }));
+  assert!(matches!(line_ranges[1], Range { from: 4, to: 8 }));
+  assert!(matches!(line_ranges[2], Range { from: 8, to: 8 }));
+}
