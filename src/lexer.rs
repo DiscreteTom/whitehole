@@ -23,14 +23,29 @@ use self::{
 };
 use std::rc::Rc;
 
-#[derive(Clone)]
 pub struct Lexer<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
 where
   Kind: TokenKind,
   ActionState: Clone + Default,
 {
   stateless: StatelessLexer<Kind, ActionState, ErrorType>,
-  state: LexerState<'buffer, ActionState>,
+  state: LexerState<'buffer>,
+  action_state: ActionState,
+}
+
+impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static> Clone
+  for Lexer<'buffer, Kind, ActionState, ErrorType>
+where
+  Kind: TokenKind,
+  ActionState: Clone + Default,
+{
+  fn clone(&self) -> Self {
+    Lexer {
+      stateless: self.stateless.clone(),
+      state: self.state.clone(),
+      action_state: self.action_state.clone(),
+    }
+  }
 }
 
 impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
@@ -43,21 +58,22 @@ where
     Lexer {
       stateless: StatelessLexer::new(actions),
       state: LexerState::new(buffer),
+      action_state: ActionState::default(),
     }
   }
 
   pub fn stateless(&self) -> &StatelessLexer<Kind, ActionState, ErrorType> {
     &self.stateless
   }
-  pub fn state(&self) -> &LexerState<'buffer, ActionState> {
+  pub fn state(&self) -> &LexerState<'buffer> {
     &self.state
   }
-  // there is no `state_mut` since only `state.action_state` can be mutated by user
   pub fn action_state(&self) -> &ActionState {
-    self.state.action_state()
+    &self.action_state
   }
+  // user can mutate the action state
   pub fn action_state_mut(&mut self) -> &mut ActionState {
-    self.state.action_state_mut()
+    &mut self.action_state
   }
 
   // TODO: better name?
@@ -68,6 +84,7 @@ where
     Lexer {
       stateless: self.stateless.clone(),
       state: LexerState::new(buffer),
+      action_state: ActionState::default(),
     }
   }
 
@@ -116,7 +133,7 @@ where
       self.state.buffer(),
       StatelessLexOptions {
         start: self.state.digested(),
-        action_state: self.state.action_state_mut(),
+        action_state: &mut self.action_state,
         expectation: expectation.into(),
       },
     );
@@ -152,7 +169,7 @@ where
   /// If the `state` is not provided, the action state will be reset to default.
   pub fn take(&mut self, n: usize, state: Option<ActionState>) -> &mut Self {
     self.state.digest(n);
-    *self.state.action_state_mut() = state.unwrap_or(ActionState::default());
+    self.action_state = state.unwrap_or(ActionState::default());
     self
   }
 
@@ -168,7 +185,7 @@ where
     let res = self.stateless.trim(
       self.state.buffer(),
       self.state.digested(),
-      self.state.action_state_mut(),
+      &mut self.action_state,
     );
     self.state.trim(res.digested);
     res
