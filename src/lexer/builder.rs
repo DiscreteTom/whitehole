@@ -1,5 +1,6 @@
 use super::{
   action::{builder::ActionBuilder, Action},
+  stateless::StatelessLexer,
   token::TokenKind,
   Lexer,
 };
@@ -87,6 +88,10 @@ where
     buffer: &'buffer str,
   ) -> Lexer<'buffer, Kind, ActionState, ErrorType> {
     Lexer::new(self.actions, buffer)
+  }
+
+  pub fn build_stateless(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
+    StatelessLexer::new(self.actions)
   }
 }
 
