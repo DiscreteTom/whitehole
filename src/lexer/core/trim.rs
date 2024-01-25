@@ -22,10 +22,11 @@ where
   Kind: TokenKind,
   ActionState: Clone + Default,
 {
-  pub fn trim<'buffer, 'expect_text>(
-    &mut self,
+  pub fn trim<'buffer, 'action_state, 'expect_text>(
+    &self,
     buffer: &'buffer str,
     start: usize,
+    mut action_state: &'action_state mut ActionState,
   ) -> TrimOutput<Rc<Token<'buffer, Kind, ErrorType>>>
   where
     'buffer: 'expect_text,
@@ -44,7 +45,7 @@ where
       },
       buffer,
       start,
-      &mut self.state,
+      &mut action_state,
       &OUTPUT_HANDLER,
     );
 

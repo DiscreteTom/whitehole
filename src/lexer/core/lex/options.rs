@@ -1,7 +1,7 @@
 use super::expectation::Expectation;
 
-#[derive(Default)]
-pub struct LexerCoreLexOptions<'expect, Kind> {
+pub struct LexerCoreLexOptions<'action_state, 'expect, Kind, ActionState: Clone + Default> {
   pub start: usize,
+  pub action_state: &'action_state mut ActionState,
   pub expectation: Expectation<'expect, Kind>,
 }

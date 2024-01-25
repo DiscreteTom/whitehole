@@ -19,7 +19,7 @@ pub struct PeekOutput<TokenType, ActionState> {
   pub token: Option<TokenType>,
   pub digested: usize,
   pub errors: Vec<TokenType>,
-  pub state: ActionState,
+  pub action_state: ActionState,
 }
 
 pub struct LexAllOutput<TokenType> {
@@ -34,10 +34,10 @@ where
   Kind: TokenKind,
   ActionState: Clone + Default,
 {
-  pub fn lex<'buffer, 'expect_text>(
-    &mut self,
+  pub fn lex<'buffer, 'action_state, 'expect_text>(
+    &self,
     buffer: &'buffer str,
-    options: impl Into<LexerCoreLexOptions<'expect_text, Kind>>,
+    options: impl Into<LexerCoreLexOptions<'action_state, 'expect_text, Kind, ActionState>>,
   ) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>>
   where
     'buffer: 'expect_text,
@@ -48,12 +48,13 @@ where
       create_token: true,
     };
 
-    let options: LexerCoreLexOptions<Kind> = options.into();
+    let options: LexerCoreLexOptions<Kind, ActionState> = options.into();
     let Expectation {
       kind: exp_kind,
       text: exp_text,
     } = options.expectation;
     let exp_kind = exp_kind.map(|kind| kind.id());
+    let mut action_state = options.action_state;
 
     Self::execute_actions(
       &self.actions,
@@ -74,7 +75,7 @@ where
       },
       buffer,
       options.start,
-      &mut self.state,
+      &mut action_state,
       &OUTPUT_HANDLER,
     )
   }

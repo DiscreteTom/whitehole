@@ -30,7 +30,7 @@ where
   ActionState: Clone + Default,
 {
   core: LexerCore<Kind, ActionState, ErrorType>,
-  state: LexerState<'buffer>,
+  state: LexerState<'buffer, ActionState>,
 }
 
 impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
@@ -52,8 +52,14 @@ where
   pub fn core_mut(&mut self) -> &mut LexerCore<Kind, ActionState, ErrorType> {
     &mut self.core
   }
-  pub fn state(&self) -> &LexerState<'buffer> {
+  pub fn state(&self) -> &LexerState<'buffer, ActionState> {
     &self.state
+  }
+  pub fn action_state(&self) -> &ActionState {
+    self.state.action_state()
+  }
+  pub fn action_state_mut(&mut self) -> &mut ActionState {
+    self.state.action_state_mut()
   }
 
   // TODO: better name?
@@ -62,7 +68,7 @@ where
     buffer: &'new_buffer str,
   ) -> Lexer<'new_buffer, Kind, ActionState, ErrorType> {
     Lexer {
-      core: self.core.dry_clone(),
+      core: self.core.clone(),
       state: LexerState::new(buffer),
     }
   }
@@ -83,11 +89,12 @@ where
     &self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
   ) -> PeekOutput<Rc<Token<'buffer, Kind, ErrorType>>, ActionState> {
-    let mut core = self.core.clone();
-    let output = core.lex(
+    let mut action_state = self.state.action_state().clone();
+    let output = self.core.lex(
       self.state.buffer(),
       LexerCoreLexOptions {
         start: self.state.digested(),
+        action_state: &mut action_state,
         expectation: expectation.into(),
       },
     );
@@ -95,7 +102,7 @@ where
       token: output.token,
       digested: output.digested,
       errors: output.errors,
-      state: core.take_state(),
+      action_state,
     }
   }
 
@@ -111,6 +118,7 @@ where
       self.state.buffer(),
       LexerCoreLexOptions {
         start: self.state.digested(),
+        action_state: self.state.action_state_mut(),
         expectation: expectation.into(),
       },
     );
@@ -146,7 +154,7 @@ where
   /// If the `state` is not provided, the action state will be reset to default.
   pub fn take(&mut self, n: usize, state: Option<ActionState>) -> &mut Self {
     self.state.digest(n);
-    *self.core.state_mut() = state.unwrap_or(ActionState::default());
+    *self.state.action_state_mut() = state.unwrap_or(ActionState::default());
     self
   }
 
@@ -159,7 +167,11 @@ where
       };
     }
 
-    let res = self.core.trim(self.state.buffer(), self.state.digested());
+    let res = self.core.trim(
+      self.state.buffer(),
+      self.state.digested(),
+      self.state.action_state_mut(),
+    );
     self.state.trim(res.digested);
     res
   }
