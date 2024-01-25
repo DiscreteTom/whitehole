@@ -1,5 +1,7 @@
 pub mod action;
 pub mod builder;
+pub mod expectation;
+pub mod output;
 pub mod position;
 pub mod state;
 pub mod stateless;
@@ -10,14 +12,10 @@ pub use action::Action;
 pub use builder::Builder;
 
 use self::{
+  expectation::Expectation,
+  output::{IntoTrimmedOutput, LexAllOutput, LexOutput, PeekOutput, TrimOutput},
   state::LexerState,
-  stateless::{
-    lex::{
-      expectation::Expectation, options::StatelessLexOptions, LexAllOutput, LexOutput, PeekOutput,
-    },
-    trim::{IntoTrimmedOutput, TrimOutput},
-    StatelessLexer,
-  },
+  stateless::{lex::StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKind},
   trimmed::TrimmedLexer,
 };

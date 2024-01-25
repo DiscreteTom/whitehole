@@ -1,32 +1,16 @@
-pub mod expectation;
-pub mod options;
-
-use self::{expectation::Expectation, options::StatelessLexOptions};
 use super::{common::Validator, StatelessLexer};
 use crate::lexer::{
+  expectation::Expectation,
+  output::LexOutput,
   stateless::common::OutputHandler,
   token::{Token, TokenKind},
 };
 use std::rc::Rc;
 
-// TODO: move
-pub struct LexOutput<TokenType> {
-  pub token: Option<TokenType>,
-  pub digested: usize,
-  pub errors: Vec<TokenType>,
-}
-
-pub struct PeekOutput<TokenType, ActionState> {
-  pub token: Option<TokenType>,
-  pub digested: usize,
-  pub errors: Vec<TokenType>,
-  pub action_state: ActionState,
-}
-
-pub struct LexAllOutput<TokenType> {
-  pub tokens: Vec<TokenType>,
-  pub digested: usize,
-  pub errors: Vec<TokenType>,
+pub struct StatelessLexOptions<'action_state, 'expect, Kind, ActionState: Clone + Default> {
+  pub start: usize,
+  pub action_state: &'action_state mut ActionState,
+  pub expectation: Expectation<'expect, Kind>,
 }
 
 pub struct StatelessLexOutput<TokenType, ActionState> {

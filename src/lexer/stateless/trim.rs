@@ -1,20 +1,10 @@
 use super::{common::Validator, StatelessLexer};
 use crate::lexer::{
+  output::TrimOutput,
   stateless::common::OutputHandler,
   token::{Token, TokenKind},
 };
 use std::rc::Rc;
-
-pub struct IntoTrimmedOutput<TokenType, TrimmedLexer> {
-  pub digested: usize,
-  pub errors: Vec<TokenType>,
-  pub trimmed: TrimmedLexer,
-}
-
-pub struct TrimOutput<TokenType> {
-  pub digested: usize,
-  pub errors: Vec<TokenType>,
-}
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
   StatelessLexer<Kind, ActionState, ErrorType>

@@ -1,6 +1,5 @@
 use crate::lexer::token::TokenKind;
 
-// TODO: move this file to lexer/expectation.rs
 pub struct Expectation<'expect_text, Kind> {
   pub kind: Option<Kind>,
   pub text: Option<&'expect_text str>,

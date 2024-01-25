@@ -1,6 +1,7 @@
-use super::{lex::LexOutput, StatelessLexer};
+use super::StatelessLexer;
 use crate::lexer::{
   action::{input::ActionInput, output::ActionOutput, Action},
+  output::LexOutput,
   token::{Token, TokenKind},
 };
 use std::rc::Rc;
