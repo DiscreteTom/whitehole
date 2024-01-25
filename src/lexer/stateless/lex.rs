@@ -70,19 +70,25 @@ where
     let mut action_state = options.action_state;
 
     Self::execute_actions(
-      &self.actions,
+      // if exp_kind is None, we should use all actions
+      // otherwise, we should use the actions with the same kind (or maybe muted)
+      exp_kind.map_or(&self.actions, |kind| {
+        self.action_map.get(&kind).unwrap_or(&self.actions)
+      }),
       move |input| {
         let text_mismatch = exp_text.is_some_and(|text| !input.rest().starts_with(text));
         Validator {
-          skip_before_exec: Box::new(move |action| {
-            action.never_muted()
-              && ((exp_kind.is_some_and(|kind| !action.possible_kinds().contains(&kind)))
-                || text_mismatch)
-          }),
-          accept_after_exec: Box::new(move |action, input, output| {
+          // since we already filtered actions, we only need to check text mismatch
+          skip_before_exec: text_mismatch,
+          accept_after_exec: Box::new(move |input, output| {
             output.muted
-              || (!exp_kind.is_some_and(|kind| !action.possible_kinds().contains(&kind))
-                && !exp_text.is_some_and(move |text| &input.rest()[..output.digested] != text))
+              || (
+                // ensure expectation match.
+                // we still need to check the kind after exec
+                // because muted actions may yield unexpected kinds
+                exp_kind.map_or(true, |kind| output.kind.id() == kind)
+                  && exp_text.map_or(true, |text| &input.rest()[..output.digested] == text)
+              )
           }),
         }
       },

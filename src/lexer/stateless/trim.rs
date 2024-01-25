@@ -28,10 +28,11 @@ where
     };
 
     let output = Self::execute_actions(
-      &self.actions,
+      &self.maybe_muted_actions,
       move |_| Validator {
-        skip_before_exec: Box::new(move |action| action.never_muted()),
-        accept_after_exec: Box::new(move |_, _, _| true),
+        // we already filtered actions, so never skip
+        skip_before_exec: false,
+        accept_after_exec: Box::new(move |_, _| true),
       },
       buffer,
       start,

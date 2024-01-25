@@ -7,16 +7,11 @@ use crate::lexer::{
 use std::rc::Rc;
 
 pub struct Validator<'validator, Kind: 'static, ActionState: 'static, ErrorType: 'static> {
-  /// If return `true`, the action will be skipped.
-  pub skip_before_exec: Box<dyn Fn(&Action<Kind, ActionState, ErrorType>) -> bool>,
+  /// If `true`, the action will be skipped.
+  pub skip_before_exec: bool,
   /// If return `true`, the action will be accepted.
   pub accept_after_exec: Box<
-    dyn Fn(
-        &Action<Kind, ActionState, ErrorType>,
-        &ActionInput<ActionState>,
-        &ActionOutput<Kind, ErrorType>,
-      ) -> bool
-      + 'validator, // make sure validator is not outlive the checker
+    dyn Fn(&ActionInput<ActionState>, &ActionOutput<Kind, ErrorType>) -> bool + 'validator, // make sure validator is not outlive the checker
   >,
 }
 
@@ -36,7 +31,7 @@ where
   ActionState: Clone + Default,
 {
   pub fn execute_actions<'validator, F>(
-    actions: &[Action<Kind, ActionState, ErrorType>],
+    actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
     validator_factory: F,
     buffer: &'buffer str,
     start: usize,
@@ -121,7 +116,7 @@ where
 
   fn traverse_actions(
     input: &mut ActionInput<'buffer, 'state, ActionState>,
-    actions: &[Action<Kind, ActionState, ErrorType>],
+    actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
     validator: Validator<Kind, ActionState, ErrorType>,
   ) -> Option<ActionOutput<Kind, ErrorType>> {
     for action in actions {
@@ -137,14 +132,14 @@ where
     action: &Action<Kind, ActionState, ErrorType>,
     validator: &Validator<Kind, ActionState, ErrorType>,
   ) -> Option<ActionOutput<Kind, ErrorType>> {
-    if (validator.skip_before_exec)(action) {
+    if validator.skip_before_exec {
       return None;
     }
 
     let output = action.exec(input);
 
     if let Some(output) = output {
-      if (validator.accept_after_exec)(action, input, &output) {
+      if (validator.accept_after_exec)(input, &output) {
         return Some(output);
       }
     }
