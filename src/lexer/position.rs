@@ -11,9 +11,9 @@ pub struct Position {
 #[derive(Debug)]
 pub struct Range {
   /// 0-based index.
-  from: usize,
+  pub from: usize,
   /// 0-based index. Exclusive.
-  to: usize,
+  pub to: usize,
 }
 
 pub struct PositionTransformer {
