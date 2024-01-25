@@ -113,7 +113,7 @@ fn action_decorators() {
   assert!(matches!(token.kind(), MyKind::D));
   assert_eq!(token.start(), 2);
   assert_eq!(token.end(), 3);
-  assert_eq!(lexer.core().state().reject, true);
+  assert_eq!(lexer.action_state().reject, true);
 
   // the third lex should be rejected
   let res = lexer.lex();

@@ -1,4 +1,4 @@
-use whitehole::lexer::{core::lex::expectation::Expectation, Action, Builder};
+use whitehole::lexer::{stateless::lex::expectation::Expectation, Action, Builder};
 use whitehole_macros::TokenKind;
 
 // define token kinds
