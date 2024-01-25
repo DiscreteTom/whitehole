@@ -200,7 +200,7 @@ where
     IntoTrimmedOutput {
       digested: res.digested,
       errors: res.errors,
-      trimmed: TrimmedLexer::new(self),
+      trimmed_lexer: TrimmedLexer::new(self),
     }
   }
 }
