@@ -1,14 +1,15 @@
 pub mod expectation;
 pub mod options;
 
-use self::{expectation::Expectation, options::LexerCoreLexOptions};
-use super::{common::Validator, LexerCore};
+use self::{expectation::Expectation, options::StatelessLexOptions};
+use super::{common::Validator, StatelessLexer};
 use crate::lexer::{
-  core::common::OutputHandler,
+  stateless::common::OutputHandler,
   token::{Token, TokenKind},
 };
 use std::rc::Rc;
 
+// TODO: move
 pub struct LexOutput<TokenType> {
   pub token: Option<TokenType>,
   pub digested: usize,
@@ -28,16 +29,44 @@ pub struct LexAllOutput<TokenType> {
   pub errors: Vec<TokenType>,
 }
 
+pub struct StatelessLexOutput<TokenType, ActionState> {
+  pub token: Option<TokenType>,
+  pub digested: usize,
+  pub errors: Vec<TokenType>,
+  pub action_state: ActionState,
+}
+
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  LexerCore<Kind, ActionState, ErrorType>
+  StatelessLexer<Kind, ActionState, ErrorType>
 where
   Kind: TokenKind,
   ActionState: Clone + Default,
 {
-  pub fn lex<'buffer, 'action_state, 'expect_text>(
+  pub fn lex<'buffer>(
     &self,
     buffer: &'buffer str,
-    options: impl Into<LexerCoreLexOptions<'action_state, 'expect_text, Kind, ActionState>>,
+  ) -> StatelessLexOutput<Rc<Token<'buffer, Kind, ErrorType>>, ActionState> {
+    let mut action_state = ActionState::default();
+    let output = self.lex_with(
+      buffer,
+      StatelessLexOptions {
+        start: 0,
+        expectation: Expectation::default(),
+        action_state: &mut action_state,
+      },
+    );
+    StatelessLexOutput {
+      token: output.token,
+      digested: output.digested,
+      errors: output.errors,
+      action_state,
+    }
+  }
+
+  pub fn lex_with<'buffer, 'action_state, 'expect_text>(
+    &self,
+    buffer: &'buffer str,
+    options: impl Into<StatelessLexOptions<'action_state, 'expect_text, Kind, ActionState>>,
   ) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>>
   where
     'buffer: 'expect_text,
@@ -48,7 +77,7 @@ where
       create_token: true,
     };
 
-    let options: LexerCoreLexOptions<Kind, ActionState> = options.into();
+    let options: StatelessLexOptions<Kind, ActionState> = options.into();
     let Expectation {
       kind: exp_kind,
       text: exp_text,

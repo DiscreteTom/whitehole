@@ -1,5 +1,5 @@
 use super::{
-  core::lex::expectation::Expectation,
+  stateless::lex::expectation::Expectation,
   token::{Token, TokenKind},
   Lexer,
 };

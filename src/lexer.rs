@@ -1,8 +1,8 @@
 pub mod action;
 pub mod builder;
-pub mod core;
 pub mod position;
 pub mod state;
+pub mod stateless;
 pub mod token;
 pub mod trimmed;
 
@@ -10,14 +10,14 @@ pub use action::Action;
 pub use builder::Builder;
 
 use self::{
-  core::{
+  state::LexerState,
+  stateless::{
     lex::{
-      expectation::Expectation, options::LexerCoreLexOptions, LexAllOutput, LexOutput, PeekOutput,
+      expectation::Expectation, options::StatelessLexOptions, LexAllOutput, LexOutput, PeekOutput,
     },
     trim::{IntoTrimmedOutput, TrimOutput},
-    LexerCore,
+    StatelessLexer,
   },
-  state::LexerState,
   token::{Token, TokenKind},
   trimmed::TrimmedLexer,
 };
@@ -29,7 +29,7 @@ where
   Kind: TokenKind,
   ActionState: Clone + Default,
 {
-  core: LexerCore<Kind, ActionState, ErrorType>,
+  stateless: StatelessLexer<Kind, ActionState, ErrorType>,
   state: LexerState<'buffer, ActionState>,
 }
 
@@ -41,20 +41,18 @@ where
 {
   pub fn new(actions: Vec<Action<Kind, ActionState, ErrorType>>, buffer: &'buffer str) -> Self {
     Lexer {
-      core: LexerCore::new(actions),
+      stateless: StatelessLexer::new(actions),
       state: LexerState::new(buffer),
     }
   }
 
-  pub fn core(&self) -> &LexerCore<Kind, ActionState, ErrorType> {
-    &self.core
-  }
-  pub fn core_mut(&mut self) -> &mut LexerCore<Kind, ActionState, ErrorType> {
-    &mut self.core
+  pub fn stateless(&self) -> &StatelessLexer<Kind, ActionState, ErrorType> {
+    &self.stateless
   }
   pub fn state(&self) -> &LexerState<'buffer, ActionState> {
     &self.state
   }
+  // there is no `state_mut` since only `state.action_state` can be mutated by user
   pub fn action_state(&self) -> &ActionState {
     self.state.action_state()
   }
@@ -68,7 +66,7 @@ where
     buffer: &'new_buffer str,
   ) -> Lexer<'new_buffer, Kind, ActionState, ErrorType> {
     Lexer {
-      core: self.core.clone(),
+      stateless: self.stateless.clone(),
       state: LexerState::new(buffer),
     }
   }
@@ -89,10 +87,10 @@ where
     &self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
   ) -> PeekOutput<Rc<Token<'buffer, Kind, ErrorType>>, ActionState> {
-    let mut action_state = self.state.action_state().clone();
-    let output = self.core.lex(
+    let mut action_state = self.action_state().clone();
+    let output = self.stateless.lex_with(
       self.state.buffer(),
-      LexerCoreLexOptions {
+      StatelessLexOptions {
         start: self.state.digested(),
         action_state: &mut action_state,
         expectation: expectation.into(),
@@ -114,9 +112,9 @@ where
     &mut self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
   ) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
-    let res = self.core.lex(
+    let res = self.stateless.lex_with(
       self.state.buffer(),
-      LexerCoreLexOptions {
+      StatelessLexOptions {
         start: self.state.digested(),
         action_state: self.state.action_state_mut(),
         expectation: expectation.into(),
@@ -167,7 +165,7 @@ where
       };
     }
 
-    let res = self.core.trim(
+    let res = self.stateless.trim(
       self.state.buffer(),
       self.state.digested(),
       self.state.action_state_mut(),

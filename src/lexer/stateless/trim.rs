@@ -1,6 +1,6 @@
-use super::{common::Validator, LexerCore};
+use super::{common::Validator, StatelessLexer};
 use crate::lexer::{
-  core::common::OutputHandler,
+  stateless::common::OutputHandler,
   token::{Token, TokenKind},
 };
 use std::rc::Rc;
@@ -17,7 +17,7 @@ pub struct TrimOutput<TokenType> {
 }
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  LexerCore<Kind, ActionState, ErrorType>
+  StatelessLexer<Kind, ActionState, ErrorType>
 where
   Kind: TokenKind,
   ActionState: Clone + Default,

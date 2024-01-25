@@ -1,4 +1,4 @@
-use super::{lex::LexOutput, LexerCore};
+use super::{lex::LexOutput, StatelessLexer};
 use crate::lexer::{
   action::{input::ActionInput, output::ActionOutput, Action},
   token::{Token, TokenKind},
@@ -28,7 +28,8 @@ pub struct OutputHandler {
   pub create_token: bool,
 }
 
-impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType> LexerCore<Kind, ActionState, ErrorType>
+impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType>
+  StatelessLexer<Kind, ActionState, ErrorType>
 where
   Kind: TokenKind,
   ActionState: Clone + Default,
