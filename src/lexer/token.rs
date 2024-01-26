@@ -6,15 +6,20 @@ pub trait TokenKind {
   fn id(&self) -> TokenKindId;
 }
 
+#[derive(Debug)]
+pub struct Range {
+  /// 0-based index.
+  pub start: usize,
+  /// 0-based index. Exclusive.
+  pub end: usize,
+}
+
 pub struct Token<'buffer, Kind, ErrorType> {
   /// The kind and the binding data.
   kind: Kind,
   /// The whole input text.
   buffer: &'buffer str,
-  /// The index of the first character of the token in the whole input text.
-  start: usize,
-  /// The index of the last character of the token in the whole input text.
-  end: usize,
+  range: Range,
   error: Option<ErrorType>,
 }
 
@@ -29,8 +34,7 @@ impl<'buffer, Kind, ErrorType> Token<'buffer, Kind, ErrorType> {
     Token {
       kind,
       buffer,
-      start,
-      end,
+      range: Range { start, end },
       error,
     }
   }
@@ -41,11 +45,14 @@ impl<'buffer, Kind, ErrorType> Token<'buffer, Kind, ErrorType> {
   pub fn buffer(&self) -> &'buffer str {
     self.buffer
   }
+  pub fn range(&self) -> &Range {
+    &self.range
+  }
   pub fn start(&self) -> usize {
-    self.start
+    self.range.start
   }
   pub fn end(&self) -> usize {
-    self.end
+    self.range.end
   }
   pub fn error(&self) -> &Option<ErrorType> {
     &self.error
@@ -53,7 +60,7 @@ impl<'buffer, Kind, ErrorType> Token<'buffer, Kind, ErrorType> {
 
   /// Returns the content of the token.
   pub fn content(&self) -> &str {
-    &self.buffer[self.start..self.end]
+    &self.buffer[self.range.start..self.range.end]
   }
 }
 
@@ -72,17 +79,11 @@ mod tests {
   #[test]
   fn simple() {
     let buffer = "123";
-    let token = Token {
-      kind: MyKind::UnitField,
-      buffer,
-      start: 0,
-      end: 3,
-      error: None::<()>,
-    };
+    let token = Token::new(MyKind::UnitField, buffer, 0, 3, None::<()>);
     assert!(matches!(token.kind, MyKind::UnitField));
     assert_eq!(token.buffer, buffer);
-    assert_eq!(token.start, 0);
-    assert_eq!(token.end, 3);
+    assert_eq!(token.start(), 0);
+    assert_eq!(token.end(), 3);
     assert_eq!(token.content(), "123");
     assert_eq!(token.error, None);
   }
@@ -90,17 +91,11 @@ mod tests {
   #[test]
   fn with_data() {
     let buffer = "123";
-    let token = Token {
-      kind: MyKind::UnnamedField(42),
-      buffer,
-      start: 0,
-      end: 3,
-      error: None::<()>,
-    };
+    let token = Token::new(MyKind::UnnamedField(42), buffer, 0, 3, None::<()>);
     assert!(matches!(token.kind, MyKind::UnnamedField(42)));
     assert_eq!(token.buffer, buffer);
-    assert_eq!(token.start, 0);
-    assert_eq!(token.end, 3);
+    assert_eq!(token.start(), 0);
+    assert_eq!(token.end(), 3);
     assert_eq!(token.content(), "123");
     assert_eq!(token.error, None);
   }

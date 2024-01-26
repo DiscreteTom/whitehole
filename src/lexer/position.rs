@@ -1,3 +1,4 @@
+use super::token::Range;
 use std::cmp::Ordering;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -8,14 +9,6 @@ pub struct Position {
   pub column: usize,
 }
 
-#[derive(Debug)]
-pub struct Range {
-  /// 0-based index.
-  pub from: usize,
-  /// 0-based index. Exclusive.
-  pub to: usize,
-}
-
 pub struct PositionTransformer {
   line_ranges: Vec<Range>,
 }
@@ -23,7 +16,7 @@ pub struct PositionTransformer {
 impl Default for PositionTransformer {
   fn default() -> Self {
     PositionTransformer {
-      line_ranges: vec![Range { from: 0, to: 0 }],
+      line_ranges: vec![Range { start: 0, end: 0 }],
     }
   }
 }
@@ -41,30 +34,30 @@ impl PositionTransformer {
 
   pub fn update(&mut self, digested: &str) {
     let mut current_line_range = self.line_ranges.pop().unwrap();
-    let start = current_line_range.to;
+    let start = current_line_range.end;
     for (i, c) in digested.char_indices() {
       if c == '\n' {
         let next_line_index = start + i + 1;
         self.line_ranges.push(Range {
-          from: current_line_range.from,
-          to: next_line_index,
+          start: current_line_range.start,
+          end: next_line_index,
         });
         current_line_range = Range {
-          from: next_line_index,
-          to: next_line_index,
+          start: next_line_index,
+          end: next_line_index,
         };
       }
     }
-    current_line_range.to = start + digested.len();
+    current_line_range.end = start + digested.len();
     self.line_ranges.push(current_line_range);
   }
 
   /// Transform 0-based index to 1-based line and column.
   pub fn transform(&self, index: usize) -> Option<Position> {
-    match self.line_ranges.binary_search_by(|Range { from, to }| {
-      if index < *from {
+    match self.line_ranges.binary_search_by(|Range { start, end }| {
+      if index < *start {
         Ordering::Greater
-      } else if index >= *to {
+      } else if index >= *end {
         Ordering::Less
       } else {
         Ordering::Equal
@@ -73,7 +66,7 @@ impl PositionTransformer {
       Err(_) => None,
       Ok(line_index) => Some(Position {
         line: line_index + 1,
-        column: index - self.line_ranges[line_index].from + 1,
+        column: index - self.line_ranges[line_index].start + 1,
       }),
     }
   }
