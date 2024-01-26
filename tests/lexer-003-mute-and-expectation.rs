@@ -1,4 +1,4 @@
-use whitehole::lexer::{stateless::lex::expectation::Expectation, Action, Builder};
+use whitehole::lexer::{expectation::Expectation, Action, Builder};
 use whitehole_macros::TokenKind;
 
 // define token kinds
@@ -64,9 +64,10 @@ fn expectation() {
 
   // or both the text and the kind are expected
   let mut lexer = lexer.dry_clone("-a");
-  assert!(lexer.lex_expect("b").kind(MyKind::A))
+  assert!(lexer
+    .lex_expect(Expectation::from("b").kind(MyKind::A))
     .token
-    .is_none();
+    .is_none());
   assert!(lexer
     .lex_expect(Expectation::from("a").kind(MyKind::A))
     .token
