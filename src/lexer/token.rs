@@ -48,12 +48,6 @@ impl<'buffer, Kind, ErrorType> Token<'buffer, Kind, ErrorType> {
   pub fn range(&self) -> &Range {
     &self.range
   }
-  pub fn start(&self) -> usize {
-    self.range.start
-  }
-  pub fn end(&self) -> usize {
-    self.range.end
-  }
   pub fn error(&self) -> &Option<ErrorType> {
     &self.error
   }
@@ -82,8 +76,8 @@ mod tests {
     let token = Token::new(MyKind::UnitField, buffer, 0, 3, None::<()>);
     assert!(matches!(token.kind, MyKind::UnitField));
     assert_eq!(token.buffer, buffer);
-    assert_eq!(token.start(), 0);
-    assert_eq!(token.end(), 3);
+    assert_eq!(token.range().start, 0);
+    assert_eq!(token.range().end, 3);
     assert_eq!(token.content(), "123");
     assert_eq!(token.error, None);
   }
@@ -94,8 +88,8 @@ mod tests {
     let token = Token::new(MyKind::UnnamedField(42), buffer, 0, 3, None::<()>);
     assert!(matches!(token.kind, MyKind::UnnamedField(42)));
     assert_eq!(token.buffer, buffer);
-    assert_eq!(token.start(), 0);
-    assert_eq!(token.end(), 3);
+    assert_eq!(token.range().start, 0);
+    assert_eq!(token.range().end, 3);
     assert_eq!(token.content(), "123");
     assert_eq!(token.error, None);
   }

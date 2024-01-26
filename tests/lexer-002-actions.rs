@@ -105,14 +105,14 @@ fn action_decorators() {
   // the first lex should be accepted
   let token = lexer.lex().token.unwrap();
   assert!(matches!(token.kind(), MyKind::C));
-  assert_eq!(token.start(), 0);
-  assert_eq!(token.end(), 1);
+  assert_eq!(token.range().start, 0);
+  assert_eq!(token.range().end, 1);
 
   // the second lex should be accepted and will change the state
   let token = lexer.lex().token.unwrap();
   assert!(matches!(token.kind(), MyKind::D));
-  assert_eq!(token.start(), 2);
-  assert_eq!(token.end(), 3);
+  assert_eq!(token.range().start, 2);
+  assert_eq!(token.range().end, 3);
   assert_eq!(lexer.action_state().reject, true);
 
   // the third lex should be rejected

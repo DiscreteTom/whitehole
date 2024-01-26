@@ -70,8 +70,8 @@ fn lexer_basic() {
   // the first token should be `MyKind::A`
   let token = lexer.lex().token.unwrap();
   assert!(matches!(token.kind(), MyKind::A));
-  assert_eq!(token.start(), 0);
-  assert_eq!(token.end(), 1);
+  assert_eq!(token.range().start, 0);
+  assert_eq!(token.range().end, 1);
   assert_eq!(token.content(), "a");
   assert!(matches!(token.error(), None));
 
@@ -80,16 +80,16 @@ fn lexer_basic() {
   // no token will be yielded for it
   let token = lexer.lex().token.unwrap();
   assert!(matches!(token.kind(), MyKind::B));
-  assert_eq!(token.start(), 2);
-  assert_eq!(token.end(), 3);
+  assert_eq!(token.range().start, 2);
+  assert_eq!(token.range().end, 3);
   assert_eq!(token.content(), "b");
   assert!(matches!(token.error(), None));
 
   // the third token should be `MyKind::C`
   let token = lexer.lex().token.unwrap();
   assert!(matches!(token.kind(), MyKind::C));
-  assert_eq!(token.start(), 4);
-  assert_eq!(token.end(), 5);
+  assert_eq!(token.range().start, 4);
+  assert_eq!(token.range().end, 5);
   assert_eq!(token.content(), "c");
   assert!(matches!(token.error(), None));
 }

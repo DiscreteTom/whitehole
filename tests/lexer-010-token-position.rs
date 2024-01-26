@@ -35,7 +35,7 @@ fn token_position() {
 
   // use `transform` to get the position from the index
   // it will use binary search to find the line index
-  let position = pt.transform(token.start()).unwrap();
+  let position = pt.transform(token.range().start).unwrap();
   assert!(matches!(position, Position { line: 1, column: 1 }));
 
   // however, if we want to batch transform the positions of all tokens
