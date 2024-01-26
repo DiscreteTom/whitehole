@@ -1,5 +1,6 @@
 use whitehole::lexer::{
-  position::{Position, PositionTransformer, Range},
+  position::{Position, PositionTransformer},
+  token::Range,
   Action, Builder,
 };
 use whitehole_macros::TokenKind;
@@ -42,7 +43,7 @@ fn token_position() {
   // we can get the line ranges and calculate them by ourselves
   let line_ranges = pt.line_ranges();
   assert_eq!(line_ranges.len(), 3);
-  assert!(matches!(line_ranges[0], Range { from: 0, to: 4 }));
-  assert!(matches!(line_ranges[1], Range { from: 4, to: 8 }));
-  assert!(matches!(line_ranges[2], Range { from: 8, to: 8 }));
+  assert!(matches!(line_ranges[0], Range { start: 0, end: 4 }));
+  assert!(matches!(line_ranges[1], Range { start: 4, end: 8 }));
+  assert!(matches!(line_ranges[2], Range { start: 8, end: 8 }));
 }
