@@ -78,8 +78,9 @@ where
       move |input| {
         let text_mismatch = exp_text.is_some_and(|text| !input.rest().starts_with(text));
         Validator {
-          // since we already filtered actions, we only need to check text mismatch
-          skip_before_exec: text_mismatch,
+          // since we already filtered actions, we only need to skip actions
+          // which are never muted and text mismatch
+          skip_before_exec: Box::new(move |action| action.never_muted() && text_mismatch),
           accept_after_exec: Box::new(move |input, output| {
             output.muted
               || (

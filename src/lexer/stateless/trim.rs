@@ -31,8 +31,8 @@ where
       &self.maybe_muted_actions,
       move |_| Validator {
         // we already filtered actions, so never skip
-        skip_before_exec: false,
-        accept_after_exec: Box::new(move |_, _| true),
+        skip_before_exec: Box::new(|_| false),
+        accept_after_exec: Box::new(|_, _| true),
       },
       buffer,
       start,

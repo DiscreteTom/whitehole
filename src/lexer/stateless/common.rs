@@ -7,8 +7,8 @@ use crate::lexer::{
 use std::rc::Rc;
 
 pub struct Validator<'validator, Kind: 'static, ActionState: 'static, ErrorType: 'static> {
-  /// If `true`, the action will be skipped.
-  pub skip_before_exec: bool,
+  /// If return `true`, the action will be skipped.
+  pub skip_before_exec: Box<dyn Fn(&Action<Kind, ActionState, ErrorType>) -> bool>,
   /// If return `true`, the action will be accepted.
   pub accept_after_exec: Box<
     dyn Fn(&ActionInput<ActionState>, &ActionOutput<Kind, ErrorType>) -> bool + 'validator, // make sure validator is not outlive the checker
@@ -132,7 +132,7 @@ where
     action: &Action<Kind, ActionState, ErrorType>,
     validator: &Validator<Kind, ActionState, ErrorType>,
   ) -> Option<ActionOutput<Kind, ErrorType>> {
-    if validator.skip_before_exec {
+    if (validator.skip_before_exec)(action) {
       return None;
     }
 
