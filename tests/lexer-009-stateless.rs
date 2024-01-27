@@ -1,5 +1,5 @@
 use whitehole::lexer::{
-  expectation::Expectation, stateless::lex::StatelessLexOptions, Action, Builder,
+  expectation::Expectation, stateless::lex::StatelessLexOptions, Action, Builder, Lexer,
 };
 use whitehole_macros::TokenKind;
 
@@ -44,4 +44,22 @@ fn stateless_lexer() {
     },
   );
   assert!(matches!(output.token.unwrap().kind(), MyKind::A));
+}
+
+#[test]
+fn stateless_to_lexer() {
+  // if we already have all actions, but we don't have a buffer
+  // we can build a stateless lexer first, and then build a stateful lexer from it
+  let stateless = Builder::<MyKind, (), ()>::default().build_stateless();
+
+  // this will consume the stateless lexer
+  let lexer = stateless.into_lexer("123");
+  assert_eq!(lexer.state().buffer(), "123");
+
+  // if we have a Rc<StatelessLexer> instead of a raw StatelessLexer
+  // e.g. we get it from a stateful lexer
+  let stateless = lexer.stateless().clone();
+  // we can just use the `Lexer::new` to create a stateful lexer
+  let lexer = Lexer::new(stateless, "123");
+  assert_eq!(lexer.state().buffer(), "123");
 }
