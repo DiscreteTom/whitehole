@@ -55,6 +55,14 @@ where
     &mut self.lexer.action_state
   }
 
+  pub fn reload<'new_buffer>(
+    self,
+    buffer: &'new_buffer str,
+  ) -> Lexer<'new_buffer, Kind, ActionState, ErrorType> {
+    // load a new buffer, so the result is not a trimmed lexer
+    self.lexer.reload(buffer)
+  }
+
   pub fn clone_with<'new_buffer>(
     &self,
     buffer: &'new_buffer str,

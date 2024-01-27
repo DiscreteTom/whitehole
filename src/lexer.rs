@@ -75,6 +75,19 @@ where
     &mut self.action_state
   }
 
+  /// Consume self, return a new lexer with the same actions and a new buffer.
+  /// ActionState will be reset to default.
+  pub fn reload<'new_buffer>(
+    self,
+    buffer: &'new_buffer str,
+  ) -> Lexer<'new_buffer, Kind, ActionState, ErrorType> {
+    Lexer {
+      stateless: self.stateless,
+      state: LexerState::new(buffer),
+      action_state: ActionState::default(),
+    }
+  }
+
   /// Clone the lexer and load a new input text.
   pub fn clone_with<'new_buffer>(
     &self,
