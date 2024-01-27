@@ -2,7 +2,7 @@ mod common;
 pub mod lex;
 pub mod trim;
 
-use super::{action::Action, token::TokenKind};
+use super::{action::Action, token::TokenKind, Lexer};
 use std::{collections::HashMap, rc::Rc};
 
 /// Stateless, immutable lexer.
@@ -69,5 +69,10 @@ where
   }
   pub fn maybe_muted_actions(&self) -> &[Rc<Action<Kind, ActionState, ErrorType>>] {
     &self.maybe_muted_actions
+  }
+
+  /// Consume self, create a new lexer with the provided buffer.
+  pub fn into_lexer(self, buffer: &str) -> Lexer<Kind, ActionState, ErrorType> {
+    Lexer::new(Rc::new(self), buffer)
   }
 }
