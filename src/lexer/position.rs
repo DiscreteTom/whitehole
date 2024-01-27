@@ -54,6 +54,10 @@ impl PositionTransformer {
 
   /// Transform 0-based index to 1-based line and column.
   pub fn transform(&self, index: usize) -> Option<Position> {
+    if index >= self.line_ranges.last().unwrap().end {
+      return None;
+    }
+
     match self.line_ranges.binary_search_by(|Range { start, end }| {
       if index < *start {
         Ordering::Greater
