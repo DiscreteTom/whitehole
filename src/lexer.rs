@@ -89,6 +89,7 @@ where
   }
 
   /// Clone the lexer and load a new input text.
+  /// ActionState will be reset to default.
   pub fn clone_with<'new_buffer>(
     &self,
     buffer: &'new_buffer str,
