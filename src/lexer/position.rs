@@ -32,10 +32,10 @@ impl PositionTransformer {
     &self.line_ranges
   }
 
-  pub fn update(&mut self, digested: &str) {
+  pub fn update(&mut self, append: &str) {
     let mut current_line_range = self.line_ranges.pop().unwrap();
     let start = current_line_range.end;
-    for (i, c) in digested.char_indices() {
+    for (i, c) in append.char_indices() {
       if c == '\n' {
         let next_line_index = start + i + 1;
         self.line_ranges.push(Range {
@@ -48,7 +48,7 @@ impl PositionTransformer {
         };
       }
     }
-    current_line_range.end = start + digested.len();
+    current_line_range.end = start + append.len();
     self.line_ranges.push(current_line_range);
   }
 
