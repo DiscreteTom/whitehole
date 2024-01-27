@@ -21,6 +21,9 @@ fn possible_kinds() {
   // and check if the action's `possible_kinds` contains the kind's id
   assert!(action.possible_kinds().contains(&MyKind::A.id()));
   assert!(!action.possible_kinds().contains(&MyKind::B.id()));
+
+  // when we use expectational lex, the possible kinds will be checked
+  // to accelerate the lexing process
 }
 
 #[test]
@@ -38,6 +41,8 @@ fn multi_kinds() {
         MyKind::B
       }
     });
+  assert!(action.possible_kinds().contains(&MyKind::A.id()));
+  assert!(action.possible_kinds().contains(&MyKind::B.id()));
 
   // but be aware, the possible kinds will NOT be checked during the runtime
   // so we MUST make sure the selector will always return a valid kind!

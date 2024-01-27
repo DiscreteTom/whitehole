@@ -49,7 +49,7 @@ fn lexer_basic() {
       // if you want to control more details about the action's output
       // like the `error` field and the `muted` field
       // you can use `Action::new` to create an action
-      // which will directly return an `Option<ActionOutput>`
+      // the closure should directly return an `Option<ActionOutput>`
       // however this is NOT the simplest way to modify the action
       // we will introduce a simpler way in `lexer-002-actions.rs`
       Action::new(|input| {

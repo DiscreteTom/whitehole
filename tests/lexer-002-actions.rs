@@ -100,7 +100,7 @@ fn action_decorators() {
   assert_eq!(res.errors.len(), 0); // no new error
 
   // create a new lexer with the same actions and a new input
-  let mut lexer = lexer.clone_with("c d c");
+  let mut lexer = lexer.reload("c d c");
 
   // the first lex should be accepted
   let token = lexer.lex().token.unwrap();

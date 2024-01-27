@@ -22,6 +22,8 @@ fn peek_lexer() {
   let peek = lexer.peek();
   let token = peek.token.unwrap();
   assert!(matches!(token.kind(), MyKind::A));
+  assert_eq!(peek.digested, 2); // the whitespace is also digested
+
   // now use `lex` to consume the token and the muted leading whitespace
   let res = lexer.lex();
   let token = res.token.unwrap();
@@ -32,7 +34,8 @@ fn peek_lexer() {
   // because actions are evaluated twice.
   // peek will return the mutated action state and how many chars are digested
   // we can directly apply them to the lexer if the peek result is what we want
-  let mut lexer = lexer.clone_with(" a");
+  let mut lexer = lexer.reload(" a");
+  assert_eq!(lexer.state().digested(), 0);
   let peek = lexer.peek();
   lexer.take(peek.digested, Some(peek.action_state));
   assert_eq!(lexer.state().digested(), 2);
@@ -42,7 +45,7 @@ fn peek_lexer() {
 
   // another thing to mention is that
   // you can provide expectations when peek just like in lex
-  let lexer = lexer.clone_with(" a");
+  let lexer = lexer.reload(" a");
   let peek = lexer.peek_expect("b");
   assert!(peek.token.is_none());
 }
@@ -85,7 +88,7 @@ fn trim_lexer() {
 
   // for strict typing, we also have a `TrimmedLexer` struct,
   // you can use `lexer.into_trimmed` to consume the lexer and get the `TrimmedLexer`.
-  let res = lexer.clone_with(" a").into_trimmed();
+  let res = lexer.reload(" a").into_trimmed();
   assert_eq!(res.digested, 1);
   // get the trimmed lexer
   let trimmed_lexer = res.trimmed_lexer;
