@@ -64,7 +64,7 @@ where
     }
   }
 
-  pub fn stateless(&self) -> &StatelessLexer<Kind, ActionState, ErrorType> {
+  pub fn stateless(&self) -> &Rc<StatelessLexer<Kind, ActionState, ErrorType>> {
     &self.stateless
   }
   pub fn state(&self) -> &LexerState<'buffer> {
