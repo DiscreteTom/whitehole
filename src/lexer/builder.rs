@@ -4,6 +4,7 @@ use super::{
   token::TokenKind,
   Lexer,
 };
+use std::rc::Rc;
 
 pub struct Builder<Kind: 'static, ActionState: 'static, ErrorType: 'static>
 where
@@ -87,7 +88,7 @@ where
     self,
     buffer: &'buffer str,
   ) -> Lexer<'buffer, Kind, ActionState, ErrorType> {
-    Lexer::new(self.actions, buffer)
+    Lexer::new(Rc::new(self.build_stateless()), buffer)
   }
 
   pub fn build_stateless(self) -> StatelessLexer<Kind, ActionState, ErrorType> {

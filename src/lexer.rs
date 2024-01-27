@@ -53,9 +53,12 @@ where
   Kind: TokenKind,
   ActionState: Clone + Default,
 {
-  pub fn new(actions: Vec<Action<Kind, ActionState, ErrorType>>, buffer: &'buffer str) -> Self {
+  pub fn new(
+    stateless: Rc<StatelessLexer<Kind, ActionState, ErrorType>>,
+    buffer: &'buffer str,
+  ) -> Self {
     Lexer {
-      stateless: Rc::new(StatelessLexer::new(actions)),
+      stateless,
       state: LexerState::new(buffer),
       action_state: ActionState::default(),
     }
