@@ -75,8 +75,8 @@ where
     &mut self.action_state
   }
 
-  // TODO: better name?
-  pub fn dry_clone<'new_buffer>(
+  /// Clone the lexer and load a new input text.
+  pub fn clone_with<'new_buffer>(
     &self,
     buffer: &'new_buffer str,
   ) -> Lexer<'new_buffer, Kind, ActionState, ErrorType> {

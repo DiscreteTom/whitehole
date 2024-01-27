@@ -44,7 +44,7 @@ fn kind_enum_value() {
   // be ware, when lex with expectation, only the kind id is compared
   // the value is ignored. in the following example
   // even we expect `MyKind::A(0)`, the lex will still accept `MyKind::A(1)`
-  let mut lexer = lexer.dry_clone("aa");
+  let mut lexer = lexer.clone_with("aa");
   let token = lexer.lex_expect(MyKind::A(0)).token.unwrap();
   assert!(matches!(token.kind(), MyKind::A(1)));
 }

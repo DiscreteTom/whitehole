@@ -55,12 +55,12 @@ where
     &mut self.lexer.action_state
   }
 
-  pub fn dry_clone<'new_buffer>(
+  pub fn clone_with<'new_buffer>(
     &self,
     buffer: &'new_buffer str,
   ) -> Lexer<'new_buffer, Kind, ActionState, ErrorType> {
     // load a new buffer, so the result is not a trimmed lexer
-    self.lexer.dry_clone(buffer)
+    self.lexer.clone_with(buffer)
   }
 
   pub fn rest(&self) -> &'buffer str {

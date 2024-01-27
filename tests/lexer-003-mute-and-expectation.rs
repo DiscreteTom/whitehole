@@ -51,19 +51,19 @@ fn expectation() {
   // but if we have an expected kind
   // the lex will only evaluate actions which are bound to the expected kind
   // or maybe-muted actions
-  let mut lexer = lexer.dry_clone("-a");
+  let mut lexer = lexer.clone_with("-a");
   let token = lexer.lex_expect(MyKind::B).token.unwrap();
   assert!(matches!(token.kind(), MyKind::B));
 
   // we can also expect a specific text
-  let mut lexer = lexer.dry_clone("-a");
+  let mut lexer = lexer.clone_with("-a");
   let token = lexer.lex_expect("b").token;
   assert!(token.is_none());
   let token = lexer.lex_expect("a").token.unwrap();
   assert!(matches!(token.kind(), MyKind::A));
 
   // or both the text and the kind are expected
-  let mut lexer = lexer.dry_clone("-a");
+  let mut lexer = lexer.clone_with("-a");
   assert!(lexer
     .lex_expect(Expectation::from("b").kind(MyKind::A))
     .token

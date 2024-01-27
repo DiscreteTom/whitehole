@@ -32,7 +32,7 @@ fn peek_lexer() {
   // because actions are evaluated twice.
   // peek will return the mutated action state and how many chars are digested
   // we can directly apply them to the lexer if the peek result is what we want
-  let mut lexer = lexer.dry_clone(" a");
+  let mut lexer = lexer.clone_with(" a");
   let peek = lexer.peek();
   lexer.take(peek.digested, Some(peek.action_state));
   assert_eq!(lexer.state().digested(), 2);
@@ -42,7 +42,7 @@ fn peek_lexer() {
 
   // another thing to mention is that
   // you can provide expectations when peek just like in lex
-  let lexer = lexer.dry_clone(" a");
+  let lexer = lexer.clone_with(" a");
   let peek = lexer.peek_expect("b");
   assert!(peek.token.is_none());
 }
@@ -85,7 +85,7 @@ fn trim_lexer() {
 
   // for strict typing, we also have a `TrimmedLexer` struct,
   // you can use `lexer.into_trimmed` to consume the lexer and get the `TrimmedLexer`.
-  let res = lexer.dry_clone(" a").into_trimmed();
+  let res = lexer.clone_with(" a").into_trimmed();
   assert_eq!(res.digested, 1);
   // get the trimmed lexer
   let trimmed_lexer = res.trimmed_lexer;
