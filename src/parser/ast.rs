@@ -92,12 +92,12 @@ impl<
 
   impl_ast_node!();
 
-  pub fn traverse(&self) -> Option<&ASTData> {
+  pub fn traverse(&self) -> &Option<ASTData> {
     // for T nodes, data should be set by the user
     // when transforming a token into a T node
     // so the traverse function won't calculate data
     // just return the data
-    self.data.as_ref()
+    &self.data
   }
 }
 
@@ -146,9 +146,9 @@ impl<
   }
 
   /// Use the traverser to calculate data and return the data.
-  pub fn traverse(&mut self) -> Option<&ASTData> {
+  pub fn traverse(&mut self) -> &Option<ASTData> {
     self.data = (self.traverser)(&self); // TODO: should be mut self?
-    self.data.as_ref()
+    &self.data
   }
 
   // pub fn first(&self) -> Option<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>> {
