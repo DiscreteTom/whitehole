@@ -1,3 +1,4 @@
 {
-  "cSpell.words": ["whitehole"]
+  "cSpell.words": ["whitehole"],
+  "rust-analyzer.showUnlinkedFileNotification": false
 }
