@@ -168,6 +168,105 @@ pub enum ASTNode<
   NT(NTNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>),
 }
 
+// TODO: any idea to avoid this?
+impl<
+    'ast_buffer,
+    TKind: TokenKind,
+    NTKind,
+    ASTData: 'static,
+    ErrorType: 'static,
+    Global: 'static,
+  > ASTNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>
+{
+  pub fn buffer(&self) -> &'ast_buffer [ASTNode<TKind, NTKind, ASTData, ErrorType, Global>] {
+    match self {
+      ASTNode::T(node) => node.buffer(),
+      ASTNode::NT(node) => node.buffer(),
+    }
+  }
+  pub fn range(&self) -> &Range {
+    match self {
+      ASTNode::T(node) => node.range(),
+      ASTNode::NT(node) => node.range(),
+    }
+  }
+  pub fn global(&self) -> &Rc<RefCell<Global>> {
+    match self {
+      ASTNode::T(node) => node.global(),
+      ASTNode::NT(node) => node.global(),
+    }
+  }
+  pub fn global_mut(&mut self) -> &mut Rc<RefCell<Global>> {
+    match self {
+      ASTNode::T(node) => node.global_mut(),
+      ASTNode::NT(node) => node.global_mut(),
+    }
+  }
+  pub fn data(&self) -> &Option<ASTData> {
+    match self {
+      ASTNode::T(node) => node.data(),
+      ASTNode::NT(node) => node.data(),
+    }
+  }
+  pub fn data_mut(&mut self) -> &mut Option<ASTData> {
+    match self {
+      ASTNode::T(node) => node.data_mut(),
+      ASTNode::NT(node) => node.data_mut(),
+    }
+  }
+  pub fn error(&self) -> &Option<ErrorType> {
+    match self {
+      ASTNode::T(node) => node.error(),
+      ASTNode::NT(node) => node.error(),
+    }
+  }
+  pub fn error_mut(&mut self) -> &mut Option<ErrorType> {
+    match self {
+      ASTNode::T(node) => node.error_mut(),
+      ASTNode::NT(node) => node.error_mut(),
+    }
+  }
+  pub fn parent(&self) -> &Option<usize> {
+    match self {
+      ASTNode::T(node) => node.parent(),
+      ASTNode::NT(node) => node.parent(),
+    }
+  }
+  pub fn parent_mut(&mut self) -> &mut Option<usize> {
+    match self {
+      ASTNode::T(node) => node.parent_mut(),
+      ASTNode::NT(node) => node.parent_mut(),
+    }
+  }
+  pub fn parent_node(&self) -> Option<&ASTNode<TKind, NTKind, ASTData, ErrorType, Global>> {
+    match self {
+      ASTNode::T(node) => node.parent_node(),
+      ASTNode::NT(node) => node.parent_node(),
+    }
+  }
+
+  pub fn traverse(&mut self) -> &Option<ASTData> {
+    match self {
+      ASTNode::T(node) => node.traverse(),
+      ASTNode::NT(node) => node.traverse(),
+    }
+  }
+  pub fn children(&self) -> Option<&Vec<usize>> {
+    match self {
+      ASTNode::T(_) => None,
+      ASTNode::NT(node) => Some(node.children()),
+    }
+  }
+  pub fn children_nodes(
+    &self,
+  ) -> Option<impl Iterator<Item = &ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>> {
+    match self {
+      ASTNode::T(_) => None,
+      ASTNode::NT(node) => Some(node.children_nodes()),
+    }
+  }
+}
+
 impl<
     'ast_buffer,
     TKind: TokenKind,
