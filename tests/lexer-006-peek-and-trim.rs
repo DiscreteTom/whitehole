@@ -21,13 +21,13 @@ fn peek_lexer() {
   // and all muted tokens are not consumed as well
   let peek = lexer.peek();
   let token = peek.token.unwrap();
-  assert!(matches!(token.kind(), MyKind::A));
+  assert!(matches!(token.kind, MyKind::A));
   assert_eq!(peek.digested, 2); // the whitespace is also digested
 
   // now use `lex` to consume the token and the muted leading whitespace
   let res = lexer.lex();
   let token = res.token.unwrap();
-  assert!(matches!(token.kind(), MyKind::A));
+  assert!(matches!(token.kind, MyKind::A));
   assert_eq!(res.digested, 2);
 
   // however, peek-then-lex is not recommended
@@ -65,13 +65,13 @@ fn trim_lexer() {
 
   // for example, this peek will first ignore the whitespace then yield `MyKind::A`
   let peek = lexer.peek_expect(&MyKind::A);
-  assert!(matches!(peek.token.unwrap().kind(), MyKind::A));
+  assert!(matches!(peek.token.unwrap().kind, MyKind::A));
   assert_eq!(peek.digested, 2);
 
   // if then we do another peek with different expectation
   // the lexer will ignore the whitespace again
   let peek = lexer.peek_expect(&MyKind::B);
-  assert!(matches!(peek.token.unwrap().kind(), MyKind::B));
+  assert!(matches!(peek.token.unwrap().kind, MyKind::B));
   assert_eq!(peek.digested, 2);
 
   // to avoid duplicated lexing, we can first trim the lexer to remove the muted tokens
@@ -80,10 +80,10 @@ fn trim_lexer() {
   assert_eq!(lexer.state().digested(), 1);
   // now we can peek the rest of the buffer
   let peek = lexer.peek_expect(&MyKind::A);
-  assert!(matches!(peek.token.unwrap().kind(), MyKind::A));
+  assert!(matches!(peek.token.unwrap().kind, MyKind::A));
   assert_eq!(peek.digested, 1);
   let peek = lexer.peek_expect(&MyKind::B);
-  assert!(matches!(peek.token.unwrap().kind(), MyKind::B));
+  assert!(matches!(peek.token.unwrap().kind, MyKind::B));
   assert_eq!(peek.digested, 1);
 
   // for strict typing, we also have a `TrimmedLexer` struct,
@@ -93,6 +93,6 @@ fn trim_lexer() {
   // get the trimmed lexer
   let trimmed_lexer = res.trimmed_lexer;
   let peek = trimmed_lexer.peek();
-  assert!(matches!(peek.token.unwrap().kind(), MyKind::A));
+  assert!(matches!(peek.token.unwrap().kind, MyKind::A));
   assert_eq!(peek.digested, 1);
 }

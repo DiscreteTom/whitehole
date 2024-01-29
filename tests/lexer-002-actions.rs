@@ -31,11 +31,11 @@ fn action_orders() {
 
   // the first lex should be accepted as `MyKind::A`
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind(), MyKind::A));
+  assert!(matches!(token.kind, MyKind::A));
 
   // the second lex should be accepted as `MyKind::A` too
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind(), MyKind::A));
+  assert!(matches!(token.kind, MyKind::A));
 }
 
 #[test]
@@ -88,8 +88,8 @@ fn action_decorators() {
   // the first lex should be accepted but with error set
   let res = lexer.lex();
   let token = res.token.unwrap();
-  assert!(matches!(token.kind(), MyKind::A));
-  assert!(matches!(token.error(), Some("error")));
+  assert!(matches!(token.kind, MyKind::A));
+  assert!(matches!(token.error, Some("error")));
   assert_eq!(res.digested, 1);
   // res.token is not included in res.errors even if the token has error
   assert_eq!(res.errors.len(), 0);
@@ -105,15 +105,15 @@ fn action_decorators() {
 
   // the first lex should be accepted
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind(), MyKind::C));
-  assert_eq!(token.range().start, 0);
-  assert_eq!(token.range().end, 1);
+  assert!(matches!(token.kind, MyKind::C));
+  assert_eq!(token.range.start, 0);
+  assert_eq!(token.range.end, 1);
 
   // the second lex should be accepted and will change the state
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind(), MyKind::D));
-  assert_eq!(token.range().start, 2);
-  assert_eq!(token.range().end, 3);
+  assert!(matches!(token.kind, MyKind::D));
+  assert_eq!(token.range.start, 2);
+  assert_eq!(token.range.end, 3);
   assert_eq!(lexer.action_state().reject, true);
 
   // the third lex should be rejected

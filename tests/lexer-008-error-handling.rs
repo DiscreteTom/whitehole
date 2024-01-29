@@ -41,12 +41,12 @@ fn error_tokens() {
   // so we can get the error token from the peek result
   // be ware: `errors` in the result doesn't contain the peeked token
   assert_eq!(peek.errors.len(), 1);
-  assert!(matches!(peek.errors[0].kind(), MyKind::Anonymous));
-  assert!(matches!(peek.errors[0].error(), Some("ignored")));
+  assert!(matches!(peek.errors[0].kind, MyKind::Anonymous));
+  assert!(matches!(peek.errors[0].error, Some("ignored")));
   // we can still get the peeked (error) token
   let token = peek.token.unwrap();
-  assert!(matches!(token.kind(), MyKind::A));
-  assert!(matches!(token.error(), Some("end")));
+  assert!(matches!(token.kind, MyKind::A));
+  assert!(matches!(token.error, Some("end")));
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn panic_mode() {
   lexer.take(1, None);
   // now we can peek
   let peek = lexer.peek();
-  assert!(matches!(peek.token.unwrap().kind(), MyKind::A));
+  assert!(matches!(peek.token.unwrap().kind, MyKind::A));
   assert_eq!(peek.digested, 2);
 
   // further more, if you know what you are doing

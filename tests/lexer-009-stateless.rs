@@ -29,7 +29,7 @@ fn stateless_lexer() {
   // stateless lexer is useful if we only want to
   // lex the head of a input buffer, with the default action state
   let output = stateless.lex("aaa");
-  assert!(matches!(output.token.unwrap().kind(), MyKind::A));
+  assert!(matches!(output.token.unwrap().kind, MyKind::A));
 
   // we can also manually provide the action state and other details
   let output = stateless.lex_with(
@@ -40,7 +40,7 @@ fn stateless_lexer() {
       expectation: Expectation::default(),
     },
   );
-  assert!(matches!(output.token.unwrap().kind(), MyKind::A));
+  assert!(matches!(output.token.unwrap().kind, MyKind::A));
 }
 
 #[test]

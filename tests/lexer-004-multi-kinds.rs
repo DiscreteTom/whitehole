@@ -54,9 +54,9 @@ fn multi_kinds() {
 
   // the first lex should be accepted as `MyKind::A`
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind(), MyKind::A));
+  assert!(matches!(token.kind, MyKind::A));
 
   // the second lex should be accepted as `MyKind::B`
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind(), MyKind::B));
+  assert!(matches!(token.kind, MyKind::B));
 }
