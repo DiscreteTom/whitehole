@@ -91,7 +91,8 @@ fn action_decorators() {
   assert!(matches!(token.kind(), MyKind::A));
   assert!(matches!(token.error(), Some("error")));
   assert_eq!(res.digested, 1);
-  assert_eq!(res.errors.len(), 1);
+  // res.token is not included in res.errors even if the token has error
+  assert_eq!(res.errors.len(), 0);
 
   // the second lex should be rejected but still digest some characters
   let res = lexer.lex();

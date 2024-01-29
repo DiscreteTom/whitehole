@@ -37,10 +37,7 @@ fn stateless_lexer() {
     StatelessLexOptions {
       action_state: &mut (),
       start: 0,
-      expectation: Expectation {
-        kind: None,
-        text: None,
-      },
+      expectation: Expectation::default(),
     },
   );
   assert!(matches!(output.token.unwrap().kind(), MyKind::A));

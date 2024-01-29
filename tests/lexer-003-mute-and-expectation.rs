@@ -52,7 +52,7 @@ fn expectation() {
   // the lex will only evaluate actions which are bound to the expected kind
   // or maybe-muted actions
   let mut lexer = lexer.reload("-a");
-  let res = lexer.lex_expect(MyKind::B);
+  let res = lexer.lex_expect(&MyKind::B);
   let token = res.token.unwrap();
   assert!(matches!(token.kind(), MyKind::B));
   assert_eq!(res.digested, 2); // the muted action is also evaluated and digested a character

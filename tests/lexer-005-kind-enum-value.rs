@@ -45,6 +45,6 @@ fn kind_enum_value() {
   // the value is ignored. in the following example
   // even we expect `MyKind::A(0)`, the lex will still accept `MyKind::A(1)`
   let mut lexer = lexer.clone_with("aa");
-  let token = lexer.lex_expect(MyKind::A(0)).token.unwrap();
+  let token = lexer.lex_expect(&MyKind::A(0)).token.unwrap();
   assert!(matches!(token.kind(), MyKind::A(1)));
 }

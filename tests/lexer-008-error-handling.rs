@@ -39,16 +39,14 @@ fn error_tokens() {
   let peek = lexer.peek();
   // now even if the whitespace is muted, it contains an error
   // so we can get the error token from the peek result
-  assert_eq!(peek.errors.len(), 2);
+  // be ware: `errors` in the result doesn't contain the peeked token
+  assert_eq!(peek.errors.len(), 1);
   assert!(matches!(peek.errors[0].kind(), MyKind::Anonymous));
   assert!(matches!(peek.errors[0].error(), Some("ignored")));
-  assert!(matches!(peek.errors[1].kind(), MyKind::A));
-  assert!(matches!(peek.errors[1].error(), Some("end")));
   // we can still get the peeked (error) token
   let token = peek.token.unwrap();
   assert!(matches!(token.kind(), MyKind::A));
   assert!(matches!(token.error(), Some("end")));
-  // that's why we return `Rc<Token>` instead of `Token` directly
 }
 
 #[test]

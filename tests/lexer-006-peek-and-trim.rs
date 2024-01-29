@@ -64,13 +64,13 @@ fn trim_lexer() {
     .build(" a");
 
   // for example, this peek will first ignore the whitespace then yield `MyKind::A`
-  let peek = lexer.peek_expect(MyKind::A);
+  let peek = lexer.peek_expect(&MyKind::A);
   assert!(matches!(peek.token.unwrap().kind(), MyKind::A));
   assert_eq!(peek.digested, 2);
 
   // if then we do another peek with different expectation
   // the lexer will ignore the whitespace again
-  let peek = lexer.peek_expect(MyKind::B);
+  let peek = lexer.peek_expect(&MyKind::B);
   assert!(matches!(peek.token.unwrap().kind(), MyKind::B));
   assert_eq!(peek.digested, 2);
 
@@ -79,10 +79,10 @@ fn trim_lexer() {
   lexer.trim(); // this will consume the whitespace
   assert_eq!(lexer.state().digested(), 1);
   // now we can peek the rest of the buffer
-  let peek = lexer.peek_expect(MyKind::A);
+  let peek = lexer.peek_expect(&MyKind::A);
   assert!(matches!(peek.token.unwrap().kind(), MyKind::A));
   assert_eq!(peek.digested, 1);
-  let peek = lexer.peek_expect(MyKind::B);
+  let peek = lexer.peek_expect(&MyKind::B);
   assert!(matches!(peek.token.unwrap().kind(), MyKind::B));
   assert_eq!(peek.digested, 1);
 
