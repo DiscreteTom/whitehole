@@ -3,23 +3,22 @@ use std::{borrow::BorrowMut, cell::RefCell, rc::Rc};
 
 macro_rules! impl_ast_node {
   () => {
-    pub fn buffer(&self) -> &'ast_buffer [ASTNode<TKind, NTKind, ASTData, ErrorType, Global>] {
-      self.buffer
-    }
     pub fn range(&self) -> &Range {
       &self.range
     }
     pub fn global(&self) -> &Rc<RefCell<Global>> {
       &self.global
     }
-    pub fn global_mut(&mut self) -> &mut Rc<RefCell<Global>> {
-      self.global.borrow_mut()
-    }
+    // don't return `&mut Rc<RefCell<Global>>` because we only want to mutate the content
+    // TODO
+    // pub fn global_mut(&mut self) -> &mut RefCell<Global> {
+    //   self.global.borrow_mut()
+    // }
     pub fn data(&self) -> &Option<ASTData> {
       &self.data
     }
     pub fn data_mut(&mut self) -> &mut Option<ASTData> {
-      self.data.borrow_mut()
+      &mut self.data
     }
     pub fn error(&self) -> &Option<ErrorType> {
       &self.error
@@ -27,56 +26,39 @@ macro_rules! impl_ast_node {
     pub fn error_mut(&mut self) -> &mut Option<ErrorType> {
       self.error.borrow_mut()
     }
-    pub fn parent(&self) -> &Option<usize> {
+    pub fn parent(&self) -> &Option<Rc<NTNode<TKind, NTKind, ASTData, ErrorType, Global>>> {
       &self.parent
     }
-    pub fn parent_mut(&mut self) -> &mut Option<usize> {
-      self.parent.borrow_mut()
-    }
-    pub fn parent_node(&self) -> Option<&ASTNode<TKind, NTKind, ASTData, ErrorType, Global>> {
-      self.parent.map(|i| &self.buffer[i])
+    pub fn parent_mut(
+      &mut self,
+    ) -> &mut Option<Rc<NTNode<TKind, NTKind, ASTData, ErrorType, Global>>> {
+      &mut self.parent
     }
   };
 }
 
-pub struct TNode<
-  'ast_buffer,
-  TKind: TokenKind,
-  NTKind,
-  ASTData: 'static,
-  ErrorType: 'static,
-  Global: 'static,
-> {
+pub struct TNode<TKind: TokenKind, NTKind, ASTData: 'static, ErrorType: 'static, Global: 'static> {
   kind: TKind,
 
-  buffer: &'ast_buffer [ASTNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>],
   range: Range,
   global: Rc<RefCell<Global>>,
   data: Option<ASTData>,
   error: Option<ErrorType>,
-  parent: Option<usize>,
+  parent: Option<Rc<NTNode<TKind, NTKind, ASTData, ErrorType, Global>>>,
 }
 
-impl<
-    'ast_buffer,
-    TKind: TokenKind,
-    NTKind,
-    ASTData: 'static,
-    ErrorType: 'static,
-    Global: 'static,
-  > TNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>
+impl<TKind: TokenKind, NTKind, ASTData: 'static, ErrorType: 'static, Global: 'static>
+  TNode<TKind, NTKind, ASTData, ErrorType, Global>
 {
   pub fn new(
     kind: TKind,
-    buffer: &'ast_buffer [ASTNode<TKind, NTKind, ASTData, ErrorType, Global>],
     range: Range,
     data: Option<ASTData>,
     error: Option<ErrorType>,
-    parent: Option<usize>,
+    parent: Option<Rc<NTNode<TKind, NTKind, ASTData, ErrorType, Global>>>,
     global: Rc<RefCell<Global>>,
   ) -> Self {
     TNode {
-      buffer,
       kind,
       range,
       data,
@@ -101,34 +83,20 @@ impl<
   }
 }
 
-pub struct NTNode<
-  'ast_buffer,
-  TKind: TokenKind,
-  NTKind,
-  ASTData: 'static,
-  ErrorType: 'static,
-  Global: 'static,
-> {
+pub struct NTNode<TKind: TokenKind, NTKind, ASTData: 'static, ErrorType: 'static, Global: 'static> {
   kind: NTKind,
-  children: Vec<usize>,
+  children: Vec<Rc<NTNode<TKind, NTKind, ASTData, ErrorType, Global>>>,
   traverser: Box<dyn Fn(&NTNode<TKind, NTKind, ASTData, ErrorType, Global>) -> Option<ASTData>>,
 
-  buffer: &'ast_buffer [ASTNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>],
   range: Range,
   global: Rc<RefCell<Global>>,
   data: Option<ASTData>,
   error: Option<ErrorType>,
-  parent: Option<usize>,
+  parent: Option<Rc<NTNode<TKind, NTKind, ASTData, ErrorType, Global>>>,
 }
 
-impl<
-    'ast_buffer,
-    TKind: TokenKind,
-    NTKind,
-    ASTData: 'static,
-    ErrorType: 'static,
-    Global: 'static,
-  > NTNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>
+impl<TKind: TokenKind, NTKind, ASTData: 'static, ErrorType: 'static, Global: 'static>
+  NTNode<TKind, NTKind, ASTData, ErrorType, Global>
 {
   pub fn kind(&self) -> &NTKind {
     &self.kind
@@ -136,13 +104,8 @@ impl<
 
   impl_ast_node!();
 
-  pub fn children(&self) -> &Vec<usize> {
+  pub fn children(&self) -> &Vec<Rc<NTNode<TKind, NTKind, ASTData, ErrorType, Global>>> {
     &self.children
-  }
-  pub fn children_nodes(
-    &self,
-  ) -> impl Iterator<Item = &ASTNode<TKind, NTKind, ASTData, ErrorType, Global>> {
-    self.children.iter().map(move |i| &self.buffer[*i])
   }
 
   /// Use the traverser to calculate data and return the data.
@@ -156,34 +119,15 @@ impl<
   // }
 }
 
-pub enum ASTNode<
-  'ast_buffer,
-  TKind: TokenKind,
-  NTKind,
-  ASTData: 'static,
-  ErrorType: 'static,
-  Global: 'static,
-> {
-  T(TNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>),
-  NT(NTNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>),
+pub enum ASTNode<TKind: TokenKind, NTKind, ASTData: 'static, ErrorType: 'static, Global: 'static> {
+  T(TNode<TKind, NTKind, ASTData, ErrorType, Global>),
+  NT(NTNode<TKind, NTKind, ASTData, ErrorType, Global>),
 }
 
 // TODO: any idea to avoid this?
-impl<
-    'ast_buffer,
-    TKind: TokenKind,
-    NTKind,
-    ASTData: 'static,
-    ErrorType: 'static,
-    Global: 'static,
-  > ASTNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>
+impl<TKind: TokenKind, NTKind, ASTData: 'static, ErrorType: 'static, Global: 'static>
+  ASTNode<TKind, NTKind, ASTData, ErrorType, Global>
 {
-  pub fn buffer(&self) -> &'ast_buffer [ASTNode<TKind, NTKind, ASTData, ErrorType, Global>] {
-    match self {
-      ASTNode::T(node) => node.buffer(),
-      ASTNode::NT(node) => node.buffer(),
-    }
-  }
   pub fn range(&self) -> &Range {
     match self {
       ASTNode::T(node) => node.range(),
@@ -196,12 +140,12 @@ impl<
       ASTNode::NT(node) => node.global(),
     }
   }
-  pub fn global_mut(&mut self) -> &mut Rc<RefCell<Global>> {
-    match self {
-      ASTNode::T(node) => node.global_mut(),
-      ASTNode::NT(node) => node.global_mut(),
-    }
-  }
+  // pub fn global_mut(&mut self) -> &RefCell<Global> {
+  //   match self {
+  //     ASTNode::T(node) => node.global_mut(),
+  //     ASTNode::NT(node) => node.global_mut(),
+  //   }
+  // }
   pub fn data(&self) -> &Option<ASTData> {
     match self {
       ASTNode::T(node) => node.data(),
@@ -226,22 +170,18 @@ impl<
       ASTNode::NT(node) => node.error_mut(),
     }
   }
-  pub fn parent(&self) -> &Option<usize> {
+  pub fn parent(&self) -> &Option<Rc<NTNode<TKind, NTKind, ASTData, ErrorType, Global>>> {
     match self {
       ASTNode::T(node) => node.parent(),
       ASTNode::NT(node) => node.parent(),
     }
   }
-  pub fn parent_mut(&mut self) -> &mut Option<usize> {
+  pub fn parent_mut(
+    &mut self,
+  ) -> &mut Option<Rc<NTNode<TKind, NTKind, ASTData, ErrorType, Global>>> {
     match self {
       ASTNode::T(node) => node.parent_mut(),
       ASTNode::NT(node) => node.parent_mut(),
-    }
-  }
-  pub fn parent_node(&self) -> Option<&ASTNode<TKind, NTKind, ASTData, ErrorType, Global>> {
-    match self {
-      ASTNode::T(node) => node.parent_node(),
-      ASTNode::NT(node) => node.parent_node(),
     }
   }
 
@@ -251,48 +191,28 @@ impl<
       ASTNode::NT(node) => node.traverse(),
     }
   }
-  pub fn children(&self) -> Option<&Vec<usize>> {
+  pub fn children(&self) -> Option<&Vec<Rc<NTNode<TKind, NTKind, ASTData, ErrorType, Global>>>> {
     match self {
       ASTNode::T(_) => None,
       ASTNode::NT(node) => Some(node.children()),
     }
   }
-  pub fn children_nodes(
-    &self,
-  ) -> Option<impl Iterator<Item = &ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>> {
-    match self {
-      ASTNode::T(_) => None,
-      ASTNode::NT(node) => Some(node.children_nodes()),
-    }
-  }
 }
 
-impl<
-    'ast_buffer,
-    TKind: TokenKind,
-    NTKind,
-    ASTData: 'static,
-    ErrorType: 'static,
-    Global: 'static,
-  > From<TNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>>
-  for ASTNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>
+impl<TKind: TokenKind, NTKind, ASTData: 'static, ErrorType: 'static, Global: 'static>
+  From<TNode<TKind, NTKind, ASTData, ErrorType, Global>>
+  for ASTNode<TKind, NTKind, ASTData, ErrorType, Global>
 {
-  fn from(node: TNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>) -> Self {
+  fn from(node: TNode<TKind, NTKind, ASTData, ErrorType, Global>) -> Self {
     ASTNode::T(node)
   }
 }
 
-impl<
-    'ast_buffer,
-    TKind: TokenKind,
-    NTKind,
-    ASTData: 'static,
-    ErrorType: 'static,
-    Global: 'static,
-  > From<NTNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>>
-  for ASTNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>
+impl<TKind: TokenKind, NTKind, ASTData: 'static, ErrorType: 'static, Global: 'static>
+  From<NTNode<TKind, NTKind, ASTData, ErrorType, Global>>
+  for ASTNode<TKind, NTKind, ASTData, ErrorType, Global>
 {
-  fn from(node: NTNode<'ast_buffer, TKind, NTKind, ASTData, ErrorType, Global>) -> Self {
+  fn from(node: NTNode<TKind, NTKind, ASTData, ErrorType, Global>) -> Self {
     ASTNode::NT(node)
   }
 }
