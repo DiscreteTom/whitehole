@@ -18,11 +18,11 @@ impl<'expect_text, Kind> Default for Expectation<'expect_text, Kind> {
   }
 }
 
-impl<'expect_text, Kind: TokenKind> From<Kind> for Expectation<'expect_text, Kind>
+impl<'expect_text, Kind: TokenKind> From<&Kind> for Expectation<'expect_text, Kind>
 where
   Kind: TokenKind,
 {
-  fn from(kind: Kind) -> Self {
+  fn from(kind: &Kind) -> Self {
     Expectation {
       kind: Some(kind.id()),
       text: None,
