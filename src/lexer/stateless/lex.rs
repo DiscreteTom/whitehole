@@ -65,8 +65,8 @@ where
     let Expectation {
       kind: exp_kind,
       text: exp_text,
+      ..
     } = options.expectation;
-    let exp_kind = exp_kind.map(|kind| kind.id());
     let mut action_state = options.action_state;
 
     Self::execute_actions(
