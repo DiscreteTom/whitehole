@@ -119,11 +119,11 @@ mod tests {
     assert_eq!(res.errors.len(), 0);
     assert!(res.token.is_some());
     let token = res.token.unwrap();
-    assert!(matches!(token.kind(), MyKind::UnitField));
-    assert_eq!(token.range().start, 0);
-    assert_eq!(token.range().end, 3);
+    assert!(matches!(token.kind, MyKind::UnitField));
+    assert_eq!(token.range.start, 0);
+    assert_eq!(token.range.end, 3);
     assert_eq!(token.content(), "aaa");
-    assert!(matches!(token.error(), None));
+    assert!(matches!(token.error, None));
   }
 
   #[test]

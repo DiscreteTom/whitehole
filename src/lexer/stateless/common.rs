@@ -2,7 +2,7 @@ use super::StatelessLexer;
 use crate::lexer::{
   action::{input::ActionInput, output::ActionOutput, Action},
   output::LexOutput,
-  token::{Token, TokenKind},
+  token::{Range, Token, TokenKind},
 };
 use std::rc::Rc;
 
@@ -153,12 +153,14 @@ where
     input: &ActionInput<'buffer, '_, ActionState>,
     output: ActionOutput<Kind, ErrorType>,
   ) -> Token<'buffer, Kind, ErrorType> {
-    Token::new(
-      output.kind,
-      input.buffer(),
-      input.start(),
-      input.start() + output.digested,
-      output.error,
-    )
+    Token {
+      kind: output.kind,
+      buffer: input.buffer(),
+      range: Range {
+        start: input.start(),
+        end: input.start() + output.digested,
+      },
+      error: output.error,
+    }
   }
 }

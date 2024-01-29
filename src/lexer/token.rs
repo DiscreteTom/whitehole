@@ -16,42 +16,14 @@ pub struct Range {
 
 pub struct Token<'buffer, Kind, ErrorType> {
   /// The kind and the binding data.
-  kind: Kind,
+  pub kind: Kind,
   /// The whole input text.
-  buffer: &'buffer str,
-  range: Range,
-  error: Option<ErrorType>,
+  pub buffer: &'buffer str,
+  pub range: Range,
+  pub error: Option<ErrorType>,
 }
 
 impl<'buffer, Kind, ErrorType> Token<'buffer, Kind, ErrorType> {
-  pub fn new(
-    kind: Kind,
-    buffer: &'buffer str,
-    start: usize,
-    end: usize,
-    error: Option<ErrorType>,
-  ) -> Self {
-    Token {
-      kind,
-      buffer,
-      range: Range { start, end },
-      error,
-    }
-  }
-
-  pub fn kind(&self) -> &Kind {
-    &self.kind
-  }
-  pub fn buffer(&self) -> &'buffer str {
-    self.buffer
-  }
-  pub fn range(&self) -> &Range {
-    &self.range
-  }
-  pub fn error(&self) -> &Option<ErrorType> {
-    &self.error
-  }
-
   /// Returns the content of the token.
   pub fn content(&self) -> &str {
     &self.buffer[self.range.start..self.range.end]
@@ -73,11 +45,16 @@ mod tests {
   #[test]
   fn simple() {
     let buffer = "123";
-    let token = Token::new(MyKind::UnitField, buffer, 0, 3, None::<()>);
+    let token = Token {
+      kind: MyKind::UnitField,
+      buffer,
+      range: Range { start: 0, end: 3 },
+      error: None::<()>,
+    };
     assert!(matches!(token.kind, MyKind::UnitField));
     assert_eq!(token.buffer, buffer);
-    assert_eq!(token.range().start, 0);
-    assert_eq!(token.range().end, 3);
+    assert_eq!(token.range.start, 0);
+    assert_eq!(token.range.end, 3);
     assert_eq!(token.content(), "123");
     assert_eq!(token.error, None);
   }
@@ -85,11 +62,16 @@ mod tests {
   #[test]
   fn with_data() {
     let buffer = "123";
-    let token = Token::new(MyKind::UnnamedField(42), buffer, 0, 3, None::<()>);
+    let token = Token {
+      kind: MyKind::UnnamedField(42),
+      buffer,
+      range: Range { start: 0, end: 3 },
+      error: None::<()>,
+    };
     assert!(matches!(token.kind, MyKind::UnnamedField(42)));
     assert_eq!(token.buffer, buffer);
-    assert_eq!(token.range().start, 0);
-    assert_eq!(token.range().end, 3);
+    assert_eq!(token.range.start, 0);
+    assert_eq!(token.range.end, 3);
     assert_eq!(token.content(), "123");
     assert_eq!(token.error, None);
   }
