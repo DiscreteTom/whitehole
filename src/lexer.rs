@@ -110,7 +110,7 @@ where
 
   /// Peek the next token without updating the state.
   /// This will clone the ActionState and return it.
-  pub fn peek(&self) -> PeekOutput<Rc<Token<'buffer, Kind, ErrorType>>, ActionState> {
+  pub fn peek(&self) -> PeekOutput<Token<'buffer, Kind, ErrorType>, ActionState> {
     self.peek_expect(Expectation::default())
   }
 
@@ -119,7 +119,7 @@ where
   pub fn peek_expect<'expect_text>(
     &self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
-  ) -> PeekOutput<Rc<Token<'buffer, Kind, ErrorType>>, ActionState> {
+  ) -> PeekOutput<Token<'buffer, Kind, ErrorType>, ActionState> {
     let mut action_state = self.action_state().clone();
     let output = self.stateless.lex_with(
       self.state.buffer(),
@@ -137,14 +137,14 @@ where
     }
   }
 
-  pub fn lex(&mut self) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
+  pub fn lex(&mut self) -> LexOutput<Token<'buffer, Kind, ErrorType>> {
     self.lex_expect(Expectation::default())
   }
 
   pub fn lex_expect<'expect_text>(
     &mut self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
-  ) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
+  ) -> LexOutput<Token<'buffer, Kind, ErrorType>> {
     let res = self.stateless.lex_with(
       self.state.buffer(),
       StatelessLexOptions {
@@ -160,7 +160,7 @@ where
     res
   }
 
-  pub fn lex_all(&mut self) -> LexAllOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
+  pub fn lex_all(&mut self) -> LexAllOutput<Token<'buffer, Kind, ErrorType>> {
     let mut output = LexAllOutput {
       tokens: Vec::new(),
       digested: 0,
@@ -189,7 +189,7 @@ where
     self
   }
 
-  pub fn trim(&mut self) -> TrimOutput<Rc<Token<'buffer, Kind, ErrorType>>> {
+  pub fn trim(&mut self) -> TrimOutput<Token<'buffer, Kind, ErrorType>> {
     // if already trimmed, return empty output
     if self.state.trimmed() {
       return TrimOutput {
@@ -210,7 +210,7 @@ where
   pub fn into_trimmed(
     mut self,
   ) -> IntoTrimmedOutput<
-    Rc<Token<'buffer, Kind, ErrorType>>,
+    Token<'buffer, Kind, ErrorType>,
     TrimmedLexer<'buffer, Kind, ActionState, ErrorType>,
   > {
     let res = self.trim();
