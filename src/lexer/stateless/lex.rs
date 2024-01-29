@@ -5,7 +5,6 @@ use crate::lexer::{
   stateless::common::OutputHandler,
   token::{Token, TokenKind},
 };
-use std::rc::Rc;
 
 pub struct StatelessLexOptions<'action_state, 'expect, Kind, ActionState: Clone + Default> {
   pub start: usize,
@@ -29,7 +28,7 @@ where
   pub fn lex<'buffer>(
     &self,
     buffer: &'buffer str,
-  ) -> StatelessLexOutput<Rc<Token<'buffer, Kind, ErrorType>>, ActionState> {
+  ) -> StatelessLexOutput<Token<'buffer, Kind, ErrorType>, ActionState> {
     let mut action_state = ActionState::default();
     let output = self.lex_with(
       buffer,
@@ -51,7 +50,7 @@ where
     &self,
     buffer: &'buffer str,
     options: impl Into<StatelessLexOptions<'action_state, 'expect_text, Kind, ActionState>>,
-  ) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>>
+  ) -> LexOutput<Token<'buffer, Kind, ErrorType>>
   where
     'buffer: 'expect_text,
   {

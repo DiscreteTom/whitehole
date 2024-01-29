@@ -6,7 +6,6 @@ use super::{
   token::{Token, TokenKind},
   Lexer,
 };
-use std::rc::Rc;
 
 pub struct TrimmedLexerLexOutput<TokenType, Lexer> {
   pub token: Option<TokenType>,
@@ -75,21 +74,21 @@ where
     self.lexer.rest()
   }
 
-  pub fn peek(&self) -> PeekOutput<Rc<Token<'buffer, Kind, ErrorType>>, ActionState> {
+  pub fn peek(&self) -> PeekOutput<Token<'buffer, Kind, ErrorType>, ActionState> {
     self.lexer.peek()
   }
 
   pub fn peek_expect<'expect_text>(
     &self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
-  ) -> PeekOutput<Rc<Token<'buffer, Kind, ErrorType>>, ActionState> {
+  ) -> PeekOutput<Token<'buffer, Kind, ErrorType>, ActionState> {
     self.lexer.peek_expect(expectation)
   }
 
   pub fn lex(
     self,
   ) -> TrimmedLexerLexOutput<
-    Rc<Token<'buffer, Kind, ErrorType>>,
+    Token<'buffer, Kind, ErrorType>,
     Lexer<'buffer, Kind, ActionState, ErrorType>,
   > {
     self.lex_expect(Expectation::default())
@@ -99,7 +98,7 @@ where
     mut self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
   ) -> TrimmedLexerLexOutput<
-    Rc<Token<'buffer, Kind, ErrorType>>,
+    Token<'buffer, Kind, ErrorType>,
     Lexer<'buffer, Kind, ActionState, ErrorType>,
   > {
     let output = self.lexer.lex_expect(expectation);
@@ -114,7 +113,7 @@ where
   pub fn lex_all(
     mut self,
   ) -> TrimmedLexerLexAllOutput<
-    Rc<Token<'buffer, Kind, ErrorType>>,
+    Token<'buffer, Kind, ErrorType>,
     Lexer<'buffer, Kind, ActionState, ErrorType>,
   > {
     let output = self.lexer.lex_all();

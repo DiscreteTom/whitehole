@@ -37,7 +37,7 @@ where
     start: usize,
     state: &'state mut ActionState,
     handler: &OutputHandler,
-  ) -> LexOutput<Rc<Token<'buffer, Kind, ErrorType>>>
+  ) -> LexOutput<Token<'buffer, Kind, ErrorType>>
   where
     F: Fn(&ActionInput<ActionState>) -> Validator<'validator, Kind, ActionState, ErrorType>,
   {
@@ -71,13 +71,14 @@ where
             let muted = output.muted;
             let digested = output.digested;
 
-            // create token and collect errors
-            let token = Rc::new(Self::output2token(&input, output));
-            res.errors.push(token.clone());
+            // create the error token
+            let token = Self::output2token(&input, output);
 
             if muted {
               // don't emit token
-              // just update state and continue
+              // push the token to errors
+              // update state and continue
+              res.errors.push(token);
               res.digested += digested;
               continue;
             }
@@ -105,7 +106,7 @@ where
               res.digested += output.digested;
             }
             if handler.create_token {
-              res.token = Some(Rc::new(Self::output2token(&input, output)));
+              res.token = Some(Self::output2token(&input, output));
             }
             return res;
           }

@@ -4,7 +4,6 @@ use crate::lexer::{
   stateless::common::OutputHandler,
   token::{Token, TokenKind},
 };
-use std::rc::Rc;
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
   StatelessLexer<Kind, ActionState, ErrorType>
@@ -17,7 +16,7 @@ where
     buffer: &'buffer str,
     start: usize,
     mut action_state: &'action_state mut ActionState,
-  ) -> TrimOutput<Rc<Token<'buffer, Kind, ErrorType>>>
+  ) -> TrimOutput<Token<'buffer, Kind, ErrorType>>
   where
     'buffer: 'expect_text,
   {
