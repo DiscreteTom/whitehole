@@ -4,11 +4,11 @@ use std::collections::HashMap;
 
 pub type GrammarId = String;
 
-pub struct GrammarRepo<TKind: TokenKind, NTKind> {
+pub struct GrammarRepo<TKind: TokenKind, NTKind: TokenKind> {
   map: HashMap<GrammarId, Grammar<TKind, NTKind>>,
 }
 
-impl<TKind: TokenKind, NTKind> Default for GrammarRepo<TKind, NTKind> {
+impl<TKind: TokenKind, NTKind: TokenKind> Default for GrammarRepo<TKind, NTKind> {
   fn default() -> Self {
     Self {
       map: HashMap::new(),
@@ -16,7 +16,7 @@ impl<TKind: TokenKind, NTKind> Default for GrammarRepo<TKind, NTKind> {
   }
 }
 
-impl<TKind: TokenKind, NTKind> GrammarRepo<TKind, NTKind> {
+impl<TKind: TokenKind, NTKind: TokenKind> GrammarRepo<TKind, NTKind> {
   pub fn get_or_create_t(&mut self, id: GrammarId, kind: TKind) -> &Grammar<TKind, NTKind> {
     self
       .map
