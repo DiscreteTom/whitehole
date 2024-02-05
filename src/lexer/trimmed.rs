@@ -21,13 +21,25 @@ pub struct TrimmedLexerLexAllOutput<TokenType, Lexer> {
   pub lexer: Lexer,
 }
 
-#[derive(Clone)]
 pub struct TrimmedLexer<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
 where
   Kind: TokenKind,
   ActionState: Clone + Default,
 {
   lexer: Lexer<'buffer, Kind, ActionState, ErrorType>,
+}
+
+impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static> Clone
+  for TrimmedLexer<'buffer, Kind, ActionState, ErrorType>
+where
+  Kind: TokenKind,
+  ActionState: Clone + Default,
+{
+  fn clone(&self) -> Self {
+    TrimmedLexer {
+      lexer: self.lexer.clone(),
+    }
+  }
 }
 
 impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
