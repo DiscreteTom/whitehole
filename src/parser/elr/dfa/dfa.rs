@@ -3,7 +3,10 @@ use super::{
   state::State,
 };
 use crate::{
-  lexer::{token::TokenKind, trimmed::TrimmedLexer},
+  lexer::{
+    token::{TokenKind, TokenKindId},
+    trimmed::TrimmedLexer,
+  },
   parser::{
     ast::ASTNode,
     elr::grammar::{grammar_repo::GrammarRepo, grammar_rule_repo::GrammarRuleRepo},
@@ -20,9 +23,9 @@ pub struct DfaParseOutput<Kind: TokenKind, ASTData: 'static, ErrorType: 'static,
 
 pub struct Dfa<Kind: TokenKind> {
   grs: GrammarRuleRepo<Kind>,
-  entry_nts: HashSet<usize>, // use TokenKindID?
+  entry_nts: HashSet<TokenKindId>,
   entry_state: Rc<State<Kind>>,
-  follow_sets: HashMap<usize, usize>,
+  follow_sets: HashMap<TokenKindId, TokenKindId>,
   grammars: GrammarRepo<Kind>,
   // TODO: token_ast_mapper
 }
