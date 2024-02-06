@@ -1,4 +1,4 @@
-use super::grammar::{Grammar, GrammarKind};
+use super::grammar::{Grammar, GrammarType};
 use crate::{
   lexer::{expectation::Expectation, token::TokenKind, trimmed::TrimmedLexer},
   parser::ast::ASTNode,
@@ -56,12 +56,12 @@ impl<Kind: TokenKind> GrammarRule<Kind> {
     }
 
     self.at(index).and_then(|current| {
-      match current.kind() {
-        GrammarKind::NT(..) => {
+      match current.grammar_type() {
+        GrammarType::NT => {
           // the current grammar is not a T, skip
           return None;
         }
-        GrammarKind::T(kind) => {
+        GrammarType::T => {
           // if current grammar is already lexed, skip
           // TODO: define grammar id
           // if lexed_grammars.contains(&current.id()) {
@@ -74,8 +74,8 @@ impl<Kind: TokenKind> GrammarRule<Kind> {
 
           let expectation = if expectational_lex {
             match current.text() {
-              Some(text) => Expectation::from(kind).text(text.as_str()),
-              None => Expectation::from(kind),
+              Some(text) => Expectation::from(current.kind()).text(text.as_str()),
+              None => Expectation::from(current.kind()),
             }
           } else {
             // no expectation

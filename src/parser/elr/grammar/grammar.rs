@@ -1,35 +1,40 @@
-use crate::lexer::token::{TokenKind, TokenKindId};
+use crate::lexer::token::TokenKind;
 
-// TODO: NTKind should impl another trait instead of TokenKind
-pub enum GrammarKind<Kind: TokenKind> {
-  T(Kind),
-  NT(Kind),
+pub enum GrammarType {
+  T,
+  NT,
 }
 
-impl<Kind: TokenKind> GrammarKind<Kind> {
-  pub fn id(&self) -> TokenKindId {
-    match self {
-      GrammarKind::T(kind) => kind.id(),
-      GrammarKind::NT(kind) => kind.id(),
-    }
-  }
-}
+pub type GrammarId = usize;
 
 pub struct Grammar<Kind: TokenKind> {
-  kind: GrammarKind<Kind>,
+  kind: Kind,
+  grammar_type: GrammarType,
   text: Option<String>,
+  id: GrammarId,
 }
 
 impl<Kind: TokenKind> Grammar<Kind> {
   /// Should only be called by the grammar repo.
-  pub fn new(kind: GrammarKind<Kind>, text: Option<String>) -> Self {
-    Self { kind, text }
+  pub fn new(grammar_type: GrammarType, kind: Kind, text: Option<String>, id: GrammarId) -> Self {
+    Self {
+      grammar_type,
+      kind,
+      text,
+      id,
+    }
   }
 
-  pub fn kind(&self) -> &GrammarKind<Kind> {
+  pub fn kind(&self) -> &Kind {
     &self.kind
+  }
+  pub fn grammar_type(&self) -> &GrammarType {
+    &self.grammar_type
   }
   pub fn text(&self) -> &Option<String> {
     &self.text
+  }
+  pub fn id(&self) -> GrammarId {
+    self.id
   }
 }
