@@ -1,15 +1,15 @@
 use crate::{
   lexer::{token::TokenKind, trimmed::TrimmedLexer},
-  parser::{ast::TNode, elr::grammar::grammar_rule::GrammarRule},
+  parser::{ast::ASTNode, elr::grammar::grammar_rule::GrammarRule},
 };
 use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
-pub struct State<TKind: TokenKind, NTKind: TokenKind> {
-  candidates: Vec<Rc<GrammarRule<TKind, NTKind>>>,
+pub struct State<Kind: TokenKind> {
+  candidates: Vec<Rc<GrammarRule<Kind>>>,
   digested: usize,
 }
 
-impl<TKind: TokenKind, NTKind: TokenKind> State<TKind, NTKind> {
+impl<Kind: TokenKind> State<Kind> {
   pub fn try_lex<
     'buffer,
     ASTData,
@@ -19,7 +19,7 @@ impl<TKind: TokenKind, NTKind: TokenKind> State<TKind, NTKind> {
     Global,
   >(
     &self,
-    lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: &TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
     // TODO: add param token_ast_mapper
     from_index: usize,
     lexed_grammars: &mut HashSet<usize>,
@@ -27,8 +27,8 @@ impl<TKind: TokenKind, NTKind: TokenKind> State<TKind, NTKind> {
     global: &Rc<RefCell<Global>>,
   ) -> Option<
     StateTryLexOutput<
-      TNode<TKind, NTKind, ASTData, ErrorType, Global>,
-      TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+      ASTNode<Kind, ASTData, ErrorType, Global>,
+      TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
     >,
   > {
     for (i, gr) in self.candidates[from_index..].iter().enumerate() {

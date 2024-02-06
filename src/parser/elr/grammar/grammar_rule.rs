@@ -1,28 +1,28 @@
 use super::grammar::{Grammar, GrammarKind};
 use crate::{
   lexer::{expectation::Expectation, token::TokenKind, trimmed::TrimmedLexer},
-  parser::ast::TNode,
+  parser::ast::ASTNode,
 };
 use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
-pub struct GrammarRule<TKind: TokenKind, NTKind: TokenKind> {
-  rule: Vec<Rc<Grammar<TKind, NTKind>>>,
-  nt: NTKind,
+pub struct GrammarRule<Kind: TokenKind> {
+  rule: Vec<Rc<Grammar<Kind>>>,
+  nt: Kind,
   expect: HashSet<usize>,
 }
 
-impl<TKind: TokenKind, NTKind: TokenKind> GrammarRule<TKind, NTKind> {
-  pub fn new(nt: NTKind, rule: Vec<Rc<Grammar<TKind, NTKind>>>, expect: HashSet<usize>) -> Self {
+impl<Kind: TokenKind> GrammarRule<Kind> {
+  pub fn new(nt: Kind, rule: Vec<Rc<Grammar<Kind>>>, expect: HashSet<usize>) -> Self {
     Self { rule, nt, expect }
   }
-  pub fn nt(&self) -> &NTKind {
+  pub fn nt(&self) -> &Kind {
     &self.nt
   }
-  pub fn rule(&self) -> &[Rc<Grammar<TKind, NTKind>>] {
+  pub fn rule(&self) -> &[Rc<Grammar<Kind>>] {
     &self.rule
   }
 
-  pub fn at(&self, index: usize) -> Option<&Rc<Grammar<TKind, NTKind>>> {
+  pub fn at(&self, index: usize) -> Option<&Rc<Grammar<Kind>>> {
     self.rule.get(index)
   }
 
@@ -36,14 +36,14 @@ impl<TKind: TokenKind, NTKind: TokenKind> GrammarRule<TKind, NTKind> {
   >(
     &self,
     index: usize,
-    lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: &TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
     _lexed_grammars: &mut HashSet<usize>,
     lexed_without_expectation: bool,
     global: &Rc<RefCell<Global>>,
   ) -> Option<
     LexGrammarOutput<
-      TNode<TKind, NTKind, ASTData, ErrorType, Global>,
-      TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+      ASTNode<Kind, ASTData, ErrorType, Global>,
+      TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
     >,
   > {
     let expectational_lex = self.expect.contains(&index);
@@ -96,13 +96,13 @@ impl<TKind: TokenKind, NTKind: TokenKind> GrammarRule<TKind, NTKind> {
     LexerErrorType,
     Global,
   >(
-    expectation: Expectation<TKind>,
-    lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    expectation: Expectation<Kind>,
+    lexer: &TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
     global: &Rc<RefCell<Global>>,
   ) -> Option<
     LexGrammarOutput<
-      TNode<TKind, NTKind, ASTData, ErrorType, Global>,
-      TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+      ASTNode<Kind, ASTData, ErrorType, Global>,
+      TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
     >,
   > {
     // because of re-lex, we may store many lexers
@@ -118,7 +118,7 @@ impl<TKind: TokenKind, NTKind: TokenKind> GrammarRule<TKind, NTKind> {
     res.token.map(move |token| {
       let lexer = res.lexer.into_trimmed().trimmed_lexer;
       // TODO: set node data
-      let node = TNode::new(token.kind, token.range, None, None, None, global.clone());
+      let node = ASTNode::new_t(token.kind, token.range, global.clone(), None, None);
       LexGrammarOutput { node, lexer }
     })
   }

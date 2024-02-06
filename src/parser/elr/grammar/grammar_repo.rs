@@ -4,11 +4,11 @@ use std::collections::HashMap;
 
 pub type GrammarId = String;
 
-pub struct GrammarRepo<TKind: TokenKind, NTKind: TokenKind> {
-  map: HashMap<GrammarId, Grammar<TKind, NTKind>>,
+pub struct GrammarRepo<Kind: TokenKind> {
+  map: HashMap<GrammarId, Grammar<Kind>>,
 }
 
-impl<TKind: TokenKind, NTKind: TokenKind> Default for GrammarRepo<TKind, NTKind> {
+impl<Kind: TokenKind> Default for GrammarRepo<Kind> {
   fn default() -> Self {
     Self {
       map: HashMap::new(),
@@ -16,15 +16,15 @@ impl<TKind: TokenKind, NTKind: TokenKind> Default for GrammarRepo<TKind, NTKind>
   }
 }
 
-impl<TKind: TokenKind, NTKind: TokenKind> GrammarRepo<TKind, NTKind> {
-  pub fn get_or_create_t(&mut self, id: GrammarId, kind: TKind) -> &Grammar<TKind, NTKind> {
+impl<Kind: TokenKind> GrammarRepo<Kind> {
+  pub fn get_or_create_t(&mut self, id: GrammarId, kind: Kind) -> &Grammar<Kind> {
     self
       .map
       .entry(id)
       .or_insert(Grammar::new(GrammarKind::T(kind), None))
   }
 
-  pub fn get_or_create_nt(&mut self, id: GrammarId, kind: NTKind) -> &Grammar<TKind, NTKind> {
+  pub fn get_or_create_nt(&mut self, id: GrammarId, kind: Kind) -> &Grammar<Kind> {
     self
       .map
       .entry(id)
@@ -34,9 +34,9 @@ impl<TKind: TokenKind, NTKind: TokenKind> GrammarRepo<TKind, NTKind> {
   pub fn get_or_create_literal(
     &mut self,
     id: GrammarId,
-    kind: TKind,
+    kind: Kind,
     text: String,
-  ) -> &Grammar<TKind, NTKind> {
+  ) -> &Grammar<Kind> {
     self
       .map
       .entry(id)

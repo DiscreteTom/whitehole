@@ -1,12 +1,12 @@
 use super::grammar_rule::GrammarRule;
 use crate::lexer::token::TokenKind;
 
-pub struct GrammarRuleRepo<TKind: TokenKind, NTKind: TokenKind> {
-  grs: Vec<GrammarRule<TKind, NTKind>>,
+pub struct GrammarRuleRepo<Kind: TokenKind> {
+  grs: Vec<GrammarRule<Kind>>,
 }
 
-impl<TKind: TokenKind, NTKind: TokenKind> GrammarRuleRepo<TKind, NTKind> {
-  pub fn new(grs: Vec<GrammarRule<TKind, NTKind>>) -> Self {
+impl<Kind: TokenKind> GrammarRuleRepo<Kind> {
+  pub fn new(grs: Vec<GrammarRule<Kind>>) -> Self {
     Self { grs }
   }
 }
