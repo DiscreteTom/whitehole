@@ -1,6 +1,9 @@
 use crate::{
   lexer::{token::TokenKind, trimmed::TrimmedLexer},
-  parser::{ast::ASTNode, elr::grammar::grammar_rule::GrammarRule},
+  parser::{
+    ast::ASTNode,
+    elr::grammar::{grammar::GrammarId, grammar_rule::GrammarRule},
+  },
 };
 use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
@@ -22,7 +25,7 @@ impl<Kind: TokenKind> State<Kind> {
     lexer: &TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
     // TODO: add param token_ast_mapper
     from_index: usize,
-    lexed_grammars: &mut HashSet<usize>,
+    lexed_grammars: &mut HashSet<GrammarId>,
     lexed_without_expectation: bool,
     global: &Rc<RefCell<Global>>,
   ) -> Option<
