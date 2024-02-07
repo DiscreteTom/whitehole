@@ -70,8 +70,21 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
 
       // else, no need to lex, just try to reduce
       if !parsing_state.try_reduce(&self.entry_nts, &self.follow_sets) {
+        // reduce failed, try to lex more
         continue;
       }
+
+      // else, reduce success
+      if self
+        .entry_nts
+        .contains(&parsing_state.buffer.last().unwrap().kind.id())
+        && parsing_state.reducing_stack.len() == 1
+      {
+        // if the last ASTNode is an entry NT, then parsing is done
+        return;
+      }
+
+      // else, should try reduce again, just continue
     }
   }
 }
