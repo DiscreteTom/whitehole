@@ -128,7 +128,7 @@ impl<
     entry_nts: &HashSet<TokenKindId>,
     follow_sets: &HashMap<TokenKindId, TokenKindId>,
   ) -> bool {
-    let reduced = match self.state_stack.current().try_reduce(
+    let output = match self.state_stack.current().try_reduce(
       &mut self.buffer,
       &self.lexer,
       &mut self.reducing_stack,
@@ -140,12 +140,29 @@ impl<
         self.need_lex = true;
         return false;
       }
-      Some(digested) => digested,
+      Some(output) => output,
     };
 
-    // else, reduce success
+    // reduce success
+    // link children's parent
+    let node_index = self.buffer.len();
+    output
+      .node
+      .children
+      .iter()
+      .for_each(|i| self.buffer[*i].parent = Some(node_index));
+
+    // push new node to buffer
+    self.buffer.push(output.node);
+
+    // reduced n nodes, generate 1 node
+    self
+      .reducing_stack
+      .truncate(self.reducing_stack.len() - output.reduced);
+    self.reducing_stack.push(node_index);
+
     // remove the reduced states
-    self.state_stack.truncate(reduced);
+    self.state_stack.truncate(output.reduced);
     true
   }
 }
