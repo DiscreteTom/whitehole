@@ -1,3 +1,4 @@
+use super::traverser::Traverser;
 use crate::lexer::token::{Range, TokenKind};
 use std::{cell::RefCell, rc::Rc};
 
@@ -5,7 +6,7 @@ pub enum ASTNodeType<Kind: TokenKind, ASTData: 'static, ErrorType: 'static, Glob
   T,
   NT {
     /// Traverser should calculate the node's data.
-    traverser: Box<dyn Fn(&ASTNode<Kind, ASTData, ErrorType, Global>) -> Option<ASTData>>,
+    traverser: Traverser<Kind, ASTData, ErrorType, Global>,
   },
 }
 
@@ -52,7 +53,7 @@ impl<Kind: TokenKind, ASTData: 'static, ErrorType: 'static, Global: 'static>
     global: Rc<RefCell<Global>>,
     data: Option<ASTData>,
     error: Option<ErrorType>,
-    traverser: Box<dyn Fn(&ASTNode<Kind, ASTData, ErrorType, Global>) -> Option<ASTData>>,
+    traverser: Traverser<Kind, ASTData, ErrorType, Global>,
   ) -> Self {
     Self {
       kind,
