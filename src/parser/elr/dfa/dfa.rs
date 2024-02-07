@@ -69,25 +69,9 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
       }
 
       // else, no need to lex, just try to reduce
-      let reduced = match parsing_state.state_stack.current().try_reduce(
-        &mut parsing_state.buffer,
-        &parsing_state.lexer,
-        &mut parsing_state.reducing_stack,
-        &self.entry_nts,
-        &self.follow_sets,
-      ) {
-        None => {
-          // reduce failed, try to lex more
-          parsing_state.need_lex = true;
-          continue;
-        }
-        Some(digested) => digested,
-      };
-
-      // else, reduce success
-
-      // remove the reduced states
-      parsing_state.state_stack.truncate(reduced);
+      if !parsing_state.try_reduce(&self.entry_nts, &self.follow_sets) {
+        continue;
+      }
     }
   }
 }

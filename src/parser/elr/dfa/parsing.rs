@@ -117,4 +117,30 @@ impl<
       }
     }
   }
+
+  pub fn try_reduce(
+    &mut self,
+    entry_nts: &HashSet<TokenKindId>,
+    follow_sets: &HashMap<TokenKindId, TokenKindId>,
+  ) -> bool {
+    let reduced = match self.state_stack.current().try_reduce(
+      &mut self.buffer,
+      &self.lexer,
+      &mut self.reducing_stack,
+      entry_nts,
+      follow_sets,
+    ) {
+      None => {
+        // reduce failed, try to lex more
+        self.need_lex = true;
+        return false;
+      }
+      Some(digested) => digested,
+    };
+
+    // else, reduce success
+    // remove the reduced states
+    self.state_stack.truncate(reduced);
+    true
+  }
 }
