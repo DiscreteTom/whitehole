@@ -1,19 +1,45 @@
 use super::grammar::{Grammar, GrammarId, GrammarType};
 use crate::{
-  lexer::{expectation::Expectation, token::TokenKind, trimmed::TrimmedLexer},
-  parser::ast::ASTNode,
+  lexer::{
+    expectation::Expectation,
+    token::{Range, TokenKind, TokenKindId},
+    trimmed::TrimmedLexer,
+  },
+  parser::{ast::ASTNode, traverser::Traverser},
 };
-use std::{cell::RefCell, collections::HashSet, rc::Rc};
+use std::{
+  cell::RefCell,
+  collections::{HashMap, HashSet},
+  rc::Rc,
+};
 
-pub struct GrammarRule<Kind: TokenKind> {
+pub struct GrammarRule<
+  Kind: TokenKind + Clone,
+  ASTData: 'static,
+  ErrorType: 'static,
+  Global: 'static,
+> {
   rule: Vec<Rc<Grammar<Kind>>>,
   nt: Kind,
   expect: HashSet<usize>,
+  traverser: Traverser<Kind, ASTData, ErrorType, Global>,
 }
 
-impl<Kind: TokenKind> GrammarRule<Kind> {
-  pub fn new(nt: Kind, rule: Vec<Rc<Grammar<Kind>>>, expect: HashSet<usize>) -> Self {
-    Self { rule, nt, expect }
+impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'static>
+  GrammarRule<Kind, ASTData, ErrorType, Global>
+{
+  pub fn new(
+    nt: Kind,
+    rule: Vec<Rc<Grammar<Kind>>>,
+    expect: HashSet<usize>,
+    traverser: Traverser<Kind, ASTData, ErrorType, Global>,
+  ) -> Self {
+    Self {
+      rule,
+      nt,
+      expect,
+      traverser,
+    }
   }
   pub fn nt(&self) -> &Kind {
     &self.nt
@@ -26,19 +52,12 @@ impl<Kind: TokenKind> GrammarRule<Kind> {
     self.rule.get(index)
   }
 
-  pub fn try_lex<
-    'buffer,
-    ASTData: 'static,
-    ErrorType: 'static,
-    LexerActionState: Default + Clone,
-    LexerErrorType,
-    Global: 'static,
-  >(
+  pub fn try_lex<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
     &self,
-    index: usize,
+    digested: usize,
     lexer: &TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
     lexed_grammars: &mut HashSet<GrammarId>,
-    lexed_without_expectation: bool,
+    lexed_without_expectation: &mut bool,
     global: &Rc<RefCell<Global>>,
   ) -> Option<
     LexGrammarOutput<
@@ -46,29 +65,33 @@ impl<Kind: TokenKind> GrammarRule<Kind> {
       TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
     >,
   > {
-    let expectational_lex = self.expect.contains(&index);
+    let expectational_lex = self.expect.contains(&digested);
 
-    if !expectational_lex && lexed_without_expectation {
+    if !expectational_lex && *lexed_without_expectation {
       // current grammar doesn't require an expectational lex
       // and non-expectational lex has already been done
       // so we can skip
       return None;
     }
 
-    self.at(index).and_then(|current| {
+    self.at(digested).and_then(|current| {
       match current.grammar_type() {
         GrammarType::NT => {
           // the current grammar is not a T, skip
           return None;
         }
         GrammarType::T => {
-          // if current grammar is already lexed, skip
-          if lexed_grammars.contains(&current.id()) {
-            return None;
+          if expectational_lex {
+            // if current grammar is already lexed, skip
+            if lexed_grammars.contains(&current.id()) {
+              return None;
+            }
+            // else, mark this grammar as done, no matter if the lex is successful
+            lexed_grammars.insert(current.id());
+          } else {
+            // mark non-expectational lex as done, no matter if the lex is successful
+            *lexed_without_expectation = true;
           }
-
-          // mark this grammar as done, no matter if the lex is successful
-          lexed_grammars.insert(current.id());
 
           let expectation = if expectational_lex {
             match current.text() {
@@ -80,20 +103,62 @@ impl<Kind: TokenKind> GrammarRule<Kind> {
             Expectation::default()
           };
 
-          Self::lex_grammar::<ASTData, ErrorType, _, _, _>(expectation, lexer, global)
+          Self::lex_grammar(expectation, lexer, global)
         }
       }
     })
   }
 
-  fn lex_grammar<
-    'buffer,
-    ASTData,
-    ErrorType,
-    LexerActionState: Default + Clone,
-    LexerErrorType,
-    Global,
-  >(
+  pub fn try_reduce<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
+    &self,
+    digested: usize,
+    buffer: &mut Vec<ASTNode<Kind, ASTData, ErrorType, Global>>,
+    lexer: &TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
+    reducing_stack: &mut Vec<usize>,
+    entry_nts: &HashSet<TokenKindId>,
+    follow_sets: &HashMap<TokenKindId, TokenKindId>,
+  ) -> Option<()> {
+    if digested != self.rule.len() - 1 {
+      // this grammar rule is not fully digested, skip
+      return None;
+    }
+
+    let matched = &reducing_stack[reducing_stack.len() - self.rule.len()..];
+    // TODO: set name
+    // TODO: check conflicts, rejecter, etc.
+
+    // now accept
+
+    // link children's parent
+    let parent_index = buffer.len();
+    matched
+      .iter()
+      .for_each(|i| buffer[*i].parent = Some(parent_index));
+
+    // create a new node and push to buffer
+    buffer.push(ASTNode::new_nt(
+      self.nt.clone(),
+      // TODO: is range needed?
+      Range {
+        start: buffer[matched[0]].range.start,
+        end: buffer[matched[matched.len() - 1]].range.end,
+      },
+      Vec::from(matched),
+      buffer[matched[0]].global.clone(),
+      // TODO: set data & error
+      None,
+      None,
+      self.traverser.clone(),
+    ));
+
+    // digested n nodes, generate 1 node
+    reducing_stack.truncate(reducing_stack.len() - self.rule.len());
+    reducing_stack.push(parent_index);
+
+    Some(())
+  }
+
+  fn lex_grammar<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
     expectation: Expectation<Kind>,
     lexer: &TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
     global: &Rc<RefCell<Global>>,
