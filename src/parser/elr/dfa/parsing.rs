@@ -64,6 +64,7 @@ pub struct ParsingState<
   pub try_lex_index: usize,
   pub lexed_grammars: HashSet<GrammarId>,
   pub lexed_without_expectation: bool,
+  pub errors: Vec<usize>,
 }
 
 impl<
@@ -104,8 +105,12 @@ impl<
       Some(output) => {
         // TODO: store re-lex info
 
+        let node_index = self.buffer.len();
+        if output.node.error.is_some() {
+          self.errors.push(node_index);
+        }
         self.state_stack.push(next); // push next state to state stack
-        self.reducing_stack.push(self.buffer.len()); // append new node to reducing stack
+        self.reducing_stack.push(node_index); // append new node to reducing stack
         self.buffer.push(output.node);
         self.lexer = output.lexer;
         self.need_lex = false;

@@ -55,6 +55,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
       try_lex_index: 0, // from the first candidate
       lexed_grammars: HashSet::new(), // no grammars are lexed at the beginning
       lexed_without_expectation: false, // non-expectational lex is not done at the beginning
+      errors: Vec::new(),
     };
 
     loop {
