@@ -112,12 +112,12 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
   pub fn try_reduce<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
     &self,
     digested: usize,
-    buffer: &mut Vec<ASTNode<Kind, ASTData, ErrorType, Global>>,
+    buffer: &Vec<ASTNode<Kind, ASTData, ErrorType, Global>>,
     lexer: &TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
-    reducing_stack: &mut Vec<usize>,
+    reducing_stack: &Vec<usize>,
     entry_nts: &HashSet<TokenKindId>,
     follow_sets: &HashMap<TokenKindId, TokenKindId>,
-  ) -> Option<()> {
+  ) -> Option<ASTNode<Kind, ASTData, ErrorType, Global>> {
     if digested != self.rule.len() - 1 {
       // this grammar rule is not fully digested, skip
       return None;
@@ -127,16 +127,8 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
     // TODO: set name
     // TODO: check conflicts, rejecter, etc.
 
-    // now accept
-
-    // link children's parent
-    let parent_index = buffer.len();
-    matched
-      .iter()
-      .for_each(|i| buffer[*i].parent = Some(parent_index));
-
-    // create a new node and push to buffer
-    buffer.push(ASTNode::new_nt(
+    // accept
+    Some(ASTNode::new_nt(
       self.nt.clone(),
       // TODO: is range needed?
       Range {
@@ -149,13 +141,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
       None,
       None,
       self.traverser.clone(),
-    ));
-
-    // digested n nodes, generate 1 node
-    reducing_stack.truncate(reducing_stack.len() - self.rule.len());
-    reducing_stack.push(parent_index);
-
-    Some(())
+    ))
   }
 
   fn lex_grammar<'buffer, LexerActionState: Default + Clone, LexerErrorType>(

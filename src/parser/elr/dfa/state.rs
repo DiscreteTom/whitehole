@@ -1,3 +1,4 @@
+use super::parsing::Stack;
 use crate::{
   lexer::{
     token::{TokenKind, TokenKindId},
@@ -82,6 +83,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
 
   pub fn try_reduce<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
     &self,
+    state_stack: &mut Stack<Self>,
     buffer: &mut Vec<ASTNode<Kind, ASTData, ErrorType, Global>>,
     lexer: &TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
     reducing_stack: &mut Vec<usize>,
@@ -89,7 +91,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
     follow_sets: &HashMap<TokenKindId, TokenKindId>,
   ) -> bool {
     for c in self.candidates.iter() {
-      if let Some(()) = c.try_reduce(
+      if let Some(node) = c.try_reduce(
         self.digested,
         buffer,
         lexer,
@@ -97,6 +99,23 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
         entry_nts,
         follow_sets,
       ) {
+        // link children's parent
+        let parent_index = buffer.len();
+        node
+          .children
+          .iter()
+          .for_each(|i| buffer[*i].parent = Some(parent_index));
+
+        // create a new node and push to buffer
+        buffer.push(node);
+
+        // digested n nodes, generate 1 node
+        reducing_stack.truncate(reducing_stack.len() - c.rule().len());
+        reducing_stack.push(parent_index);
+
+        // remove the reduced states
+        state_stack.truncate(c.rule().len());
+
         return true;
       }
     }
