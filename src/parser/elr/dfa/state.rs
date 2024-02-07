@@ -83,13 +83,12 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
 
   pub fn try_reduce<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
     &self,
-    state_stack: &mut Stack<Self>,
     buffer: &mut Vec<ASTNode<Kind, ASTData, ErrorType, Global>>,
     lexer: &TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
     reducing_stack: &mut Vec<usize>,
     entry_nts: &HashSet<TokenKindId>,
     follow_sets: &HashMap<TokenKindId, TokenKindId>,
-  ) -> bool {
+  ) -> Option<usize> {
     for c in self.candidates.iter() {
       if let Some(node) = c.try_reduce(
         self.digested,
@@ -113,13 +112,10 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
         reducing_stack.truncate(reducing_stack.len() - c.rule().len());
         reducing_stack.push(parent_index);
 
-        // remove the reduced states
-        state_stack.truncate(c.rule().len());
-
-        return true;
+        return Some(c.rule().len());
       }
     }
-    false
+    None
   }
 }
 
