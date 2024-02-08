@@ -44,6 +44,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
     }
   }
 
+  // TODO: only available when enable feature `generate`?
   pub fn generate_next(&self, input: &Grammar<Kind>) {}
 
   pub fn try_lex<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
