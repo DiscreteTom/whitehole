@@ -14,6 +14,7 @@ pub struct Range {
   pub end: usize,
 }
 
+// make all fields public so the user can destruct the struct and get the fields
 pub struct Token<'buffer, Kind, ErrorType> {
   /// The kind and the binding data.
   pub kind: Kind,
