@@ -48,8 +48,18 @@ impl<
     Self { id, gr, digested }
   }
 
+  pub fn gr(&self) -> &Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>> {
+    &self.gr
+  }
+  pub fn digested(&self) -> usize {
+    self.digested
+  }
+
   pub fn current(&self) -> Option<&Rc<Grammar<TKind, NTKind>>> {
     self.gr.rule().get(self.digested)
+  }
+  pub fn can_digest_more(&self) -> bool {
+    self.digested < self.gr.rule().len() - 1
   }
 
   pub fn try_lex<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
