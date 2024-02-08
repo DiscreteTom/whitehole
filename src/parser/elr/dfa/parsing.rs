@@ -155,8 +155,9 @@ impl<
       .truncate(self.reducing_stack.len() - output.reduced);
     self.reducing_stack.push(node_index);
 
-    // remove the reduced states
+    // remove the reduced states, push the new state
     self.state_stack.truncate(output.reduced);
+    self.state_stack.push(output.next_state);
     true
   }
 }

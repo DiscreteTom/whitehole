@@ -96,7 +96,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
     reducing_stack: &Vec<usize>,
     entry_nts: &HashSet<TokenKindId>,
     follow_sets: &HashMap<TokenKindId, TokenKindId>,
-  ) -> Option<StateTryReduceOutput<ASTNode<Kind, ASTData, ErrorType, Global>>> {
+  ) -> Option<StateTryReduceOutput<ASTNode<Kind, ASTData, ErrorType, Global>, Rc<Self>>> {
     for c in self.candidates.iter() {
       if let Some(node) = c.try_reduce(
         self.digested,
@@ -106,9 +106,17 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
         entry_nts,
         follow_sets,
       ) {
+        // get the next state by the reduced grammar (NT)
+        let next = match self.get_next(&c.nt().kind().id()) {
+          // no next state, continue to try next candidate
+          // TODO: will this happen?
+          None => continue,
+          Some(next) => next,
+        };
         return Some(StateTryReduceOutput {
           node,
           reduced: c.rule().len(),
+          next_state: next,
         });
       }
     }
@@ -136,7 +144,8 @@ pub struct StateTryLexOutput<NodeType, LexerType, StateType> {
   pub next_state: StateType,
 }
 
-pub struct StateTryReduceOutput<NodeType> {
+pub struct StateTryReduceOutput<NodeType, StateType> {
   pub node: NodeType,
   pub reduced: usize,
+  pub next_state: StateType,
 }
