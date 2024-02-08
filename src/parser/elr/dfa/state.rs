@@ -70,17 +70,11 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
         global,
       ) {
         // get the next state by the lexed grammar
-        let next = match { self.next_map.get(&output.grammar_id) } {
-          // this should never be None, since when building DFA
-          // we should already calculated the next state in generate_next for all grammars
-          // TODO: don't panic, return Err?
-          None => panic!("No next state for grammar {:?}", output.grammar_id),
-          Some(next) => match next {
-            // here the next state is None (no candidates), should try next grammar rule
-            // TODO: is this never happen?
-            None => continue,
-            Some(next) => next.clone(),
-          },
+        let next = match self.get_next(&output.grammar_id) {
+          // no next state, continue to try next candidate
+          // TODO: will this happen?
+          None => continue,
+          Some(next) => next,
         };
 
         return Some(StateTryLexOutput {
@@ -119,6 +113,19 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
       }
     }
     None
+  }
+
+  fn get_next(&self, grammar_id: &GrammarId) -> Option<Rc<Self>> {
+    match { self.next_map.get(grammar_id) } {
+      // this should never be None, since when building DFA
+      // we should already calculated the next state in generate_next for all grammars
+      // TODO: don't panic, return Err?
+      None => panic!("No next state for grammar {:?}", grammar_id),
+      // here the next state still may be None (no candidates)
+      // usually happen when try_reduce
+      // TODO: is the comment correct?
+      Some(next) => next.map(|next| next.clone()),
+    }
   }
 }
 
