@@ -60,7 +60,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
     lexed_without_expectation: &mut bool,
     global: &Rc<RefCell<Global>>,
   ) -> Option<
-    LexGrammarOutput<
+    GrammarRuleTryLexOutput<
       ASTNode<Kind, ASTData, ErrorType, Global>,
       TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
     >,
@@ -103,7 +103,11 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
             Expectation::default()
           };
 
-          Self::lex_grammar(expectation, lexer, global)
+          Self::lex_grammar(expectation, lexer, global).map(|output| GrammarRuleTryLexOutput {
+            node: output.node,
+            lexer: output.lexer,
+            grammar_id: current.id(),
+          })
         }
       }
     })
@@ -173,7 +177,13 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
   }
 }
 
-pub struct LexGrammarOutput<NodeType, LexerType> {
+struct LexGrammarOutput<NodeType, LexerType> {
   pub node: NodeType,
   pub lexer: LexerType,
+}
+
+pub struct GrammarRuleTryLexOutput<NodeType, LexerType> {
+  pub node: NodeType,
+  pub lexer: LexerType,
+  pub grammar_id: GrammarId,
 }
