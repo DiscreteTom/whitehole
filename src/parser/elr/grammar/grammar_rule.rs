@@ -56,8 +56,4 @@ impl<
   pub fn traverser(&self) -> &Traverser<TKind, NTKind, ASTData, ErrorType, Global> {
     &self.traverser
   }
-
-  pub fn at(&self, index: usize) -> Option<&Rc<Grammar<TKind, NTKind>>> {
-    self.rule.get(index)
-  }
 }

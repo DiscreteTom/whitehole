@@ -7,7 +7,7 @@ use crate::{
   parser::{
     ast::ASTNode,
     elr::grammar::{
-      grammar::{GrammarId, GrammarKind},
+      grammar::{Grammar, GrammarId, GrammarKind},
       grammar_rule::GrammarRule,
     },
   },
@@ -48,6 +48,10 @@ impl<
     Self { id, gr, digested }
   }
 
+  pub fn current(&self) -> Option<&Rc<Grammar<TKind, NTKind>>> {
+    self.gr.rule().get(self.digested)
+  }
+
   pub fn try_lex<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
     &self,
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
@@ -69,7 +73,7 @@ impl<
       return None;
     }
 
-    self.gr.at(self.digested).and_then(|current| {
+    self.current().and_then(|current| {
       match current.kind() {
         GrammarKind::NT(_) => {
           // the current grammar is not a T, skip
