@@ -50,7 +50,7 @@ where
 {
   pub fn define<AnyKind>(
     mut self,
-    kind: Kind,
+    kind: impl Into<Kind>,
     action: Action<AnyKind, ActionState, ErrorType>,
   ) -> Self
   where
@@ -60,7 +60,7 @@ where
     self
   }
 
-  pub fn define_from<AnyKind: 'static, F>(self, kind: Kind, factory: F) -> Self
+  pub fn define_from<AnyKind: 'static, F>(self, kind: impl Into<Kind>, factory: F) -> Self
   where
     Kind: Clone,
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<AnyKind, ActionState, ErrorType>,

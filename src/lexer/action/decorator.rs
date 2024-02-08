@@ -175,10 +175,11 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
 
   /// Set the kind and the data binding for this action.
   /// Use this if your action can only yield one kind.
-  pub fn bind<NewKind>(self, kind: NewKind) -> Action<NewKind, ActionState, ErrorType>
+  pub fn bind<NewKind>(self, kind: impl Into<NewKind>) -> Action<NewKind, ActionState, ErrorType>
   where
     NewKind: TokenKind + Clone + 'static,
   {
+    let kind = kind.into();
     self.kinds(&[&kind]).select(move |_| kind.clone())
   }
 
