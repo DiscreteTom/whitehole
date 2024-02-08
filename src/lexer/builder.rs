@@ -48,11 +48,7 @@ where
   Kind: TokenKind,
   ActionState: Clone + Default,
 {
-  pub fn define<AnyKind>(
-    mut self,
-    kind: impl Into<Kind>,
-    action: Action<AnyKind, ActionState, ErrorType>,
-  ) -> Self
+  pub fn define(mut self, kind: impl Into<Kind>, action: Action<(), ActionState, ErrorType>) -> Self
   where
     Kind: Clone,
   {
@@ -60,10 +56,10 @@ where
     self
   }
 
-  pub fn define_from<AnyKind: 'static, F>(self, kind: impl Into<Kind>, factory: F) -> Self
+  pub fn define_from<F>(self, kind: impl Into<Kind>, factory: F) -> Self
   where
     Kind: Clone,
-    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<AnyKind, ActionState, ErrorType>,
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
   {
     self.define(kind, factory(ActionBuilder::default()))
   }
