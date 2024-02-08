@@ -81,7 +81,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
         .contains(&parsing_state.buffer.last().unwrap().kind.id())
         && parsing_state.reducing_stack.len() == 1
       {
-        // if the last ASTNode is an entry NT, then parsing is done
+        // if the last ASTNode is an entry NT, and is the only node to be reduce, then parsing is done
         return;
       }
 
