@@ -116,7 +116,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
   }
 
   fn get_next(&self, grammar_id: &GrammarId) -> Option<Rc<Self>> {
-    match { self.next_map.get(grammar_id) } {
+    match self.next_map.get(grammar_id) {
       // this should never be None, since when building DFA
       // we should already calculated the next state in generate_next for all grammars
       // TODO: don't panic, return Err?
@@ -124,7 +124,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
       // here the next state still may be None (no candidates)
       // usually happen when try_reduce
       // TODO: is the comment correct?
-      Some(next) => next.map(|next| next.clone()),
+      Some(next) => next.clone(),
     }
   }
 }
