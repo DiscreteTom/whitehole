@@ -29,6 +29,17 @@ where
   {
     self.ignore_default(factory(ActionBuilder::default()))
   }
+
+  pub fn append_default(self, action: Action<(), ActionState, ErrorType>) -> Self {
+    self.append(action.bind(Kind::default()))
+  }
+
+  pub fn append_default_from<F>(self, factory: F) -> Self
+  where
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
+  {
+    self.append_default(factory(ActionBuilder::default()))
+  }
 }
 
 impl<Kind, ActionState, ErrorType> Default for Builder<Kind, ActionState, ErrorType>
@@ -48,22 +59,6 @@ where
   Kind: TokenKind,
   ActionState: Clone + Default,
 {
-  pub fn define(mut self, kind: impl Into<Kind>, action: Action<(), ActionState, ErrorType>) -> Self
-  where
-    Kind: Clone,
-  {
-    self.actions.push(action.bind(kind));
-    self
-  }
-
-  pub fn define_from<F>(self, kind: impl Into<Kind>, factory: F) -> Self
-  where
-    Kind: Clone,
-    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
-  {
-    self.define(kind, factory(ActionBuilder::default()))
-  }
-
   pub fn append(mut self, action: Action<Kind, ActionState, ErrorType>) -> Self {
     self.actions.push(action);
     self
@@ -76,10 +71,24 @@ where
     self.append(factory(ActionBuilder::default()))
   }
 
+  pub fn define(self, kind: impl Into<Kind>, action: Action<(), ActionState, ErrorType>) -> Self
+  where
+    Kind: Clone,
+  {
+    self.append(action.bind(kind))
+  }
+
+  pub fn define_from<F>(self, kind: impl Into<Kind>, factory: F) -> Self
+  where
+    Kind: Clone,
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
+  {
+    self.define(kind, factory(ActionBuilder::default()))
+  }
+
   /// Define muted action.
-  pub fn ignore(mut self, action: Action<Kind, ActionState, ErrorType>) -> Self {
-    self.actions.push(action.mute(true));
-    self
+  pub fn ignore(self, action: Action<Kind, ActionState, ErrorType>) -> Self {
+    self.append(action.mute(true))
   }
 
   /// Define muted action.
