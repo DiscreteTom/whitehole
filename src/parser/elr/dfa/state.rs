@@ -58,6 +58,9 @@ impl<
   pub fn candidates(&self) -> &[Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>] {
     &self.candidates
   }
+  pub fn digested(&self) -> usize {
+    self.digested
+  }
 
   // TODO: only available when enable feature `generate`?
   pub fn generate_next(&self, input: &Grammar<TKind, NTKind>) {}
