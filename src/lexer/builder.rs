@@ -43,15 +43,12 @@ where
     self
   }
 
-  pub fn define_from<AnyKind: 'static, F>(mut self, kind: Kind, factory: F) -> Self
+  pub fn define_from<AnyKind: 'static, F>(self, kind: Kind, factory: F) -> Self
   where
     Kind: Clone,
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<AnyKind, ActionState, ErrorType>,
   {
-    self
-      .actions
-      .push(factory(ActionBuilder::default()).bind(kind));
-    self
+    self.define(kind, factory(ActionBuilder::default()))
   }
 
   pub fn append(mut self, action: Action<Kind, ActionState, ErrorType>) -> Self {
@@ -59,12 +56,11 @@ where
     self
   }
 
-  pub fn append_from<F>(mut self, factory: F) -> Self
+  pub fn append_from<F>(self, factory: F) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
   {
-    self.actions.push(factory(ActionBuilder::default()));
-    self
+    self.append(factory(ActionBuilder::default()))
   }
 
   /// Define muted action.
@@ -74,14 +70,11 @@ where
   }
 
   /// Define muted action.
-  pub fn ignore_from<F>(mut self, factory: F) -> Self
+  pub fn ignore_from<F>(self, factory: F) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
   {
-    self
-      .actions
-      .push(factory(ActionBuilder::default()).mute(true));
-    self
+    self.ignore(factory(ActionBuilder::default()))
   }
 
   pub fn build<'buffer>(
