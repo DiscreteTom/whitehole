@@ -16,7 +16,9 @@ fn possible_kinds() {
 
   // when you create a new Action, the target kind is `()`
   // so we have to use `bind` to bind the action to a specific kind
-  let action = Action::<(), (), ()>::regex(r"^a").unwrap().bind(MyKind::A);
+  let action = Action::<(), (), ()>::regex(r"^a")
+    .unwrap()
+    .bind::<MyKind>(MyKind::A);
   // `MyKind` implemented `TokenKind` so we can use `id` to get the kind's id
   // and check if the action's `possible_kinds` contains the kind's id
   assert!(action.possible_kinds().contains(&MyKind::A.id()));

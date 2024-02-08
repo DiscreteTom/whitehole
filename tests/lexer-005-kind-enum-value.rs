@@ -8,6 +8,13 @@ enum MyKind {
   A(usize),
 }
 
+// for convenience, we can implement `From<T>` for the kind
+impl From<usize> for MyKind {
+  fn from(value: usize) -> Self {
+    MyKind::A(value)
+  }
+}
+
 #[test]
 fn kind_enum_value() {
   // we can have enum variants with values as the token kinds
@@ -16,9 +23,56 @@ fn kind_enum_value() {
 
   // if the value is a constant, we can still use `action.bind`
   // then all token yielded by the action will have the same value
-  Action::<(), (), ()>::regex(r"^a")
-    .unwrap()
-    .bind(MyKind::A(0));
+  let mut lexer = Builder::<MyKind, (), ()>::default()
+    .append(
+      Action::<(), (), ()>::regex(r"^a")
+        .unwrap()
+        .bind::<MyKind>(MyKind::A(42)),
+    )
+    .build("aa");
+  assert!(matches!(lexer.lex().token.unwrap().kind, MyKind::A(42))); // the first lex
+  assert!(matches!(lexer.lex().token.unwrap().kind, MyKind::A(42))); // the second lex
+
+  // `action.bind` accept `impl Into<YourKind>` as the parameter
+  // so if YourKind implements `From<T>` you can use `T` directly
+  assert!(matches!(
+    Builder::<MyKind, (), ()>::default()
+      .append(
+        Action::<(), (), ()>::regex(r"^a")
+          .unwrap()
+          .bind::<MyKind>(42) // here, use `42` directly
+      )
+      .build("aa")
+      .lex()
+      .token
+      .unwrap()
+      .kind,
+    MyKind::A(42)
+  ));
+
+  // `builder.define` and `builder.define_from` also accept `impl Into<YourKind>`
+  assert!(matches!(
+    Builder::<MyKind, (), ()>::default()
+      // here, use `42` directly
+      .define(42, Action::regex(r"^a").unwrap())
+      .build("aa")
+      .lex()
+      .token
+      .unwrap()
+      .kind,
+    MyKind::A(42)
+  ));
+  assert!(matches!(
+    Builder::<MyKind, (), ()>::default()
+      // here, use `42` directly
+      .define_from(42, |a| a.regex(r"^a").unwrap())
+      .build("aa")
+      .lex()
+      .token
+      .unwrap()
+      .kind,
+    MyKind::A(42)
+  ));
 
   // if we want to calculate the value by the action's output
   // we need to use `action.kinds` and `action.select`
