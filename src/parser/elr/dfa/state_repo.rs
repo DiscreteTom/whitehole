@@ -22,7 +22,7 @@ impl<
 {
   // TODO: only available when enable feature `generate`?
   pub fn with_entry(
-    entry_candidates: Rc<Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>>,
+    entry_candidates: Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
   ) -> Self {
     let state_id = 0;
     let entry_state = Rc::new(State::new(state_id, entry_candidates, 0));

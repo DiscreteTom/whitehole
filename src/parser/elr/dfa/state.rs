@@ -27,7 +27,7 @@ pub struct State<
   Global: 'static,
 > {
   id: StateId,
-  candidates: Rc<Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>>,
+  candidates: Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
   max_candidate_length: usize,
   digested: usize,
   next_map: HashMap<GrammarId, Option<Rc<Self>>>,
@@ -43,7 +43,7 @@ impl<
 {
   pub fn new(
     id: StateId,
-    candidates: Rc<Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>>,
+    candidates: Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
     digested: usize,
   ) -> Self {
     Self {
