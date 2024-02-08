@@ -19,20 +19,31 @@ use std::{
 
 pub type StateId = usize;
 
-pub struct State<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'static> {
+pub struct State<
+  TKind: TokenKind,
+  NTKind: TokenKind,
+  ASTData: 'static,
+  ErrorType: 'static,
+  Global: 'static,
+> {
   id: StateId,
-  candidates: Rc<Vec<Rc<GrammarRule<Kind, ASTData, ErrorType, Global>>>>,
+  candidates: Rc<Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>>,
   max_candidate_length: usize,
   digested: usize,
   next_map: HashMap<GrammarId, Option<Rc<Self>>>,
 }
 
-impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'static>
-  State<Kind, ASTData, ErrorType, Global>
+impl<
+    TKind: TokenKind,
+    NTKind: TokenKind + Clone,
+    ASTData: 'static,
+    ErrorType: 'static,
+    Global: 'static,
+  > State<TKind, NTKind, ASTData, ErrorType, Global>
 {
   pub fn new(
     id: StateId,
-    candidates: Rc<Vec<Rc<GrammarRule<Kind, ASTData, ErrorType, Global>>>>,
+    candidates: Rc<Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>>,
     digested: usize,
   ) -> Self {
     Self {
@@ -45,11 +56,11 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
   }
 
   // TODO: only available when enable feature `generate`?
-  pub fn generate_next(&self, input: &Grammar<Kind>) {}
+  pub fn generate_next(&self, input: &Grammar<TKind, NTKind>) {}
 
   pub fn try_lex<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
     &self,
-    lexer: &TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
+    lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     // TODO: add param token_ast_mapper
     from_index: usize,
     lexed_grammars: &mut HashSet<GrammarId>,
@@ -57,8 +68,8 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
     global: &Rc<RefCell<Global>>,
   ) -> Option<
     StateTryLexOutput<
-      ASTNode<Kind, ASTData, ErrorType, Global>,
-      TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
+      ASTNode<TKind, NTKind, ASTData, ErrorType, Global>,
+      TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
       Rc<Self>,
     >,
   > {
@@ -92,12 +103,13 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
 
   pub fn try_reduce<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
     &self,
-    buffer: &Vec<ASTNode<Kind, ASTData, ErrorType, Global>>,
-    lexer: &TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
+    buffer: &Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
+    lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     reducing_stack: &Vec<usize>,
     entry_nts: &HashSet<TokenKindId>,
     follow_sets: &HashMap<TokenKindId, TokenKindId>,
-  ) -> Option<StateTryReduceOutput<ASTNode<Kind, ASTData, ErrorType, Global>, Rc<Self>>> {
+  ) -> Option<StateTryReduceOutput<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>, Rc<Self>>>
+  {
     for c in self.candidates.iter() {
       if let Some(node) = c.try_reduce(
         self.digested,
@@ -108,7 +120,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
         follow_sets,
       ) {
         // get the next state by the reduced grammar (NT)
-        let next = match self.get_next(&c.nt().kind().id()) {
+        let next = match self.get_next(&c.nt().id()) {
           // no next state, continue to try next candidate
           // TODO: will this happen?
           None => continue,

@@ -2,18 +2,19 @@ use super::grammar_rule::GrammarRule;
 use crate::lexer::token::TokenKind;
 
 pub struct GrammarRuleRepo<
-  Kind: TokenKind + Clone,
+  TKind: TokenKind,
+  NTKind: TokenKind,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
 > {
-  grs: Vec<GrammarRule<Kind, ASTData, ErrorType, Global>>,
+  grs: Vec<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>,
 }
 
-impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'static>
-  GrammarRuleRepo<Kind, ASTData, ErrorType, Global>
+impl<TKind: TokenKind, NTKind: TokenKind, ASTData: 'static, ErrorType: 'static, Global: 'static>
+  GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>
 {
-  pub fn new(grs: Vec<GrammarRule<Kind, ASTData, ErrorType, Global>>) -> Self {
+  pub fn new(grs: Vec<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>) -> Self {
     Self { grs }
   }
 }

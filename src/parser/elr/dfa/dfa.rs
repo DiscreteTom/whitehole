@@ -19,32 +19,44 @@ use std::{
 };
 
 pub struct DfaParseOutput<
-  Kind: TokenKind + Clone,
+  TKind: TokenKind,
+  NTKind: TokenKind,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
 > {
-  pub buffer: Vec<ASTNode<Kind, ASTData, ErrorType, Global>>,
+  pub buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
 }
 
-pub struct Dfa<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'static> {
-  grs: GrammarRuleRepo<Kind, ASTData, ErrorType, Global>,
+pub struct Dfa<
+  TKind: TokenKind,
+  NTKind: TokenKind,
+  ASTData: 'static,
+  ErrorType: 'static,
+  Global: 'static,
+> {
+  grs: GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
   entry_nts: HashSet<TokenKindId>,
-  entry_state: Rc<State<Kind, ASTData, ErrorType, Global>>,
+  entry_state: Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>,
   follow_sets: HashMap<TokenKindId, TokenKindId>,
-  grammars: GrammarRepo<Kind>,
+  grammars: GrammarRepo<TKind, NTKind>,
   // TODO: token_ast_mapper
 }
 
-impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'static>
-  Dfa<Kind, ASTData, ErrorType, Global>
+impl<
+    TKind: TokenKind,
+    NTKind: TokenKind + Clone,
+    ASTData: 'static,
+    ErrorType: 'static,
+    Global: 'static,
+  > Dfa<TKind, NTKind, ASTData, ErrorType, Global>
 {
   pub fn parse<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
     &self,
-    buffer: Vec<ASTNode<Kind, ASTData, ErrorType, Global>>,
-    lexer: TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
+    buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
+    lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     global: &Rc<RefCell<Global>>,
-    // ) -> DfaParseOutput<Kind, ASTData, ErrorType, Global> {
+    // ) -> DfaParseOutput<TKind, NTKind, ASTData, ErrorType, Global> {
   ) -> () {
     let mut parsing_state = ParsingState {
       buffer,

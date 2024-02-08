@@ -50,14 +50,15 @@ impl<T> Stack<T> {
 }
 
 pub struct ParsingState<
-  Kind: TokenKind + Clone,
+  TKind: TokenKind,
+  NTKind: TokenKind,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
   LexerType,
 > {
-  pub buffer: Vec<ASTNode<Kind, ASTData, ErrorType, Global>>,
-  pub state_stack: Stack<Rc<State<Kind, ASTData, ErrorType, Global>>>,
+  pub buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
+  pub state_stack: Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
   pub reducing_stack: Vec<usize>,
   pub lexer: LexerType,
   pub need_lex: bool,
@@ -69,7 +70,8 @@ pub struct ParsingState<
 
 impl<
     'buffer,
-    Kind: TokenKind + Clone,
+    TKind: TokenKind,
+    NTKind: TokenKind + Clone,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
@@ -77,11 +79,12 @@ impl<
     LexerErrorType,
   >
   ParsingState<
-    Kind,
+    TKind,
+    NTKind,
     ASTData,
     ErrorType,
     Global,
-    TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
+    TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   >
 {
   pub fn try_lex(&mut self, global: &Rc<RefCell<Global>>) -> bool {

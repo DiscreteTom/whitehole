@@ -1,40 +1,58 @@
 use super::traverser::Traverser;
-use crate::lexer::token::{Range, TokenKind};
+use crate::lexer::token::{Range, TokenKind, TokenKindId};
 use std::{cell::RefCell, rc::Rc};
 
-pub enum ASTNodeType<Kind: TokenKind, ASTData: 'static, ErrorType: 'static, Global: 'static> {
-  T,
-  NT {
-    /// Traverser should calculate the node's data.
-    traverser: Traverser<Kind, ASTData, ErrorType, Global>,
-  },
+pub enum ASTNodeKind<
+  TKind: TokenKind,
+  NTKind: TokenKind,
+  ASTData: 'static,
+  ErrorType: 'static,
+  Global: 'static,
+> {
+  T(TKind),
+  NT(NTKind, Traverser<TKind, NTKind, ASTData, ErrorType, Global>),
 }
 
-pub struct ASTNode<Kind: TokenKind, ASTData: 'static, ErrorType: 'static, Global: 'static> {
-  pub kind: Kind,
+impl<TKind: TokenKind, NTKind: TokenKind, ASTData: 'static, ErrorType: 'static, Global: 'static>
+  TokenKind for ASTNodeKind<TKind, NTKind, ASTData, ErrorType, Global>
+{
+  fn id(&self) -> TokenKindId {
+    match self {
+      ASTNodeKind::T(kind) => kind.id(),
+      ASTNodeKind::NT(kind, _) => kind.id(),
+    }
+  }
+}
+
+pub struct ASTNode<
+  TKind: TokenKind,
+  NTKind: TokenKind, // TODO: don't use TokenKind? use another trait?
+  ASTData: 'static,
+  ErrorType: 'static,
+  Global: 'static,
+> {
+  // make these fields public so the user can destruct the struct and get the fields
+  pub kind: ASTNodeKind<TKind, NTKind, ASTData, ErrorType, Global>,
   pub range: Range,
   pub children: Vec<usize>,
   pub global: Rc<RefCell<Global>>,
   pub data: Option<ASTData>,
   pub error: Option<ErrorType>,
   pub parent: Option<usize>,
-
-  // hide this so the user can only call `traverse`
-  node_type: ASTNodeType<Kind, ASTData, ErrorType, Global>,
 }
 
-impl<Kind: TokenKind, ASTData: 'static, ErrorType: 'static, Global: 'static>
-  ASTNode<Kind, ASTData, ErrorType, Global>
+impl<TKind: TokenKind, NTKind: TokenKind, ASTData: 'static, ErrorType: 'static, Global: 'static>
+  ASTNode<TKind, NTKind, ASTData, ErrorType, Global>
 {
   pub fn new_t(
-    kind: Kind,
+    kind: TKind,
     range: Range,
     global: Rc<RefCell<Global>>,
     data: Option<ASTData>,
     error: Option<ErrorType>,
   ) -> Self {
     Self {
-      kind,
+      kind: ASTNodeKind::T(kind),
       range,
       children: Vec::new(),
       global,
@@ -42,21 +60,20 @@ impl<Kind: TokenKind, ASTData: 'static, ErrorType: 'static, Global: 'static>
       error,
       // the parent will be set later
       parent: None,
-      node_type: ASTNodeType::T,
     }
   }
 
   pub fn new_nt(
-    kind: Kind,
+    kind: NTKind,
     range: Range,
     children: Vec<usize>,
     global: Rc<RefCell<Global>>,
     data: Option<ASTData>,
     error: Option<ErrorType>,
-    traverser: Traverser<Kind, ASTData, ErrorType, Global>,
+    traverser: Traverser<TKind, NTKind, ASTData, ErrorType, Global>,
   ) -> Self {
     Self {
-      kind,
+      kind: ASTNodeKind::NT(kind, traverser),
       range,
       children,
       global,
@@ -64,17 +81,12 @@ impl<Kind: TokenKind, ASTData: 'static, ErrorType: 'static, Global: 'static>
       error,
       // the parent will be set later
       parent: None,
-      node_type: ASTNodeType::NT { traverser },
     }
-  }
-
-  pub fn is_t(&self) -> bool {
-    matches!(self.node_type, ASTNodeType::T)
   }
 
   /// Use the traverser to calculate data and return the data.
   pub fn traverse(&mut self) -> &Option<ASTData> {
-    if let ASTNodeType::NT { traverser } = &self.node_type {
+    if let ASTNodeKind::NT(_, traverser) = &self.kind {
       self.data = (traverser)(&self); // TODO: should be mut self?
     }
     // for T nodes, data should be set by the user

@@ -1,40 +1,40 @@
-use crate::lexer::token::TokenKind;
-
-pub enum GrammarType {
-  T,
-  NT,
-}
+use crate::lexer::token::{TokenKind, TokenKindId};
 
 pub type GrammarId = usize;
 
-pub struct Grammar<Kind: TokenKind> {
-  kind: Kind,
-  grammar_type: GrammarType,
-  text: Option<String>,
-  id: GrammarId,
+pub enum GrammarKind<TKind: TokenKind, NTKind: TokenKind> {
+  T(TKind),
+  NT(NTKind),
 }
 
-impl<Kind: TokenKind> Grammar<Kind> {
-  /// Should only be called by the grammar repo.
-  pub fn new(grammar_type: GrammarType, kind: Kind, text: Option<String>, id: GrammarId) -> Self {
-    Self {
-      grammar_type,
-      kind,
-      text,
-      id,
+impl<TKind: TokenKind, NTKind: TokenKind> TokenKind for GrammarKind<TKind, NTKind> {
+  fn id(&self) -> TokenKindId {
+    match self {
+      GrammarKind::T(kind) => kind.id(),
+      GrammarKind::NT(kind) => kind.id(),
     }
   }
+}
 
-  pub fn kind(&self) -> &Kind {
-    &self.kind
+pub struct Grammar<TKind: TokenKind, NTKind: TokenKind> {
+  id: GrammarId,
+  kind: GrammarKind<TKind, NTKind>,
+  text: Option<String>,
+}
+
+impl<TKind: TokenKind, NTKind: TokenKind> Grammar<TKind, NTKind> {
+  /// Should only be called by the grammar repo.
+  pub fn new(id: GrammarId, kind: GrammarKind<TKind, NTKind>, text: Option<String>) -> Self {
+    Self { id, kind, text }
   }
-  pub fn grammar_type(&self) -> &GrammarType {
-    &self.grammar_type
+
+  pub fn id(&self) -> GrammarId {
+    self.id
+  }
+  pub fn kind(&self) -> &GrammarKind<TKind, NTKind> {
+    &self.kind
   }
   pub fn text(&self) -> &Option<String> {
     &self.text
-  }
-  pub fn id(&self) -> GrammarId {
-    self.id
   }
 }
