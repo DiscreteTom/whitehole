@@ -57,7 +57,7 @@ pub struct ParsingState<
   LexerType,
 > {
   pub buffer: Vec<ASTNode<Kind, ASTData, ErrorType, Global>>,
-  pub state_stack: Stack<State<Kind, ASTData, ErrorType, Global>>,
+  pub state_stack: Stack<Rc<State<Kind, ASTData, ErrorType, Global>>>,
   pub reducing_stack: Vec<usize>,
   pub lexer: LexerType,
   pub need_lex: bool,
@@ -87,12 +87,6 @@ impl<
   pub fn try_lex(&mut self, global: &Rc<RefCell<Global>>) -> bool {
     let current_state = self.state_stack.current();
 
-    // ensure current state has next (can digest more)
-    let next = match current_state.get_next() {
-      Some(next) => next,
-      None => return false,
-    };
-
     match current_state.try_lex(
       &self.lexer,
       self.try_lex_index,
@@ -109,7 +103,7 @@ impl<
         if output.node.error.is_some() {
           self.errors.push(node_index);
         }
-        self.state_stack.push(next); // push next state to state stack
+        self.state_stack.push(output.next_state); // push next state to state stack
         self.reducing_stack.push(node_index); // append new node to reducing stack
         self.buffer.push(output.node);
         self.lexer = output.lexer;

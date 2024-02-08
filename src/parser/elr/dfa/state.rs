@@ -5,7 +5,10 @@ use crate::{
   },
   parser::{
     ast::ASTNode,
-    elr::grammar::{grammar::GrammarId, grammar_rule::GrammarRule},
+    elr::grammar::{
+      grammar::{Grammar, GrammarId},
+      grammar_rule::GrammarRule,
+    },
   },
 };
 use std::{
@@ -14,38 +17,34 @@ use std::{
   rc::Rc,
 };
 
+pub type StateId = usize;
+
 pub struct State<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'static> {
+  id: StateId,
   candidates: Rc<Vec<Rc<GrammarRule<Kind, ASTData, ErrorType, Global>>>>,
   max_candidate_length: usize,
   digested: usize,
-}
-
-impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'static> Clone
-  for State<Kind, ASTData, ErrorType, Global>
-{
-  fn clone(&self) -> Self {
-    Self {
-      candidates: self.candidates.clone(),
-      max_candidate_length: self.max_candidate_length,
-      digested: self.digested,
-    }
-  }
+  next_map: HashMap<GrammarId, Option<Rc<Self>>>,
 }
 
 impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'static>
   State<Kind, ASTData, ErrorType, Global>
 {
-  pub fn get_next(&self) -> Option<Self> {
-    if self.digested < self.max_candidate_length - 1 {
-      Some(Self {
-        candidates: self.candidates.clone(),
-        max_candidate_length: self.max_candidate_length,
-        digested: self.digested + 1,
-      })
-    } else {
-      None
+  pub fn new(
+    id: StateId,
+    candidates: Rc<Vec<Rc<GrammarRule<Kind, ASTData, ErrorType, Global>>>>,
+    digested: usize,
+  ) -> Self {
+    Self {
+      id,
+      max_candidate_length: candidates.iter().map(|c| c.rule().len()).max().unwrap(),
+      candidates,
+      digested,
+      next_map: HashMap::new(),
     }
   }
+
+  pub fn generate_next(&self, input: &Grammar<Kind>) {}
 
   pub fn try_lex<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
     &self,
@@ -59,6 +58,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
     StateTryLexOutput<
       ASTNode<Kind, ASTData, ErrorType, Global>,
       TrimmedLexer<'buffer, Kind, LexerActionState, LexerErrorType>,
+      Rc<Self>,
     >,
   > {
     for (i, gr) in self.candidates[from_index..].iter().enumerate() {
@@ -69,10 +69,25 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
         lexed_without_expectation,
         global,
       ) {
+        // get the next state by the lexed grammar
+        let next = match { self.next_map.get(&output.grammar_id) } {
+          // this should never be None, since when building DFA
+          // we should already calculated the next state in generate_next for all grammars
+          // TODO: don't panic, return Err?
+          None => panic!("No next state for grammar {:?}", output.grammar_id),
+          Some(next) => match next {
+            // here the next state is None (no candidates), should try next grammar rule
+            // TODO: is this never happen?
+            None => continue,
+            Some(next) => next.clone(),
+          },
+        };
+
         return Some(StateTryLexOutput {
           node: output.node,
           lexer: output.lexer,
           next_candidate_index: i + 1,
+          next_state: next,
         });
       }
     }
@@ -107,10 +122,11 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
   }
 }
 
-pub struct StateTryLexOutput<NodeType, LexerType> {
+pub struct StateTryLexOutput<NodeType, LexerType, StateType> {
   pub node: NodeType,
   pub lexer: LexerType,
   pub next_candidate_index: usize,
+  pub next_state: StateType,
 }
 
 pub struct StateTryReduceOutput<NodeType> {

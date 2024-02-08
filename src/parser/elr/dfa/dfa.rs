@@ -30,7 +30,7 @@ pub struct DfaParseOutput<
 pub struct Dfa<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'static> {
   grs: GrammarRuleRepo<Kind, ASTData, ErrorType, Global>,
   entry_nts: HashSet<TokenKindId>,
-  entry_state: State<Kind, ASTData, ErrorType, Global>,
+  entry_state: Rc<State<Kind, ASTData, ErrorType, Global>>,
   follow_sets: HashMap<TokenKindId, TokenKindId>,
   grammars: GrammarRepo<Kind>,
   // TODO: token_ast_mapper
