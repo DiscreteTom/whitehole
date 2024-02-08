@@ -14,6 +14,23 @@ where
   actions: Vec<Action<Kind, ActionState, ErrorType>>,
 }
 
+impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Builder<Kind, ActionState, ErrorType>
+where
+  Kind: TokenKind + Default + Clone,
+  ActionState: Clone + Default,
+{
+  pub fn ignore_default(self, action: Action<(), ActionState, ErrorType>) -> Self {
+    self.ignore(action.bind(Kind::default()))
+  }
+
+  pub fn ignore_default_from<F>(self, factory: F) -> Self
+  where
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
+  {
+    self.ignore_default(factory(ActionBuilder::default()))
+  }
+}
+
 impl<Kind, ActionState, ErrorType> Default for Builder<Kind, ActionState, ErrorType>
 where
   Kind: TokenKind,
