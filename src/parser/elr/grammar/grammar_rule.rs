@@ -20,7 +20,7 @@ pub struct GrammarRule<
   Global: 'static,
 > {
   rule: Vec<Rc<Grammar<Kind>>>,
-  nt: Kind,
+  nt: Grammar<Kind>,
   expect: HashSet<usize>,
   traverser: Traverser<Kind, ASTData, ErrorType, Global>,
 }
@@ -29,7 +29,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
   GrammarRule<Kind, ASTData, ErrorType, Global>
 {
   pub fn new(
-    nt: Kind,
+    nt: Grammar<Kind>,
     rule: Vec<Rc<Grammar<Kind>>>,
     expect: HashSet<usize>,
     traverser: Traverser<Kind, ASTData, ErrorType, Global>,
@@ -41,7 +41,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
       traverser,
     }
   }
-  pub fn nt(&self) -> &Kind {
+  pub fn nt(&self) -> &Grammar<Kind> {
     &self.nt
   }
   pub fn rule(&self) -> &[Rc<Grammar<Kind>>] {
@@ -133,7 +133,7 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
 
     // accept
     Some(ASTNode::new_nt(
-      self.nt.clone(),
+      self.nt.kind().clone(),
       // TODO: is range needed?
       Range {
         start: buffer[matched[0]].range.start,
