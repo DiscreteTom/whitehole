@@ -16,12 +16,46 @@ impl From<usize> for MyKind {
 }
 
 #[test]
-fn kind_enum_value() {
+fn kind_id_is_not_relevant_with_value() {
   // we can have enum variants with values as the token kinds
   // the kind id is not related to the value
   assert_eq!(MyKind::A(0).id(), MyKind::A(1).id());
+}
 
-  // if the value is a constant, we can still use `action.bind`
+#[test]
+fn kind_enum_with_calculated_value() {
+  // if we want to calculate the value by the action's output
+  // we need to use `action.kinds` and `action.select`
+  let action = Action::<(), (), ()>::regex(r"^a")
+    .unwrap()
+    // in `kinds` the value is not important, we just want to get the kind id
+    .kinds(&[&MyKind::A(Default::default())])
+    .select(|ctx| MyKind::A(ctx.output.rest().len()));
+
+  // yes we can use `append` and `append_from` to use an action with possible_kinds set
+  let mut lexer = Builder::<MyKind, (), ()>::default()
+    .append(action)
+    .build("aa");
+
+  // the first lex should be accepted as `MyKind::A(1)`
+  let token = lexer.lex().token.unwrap();
+  assert!(matches!(token.kind, MyKind::A(1)));
+
+  // the second lex should be accepted as `MyKind::A(0)`
+  let token = lexer.lex().token.unwrap();
+  assert!(matches!(token.kind, MyKind::A(0)));
+
+  // be ware, when lex with expectation, only the kind id is compared
+  // the value is ignored. in the following example
+  // even we expect `MyKind::A(0)`, the lex will still accept `MyKind::A(1)`
+  let mut lexer = lexer.clone_with("aa");
+  let token = lexer.lex_expect(&MyKind::A(0)).token.unwrap();
+  assert!(matches!(token.kind, MyKind::A(1)));
+}
+
+#[test]
+fn kind_enum_with_const_value() {
+  // if the value is a constant, we can still use `action.bind` and `builder.define`
   // then all token yielded by the action will have the same value
   let mut lexer = Builder::<MyKind, (), ()>::default()
     .append(
@@ -29,10 +63,16 @@ fn kind_enum_value() {
         .unwrap()
         .bind::<MyKind>(MyKind::A(42)),
     )
-    .build("aa");
-  assert!(matches!(lexer.lex().token.unwrap().kind, MyKind::A(42))); // the first lex
-  assert!(matches!(lexer.lex().token.unwrap().kind, MyKind::A(42))); // the second lex
+    .define(MyKind::A(66), Action::<(), (), ()>::regex(r"^b").unwrap())
+    .build("aabb");
+  assert!(matches!(lexer.lex().token.unwrap().kind, MyKind::A(42))); // the first lex for 42
+  assert!(matches!(lexer.lex().token.unwrap().kind, MyKind::A(42))); // the second lex for 42
+  assert!(matches!(lexer.lex().token.unwrap().kind, MyKind::A(66))); // the first lex for 66
+  assert!(matches!(lexer.lex().token.unwrap().kind, MyKind::A(66))); // the second lex for 66
+}
 
+#[test]
+fn into_kind_enum() {
   // `action.bind` accept `impl Into<YourKind>` as the parameter
   // so if YourKind implements `From<T>` you can use `T` directly
   assert!(matches!(
@@ -73,32 +113,4 @@ fn kind_enum_value() {
       .kind,
     MyKind::A(42)
   ));
-
-  // if we want to calculate the value by the action's output
-  // we need to use `action.kinds` and `action.select`
-  let action = Action::<(), (), ()>::regex(r"^a")
-    .unwrap()
-    // in `kinds` the value is not important, we just want to get the kind id
-    .kinds(&[&MyKind::A(0)])
-    .select(|ctx| MyKind::A(ctx.output.rest().len()));
-
-  // yes we can use `append` and `append_from` to use an action with possible_kinds set
-  let mut lexer = Builder::<MyKind, (), ()>::default()
-    .append(action)
-    .build("aa");
-
-  // the first lex should be accepted as `MyKind::A(1)`
-  let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind, MyKind::A(1)));
-
-  // the second lex should be accepted as `MyKind::A(0)`
-  let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind, MyKind::A(0)));
-
-  // be ware, when lex with expectation, only the kind id is compared
-  // the value is ignored. in the following example
-  // even we expect `MyKind::A(0)`, the lex will still accept `MyKind::A(1)`
-  let mut lexer = lexer.clone_with("aa");
-  let token = lexer.lex_expect(&MyKind::A(0)).token.unwrap();
-  assert!(matches!(token.kind, MyKind::A(1)));
 }
