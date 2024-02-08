@@ -1,4 +1,4 @@
-use whitehole::lexer::{expectation::Expectation, Action, Builder};
+use whitehole::lexer::{expectation::Expectation, token::TokenKind, Action, Builder};
 use whitehole_macros::TokenKind;
 
 // define token kinds
@@ -8,6 +8,14 @@ enum MyKind {
   Anonymous,
   A,
   B,
+}
+
+// as a convention, we use `Anonymous` as the default kind
+// so that we can use `builder.ignore_default`
+impl Default for MyKind {
+  fn default() -> Self {
+    MyKind::Anonymous
+  }
 }
 
 #[test]
@@ -33,6 +41,44 @@ fn maybe_muted() {
   let mut action = Action::<(), (), ()>::regex(r"^a").unwrap();
   action.maybe_muted = true;
   assert!(action.maybe_muted);
+}
+
+#[test]
+fn builder_ignore() {
+  // when you use `builder.ignore` or `builder.ignore_from`
+  // the builder will set the `maybe_muted` field to `true`
+  assert!(
+    Builder::<MyKind, (), ()>::default()
+      .ignore(Action::regex("^-").unwrap().bind(MyKind::Anonymous))
+      .build_stateless()
+      .actions()[0]
+      .maybe_muted
+  );
+  assert!(
+    Builder::<MyKind, (), ()>::default()
+      .ignore_from(|a| a.regex("^-").unwrap().bind(MyKind::Anonymous))
+      .build_stateless()
+      .actions()[0]
+      .maybe_muted
+  );
+
+  // if your token kind implements `Default` and `Clone`
+  // you can use `builder.ignore_default` or `builder.ignore_default_from`
+  // so that the builder will bind the A with the default kind
+  let stateless = Builder::<MyKind, (), ()>::default()
+    .ignore_default(Action::regex("^-").unwrap())
+    .build_stateless();
+  let action = &stateless.actions()[0];
+  assert!(action.maybe_muted);
+  assert_eq!(action.possible_kinds().len(), 1);
+  assert!(action.possible_kinds().contains(&MyKind::Anonymous.id()));
+  let stateless = Builder::<MyKind, (), ()>::default()
+    .ignore_default_from(|a| a.regex("^-").unwrap())
+    .build_stateless();
+  let action = &stateless.actions()[0];
+  assert!(action.maybe_muted);
+  assert_eq!(action.possible_kinds().len(), 1);
+  assert!(action.possible_kinds().contains(&MyKind::Anonymous.id()));
 }
 
 #[test]
