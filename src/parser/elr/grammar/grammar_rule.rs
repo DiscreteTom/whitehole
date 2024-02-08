@@ -13,12 +13,15 @@ use std::{
   rc::Rc,
 };
 
+pub type GrammarRuleId = usize;
+
 pub struct GrammarRule<
   Kind: TokenKind + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
 > {
+  id: GrammarRuleId,
   rule: Vec<Rc<Grammar<Kind>>>,
   nt: Grammar<Kind>,
   expect: HashSet<usize>,
@@ -29,17 +32,22 @@ impl<Kind: TokenKind + Clone, ASTData: 'static, ErrorType: 'static, Global: 'sta
   GrammarRule<Kind, ASTData, ErrorType, Global>
 {
   pub fn new(
+    id: GrammarRuleId,
     nt: Grammar<Kind>,
     rule: Vec<Rc<Grammar<Kind>>>,
     expect: HashSet<usize>,
     traverser: Traverser<Kind, ASTData, ErrorType, Global>,
   ) -> Self {
     Self {
+      id,
       rule,
       nt,
       expect,
       traverser,
     }
+  }
+  pub fn id(&self) -> GrammarRuleId {
+    self.id
   }
   pub fn nt(&self) -> &Grammar<Kind> {
     &self.nt
