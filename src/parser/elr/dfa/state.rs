@@ -1,3 +1,4 @@
+use super::candidate::Candidate;
 use crate::{
   lexer::{
     token::{TokenKind, TokenKindId},
@@ -5,10 +6,7 @@ use crate::{
   },
   parser::{
     ast::ASTNode,
-    elr::grammar::{
-      grammar::{Grammar, GrammarId},
-      grammar_rule::GrammarRule,
-    },
+    elr::grammar::grammar::{Grammar, GrammarId},
   },
 };
 use std::{
@@ -21,15 +19,13 @@ pub type StateId = usize;
 
 pub struct State<
   TKind: TokenKind,
-  NTKind: TokenKind,
+  NTKind: TokenKind + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
 > {
   id: StateId,
-  candidates: Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
-  max_candidate_length: usize,
-  digested: usize,
+  candidates: Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>>,
   next_map: HashMap<GrammarId, Option<Rc<Self>>>,
 }
 
@@ -43,27 +39,23 @@ impl<
 {
   pub fn new(
     id: StateId,
-    candidates: Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
-    digested: usize,
+    candidates: Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>>,
   ) -> Self {
     Self {
       id,
-      max_candidate_length: candidates.iter().map(|c| c.rule().len()).max().unwrap(),
       candidates,
-      digested,
       next_map: HashMap::new(),
     }
   }
 
-  pub fn candidates(&self) -> &[Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>] {
+  pub fn candidates(&self) -> &[Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>] {
     &self.candidates
-  }
-  pub fn digested(&self) -> usize {
-    self.digested
   }
 
   // TODO: only available when enable feature `generate`?
-  pub fn generate_next(&self, input: &Grammar<TKind, NTKind>) {}
+  pub fn generate_next(&self, input: &Grammar<TKind, NTKind>) {
+    // TODO
+  }
 
   pub fn try_lex<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
     &self,
@@ -80,14 +72,8 @@ impl<
       Rc<Self>,
     >,
   > {
-    for (i, gr) in self.candidates[from_index..].iter().enumerate() {
-      if let Some(output) = gr.try_lex(
-        self.digested,
-        lexer,
-        lexed_grammars,
-        lexed_without_expectation,
-        global,
-      ) {
+    for (i, c) in self.candidates[from_index..].iter().enumerate() {
+      if let Some(output) = c.try_lex(lexer, lexed_grammars, lexed_without_expectation, global) {
         // get the next state by the lexed grammar
         let next = match self.get_next(&output.grammar_id) {
           // no next state, continue to try next candidate
@@ -118,24 +104,17 @@ impl<
   ) -> Option<StateTryReduceOutput<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>, Rc<Self>>>
   {
     for c in self.candidates.iter() {
-      if let Some(node) = c.try_reduce(
-        self.digested,
-        buffer,
-        lexer,
-        reducing_stack,
-        entry_nts,
-        follow_sets,
-      ) {
+      if let Some(output) = c.try_reduce(buffer, lexer, reducing_stack, entry_nts, follow_sets) {
         // get the next state by the reduced grammar (NT)
-        let next = match self.get_next(&c.nt().id()) {
+        let next = match self.get_next(&output.nt_grammar_id) {
           // no next state, continue to try next candidate
           // TODO: will this happen?
           None => continue,
           Some(next) => next,
         };
         return Some(StateTryReduceOutput {
-          node,
-          reduced: c.rule().len(),
+          node: output.node,
+          reduced: output.reduced,
           next_state: next,
         });
       }

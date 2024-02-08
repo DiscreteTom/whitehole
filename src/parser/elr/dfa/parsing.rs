@@ -51,7 +51,7 @@ impl<T> Stack<T> {
 
 pub struct ParsingState<
   TKind: TokenKind,
-  NTKind: TokenKind,
+  NTKind: TokenKind + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,

@@ -30,7 +30,7 @@ pub struct DfaParseOutput<
 
 pub struct Dfa<
   TKind: TokenKind,
-  NTKind: TokenKind,
+  NTKind: TokenKind + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
