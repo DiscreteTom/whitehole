@@ -23,6 +23,13 @@ impl RawState {
     }
   }
 
+  pub fn id(&self) -> StateId {
+    self.id
+  }
+  pub fn candidates(&self) -> &Vec<CandidateId> {
+    &self.candidates
+  }
+
   pub fn generate_next(&self, input_grammar_id: &GrammarId) {
     // TODO
   }

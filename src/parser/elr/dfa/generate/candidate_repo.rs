@@ -71,7 +71,7 @@ impl<
     &mut self,
     current_id: &CandidateId,
     input_grammar_id: &GrammarId,
-  ) -> Option<CandidateId> {
+  ) -> Option<&RawCandidate<TKind, NTKind, ASTData, ErrorType, Global>> {
     let new_candidate_id = self.candidates.len();
     let candidate = self.candidates.get_mut(current_id).unwrap();
 
@@ -91,14 +91,20 @@ impl<
       .entry(digested)
     {
       // cache hit, just return
-      Entry::Occupied(o) => return Some(o.get().clone()),
+      Entry::Occupied(o) => return Some(self.candidates.get(o.get()).unwrap()),
       // else, create new candidate
       Entry::Vacant(v) => v.insert(new_candidate_id),
     };
     candidate.set_next(Some(new_candidate_id));
     let new_candidate = RawCandidate::new(new_candidate_id, candidate.gr().clone(), digested);
-    self.candidates.insert(new_candidate_id, new_candidate);
-    Some(new_candidate_id)
+    Some(
+      self
+        .candidates
+        .entry(new_candidate_id)
+        // the entry must be vacant
+        // TODO: is this the best way?
+        .or_insert(new_candidate),
+    )
   }
 
   pub fn get(&self, id: &CandidateId) -> &RawCandidate<TKind, NTKind, ASTData, ErrorType, Global> {
