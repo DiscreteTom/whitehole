@@ -3,7 +3,10 @@ use crate::{
   lexer::token::{TokenKind, TokenKindId},
   parser::elr::{
     dfa::{candidate::CandidateId, state::StateId},
-    grammar::{grammar::GrammarId, grammar_rule::GrammarRule},
+    grammar::{
+      grammar::{GrammarId, GrammarKind},
+      grammar_rule::GrammarRule,
+    },
   },
 };
 use std::{
@@ -90,7 +93,15 @@ impl StateRepo {
       .iter()
       .map(|c_id| {
         cs.get_or_add_next(c_id, input_grammar_id).map(|next| {
-          nts.insert(next.gr().nt().id());
+          if let Some(nt) = next.current().and_then(|current| {
+            if let GrammarKind::NT(nt) = current.kind() {
+              Some(nt)
+            } else {
+              None
+            }
+          }) {
+            nts.insert(nt.id());
+          }
           next.id()
         })
       })
