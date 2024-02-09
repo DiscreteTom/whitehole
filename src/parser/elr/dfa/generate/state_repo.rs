@@ -10,14 +10,14 @@ use crate::{
   },
 };
 use std::{
-  collections::{HashMap, HashSet},
-  hash::Hash,
+  collections::{BTreeSet, HashMap, HashSet},
   rc::Rc,
 };
 
 pub struct StateRepo {
   states: HashMap<StateId, RawState>,
-  cache: HashMap<SortedCandidateIdVec, StateId>,
+  // BTreeSet will store elements in a sorted order and can be hashed
+  cache: HashMap<BTreeSet<CandidateId>, StateId>,
 }
 
 impl StateRepo {
@@ -51,19 +51,26 @@ impl StateRepo {
   ) -> Option<StateId> {
     let next_candidates = Self::get_next_candidates(current, input_grammar_id, cs, nt_closures);
 
-    if next_candidates.0.len() == 0 {
+    if next_candidates.len() == 0 {
       // no next state
       return None;
     }
 
-    // check cache
+    // check cache whether the state already created
+    // TODO: check another cache by current and input grammar id?
     if let Some(cache) = self.cache.get(&next_candidates) {
       return Some(cache.clone());
     }
 
     // create new
     let id = self.states.len();
-    let state = RawState::new(id, next_candidates.clone().0);
+    let state = RawState::new(
+      id,
+      next_candidates
+        .iter()
+        .map(|c| c.clone())
+        .collect::<Vec<_>>(),
+    );
     self.states.insert(id, state);
     self.cache.insert(next_candidates, id);
     Some(id)
@@ -84,7 +91,7 @@ impl StateRepo {
       TokenKindId,
       Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
     >,
-  ) -> SortedCandidateIdVec {
+  ) -> BTreeSet<CandidateId> {
     // TODO: optimize code
     let mut nts = HashSet::new();
     // find grammar rules that can accept the input grammar
@@ -106,7 +113,7 @@ impl StateRepo {
         })
       })
       .filter_map(|c| c) // TODO: is this the best way?
-      .collect::<Vec<_>>();
+      .collect::<BTreeSet<_>>();
 
     let mut grs = HashSet::new();
     for nt in nts {
@@ -114,21 +121,10 @@ impl StateRepo {
         grs.insert(gr.id());
       });
     }
-    grs
-      .iter()
-      .for_each(|gr_id| next_candidates.push(cs.get_initial(gr_id).id().clone()));
+    grs.iter().for_each(|gr_id| {
+      next_candidates.insert(cs.get_initial(gr_id).id().clone());
+    });
 
-    SortedCandidateIdVec::sort_new(next_candidates)
-  }
-}
-
-// TODO: is the derive ok?
-#[derive(PartialEq, Eq, Hash, Clone)]
-struct SortedCandidateIdVec(pub Vec<CandidateId>);
-
-impl SortedCandidateIdVec {
-  pub fn sort_new(mut vec: Vec<CandidateId>) -> Self {
-    vec.sort();
-    Self(vec)
+    next_candidates
   }
 }
