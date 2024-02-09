@@ -30,6 +30,7 @@ pub struct Candidate<
   id: CandidateId,
   gr: Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>,
   digested: usize,
+  next_map: HashMap<GrammarId, CandidateId>,
 }
 
 impl<
@@ -45,7 +46,12 @@ impl<
     gr: Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>,
     digested: usize,
   ) -> Self {
-    Self { id, gr, digested }
+    Self {
+      id,
+      gr,
+      digested,
+      next_map: HashMap::new(),
+    }
   }
 
   pub fn gr(&self) -> &Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>> {
