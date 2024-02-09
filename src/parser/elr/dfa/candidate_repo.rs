@@ -82,4 +82,8 @@ impl<
       }
     }
   }
+
+  pub fn get(&self, id: &CandidateId) -> &Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>> {
+    self.candidates.get(id).unwrap()
+  }
 }
