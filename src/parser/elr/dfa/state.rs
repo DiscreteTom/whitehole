@@ -48,13 +48,8 @@ impl<
     }
   }
 
-  pub fn candidates(&self) -> &[Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>] {
+  pub fn candidates(&self) -> &Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>> {
     &self.candidates
-  }
-
-  // TODO: only available when enable feature `generate`?
-  pub fn generate_next(&self, input: &Grammar<TKind, NTKind>) {
-    // TODO
   }
 
   pub fn try_lex<'buffer, LexerActionState: Default + Clone, LexerErrorType>(

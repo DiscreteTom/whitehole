@@ -1,4 +1,3 @@
-use super::candidate_repo::CandidateRepo;
 use crate::{
   lexer::{
     expectation::Expectation,
@@ -31,7 +30,6 @@ pub struct Candidate<
   id: CandidateId,
   gr: Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>,
   digested: usize,
-  next: Option<Option<CandidateId>>,
 }
 
 impl<
@@ -47,12 +45,7 @@ impl<
     gr: Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>,
     digested: usize,
   ) -> Self {
-    Self {
-      id,
-      gr,
-      digested,
-      next: None,
-    }
+    Self { id, gr, digested }
   }
 
   pub fn id(&self) -> CandidateId {
@@ -70,24 +63,6 @@ impl<
   }
   pub fn can_digest_more(&self) -> bool {
     self.digested < self.gr.rule().len() - 1
-  }
-
-  // TODO: only available when enable feature `generate`? move to a standalone module?
-  pub fn get_or_generate_next(
-    &mut self,
-    cs: &mut CandidateRepo<TKind, NTKind, ASTData, ErrorType, Global>,
-  ) -> Option<Rc<Self>> {
-    // try to retrieve from cache
-    if let Some(cache) = &self.next {
-      return cache.map(|id| cs.get(&id).clone());
-    }
-
-    let next = cs.get_or_add_next(self);
-    self.next = match &next {
-      Some(next) => Some(Some(next.id)),
-      None => Some(None),
-    };
-    next
   }
 
   pub fn try_lex<'buffer, LexerActionState: Default + Clone, LexerErrorType>(

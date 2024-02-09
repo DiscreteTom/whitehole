@@ -1,7 +1,6 @@
 pub mod dfa;
 
 mod candidate;
-mod candidate_repo;
+mod generate;
 mod parsing;
 mod state;
-mod state_repo;

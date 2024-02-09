@@ -1,7 +1,10 @@
-use super::candidate::{Candidate, CandidateId};
+use super::raw_candidate::RawCandidate;
 use crate::{
   lexer::token::TokenKind,
-  parser::elr::grammar::grammar_rule::{GrammarRule, GrammarRuleId},
+  parser::elr::{
+    dfa::candidate::CandidateId,
+    grammar::grammar_rule::{GrammarRule, GrammarRuleId},
+  },
 };
 use std::{
   collections::{hash_map::Entry, HashMap},
@@ -17,7 +20,7 @@ pub struct CandidateRepo<
 > {
   gr_cache: HashMap<GrammarRuleId, HashMap<usize, CandidateId>>,
   // TODO: is this needed? can we just store candidates in caches?
-  candidates: HashMap<CandidateId, Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>>,
+  candidates: HashMap<CandidateId, RawCandidate<TKind, NTKind, ASTData, ErrorType, Global>>,
 }
 
 impl<
@@ -37,7 +40,7 @@ impl<
 
     // use index as the candidate_id
     for (candidate_id, gr) in grs.iter().enumerate() {
-      let candidate = Rc::new(Candidate::new(candidate_id, gr.clone(), digested));
+      let candidate = RawCandidate::new(candidate_id, gr.clone(), digested);
       candidates.insert(candidate_id, candidate);
       gr_cache.insert(gr.id(), {
         let mut v = HashMap::new();
@@ -54,7 +57,7 @@ impl<
   pub fn get_initial(
     &self,
     gr_id: &GrammarRuleId,
-  ) -> &Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>> {
+  ) -> &RawCandidate<TKind, NTKind, ASTData, ErrorType, Global> {
     self
       .candidates
       .get(&self.gr_cache.get(gr_id).unwrap().get(&0).unwrap())
@@ -64,8 +67,8 @@ impl<
   /// Return `None` if the candidate can't digest more.
   pub fn get_or_add_next(
     &mut self,
-    c: &Candidate<TKind, NTKind, ASTData, ErrorType, Global>,
-  ) -> Option<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>> {
+    c: &RawCandidate<TKind, NTKind, ASTData, ErrorType, Global>,
+  ) -> Option<&RawCandidate<TKind, NTKind, ASTData, ErrorType, Global>> {
     if !c.can_digest_more() {
       return None;
     }
@@ -76,14 +79,20 @@ impl<
       Entry::Occupied(o) => Some(self.candidates.get(o.get()).unwrap().clone()),
       Entry::Vacant(v) => {
         let id = self.candidates.len();
-        let res = Rc::new(Candidate::new(id, c.gr().clone(), digested));
+        let res = RawCandidate::new(id, c.gr().clone(), digested);
         v.insert(id);
-        Some(res)
+        Some(
+          self
+            .candidates
+            .entry(id)
+            // the entry must be vacant, so we can just insert
+            .or_insert(res),
+        )
       }
     }
   }
 
-  pub fn get(&self, id: &CandidateId) -> &Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>> {
+  pub fn get(&self, id: &CandidateId) -> &RawCandidate<TKind, NTKind, ASTData, ErrorType, Global> {
     self.candidates.get(id).unwrap()
   }
 }
