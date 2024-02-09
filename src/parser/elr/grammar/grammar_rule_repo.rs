@@ -1,5 +1,6 @@
 use super::grammar_rule::GrammarRule;
 use crate::lexer::token::TokenKind;
+use std::rc::Rc;
 
 pub struct GrammarRuleRepo<
   TKind: TokenKind,
@@ -8,7 +9,7 @@ pub struct GrammarRuleRepo<
   ErrorType: 'static,
   Global: 'static,
 > {
-  grs: Vec<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>,
+  grs: Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
 }
 
 impl<
@@ -19,7 +20,11 @@ impl<
     Global: 'static,
   > GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>
 {
-  pub fn new(grs: Vec<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>) -> Self {
+  pub fn new(grs: Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>) -> Self {
     Self { grs }
+  }
+
+  pub fn grs(&self) -> &Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>> {
+    &self.grs
   }
 }
