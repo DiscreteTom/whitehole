@@ -73,7 +73,7 @@ impl<
   }
 
   // TODO: only available when enable feature `generate`? move to a standalone module?
-  pub fn generate_next(
+  pub fn get_or_generate_next(
     &mut self,
     cs: &mut CandidateRepo<TKind, NTKind, ASTData, ErrorType, Global>,
   ) -> Option<Rc<Self>> {
