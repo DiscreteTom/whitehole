@@ -23,8 +23,8 @@ impl RawState {
     }
   }
 
-  pub fn id(&self) -> StateId {
-    self.id
+  pub fn id(&self) -> &StateId {
+    &self.id
   }
   pub fn candidates(&self) -> &Vec<CandidateId> {
     &self.candidates

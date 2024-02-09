@@ -57,8 +57,8 @@ impl<
     }
   }
 
-  pub fn id(&self) -> CandidateId {
-    self.id
+  pub fn id(&self) -> &CandidateId {
+    &self.id
   }
   pub fn gr(&self) -> &Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>> {
     &self.gr

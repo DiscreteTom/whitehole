@@ -28,8 +28,8 @@ impl<TKind: TokenKind, NTKind: TokenKind> Grammar<TKind, NTKind> {
     Self { id, kind, text }
   }
 
-  pub fn id(&self) -> GrammarId {
-    self.id
+  pub fn id(&self) -> &GrammarId {
+    &self.id
   }
   pub fn kind(&self) -> &GrammarKind<TKind, NTKind> {
     &self.kind

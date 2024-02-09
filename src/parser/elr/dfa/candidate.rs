@@ -48,8 +48,8 @@ impl<
     Self { id, gr, digested }
   }
 
-  pub fn id(&self) -> CandidateId {
-    self.id
+  pub fn id(&self) -> &CandidateId {
+    &self.id
   }
   pub fn gr(&self) -> &Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>> {
     &self.gr
@@ -99,7 +99,7 @@ impl<
               return None;
             }
             // else, mark this grammar as done, no matter if the lex is successful
-            lexed_grammars.insert(current.id());
+            lexed_grammars.insert(current.id().clone());
           } else {
             // mark non-expectational lex as done, no matter if the lex is successful
             *lexed_without_expectation = true;
@@ -118,7 +118,7 @@ impl<
           Self::lex_grammar(expectation, lexer, global).map(|output| CandidateTryLexOutput {
             node: output.node,
             lexer: output.lexer,
-            grammar_id: current.id(),
+            grammar_id: current.id().clone(),
           })
         }
       }

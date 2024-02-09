@@ -45,7 +45,7 @@ impl<
     for (candidate_id, gr) in grs.iter().enumerate() {
       let candidate = RawCandidate::new(candidate_id, gr.clone(), digested);
       candidates.insert(candidate_id, candidate);
-      gr_cache.insert(gr.id(), {
+      gr_cache.insert(gr.id().clone(), {
         let mut v = HashMap::new();
         v.insert(digested, candidate_id);
         v
@@ -77,7 +77,9 @@ impl<
 
     if !candidate
       .current()
-      .is_some_and(|g| g.id() == *input_grammar_id)
+      // TODO: can we omit the `*` and compare ref directly?
+      // will that compare the pointer value?
+      .is_some_and(|g| *g.id() == *input_grammar_id)
     {
       // can't digest more, or grammar mismatch
       return None;

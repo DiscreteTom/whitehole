@@ -41,8 +41,8 @@ impl<
       traverser,
     }
   }
-  pub fn id(&self) -> GrammarRuleId {
-    self.id
+  pub fn id(&self) -> &GrammarRuleId {
+    &self.id
   }
   pub fn nt(&self) -> &NTKind {
     &self.nt

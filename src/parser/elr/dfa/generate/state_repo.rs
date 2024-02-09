@@ -102,7 +102,7 @@ impl StateRepo {
           }) {
             nts.insert(nt.id());
           }
-          next.id()
+          next.id().clone()
         })
       })
       .filter_map(|c| c) // TODO: is this the best way?
@@ -116,7 +116,7 @@ impl StateRepo {
     }
     grs
       .iter()
-      .for_each(|gr_id| next_candidates.push(cs.get_initial(gr_id).id()));
+      .for_each(|gr_id| next_candidates.push(cs.get_initial(gr_id).id().clone()));
 
     SortedCandidateIdVec::sort_new(next_candidates)
   }
