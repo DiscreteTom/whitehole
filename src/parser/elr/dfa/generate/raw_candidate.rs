@@ -74,20 +74,7 @@ impl<
     self.digested < self.gr.rule().len() - 1
   }
 
-  pub fn get_or_generate_next(
-    &mut self,
-    cs: &mut CandidateRepo<TKind, NTKind, ASTData, ErrorType, Global>,
-  ) -> Option<CandidateId> {
-    // try to retrieve from cache
-    if let Some(cache) = &self.next {
-      return cache.clone();
-    }
-
-    let next = cs.get_or_add_next(self);
-    self.next = match &next {
-      Some(next) => Some(Some(next.id)),
-      None => Some(None),
-    };
-    next.map(|c| c.id)
+  pub fn set_next(&mut self, next: Option<CandidateId>) {
+    self.next = Some(next);
   }
 }

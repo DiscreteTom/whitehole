@@ -3,7 +3,10 @@ use crate::{
   lexer::token::TokenKind,
   parser::elr::{
     dfa::candidate::CandidateId,
-    grammar::grammar_rule::{GrammarRule, GrammarRuleId},
+    grammar::{
+      grammar::GrammarId,
+      grammar_rule::{GrammarRule, GrammarRuleId},
+    },
   },
 };
 use std::{
@@ -64,32 +67,38 @@ impl<
       .unwrap()
   }
 
-  /// Return `None` if the candidate can't digest more.
   pub fn get_or_add_next(
     &mut self,
-    c: &RawCandidate<TKind, NTKind, ASTData, ErrorType, Global>,
-  ) -> Option<&RawCandidate<TKind, NTKind, ASTData, ErrorType, Global>> {
-    if !c.can_digest_more() {
+    current_id: &CandidateId,
+    input_grammar_id: &GrammarId,
+  ) -> Option<CandidateId> {
+    let new_candidate_id = self.candidates.len();
+    let candidate = self.candidates.get_mut(current_id).unwrap();
+
+    if !candidate
+      .current()
+      .is_some_and(|g| g.id() == *input_grammar_id)
+    {
+      // can't digest more, or grammar mismatch
       return None;
     }
 
-    let gr_id = c.gr().id();
-    let digested = c.digested() + 1;
-    match self.gr_cache.get_mut(&gr_id).unwrap().entry(digested) {
-      Entry::Occupied(o) => Some(self.candidates.get(o.get()).unwrap().clone()),
-      Entry::Vacant(v) => {
-        let id = self.candidates.len();
-        let res = RawCandidate::new(id, c.gr().clone(), digested);
-        v.insert(id);
-        Some(
-          self
-            .candidates
-            .entry(id)
-            // the entry must be vacant, so we can just insert
-            .or_insert(res),
-        )
-      }
-    }
+    let digested = candidate.digested() + 1;
+    match self
+      .gr_cache
+      .get_mut(&candidate.gr().id())
+      .unwrap()
+      .entry(digested)
+    {
+      // cache hit, just return
+      Entry::Occupied(o) => return Some(o.get().clone()),
+      // else, create new candidate
+      Entry::Vacant(v) => v.insert(new_candidate_id),
+    };
+    candidate.set_next(Some(new_candidate_id));
+    let new_candidate = RawCandidate::new(new_candidate_id, candidate.gr().clone(), digested);
+    self.candidates.insert(new_candidate_id, new_candidate);
+    Some(new_candidate_id)
   }
 
   pub fn get(&self, id: &CandidateId) -> &RawCandidate<TKind, NTKind, ASTData, ErrorType, Global> {
