@@ -8,11 +8,13 @@ use crate::{
 };
 use std::{
   collections::{HashMap, HashSet},
+  hash::Hash,
   rc::Rc,
 };
 
 pub struct StateRepo {
   states: HashMap<StateId, RawState>,
+  cache: HashMap<SortedCandidateIdVec, StateId>,
 }
 
 impl StateRepo {
@@ -21,7 +23,10 @@ impl StateRepo {
     let entry_state = RawState::new(state_id, entry_candidates);
     let mut states = HashMap::new();
     states.insert(state_id, entry_state);
-    Self { states }
+    Self {
+      states,
+      cache: HashMap::new(),
+    }
   }
 
   pub fn get_or_add_next<
@@ -40,10 +45,25 @@ impl StateRepo {
       TokenKindId,
       Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
     >,
-  ) -> Option<&RawState> {
+  ) -> Option<StateId> {
     let next_candidates = Self::get_next_candidates(current, input_grammar_id, cs, nt_closures);
 
-    None
+    if next_candidates.0.len() == 0 {
+      // no next state
+      return None;
+    }
+
+    // check cache
+    if let Some(cache) = self.cache.get(&next_candidates) {
+      return Some(cache.clone());
+    }
+
+    // create new
+    let id = self.states.len();
+    let state = RawState::new(id, next_candidates.clone().0);
+    self.states.insert(id, state);
+    self.cache.insert(next_candidates, id);
+    Some(id)
   }
 
   fn get_next_candidates<
@@ -61,7 +81,8 @@ impl StateRepo {
       TokenKindId,
       Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
     >,
-  ) -> Vec<CandidateId> {
+  ) -> SortedCandidateIdVec {
+    // TODO: optimize code
     let mut nts = HashSet::new();
     // find grammar rules that can accept the input grammar
     let mut next_candidates = current
@@ -86,7 +107,17 @@ impl StateRepo {
       .iter()
       .for_each(|gr_id| next_candidates.push(cs.get_initial(gr_id).id()));
 
-    next_candidates.sort();
-    next_candidates
+    SortedCandidateIdVec::sort_new(next_candidates)
+  }
+}
+
+// TODO: is the derive ok?
+#[derive(PartialEq, Eq, Hash, Clone)]
+struct SortedCandidateIdVec(pub Vec<CandidateId>);
+
+impl SortedCandidateIdVec {
+  pub fn sort_new(mut vec: Vec<CandidateId>) -> Self {
+    vec.sort();
+    Self(vec)
   }
 }
