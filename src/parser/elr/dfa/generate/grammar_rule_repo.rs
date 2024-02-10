@@ -1,5 +1,4 @@
-use super::grammar_rule::GrammarRule;
-use crate::lexer::token::TokenKind;
+use crate::{lexer::token::TokenKind, parser::elr::grammar::grammar_rule::GrammarRule};
 use std::rc::Rc;
 
 pub struct GrammarRuleRepo<

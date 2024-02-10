@@ -1,5 +1,7 @@
-use super::grammar::{Grammar, GrammarId, GrammarKind};
-use crate::lexer::token::{TokenKind, TokenKindId};
+use crate::{
+  lexer::token::{TokenKind, TokenKindId},
+  parser::elr::grammar::grammar::{Grammar, GrammarId, GrammarKind},
+};
 use std::collections::{hash_map::Entry, HashMap};
 
 pub struct GrammarRepo<TKind: TokenKind, NTKind: TokenKind> {

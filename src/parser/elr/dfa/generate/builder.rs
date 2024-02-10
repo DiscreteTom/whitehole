@@ -1,10 +1,11 @@
-use super::{candidate_repo::CandidateRepo, state_repo::StateRepo};
+use super::{
+  candidate_repo::CandidateRepo, grammar_rule_repo::GrammarRuleRepo, state_repo::StateRepo,
+};
 use crate::{
   lexer::token::TokenKind,
   parser::elr::grammar::{
     grammar::{GrammarId, GrammarKind},
     grammar_rule::GrammarRule,
-    grammar_rule_repo::GrammarRuleRepo,
   },
 };
 use std::{
