@@ -44,6 +44,9 @@ pub fn prepare<
 
   let mut state_repo = StateRepo::with_entry(entry_candidates);
   state_repo.calc_all_states(&get_all_grammar_id(&gr_repo), &mut cs, &nt_closures);
+
+  let first_sets = calc_first_sets(&nt_closures);
+  let follow_sets = calc_follow_sets(&gr_repo, &first_sets);
 }
 
 /// If a rule starts with an NT, merge result with that NT's grammar rules.
@@ -181,4 +184,82 @@ fn get_all_grammar_id<
     .map(|gr| gr.rule().iter().map(|g| g.id().clone()).collect::<Vec<_>>())
     .flat_map(|ids| ids.into_iter())
     .collect()
+}
+
+fn calc_first_sets<
+  TKind: TokenKind,
+  NTKind: TokenKind + Clone,
+  ASTData: 'static,
+  ErrorType: 'static,
+  Global: 'static,
+>(
+  nt_closures: &HashMap<GrammarId, Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>>,
+) -> HashMap<GrammarId, HashSet<GrammarId>> {
+  let mut result = HashMap::new();
+
+  nt_closures.iter().for_each(|(nt, grs)| {
+    let grammar_set = result.entry(nt.clone()).or_insert_with(|| HashSet::new());
+    // for each direct/indirect grammar rule, add first grammar to first set
+    // including T and NT
+    grs.iter().for_each(|gr| {
+      grammar_set.insert(gr.rule()[0].kind().id());
+    });
+  });
+
+  result
+}
+
+fn calc_follow_sets<
+  TKind: TokenKind,
+  NTKind: TokenKind + Clone,
+  ASTData: 'static,
+  ErrorType: 'static,
+  Global: 'static,
+>(
+  gr_repo: &GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
+  first_sets: &HashMap<GrammarId, HashSet<GrammarId>>,
+) -> HashMap<GrammarId, HashSet<GrammarId>> {
+  let mut result = HashMap::new();
+
+  gr_repo.grs().iter().for_each(|gr| {
+    gr.rule().iter().enumerate().for_each(|(i, g)| {
+      if i < gr.rule().len() - 1 {
+        let next_grammar = &gr.rule()[i + 1];
+        // next grammar exists, merge the current grammar's follow set with next grammar
+        let grammar_set = result
+          .entry(g.kind().id())
+          .or_insert_with(|| HashSet::new());
+        grammar_set.insert(next_grammar.kind().id());
+        // if next grammar is also NT, merge with its first set
+        if let GrammarKind::NT(nt) = next_grammar.kind() {
+          // every NT should have a first set, so we can unwrap the result
+          grammar_set.extend(first_sets.get(&nt.id()).unwrap());
+        }
+      }
+    });
+  });
+
+  // the last grammar's follow set should merge with the target NT's follow set
+  // be ware: don't merge the target NT's follow set with the last grammar's follow set
+  // the last grammar's follow set should be a super set of the target NT's follow set, not vice versa
+  loop {
+    let mut changed = false;
+
+    gr_repo.grs().iter().for_each(|gr| {
+      let last_grammar = gr.rule().last().unwrap();
+      let nt_follow = result.get(&gr.nt().id()).unwrap().clone(); // TODO: prevent the clone
+      let last_grammar_follow = result.get_mut(&last_grammar.id()).unwrap();
+      let len = last_grammar_follow.len();
+      last_grammar_follow.extend(nt_follow);
+      if last_grammar_follow.len() != len {
+        changed = true;
+      }
+    });
+
+    if !changed {
+      break;
+    }
+  }
+
+  result
 }
