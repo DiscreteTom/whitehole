@@ -1,21 +1,17 @@
-use std::collections::HashMap;
-
-use crate::{
-  lexer::token::TokenKind,
-  parser::elr::{
-    dfa::{candidate::CandidateId, state::StateId},
-    grammar::grammar::{Grammar, GrammarId},
-  },
+use crate::parser::elr::{
+  dfa::{candidate::CandidateId, state::StateId},
+  grammar::grammar::GrammarId,
 };
+use std::collections::{BTreeSet, HashMap};
 
 pub struct RawState {
   id: StateId,
-  candidates: Vec<CandidateId>,
+  candidates: BTreeSet<CandidateId>,
   next_map: HashMap<GrammarId, Option<StateId>>,
 }
 
 impl RawState {
-  pub fn new(id: StateId, candidates: Vec<CandidateId>) -> Self {
+  pub fn new(id: StateId, candidates: BTreeSet<CandidateId>) -> Self {
     RawState {
       id,
       candidates,
@@ -26,11 +22,7 @@ impl RawState {
   pub fn id(&self) -> &StateId {
     &self.id
   }
-  pub fn candidates(&self) -> &Vec<CandidateId> {
+  pub fn candidates(&self) -> &BTreeSet<CandidateId> {
     &self.candidates
-  }
-
-  pub fn generate_next(&self, input_grammar_id: &GrammarId) {
-    // TODO
   }
 }

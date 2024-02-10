@@ -15,13 +15,13 @@ use std::{
 };
 
 pub struct StateRepo {
+  // TODO: can we merge these two so we don't need to store BTreeSet twice?
   states: HashMap<StateId, RawState>,
-  // BTreeSet will store elements in a sorted order and can be hashed
   cache: HashSet<BTreeSet<CandidateId>>,
 }
 
 impl StateRepo {
-  pub fn with_entry(entry_candidates: Vec<CandidateId>) -> Self {
+  pub fn with_entry(entry_candidates: BTreeSet<CandidateId>) -> Self {
     let state_id = 0;
     let entry_state = RawState::new(state_id, entry_candidates);
     let mut states = HashMap::new();
@@ -52,8 +52,6 @@ impl StateRepo {
       Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
     >,
   ) {
-    // TODO: optimize code
-
     // store the candidates of each unexpanded state
     let mut unexpanded = self
       .states
@@ -73,24 +71,15 @@ impl StateRepo {
         });
       });
 
-      // TODO: don't convert?
-      unexpanded = generated
-        .iter()
-        .map(|c| c.iter().map(|c| c.clone()).collect())
-        .collect::<Vec<_>>();
-
-      generated.into_iter().for_each(|next_candidates| {
+      generated.iter().for_each(|next_candidates| {
         let id = self.states.len();
-        let state = RawState::new(
-          id,
-          next_candidates
-            .iter()
-            .map(|c| c.clone())
-            .collect::<Vec<_>>(),
-        );
+        // TODO: prevent the clone, use ref?
+        let state = RawState::new(id, next_candidates.clone());
         self.states.insert(id, state);
-        self.cache.insert(next_candidates);
+        self.cache.insert(next_candidates.clone());
       });
+
+      unexpanded = generated;
     }
   }
 
@@ -103,7 +92,7 @@ impl StateRepo {
     Global: 'static,
   >(
     &self,
-    current_candidates: &Vec<CandidateId>,
+    current_candidates: &BTreeSet<CandidateId>,
     input_grammar_id: &GrammarId,
     cs: &mut CandidateRepo<TKind, NTKind, ASTData, ErrorType, Global>,
     // TODO: nt_closures only store grammar rule id?
@@ -137,7 +126,7 @@ impl StateRepo {
     ErrorType: 'static,
     Global: 'static,
   >(
-    current_candidates: &Vec<CandidateId>,
+    current_candidates: &BTreeSet<CandidateId>,
     input_grammar_id: &GrammarId,
     cs: &mut CandidateRepo<TKind, NTKind, ASTData, ErrorType, Global>,
     // TODO: nt_closures only store grammar rule id?

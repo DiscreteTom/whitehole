@@ -7,11 +7,11 @@ use crate::{
   },
 };
 use std::{
-  collections::{HashMap, HashSet},
+  collections::{BTreeSet, HashMap, HashSet},
   rc::Rc,
 };
 
-use super::candidate_repo::CandidateRepo;
+use super::{candidate_repo::CandidateRepo, state_repo::StateRepo};
 
 pub fn prepare<
   TKind: TokenKind,
@@ -20,10 +20,29 @@ pub fn prepare<
   ErrorType: 'static,
   Global: 'static,
 >(
+  nts: HashSet<GrammarId>,
+  entry_nts: HashSet<GrammarId>,
   gr_repo: GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
 ) {
   // init all initial candidates, initial candidate is candidate with digested=0
   let cs = CandidateRepo::with_initial(gr_repo.grs());
+
+  let entry_candidates = calc_grs_closure(
+    gr_repo
+      .grs()
+      .iter()
+      .filter(|gr| entry_nts.contains(&gr.nt().id()))
+      .map(|gr| gr.clone())
+      .collect(),
+    &gr_repo,
+  )
+  .iter()
+  .map(|gr| cs.get_initial(gr.id()).id().clone())
+  .collect::<BTreeSet<_>>();
+
+  let state_repo = StateRepo::with_entry(entry_candidates);
+
+  let nt_closures = calc_all_nt_closures(&nts, &gr_repo);
 }
 
 /// If a rule starts with an NT, merge result with that NT's grammar rules.
@@ -31,6 +50,7 @@ pub fn prepare<
 /// E.g. knowing `A := B 'c'` and `B := 'd'`, we can infer `A := 'd' 'c'`.
 /// When we construct DFA state, if a state has the candidate `A := # B 'c'`,
 /// it should also have the candidate `B := # 'd'`.
+// TODO: just return id?
 fn calc_grs_closure<
   TKind: TokenKind,
   NTKind: TokenKind + Clone,
@@ -135,4 +155,19 @@ fn calc_all_nt_closures<
     .iter()
     .map(|nt_id| (nt_id.clone(), calc_nt_closure(nt_id, gr_repo)))
     .collect::<HashMap<_, _>>()
+}
+
+fn calc_all_states(state_repo: StateRepo) {
+  // collect all grammars in grammar rules.
+  // don't convert grammar rules' NTs into ASTNodes,
+  // some NTs might not appear in grammar rules (entry-only NTs).
+  // when we enable ignoreEntryFollow, the entry-only NTs
+  // may appear as the first node in parser's buffer,
+  // and the `parser.parse` will throw StateCacheMissError.
+  // if we do convert entry-only NTs into ASTNodes,
+  // the `parser.parse` will just reject the input without throwing StateCacheMissError.
+
+  loop {
+    state_repo.states().iter().for_each(|s| {})
+  }
 }
