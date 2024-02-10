@@ -20,7 +20,7 @@ pub fn prepare<
   ErrorType: 'static,
   Global: 'static,
 >(
-  nts: HashSet<GrammarId>,
+  nts: HashSet<GrammarId>, // TODO: don't pass nts because this can be calculated by gr_repo
   entry_nts: HashSet<GrammarId>,
   gr_repo: GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
 ) {
