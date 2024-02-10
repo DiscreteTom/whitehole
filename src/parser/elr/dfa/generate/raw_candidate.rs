@@ -8,7 +8,7 @@ use crate::{
   parser::{
     ast::ASTNode,
     elr::{
-      dfa::candidate::CandidateId,
+      dfa::candidate::{Candidate, CandidateId},
       grammar::{
         grammar::{Grammar, GrammarId, GrammarKind},
         grammar_rule::GrammarRule,
@@ -76,5 +76,9 @@ impl<
 
   pub fn set_next(&mut self, next: Option<CandidateId>) {
     self.next = Some(next);
+  }
+
+  pub fn into_candidate(self) -> Candidate<TKind, NTKind, ASTData, ErrorType, Global> {
+    Candidate::new(self.id, self.gr, self.digested)
   }
 }

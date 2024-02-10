@@ -11,7 +11,7 @@ use std::{
   rc::Rc,
 };
 
-use super::state::State;
+use super::state::{State, StateId};
 
 pub struct Stack<T> {
   stack: Vec<T>,
@@ -87,7 +87,11 @@ impl<
     TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   >
 {
-  pub fn try_lex(&mut self, global: &Rc<RefCell<Global>>) -> bool {
+  pub fn try_lex(
+    &mut self,
+    states: &HashMap<StateId, Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
+    global: &Rc<RefCell<Global>>,
+  ) -> bool {
     let current_state = self.state_stack.current();
 
     match current_state.try_lex(
@@ -106,7 +110,9 @@ impl<
         if output.node.error.is_some() {
           self.errors.push(node_index);
         }
-        self.state_stack.push(output.next_state); // push next state to state stack
+        self
+          .state_stack
+          .push(states.get(&output.next_state_id).unwrap().clone()); // push next state to state stack
         self.reducing_stack.push(node_index); // append new node to reducing stack
         self.buffer.push(output.node);
         self.lexer = output.lexer;
@@ -124,6 +130,7 @@ impl<
     &mut self,
     entry_nts: &HashSet<TokenKindId>,
     follow_sets: &HashMap<TokenKindId, TokenKindId>,
+    states: &HashMap<StateId, Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
   ) -> bool {
     let output = match self.state_stack.current().try_reduce(
       &mut self.buffer,
@@ -160,7 +167,9 @@ impl<
 
     // remove the reduced states, push the new state
     self.state_stack.truncate(output.reduced);
-    self.state_stack.push(output.next_state);
+    self
+      .state_stack
+      .push(states.get(&output.next_state_id).unwrap().clone());
     true
   }
 }

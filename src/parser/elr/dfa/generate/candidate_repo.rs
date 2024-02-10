@@ -2,7 +2,7 @@ use super::raw_candidate::RawCandidate;
 use crate::{
   lexer::token::TokenKind,
   parser::elr::{
-    dfa::candidate::CandidateId,
+    dfa::candidate::{Candidate, CandidateId},
     grammar::{
       grammar::GrammarId,
       grammar_rule::{GrammarRule, GrammarRuleId},
@@ -111,5 +111,15 @@ impl<
 
   pub fn get(&self, id: &CandidateId) -> &RawCandidate<TKind, NTKind, ASTData, ErrorType, Global> {
     self.candidates.get(id).unwrap()
+  }
+
+  pub fn into_candidates(
+    self,
+  ) -> HashMap<CandidateId, Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>> {
+    self
+      .candidates
+      .into_iter()
+      .map(|(id, c)| (id, Rc::new(c.into_candidate())))
+      .collect()
   }
 }

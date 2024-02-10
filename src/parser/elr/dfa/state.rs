@@ -4,10 +4,7 @@ use crate::{
     token::{TokenKind, TokenKindId},
     trimmed::TrimmedLexer,
   },
-  parser::{
-    ast::ASTNode,
-    elr::grammar::grammar::{Grammar, GrammarId},
-  },
+  parser::{ast::ASTNode, elr::grammar::grammar::GrammarId},
 };
 use std::{
   cell::RefCell,
@@ -26,7 +23,7 @@ pub struct State<
 > {
   id: StateId,
   candidates: Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>>,
-  next_map: HashMap<GrammarId, Option<Rc<Self>>>,
+  next_map: HashMap<GrammarId, Option<StateId>>,
 }
 
 impl<
@@ -40,11 +37,12 @@ impl<
   pub fn new(
     id: StateId,
     candidates: Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>>,
+    next_map: HashMap<GrammarId, Option<StateId>>,
   ) -> Self {
     Self {
       id,
       candidates,
-      next_map: HashMap::new(),
+      next_map,
     }
   }
 
@@ -64,7 +62,6 @@ impl<
     StateTryLexOutput<
       ASTNode<TKind, NTKind, ASTData, ErrorType, Global>,
       TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
-      Rc<Self>,
     >,
   > {
     for (i, c) in self.candidates[from_index..].iter().enumerate() {
@@ -81,7 +78,7 @@ impl<
           node: output.node,
           lexer: output.lexer,
           next_candidate_index: i + 1,
-          next_state: next,
+          next_state_id: next,
         });
       }
     }
@@ -96,8 +93,7 @@ impl<
     reducing_stack: &Vec<usize>,
     entry_nts: &HashSet<TokenKindId>,
     follow_sets: &HashMap<TokenKindId, TokenKindId>,
-  ) -> Option<StateTryReduceOutput<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>, Rc<Self>>>
-  {
+  ) -> Option<StateTryReduceOutput<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>> {
     for c in self.candidates.iter() {
       if let Some(output) = c.try_reduce(buffer, lexer, reducing_stack, entry_nts, follow_sets) {
         // get the next state by the reduced grammar (NT)
@@ -110,14 +106,14 @@ impl<
         return Some(StateTryReduceOutput {
           node: output.node,
           reduced: output.reduced,
-          next_state: next,
+          next_state_id: next,
         });
       }
     }
     None
   }
 
-  fn get_next(&self, grammar_id: &GrammarId) -> Option<Rc<Self>> {
+  fn get_next(&self, grammar_id: &GrammarId) -> Option<StateId> {
     match self.next_map.get(grammar_id) {
       // this should never be None, since when building DFA
       // we should already calculated the next state in generate_next for all grammars
@@ -131,15 +127,15 @@ impl<
   }
 }
 
-pub struct StateTryLexOutput<NodeType, LexerType, StateType> {
+pub struct StateTryLexOutput<NodeType, LexerType> {
   pub node: NodeType,
   pub lexer: LexerType,
   pub next_candidate_index: usize,
-  pub next_state: StateType,
+  pub next_state_id: StateId,
 }
 
-pub struct StateTryReduceOutput<NodeType, StateType> {
+pub struct StateTryReduceOutput<NodeType> {
   pub node: NodeType,
   pub reduced: usize,
-  pub next_state: StateType,
+  pub next_state_id: StateId,
 }

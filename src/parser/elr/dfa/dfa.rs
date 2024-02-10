@@ -1,6 +1,6 @@
 use super::{
   parsing::{ParsingState, Stack},
-  state::State,
+  state::{State, StateId},
 };
 use crate::{
   lexer::{
@@ -34,6 +34,7 @@ pub struct Dfa<
 > {
   entry_nts: HashSet<TokenKindId>,
   entry_state: Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>,
+  states: HashMap<StateId, Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
   follow_sets: HashMap<TokenKindId, TokenKindId>,
   // TODO: token_ast_mapper
 }
@@ -49,12 +50,14 @@ impl<
   pub fn new(
     entry_nts: HashSet<TokenKindId>,
     entry_state: Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>,
+    states: HashMap<StateId, Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
     follow_sets: HashMap<TokenKindId, TokenKindId>,
   ) -> Self {
     Self {
       entry_nts,
       entry_state,
       follow_sets,
+      states,
     }
   }
 
@@ -80,7 +83,7 @@ impl<
     loop {
       if parsing_state.need_lex {
         // try to lex a new one
-        if parsing_state.try_lex(global) {
+        if parsing_state.try_lex(&self.states, global) {
           continue;
         } else {
           // TODO: enter panic mode
@@ -89,7 +92,7 @@ impl<
       }
 
       // else, no need to lex, just try to reduce
-      if !parsing_state.try_reduce(&self.entry_nts, &self.follow_sets) {
+      if !parsing_state.try_reduce(&self.entry_nts, &self.follow_sets, &self.states) {
         // reduce failed, try to lex more
         continue;
       }

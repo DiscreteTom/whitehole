@@ -2,7 +2,10 @@ use super::{candidate_repo::CandidateRepo, raw_candidate::RawCandidate, raw_stat
 use crate::{
   lexer::token::{TokenKind, TokenKindId},
   parser::elr::{
-    dfa::{candidate::CandidateId, state::StateId},
+    dfa::{
+      candidate::{Candidate, CandidateId},
+      state::{State, StateId},
+    },
     grammar::{
       grammar::{GrammarId, GrammarKind},
       grammar_rule::GrammarRule,
@@ -168,5 +171,25 @@ impl StateRepo {
     });
 
     next_candidates
+  }
+
+  pub fn into_states<
+    TKind: TokenKind,
+    NTKind: TokenKind + Clone,
+    ASTData: 'static,
+    ErrorType: 'static,
+    Global: 'static,
+  >(
+    self,
+    candidates: &HashMap<CandidateId, Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>>,
+  ) -> HashMap<StateId, Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>> {
+    self
+      .states
+      .into_iter()
+      .map(|(id, state)| {
+        let state = state.into_state(candidates);
+        (id, Rc::new(state))
+      })
+      .collect()
   }
 }

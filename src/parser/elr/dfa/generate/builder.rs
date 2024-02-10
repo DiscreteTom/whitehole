@@ -45,8 +45,11 @@ pub fn prepare<
   let mut state_repo = StateRepo::with_entry(entry_candidates);
   state_repo.calc_all_states(&get_all_grammar_id(&gr_repo), &mut cs, &nt_closures);
 
-  let first_sets = calc_first_sets(&nt_closures);
-  let follow_sets = calc_follow_sets(&gr_repo, &first_sets);
+  let follow_sets = calc_follow_sets(&gr_repo, &calc_first_sets(&nt_closures));
+
+  // convert raw candidates/states to candidates/states
+  let candidates = cs.into_candidates();
+  let states = state_repo.into_states(&candidates);
 }
 
 /// If a rule starts with an NT, merge result with that NT's grammar rules.
