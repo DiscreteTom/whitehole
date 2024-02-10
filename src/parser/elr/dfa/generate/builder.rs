@@ -29,7 +29,7 @@ pub fn prepare<
 /// E.g. knowing `A := B 'c'` and `B := 'd'`, we can infer `A := 'd' 'c'`.
 /// When we construct DFA state, if a state has the candidate `A := # B 'c'`,
 /// it should also have the candidate `B := # 'd'`.
-fn calc_gr_closure<
+fn calc_grs_closure<
   TKind: TokenKind,
   NTKind: TokenKind + Clone,
   ASTData: 'static,
