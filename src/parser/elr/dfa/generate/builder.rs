@@ -1,3 +1,4 @@
+use super::{candidate_repo::CandidateRepo, state_repo::StateRepo};
 use crate::{
   lexer::token::TokenKind,
   parser::elr::grammar::{
@@ -10,8 +11,6 @@ use std::{
   collections::{BTreeSet, HashMap, HashSet},
   rc::Rc,
 };
-
-use super::{candidate_repo::CandidateRepo, state_repo::StateRepo};
 
 pub fn prepare<
   TKind: TokenKind,
