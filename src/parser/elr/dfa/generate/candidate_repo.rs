@@ -42,7 +42,8 @@ impl<
     let digested = 0;
 
     // use index as the candidate_id
-    for (candidate_id, gr) in grs.iter().enumerate() {
+    for (i, gr) in grs.iter().enumerate() {
+      let candidate_id = CandidateId(i);
       let candidate = RawCandidate::new(candidate_id, gr.clone(), digested);
       candidates.insert(candidate_id, candidate);
       gr_cache.insert(gr.id().clone(), {
@@ -72,7 +73,7 @@ impl<
     current_id: &CandidateId,
     input_grammar_id: &GrammarId,
   ) -> Option<&RawCandidate<TKind, NTKind, ASTData, ErrorType, Global>> {
-    let new_candidate_id = self.candidates.len();
+    let new_candidate_id = CandidateId(self.candidates.len());
     let candidate = self.candidates.get_mut(current_id).unwrap();
 
     if !candidate

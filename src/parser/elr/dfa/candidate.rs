@@ -18,7 +18,8 @@ use std::{
   rc::Rc,
 };
 
-pub type CandidateId = usize;
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, PartialOrd, Ord)]
+pub struct CandidateId(pub usize);
 
 pub struct Candidate<
   TKind: TokenKind,
@@ -145,7 +146,10 @@ impl<
     // accept
     Some(CandidateTryReduceOutput {
       node: ASTNode::new_nt(
-        self.gr.nt().clone(),
+        match self.gr.nt().kind() {
+          GrammarKind::NT(kind) => kind.clone(),
+          _ => unreachable!(),
+        },
         // TODO: is range needed?
         Range {
           start: buffer[matched[0]].range.start,
@@ -158,7 +162,7 @@ impl<
         None,
         self.gr.traverser().clone(),
       ),
-      nt_grammar_id: self.gr.nt().id(),
+      nt_grammar_id: self.gr.nt().id().clone(),
       reduced: self.gr.rule().len(),
     })
   }

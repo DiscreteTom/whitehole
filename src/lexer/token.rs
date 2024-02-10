@@ -1,6 +1,7 @@
-/// The unique identifier of a token kind.
-/// Usually we use enum variants as token kinds, and the identifier is the variant's index.
-pub type TokenKindId = usize;
+/// The unique id of a token kind.
+/// Usually we use enum variants as token kinds, and the id is the variant's index.
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, PartialOrd, Ord)]
+pub struct TokenKindId(pub usize);
 
 pub trait TokenKind {
   fn id(&self) -> TokenKindId;
@@ -79,8 +80,8 @@ mod tests {
 
   #[test]
   fn token_kind_id() {
-    assert_eq!(MyKind::UnitField.id(), 0);
-    assert_eq!(MyKind::UnnamedField(42).id(), 1);
-    assert_eq!(MyKind::NamedField { _a: 1 }.id(), 2);
+    assert_eq!(MyKind::UnitField.id().0, 0);
+    assert_eq!(MyKind::UnnamedField(42).id().0, 1);
+    assert_eq!(MyKind::NamedField { _a: 1 }.id().0, 2);
   }
 }

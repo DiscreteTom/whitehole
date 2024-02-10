@@ -2,7 +2,8 @@ use super::grammar::Grammar;
 use crate::{lexer::token::TokenKind, parser::traverser::Traverser};
 use std::{collections::HashSet, rc::Rc};
 
-pub type GrammarRuleId = usize;
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, PartialOrd, Ord)]
+pub struct GrammarRuleId(pub usize);
 
 pub struct GrammarRule<
   TKind: TokenKind,
@@ -12,7 +13,7 @@ pub struct GrammarRule<
   Global: 'static,
 > {
   id: GrammarRuleId,
-  nt: NTKind,
+  nt: Rc<Grammar<TKind, NTKind>>,
   rule: Vec<Rc<Grammar<TKind, NTKind>>>,
   expect: HashSet<usize>,
   traverser: Traverser<TKind, NTKind, ASTData, ErrorType, Global>,
@@ -28,7 +29,7 @@ impl<
 {
   pub fn new(
     id: GrammarRuleId,
-    nt: NTKind,
+    nt: Rc<Grammar<TKind, NTKind>>,
     rule: Vec<Rc<Grammar<TKind, NTKind>>>,
     expect: HashSet<usize>,
     traverser: Traverser<TKind, NTKind, ASTData, ErrorType, Global>,
@@ -44,7 +45,7 @@ impl<
   pub fn id(&self) -> &GrammarRuleId {
     &self.id
   }
-  pub fn nt(&self) -> &NTKind {
+  pub fn nt(&self) -> &Rc<Grammar<TKind, NTKind>> {
     &self.nt
   }
   pub fn rule(&self) -> &[Rc<Grammar<TKind, NTKind>>] {

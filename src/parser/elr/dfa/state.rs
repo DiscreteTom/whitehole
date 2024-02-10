@@ -12,7 +12,8 @@ use std::{
   rc::Rc,
 };
 
-pub type StateId = usize;
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, PartialOrd, Ord)]
+pub struct StateId(pub usize);
 
 pub struct State<
   TKind: TokenKind,

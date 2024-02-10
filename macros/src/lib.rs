@@ -27,17 +27,17 @@ pub fn token_kind_macro_derive(input: TokenStream) -> TokenStream {
       match variant.fields {
         Fields::Named(_) => {
           quote! {
-            #enum_name::#variant_name { .. } => #index,
+            #enum_name::#variant_name { .. } => #crate_name::lexer::token::TokenKindId(#index),
           }
         }
         Fields::Unnamed(_) => {
           quote! {
-            #enum_name::#variant_name(..) => #index,
+            #enum_name::#variant_name(..) => #crate_name::lexer::token::TokenKindId(#index),
           }
         }
         Fields::Unit => {
           quote! {
-            #enum_name::#variant_name => #index,
+            #enum_name::#variant_name => #crate_name::lexer::token::TokenKindId(#index),
           }
         }
       }

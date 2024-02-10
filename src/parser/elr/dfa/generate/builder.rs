@@ -87,12 +87,13 @@ fn calc_grs_closure<
 
     unexpanded.iter().for_each(|(_, gr)| {
       // only expand if the unexpanded grammar rule's first grammar is NT
-      if let GrammarKind::NT(nt) = gr.rule()[0].kind() {
+      let first = &gr.rule()[0];
+      if let GrammarKind::NT(_) = first.kind() {
         gr_repo
           .grs()
           .iter()
           // find all grammar rules that yields the NT
-          .filter(|gr2| gr2.nt().id() == nt.id())
+          .filter(|gr2| gr2.nt().id() == first.id())
           .for_each(|gr2| {
             // no need to check if the gr2 is already in `unexpanded`
             // since unexpanded grammar rules are already in the result
@@ -141,7 +142,7 @@ fn calc_nt_closure<
     gr_repo
       .grs()
       .iter()
-      .filter(|gr| gr.nt().id() == *nt_id)
+      .filter(|gr| gr.nt().id() == nt_id)
       .map(|gr| gr.clone())
       .collect(),
     gr_repo,
@@ -205,7 +206,7 @@ fn calc_first_sets<
     // for each direct/indirect grammar rule, add first grammar to first set
     // including T and NT
     grs.iter().for_each(|gr| {
-      grammar_set.insert(gr.rule()[0].kind().id());
+      grammar_set.insert(gr.rule()[0].id().clone());
     });
   });
 
@@ -230,13 +231,13 @@ fn calc_follow_sets<
         let next_grammar = &gr.rule()[i + 1];
         // next grammar exists, merge the current grammar's follow set with next grammar
         let grammar_set = result
-          .entry(g.kind().id())
+          .entry(g.id().clone())
           .or_insert_with(|| HashSet::new());
-        grammar_set.insert(next_grammar.kind().id());
+        grammar_set.insert(next_grammar.id().clone());
         // if next grammar is also NT, merge with its first set
-        if let GrammarKind::NT(nt) = next_grammar.kind() {
+        if let GrammarKind::NT(_) = next_grammar.kind() {
           // every NT should have a first set, so we can unwrap the result
-          grammar_set.extend(first_sets.get(&nt.id()).unwrap());
+          grammar_set.extend(first_sets.get(&next_grammar.id()).unwrap().clone());
         }
       }
     });

@@ -1,6 +1,7 @@
 use crate::lexer::token::{TokenKind, TokenKindId};
 
-pub type GrammarId = usize;
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, PartialOrd, Ord)]
+pub struct GrammarId(pub usize);
 
 pub enum GrammarKind<TKind: TokenKind, NTKind: TokenKind> {
   T(TKind),

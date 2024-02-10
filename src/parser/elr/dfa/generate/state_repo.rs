@@ -25,7 +25,7 @@ pub struct StateRepo {
 
 impl StateRepo {
   pub fn with_entry(entry_candidates: BTreeSet<CandidateId>) -> Self {
-    let state_id = 0;
+    let state_id = StateId(0);
     let entry_state = RawState::new(state_id, entry_candidates);
     let mut states = HashMap::new();
     states.insert(state_id, entry_state);
@@ -51,7 +51,7 @@ impl StateRepo {
     cs: &mut CandidateRepo<TKind, NTKind, ASTData, ErrorType, Global>,
     // TODO: nt_closures only store grammar rule id?
     nt_closures: &HashMap<
-      TokenKindId,
+      GrammarId,
       Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
     >,
   ) {
@@ -75,7 +75,7 @@ impl StateRepo {
       });
 
       generated.iter().for_each(|next_candidates| {
-        let id = self.states.len();
+        let id = StateId(self.states.len());
         // TODO: prevent the clone, use ref?
         let state = RawState::new(id, next_candidates.clone());
         self.states.insert(id, state);
@@ -100,7 +100,7 @@ impl StateRepo {
     cs: &mut CandidateRepo<TKind, NTKind, ASTData, ErrorType, Global>,
     // TODO: nt_closures only store grammar rule id?
     nt_closures: &HashMap<
-      TokenKindId,
+      GrammarId,
       Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
     >,
   ) -> Option<BTreeSet<CandidateId>> {
@@ -134,7 +134,7 @@ impl StateRepo {
     cs: &mut CandidateRepo<TKind, NTKind, ASTData, ErrorType, Global>,
     // TODO: nt_closures only store grammar rule id?
     nt_closures: &HashMap<
-      TokenKindId,
+      GrammarId,
       Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
     >,
   ) -> BTreeSet<CandidateId> {
@@ -145,14 +145,14 @@ impl StateRepo {
       .iter()
       .map(|c_id| {
         cs.get_or_add_next(c_id, input_grammar_id).map(|next| {
-          if let Some(nt) = next.current().and_then(|current| {
-            if let GrammarKind::NT(nt) = current.kind() {
-              Some(nt)
+          if let Some(next_current) = next.current().and_then(|current| {
+            if let GrammarKind::NT(_) = current.kind() {
+              Some(current)
             } else {
               None
             }
           }) {
-            nts.insert(nt.id());
+            nts.insert(next_current.id().clone());
           }
           next.id().clone()
         })

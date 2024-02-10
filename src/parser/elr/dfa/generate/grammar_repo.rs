@@ -34,11 +34,11 @@ impl<TKind: TokenKind, NTKind: TokenKind> GrammarRepo<TKind, NTKind> {
     {
       Entry::Occupied(o) => &self.map[&o.get()],
       Entry::Vacant(v) => {
-        let id = self.map.len();
+        let id = GrammarId(self.map.len());
         v.insert(id);
         match self.map.entry(id) {
           // this should never happen
-          Entry::Occupied(_) => panic!("Grammar with id {} already exists", id),
+          Entry::Occupied(_) => panic!("Grammar with id {:?} already exists", id),
           Entry::Vacant(v) => v.insert(Grammar::new(id,GrammarKind::T(kind) , None)),
         }
       }
@@ -54,11 +54,11 @@ impl<TKind: TokenKind, NTKind: TokenKind> GrammarRepo<TKind, NTKind> {
     {
       Entry::Occupied(o) => &self.map[&o.get()],
       Entry::Vacant(v) => {
-        let id = self.map.len();
+        let id = GrammarId(self.map.len());
         v.insert(id);
         match self.map.entry(id) {
           // this should never happen
-          Entry::Occupied(_) => panic!("Grammar with id {} already exists", id),
+          Entry::Occupied(_) => panic!("Grammar with id {:?} already exists", id),
           Entry::Vacant(v) => v.insert(Grammar::new(id,GrammarKind::T(kind), Some(text))),
         }
       }
@@ -69,11 +69,11 @@ impl<TKind: TokenKind, NTKind: TokenKind> GrammarRepo<TKind, NTKind> {
     match self.nt_cache.entry(kind.id()) {
       Entry::Occupied(o) => &self.map[&o.get()],
       Entry::Vacant(v) => {
-        let id = self.map.len();
+        let id = GrammarId(self.map.len());
         v.insert(id);
         match self.map.entry(id) {
           // this should never happen
-          Entry::Occupied(_) => panic!("Grammar with id {} already exists", id),
+          Entry::Occupied(_) => panic!("Grammar with id {:?} already exists", id),
           Entry::Vacant(v) => v.insert(Grammar::new(id, GrammarKind::NT(kind), None)),
         }
       }
