@@ -37,7 +37,7 @@ fn calc_grs_closure<
   Global: 'static,
 >(
   grs: Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
-  gr_repo: GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
+  gr_repo: &GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
 ) -> Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>> {
   // init result as a hashmap with given grammar rules
   // so we can check if a grammar rule is already in the result by id
