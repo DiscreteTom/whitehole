@@ -1,7 +1,9 @@
 use crate::{
   lexer::token::TokenKind,
   parser::elr::grammar::{
-    grammar::GrammarKind, grammar_rule::GrammarRule, grammar_rule_repo::GrammarRuleRepo,
+    grammar::{GrammarId, GrammarKind},
+    grammar_rule::GrammarRule,
+    grammar_rule_repo::GrammarRuleRepo,
   },
 };
 use std::{
@@ -90,4 +92,47 @@ fn calc_grs_closure<
 
   // convert back to Vec
   result.into_iter().map(|(_, gr)| gr).collect()
+}
+
+/// Calculate all direct/indirect grammar rules which can reduce to the specified NT.
+///
+/// E.g. knowing `A := B 'c'` and `B := 'd'`, we can infer `A := 'd' 'c'`.
+/// When we construct DFA state, if a state has the candidate `X := # A`,
+/// it should also have the candidate `A := # B 'c'` and `B := # 'd'`.
+/// In this case, `A := # B 'c'` and `B := # 'd'` are the closure of the NT 'A'.
+fn calc_nt_closure<
+  TKind: TokenKind,
+  NTKind: TokenKind + Clone,
+  ASTData: 'static,
+  ErrorType: 'static,
+  Global: 'static,
+>(
+  nt_id: &GrammarId,
+  gr_repo: &GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
+) -> Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>> {
+  calc_grs_closure(
+    gr_repo
+      .grs()
+      .iter()
+      .filter(|gr| gr.nt().id() == *nt_id)
+      .map(|gr| gr.clone())
+      .collect(),
+    gr_repo,
+  )
+}
+
+fn calc_all_nt_closures<
+  TKind: TokenKind,
+  NTKind: TokenKind + Clone,
+  ASTData: 'static,
+  ErrorType: 'static,
+  Global: 'static,
+>(
+  nt_ids: &HashSet<GrammarId>,
+  gr_repo: &GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
+) -> HashMap<GrammarId, Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>> {
+  nt_ids
+    .iter()
+    .map(|nt_id| (nt_id.clone(), calc_nt_closure(nt_id, gr_repo)))
+    .collect::<HashMap<_, _>>()
 }
