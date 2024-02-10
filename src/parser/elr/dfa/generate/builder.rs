@@ -24,8 +24,10 @@ pub fn prepare<
   entry_nts: HashSet<GrammarId>,
   gr_repo: GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
 ) {
+  let nt_closures = calc_all_nt_closures(&nts, &gr_repo);
+
   // init all initial candidates, initial candidate is candidate with digested=0
-  let cs = CandidateRepo::with_initial(gr_repo.grs());
+  let mut cs = CandidateRepo::with_initial(gr_repo.grs());
 
   let entry_candidates = calc_grs_closure(
     gr_repo
@@ -40,9 +42,8 @@ pub fn prepare<
   .map(|gr| cs.get_initial(gr.id()).id().clone())
   .collect::<BTreeSet<_>>();
 
-  let state_repo = StateRepo::with_entry(entry_candidates);
-
-  let nt_closures = calc_all_nt_closures(&nts, &gr_repo);
+  let mut state_repo = StateRepo::with_entry(entry_candidates);
+  state_repo.calc_all_states(&get_all_grammar_id(&gr_repo), &mut cs, &nt_closures);
 }
 
 /// If a rule starts with an NT, merge result with that NT's grammar rules.
@@ -157,17 +158,27 @@ fn calc_all_nt_closures<
     .collect::<HashMap<_, _>>()
 }
 
-fn calc_all_states(state_repo: StateRepo) {
-  // collect all grammars in grammar rules.
-  // don't convert grammar rules' NTs into ASTNodes,
+fn get_all_grammar_id<
+  TKind: TokenKind,
+  NTKind: TokenKind + Clone,
+  ASTData: 'static,
+  ErrorType: 'static,
+  Global: 'static,
+>(
+  gr_repo: &GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
+) -> HashSet<GrammarId> {
+  // collect all grammars in grammar rules only,
+  // don't collect grammar rules' NTs, because
   // some NTs might not appear in grammar rules (entry-only NTs).
-  // when we enable ignoreEntryFollow, the entry-only NTs
-  // may appear as the first node in parser's buffer,
-  // and the `parser.parse` will throw StateCacheMissError.
-  // if we do convert entry-only NTs into ASTNodes,
+  // when entry-only NTs appear in parser's buffer (e.g. user provided buffer when parse),
+  // the `parser.parse` should throw StateCacheMissError.
+  // if we do collect entry-only NTs,
   // the `parser.parse` will just reject the input without throwing StateCacheMissError.
-
-  loop {
-    state_repo.states().iter().for_each(|s| {})
-  }
+  // TODO: update comments above
+  gr_repo
+    .grs()
+    .iter()
+    .map(|gr| gr.rule().iter().map(|g| g.id().clone()).collect::<Vec<_>>())
+    .flat_map(|ids| ids.into_iter())
+    .collect()
 }
