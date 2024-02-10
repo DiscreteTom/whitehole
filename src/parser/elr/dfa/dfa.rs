@@ -7,10 +7,7 @@ use crate::{
     token::{TokenKind, TokenKindId},
     trimmed::TrimmedLexer,
   },
-  parser::{
-    ast::ASTNode,
-    elr::grammar::{grammar_repo::GrammarRepo, grammar_rule_repo::GrammarRuleRepo},
-  },
+  parser::ast::ASTNode,
 };
 use std::{
   cell::RefCell,
@@ -35,11 +32,9 @@ pub struct Dfa<
   ErrorType: 'static,
   Global: 'static,
 > {
-  grs: GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
   entry_nts: HashSet<TokenKindId>,
   entry_state: Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>,
   follow_sets: HashMap<TokenKindId, TokenKindId>,
-  grammars: GrammarRepo<TKind, NTKind>,
   // TODO: token_ast_mapper
 }
 
@@ -51,6 +46,18 @@ impl<
     Global: 'static,
   > Dfa<TKind, NTKind, ASTData, ErrorType, Global>
 {
+  pub fn new(
+    entry_nts: HashSet<TokenKindId>,
+    entry_state: Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>,
+    follow_sets: HashMap<TokenKindId, TokenKindId>,
+  ) -> Self {
+    Self {
+      entry_nts,
+      entry_state,
+      follow_sets,
+    }
+  }
+
   pub fn parse<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
     &self,
     buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
