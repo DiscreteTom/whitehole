@@ -19,10 +19,12 @@ where
   Kind: TokenKind<Kind> + Default + Clone,
   ActionState: Clone + Default,
 {
+  /// Define [muted](Action::maybe_muted) action.
   pub fn ignore_default(self, action: Action<(), ActionState, ErrorType>) -> Self {
     self.ignore(action.bind(Kind::default()))
   }
 
+  /// Define [muted](Action::maybe_muted) action.
   pub fn ignore_default_from<F>(self, factory: F) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
@@ -86,12 +88,12 @@ where
     self.define(kind, factory(ActionBuilder::default()))
   }
 
-  /// Define muted action.
+  /// Define [muted](Action::maybe_muted) action.
   pub fn ignore(self, action: Action<Kind, ActionState, ErrorType>) -> Self {
     self.append(action.mute(true))
   }
 
-  /// Define muted action.
+  /// Define [muted](Action::maybe_muted) action.
   pub fn ignore_from<F>(self, factory: F) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,

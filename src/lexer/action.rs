@@ -29,7 +29,7 @@ pub struct Action<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
   pub maybe_muted: bool,
 
   /// This is used to accelerate expectational lexing.
-  /// Every action should have this field set by `Action.kinds`.
+  /// Every action should have this field set by [`Action::kinds`].
   possible_kinds: HashSet<TokenKindId<Kind>>,
   /// This is used to accelerate lexing by the first character
   /// of the rest of the input. This is optional.

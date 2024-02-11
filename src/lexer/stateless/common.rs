@@ -15,12 +15,12 @@ pub struct Validator<'validator, Kind: 'static, ActionState: 'static, ErrorType:
   >,
 }
 
-/// OutputHandler controls the behaviour of `execute_actions`
+/// [`OutputHandler`] controls the behaviour of [`StatelessLexer::execute_actions`]
 /// when an un-muted action is accepted.
 pub struct OutputHandler {
-  /// If `true`, fields in `LexerCoreLexOutput` (like `digested`) should be updated.
+  /// If `true`, fields in [`LexOutput`] (like [`digested`](LexOutput::digested)) should be updated.
   pub update_lex_output: bool,
-  /// If `true`, the `LexerCoreLexOutput` should have a token created by the `ActionOutput`.
+  /// If `true`, the [`LexOutput`] should have a token created by the [`ActionOutput`].
   pub create_token: bool,
 }
 
