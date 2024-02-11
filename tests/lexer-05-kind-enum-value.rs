@@ -29,7 +29,7 @@ fn kind_enum_with_calculated_value() {
   let action = Action::<(), (), ()>::regex(r"^a")
     .unwrap()
     // in `kinds` the value is not important, we just want to get the kind id
-    .kinds(&[&MyKind::A(Default::default())])
+    .kinds([MyKind::A(Default::default())])
     .select(|ctx| MyKind::A(ctx.output.rest().len()));
 
   // yes we can use `append` and `append_from` to use an action with possible_kinds set
