@@ -1,11 +1,9 @@
 use super::token::TokenKindId;
 use crate::lexer::token::TokenKind;
-use std::marker::PhantomData;
 
 pub struct Expectation<'expect_text, Kind> {
   pub kind: Option<TokenKindId<Kind>>,
   pub text: Option<&'expect_text str>,
-  _kind: PhantomData<Kind>,
 }
 
 impl<'expect_text, Kind> Default for Expectation<'expect_text, Kind> {
@@ -13,7 +11,6 @@ impl<'expect_text, Kind> Default for Expectation<'expect_text, Kind> {
     Expectation {
       kind: None,
       text: None,
-      _kind: PhantomData,
     }
   }
 }
@@ -26,7 +23,6 @@ where
     Expectation {
       kind: Some(kind.id()),
       text: None,
-      _kind: PhantomData,
     }
   }
 }
@@ -36,14 +32,13 @@ impl<'expect_text, Kind> From<&'expect_text str> for Expectation<'expect_text, K
     Expectation {
       kind: None,
       text: Some(text),
-      _kind: PhantomData,
     }
   }
 }
 
 impl<'expect_text, Kind: TokenKind<Kind>> Expectation<'expect_text, Kind> {
   /// Set the expected kind of the token.
-  /// Only the kind id will be compared, data will be ignored.
+  /// Only the kind id is compared, data will be ignored.
   pub fn kind(mut self, kind: impl Into<Kind>) -> Self {
     self.kind = Some(kind.into().id());
     self
