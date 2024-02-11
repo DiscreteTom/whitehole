@@ -3,19 +3,14 @@ use whitehole_macros::TokenKind;
 
 // define token kinds
 // make sure it implements `TokenKind` and `Clone`.
-#[derive(TokenKind, Clone)]
+#[derive(TokenKind, Clone, Default)]
 enum MyKind {
+  // as a convention, we use `Anonymous` as the default kind
+  // so that we can use `builder.ignore_default`
+  #[default]
   Anonymous,
   A,
   B,
-}
-
-// as a convention, we use `Anonymous` as the default kind
-// so that we can use `builder.ignore_default`
-impl Default for MyKind {
-  fn default() -> Self {
-    MyKind::Anonymous
-  }
 }
 
 #[test]
