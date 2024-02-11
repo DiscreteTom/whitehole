@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use whitehole::lexer::{token::TokenKind, Action, Builder};
 use whitehole_macros::TokenKind;
 
@@ -62,5 +64,18 @@ fn multi_kinds() {
   let token = lexer.lex().token.unwrap();
   assert!(matches!(token.kind, MyKind::B));
 
-  // TODO: action.into_multi_kind_action
+  // if you want to provide the kinds as a hash set directly
+  // you can use Action.into_multi_kind_action
+  let action = Action::<(), (), ()>::regex(r"^a")
+    .unwrap()
+    .into_multi_kind_action(HashSet::from([MyKind::A.id(), MyKind::B.id()]))
+    .select(|ctx| {
+      if ctx.output.rest().len() > 0 {
+        MyKind::A
+      } else {
+        MyKind::B
+      }
+    });
+  assert!(action.possible_kinds().contains(&MyKind::A.id()));
+  assert!(action.possible_kinds().contains(&MyKind::B.id()));
 }
