@@ -18,12 +18,11 @@ where
   /// All actions.
   actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
   /// This is used to accelerate expected lexing.
-  /// TODO: rename to kind_map
-  action_map: HashMap<TokenKindId<Kind>, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
-  /// This is used to accelerate trimming.
-  maybe_muted_actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
+  kind_map: HashMap<TokenKindId<Kind>, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
   /// This is used to accelerate lexing by the first character.
   head_map: HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
+  /// This is used to accelerate trimming.
+  maybe_muted_actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
 }
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType>
@@ -97,7 +96,7 @@ where
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
 
     StatelessLexer {
-      action_map,
+      kind_map: action_map,
       maybe_muted_actions: actions
         .iter()
         .filter(|a| a.maybe_muted)
@@ -111,16 +110,16 @@ where
   pub fn actions(&self) -> &[Rc<Action<Kind, ActionState, ErrorType>>] {
     &self.actions
   }
-  pub fn action_map(
+  pub fn kind_map(
     &self,
   ) -> &HashMap<TokenKindId<Kind>, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
-    &self.action_map
-  }
-  pub fn maybe_muted_actions(&self) -> &[Rc<Action<Kind, ActionState, ErrorType>>] {
-    &self.maybe_muted_actions
+    &self.kind_map
   }
   pub fn head_map(&self) -> &HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
     &self.head_map
+  }
+  pub fn maybe_muted_actions(&self) -> &[Rc<Action<Kind, ActionState, ErrorType>>] {
+    &self.maybe_muted_actions
   }
 
   /// Consume self, create a new lexer with the provided buffer.

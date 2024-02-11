@@ -72,7 +72,7 @@ where
       // if exp_kind is None, we should use all actions
       // otherwise, we should use the actions with the same kind (or maybe muted)
       exp_kind.map_or(&self.actions, |kind| {
-        self.action_map.get(&kind).unwrap_or(&self.actions)
+        self.kind_map.get(&kind).unwrap_or(&self.actions)
       }),
       move |input| {
         let text_mismatch = exp_text.is_some_and(|text| !input.rest().starts_with(text));
