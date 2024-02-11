@@ -12,7 +12,7 @@ enum MyKind {
 }
 
 #[test]
-fn lexer_basic() {
+fn lexer_basics() {
   // create a lexer via the lexer builder
   // specify lexer builder's generic parameters explicitly
   // the first parameter is the token kind
@@ -51,7 +51,7 @@ fn lexer_basic() {
       // you can use `Action::new` to create an action
       // the closure should directly return an `Option<ActionOutput>`
       // however this is NOT the simplest way to modify the action
-      // we will introduce a simpler way in `lexer-002-actions.rs`
+      // we will introduce a simpler way in the next chapter
       Action::new(|input| {
         if input.rest().starts_with("c") {
           Some(ActionOutputWithoutKind {
