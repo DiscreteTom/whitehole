@@ -50,8 +50,8 @@ impl<T> Stack<T> {
 }
 
 pub struct ParsingState<
-  TKind: TokenKind,
-  NTKind: TokenKind + Clone,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
@@ -70,8 +70,8 @@ pub struct ParsingState<
 
 impl<
     'buffer,
-    TKind: TokenKind,
-    NTKind: TokenKind + Clone,
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind> + Clone,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
@@ -128,8 +128,8 @@ impl<
 
   pub fn try_reduce(
     &mut self,
-    entry_nts: &HashSet<TokenKindId>,
-    follow_sets: &HashMap<TokenKindId, TokenKindId>,
+    entry_nts: &HashSet<TokenKindId<NTKind>>,
+    follow_sets: &HashMap<GrammarId, HashSet<GrammarId>>,
     states: &HashMap<StateId, Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
   ) -> bool {
     let output = match self.state_stack.current().try_reduce(

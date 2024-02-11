@@ -1,10 +1,9 @@
-/// The unique id of a token kind.
-/// Usually we use enum variants as token kinds, and the id is the variant's index.
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, PartialOrd, Ord)]
-pub struct TokenKindId(pub usize);
+mod token_kind_id;
 
-pub trait TokenKind {
-  fn id(&self) -> TokenKindId;
+pub use self::token_kind_id::TokenKindId;
+
+pub trait TokenKind<TokenKindType> {
+  fn id(&self) -> TokenKindId<TokenKindType>;
 }
 
 #[derive(Debug)]

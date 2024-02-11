@@ -6,13 +6,15 @@ use std::{collections::HashSet, rc::Rc};
 pub struct GrammarRuleId(pub usize);
 
 pub struct GrammarRule<
-  TKind: TokenKind,
-  NTKind: TokenKind + Clone,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
 > {
   id: GrammarRuleId,
+  // the NT should be a `Grammar` instead of an `NTKind`
+  // because we need the grammar to get next state when `try_reduce`
   nt: Rc<Grammar<TKind, NTKind>>,
   rule: Vec<Rc<Grammar<TKind, NTKind>>>,
   expect: HashSet<usize>,
@@ -20,8 +22,8 @@ pub struct GrammarRule<
 }
 
 impl<
-    TKind: TokenKind,
-    NTKind: TokenKind + Clone,
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind> + Clone,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,

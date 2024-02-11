@@ -1,29 +1,20 @@
-use crate::lexer::token::{TokenKind, TokenKindId};
+use crate::lexer::token::TokenKind;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, PartialOrd, Ord)]
 pub struct GrammarId(pub usize);
 
-pub enum GrammarKind<TKind: TokenKind, NTKind: TokenKind> {
+pub enum GrammarKind<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> {
   T(TKind),
   NT(NTKind),
 }
 
-impl<TKind: TokenKind, NTKind: TokenKind> TokenKind for GrammarKind<TKind, NTKind> {
-  fn id(&self) -> TokenKindId {
-    match self {
-      GrammarKind::T(kind) => kind.id(),
-      GrammarKind::NT(kind) => kind.id(),
-    }
-  }
-}
-
-pub struct Grammar<TKind: TokenKind, NTKind: TokenKind> {
+pub struct Grammar<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> {
   id: GrammarId,
   kind: GrammarKind<TKind, NTKind>,
   text: Option<String>,
 }
 
-impl<TKind: TokenKind, NTKind: TokenKind> Grammar<TKind, NTKind> {
+impl<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> Grammar<TKind, NTKind> {
   /// Should only be called by the grammar repo.
   pub fn new(id: GrammarId, kind: GrammarKind<TKind, NTKind>, text: Option<String>) -> Self {
     Self { id, kind, text }

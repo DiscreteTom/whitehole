@@ -27,7 +27,7 @@ pub struct OutputHandler {
 impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType>
   StatelessLexer<Kind, ActionState, ErrorType>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   pub fn execute_actions<'validator, F>(

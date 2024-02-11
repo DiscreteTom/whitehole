@@ -41,14 +41,11 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// Apply a decorator to this action.
   /// Usually used to modify the `ActionOutput`.
   /// Return a new action.
-  pub fn apply<NewKind, NewErrorType, F>(
-    self,
-    decorator: F,
-  ) -> Action<NewKind, ActionState, NewErrorType>
+  pub fn apply<NewErrorType, F>(self, decorator: F) -> Action<Kind, ActionState, NewErrorType>
   where
     F: Fn(
         AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>,
-      ) -> Option<ActionOutput<NewKind, NewErrorType>>
+      ) -> Option<ActionOutput<Kind, NewErrorType>>
       + 'static,
   {
     let exec = self.exec;
@@ -177,7 +174,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// Use this if your action can only yield one kind.
   pub fn bind<NewKind>(self, kind: impl Into<NewKind>) -> Action<NewKind, ActionState, ErrorType>
   where
-    NewKind: TokenKind + Clone + 'static,
+    NewKind: TokenKind<NewKind> + Clone + 'static,
   {
     let kind = kind.into();
     self.kinds(&[&kind]).select(move |_| kind.clone())

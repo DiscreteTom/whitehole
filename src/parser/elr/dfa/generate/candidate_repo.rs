@@ -15,8 +15,8 @@ use std::{
 };
 
 pub struct CandidateRepo<
-  TKind: TokenKind,
-  NTKind: TokenKind + Clone,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
@@ -27,8 +27,8 @@ pub struct CandidateRepo<
 }
 
 impl<
-    TKind: TokenKind,
-    NTKind: TokenKind + Clone,
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind> + Clone,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,

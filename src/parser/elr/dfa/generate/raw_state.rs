@@ -36,8 +36,8 @@ impl RawState {
   }
 
   pub fn into_state<
-    TKind: TokenKind,
-    NTKind: TokenKind + Clone,
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind> + Clone,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,

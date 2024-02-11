@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 pub struct Builder<Kind: 'static, ActionState: 'static, ErrorType: 'static>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   actions: Vec<Action<Kind, ActionState, ErrorType>>,
@@ -16,7 +16,7 @@ where
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Builder<Kind, ActionState, ErrorType>
 where
-  Kind: TokenKind + Default + Clone,
+  Kind: TokenKind<Kind> + Default + Clone,
   ActionState: Clone + Default,
 {
   pub fn ignore_default(self, action: Action<(), ActionState, ErrorType>) -> Self {
@@ -44,7 +44,7 @@ where
 
 impl<Kind, ActionState, ErrorType> Default for Builder<Kind, ActionState, ErrorType>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   fn default() -> Self {
@@ -56,7 +56,7 @@ where
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Builder<Kind, ActionState, ErrorType>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   pub fn append(mut self, action: Action<Kind, ActionState, ErrorType>) -> Self {

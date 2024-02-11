@@ -1,6 +1,6 @@
-use super::{candidate_repo::CandidateRepo, raw_candidate::RawCandidate, raw_state::RawState};
+use super::{candidate_repo::CandidateRepo, raw_state::RawState};
 use crate::{
-  lexer::token::{TokenKind, TokenKindId},
+  lexer::token::TokenKind,
   parser::elr::{
     dfa::{
       candidate::{Candidate, CandidateId},
@@ -40,8 +40,8 @@ impl StateRepo {
   }
 
   pub fn calc_all_states<
-    TKind: TokenKind,
-    NTKind: TokenKind + Clone,
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind> + Clone,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
@@ -88,8 +88,8 @@ impl StateRepo {
 
   /// Return `None` if no next or next is already generated.
   fn generate_next<
-    TKind: TokenKind,
-    NTKind: TokenKind + Clone,
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind> + Clone,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
@@ -123,8 +123,8 @@ impl StateRepo {
 
   // TODO: merge with generate_next
   fn calc_next_candidates<
-    TKind: TokenKind,
-    NTKind: TokenKind + Clone,
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind> + Clone,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
@@ -174,8 +174,8 @@ impl StateRepo {
   }
 
   pub fn into_states<
-    TKind: TokenKind,
-    NTKind: TokenKind + Clone,
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind> + Clone,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,

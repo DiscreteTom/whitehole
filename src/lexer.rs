@@ -23,7 +23,7 @@ use std::rc::Rc;
 
 pub struct Lexer<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   // use Rc so that this is clone-able
@@ -35,7 +35,7 @@ where
 impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static> Clone
   for Lexer<'buffer, Kind, ActionState, ErrorType>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   fn clone(&self) -> Self {
@@ -50,7 +50,7 @@ where
 impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
   Lexer<'buffer, Kind, ActionState, ErrorType>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   pub fn new(

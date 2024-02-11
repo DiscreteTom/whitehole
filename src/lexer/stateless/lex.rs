@@ -22,7 +22,7 @@ pub struct StatelessLexOutput<TokenType, ActionState> {
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
   StatelessLexer<Kind, ActionState, ErrorType>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   pub fn lex<'buffer>(

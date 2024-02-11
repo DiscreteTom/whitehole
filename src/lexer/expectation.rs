@@ -3,7 +3,7 @@ use crate::lexer::token::TokenKind;
 use std::marker::PhantomData;
 
 pub struct Expectation<'expect_text, Kind> {
-  pub kind: Option<TokenKindId>,
+  pub kind: Option<TokenKindId<Kind>>,
   pub text: Option<&'expect_text str>,
   _kind: PhantomData<Kind>,
 }
@@ -18,9 +18,9 @@ impl<'expect_text, Kind> Default for Expectation<'expect_text, Kind> {
   }
 }
 
-impl<'expect_text, Kind: TokenKind> From<&Kind> for Expectation<'expect_text, Kind>
+impl<'expect_text, Kind: TokenKind<Kind>> From<&Kind> for Expectation<'expect_text, Kind>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
 {
   fn from(kind: &Kind) -> Self {
     Expectation {
@@ -41,7 +41,7 @@ impl<'expect_text, Kind> From<&'expect_text str> for Expectation<'expect_text, K
   }
 }
 
-impl<'expect_text, Kind: TokenKind> Expectation<'expect_text, Kind> {
+impl<'expect_text, Kind: TokenKind<Kind>> Expectation<'expect_text, Kind> {
   /// Set the expected kind of the token.
   /// Only the kind id will be compared, data will be ignored.
   pub fn kind(mut self, kind: impl Into<Kind>) -> Self {

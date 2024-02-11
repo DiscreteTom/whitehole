@@ -23,7 +23,7 @@ pub struct TrimmedLexerLexAllOutput<TokenType, Lexer> {
 
 pub struct TrimmedLexer<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   lexer: Lexer<'buffer, Kind, ActionState, ErrorType>,
@@ -32,7 +32,7 @@ where
 impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static> Clone
   for TrimmedLexer<'buffer, Kind, ActionState, ErrorType>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   fn clone(&self) -> Self {
@@ -45,7 +45,7 @@ where
 impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
   TrimmedLexer<'buffer, Kind, ActionState, ErrorType>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   pub fn new(lexer: Lexer<'buffer, Kind, ActionState, ErrorType>) -> Self {

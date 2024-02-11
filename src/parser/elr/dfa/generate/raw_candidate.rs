@@ -1,30 +1,15 @@
-use super::candidate_repo::CandidateRepo;
 use crate::{
-  lexer::{
-    expectation::Expectation,
-    token::{Range, TokenKind, TokenKindId},
-    trimmed::TrimmedLexer,
-  },
-  parser::{
-    ast::ASTNode,
-    elr::{
-      dfa::candidate::{Candidate, CandidateId},
-      grammar::{
-        grammar::{Grammar, GrammarId, GrammarKind},
-        grammar_rule::GrammarRule,
-      },
-    },
+  lexer::token::TokenKind,
+  parser::elr::{
+    dfa::candidate::{Candidate, CandidateId},
+    grammar::{grammar::Grammar, grammar_rule::GrammarRule},
   },
 };
-use std::{
-  cell::RefCell,
-  collections::{HashMap, HashSet},
-  rc::Rc,
-};
+use std::rc::Rc;
 
 pub struct RawCandidate<
-  TKind: TokenKind,
-  NTKind: TokenKind + Clone,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
@@ -37,8 +22,8 @@ pub struct RawCandidate<
 }
 
 impl<
-    TKind: TokenKind,
-    NTKind: TokenKind + Clone,
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind> + Clone,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,

@@ -1,10 +1,10 @@
 use super::traverser::Traverser;
-use crate::lexer::token::{Range, TokenKind, TokenKindId};
+use crate::lexer::token::{Range, TokenKind};
 use std::{cell::RefCell, rc::Rc};
 
 pub enum ASTNodeKind<
-  TKind: TokenKind,
-  NTKind: TokenKind,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind>,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
@@ -13,20 +13,9 @@ pub enum ASTNodeKind<
   NT(NTKind, Traverser<TKind, NTKind, ASTData, ErrorType, Global>),
 }
 
-impl<TKind: TokenKind, NTKind: TokenKind, ASTData: 'static, ErrorType: 'static, Global: 'static>
-  TokenKind for ASTNodeKind<TKind, NTKind, ASTData, ErrorType, Global>
-{
-  fn id(&self) -> TokenKindId {
-    match self {
-      ASTNodeKind::T(kind) => kind.id(),
-      ASTNodeKind::NT(kind, _) => kind.id(),
-    }
-  }
-}
-
 pub struct ASTNode<
-  TKind: TokenKind,
-  NTKind: TokenKind, // TODO: don't use TokenKind? use another trait?
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind>, // TODO: don't use TokenKind? use another trait?
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
@@ -41,8 +30,13 @@ pub struct ASTNode<
   pub parent: Option<usize>,
 }
 
-impl<TKind: TokenKind, NTKind: TokenKind, ASTData: 'static, ErrorType: 'static, Global: 'static>
-  ASTNode<TKind, NTKind, ASTData, ErrorType, Global>
+impl<
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind>,
+    ASTData: 'static,
+    ErrorType: 'static,
+    Global: 'static,
+  > ASTNode<TKind, NTKind, ASTData, ErrorType, Global>
 {
   pub fn new_t(
     kind: TKind,

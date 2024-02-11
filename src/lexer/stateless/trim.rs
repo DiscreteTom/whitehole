@@ -8,7 +8,7 @@ use crate::lexer::{
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
   StatelessLexer<Kind, ActionState, ErrorType>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   pub fn trim<'buffer, 'action_state, 'expect_text>(

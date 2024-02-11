@@ -2,7 +2,7 @@ use super::{
   candidate_repo::CandidateRepo, grammar_rule_repo::GrammarRuleRepo, state_repo::StateRepo,
 };
 use crate::{
-  lexer::token::TokenKind,
+  lexer::token::{TokenKind, TokenKindId},
   parser::elr::grammar::{
     grammar::{GrammarId, GrammarKind},
     grammar_rule::GrammarRule,
@@ -14,14 +14,14 @@ use std::{
 };
 
 pub fn prepare<
-  TKind: TokenKind,
-  NTKind: TokenKind + Clone,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
 >(
   nts: HashSet<GrammarId>, // TODO: don't pass nts because this can be calculated by gr_repo
-  entry_nts: HashSet<GrammarId>,
+  entry_nts: HashSet<TokenKindId<NTKind>>,
   gr_repo: GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
 ) {
   let nt_closures = calc_all_nt_closures(&nts, &gr_repo);
@@ -33,7 +33,12 @@ pub fn prepare<
     gr_repo
       .grs()
       .iter()
-      .filter(|gr| entry_nts.contains(&gr.nt().id()))
+      .filter(|gr| {
+        entry_nts.contains(&match &gr.nt().kind() {
+          GrammarKind::NT(nt) => nt.id(),
+          _ => unreachable!("GrammarRule's NT must be NTKind"),
+        })
+      })
       .map(|gr| gr.clone())
       .collect(),
     &gr_repo,
@@ -50,6 +55,8 @@ pub fn prepare<
   // convert raw candidates/states to candidates/states
   let candidates = cs.into_candidates();
   let states = state_repo.into_states(&candidates);
+
+  // TODO: build the dfa
 }
 
 /// If a rule starts with an NT, merge result with that NT's grammar rules.
@@ -59,8 +66,8 @@ pub fn prepare<
 /// it should also have the candidate `B := # 'd'`.
 // TODO: just return id?
 fn calc_grs_closure<
-  TKind: TokenKind,
-  NTKind: TokenKind + Clone,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
@@ -129,8 +136,8 @@ fn calc_grs_closure<
 /// it should also have the candidate `A := # B 'c'` and `B := # 'd'`.
 /// In this case, `A := # B 'c'` and `B := # 'd'` are the closure of the NT 'A'.
 fn calc_nt_closure<
-  TKind: TokenKind,
-  NTKind: TokenKind + Clone,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
@@ -150,8 +157,8 @@ fn calc_nt_closure<
 }
 
 fn calc_all_nt_closures<
-  TKind: TokenKind,
-  NTKind: TokenKind + Clone,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
@@ -166,8 +173,8 @@ fn calc_all_nt_closures<
 }
 
 fn get_all_grammar_id<
-  TKind: TokenKind,
-  NTKind: TokenKind + Clone,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
@@ -191,8 +198,8 @@ fn get_all_grammar_id<
 }
 
 fn calc_first_sets<
-  TKind: TokenKind,
-  NTKind: TokenKind + Clone,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
@@ -214,8 +221,8 @@ fn calc_first_sets<
 }
 
 fn calc_follow_sets<
-  TKind: TokenKind,
-  NTKind: TokenKind + Clone,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,

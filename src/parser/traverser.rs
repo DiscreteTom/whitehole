@@ -3,8 +3,8 @@ use crate::lexer::token::TokenKind;
 use std::rc::Rc;
 
 pub type Traverser<
-  TKind: TokenKind,
-  NTKind: TokenKind,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind>,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,

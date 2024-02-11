@@ -5,7 +5,7 @@ use super::{
   Action,
 };
 use crate::lexer::token::{TokenKind, TokenKindId};
-use std::{collections::HashSet, marker::PhantomData};
+use std::collections::HashSet;
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Set possible kinds for this action.
@@ -15,29 +15,38 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     possible_kinds: &[&NewKind],
   ) -> MultiKindAction<NewKind, Kind, ActionState, ErrorType>
   where
-    NewKind: TokenKind,
+    NewKind: TokenKind<NewKind>,
   {
     MultiKindAction {
       possible_kinds: possible_kinds.iter().map(|kind| kind.id()).collect(),
       maybe_muted: self.maybe_muted,
       exec: self.exec,
-      new_kind: PhantomData,
+    }
+  }
+
+  pub fn into_multi_kind_action<NewKind: 'static>(
+    self,
+    possible_kinds: HashSet<TokenKindId<NewKind>>,
+  ) -> MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
+    MultiKindAction {
+      possible_kinds,
+      maybe_muted: self.maybe_muted,
+      exec: self.exec,
     }
   }
 }
 
 pub struct MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
-  possible_kinds: HashSet<TokenKindId>,
+  possible_kinds: HashSet<TokenKindId<NewKind>>,
   maybe_muted: bool,
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
-  new_kind: PhantomData<NewKind>, // we need this to store the `NewKind` type
 }
 
 impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
   MultiKindAction<NewKind, Kind, ActionState, ErrorType>
 {
   pub fn new(
-    possible_kinds: HashSet<TokenKindId>,
+    possible_kinds: HashSet<TokenKindId<NewKind>>,
     maybe_muted: bool,
     exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
   ) -> Self {
@@ -45,7 +54,6 @@ impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
       possible_kinds,
       maybe_muted,
       exec,
-      new_kind: PhantomData,
     }
   }
 

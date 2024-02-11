@@ -22,7 +22,7 @@ pub struct Action<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
   /// so don't set this field unless you know what you are doing.
   pub maybe_muted: bool,
 
-  possible_kinds: HashSet<TokenKindId>,
+  possible_kinds: HashSet<TokenKindId<Kind>>,
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
 }
 
@@ -45,7 +45,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     !self.maybe_muted
   }
 
-  pub fn possible_kinds(&self) -> &HashSet<TokenKindId> {
+  /// Should only be set by `Action.kinds`.
+  pub fn possible_kinds(&self) -> &HashSet<TokenKindId<Kind>> {
     &self.possible_kinds
   }
 

@@ -2,8 +2,8 @@ use crate::{lexer::token::TokenKind, parser::elr::grammar::grammar_rule::Grammar
 use std::rc::Rc;
 
 pub struct GrammarRuleRepo<
-  TKind: TokenKind,
-  NTKind: TokenKind + Clone,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
@@ -12,8 +12,8 @@ pub struct GrammarRuleRepo<
 }
 
 impl<
-    TKind: TokenKind,
-    NTKind: TokenKind + Clone,
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind> + Clone,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,

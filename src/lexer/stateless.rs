@@ -12,20 +12,20 @@ use std::{collections::HashMap, rc::Rc};
 /// Stateless, immutable lexer.
 pub struct StatelessLexer<Kind: 'static, ActionState: 'static, ErrorType: 'static>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   /// All actions.
   actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
   /// This is used to accelerate expected lexing.
-  action_map: HashMap<TokenKindId, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>, // TODO: don't overuse Rc, can we just use a reference?
+  action_map: HashMap<TokenKindId<Kind>, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>, // TODO: don't overuse Rc, can we just use a reference?
   /// This is used to accelerate trimming.
   maybe_muted_actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
 }
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType>
 where
-  Kind: TokenKind,
+  Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   pub fn new(actions: Vec<Action<Kind, ActionState, ErrorType>>) -> Self {
@@ -68,7 +68,9 @@ where
   pub fn actions(&self) -> &[Rc<Action<Kind, ActionState, ErrorType>>] {
     &self.actions
   }
-  pub fn action_map(&self) -> &HashMap<TokenKindId, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
+  pub fn action_map(
+    &self,
+  ) -> &HashMap<TokenKindId<Kind>, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
     &self.action_map
   }
   pub fn maybe_muted_actions(&self) -> &[Rc<Action<Kind, ActionState, ErrorType>>] {

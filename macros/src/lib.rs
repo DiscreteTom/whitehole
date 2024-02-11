@@ -27,17 +27,17 @@ pub fn token_kind_macro_derive(input: TokenStream) -> TokenStream {
       match variant.fields {
         Fields::Named(_) => {
           quote! {
-            #enum_name::#variant_name { .. } => #crate_name::lexer::token::TokenKindId(#index),
+            #enum_name::#variant_name { .. } => #crate_name::lexer::token::TokenKindId::new(#index),
           }
         }
         Fields::Unnamed(_) => {
           quote! {
-            #enum_name::#variant_name(..) => #crate_name::lexer::token::TokenKindId(#index),
+            #enum_name::#variant_name(..) => #crate_name::lexer::token::TokenKindId::new(#index),
           }
         }
         Fields::Unit => {
           quote! {
-            #enum_name::#variant_name => #crate_name::lexer::token::TokenKindId(#index),
+            #enum_name::#variant_name => #crate_name::lexer::token::TokenKindId::new(#index),
           }
         }
       }
@@ -45,8 +45,8 @@ pub fn token_kind_macro_derive(input: TokenStream) -> TokenStream {
     .collect();
 
   let gen = quote! {
-    impl #crate_name::lexer::token::TokenKind for #enum_name {
-      fn id(&self) -> #crate_name::lexer::token::TokenKindId {
+    impl #crate_name::lexer::token::TokenKind<#enum_name> for #enum_name {
+      fn id(&self) -> #crate_name::lexer::token::TokenKindId<#enum_name> {
         match self {
           #(#match_arms)*
         }

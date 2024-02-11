@@ -7,7 +7,10 @@ use crate::{
     token::{TokenKind, TokenKindId},
     trimmed::TrimmedLexer,
   },
-  parser::ast::ASTNode,
+  parser::{
+    ast::{ASTNode, ASTNodeKind},
+    elr::grammar::grammar::GrammarId,
+  },
 };
 use std::{
   cell::RefCell,
@@ -16,8 +19,8 @@ use std::{
 };
 
 pub struct DfaParseOutput<
-  TKind: TokenKind,
-  NTKind: TokenKind,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind>,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
@@ -26,32 +29,32 @@ pub struct DfaParseOutput<
 }
 
 pub struct Dfa<
-  TKind: TokenKind,
-  NTKind: TokenKind + Clone,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
 > {
-  entry_nts: HashSet<TokenKindId>,
+  entry_nts: HashSet<TokenKindId<NTKind>>,
   entry_state: Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>,
   states: HashMap<StateId, Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
-  follow_sets: HashMap<TokenKindId, TokenKindId>,
+  follow_sets: HashMap<GrammarId, HashSet<GrammarId>>,
   // TODO: token_ast_mapper
 }
 
 impl<
-    TKind: TokenKind,
-    NTKind: TokenKind + Clone,
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind> + Clone,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
   > Dfa<TKind, NTKind, ASTData, ErrorType, Global>
 {
   pub fn new(
-    entry_nts: HashSet<TokenKindId>,
+    entry_nts: HashSet<TokenKindId<NTKind>>,
     entry_state: Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>,
     states: HashMap<StateId, Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
-    follow_sets: HashMap<TokenKindId, TokenKindId>,
+    follow_sets: HashMap<GrammarId, HashSet<GrammarId>>,
   ) -> Self {
     Self {
       entry_nts,
@@ -98,10 +101,13 @@ impl<
       }
 
       // else, reduce success
-      if self
-        .entry_nts
-        .contains(&parsing_state.buffer.last().unwrap().kind.id())
-        && parsing_state.reducing_stack.len() == 1
+      if parsing_state.reducing_stack.len() == 1
+        && self
+          .entry_nts
+          .contains(&match &parsing_state.buffer.last().unwrap().kind {
+            ASTNodeKind::NT(kind, _) => kind.id(),
+            _ => unreachable!("The last ASTNode must be an NT after a successful reduce"),
+          })
       {
         // if the last ASTNode is an entry NT, and is the only node to be reduce, then parsing is done
         return;

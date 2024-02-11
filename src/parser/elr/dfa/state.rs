@@ -16,8 +16,8 @@ use std::{
 pub struct StateId(pub usize);
 
 pub struct State<
-  TKind: TokenKind,
-  NTKind: TokenKind + Clone,
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
@@ -28,8 +28,8 @@ pub struct State<
 }
 
 impl<
-    TKind: TokenKind,
-    NTKind: TokenKind + Clone,
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind> + Clone,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
@@ -92,8 +92,8 @@ impl<
     buffer: &Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     reducing_stack: &Vec<usize>,
-    entry_nts: &HashSet<TokenKindId>,
-    follow_sets: &HashMap<TokenKindId, TokenKindId>,
+    entry_nts: &HashSet<TokenKindId<NTKind>>,
+    follow_sets: &HashMap<GrammarId, HashSet<GrammarId>>,
   ) -> Option<StateTryReduceOutput<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>> {
     for c in self.candidates.iter() {
       if let Some(output) = c.try_reduce(buffer, lexer, reducing_stack, entry_nts, follow_sets) {

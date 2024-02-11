@@ -4,17 +4,17 @@ use crate::{
 };
 use std::collections::{hash_map::Entry, HashMap};
 
-pub struct GrammarRepo<TKind: TokenKind, NTKind: TokenKind> {
+pub struct GrammarRepo<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> {
   /// This is used to check if a T grammar is already created.
-  t_cache: HashMap<TokenKindId, HashMap<Option<String>, GrammarId>>,
+  t_cache: HashMap<TokenKindId<TKind>, HashMap<Option<String>, GrammarId>>,
   /// This is used to check if a NT grammar is already created.
-  nt_cache: HashMap<TokenKindId, GrammarId>,
+  nt_cache: HashMap<TokenKindId<NTKind>, GrammarId>,
   /// This is used to get the grammar by id.
   // TODO: is this needed? can we just store grammar in caches?
   map: HashMap<GrammarId, Grammar<TKind, NTKind>>,
 }
 
-impl<TKind: TokenKind, NTKind: TokenKind> Default for GrammarRepo<TKind, NTKind> {
+impl<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> Default for GrammarRepo<TKind, NTKind> {
   fn default() -> Self {
     Self {
       t_cache: HashMap::new(),
@@ -24,7 +24,7 @@ impl<TKind: TokenKind, NTKind: TokenKind> Default for GrammarRepo<TKind, NTKind>
   }
 }
 
-impl<TKind: TokenKind, NTKind: TokenKind> GrammarRepo<TKind, NTKind> {
+impl<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> GrammarRepo<TKind, NTKind> {
   pub fn get_or_create_t(&mut self, kind: TKind) -> &Grammar<TKind, NTKind> {
     match self
       .t_cache
