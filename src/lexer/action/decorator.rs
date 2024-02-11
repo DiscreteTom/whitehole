@@ -183,14 +183,14 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   }
 
   /// Set [`Action::head_matcher`] to [`OneOf`](ActionInputRestHeadMatcher::OneOf).
-  pub fn head_in(mut self, char_set: HashSet<char>) -> Self {
-    self.head_matcher = Some(ActionInputRestHeadMatcher::OneOf(char_set));
+  pub fn head_in(mut self, char_set: impl Into<HashSet<char>>) -> Self {
+    self.head_matcher = Some(ActionInputRestHeadMatcher::OneOf(char_set.into()));
     self
   }
 
   /// Set [`Action::head_matcher`] to [`Not`](ActionInputRestHeadMatcher::Not).
-  pub fn head_not(mut self, char_set: HashSet<char>) -> Self {
-    self.head_matcher = Some(ActionInputRestHeadMatcher::Not(char_set));
+  pub fn head_not(mut self, char_set: impl Into<HashSet<char>>) -> Self {
+    self.head_matcher = Some(ActionInputRestHeadMatcher::Not(char_set.into()));
     self
   }
 
