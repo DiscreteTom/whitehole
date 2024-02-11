@@ -3,7 +3,7 @@ use whitehole_macros::TokenKind;
 
 // define token kinds
 // make sure it implements `TokenKind` and `Clone`.
-#[derive(TokenKind, Clone)]
+#[derive(TokenKind, Clone, Debug)]
 enum MyKind {
   A(usize),
 }
