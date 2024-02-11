@@ -27,6 +27,7 @@ where
     };
 
     let output = Self::execute_actions(
+      &self.maybe_muted_map,
       &self.maybe_muted_actions,
       move |_| Validator {
         // we already filtered actions, so never skip

@@ -69,6 +69,10 @@ where
     let mut action_state = options.action_state;
 
     Self::execute_actions(
+      exp_kind.map_or(&self.head_map, |kind| {
+        self.kind_head_map.get(&kind).unwrap_or(&self.head_map)
+      }),
+      // this is the fallback actions when head map mismatch.
       // if exp_kind is None, we should use all actions
       // otherwise, we should use the actions with the same kind (or maybe muted)
       exp_kind.map_or(&self.actions, |kind| {

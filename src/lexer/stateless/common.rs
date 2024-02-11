@@ -4,7 +4,7 @@ use crate::lexer::{
   output::LexOutput,
   token::{Range, Token, TokenKind},
 };
-use std::rc::Rc;
+use std::{collections::HashMap, rc::Rc};
 
 pub struct Validator<'validator, Kind: 'static, ActionState: 'static, ErrorType: 'static> {
   /// If return `true`, the action will be skipped.
@@ -31,7 +31,8 @@ where
   ActionState: Clone + Default,
 {
   pub fn execute_actions<'validator, F>(
-    actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
+    head_map: &HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
+    fallback_actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
     validator_factory: F,
     buffer: &'buffer str,
     start: usize,
@@ -58,6 +59,9 @@ where
       // so we have to create it outside of the loop
       let mut input = ActionInput::new(buffer, start + res.digested, state);
       let validator = validator_factory(&input);
+      let actions = head_map
+        .get(&(input.rest().as_bytes()[0] as char))
+        .unwrap_or(fallback_actions);
       let output = Self::traverse_actions(&mut input, actions, validator);
 
       match output {

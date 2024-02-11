@@ -17,11 +17,16 @@ where
 {
   /// All actions.
   actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
-  /// This is used to accelerate expected lexing.
-  kind_map: HashMap<TokenKindId<Kind>, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
-  /// This is used to accelerate lexing by the first character.
+  /// This is used to accelerate lexing by the first character when no expected kind.
   head_map: HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
-  /// This is used to accelerate trimming.
+  /// This is used to accelerate expected lexing by the expected kind when first character mismatch.
+  kind_map: HashMap<TokenKindId<Kind>, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
+  /// This is used to accelerate expected lexing by the expected kind and the first character.
+  kind_head_map:
+    HashMap<TokenKindId<Kind>, HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>>,
+  /// This is used to accelerate trimming by the first character.
+  maybe_muted_map: HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
+  /// This is used to accelerate trimming when the first character mismatch.
   maybe_muted_actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
 }
 
@@ -35,7 +40,7 @@ where
     let actions = actions.into_iter().map(Rc::new).collect::<Vec<_>>();
 
     let mut kind_map = HashMap::new();
-    // prepare action map, add vec for all possible kinds
+    // prepare kind map, add value for all possible kinds
     for a in &actions {
       for k in a.possible_kinds() {
         kind_map.entry(k.clone()).or_insert(Vec::new());
@@ -57,9 +62,54 @@ where
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
 
+    let maybe_muted_actions = actions
+      .iter()
+      .filter(|a| a.maybe_muted)
+      .map(|a| a.clone())
+      .collect();
+
+    StatelessLexer {
+      kind_head_map: kind_map
+        .iter()
+        .map(|(k, v)| (k.clone(), Self::calc_head_map(&v)))
+        .collect(),
+      kind_map,
+      head_map: Self::calc_head_map(&actions),
+      maybe_muted_map: Self::calc_head_map(&maybe_muted_actions),
+      maybe_muted_actions,
+      actions,
+    }
+  }
+
+  pub fn actions(&self) -> &[Rc<Action<Kind, ActionState, ErrorType>>] {
+    &self.actions
+  }
+  pub fn head_map(&self) -> &HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
+    &self.head_map
+  }
+  pub fn kind_map(
+    &self,
+  ) -> &HashMap<TokenKindId<Kind>, HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>> {
+    &self.kind_head_map
+  }
+  pub fn maybe_muted_map(&self) -> &HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
+    &self.maybe_muted_map
+  }
+  pub fn maybe_muted_actions(&self) -> &Vec<Rc<Action<Kind, ActionState, ErrorType>>> {
+    &self.maybe_muted_actions
+  }
+
+  /// Consume self, create a new lexer with the provided buffer.
+  pub fn into_lexer(self, buffer: &str) -> Lexer<Kind, ActionState, ErrorType> {
+    Lexer::new(Rc::new(self), buffer)
+  }
+
+  fn calc_head_map(
+    actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
+  ) -> HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
     let mut head_map = HashMap::new();
     // collect all known chars
-    for a in &actions {
+    for a in actions {
       if let Some(head_matcher) = a.head_matcher() {
         for c in match head_matcher {
           ActionInputRestHeadMatcher::OneOf(set) => set,
@@ -70,7 +120,7 @@ where
       }
     }
     // fill the head_map
-    for a in &actions {
+    for a in actions {
       if let Some(head_matcher) = a.head_matcher() {
         match head_matcher {
           ActionInputRestHeadMatcher::OneOf(set) => {
@@ -94,36 +144,6 @@ where
       }
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
-
-    StatelessLexer {
-      kind_map,
-      head_map,
-      maybe_muted_actions: actions
-        .iter()
-        .filter(|a| a.maybe_muted)
-        .map(|a| a.clone())
-        .collect(),
-      actions,
-    }
-  }
-
-  pub fn actions(&self) -> &[Rc<Action<Kind, ActionState, ErrorType>>] {
-    &self.actions
-  }
-  pub fn kind_map(
-    &self,
-  ) -> &HashMap<TokenKindId<Kind>, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
-    &self.kind_map
-  }
-  pub fn head_map(&self) -> &HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
-    &self.head_map
-  }
-  pub fn maybe_muted_actions(&self) -> &[Rc<Action<Kind, ActionState, ErrorType>>] {
-    &self.maybe_muted_actions
-  }
-
-  /// Consume self, create a new lexer with the provided buffer.
-  pub fn into_lexer(self, buffer: &str) -> Lexer<Kind, ActionState, ErrorType> {
-    Lexer::new(Rc::new(self), buffer)
+    head_map
   }
 }
