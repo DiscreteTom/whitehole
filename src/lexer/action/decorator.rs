@@ -179,7 +179,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
     NewKind: TokenKind<NewKind> + Clone + 'static,
   {
     let kind = kind.into();
-    self.kinds(&[&kind]).select(move |_| kind.clone())
+    self.kind_ids([kind.id()]).select(move |_| kind.clone())
   }
 
   /// Set [`Action::head_matcher`] to [`OneOf`](ActionInputRestHeadMatcher::OneOf).

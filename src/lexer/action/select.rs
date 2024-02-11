@@ -8,29 +8,31 @@ use crate::lexer::token::{TokenKind, TokenKindId};
 use std::collections::HashSet;
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
-  /// Set possible kinds for this action.
+  /// Set [`Action::possible_kinds`].
   /// This is used to accelerate the lexing process when lexing with expected kinds.
   pub fn kinds<NewKind: 'static>(
     self,
-    possible_kinds: &[&NewKind],
+    possible_kinds: impl Into<Vec<NewKind>>,
   ) -> MultiKindAction<NewKind, Kind, ActionState, ErrorType>
   where
     NewKind: TokenKind<NewKind>,
   {
     MultiKindAction {
-      possible_kinds: possible_kinds.iter().map(|kind| kind.id()).collect(),
+      possible_kinds: possible_kinds.into().iter().map(|kind| kind.id()).collect(),
       head_matcher: self.head_matcher,
       maybe_muted: self.maybe_muted,
       exec: self.exec,
     }
   }
 
-  pub fn into_multi_kind_action<NewKind: 'static>(
+  /// Set [`Action::possible_kinds`].
+  /// This is used to accelerate the lexing process when lexing with expected kinds.
+  pub fn kind_ids<NewKind: 'static>(
     self,
-    possible_kinds: HashSet<TokenKindId<NewKind>>,
+    possible_kinds: impl Into<HashSet<TokenKindId<NewKind>>>,
   ) -> MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
     MultiKindAction {
-      possible_kinds,
+      possible_kinds: possible_kinds.into(),
       head_matcher: self.head_matcher,
       maybe_muted: self.maybe_muted,
       exec: self.exec,
