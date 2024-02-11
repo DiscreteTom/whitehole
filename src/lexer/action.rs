@@ -22,6 +22,8 @@ pub struct Action<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
   /// so don't set this field unless you know what you are doing.
   pub maybe_muted: bool,
 
+  /// This is used to accelerate expectational lexing.
+  /// Every action should have this field set by `Action.kinds`.
   possible_kinds: HashSet<TokenKindId<Kind>>,
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
 }
