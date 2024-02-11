@@ -34,24 +34,24 @@ where
     // TODO: move the build process into builder.generate?
     let actions = actions.into_iter().map(Rc::new).collect::<Vec<_>>();
 
-    let mut action_map = HashMap::new();
+    let mut kind_map = HashMap::new();
     // prepare action map, add vec for all possible kinds
     for a in &actions {
       for k in a.possible_kinds() {
-        action_map.entry(k.clone()).or_insert(Vec::new());
+        kind_map.entry(k.clone()).or_insert(Vec::new());
       }
     }
-    // fill action_map
+    // fill kind_map
     for a in &actions {
       if a.maybe_muted {
         // maybe muted, add to all kinds
-        for (_, vec) in action_map.iter_mut() {
+        for (_, vec) in kind_map.iter_mut() {
           vec.push(a.clone());
         }
       } else {
         // never muted, only add to possible kinds
         for k in a.possible_kinds() {
-          action_map.get_mut(k).unwrap().push(a.clone());
+          kind_map.get_mut(k).unwrap().push(a.clone());
         }
       }
     }
@@ -96,13 +96,13 @@ where
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
 
     StatelessLexer {
-      kind_map: action_map,
+      kind_map,
+      head_map,
       maybe_muted_actions: actions
         .iter()
         .filter(|a| a.maybe_muted)
         .map(|a| a.clone())
         .collect(),
-      head_map,
       actions,
     }
   }
