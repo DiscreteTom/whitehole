@@ -28,11 +28,11 @@ impl<ErrorType> Into<ActionOutput<(), ErrorType>> for ActionOutputWithoutKind<Er
 }
 
 pub struct EnhancedActionOutput<'buffer, Kind, ErrorType> {
-  /// The original [ActionOutput].
+  /// The original [`ActionOutput`].
   pub raw: ActionOutput<Kind, ErrorType>,
-  /// [ActionInput.buffer](ActionInput).
+  /// The [`ActionInput::buffer`].
   pub buffer: &'buffer str,
-  /// [ActionInput.start](ActionInput).
+  /// The [`ActionInput::start`].
   pub start: usize,
 }
 

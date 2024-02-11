@@ -19,7 +19,7 @@ pub struct ActionCallbackContext<'input, 'buffer, 'state, 'output, Kind, ActionS
 }
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, ActionState, ErrorType> {
-  /// Check the `ActionInput` before the action is executed.
+  /// Check the [`ActionInput`] before the action is executed.
   /// Reject the action if the `condition` returns `true`.
   /// Return a new action.
   pub fn prevent<F>(mut self, condition: F) -> Self
@@ -40,7 +40,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   }
 
   /// Apply a decorator to this action.
-  /// Usually used to modify the `ActionOutput`.
+  /// Usually used to modify the [`ActionOutput`].
   /// Return a new action.
   pub fn apply<NewErrorType, F>(self, decorator: F) -> Action<Kind, ActionState, NewErrorType>
   where
@@ -65,7 +65,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
     }
   }
 
-  /// Set `ActionOutput.muted` if the action is accepted.
+  /// Set [`ActionOutput::muted`] if the action is accepted.
   /// Return a new action.
   pub fn mute_if<F>(self, condition: F) -> Self
   where
@@ -81,7 +81,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
     res
   }
 
-  /// Set `ActionOutput.muted` if the action is accepted.
+  /// Set [`ActionOutput::muted`] if the action is accepted.
   /// Return a new action.
   pub fn mute(self, muted: bool) -> Self {
     // reminder: DON'T use `self.mute_if(move |_| muted)`
@@ -94,7 +94,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
     res
   }
 
-  /// Set `ActionOutput.error` if the action is accepted.
+  /// Set [`ActionOutput::error`] if the action is accepted.
   /// Return a new action.
   pub fn check<NewError, F>(self, condition: F) -> Action<Kind, ActionState, NewError>
   where
@@ -111,7 +111,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
     })
   }
 
-  /// Set `ActionOutput.error` if the action is accepted.
+  /// Set [`ActionOutput::error`] if the action is accepted.
   /// Return a new action.
   pub fn error<NewError>(self, error: NewError) -> Action<Kind, ActionState, NewError>
   where
@@ -182,11 +182,13 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
     self.kinds(&[&kind]).select(move |_| kind.clone())
   }
 
+  /// Set [`Action::head_matcher`] to [`OneOf`](ActionInputRestHeadMatcher::OneOf).
   pub fn head_in(mut self, char_set: HashSet<char>) -> Self {
     self.head_matcher = Some(ActionInputRestHeadMatcher::OneOf(char_set));
     self
   }
 
+  /// Set [`Action::head_matcher`] to [`Not`](ActionInputRestHeadMatcher::Not).
   pub fn head_not(mut self, char_set: HashSet<char>) -> Self {
     self.head_matcher = Some(ActionInputRestHeadMatcher::Not(char_set));
     self
