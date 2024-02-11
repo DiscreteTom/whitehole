@@ -1,9 +1,10 @@
 use super::{
   input::ActionInput,
   output::{ActionOutput, EnhancedActionOutput},
-  Action,
+  Action, ActionInputRestHeadMatcher,
 };
 use crate::lexer::token::TokenKind;
+use std::collections::HashSet;
 
 /// `input.state` is mutable. `output` is consumed.
 pub struct AcceptedActionDecoratorContext<'input, 'buffer, 'state, Kind, ActionState, ErrorType> {
@@ -60,6 +61,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
       }),
       maybe_muted: self.maybe_muted,
       possible_kinds: self.possible_kinds,
+      head_matcher: self.head_matcher,
     }
   }
 
@@ -178,6 +180,16 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   {
     let kind = kind.into();
     self.kinds(&[&kind]).select(move |_| kind.clone())
+  }
+
+  pub fn head_in(mut self, char_set: HashSet<char>) -> Self {
+    self.head_matcher = Some(ActionInputRestHeadMatcher::OneOf(char_set));
+    self
+  }
+
+  pub fn head_not(mut self, char_set: HashSet<char>) -> Self {
+    self.head_matcher = Some(ActionInputRestHeadMatcher::Not(char_set));
+    self
   }
 
   // there is no `Action.map` or `Action.data` like in retsac since rust doesn't support value-level type or type union,

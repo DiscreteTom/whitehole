@@ -13,6 +13,12 @@ use self::{
 use super::token::TokenKindId;
 use std::collections::HashSet;
 
+pub enum ActionInputRestHeadMatcher {
+  // TODO: what about UTF-8 characters?
+  OneOf(HashSet<char>),
+  Not(HashSet<char>),
+}
+
 pub struct Action<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
   /// This flag is to indicate whether this action's output might be muted.
   /// The lexer will based on this flag to accelerate the lexing process.
@@ -25,6 +31,9 @@ pub struct Action<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
   /// This is used to accelerate expectational lexing.
   /// Every action should have this field set by `Action.kinds`.
   possible_kinds: HashSet<TokenKindId<Kind>>,
+  /// This is used to accelerate lexing by the first character
+  /// of the rest of the input. This is optional.
+  head_matcher: Option<ActionInputRestHeadMatcher>,
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
 }
 
@@ -36,6 +45,7 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
     Action {
       maybe_muted: false,
       possible_kinds: HashSet::new(),
+      head_matcher: None,
       exec: Box::new(move |input| exec(input).map(|output| output.into())),
     }
   }
@@ -47,9 +57,14 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     !self.maybe_muted
   }
 
-  /// Should only be set by `Action.kinds`.
+  /// Should only be set by [`Action::kinds`].
   pub fn possible_kinds(&self) -> &HashSet<TokenKindId<Kind>> {
     &self.possible_kinds
+  }
+
+  /// Should only be set by [`Action::head_in`] or [`Action::head_not`].
+  pub fn head_matcher(&self) -> &Option<ActionInputRestHeadMatcher> {
+    &self.head_matcher
   }
 
   pub fn exec(

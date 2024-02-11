@@ -2,7 +2,7 @@ use super::{
   decorator::AcceptedActionDecoratorContext,
   input::ActionInput,
   output::{ActionOutput, EnhancedActionOutput},
-  Action,
+  Action, ActionInputRestHeadMatcher,
 };
 use crate::lexer::token::{TokenKind, TokenKindId};
 use std::collections::HashSet;
@@ -19,6 +19,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   {
     MultiKindAction {
       possible_kinds: possible_kinds.iter().map(|kind| kind.id()).collect(),
+      head_matcher: self.head_matcher,
       maybe_muted: self.maybe_muted,
       exec: self.exec,
     }
@@ -30,6 +31,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ) -> MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
     MultiKindAction {
       possible_kinds,
+      head_matcher: self.head_matcher,
       maybe_muted: self.maybe_muted,
       exec: self.exec,
     }
@@ -38,6 +40,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 
 pub struct MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
   possible_kinds: HashSet<TokenKindId<NewKind>>,
+  head_matcher: Option<ActionInputRestHeadMatcher>,
   maybe_muted: bool,
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
 }
@@ -45,18 +48,6 @@ pub struct MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
 impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
   MultiKindAction<NewKind, Kind, ActionState, ErrorType>
 {
-  pub fn new(
-    possible_kinds: HashSet<TokenKindId<NewKind>>,
-    maybe_muted: bool,
-    exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
-  ) -> Self {
-    MultiKindAction {
-      possible_kinds,
-      maybe_muted,
-      exec,
-    }
-  }
-
   /// Define a selector to select a kind from action's kinds by action's input and output.
   pub fn select<F>(self, selector: F) -> Action<NewKind, ActionState, ErrorType>
   where
@@ -80,6 +71,7 @@ impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
       }),
       maybe_muted: self.maybe_muted,
       possible_kinds: self.possible_kinds,
+      head_matcher: self.head_matcher,
     }
   }
 }
