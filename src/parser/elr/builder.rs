@@ -14,6 +14,46 @@ use crate::{
 };
 use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
+pub struct ParserBuilderGrammar<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> {
+  pub kind: GrammarKind<TKind, NTKind>,
+  pub expect: bool,
+}
+
+impl<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> ParserBuilderGrammar<TKind, NTKind> {
+  pub fn expect(mut self, value: bool) -> Self {
+    self.expect = value;
+    self
+  }
+}
+
+#[allow(non_snake_case)]
+pub fn T<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>>(
+  t: TKind,
+) -> ParserBuilderGrammar<TKind, NTKind> {
+  ParserBuilderGrammar {
+    kind: GrammarKind::T(t),
+    expect: false,
+  }
+}
+#[allow(non_snake_case)]
+pub fn NT<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>>(
+  nt: NTKind,
+) -> ParserBuilderGrammar<TKind, NTKind> {
+  ParserBuilderGrammar {
+    kind: GrammarKind::NT(nt),
+    expect: false,
+  }
+}
+#[allow(non_snake_case)]
+pub fn Literal<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>>(
+  s: impl Into<String>,
+) -> ParserBuilderGrammar<TKind, NTKind> {
+  ParserBuilderGrammar {
+    kind: GrammarKind::Literal(s.into()),
+    expect: false,
+  }
+}
+
 pub struct ParserBuilder<
   TKind: TokenKind<TKind>,
   NTKind: TokenKind<NTKind> + Clone,
@@ -52,17 +92,17 @@ impl<
   pub fn define(
     mut self,
     nt: NTKind,
-    rule: Vec<(GrammarKind<TKind, NTKind>, bool)>,
+    rule: Vec<ParserBuilderGrammar<TKind, NTKind>>,
     traverser: Traverser<TKind, NTKind, ASTData, ErrorType, Global>,
   ) -> Self {
     let expect = rule
       .iter()
       .enumerate()
-      .filter_map(|(i, (_, e))| if *e { Some(i) } else { None })
+      .filter_map(|(i, g)| if g.expect { Some(i) } else { None })
       .collect();
     let rule = rule
       .into_iter()
-      .map(|(g, _)| self.grammars.get_or_create(g).clone())
+      .map(|g| self.grammars.get_or_create(g.kind).clone())
       .collect();
     self.gr_repo.push(
       self.grammars.get_or_create_nt(nt).clone(),
