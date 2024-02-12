@@ -29,6 +29,18 @@ where
   lexer: Lexer<'buffer, Kind, ActionState, ErrorType>,
 }
 
+impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
+  From<Lexer<'buffer, Kind, ActionState, ErrorType>>
+  for TrimmedLexer<'buffer, Kind, ActionState, ErrorType>
+where
+  Kind: TokenKind<Kind>,
+  ActionState: Clone + Default,
+{
+  fn from(lexer: Lexer<'buffer, Kind, ActionState, ErrorType>) -> Self {
+    lexer.into_trimmed().trimmed_lexer
+  }
+}
+
 impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static> Clone
   for TrimmedLexer<'buffer, Kind, ActionState, ErrorType>
 where
