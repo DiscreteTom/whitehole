@@ -6,6 +6,15 @@ use super::{
 };
 use std::rc::Rc;
 
+// impl Into<Vec> for Action so that the builder can accept one or multiple actions
+impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
+  Into<Vec<Action<Kind, ActionState, ErrorType>>> for Action<Kind, ActionState, ErrorType>
+{
+  fn into(self) -> Vec<Action<Kind, ActionState, ErrorType>> {
+    vec![self]
+  }
+}
+
 pub struct Builder<Kind: 'static, ActionState: 'static, ErrorType: 'static>
 where
   Kind: TokenKind<Kind>,
@@ -20,8 +29,8 @@ where
   ActionState: Clone + Default,
 {
   /// Define [muted](Action::maybe_muted) action.
-  pub fn ignore_default(self, action: Action<(), ActionState, ErrorType>) -> Self {
-    self.ignore(action.bind(Kind::default()))
+  pub fn ignore_default(self, actions: impl Into<Vec<Action<(), ActionState, ErrorType>>>) -> Self {
+    self.ignore(Self::map_actions(actions, |a| a.bind(Kind::default())))
   }
 
   /// Define [muted](Action::maybe_muted) action.
@@ -32,8 +41,8 @@ where
     self.ignore_default(factory(ActionBuilder::default()))
   }
 
-  pub fn append_default(self, action: Action<(), ActionState, ErrorType>) -> Self {
-    self.append(action.bind(Kind::default()))
+  pub fn append_default(self, actions: impl Into<Vec<Action<(), ActionState, ErrorType>>>) -> Self {
+    self.append(Self::map_actions(actions, |a| a.bind(Kind::default())))
   }
 
   pub fn append_default_from<F>(self, factory: F) -> Self
@@ -61,8 +70,21 @@ where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
-  pub fn append(mut self, action: Action<Kind, ActionState, ErrorType>) -> Self {
-    self.actions.push(action);
+  fn map_actions<OldKind: 'static, NewKind, F>(
+    actions: impl Into<Vec<Action<OldKind, ActionState, ErrorType>>>,
+    f: F,
+  ) -> Vec<Action<NewKind, ActionState, ErrorType>>
+  where
+    F: Fn(Action<OldKind, ActionState, ErrorType>) -> Action<NewKind, ActionState, ErrorType>,
+  {
+    actions.into().into_iter().map(f).collect::<Vec<_>>()
+  }
+
+  pub fn append(mut self, actions: impl Into<Vec<Action<Kind, ActionState, ErrorType>>>) -> Self {
+    actions
+      .into()
+      .into_iter()
+      .for_each(|action| self.actions.push(action));
     self
   }
 
@@ -73,11 +95,16 @@ where
     self.append(factory(ActionBuilder::default()))
   }
 
-  pub fn define(self, kind: impl Into<Kind>, action: Action<(), ActionState, ErrorType>) -> Self
+  pub fn define(
+    self,
+    kind: impl Into<Kind>,
+    actions: impl Into<Vec<Action<(), ActionState, ErrorType>>>,
+  ) -> Self
   where
     Kind: Clone,
   {
-    self.append(action.bind(kind))
+    let kind = kind.into();
+    self.append(Self::map_actions(actions, |a| a.bind(kind.clone())))
   }
 
   pub fn define_from<F>(self, kind: impl Into<Kind>, factory: F) -> Self
@@ -89,8 +116,8 @@ where
   }
 
   /// Define [muted](Action::maybe_muted) action.
-  pub fn ignore(self, action: Action<Kind, ActionState, ErrorType>) -> Self {
-    self.append(action.mute(true))
+  pub fn ignore(self, actions: impl Into<Vec<Action<Kind, ActionState, ErrorType>>>) -> Self {
+    self.append(Self::map_actions(actions, |a| a.mute(true)))
   }
 
   /// Define [muted](Action::maybe_muted) action.
