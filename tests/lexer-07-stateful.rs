@@ -1,5 +1,6 @@
 use whitehole::lexer::Builder;
 use whitehole_macros::TokenKind;
+use MyKind::*; // use the enum variants directly
 
 // define token kinds
 // make sure it implements `TokenKind` and `Clone`.
@@ -21,7 +22,7 @@ fn stateful_lexer() {
     .append_from(|a| {
       a.regex("^123")
         .unwrap()
-        .bind(MyKind::A)
+        .bind(A)
         // access lexer's action state by `input.state()` or `input.state_mut()`.
         // in this example we reject the action if the state's `reject` field is `true`.
         .prevent(|input| input.state().reject)

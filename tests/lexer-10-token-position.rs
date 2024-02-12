@@ -4,6 +4,7 @@ use whitehole::lexer::{
   Action, Builder,
 };
 use whitehole_macros::TokenKind;
+use MyKind::*; // use the enum variants directly
 
 // define token kinds
 // make sure it implements `TokenKind` and `Clone`.
@@ -26,8 +27,8 @@ fn token_position() {
   let pt = PositionTransformer::new(text);
 
   let lexer = Builder::<MyKind, (), ()>::default()
-    .ignore(Action::regex(r"^\n").unwrap().bind(MyKind::Anonymous))
-    .define(MyKind::A, Action::regex(r"^123").unwrap())
+    .ignore(Action::regex(r"^\n").unwrap().bind(Anonymous))
+    .define(A, Action::regex(r"^123").unwrap())
     .build(text);
 
   let peek = lexer.peek();

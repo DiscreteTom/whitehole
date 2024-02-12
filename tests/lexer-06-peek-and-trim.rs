@@ -1,5 +1,6 @@
 use whitehole::lexer::{Action, Builder};
 use whitehole_macros::TokenKind;
+use MyKind::*; // use the enum variants directly
 
 // define token kinds
 // make sure it implements `TokenKind` and `Clone`.
@@ -13,21 +14,21 @@ enum MyKind {
 #[test]
 fn peek_lexer() {
   let mut lexer = Builder::<MyKind, (), ()>::default()
-    .ignore(Action::regex(r"^\s+").unwrap().bind(MyKind::Anonymous))
-    .define(MyKind::A, Action::regex(r"a").unwrap())
+    .ignore(Action::regex(r"^\s+").unwrap().bind(Anonymous))
+    .define(A, Action::regex(r"a").unwrap())
     .build(" a");
 
   // we can peek the next token without consuming it
   // and all muted tokens are not consumed as well
   let peek = lexer.peek();
   let token = peek.token.unwrap();
-  assert!(matches!(token.kind, MyKind::A));
+  assert!(matches!(token.kind, A));
   assert_eq!(peek.digested, 2); // the whitespace is also digested
 
   // now use `lex` to consume the token and the muted leading whitespace
   let res = lexer.lex();
   let token = res.token.unwrap();
-  assert!(matches!(token.kind, MyKind::A));
+  assert!(matches!(token.kind, A));
   assert_eq!(res.digested, 2);
 
   // however, peek-then-lex is not recommended
@@ -58,20 +59,20 @@ fn trim_lexer() {
   // which is not efficient
 
   let mut lexer = Builder::<MyKind, (), ()>::default()
-    .ignore(Action::regex(r"^\s+").unwrap().bind(MyKind::Anonymous))
-    .define(MyKind::A, Action::regex(r"a").unwrap())
-    .define(MyKind::B, Action::regex(r"a").unwrap())
+    .ignore(Action::regex(r"^\s+").unwrap().bind(Anonymous))
+    .define(A, Action::regex(r"a").unwrap())
+    .define(B, Action::regex(r"a").unwrap())
     .build(" a");
 
-  // for example, this peek will first ignore the whitespace then yield `MyKind::A`
-  let peek = lexer.peek_expect(&MyKind::A);
-  assert!(matches!(peek.token.unwrap().kind, MyKind::A));
+  // for example, this peek will first ignore the whitespace then yield `A`
+  let peek = lexer.peek_expect(&A);
+  assert!(matches!(peek.token.unwrap().kind, A));
   assert_eq!(peek.digested, 2);
 
   // if then we do another peek with different expectation
   // the lexer will ignore the whitespace again
-  let peek = lexer.peek_expect(&MyKind::B);
-  assert!(matches!(peek.token.unwrap().kind, MyKind::B));
+  let peek = lexer.peek_expect(&B);
+  assert!(matches!(peek.token.unwrap().kind, B));
   assert_eq!(peek.digested, 2);
 
   // to avoid duplicated lexing, we can first trim the lexer to remove the muted tokens
@@ -79,11 +80,11 @@ fn trim_lexer() {
   lexer.trim(); // this will consume the whitespace
   assert_eq!(lexer.state().digested(), 1);
   // now we can peek the rest of the buffer
-  let peek = lexer.peek_expect(&MyKind::A);
-  assert!(matches!(peek.token.unwrap().kind, MyKind::A));
+  let peek = lexer.peek_expect(&A);
+  assert!(matches!(peek.token.unwrap().kind, A));
   assert_eq!(peek.digested, 1);
-  let peek = lexer.peek_expect(&MyKind::B);
-  assert!(matches!(peek.token.unwrap().kind, MyKind::B));
+  let peek = lexer.peek_expect(&B);
+  assert!(matches!(peek.token.unwrap().kind, B));
   assert_eq!(peek.digested, 1);
 
   // for strict typing, we also have a `TrimmedLexer` struct,
@@ -93,6 +94,6 @@ fn trim_lexer() {
   // get the trimmed lexer
   let trimmed_lexer = res.trimmed_lexer;
   let peek = trimmed_lexer.peek();
-  assert!(matches!(peek.token.unwrap().kind, MyKind::A));
+  assert!(matches!(peek.token.unwrap().kind, A));
   assert_eq!(peek.digested, 1);
 }

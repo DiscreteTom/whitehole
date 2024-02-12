@@ -1,5 +1,6 @@
 use whitehole::lexer::{token::TokenKind, Action, Builder};
 use whitehole_macros::TokenKind;
+use MyKind::*; // use the enum variants directly
 
 // define token kinds
 // make sure it implements `TokenKind` and `Clone`.
@@ -18,11 +19,11 @@ fn possible_kinds() {
   // so we have to use `bind` to bind the action to a specific kind
   let action = Action::<(), (), ()>::regex(r"^a")
     .unwrap()
-    .bind::<MyKind>(MyKind::A);
+    .bind::<MyKind>(A);
   // `MyKind` implemented `TokenKind` so we can use `id` to get the kind's id
   // and check if the action's `possible_kinds` contains the kind's id
-  assert!(action.possible_kinds().contains(&MyKind::A.id()));
-  assert!(!action.possible_kinds().contains(&MyKind::B.id()));
+  assert!(action.possible_kinds().contains(&A.id()));
+  assert!(!action.possible_kinds().contains(&B.id()));
 
   // when we use expectational lex, the possible kinds will be checked
   // to accelerate the lexing process
@@ -35,16 +36,10 @@ fn multi_kinds() {
 
   let action = Action::<(), (), ()>::regex(r"^a")
     .unwrap()
-    .kinds([MyKind::A, MyKind::B])
-    .select(|ctx| {
-      if ctx.output.rest().len() > 0 {
-        MyKind::A
-      } else {
-        MyKind::B
-      }
-    });
-  assert!(action.possible_kinds().contains(&MyKind::A.id()));
-  assert!(action.possible_kinds().contains(&MyKind::B.id()));
+    .kinds([A, B])
+    .select(|ctx| if ctx.output.rest().len() > 0 { A } else { B });
+  assert!(action.possible_kinds().contains(&A.id()));
+  assert!(action.possible_kinds().contains(&B.id()));
 
   // but be aware, the possible kinds will NOT be checked during the runtime
   // so we MUST make sure the selector will always return a valid kind!
@@ -54,26 +49,20 @@ fn multi_kinds() {
     .append(action)
     .build("aa");
 
-  // the first lex should be accepted as `MyKind::A`
+  // the first lex should be accepted as `A`
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind, MyKind::A));
+  assert!(matches!(token.kind, A));
 
-  // the second lex should be accepted as `MyKind::B`
+  // the second lex should be accepted as `B`
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind, MyKind::B));
+  assert!(matches!(token.kind, B));
 
   // if you want to provide kind ids directly
   // you can use Action.kind_ids
   let action = Action::<(), (), ()>::regex(r"^a")
     .unwrap()
-    .kind_ids([MyKind::A.id(), MyKind::B.id()])
-    .select(|ctx| {
-      if ctx.output.rest().len() > 0 {
-        MyKind::A
-      } else {
-        MyKind::B
-      }
-    });
-  assert!(action.possible_kinds().contains(&MyKind::A.id()));
-  assert!(action.possible_kinds().contains(&MyKind::B.id()));
+    .kind_ids([A.id(), B.id()])
+    .select(|ctx| if ctx.output.rest().len() > 0 { A } else { B });
+  assert!(action.possible_kinds().contains(&A.id()));
+  assert!(action.possible_kinds().contains(&B.id()));
 }

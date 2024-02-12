@@ -11,6 +11,10 @@ enum MyKind {
   C,
 }
 
+// use the enum variants directly
+// e.g. we can use `A` instead of `MyKind::A`
+use MyKind::*;
+
 #[test]
 fn lexer_basics() {
   // create a lexer via the lexer builder
@@ -26,26 +30,26 @@ fn lexer_basics() {
       // we can create actions from a regex pattern
       // and use `bind` to bind the action to a token kind
       // remember to use `^` to match the start of the rest string
-      Action::regex(r"^\s+").unwrap().bind(MyKind::Anonymous),
+      Action::regex(r"^\s+").unwrap().bind(Anonymous),
     )
     // for not muted actions, we can use `define` to define them
     // the first parameter is the target token kind
     // the second parameter is the action
     .define(
-      MyKind::A,
+      A,
       // when using `Action::simple`
       // the closure's return value indicates how many characters are digested by the action
       // `0` means the action is rejected
-      // we don't need to call `bind` here because the action will be bound to `MyKind::A`
+      // we don't need to call `bind` here because the action will be bound to `A`
       Action::simple(|input| if input.rest().starts_with("a") { 1 } else { 0 }),
     )
     .define(
-      MyKind::B,
+      B,
       // yes we can use regex here too
       Action::regex("^b").unwrap(),
     )
     .define(
-      MyKind::C,
+      C,
       // if you want to control more details about the action's output
       // like the `error` field and the `muted` field
       // you can use `Action::new` to create an action
@@ -67,27 +71,27 @@ fn lexer_basics() {
     // load the input string
     .build("a b c");
 
-  // the first token should be `MyKind::A`
+  // the first token should be `A`
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind, MyKind::A));
+  assert!(matches!(token.kind, A));
   assert_eq!(token.range.start, 0);
   assert_eq!(token.range.end, 1);
   assert_eq!(token.content(), "a");
   assert!(matches!(token.error, None));
 
-  // the second token should be `MyKind::B`
+  // the second token should be `B`
   // because whitespace is muted and ignored
   // no token will be yielded for it
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind, MyKind::B));
+  assert!(matches!(token.kind, B));
   assert_eq!(token.range.start, 2);
   assert_eq!(token.range.end, 3);
   assert_eq!(token.content(), "b");
   assert!(matches!(token.error, None));
 
-  // the third token should be `MyKind::C`
+  // the third token should be `C`
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind, MyKind::C));
+  assert!(matches!(token.kind, C));
   assert_eq!(token.range.start, 4);
   assert_eq!(token.range.end, 5);
   assert_eq!(token.content(), "c");

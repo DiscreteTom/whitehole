@@ -1,5 +1,6 @@
 use whitehole::lexer::{Action, Builder};
 use whitehole_macros::TokenKind;
+use MyKind::*; // use the enum variants directly
 
 // define token kinds
 // make sure it implements `TokenKind` and `Clone`.
@@ -31,7 +32,7 @@ fn lex_with_head_matcher() {
 
   // let's see if there is no head matcher
   let mut lexer = Builder::<MyKind, MyState, ()>::default()
-    .define_from(MyKind::True, |a| {
+    .define_from(True, |a| {
       a.simple(|input| {
         // mutate the action state when the action is evaluated
         // no matter if it's accepted or rejected
@@ -45,16 +46,16 @@ fn lex_with_head_matcher() {
         }
       })
     })
-    .define(MyKind::False, Action::regex(r"^false").unwrap())
+    .define(False, Action::regex(r"^false").unwrap())
     .build("false");
-  // the lexed token should be `MyKind::False`
-  assert!(matches!(lexer.lex().token.unwrap().kind, MyKind::False));
-  // but the action for `MyKind::True` is evaluated
+  // the lexed token should be `False`
+  assert!(matches!(lexer.lex().token.unwrap().kind, False));
+  // but the action for `True` is evaluated
   assert!(lexer.action_state().evaluated);
 
   // now with head matcher
   let mut lexer = Builder::<MyKind, MyState, ()>::default()
-    .define_from(MyKind::True, |a| {
+    .define_from(True, |a| {
       a.simple(|input| {
         // mutate the action state when the action is evaluated
         // no matter if it's accepted or rejected
@@ -71,22 +72,22 @@ fn lex_with_head_matcher() {
       .head_in(['t'])
     })
     .define(
-      MyKind::False,
+      False,
       Action::regex(r"^false")
         .unwrap()
         // only evaluate this action if the first character is `f`
         .head_in(['f']),
     )
     .build("false");
-  // the lexed token should be `MyKind::False`
-  assert!(matches!(lexer.lex().token.unwrap().kind, MyKind::False));
-  // and the action for `MyKind::True` is NOT evaluated
+  // the lexed token should be `False`
+  assert!(matches!(lexer.lex().token.unwrap().kind, False));
+  // and the action for `True` is NOT evaluated
   assert!(!lexer.action_state().evaluated);
 
   // if an action has no head matcher
   // the action will always be evaluated
   let mut lexer = Builder::<MyKind, MyState, ()>::default()
-    .define_from(MyKind::True, |a| {
+    .define_from(True, |a| {
       a.simple(|input| {
         // mutate the action state when the action is evaluated
         // no matter if it's accepted or rejected
@@ -102,21 +103,21 @@ fn lex_with_head_matcher() {
       // no head matcher for this action
     })
     .define(
-      MyKind::False,
+      False,
       Action::regex(r"^false")
         .unwrap()
         // only evaluate this action if the first character is `f`
         .head_in(['f']),
     )
     .build("false");
-  // the lexed token should be `MyKind::False`
-  assert!(matches!(lexer.lex().token.unwrap().kind, MyKind::False));
-  // but the action for `MyKind::True` is evaluated
+  // the lexed token should be `False`
+  assert!(matches!(lexer.lex().token.unwrap().kind, False));
+  // but the action for `True` is evaluated
   assert!(lexer.action_state().evaluated);
 
   // we can use head_not to exclude some characters
   let mut lexer = Builder::<MyKind, MyState, ()>::default()
-    .define_from(MyKind::Others, |a| {
+    .define_from(Others, |a| {
       a.simple(|input| {
         input.state_mut().evaluated = true;
 
@@ -129,19 +130,16 @@ fn lex_with_head_matcher() {
       // instead of using `head_in([',', ':', '{', '}', '[', ']'])`
       .head_not(['t', 'f'])
     })
-    .define(
-      MyKind::False,
-      Action::regex(r"^false").unwrap().head_in(['f']),
-    )
+    .define(False, Action::regex(r"^false").unwrap().head_in(['f']))
     .build("false");
-  // the lexed token should be `MyKind::False`
-  assert!(matches!(lexer.lex().token.unwrap().kind, MyKind::False));
-  // and the action for `MyKind::True` is NOT evaluated
+  // the lexed token should be `False`
+  assert!(matches!(lexer.lex().token.unwrap().kind, False));
+  // and the action for `True` is NOT evaluated
   assert!(!lexer.action_state().evaluated);
 
   // we can also use head_unknown to match any unknown characters
   let mut lexer = Builder::<MyKind, MyState, ()>::default()
-    .define_from(MyKind::Others, |a| {
+    .define_from(Others, |a| {
       a.simple(|input| {
         input.state_mut().evaluated = true;
 
@@ -153,14 +151,11 @@ fn lex_with_head_matcher() {
       })
       .head_unknown()
     })
-    .define(
-      MyKind::False,
-      Action::regex(r"^false").unwrap().head_in(['f']),
-    )
+    .define(False, Action::regex(r"^false").unwrap().head_in(['f']))
     .build("false");
-  // the lexed token should be `MyKind::False`
-  assert!(matches!(lexer.lex().token.unwrap().kind, MyKind::False));
-  // and the action for `MyKind::True` is NOT evaluated
+  // the lexed token should be `False`
+  assert!(matches!(lexer.lex().token.unwrap().kind, False));
+  // and the action for `True` is NOT evaluated
   assert!(!lexer.action_state().evaluated);
 
   // head matcher will take effect in lexing, expectational lexing,

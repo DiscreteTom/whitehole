@@ -1,5 +1,6 @@
 use whitehole::lexer::{Action, Builder};
 use whitehole_macros::TokenKind;
+use MyKind::*; // use the enum variants directly
 
 // define token kinds
 // make sure it implements `TokenKind` and `Clone`.
@@ -19,11 +20,11 @@ fn error_tokens() {
     .ignore_from(|a| {
       a.regex(r"^\s+")
         .unwrap()
-        .bind(MyKind::Anonymous)
+        .bind(Anonymous)
         // set error by using `error`
         .error("ignored")
     })
-    .define_from(MyKind::A, |a| {
+    .define_from(A, |a| {
       // set error by using `check`
       a.regex(r"^a").unwrap().check(|ctx| {
         if ctx.output.rest().len() == 0 {
@@ -41,11 +42,11 @@ fn error_tokens() {
   // so we can get the error token from the peek result
   // be ware: `errors` in the result doesn't contain the peeked token
   assert_eq!(peek.errors.len(), 1);
-  assert!(matches!(peek.errors[0].kind, MyKind::Anonymous));
+  assert!(matches!(peek.errors[0].kind, Anonymous));
   assert!(matches!(peek.errors[0].error, Some("ignored")));
   // we can still get the peeked (error) token
   let token = peek.token.unwrap();
-  assert!(matches!(token.kind, MyKind::A));
+  assert!(matches!(token.kind, A));
   assert!(matches!(token.error, Some("end")));
 }
 
@@ -55,8 +56,8 @@ fn panic_mode() {
   // which will digest 1 char and try again
 
   let mut lexer = Builder::<MyKind, (), &str>::default()
-    .ignore(Action::regex(r"^\s+").unwrap().bind(MyKind::Anonymous))
-    .define(MyKind::A, Action::regex(r"^a").unwrap())
+    .ignore(Action::regex(r"^\s+").unwrap().bind(Anonymous))
+    .define(A, Action::regex(r"^a").unwrap())
     .build("b a");
 
   // in this case when we peek the lexer
@@ -71,7 +72,7 @@ fn panic_mode() {
   lexer.take(1, None);
   // now we can peek
   let peek = lexer.peek();
-  assert!(matches!(peek.token.unwrap().kind, MyKind::A));
+  assert!(matches!(peek.token.unwrap().kind, A));
   assert_eq!(peek.digested, 2);
 
   // further more, if you know what you are doing

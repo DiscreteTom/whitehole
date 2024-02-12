@@ -1,5 +1,6 @@
 use whitehole::lexer::{expectation::Expectation, token::TokenKind, Action, Builder};
 use whitehole_macros::TokenKind;
+use MyKind::*; // use the enum variants directly
 
 // define token kinds
 // make sure it implements `TokenKind` and `Clone`.
@@ -44,14 +45,14 @@ fn builder_ignore() {
   // the builder will set the `maybe_muted` field to `true`
   assert!(
     Builder::<MyKind, (), ()>::default()
-      .ignore(Action::regex("^-").unwrap().bind(MyKind::Anonymous))
+      .ignore(Action::regex("^-").unwrap().bind(Anonymous))
       .build_stateless()
       .actions()[0]
       .maybe_muted
   );
   assert!(
     Builder::<MyKind, (), ()>::default()
-      .ignore_from(|a| a.regex("^-").unwrap().bind(MyKind::Anonymous))
+      .ignore_from(|a| a.regex("^-").unwrap().bind(Anonymous))
       .build_stateless()
       .actions()[0]
       .maybe_muted
@@ -66,36 +67,36 @@ fn builder_ignore() {
   let action = &stateless.actions()[0];
   assert!(action.maybe_muted);
   assert_eq!(action.possible_kinds().len(), 1);
-  assert!(action.possible_kinds().contains(&MyKind::Anonymous.id()));
+  assert!(action.possible_kinds().contains(&Anonymous.id()));
   let stateless = Builder::<MyKind, (), ()>::default()
     .ignore_default_from(|a| a.regex("^-").unwrap())
     .build_stateless();
   let action = &stateless.actions()[0];
   assert!(action.maybe_muted);
   assert_eq!(action.possible_kinds().len(), 1);
-  assert!(action.possible_kinds().contains(&MyKind::Anonymous.id()));
+  assert!(action.possible_kinds().contains(&Anonymous.id()));
 }
 
 #[test]
 fn expectation() {
   let mut lexer = Builder::<MyKind, (), ()>::default()
-    .ignore(Action::regex("^-").unwrap().bind(MyKind::Anonymous))
-    .define(MyKind::A, Action::regex(r"a").unwrap())
-    .define(MyKind::B, Action::regex(r"a").unwrap())
+    .ignore(Action::regex("^-").unwrap().bind(Anonymous))
+    .define(A, Action::regex(r"a").unwrap())
+    .define(B, Action::regex(r"a").unwrap())
     .build("-a");
 
   // by default, the lex will evaluate all actions in the order they are defined
-  // so the first lex should be accepted as `MyKind::A`
+  // so the first lex should be accepted as `A`
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind, MyKind::A));
+  assert!(matches!(token.kind, A));
 
   // but if we have an expected kind
   // the lex will only evaluate actions which are bound to the expected kind
   // or maybe-muted actions
   let mut lexer = lexer.reload("-a");
-  let res = lexer.lex_expect(&MyKind::B);
+  let res = lexer.lex_expect(&B);
   let token = res.token.unwrap();
-  assert!(matches!(token.kind, MyKind::B));
+  assert!(matches!(token.kind, B));
   assert_eq!(res.digested, 2); // the muted action is also evaluated and digested a character
 
   // we can also expect a specific text
@@ -105,16 +106,16 @@ fn expectation() {
   assert!(token.is_none());
   assert_eq!(res.digested, 1); // the muted action is also evaluated and digested a character
   let token = lexer.lex_expect("a").token.unwrap();
-  assert!(matches!(token.kind, MyKind::A));
+  assert!(matches!(token.kind, A));
 
   // or both the text and the kind are expected
   let mut lexer = lexer.reload("-a");
   assert!(lexer
-    .lex_expect(Expectation::from("b").kind(MyKind::A))
+    .lex_expect(Expectation::from("b").kind(A))
     .token
     .is_none());
   assert!(lexer
-    .lex_expect(Expectation::from("a").kind(MyKind::A))
+    .lex_expect(Expectation::from("a").kind(A))
     .token
     .is_some());
 }
