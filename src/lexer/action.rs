@@ -17,6 +17,7 @@ pub enum ActionInputRestHeadMatcher {
   // TODO: what about UTF-8 characters?
   OneOf(HashSet<char>),
   Not(HashSet<char>),
+  /// Match any characters that are not in known `OneOf` or `Not`.
   Unknown,
 }
 
