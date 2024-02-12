@@ -72,12 +72,6 @@ where
       exp_kind.map_or(&self.head_map, |kind| {
         self.kind_head_map.get(&kind).unwrap_or(&self.head_map)
       }),
-      // this is the fallback actions when head map mismatch.
-      // if exp_kind is None, we should use all actions
-      // otherwise, we should use the actions with the same kind (or maybe muted)
-      exp_kind.map_or(&self.actions, |kind| {
-        self.kind_map.get(&kind).unwrap_or(&self.actions)
-      }),
       move |input| {
         let text_mismatch = exp_text.is_some_and(|text| !input.rest().starts_with(text));
         Validator {

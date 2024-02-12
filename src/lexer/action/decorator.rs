@@ -194,6 +194,12 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
     self
   }
 
+  /// Set [`Action::head_matcher`] to [`Unknown`](ActionInputRestHeadMatcher::Unknown).
+  pub fn head_unknown(mut self) -> Self {
+    self.head_matcher = Some(ActionInputRestHeadMatcher::Unknown);
+    self
+  }
+
   // there is no `Action.map` or `Action.data` like in retsac since rust doesn't support value-level type or type union,
   // so we have to provide `possible_kinds` manually if we implement `Action.map` or `Action.data`,
   // which is the same as calling `action.kinds().select()`.

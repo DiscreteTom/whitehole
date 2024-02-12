@@ -17,6 +17,7 @@ pub enum ActionInputRestHeadMatcher {
   // TODO: what about UTF-8 characters?
   OneOf(HashSet<char>),
   Not(HashSet<char>),
+  Unknown,
 }
 
 pub struct Action<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
