@@ -31,6 +31,22 @@ impl<
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
+  > Default for ParserBuilder<TKind, NTKind, ASTData, ErrorType, Global>
+{
+  fn default() -> Self {
+    Self {
+      grammars: GrammarRepo::default(),
+      gr_repo: GrammarRuleRepo::default(),
+    }
+  }
+}
+
+impl<
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind> + Clone,
+    ASTData: 'static,
+    ErrorType: 'static,
+    Global: 'static,
   > ParserBuilder<TKind, NTKind, ASTData, ErrorType, Global>
 {
   pub fn define(
