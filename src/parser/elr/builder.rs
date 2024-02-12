@@ -92,9 +92,10 @@ impl<
   pub fn define(
     mut self,
     nt: NTKind,
-    rule: Vec<ParserBuilderGrammar<TKind, NTKind>>,
+    rule: impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>,
     traverser: Traverser<TKind, NTKind, ASTData, ErrorType, Global>,
   ) -> Self {
+    let rule = rule.into();
     let expect = rule
       .iter()
       .enumerate()
