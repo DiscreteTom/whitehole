@@ -2,7 +2,10 @@ use crate::{
   lexer::token::{TokenKind, TokenKindId},
   parser::elr::grammar::grammar::{Grammar, GrammarId, GrammarKind},
 };
-use std::collections::{hash_map::Entry, HashMap};
+use std::{
+  collections::{hash_map::Entry, HashMap},
+  rc::Rc,
+};
 
 pub struct GrammarRepo<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> {
   /// This is used to check if a T grammar is already created.
@@ -13,7 +16,7 @@ pub struct GrammarRepo<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> {
   literal_cache: HashMap<String, GrammarId>,
   /// This is used to get the grammar by id.
   // TODO: is this needed? can we just store grammar in caches?
-  map: HashMap<GrammarId, Grammar<TKind, NTKind>>,
+  map: HashMap<GrammarId, Rc<Grammar<TKind, NTKind>>>,
 }
 
 impl<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> Default for GrammarRepo<TKind, NTKind> {
@@ -28,7 +31,7 @@ impl<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> Default for GrammarRepo
 }
 
 impl<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> GrammarRepo<TKind, NTKind> {
-  pub fn get_or_create_t(&mut self, kind: TKind) -> &Grammar<TKind, NTKind> {
+  pub fn get_or_create_t(&mut self, kind: TKind) -> &Rc<Grammar<TKind, NTKind>> {
     match self.t_cache.entry(kind.id()) {
       Entry::Occupied(o) => &self.map[&o.get()],
       Entry::Vacant(v) => {
@@ -37,13 +40,13 @@ impl<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> GrammarRepo<TKind, NTKi
         match self.map.entry(id) {
           // this should never happen
           Entry::Occupied(_) => panic!("Grammar with id {:?} already exists", id),
-          Entry::Vacant(v) => v.insert(Grammar::new(id, GrammarKind::T(kind))),
+          Entry::Vacant(v) => v.insert(Rc::new(Grammar::new(id, GrammarKind::T(kind)))),
         }
       }
     }
   }
 
-  pub fn get_or_create_literal(&mut self, text: String) -> &Grammar<TKind, NTKind> {
+  pub fn get_or_create_literal(&mut self, text: String) -> &Rc<Grammar<TKind, NTKind>> {
     match self.literal_cache.entry(text.clone()) {
       Entry::Occupied(o) => &self.map[&o.get()],
       Entry::Vacant(v) => {
@@ -52,13 +55,13 @@ impl<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> GrammarRepo<TKind, NTKi
         match self.map.entry(id) {
           // this should never happen
           Entry::Occupied(_) => panic!("Grammar with id {:?} already exists", id),
-          Entry::Vacant(v) => v.insert(Grammar::new(id, GrammarKind::Literal(text))),
+          Entry::Vacant(v) => v.insert(Rc::new(Grammar::new(id, GrammarKind::Literal(text)))),
         }
       }
     }
   }
 
-  pub fn get_or_create_nt(&mut self, kind: NTKind) -> &Grammar<TKind, NTKind> {
+  pub fn get_or_create_nt(&mut self, kind: NTKind) -> &Rc<Grammar<TKind, NTKind>> {
     match self.nt_cache.entry(kind.id()) {
       Entry::Occupied(o) => &self.map[&o.get()],
       Entry::Vacant(v) => {
@@ -67,9 +70,17 @@ impl<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> GrammarRepo<TKind, NTKi
         match self.map.entry(id) {
           // this should never happen
           Entry::Occupied(_) => panic!("Grammar with id {:?} already exists", id),
-          Entry::Vacant(v) => v.insert(Grammar::new(id, GrammarKind::NT(kind))),
+          Entry::Vacant(v) => v.insert(Rc::new(Grammar::new(id, GrammarKind::NT(kind)))),
         }
       }
+    }
+  }
+
+  pub fn get_or_create(&mut self, kind: GrammarKind<TKind, NTKind>) -> &Rc<Grammar<TKind, NTKind>> {
+    match kind {
+      GrammarKind::T(kind) => self.get_or_create_t(kind),
+      GrammarKind::NT(kind) => self.get_or_create_nt(kind),
+      GrammarKind::Literal(text) => self.get_or_create_literal(text),
     }
   }
 }

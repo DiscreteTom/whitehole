@@ -69,8 +69,7 @@ impl<
     buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
     lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     global: &Rc<RefCell<Global>>,
-    // ) -> DfaParseOutput<TKind, NTKind, ASTData, ErrorType, Global> {
-  ) -> () {
+  ) -> DfaParseOutput<TKind, NTKind, ASTData, ErrorType, Global> {
     let mut parsing_state = ParsingState {
       buffer,
       state_stack: Stack::new(vec![self.entry_state.clone()]),
@@ -110,7 +109,9 @@ impl<
           })
       {
         // if the last ASTNode is an entry NT, and is the only node to be reduce, then parsing is done
-        return;
+        return DfaParseOutput {
+          buffer: parsing_state.buffer,
+        };
       }
 
       // else, should try reduce again, just continue
