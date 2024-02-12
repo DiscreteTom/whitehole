@@ -60,6 +60,7 @@ where
       let validator = validator_factory(&input);
       let actions = head_map
         .known_map
+        // TODO: maybe some day we can get a `&char` instead of a `char`
         .get(&(input.rest().chars().next().unwrap()))
         .unwrap_or(&head_map.unknown_fallback);
       let output = Self::traverse_actions(&mut input, actions, validator);
