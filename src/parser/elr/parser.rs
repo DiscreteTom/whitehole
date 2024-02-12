@@ -50,8 +50,15 @@ impl<
   }
 
   pub fn parse(&self) -> ParseOutput<TKind, NTKind, ASTData, ErrorType, Global> {
+    self.parse_with(Vec::new())
+  }
+
+  pub fn parse_with(
+    &self,
+    buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
+  ) -> ParseOutput<TKind, NTKind, ASTData, ErrorType, Global> {
     let output = self.dfa.parse(
-      Vec::new(),
+      buffer,
       // TODO: prevent clone?
       self.lexer.clone(),
       &self.global,
