@@ -79,29 +79,16 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   /// Match a word, lookahead one char to ensure there is a word boundary or end of input.
   /// The head matcher will be set automatically.
   pub fn word(s: impl Into<String>) -> Self {
-    let s = s.into();
-    let first = s.chars().next().unwrap();
-    Action::simple(move |input| {
-      // mismatch
-      if !input.rest().starts_with(&s) {
-        return 0;
-      }
-
-      // end of input
-      if input.rest().len() == s.len() {
-        // accept all
-        return s.len();
-      }
-
-      // check word boundary
-      let next = input.rest().chars().nth(s.len()).unwrap();
-      if next.is_alphanumeric() || next == '_' {
-        // missing word boundary
-        return 0;
-      }
-
-      s.len()
+    Action::exact(s).reject_if(|ctx| {
+      ctx
+        .output
+        .rest()
+        .chars()
+        .next()
+        // if next char exists and is alphanumeric or `_` then reject
+        .map(|c| c.is_alphanumeric() || c == '_')
+        // if next char does not exist, then accept
+        .unwrap_or(false)
     })
-    .head_in([first])
   }
 }
