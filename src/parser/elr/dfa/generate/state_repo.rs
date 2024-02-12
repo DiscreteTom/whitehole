@@ -20,7 +20,7 @@ use std::{
 pub struct StateRepo {
   // TODO: can we merge these two so we don't need to store BTreeSet twice?
   states: HashMap<StateId, RawState>,
-  cache: HashSet<BTreeSet<CandidateId>>,
+  cache: HashMap<BTreeSet<CandidateId>, StateId>,
 }
 
 impl StateRepo {
@@ -31,7 +31,7 @@ impl StateRepo {
     states.insert(state_id, entry_state);
     Self {
       states,
-      cache: HashSet::new(),
+      cache: HashMap::new(),
     }
   }
 
@@ -67,17 +67,23 @@ impl StateRepo {
       let mut generated = Vec::new();
       input_grammar_ids.iter().for_each(|input_grammar_id| {
         unexpanded.iter().for_each(|(id, current_candidates)| {
-          if let Some(next_candidates) =
-            self.generate_next(current_candidates, input_grammar_id, cs, nt_closures)
-          {
-            generated.push((next_candidates, id, input_grammar_id))
-          } else {
-            // append None to mark it is already calculated
-            self
+          match self.generate_next(current_candidates, input_grammar_id, cs, nt_closures) {
+            NextResult::New(next_candidates) => {
+              generated.push((next_candidates, id, input_grammar_id))
+            }
+            NextResult::InCache(next_id) => self
               .states
               .get_mut(id)
               .unwrap()
-              .append_next(input_grammar_id.clone(), None);
+              .append_next(input_grammar_id.clone(), Some(next_id)),
+            NextResult::NoNext => {
+              // append None to mark it is already calculated
+              self
+                .states
+                .get_mut(id)
+                .unwrap()
+                .append_next(input_grammar_id.clone(), None)
+            }
           }
         });
       });
@@ -97,7 +103,7 @@ impl StateRepo {
 
           // update cache
           self.states.insert(id, state);
-          self.cache.insert(next_candidates.clone());
+          self.cache.insert(next_candidates.clone(), id);
 
           // update next_map
           self
@@ -130,22 +136,22 @@ impl StateRepo {
       GrammarId,
       Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
     >,
-  ) -> Option<BTreeSet<CandidateId>> {
+  ) -> NextResult<BTreeSet<CandidateId>> {
     let next_candidates =
       Self::calc_next_candidates(current_candidates, input_grammar_id, cs, nt_closures);
 
     if next_candidates.len() == 0 {
       // no next state
-      return None;
+      return NextResult::NoNext;
     }
 
     // check cache whether the state already created
-    if self.cache.contains(&next_candidates) {
-      return None;
+    if let Some(id) = self.cache.get(&next_candidates) {
+      return NextResult::InCache(id.clone()); // TODO: prevent clone
     }
 
     // create new
-    Some(next_candidates)
+    NextResult::New(next_candidates)
   }
 
   // TODO: merge with generate_next
@@ -219,4 +225,10 @@ impl StateRepo {
       })
       .collect()
   }
+}
+
+enum NextResult<NextType> {
+  New(NextType),
+  InCache(StateId),
+  NoNext,
 }
