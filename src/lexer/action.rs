@@ -5,6 +5,7 @@ pub mod output;
 pub mod regex;
 pub mod select;
 pub mod simple;
+pub mod utils;
 
 use self::{
   input::ActionInput,
@@ -14,7 +15,7 @@ use super::token::TokenKindId;
 use std::collections::HashSet;
 
 pub enum ActionInputRestHeadMatcher {
-  // TODO: what about UTF-8 characters?
+  // TODO: add test for utf8
   OneOf(HashSet<char>),
   Not(HashSet<char>),
   /// Match any characters that are not in known `OneOf` or `Not`.
