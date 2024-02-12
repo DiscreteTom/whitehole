@@ -121,7 +121,7 @@ fn lex_with_head_matcher() {
       a.simple(|input| {
         input.state_mut().evaluated = true;
 
-        if [',', ':', '{', '}', '[', ']'].contains(&(input.rest().as_bytes()[0] as char)) {
+        if [',', ':', '{', '}', '[', ']'].contains(&(input.rest().chars().next().unwrap())) {
           1
         } else {
           0
@@ -143,7 +143,7 @@ fn lex_with_head_matcher() {
       a.simple(|input| {
         input.state_mut().evaluated = true;
 
-        if [',', ':', '{', '}', '[', ']'].contains(&(input.rest().as_bytes()[0] as char)) {
+        if [',', ':', '{', '}', '[', ']'].contains(&(input.rest().chars().next().unwrap())) {
           1
         } else {
           0
