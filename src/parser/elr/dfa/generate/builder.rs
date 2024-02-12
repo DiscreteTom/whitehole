@@ -235,6 +235,7 @@ fn calc_follow_sets<
 ) -> HashMap<GrammarId, HashSet<GrammarId>> {
   let mut result = HashMap::new();
 
+  // collect follow from grammar rules
   gr_repo.grs().iter().for_each(|gr| {
     gr.rule().iter().enumerate().for_each(|(i, g)| {
       if i < gr.rule().len() - 1 {
@@ -261,12 +262,22 @@ fn calc_follow_sets<
 
     gr_repo.grs().iter().for_each(|gr| {
       let last_grammar = gr.rule().last().unwrap();
-      let nt_follow = result.get(&gr.nt().id()).unwrap().clone(); // TODO: prevent the clone
-      let last_grammar_follow = result.get_mut(&last_grammar.id()).unwrap();
-      let len = last_grammar_follow.len();
-      last_grammar_follow.extend(nt_follow);
-      if last_grammar_follow.len() != len {
-        changed = true;
+      let nt_follow = result
+        .entry(gr.nt().id().clone())
+        // some NT may not appear in grammar rules (e.g. entry NT)
+        // so we have to insert new value for this situation
+        .or_insert_with(|| HashSet::new())
+        .clone(); // TODO: prevent the clone
+
+      // last grammar may not already in result
+      // since we only collect the result using the second last grammar
+      // so we have to do a if-let check here
+      if let Some(last_grammar_follow) = result.get_mut(&last_grammar.id()) {
+        let len = last_grammar_follow.len();
+        last_grammar_follow.extend(nt_follow);
+        if last_grammar_follow.len() != len {
+          changed = true;
+        }
       }
     });
 
