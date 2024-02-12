@@ -74,6 +74,11 @@ impl StateRepo {
         });
       });
 
+      if generated.len() == 0 {
+        // done
+        break;
+      }
+
       generated.iter().for_each(|next_candidates| {
         let id = StateId(self.states.len());
         // TODO: prevent the clone, use ref?
