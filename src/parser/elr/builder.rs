@@ -75,7 +75,7 @@ impl<
   pub fn build<'buffer, LexerActionState: Clone + Default, LexerErrorType>(
     self,
     entry_nts: HashSet<TokenKindId<NTKind>>,
-    lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: impl Into<TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>>,
     global: Global,
   ) -> Parser<'buffer, TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
   {
@@ -88,7 +88,7 @@ impl<
       .collect();
     Parser::new(
       build_dfa(nts, entry_nts, self.gr_repo),
-      lexer,
+      lexer.into(),
       Rc::new(RefCell::new(global)),
     )
   }
