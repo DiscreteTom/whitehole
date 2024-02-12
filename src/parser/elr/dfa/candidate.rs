@@ -151,7 +151,7 @@ impl<
     entry_nts: &HashSet<TokenKindId<NTKind>>,
     follow_sets: &HashMap<GrammarId, HashSet<GrammarId>>,
   ) -> Option<CandidateTryReduceOutput<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>> {
-    if self.digested != self.gr.rule().len() - 1 {
+    if self.digested != self.gr.rule().len() {
       // this grammar rule is not fully digested, skip
       return None;
     }
