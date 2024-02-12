@@ -1,6 +1,8 @@
 use super::{input::ActionInput, output::ActionOutputWithoutKind, Action};
 
 impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
+  /// Provide a function that digests the input buffer and returns the number of digested characters.
+  /// Return `0` if the action is rejected.
   pub fn simple<F>(f: F) -> Self
   where
     F: Fn(&mut ActionInput<ActionState>) -> usize + 'static,
