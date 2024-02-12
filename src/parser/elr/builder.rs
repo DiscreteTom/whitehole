@@ -50,11 +50,11 @@ impl<
   > ParserBuilder<TKind, NTKind, ASTData, ErrorType, Global>
 {
   pub fn define(
-    &mut self,
+    mut self,
     nt: NTKind,
     rule: Vec<(GrammarKind<TKind, NTKind>, bool)>,
     traverser: Traverser<TKind, NTKind, ASTData, ErrorType, Global>,
-  ) {
+  ) -> Self {
     let expect = rule
       .iter()
       .enumerate()
@@ -70,6 +70,7 @@ impl<
       expect,
       traverser,
     );
+    self
   }
   pub fn build<'buffer, LexerActionState: Clone + Default, LexerErrorType>(
     self,
