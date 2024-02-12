@@ -35,9 +35,6 @@ impl<T> Stack<T> {
   pub fn push(&mut self, item: T) {
     self.stack.push(item);
   }
-  pub fn pop(&mut self) -> Option<T> {
-    self.stack.pop()
-  }
   pub fn current(&self) -> &T {
     self.stack.last().unwrap()
   }
@@ -46,6 +43,9 @@ impl<T> Stack<T> {
   }
   pub fn truncate(&mut self, len: usize) {
     self.stack.truncate(len);
+  }
+  pub fn pop_n(&mut self, n: usize) {
+    self.stack.truncate(self.stack.len() - n);
   }
 }
 
@@ -166,7 +166,7 @@ impl<
     self.reducing_stack.push(node_index);
 
     // remove the reduced states, push the new state
-    self.state_stack.truncate(output.reduced);
+    self.state_stack.pop_n(output.reduced);
     let next_state = states
       .get(
         &match self.state_stack.current().get_next(&output.nt_grammar_id) {
