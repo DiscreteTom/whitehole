@@ -35,6 +35,10 @@ impl RawState {
     &self.candidates
   }
 
+  pub fn append_next(&mut self, input_grammar_id: GrammarId, next: Option<StateId>) {
+    self.next_map.insert(input_grammar_id, next);
+  }
+
   pub fn into_state<
     TKind: TokenKind<TKind>,
     NTKind: TokenKind<NTKind> + Clone,

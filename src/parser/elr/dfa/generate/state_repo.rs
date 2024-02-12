@@ -60,16 +60,24 @@ impl StateRepo {
       .states
       .iter()
       // TODO: prevent the clone
-      .map(|(_, state)| state.candidates().clone())
+      .map(|(id, state)| (id.clone(), state.candidates().clone()))
       .collect::<Vec<_>>();
+
     loop {
       let mut generated = Vec::new();
       input_grammar_ids.iter().for_each(|input_grammar_id| {
-        unexpanded.iter().for_each(|current_candidates| {
+        unexpanded.iter().for_each(|(id, current_candidates)| {
           if let Some(next_candidates) =
             self.generate_next(current_candidates, input_grammar_id, cs, nt_closures)
           {
-            generated.push(next_candidates)
+            generated.push((next_candidates, id, input_grammar_id))
+          } else {
+            // append None to mark it is already calculated
+            self
+              .states
+              .get_mut(id)
+              .unwrap()
+              .append_next(input_grammar_id.clone(), None);
           }
         });
       });
@@ -79,15 +87,29 @@ impl StateRepo {
         break;
       }
 
-      generated.iter().for_each(|next_candidates| {
-        let id = StateId(self.states.len());
-        // TODO: prevent the clone, use ref?
-        let state = RawState::new(id, next_candidates.clone());
-        self.states.insert(id, state);
-        self.cache.insert(next_candidates.clone());
-      });
+      unexpanded = generated
+        .into_iter()
+        .map(|(next_candidates, from_id, input_grammar_id)| {
+          // construct new state
+          let id = StateId(self.states.len());
+          // TODO: prevent the clone, use ref?
+          let state = RawState::new(id, next_candidates.clone());
 
-      unexpanded = generated;
+          // update cache
+          self.states.insert(id, state);
+          self.cache.insert(next_candidates.clone());
+
+          // update next_map
+          self
+            .states
+            .get_mut(from_id)
+            .unwrap()
+            .append_next(input_grammar_id.clone(), Some(id));
+
+          // convert to unexpanded
+          (id, next_candidates)
+        })
+        .collect();
     }
   }
 
