@@ -1,6 +1,19 @@
 use super::dfa::dfa::Dfa;
-use crate::lexer::{token::TokenKind, trimmed::TrimmedLexer};
+use crate::{
+  lexer::{token::TokenKind, trimmed::TrimmedLexer},
+  parser::ast::ASTNode,
+};
 use std::{cell::RefCell, rc::Rc};
+
+pub struct ParseOutput<
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind>,
+  ASTData: 'static,
+  ErrorType: 'static,
+  Global: 'static,
+> {
+  pub buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
+}
 
 pub struct Parser<
   'buffer,
@@ -36,14 +49,15 @@ impl<
     Self { dfa, lexer, global }
   }
 
-  pub fn parse(&self) {
+  pub fn parse(&self) -> ParseOutput<TKind, NTKind, ASTData, ErrorType, Global> {
     let output = self.dfa.parse(
       Vec::new(),
       // TODO: prevent clone?
       self.lexer.clone(),
       &self.global,
     );
-    // TODO
-    // println!("{:?}", output.buffer);
+    ParseOutput {
+      buffer: output.buffer,
+    }
   }
 }
