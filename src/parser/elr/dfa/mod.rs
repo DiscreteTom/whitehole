@@ -1,6 +1,5 @@
+pub mod candidate;
 pub mod dfa;
 pub mod generate;
-
-mod candidate;
-mod parsing;
-mod state;
+pub mod parsing;
+pub mod state;

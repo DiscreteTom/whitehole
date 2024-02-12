@@ -19,13 +19,19 @@ use std::{
 };
 
 pub struct DfaParseOutput<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind>,
+  'buffer,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 > {
+  pub lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   pub buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
+  pub state_stack: Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
+  pub errors: Vec<usize>,
 }
 
 pub struct Dfa<
@@ -64,18 +70,34 @@ impl<
     }
   }
 
+  pub fn entry_state(&self) -> &Rc<State<TKind, NTKind, ASTData, ErrorType, Global>> {
+    &self.entry_state
+  }
+
   pub fn parse<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
     &self,
     buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
+    state_stack: Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
+    reducing_stack: Vec<usize>,
     lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     global: &Rc<RefCell<Global>>,
-  ) -> DfaParseOutput<TKind, NTKind, ASTData, ErrorType, Global> {
+  ) -> DfaParseOutput<
+    'buffer,
+    TKind,
+    NTKind,
+    ASTData,
+    ErrorType,
+    Global,
+    LexerActionState,
+    LexerErrorType,
+  > {
+    // TODO: move to ParsingState::new()?
     let mut parsing_state = ParsingState {
       buffer,
-      state_stack: Stack::new(vec![self.entry_state.clone()]),
-      reducing_stack: Vec::new(), // empty since no ASTNode in buffer
+      state_stack,
+      reducing_stack,
       lexer,
-      need_lex: true,   // at the beginning we should lex for a new AST node
+      need_lex: true, // at the beginning we should lex for a new AST node // TODO: is this true? maybe we want to reduce when we already have nodes in buffer
       try_lex_index: 0, // from the first candidate
       lexed_grammars: HashSet::new(), // no grammars are lexed at the beginning
       lexed_without_expectation: false, // non-expectational lex is not done at the beginning
@@ -110,7 +132,10 @@ impl<
       {
         // if the last ASTNode is an entry NT, and is the only node to be reduce, then parsing is done
         return DfaParseOutput {
+          lexer: parsing_state.lexer,
           buffer: parsing_state.buffer,
+          errors: parsing_state.errors,
+          state_stack: parsing_state.state_stack,
         };
       }
 
