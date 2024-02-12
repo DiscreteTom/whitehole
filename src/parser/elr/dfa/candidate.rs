@@ -88,12 +88,13 @@ impl<
     }
 
     self.current().and_then(|current| {
-      match current.kind() {
+      let expectation = match current.kind() {
         GrammarKind::NT(_) => {
           // the current grammar is not a T, skip
           return None;
         }
         GrammarKind::T(kind) => {
+          // TODO: optimize code, reduce duplicated code
           if expectational_lex {
             // if current grammar is already lexed, skip
             if lexed_grammars.contains(&current.id()) {
@@ -106,23 +107,39 @@ impl<
             *lexed_without_expectation = true;
           }
 
-          let expectation = if expectational_lex {
-            match current.text() {
-              Some(text) => Expectation::from(kind).text(text.as_str()),
-              None => Expectation::from(kind),
-            }
+          if expectational_lex {
+            Expectation::from(kind)
           } else {
             // no expectation
             Expectation::default()
-          };
-
-          Self::lex_grammar(expectation, lexer, global).map(|output| CandidateTryLexOutput {
-            node: output.node,
-            lexer: output.lexer,
-            grammar_id: current.id().clone(),
-          })
+          }
         }
-      }
+        GrammarKind::Literal(text) => {
+          if expectational_lex {
+            // if current grammar is already lexed, skip
+            if lexed_grammars.contains(&current.id()) {
+              return None;
+            }
+            // else, mark this grammar as done, no matter if the lex is successful
+            lexed_grammars.insert(current.id().clone());
+          } else {
+            // mark non-expectational lex as done, no matter if the lex is successful
+            *lexed_without_expectation = true;
+          }
+
+          if expectational_lex {
+            Expectation::from(text.as_str())
+          } else {
+            // no expectation
+            Expectation::default()
+          }
+        }
+      };
+      Self::lex_grammar(expectation, lexer, global).map(|output| CandidateTryLexOutput {
+        node: output.node,
+        lexer: output.lexer,
+        grammar_id: current.id().clone(),
+      })
     })
   }
 
