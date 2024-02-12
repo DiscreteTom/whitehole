@@ -97,24 +97,18 @@ impl<
   ) -> Option<StateTryReduceOutput<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>> {
     for c in self.candidates.iter() {
       if let Some(output) = c.try_reduce(buffer, lexer, reducing_stack, entry_nts, follow_sets) {
-        // get the next state by the reduced grammar (NT)
-        let next = match self.get_next(&output.nt_grammar_id) {
-          // no next state, continue to try next candidate
-          // TODO: will this happen?
-          None => continue,
-          Some(next) => next,
-        };
+        // TODO: just return candidate output
         return Some(StateTryReduceOutput {
           node: output.node,
+          nt_grammar_id: output.nt_grammar_id,
           reduced: output.reduced,
-          next_state_id: next,
         });
       }
     }
     None
   }
 
-  fn get_next(&self, grammar_id: &GrammarId) -> Option<StateId> {
+  pub fn get_next(&self, grammar_id: &GrammarId) -> Option<StateId> {
     match self.next_map.get(grammar_id) {
       // this should never be None, since when building DFA
       // we should already calculated the next state in generate_next for all grammars
@@ -137,6 +131,6 @@ pub struct StateTryLexOutput<NodeType, LexerType> {
 
 pub struct StateTryReduceOutput<NodeType> {
   pub node: NodeType,
+  pub nt_grammar_id: GrammarId,
   pub reduced: usize,
-  pub next_state_id: StateId,
 }

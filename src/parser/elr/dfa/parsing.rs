@@ -167,9 +167,16 @@ impl<
 
     // remove the reduced states, push the new state
     self.state_stack.truncate(output.reduced);
-    self
-      .state_stack
-      .push(states.get(&output.next_state_id).unwrap().clone());
+    let next_state = states
+      .get(
+        &match self.state_stack.current().get_next(&output.nt_grammar_id) {
+          Some(id) => id,
+          None => todo!(),
+        },
+      )
+      .unwrap()
+      .clone();
+    self.state_stack.push(next_state);
     true
   }
 }
