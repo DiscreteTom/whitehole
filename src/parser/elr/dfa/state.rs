@@ -110,10 +110,9 @@ impl<
 
   pub fn get_next(&self, grammar_id: &GrammarId) -> Option<StateId> {
     match self.next_map.get(grammar_id) {
-      // this should never be None, since when building DFA
-      // we should already calculated the next state in generate_next for all grammars
-      // TODO: don't panic, return Err?
-      None => panic!("No next state for grammar {:?}", grammar_id),
+      // when building DFA
+      // we should already calculated the next state for all grammars
+      None => unreachable!("No next state for grammar {:?}", grammar_id),
       // here the next state still may be None (no candidates)
       // usually happen when try_reduce
       // TODO: is the comment correct?
