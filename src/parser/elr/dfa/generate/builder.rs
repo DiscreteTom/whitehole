@@ -3,9 +3,12 @@ use super::{
 };
 use crate::{
   lexer::token::{TokenKind, TokenKindId},
-  parser::elr::grammar::{
-    grammar::{GrammarId, GrammarKind},
-    grammar_rule::GrammarRule,
+  parser::elr::{
+    dfa::{dfa::Dfa, state::StateId},
+    grammar::{
+      grammar::{GrammarId, GrammarKind},
+      grammar_rule::GrammarRule,
+    },
   },
 };
 use std::{
@@ -13,7 +16,7 @@ use std::{
   rc::Rc,
 };
 
-pub fn prepare<
+pub fn build_dfa<
   TKind: TokenKind<TKind>,
   NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static,
@@ -23,7 +26,7 @@ pub fn prepare<
   nts: HashSet<GrammarId>, // TODO: don't pass nts because this can be calculated by gr_repo
   entry_nts: HashSet<TokenKindId<NTKind>>,
   gr_repo: GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
-) {
+) -> Dfa<TKind, NTKind, ASTData, ErrorType, Global> {
   let nt_closures = calc_all_nt_closures(&nts, &gr_repo);
 
   // init all initial candidates, initial candidate is candidate with digested=0
@@ -56,7 +59,7 @@ pub fn prepare<
   let candidates = cs.into_candidates();
   let states = state_repo.into_states(&candidates);
 
-  // TODO: build the dfa
+  Dfa::new(entry_nts, states[&StateId(0)].clone(), states, follow_sets)
 }
 
 /// If a rule starts with an NT, merge result with that NT's grammar rules.
