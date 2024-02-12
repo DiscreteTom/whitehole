@@ -135,10 +135,14 @@ impl<
           }
         }
       };
-      Self::lex_grammar(expectation, lexer, global).map(|output| CandidateTryLexOutput {
-        node: output.node,
-        lexer: output.lexer,
-        grammar_id: current.id().clone(),
+      Self::lex_grammar(expectation, lexer, global).map(|output| {
+        // TODO: validate expectation after the lexing if not expectational lex
+        // to make sure the lex output is valid?
+        CandidateTryLexOutput {
+          node: output.node,
+          lexer: output.lexer,
+          grammar_id: current.id().clone(),
+        }
       })
     })
   }
