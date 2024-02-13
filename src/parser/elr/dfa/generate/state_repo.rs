@@ -214,7 +214,7 @@ impl StateRepo {
     Global: 'static,
   >(
     self,
-    candidates: &HashMap<CandidateId, Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>>,
+    candidates: &Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>>,
   ) -> HashMap<StateId, Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>> {
     self
       .states

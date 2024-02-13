@@ -21,9 +21,9 @@ pub struct CandidateRepo<
   ErrorType: 'static,
   Global: 'static,
 > {
-  gr_cache: HashMap<GrammarRuleId, HashMap<usize, CandidateId>>,
+  gr_cache: HashMap<GrammarRuleId, HashMap</* digested */ usize, CandidateId>>,
   // TODO: is this needed? can we just store candidates in caches?
-  candidates: HashMap<CandidateId, RawCandidate<TKind, NTKind, ASTData, ErrorType, Global>>,
+  candidates: Vec<RawCandidate<TKind, NTKind, ASTData, ErrorType, Global>>,
 }
 
 impl<
@@ -38,14 +38,14 @@ impl<
     grs: &Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
   ) -> Self {
     let mut gr_cache = HashMap::new();
-    let mut candidates = HashMap::new();
+    let mut candidates = Vec::new();
     let digested = 0;
 
     // use index as the candidate_id
     for (i, gr) in grs.iter().enumerate() {
       let candidate_id = CandidateId(i);
       let candidate = RawCandidate::new(candidate_id, gr.clone(), digested);
-      candidates.insert(candidate_id, candidate);
+      candidates.push(candidate);
       gr_cache.insert(gr.id().clone(), {
         let mut v = HashMap::new();
         v.insert(digested, candidate_id);
@@ -62,10 +62,7 @@ impl<
     &self,
     gr_id: &GrammarRuleId,
   ) -> &RawCandidate<TKind, NTKind, ASTData, ErrorType, Global> {
-    self
-      .candidates
-      .get(&self.gr_cache.get(gr_id).unwrap().get(&0).unwrap())
-      .unwrap()
+    &self.candidates[self.gr_cache.get(gr_id).unwrap().get(&0).unwrap().0]
   }
 
   pub fn get_or_add_next(
@@ -74,7 +71,7 @@ impl<
     input_grammar_id: &GrammarId,
   ) -> Option<&RawCandidate<TKind, NTKind, ASTData, ErrorType, Global>> {
     let new_candidate_id = CandidateId(self.candidates.len());
-    let candidate = self.candidates.get_mut(current_id).unwrap();
+    let candidate = &mut self.candidates[current_id.0];
 
     if !candidate
       .current()
@@ -94,33 +91,25 @@ impl<
       .entry(digested)
     {
       // cache hit, just return
-      Entry::Occupied(o) => return Some(self.candidates.get(o.get()).unwrap()),
+      Entry::Occupied(o) => return Some(&self.candidates[o.get().0]),
       // else, create new candidate
       Entry::Vacant(v) => v.insert(new_candidate_id),
     };
     candidate.set_next(Some(new_candidate_id));
     let new_candidate = RawCandidate::new(new_candidate_id, candidate.gr().clone(), digested);
-    Some(
-      self
-        .candidates
-        .entry(new_candidate_id)
-        // the entry must be vacant
-        // TODO: is this the best way?
-        .or_insert(new_candidate),
-    )
+    self.candidates.push(new_candidate);
+    Some(&self.candidates[new_candidate_id.0])
   }
 
   pub fn get(&self, id: &CandidateId) -> &RawCandidate<TKind, NTKind, ASTData, ErrorType, Global> {
-    self.candidates.get(id).unwrap()
+    &self.candidates[id.0]
   }
 
-  pub fn into_candidates(
-    self,
-  ) -> HashMap<CandidateId, Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>> {
+  pub fn into_candidates(self) -> Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>> {
     self
       .candidates
       .into_iter()
-      .map(|(id, c)| (id, Rc::new(c.into_candidate())))
+      .map(|c| Rc::new(c.into_candidate()))
       .collect()
   }
 }

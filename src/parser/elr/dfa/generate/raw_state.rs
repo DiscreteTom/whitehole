@@ -47,14 +47,14 @@ impl RawState {
     Global: 'static,
   >(
     self,
-    candidates: &HashMap<CandidateId, Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>>,
+    candidates: &Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>>,
   ) -> State<TKind, NTKind, ASTData, ErrorType, Global> {
     State::new(
       self.id,
       self
         .candidates
         .iter()
-        .map(|id| candidates[id].clone())
+        .map(|id| candidates[id.0].clone())
         .collect(),
       self.next_map,
     )
