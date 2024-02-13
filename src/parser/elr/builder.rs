@@ -127,6 +127,7 @@ impl<
     let mut ctx = GrammarRuleContextBuilder::default();
     f(&mut ctx);
 
+    // TODO: panic if defining duplicated grammar rule
     self.gr_repo.get_or_add(
       self.grammars.get_or_create_nt(nt).clone(),
       rule,
