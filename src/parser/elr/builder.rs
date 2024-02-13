@@ -1,3 +1,7 @@
+pub mod grammar_rule_context_builder;
+pub mod reduce_context;
+
+use self::grammar_rule_context_builder::GrammarRuleContextBuilder;
 use super::{
   dfa::generate::{
     builder::build_dfa, grammar_repo::GrammarRepo, grammar_rule_repo::GrammarRuleRepo,
@@ -5,10 +9,7 @@ use super::{
   grammar::grammar::GrammarKind,
   parser::Parser,
 };
-use crate::{
-  lexer::{stateless::StatelessLexer, token::TokenKind},
-  parser::traverser::Traverser,
-};
+use crate::lexer::{stateless::StatelessLexer, token::TokenKind};
 use std::{cell::RefCell, rc::Rc};
 
 pub struct ParserBuilderGrammar<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> {
@@ -52,30 +53,17 @@ pub fn Literal<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>>(
 }
 
 pub struct ParserBuilder<
-  TKind: TokenKind<TKind>,
+  TKind: TokenKind<TKind> + 'static,
   NTKind: TokenKind<NTKind> + Clone,
   ASTData: 'static = (),
   ErrorType: 'static = (),
   Global: 'static = (),
+  LexerActionState: Clone + Default + 'static = (),
+  LexerErrorType: 'static = (),
 > {
+  lexer: StatelessLexer<TKind, LexerActionState, LexerErrorType>,
   grammars: GrammarRepo<TKind, NTKind>,
   gr_repo: GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
-}
-
-impl<
-    TKind: TokenKind<TKind>,
-    NTKind: TokenKind<NTKind> + Clone,
-    ASTData: 'static,
-    ErrorType: 'static,
-    Global: 'static,
-  > Default for ParserBuilder<TKind, NTKind, ASTData, ErrorType, Global>
-{
-  fn default() -> Self {
-    Self {
-      grammars: GrammarRepo::default(),
-      gr_repo: GrammarRuleRepo::default(),
-    }
-  }
 }
 
 impl<
@@ -84,8 +72,18 @@ impl<
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
-  > ParserBuilder<TKind, NTKind, ASTData, ErrorType, Global>
+    LexerActionState: Clone + Default + 'static,
+    LexerErrorType: 'static,
+  > ParserBuilder<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
+  pub fn new(lexer: impl Into<StatelessLexer<TKind, LexerActionState, LexerErrorType>>) -> Self {
+    Self {
+      lexer: lexer.into(),
+      grammars: GrammarRepo::default(),
+      gr_repo: GrammarRuleRepo::default(),
+    }
+  }
+
   pub fn define(
     mut self,
     nt: NTKind,
@@ -110,10 +108,51 @@ impl<
     self
   }
 
-  pub fn build<'buffer, LexerActionState: Clone + Default, LexerErrorType>(
+  pub fn define_with<'a, 'buffer: 'a, F>(
+    mut self,
+    nt: NTKind,
+    rule: impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>,
+    f: F,
+  ) -> Self
+  where
+    F: Fn(
+      &mut GrammarRuleContextBuilder<
+        'a,
+        'buffer,
+        TKind,
+        NTKind,
+        ASTData,
+        ErrorType,
+        Global,
+        LexerActionState,
+        LexerErrorType,
+      >,
+    ),
+  {
+    let rule = rule.into();
+    let expect = rule
+      .iter()
+      .enumerate()
+      .filter_map(|(i, g)| if g.expect { Some(i) } else { None })
+      .collect();
+    let rule = rule
+      .into_iter()
+      .map(|g| self.grammars.get_or_create(g.kind).clone())
+      .collect();
+    self.gr_repo.get_or_add(
+      self.grammars.get_or_create_nt(nt).clone(),
+      rule,
+      expect,
+      None,
+    );
+    let mut ctx = GrammarRuleContextBuilder::default();
+    f(&mut ctx);
+    self
+  }
+
+  pub fn build<'buffer>(
     self,
     entry_nts: impl Into<Vec<NTKind>>,
-    lexer: impl Into<StatelessLexer<TKind, LexerActionState, LexerErrorType>>,
     global: Global,
     input: &'buffer str,
   ) -> Parser<'buffer, TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
@@ -128,7 +167,7 @@ impl<
       .collect();
     Parser::new(
       build_dfa(nts, entry_nts, self.gr_repo),
-      lexer.into().into_lexer(input).into(),
+      self.lexer.into_lexer(input).into(),
       Rc::new(RefCell::new(global)),
     )
   }
