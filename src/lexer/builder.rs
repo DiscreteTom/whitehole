@@ -15,7 +15,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
   }
 }
 
-pub struct Builder<Kind: 'static, ActionState: 'static, ErrorType: 'static>
+pub struct Builder<Kind: 'static, ActionState: 'static = (), ErrorType: 'static = ()>
 where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,

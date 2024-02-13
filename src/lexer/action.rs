@@ -22,7 +22,7 @@ pub enum ActionInputRestHeadMatcher {
   Unknown,
 }
 
-pub struct Action<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
+pub struct Action<Kind: 'static, ActionState: 'static = (), ErrorType: 'static = ()> {
   /// This flag is to indicate whether this action's output might be muted.
   /// The lexer will based on this flag to accelerate the lexing process.
   /// If `true`, this action's output may be muted.
