@@ -105,7 +105,7 @@ impl<
       .into_iter()
       .map(|g| self.grammars.get_or_create(g.kind).clone())
       .collect();
-    self.gr_repo.push(
+    self.gr_repo.get_or_add(
       self.grammars.get_or_create_nt(nt).clone(),
       rule,
       expect,

@@ -2,13 +2,16 @@ use crate::{
   lexer::token::TokenKind,
   parser::{
     elr::grammar::{
-      grammar::Grammar,
+      grammar::{Grammar, GrammarId},
       grammar_rule::{GrammarRule, GrammarRuleId},
     },
     traverser::Traverser,
   },
 };
-use std::{collections::HashSet, rc::Rc};
+use std::{
+  collections::{HashMap, HashSet},
+  rc::Rc,
+};
 
 pub struct GrammarRuleRepo<
   TKind: TokenKind<TKind>,
@@ -17,6 +20,9 @@ pub struct GrammarRuleRepo<
   ErrorType: 'static,
   Global: 'static,
 > {
+  // vec is hash-able.
+  // if 2 grammar rules have the same nt and rule, they are the same grammar rule.
+  cache: HashMap<Vec<GrammarId>, GrammarRuleId>,
   grs: Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
 }
 
@@ -29,7 +35,10 @@ impl<
   > Default for GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>
 {
   fn default() -> Self {
-    Self { grs: Vec::new() }
+    Self {
+      cache: HashMap::new(),
+      grs: Vec::new(),
+    }
   }
 }
 
@@ -45,16 +54,25 @@ impl<
     &self.grs
   }
 
-  pub fn push(
+  pub fn get_or_add(
     &mut self,
     nt: Rc<Grammar<TKind, NTKind>>,
     rule: Vec<Rc<Grammar<TKind, NTKind>>>,
     expect: HashSet<usize>,
     traverser: Traverser<TKind, NTKind, ASTData, ErrorType, Global>,
-  ) {
+  ) -> &GrammarRule<TKind, NTKind, ASTData, ErrorType, Global> {
+    let mut key = vec![nt.id().clone()];
+    key.extend(rule.iter().map(|g| g.id()));
+
+    if let Some(id) = self.cache.get(&key) {
+      return &self.grs[id.0];
+    }
+
     let id = GrammarRuleId(self.grs.len());
     self
       .grs
       .push(Rc::new(GrammarRule::new(id, nt, rule, expect, traverser)));
+    self.cache.insert(key, id);
+    &self.grs[id.0]
   }
 }
