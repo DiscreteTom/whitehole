@@ -15,13 +15,8 @@ impl<TokenKindType> PartialEq for TokenKindId<TokenKindType> {
   fn eq(&self, other: &Self) -> bool {
     self.0 == other.0
   }
-  fn ne(&self, other: &Self) -> bool {
-    self.0 != other.0
-  }
 }
-impl<TokenKindType> Eq for TokenKindId<TokenKindType> {
-  fn assert_receiver_is_total_eq(&self) {}
-}
+impl<TokenKindType> Eq for TokenKindId<TokenKindType> {}
 impl<TokenKindType> Hash for TokenKindId<TokenKindType> {
   fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
     self.0.hash(state);
