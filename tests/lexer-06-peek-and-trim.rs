@@ -1,4 +1,4 @@
-use whitehole::lexer::{Action, Builder};
+use whitehole::lexer::{Action, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -13,7 +13,7 @@ enum MyKind {
 
 #[test]
 fn peek_lexer() {
-  let mut lexer = Builder::<MyKind>::default()
+  let mut lexer = LexerBuilder::<MyKind>::default()
     .ignore(Action::regex(r"^\s+").unwrap().bind(Anonymous))
     .define(A, Action::regex(r"a").unwrap())
     .build(" a");
@@ -58,7 +58,7 @@ fn trim_lexer() {
   // then the muted tokens will be lexed multi times
   // which is not efficient
 
-  let mut lexer = Builder::<MyKind>::default()
+  let mut lexer = LexerBuilder::<MyKind>::default()
     .ignore(Action::regex(r"^\s+").unwrap().bind(Anonymous))
     .define(A, Action::regex(r"a").unwrap())
     .define(B, Action::regex(r"a").unwrap())

@@ -1,4 +1,4 @@
-use whitehole::lexer::{token::TokenKind, Action, Builder};
+use whitehole::lexer::{token::TokenKind, Action, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -34,7 +34,7 @@ fn kind_enum_with_calculated_value() {
     .select(|ctx| A(ctx.output.rest().len()));
 
   // yes we can use `append` and `append_with` to use an action with possible_kinds set
-  let mut lexer = Builder::<MyKind>::default().append(action).build("aa");
+  let mut lexer = LexerBuilder::<MyKind>::default().append(action).build("aa");
 
   // the first lex should be accepted as `A(1)`
   let token = lexer.lex().token.unwrap();
@@ -56,7 +56,7 @@ fn kind_enum_with_calculated_value() {
 fn kind_enum_with_const_value() {
   // if the value is a constant, we can still use `action.bind` and `builder.define`
   // then all token yielded by the action will have the same value
-  let mut lexer = Builder::<MyKind>::default()
+  let mut lexer = LexerBuilder::<MyKind>::default()
     .append(Action::regex(r"^a").unwrap().bind(A(42)))
     .define(A(66), Action::regex(r"^b").unwrap())
     .build("aabb");
@@ -71,7 +71,7 @@ fn into_kind_enum() {
   // `action.bind` accept `impl Into<YourKind>` as the parameter
   // so if YourKind implements `From<T>` you can use `T` directly
   assert!(matches!(
-    Builder::<MyKind>::default()
+    LexerBuilder::<MyKind>::default()
       .append(
         Action::regex(r"^a")
           .unwrap()
@@ -87,7 +87,7 @@ fn into_kind_enum() {
 
   // `builder.define` and `builder.define_with` also accept `impl Into<YourKind>`
   assert!(matches!(
-    Builder::<MyKind>::default()
+    LexerBuilder::<MyKind>::default()
       // here, use `42` directly
       .define(42, Action::regex(r"^a").unwrap())
       .build("aa")
@@ -98,7 +98,7 @@ fn into_kind_enum() {
     A(42)
   ));
   assert!(matches!(
-    Builder::<MyKind>::default()
+    LexerBuilder::<MyKind>::default()
       // here, use `42` directly
       .define_with(42, |a| a.regex(r"^a").unwrap())
       .build("aa")

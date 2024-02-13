@@ -1,4 +1,4 @@
-use whitehole::lexer::{token::TokenKind, Action, Builder};
+use whitehole::lexer::{token::TokenKind, Action, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -43,7 +43,7 @@ fn multi_kinds() {
   // so we MUST make sure the selector will always return a valid kind!
 
   // to use an action with possible_kinds set, we can use `builder.append` or `builder.append_with`
-  let mut lexer = Builder::<MyKind>::default().append(action).build("aa");
+  let mut lexer = LexerBuilder::<MyKind>::default().append(action).build("aa");
 
   // the first lex should be accepted as `A`
   let token = lexer.lex().token.unwrap();

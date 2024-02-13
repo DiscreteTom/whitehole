@@ -1,4 +1,4 @@
-use whitehole::lexer::{action::output::ActionOutputWithoutKind, Action, Builder};
+use whitehole::lexer::{action::output::ActionOutputWithoutKind, Action, LexerBuilder};
 use whitehole_macros::TokenKind;
 
 // define token kinds
@@ -22,7 +22,7 @@ fn lexer_basics() {
   // the first parameter is the token kind
   // the second parameter is the action state (not used in this example)
   // the third parameter is the error type (not used in this example)
-  let mut lexer = Builder::<MyKind>::default()
+  let mut lexer = LexerBuilder::<MyKind>::default()
     // you can use `ignore` to define a muted action
     // which will be accepted during the lexing process
     // without yielding any token

@@ -1,4 +1,4 @@
-use whitehole::lexer::{Action, Builder};
+use whitehole::lexer::{Action, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -22,7 +22,7 @@ struct MyState {
 
 #[test]
 fn action_orders() {
-  let mut lexer = Builder::<MyKind, MyState>::default()
+  let mut lexer = LexerBuilder::<MyKind, MyState>::default()
     // first defined actions have higher priority
     .define(A, Action::regex(r"^a").unwrap())
     .define(B, Action::regex(r"^a").unwrap())
@@ -41,7 +41,7 @@ fn action_orders() {
 
 #[test]
 fn action_decorators() {
-  let mut lexer = Builder::<MyKind, MyState, &str>::default()
+  let mut lexer = LexerBuilder::<MyKind, MyState, &str>::default()
     // when using action decorators
     // rust compiler can't infer the action's generic parameters
     // so we need to use `define_with`, `append_with` and `ignore_with` to define actions

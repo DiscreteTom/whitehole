@@ -1,4 +1,4 @@
-use whitehole::lexer::{Action, Builder};
+use whitehole::lexer::{Action, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -16,7 +16,7 @@ fn error_tokens() {
   // this is acceptable errors, the lexing process won't stop
 
   // in this example we use `&str` as the error type
-  let lexer = Builder::<MyKind, (), &str>::default()
+  let lexer = LexerBuilder::<MyKind, (), &str>::default()
     .ignore_with(|a| {
       a.regex(r"^\s+")
         .unwrap()
@@ -55,7 +55,7 @@ fn panic_mode() {
   // for some unacceptable errors, we can use panic mode
   // which will digest 1 char and try again
 
-  let mut lexer = Builder::<MyKind, (), &str>::default()
+  let mut lexer = LexerBuilder::<MyKind, (), &str>::default()
     .ignore(Action::regex(r"^\s+").unwrap().bind(Anonymous))
     .define(A, Action::regex(r"^a").unwrap())
     .build("b a");

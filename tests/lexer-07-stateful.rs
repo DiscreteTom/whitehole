@@ -1,4 +1,4 @@
-use whitehole::lexer::Builder;
+use whitehole::lexer::LexerBuilder;
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -18,7 +18,7 @@ struct MyState {
 
 #[test]
 fn stateful_lexer() {
-  let mut lexer = Builder::<MyKind, MyState>::default()
+  let mut lexer = LexerBuilder::<MyKind, MyState>::default()
     .append_with(|a| {
       a.regex("^123")
         .unwrap()

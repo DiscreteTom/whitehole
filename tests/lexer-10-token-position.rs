@@ -1,7 +1,7 @@
 use whitehole::lexer::{
   position::{Position, PositionTransformer},
   token::Range,
-  Action, Builder,
+  Action, LexerBuilder,
 };
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
@@ -26,7 +26,7 @@ fn token_position() {
   // so we can use it to get the position of a token
   let pt = PositionTransformer::new(text);
 
-  let lexer = Builder::<MyKind>::default()
+  let lexer = LexerBuilder::<MyKind>::default()
     .ignore(Action::regex(r"^\n").unwrap().bind(Anonymous))
     .define(A, Action::regex(r"^123").unwrap())
     .build(text);
