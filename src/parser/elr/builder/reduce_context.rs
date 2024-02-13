@@ -81,28 +81,9 @@ impl<
   }
 }
 
-pub type Condition<
-  'a,
-  'buffer,
-  TKind,
-  NTKind,
-  ASTData,
-  ErrorType,
-  Global,
-  LexerActionState,
-  LexerErrorType,
-> = Box<
-  dyn Fn(
-    ReduceContext<
-      'a,
-      'buffer,
-      TKind,
-      NTKind,
-      ASTData,
-      ErrorType,
-      Global,
-      LexerActionState,
-      LexerErrorType,
-    >,
-  ) -> bool,
->;
+pub type Condition<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> =
+  Box<
+    dyn Fn(
+      &ReduceContext<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+    ) -> bool,
+  >;

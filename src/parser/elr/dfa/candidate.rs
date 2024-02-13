@@ -6,9 +6,12 @@ use crate::{
   },
   parser::{
     ast::ASTNode,
-    elr::grammar::{
-      grammar::{Grammar, GrammarId, GrammarKind},
-      grammar_rule::GrammarRule,
+    elr::{
+      builder::reduce_context::ReduceContext,
+      grammar::{
+        grammar::{Grammar, GrammarId, GrammarKind},
+        grammar_rule::GrammarRule,
+      },
     },
     traverser::default_traverser,
   },
@@ -23,14 +26,16 @@ use std::{
 pub struct CandidateId(pub usize);
 
 pub struct Candidate<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 > {
   id: CandidateId,
-  gr: Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>,
+  gr: Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
   digested: usize,
 }
 
@@ -40,11 +45,15 @@ impl<
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
-  > Candidate<TKind, NTKind, ASTData, ErrorType, Global>
+    LexerActionState: Default + Clone + 'static,
+    LexerErrorType: 'static,
+  > Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
   pub fn new(
     id: CandidateId,
-    gr: Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>,
+    gr: Rc<
+      GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+    >,
     digested: usize,
   ) -> Self {
     Self { id, gr, digested }
@@ -53,7 +62,10 @@ impl<
   pub fn id(&self) -> &CandidateId {
     &self.id
   }
-  pub fn gr(&self) -> &Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>> {
+  pub fn gr(
+    &self,
+  ) -> &Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>
+  {
     &self.gr
   }
   pub fn digested(&self) -> usize {
@@ -67,7 +79,7 @@ impl<
     self.digested < self.gr.rule().len() - 1
   }
 
-  pub fn try_lex<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
+  pub fn try_lex<'buffer>(
     &self,
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     lexed_grammars: &mut HashSet<GrammarId>,
@@ -148,7 +160,7 @@ impl<
     })
   }
 
-  pub fn try_reduce<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
+  pub fn try_reduce<'buffer>(
     &self,
     buffer: &Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
@@ -163,7 +175,14 @@ impl<
 
     let matched = &reducing_stack[reducing_stack.len() - self.gr.rule().len()..];
     // TODO: set name
-    // TODO: check conflicts, rejecter, etc.
+    // TODO: check conflicts, etc.
+
+    let ctx = ReduceContext::new(matched, buffer, reducing_stack, lexer);
+
+    // check rejecter
+    if (self.gr.rejecter())(&ctx) {
+      return None;
+    }
 
     // accept
     Some(CandidateTryReduceOutput {
@@ -194,7 +213,7 @@ impl<
     })
   }
 
-  fn lex_grammar<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
+  fn lex_grammar<'buffer>(
     expectation: Expectation<TKind>,
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     global: &Rc<RefCell<Global>>,

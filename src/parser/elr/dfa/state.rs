@@ -16,14 +16,17 @@ use std::{
 pub struct StateId(pub usize);
 
 pub struct State<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 > {
   id: StateId,
-  candidates: Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>>,
+  candidates:
+    Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
   next_map: HashMap<GrammarId, Option<StateId>>,
 }
 
@@ -33,11 +36,15 @@ impl<
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
-  > State<TKind, NTKind, ASTData, ErrorType, Global>
+    LexerActionState: Default + Clone + 'static,
+    LexerErrorType: 'static,
+  > State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
   pub fn new(
     id: StateId,
-    candidates: Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>>,
+    candidates: Vec<
+      Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+    >,
     next_map: HashMap<GrammarId, Option<StateId>>,
   ) -> Self {
     Self {
@@ -47,11 +54,15 @@ impl<
     }
   }
 
-  pub fn candidates(&self) -> &Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>> {
+  pub fn candidates(
+    &self,
+  ) -> &Vec<
+    Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+  > {
     &self.candidates
   }
 
-  pub fn try_lex<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
+  pub fn try_lex<'buffer>(
     &self,
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     // TODO: add param token_ast_mapper
@@ -87,7 +98,7 @@ impl<
     None
   }
 
-  pub fn try_reduce<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
+  pub fn try_reduce<'buffer>(
     &self,
     buffer: &Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,

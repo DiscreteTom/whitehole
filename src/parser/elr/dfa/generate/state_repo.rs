@@ -47,14 +47,28 @@ impl StateRepo {
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
+    LexerActionState: Default + Clone + 'static,
+    LexerErrorType: 'static,
   >(
     &mut self,
     input_grammar_ids: &HashSet<GrammarId>,
-    cs: &mut CandidateRepo<TKind, NTKind, ASTData, ErrorType, Global>,
+    cs: &mut CandidateRepo<
+      TKind,
+      NTKind,
+      ASTData,
+      ErrorType,
+      Global,
+      LexerActionState,
+      LexerErrorType,
+    >,
     // TODO: nt_closures only store grammar rule id?
     nt_closures: &HashMap<
       GrammarId,
-      Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
+      Vec<
+        Rc<
+          GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+        >,
+      >,
     >,
   ) {
     // store the candidates of each unexpanded state
@@ -128,15 +142,29 @@ impl StateRepo {
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
+    LexerActionState: Default + Clone + 'static,
+    LexerErrorType: 'static,
   >(
     &self,
     current_candidates: &BTreeSet<CandidateId>,
     input_grammar_id: &GrammarId,
-    cs: &mut CandidateRepo<TKind, NTKind, ASTData, ErrorType, Global>,
+    cs: &mut CandidateRepo<
+      TKind,
+      NTKind,
+      ASTData,
+      ErrorType,
+      Global,
+      LexerActionState,
+      LexerErrorType,
+    >,
     // TODO: nt_closures only store grammar rule id?
     nt_closures: &HashMap<
       GrammarId,
-      Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
+      Vec<
+        Rc<
+          GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+        >,
+      >,
     >,
   ) -> NextResult<BTreeSet<CandidateId>> {
     let next_candidates =
@@ -163,14 +191,28 @@ impl StateRepo {
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
+    LexerActionState: Default + Clone + 'static,
+    LexerErrorType: 'static,
   >(
     current_candidates: &BTreeSet<CandidateId>,
     input_grammar_id: &GrammarId,
-    cs: &mut CandidateRepo<TKind, NTKind, ASTData, ErrorType, Global>,
+    cs: &mut CandidateRepo<
+      TKind,
+      NTKind,
+      ASTData,
+      ErrorType,
+      Global,
+      LexerActionState,
+      LexerErrorType,
+    >,
     // TODO: nt_closures only store grammar rule id?
     nt_closures: &HashMap<
       GrammarId,
-      Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
+      Vec<
+        Rc<
+          GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+        >,
+      >,
     >,
   ) -> BTreeSet<CandidateId> {
     // TODO: optimize code
@@ -214,10 +256,17 @@ impl StateRepo {
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
+    LexerActionState: Default + Clone + 'static,
+    LexerErrorType: 'static,
   >(
     self,
-    candidates: &Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>>,
-  ) -> HashMap<StateId, Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>> {
+    candidates: &Vec<
+      Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+    >,
+  ) -> HashMap<
+    StateId,
+    Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+  > {
     self
       .states
       .into_iter()

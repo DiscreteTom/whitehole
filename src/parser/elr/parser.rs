@@ -6,28 +6,31 @@ use crate::{
 use std::{cell::RefCell, rc::Rc};
 
 pub struct ParseOutput<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 > {
   pub buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
-  pub state_stack: Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
+  pub state_stack:
+    Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
   pub errors: Vec<usize>,
 }
 
 pub struct Parser<
   'buffer,
   TKind: TokenKind<TKind> + 'static,
-  NTKind: TokenKind<NTKind> + Clone,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
   LexerActionState: Clone + Default + 'static,
   LexerErrorType: 'static,
 > {
-  dfa: Dfa<TKind, NTKind, ASTData, ErrorType, Global>,
+  dfa: Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
   lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   global: Rc<RefCell<Global>>,
 }
@@ -44,14 +47,16 @@ impl<
   > Parser<'buffer, TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
   pub fn new(
-    dfa: Dfa<TKind, NTKind, ASTData, ErrorType, Global>,
+    dfa: Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
     lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     global: Rc<RefCell<Global>>,
   ) -> Self {
     Self { dfa, lexer, global }
   }
 
-  pub fn parse(&mut self) -> ParseOutput<TKind, NTKind, ASTData, ErrorType, Global> {
+  pub fn parse(
+    &mut self,
+  ) -> ParseOutput<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> {
     self.parse_with(
       Vec::new(),
       Stack::new(vec![self.dfa.entry_state().clone()]),
@@ -63,8 +68,10 @@ impl<
   pub fn parse_continue(
     &mut self,
     buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
-    state_stack: Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
-  ) -> ParseOutput<TKind, NTKind, ASTData, ErrorType, Global> {
+    state_stack: Stack<
+      Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+    >,
+  ) -> ParseOutput<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> {
     let last = buffer.len() - 1;
     self.parse_with(buffer, state_stack, [last])
   }
@@ -72,9 +79,11 @@ impl<
   pub fn parse_with(
     &mut self,
     buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
-    state_stack: Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
+    state_stack: Stack<
+      Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+    >,
     reducing_stack: impl Into<Vec<usize>>,
-  ) -> ParseOutput<TKind, NTKind, ASTData, ErrorType, Global> {
+  ) -> ParseOutput<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> {
     let output = self.dfa.parse(
       buffer,
       state_stack,
@@ -91,7 +100,9 @@ impl<
     }
   }
 
-  pub fn parse_all(&mut self) -> ParseOutput<TKind, NTKind, ASTData, ErrorType, Global> {
+  pub fn parse_all(
+    &mut self,
+  ) -> ParseOutput<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> {
     todo!()
   }
 }

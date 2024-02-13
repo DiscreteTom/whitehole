@@ -21,7 +21,7 @@ use std::{
 pub struct DfaParseOutput<
   'buffer,
   TKind: TokenKind<TKind> + 'static,
-  NTKind: TokenKind<NTKind> + Clone,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
@@ -30,20 +30,27 @@ pub struct DfaParseOutput<
 > {
   pub lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   pub buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
-  pub state_stack: Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
+  pub state_stack:
+    Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
   pub errors: Vec<usize>,
 }
 
 pub struct Dfa<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 > {
   entry_nts: HashSet<TokenKindId<NTKind>>,
-  entry_state: Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>,
-  states: HashMap<StateId, Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
+  entry_state:
+    Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+  states: HashMap<
+    StateId,
+    Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+  >,
   follow_sets: HashMap<GrammarId, HashSet<GrammarId>>,
   // TODO: token_ast_mapper
 }
@@ -54,12 +61,19 @@ impl<
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
-  > Dfa<TKind, NTKind, ASTData, ErrorType, Global>
+    LexerActionState: Default + Clone + 'static,
+    LexerErrorType: 'static,
+  > Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
   pub fn new(
     entry_nts: HashSet<TokenKindId<NTKind>>,
-    entry_state: Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>,
-    states: HashMap<StateId, Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
+    entry_state: Rc<
+      State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+    >,
+    states: HashMap<
+      StateId,
+      Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+    >,
     follow_sets: HashMap<GrammarId, HashSet<GrammarId>>,
   ) -> Self {
     Self {
@@ -70,14 +84,18 @@ impl<
     }
   }
 
-  pub fn entry_state(&self) -> &Rc<State<TKind, NTKind, ASTData, ErrorType, Global>> {
+  pub fn entry_state(
+    &self,
+  ) -> &Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>> {
     &self.entry_state
   }
 
-  pub fn parse<'buffer, LexerActionState: Default + Clone, LexerErrorType>(
+  pub fn parse<'buffer>(
     &self,
     buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
-    state_stack: Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
+    state_stack: Stack<
+      Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+    >,
     reducing_stack: Vec<usize>,
     lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     global: &Rc<RefCell<Global>>,

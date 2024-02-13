@@ -2,8 +2,6 @@ use super::reduce_context::{Condition, ReduceContext};
 use crate::lexer::token::TokenKind;
 
 pub struct GrammarRuleContextBuilder<
-  'a,
-  'buffer,
   TKind: TokenKind<TKind> + 'static,
   NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
@@ -12,22 +10,11 @@ pub struct GrammarRuleContextBuilder<
   LexerActionState: Default + Clone + 'static,
   LexerErrorType: 'static,
 > {
-  rejecter: Condition<
-    'a,
-    'buffer,
-    TKind,
-    NTKind,
-    ASTData,
-    ErrorType,
-    Global,
-    LexerActionState,
-    LexerErrorType,
-  >,
+  pub rejecter:
+    Condition<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
 }
 
 impl<
-    'a,
-    'buffer,
     TKind: TokenKind<TKind> + 'static,
     NTKind: TokenKind<NTKind> + Clone + 'static,
     ASTData: 'static,
@@ -37,8 +24,6 @@ impl<
     LexerErrorType: 'static,
   > Default
   for GrammarRuleContextBuilder<
-    'a,
-    'buffer,
     TKind,
     NTKind,
     ASTData,
@@ -67,8 +52,6 @@ impl<
     LexerErrorType: 'static,
   >
   GrammarRuleContextBuilder<
-    'a,
-    'buffer,
     TKind,
     NTKind,
     ASTData,
@@ -81,17 +64,7 @@ impl<
   pub fn rejecter<F>(&mut self, condition: F)
   where
     F: Fn(
-        ReduceContext<
-          'a,
-          'buffer,
-          TKind,
-          NTKind,
-          ASTData,
-          ErrorType,
-          Global,
-          LexerActionState,
-          LexerErrorType,
-        >,
+        &ReduceContext<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
       ) -> bool
       + 'static,
   {

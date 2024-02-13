@@ -15,15 +15,18 @@ use std::{
 };
 
 pub struct CandidateRepo<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 > {
   gr_cache: HashMap<GrammarRuleId, HashMap</* digested */ usize, CandidateId>>,
   // TODO: is this needed? can we just store candidates in caches?
-  candidates: Vec<RawCandidate<TKind, NTKind, ASTData, ErrorType, Global>>,
+  candidates:
+    Vec<RawCandidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
 }
 
 impl<
@@ -32,10 +35,14 @@ impl<
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
-  > CandidateRepo<TKind, NTKind, ASTData, ErrorType, Global>
+    LexerActionState: Default + Clone + 'static,
+    LexerErrorType: 'static,
+  > CandidateRepo<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
   pub fn with_initial(
-    grs: &Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
+    grs: &Vec<
+      Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+    >,
   ) -> Self {
     let mut gr_cache = HashMap::new();
     let mut candidates = Vec::new();
@@ -61,7 +68,8 @@ impl<
   pub fn get_initial(
     &self,
     gr_id: &GrammarRuleId,
-  ) -> &RawCandidate<TKind, NTKind, ASTData, ErrorType, Global> {
+  ) -> &RawCandidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
+  {
     &self.candidates[self.gr_cache.get(gr_id).unwrap().get(&0).unwrap().0]
   }
 
@@ -69,7 +77,9 @@ impl<
     &mut self,
     current_id: &CandidateId,
     input_grammar_id: &GrammarId,
-  ) -> Option<&RawCandidate<TKind, NTKind, ASTData, ErrorType, Global>> {
+  ) -> Option<
+    &RawCandidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+  > {
     let new_candidate_id = CandidateId(self.candidates.len());
     let candidate = &mut self.candidates[current_id.0];
 
@@ -101,11 +111,18 @@ impl<
     Some(&self.candidates[new_candidate_id.0])
   }
 
-  pub fn get(&self, id: &CandidateId) -> &RawCandidate<TKind, NTKind, ASTData, ErrorType, Global> {
+  pub fn get(
+    &self,
+    id: &CandidateId,
+  ) -> &RawCandidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
+  {
     &self.candidates[id.0]
   }
 
-  pub fn into_candidates(self) -> Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>> {
+  pub fn into_candidates(
+    self,
+  ) -> Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>
+  {
     self
       .candidates
       .into_iter()

@@ -22,11 +22,21 @@ pub fn build_dfa<
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 >(
   nts: HashSet<GrammarId>, // TODO: don't pass nts because this can be calculated by gr_repo
   entry_nts: HashSet<TokenKindId<NTKind>>,
-  gr_repo: GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
-) -> Dfa<TKind, NTKind, ASTData, ErrorType, Global> {
+  gr_repo: GrammarRuleRepo<
+    TKind,
+    NTKind,
+    ASTData,
+    ErrorType,
+    Global,
+    LexerActionState,
+    LexerErrorType,
+  >,
+) -> Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> {
   let nt_closures = calc_all_nt_closures(&nts, &gr_repo);
 
   // init all initial candidates, initial candidate is candidate with digested=0
@@ -69,15 +79,28 @@ pub fn build_dfa<
 /// it should also have the candidate `B := # 'd'`.
 // TODO: just return id?
 fn calc_grs_closure<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 >(
-  grs: Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>,
-  gr_repo: &GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
-) -> Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>> {
+  grs: Vec<
+    Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+  >,
+  gr_repo: &GrammarRuleRepo<
+    TKind,
+    NTKind,
+    ASTData,
+    ErrorType,
+    Global,
+    LexerActionState,
+    LexerErrorType,
+  >,
+) -> Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>
+{
   // init result as a hashmap with given grammar rules
   // so we can check if a grammar rule is already in the result by id
   let mut result = grs
@@ -139,15 +162,26 @@ fn calc_grs_closure<
 /// it should also have the candidate `A := # B 'c'` and `B := # 'd'`.
 /// In this case, `A := # B 'c'` and `B := # 'd'` are the closure of the NT 'A'.
 fn calc_nt_closure<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 >(
   nt_id: &GrammarId,
-  gr_repo: &GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
-) -> Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>> {
+  gr_repo: &GrammarRuleRepo<
+    TKind,
+    NTKind,
+    ASTData,
+    ErrorType,
+    Global,
+    LexerActionState,
+    LexerErrorType,
+  >,
+) -> Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>
+{
   calc_grs_closure(
     gr_repo
       .grs()
@@ -160,15 +194,28 @@ fn calc_nt_closure<
 }
 
 fn calc_all_nt_closures<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 >(
   nt_ids: &HashSet<GrammarId>,
-  gr_repo: &GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
-) -> HashMap<GrammarId, Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>> {
+  gr_repo: &GrammarRuleRepo<
+    TKind,
+    NTKind,
+    ASTData,
+    ErrorType,
+    Global,
+    LexerActionState,
+    LexerErrorType,
+  >,
+) -> HashMap<
+  GrammarId,
+  Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
+> {
   nt_ids
     .iter()
     .map(|nt_id| (nt_id.clone(), calc_nt_closure(nt_id, gr_repo)))
@@ -176,13 +223,23 @@ fn calc_all_nt_closures<
 }
 
 fn get_all_grammar_id<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 >(
-  gr_repo: &GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
+  gr_repo: &GrammarRuleRepo<
+    TKind,
+    NTKind,
+    ASTData,
+    ErrorType,
+    Global,
+    LexerActionState,
+    LexerErrorType,
+  >,
 ) -> HashSet<GrammarId> {
   // collect all grammars in grammar rules only,
   // don't collect grammar rules' NTs, because
@@ -201,13 +258,20 @@ fn get_all_grammar_id<
 }
 
 fn calc_first_sets<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 >(
-  nt_closures: &HashMap<GrammarId, Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>>>,
+  nt_closures: &HashMap<
+    GrammarId,
+    Vec<
+      Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+    >,
+  >,
 ) -> HashMap<GrammarId, HashSet<GrammarId>> {
   let mut result = HashMap::new();
 
@@ -224,13 +288,23 @@ fn calc_first_sets<
 }
 
 fn calc_follow_sets<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 >(
-  gr_repo: &GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
+  gr_repo: &GrammarRuleRepo<
+    TKind,
+    NTKind,
+    ASTData,
+    ErrorType,
+    Global,
+    LexerActionState,
+    LexerErrorType,
+  >,
   first_sets: &HashMap<GrammarId, HashSet<GrammarId>>,
 ) -> HashMap<GrammarId, HashSet<GrammarId>> {
   let mut result = HashMap::new();

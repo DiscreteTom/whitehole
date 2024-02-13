@@ -45,10 +45,14 @@ impl RawState {
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
+    LexerActionState: Default + Clone + 'static,
+    LexerErrorType: 'static,
   >(
     self,
-    candidates: &Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global>>>,
-  ) -> State<TKind, NTKind, ASTData, ErrorType, Global> {
+    candidates: &Vec<
+      Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+    >,
+  ) -> State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> {
     State::new(
       self.id,
       self

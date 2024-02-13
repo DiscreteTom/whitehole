@@ -8,14 +8,16 @@ use crate::{
 use std::rc::Rc;
 
 pub struct RawCandidate<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 > {
   id: CandidateId,
-  gr: Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>,
+  gr: Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
   digested: usize,
   /// `None` if not calculated yet, `Some(None)` if no next, `Some(Some(id))` if has next.
   next: Option<Option<CandidateId>>,
@@ -27,11 +29,15 @@ impl<
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
-  > RawCandidate<TKind, NTKind, ASTData, ErrorType, Global>
+    LexerActionState: Default + Clone + 'static,
+    LexerErrorType: 'static,
+  > RawCandidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
   pub fn new(
     id: CandidateId,
-    gr: Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>>,
+    gr: Rc<
+      GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+    >,
     digested: usize,
   ) -> Self {
     Self {
@@ -45,7 +51,10 @@ impl<
   pub fn id(&self) -> &CandidateId {
     &self.id
   }
-  pub fn gr(&self) -> &Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>> {
+  pub fn gr(
+    &self,
+  ) -> &Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>
+  {
     &self.gr
   }
   pub fn digested(&self) -> usize {
@@ -63,7 +72,9 @@ impl<
     self.next = Some(next);
   }
 
-  pub fn into_candidate(self) -> Candidate<TKind, NTKind, ASTData, ErrorType, Global> {
+  pub fn into_candidate(
+    self,
+  ) -> Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> {
     Candidate::new(self.id, self.gr, self.digested)
   }
 }

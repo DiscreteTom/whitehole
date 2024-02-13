@@ -1,3 +1,4 @@
+pub mod conflict;
 pub mod grammar_rule_context_builder;
 pub mod reduce_context;
 
@@ -54,7 +55,7 @@ pub fn Literal<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>>(
 
 pub struct ParserBuilder<
   TKind: TokenKind<TKind> + 'static,
-  NTKind: TokenKind<NTKind> + Clone,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static = (),
   ErrorType: 'static = (),
   Global: 'static = (),
@@ -63,7 +64,8 @@ pub struct ParserBuilder<
 > {
   lexer: StatelessLexer<TKind, LexerActionState, LexerErrorType>,
   grammars: GrammarRepo<TKind, NTKind>,
-  gr_repo: GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
+  gr_repo:
+    GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
 }
 
 impl<
@@ -85,27 +87,11 @@ impl<
   }
 
   pub fn define(
-    mut self,
+    self,
     nt: NTKind,
     rule: impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>,
   ) -> Self {
-    let rule = rule.into();
-    let expect = rule
-      .iter()
-      .enumerate()
-      .filter_map(|(i, g)| if g.expect { Some(i) } else { None })
-      .collect();
-    let rule = rule
-      .into_iter()
-      .map(|g| self.grammars.get_or_create(g.kind).clone())
-      .collect();
-    self.gr_repo.get_or_add(
-      self.grammars.get_or_create_nt(nt).clone(),
-      rule,
-      expect,
-      None,
-    );
-    self
+    self.define_with(nt, rule, |_| {})
   }
 
   pub fn define_with<'a, 'buffer: 'a, F>(
@@ -117,8 +103,6 @@ impl<
   where
     F: Fn(
       &mut GrammarRuleContextBuilder<
-        'a,
-        'buffer,
         TKind,
         NTKind,
         ASTData,
@@ -139,14 +123,17 @@ impl<
       .into_iter()
       .map(|g| self.grammars.get_or_create(g.kind).clone())
       .collect();
+
+    let mut ctx = GrammarRuleContextBuilder::default();
+    f(&mut ctx);
+
     self.gr_repo.get_or_add(
       self.grammars.get_or_create_nt(nt).clone(),
       rule,
       expect,
+      ctx.rejecter,
       None,
     );
-    let mut ctx = GrammarRuleContextBuilder::default();
-    f(&mut ctx);
     self
   }
 

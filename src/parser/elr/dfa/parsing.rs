@@ -50,15 +50,18 @@ impl<T> Stack<T> {
 }
 
 pub struct ParsingState<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
   LexerType,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 > {
   pub buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
-  pub state_stack: Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
+  pub state_stack:
+    Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
   pub reducing_stack: Vec<usize>,
   pub lexer: LexerType,
   pub need_lex: bool,
@@ -85,11 +88,16 @@ impl<
     ErrorType,
     Global,
     TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    LexerActionState,
+    LexerErrorType,
   >
 {
   pub fn try_lex(
     &mut self,
-    states: &HashMap<StateId, Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
+    states: &HashMap<
+      StateId,
+      Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+    >,
     global: &Rc<RefCell<Global>>,
   ) -> bool {
     let current_state = self.state_stack.current();
@@ -130,7 +138,10 @@ impl<
     &mut self,
     entry_nts: &HashSet<TokenKindId<NTKind>>,
     follow_sets: &HashMap<GrammarId, HashSet<GrammarId>>,
-    states: &HashMap<StateId, Rc<State<TKind, NTKind, ASTData, ErrorType, Global>>>,
+    states: &HashMap<
+      StateId,
+      Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+    >,
   ) -> bool {
     let output = match self.state_stack.current().try_reduce(
       &mut self.buffer,

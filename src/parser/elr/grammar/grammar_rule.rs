@@ -1,16 +1,21 @@
 use super::grammar::Grammar;
-use crate::{lexer::token::TokenKind, parser::traverser::Traverser};
+use crate::{
+  lexer::token::TokenKind,
+  parser::{elr::builder::reduce_context::Condition, traverser::Traverser},
+};
 use std::{collections::HashSet, rc::Rc};
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, PartialOrd, Ord)]
 pub struct GrammarRuleId(pub usize);
 
 pub struct GrammarRule<
-  TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
 > {
   id: GrammarRuleId,
   // the NT should be a `Grammar` instead of an `NTKind`
@@ -18,6 +23,7 @@ pub struct GrammarRule<
   nt: Rc<Grammar<TKind, NTKind>>,
   rule: Vec<Rc<Grammar<TKind, NTKind>>>,
   expect: HashSet<usize>,
+  rejecter: Condition<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
   traverser: Option<Traverser<TKind, NTKind, ASTData, ErrorType, Global>>,
 }
 
@@ -27,13 +33,24 @@ impl<
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
-  > GrammarRule<TKind, NTKind, ASTData, ErrorType, Global>
+    LexerActionState: Default + Clone + 'static,
+    LexerErrorType: 'static,
+  > GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
   pub fn new(
     id: GrammarRuleId,
     nt: Rc<Grammar<TKind, NTKind>>,
     rule: Vec<Rc<Grammar<TKind, NTKind>>>,
     expect: HashSet<usize>,
+    rejecter: Condition<
+      TKind,
+      NTKind,
+      ASTData,
+      ErrorType,
+      Global,
+      LexerActionState,
+      LexerErrorType,
+    >,
     traverser: Option<Traverser<TKind, NTKind, ASTData, ErrorType, Global>>,
   ) -> Self {
     Self {
@@ -41,6 +58,7 @@ impl<
       nt,
       rule,
       expect,
+      rejecter,
       traverser,
     }
   }
@@ -55,6 +73,11 @@ impl<
   }
   pub fn expect(&self) -> &HashSet<usize> {
     &self.expect
+  }
+  pub fn rejecter(
+    &self,
+  ) -> &Condition<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> {
+    &self.rejecter
   }
   pub fn traverser(&self) -> &Option<Traverser<TKind, NTKind, ASTData, ErrorType, Global>> {
     &self.traverser
