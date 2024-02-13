@@ -18,7 +18,7 @@ use std::{
 
 pub fn build_dfa<
   TKind: TokenKind<TKind>,
-  NTKind: TokenKind<NTKind> + Clone,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,

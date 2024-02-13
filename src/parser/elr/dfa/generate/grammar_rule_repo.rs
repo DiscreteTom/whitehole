@@ -59,7 +59,7 @@ impl<
     nt: Rc<Grammar<TKind, NTKind>>,
     rule: Vec<Rc<Grammar<TKind, NTKind>>>,
     expect: HashSet<usize>,
-    traverser: Traverser<TKind, NTKind, ASTData, ErrorType, Global>,
+    traverser: Option<Traverser<TKind, NTKind, ASTData, ErrorType, Global>>,
   ) -> &GrammarRule<TKind, NTKind, ASTData, ErrorType, Global> {
     let mut key = vec![nt.id().clone()];
     key.extend(rule.iter().map(|g| g.id()));

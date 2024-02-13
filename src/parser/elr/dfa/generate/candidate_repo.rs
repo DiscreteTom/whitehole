@@ -28,7 +28,7 @@ pub struct CandidateRepo<
 
 impl<
     TKind: TokenKind<TKind>,
-    NTKind: TokenKind<NTKind> + Clone,
+    NTKind: TokenKind<NTKind> + Clone + 'static,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,

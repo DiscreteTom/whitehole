@@ -43,7 +43,7 @@ impl StateRepo {
 
   pub fn calc_all_states<
     TKind: TokenKind<TKind>,
-    NTKind: TokenKind<NTKind> + Clone,
+    NTKind: TokenKind<NTKind> + Clone + 'static,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
@@ -124,7 +124,7 @@ impl StateRepo {
   /// Return `None` if no next or next is already generated.
   fn generate_next<
     TKind: TokenKind<TKind>,
-    NTKind: TokenKind<NTKind> + Clone,
+    NTKind: TokenKind<NTKind> + Clone + 'static,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
@@ -159,7 +159,7 @@ impl StateRepo {
   // TODO: merge with generate_next
   fn calc_next_candidates<
     TKind: TokenKind<TKind>,
-    NTKind: TokenKind<NTKind> + Clone,
+    NTKind: TokenKind<NTKind> + Clone + 'static,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
@@ -210,7 +210,7 @@ impl StateRepo {
 
   pub fn into_states<
     TKind: TokenKind<TKind>,
-    NTKind: TokenKind<NTKind> + Clone,
+    NTKind: TokenKind<NTKind> + Clone + 'static,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,

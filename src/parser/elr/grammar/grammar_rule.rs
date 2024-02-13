@@ -18,7 +18,7 @@ pub struct GrammarRule<
   nt: Rc<Grammar<TKind, NTKind>>,
   rule: Vec<Rc<Grammar<TKind, NTKind>>>,
   expect: HashSet<usize>,
-  traverser: Traverser<TKind, NTKind, ASTData, ErrorType, Global>,
+  traverser: Option<Traverser<TKind, NTKind, ASTData, ErrorType, Global>>,
 }
 
 impl<
@@ -34,7 +34,7 @@ impl<
     nt: Rc<Grammar<TKind, NTKind>>,
     rule: Vec<Rc<Grammar<TKind, NTKind>>>,
     expect: HashSet<usize>,
-    traverser: Traverser<TKind, NTKind, ASTData, ErrorType, Global>,
+    traverser: Option<Traverser<TKind, NTKind, ASTData, ErrorType, Global>>,
   ) -> Self {
     Self {
       id,
@@ -56,7 +56,7 @@ impl<
   pub fn expect(&self) -> &HashSet<usize> {
     &self.expect
   }
-  pub fn traverser(&self) -> &Traverser<TKind, NTKind, ASTData, ErrorType, Global> {
+  pub fn traverser(&self) -> &Option<Traverser<TKind, NTKind, ASTData, ErrorType, Global>> {
     &self.traverser
   }
 }

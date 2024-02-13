@@ -10,6 +10,7 @@ use crate::{
       grammar::{Grammar, GrammarId, GrammarKind},
       grammar_rule::GrammarRule,
     },
+    traverser::default_traverser,
   },
 };
 use std::{
@@ -35,7 +36,7 @@ pub struct Candidate<
 
 impl<
     TKind: TokenKind<TKind>,
-    NTKind: TokenKind<NTKind> + Clone,
+    NTKind: TokenKind<NTKind> + Clone + 'static,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
@@ -181,7 +182,12 @@ impl<
         // TODO: set data & error
         None,
         None,
-        self.gr.traverser().clone(),
+        self
+          .gr
+          .traverser()
+          .as_ref()
+          .map(|t| t.clone())
+          .unwrap_or(Rc::new(default_traverser)),
       ),
       nt_grammar_id: self.gr.nt().id().clone(),
       reduced: self.gr.rule().len(),

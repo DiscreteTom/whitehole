@@ -71,7 +71,7 @@ pub struct ParsingState<
 impl<
     'buffer,
     TKind: TokenKind<TKind>,
-    NTKind: TokenKind<NTKind> + Clone,
+    NTKind: TokenKind<NTKind> + Clone + 'static,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,

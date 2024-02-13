@@ -80,7 +80,7 @@ impl<
 
 impl<
     TKind: TokenKind<TKind>,
-    NTKind: TokenKind<NTKind> + Clone,
+    NTKind: TokenKind<NTKind> + Clone + 'static,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
@@ -90,7 +90,6 @@ impl<
     mut self,
     nt: NTKind,
     rule: impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>,
-    traverser: Traverser<TKind, NTKind, ASTData, ErrorType, Global>,
   ) -> Self {
     let rule = rule.into();
     let expect = rule
@@ -106,7 +105,7 @@ impl<
       self.grammars.get_or_create_nt(nt).clone(),
       rule,
       expect,
-      traverser,
+      None,
     );
     self
   }

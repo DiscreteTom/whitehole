@@ -9,3 +9,15 @@ pub type Traverser<
   ErrorType: 'static,
   Global: 'static,
 > = Rc<dyn Fn(&ASTNode<TKind, NTKind, ASTData, ErrorType, Global>) -> Option<ASTData>>;
+
+pub fn default_traverser<
+  TKind: TokenKind<TKind>,
+  NTKind: TokenKind<NTKind>,
+  ASTData: 'static,
+  ErrorType: 'static,
+  Global: 'static,
+>(
+  _: &ASTNode<TKind, NTKind, ASTData, ErrorType, Global>,
+) -> Option<ASTData> {
+  todo!()
+}
