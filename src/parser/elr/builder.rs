@@ -57,9 +57,9 @@ pub fn Literal<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>>(
 pub struct ParserBuilder<
   TKind: TokenKind<TKind>,
   NTKind: TokenKind<NTKind> + Clone,
-  ASTData: 'static,
-  ErrorType: 'static,
-  Global: 'static,
+  ASTData: 'static = (),
+  ErrorType: 'static = (),
+  Global: 'static = (),
 > {
   grammars: GrammarRepo<TKind, NTKind>,
   gr_repo: GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global>,
