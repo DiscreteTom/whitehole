@@ -209,6 +209,17 @@ where
   }
 }
 
+impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
+  Into<StatelessLexer<Kind, ActionState, ErrorType>> for Builder<Kind, ActionState, ErrorType>
+where
+  Kind: TokenKind<Kind>,
+  ActionState: Clone + Default,
+{
+  fn into(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
+    self.build_stateless()
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
