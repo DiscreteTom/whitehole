@@ -6,13 +6,10 @@ use super::{
   parser::Parser,
 };
 use crate::{
-  lexer::{
-    token::{TokenKind, TokenKindId},
-    trimmed::TrimmedLexer,
-  },
+  lexer::{stateless::StatelessLexer, token::TokenKind},
   parser::traverser::Traverser,
 };
-use std::{cell::RefCell, collections::HashSet, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 pub struct ParserBuilderGrammar<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> {
   pub kind: GrammarKind<TKind, NTKind>,
@@ -113,13 +110,16 @@ impl<
     );
     self
   }
+
   pub fn build<'buffer, LexerActionState: Clone + Default, LexerErrorType>(
     self,
-    entry_nts: HashSet<TokenKindId<NTKind>>,
-    lexer: impl Into<TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>>,
+    entry_nts: impl Into<Vec<NTKind>>,
+    lexer: impl Into<StatelessLexer<TKind, LexerActionState, LexerErrorType>>,
     global: Global,
+    input: &'buffer str,
   ) -> Parser<'buffer, TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
   {
+    let entry_nts = entry_nts.into().into_iter().map(|e| e.id()).collect();
     // collect known nts
     let nts = self
       .gr_repo
@@ -129,7 +129,7 @@ impl<
       .collect();
     Parser::new(
       build_dfa(nts, entry_nts, self.gr_repo),
-      lexer.into(),
+      lexer.into().into_lexer(input).into(),
       Rc::new(RefCell::new(global)),
     )
   }
