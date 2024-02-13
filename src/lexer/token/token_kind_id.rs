@@ -1,9 +1,16 @@
+use super::TokenKind;
 use std::{hash::Hash, marker::PhantomData};
 
 /// The unique id of a token kind.
 /// Usually we use enum variants as token kinds, and the id is the variant's index.
 #[derive(Debug)]
 pub struct TokenKindId<TokenKindType>(pub usize, PhantomData<TokenKindType>);
+
+impl<TokenKindType: TokenKind<TokenKindType>> From<TokenKindType> for TokenKindId<TokenKindType> {
+  fn from(kind: TokenKindType) -> Self {
+    kind.id()
+  }
+}
 
 impl<TokenKindType> TokenKindId<TokenKindType> {
   pub fn new(index: usize) -> Self {
