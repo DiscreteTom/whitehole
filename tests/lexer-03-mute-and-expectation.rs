@@ -18,7 +18,7 @@ enum MyKind {
 fn maybe_muted() {
   // there is a field `maybe_muted` in `Action`
   // which will be set if you use `action.mute` or `action.mute_if`
-  let action = Action::<(), (), ()>::regex(r"^a").unwrap();
+  let action = Action::<()>::regex(r"^a").unwrap();
   // by default `maybe_muted` is `false`
   assert!(!action.maybe_muted);
   // with `mute`, the `maybe_muted` field will be set by the argument
@@ -34,7 +34,7 @@ fn maybe_muted() {
   assert!(action.maybe_muted);
 
   // we can edit the `maybe_muted` field if we know what we are doing
-  let mut action = Action::<(), (), ()>::regex(r"^a").unwrap();
+  let mut action = Action::<()>::regex(r"^a").unwrap();
   action.maybe_muted = true;
   assert!(action.maybe_muted);
 }
@@ -44,14 +44,14 @@ fn builder_ignore() {
   // when you use `builder.ignore` or `builder.ignore_with`
   // the builder will set the `maybe_muted` field to `true`
   assert!(
-    Builder::<MyKind, (), ()>::default()
+    Builder::<MyKind>::default()
       .ignore(Action::regex("^-").unwrap().bind(Anonymous))
       .build_stateless()
       .actions()[0]
       .maybe_muted
   );
   assert!(
-    Builder::<MyKind, (), ()>::default()
+    Builder::<MyKind>::default()
       .ignore_with(|a| a.regex("^-").unwrap().bind(Anonymous))
       .build_stateless()
       .actions()[0]
@@ -61,14 +61,14 @@ fn builder_ignore() {
   // if your token kind implements `Default` and `Clone`
   // you can use `builder.ignore_default` or `builder.ignore_default_with`
   // so that the builder will bind the A with the default kind
-  let stateless = Builder::<MyKind, (), ()>::default()
+  let stateless = Builder::<MyKind>::default()
     .ignore_default(Action::regex("^-").unwrap())
     .build_stateless();
   let action = &stateless.actions()[0];
   assert!(action.maybe_muted);
   assert_eq!(action.possible_kinds().len(), 1);
   assert!(action.possible_kinds().contains(&Anonymous.id()));
-  let stateless = Builder::<MyKind, (), ()>::default()
+  let stateless = Builder::<MyKind>::default()
     .ignore_default_with(|a| a.regex("^-").unwrap())
     .build_stateless();
   let action = &stateless.actions()[0];
@@ -79,7 +79,7 @@ fn builder_ignore() {
 
 #[test]
 fn expectation() {
-  let mut lexer = Builder::<MyKind, (), ()>::default()
+  let mut lexer = Builder::<MyKind>::default()
     .ignore(Action::regex("^-").unwrap().bind(Anonymous))
     .define(A, Action::regex(r"a").unwrap())
     .define(B, Action::regex(r"a").unwrap())

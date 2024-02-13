@@ -26,7 +26,7 @@ fn token_position() {
   // so we can use it to get the position of a token
   let pt = PositionTransformer::new(text);
 
-  let lexer = Builder::<MyKind, (), ()>::default()
+  let lexer = Builder::<MyKind>::default()
     .ignore(Action::regex(r"^\n").unwrap().bind(Anonymous))
     .define(A, Action::regex(r"^123").unwrap())
     .build(text);

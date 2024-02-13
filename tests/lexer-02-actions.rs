@@ -22,7 +22,7 @@ struct MyState {
 
 #[test]
 fn action_orders() {
-  let mut lexer = Builder::<MyKind, MyState, &str>::default()
+  let mut lexer = Builder::<MyKind, MyState>::default()
     // first defined actions have higher priority
     .define(A, Action::regex(r"^a").unwrap())
     .define(B, Action::regex(r"^a").unwrap())

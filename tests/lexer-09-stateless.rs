@@ -16,10 +16,10 @@ enum MyKind {
 fn stateless_lexer() {
   // `Lexer` is stateful, it keep tracks of the lexer state (digested, buffer, etc) and the action state.
   // we can use `builder.build_stateless` to get a stateless lexer
-  Builder::<MyKind, (), ()>::default().build_stateless();
+  Builder::<MyKind>::default().build_stateless();
 
   // or use `lexer.stateless()` to get the stateless lexer from a stateful lexer
-  let lexer = Builder::<MyKind, (), ()>::default()
+  let lexer = Builder::<MyKind>::default()
     .ignore(Action::regex(r"^\s+").unwrap().bind(Anonymous))
     .define(A, Action::regex(r"^a").unwrap())
     .build(" a");
@@ -48,7 +48,7 @@ fn stateless_lexer() {
 fn stateless_to_lexer() {
   // if we already have all actions, but we don't have a buffer
   // we can build a stateless lexer first, and then build a stateful lexer from it
-  let stateless = Builder::<MyKind, (), ()>::default().build_stateless();
+  let stateless = Builder::<MyKind>::default().build_stateless();
 
   // this will consume the stateless lexer
   let lexer = stateless.into_lexer("123");

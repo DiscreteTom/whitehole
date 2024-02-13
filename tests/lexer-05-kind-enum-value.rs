@@ -27,16 +27,14 @@ fn kind_id_is_not_relevant_with_value() {
 fn kind_enum_with_calculated_value() {
   // if we want to calculate the value by the action's output
   // we need to use `action.kinds` and `action.select`
-  let action = Action::<(), (), ()>::regex(r"^a")
+  let action = Action::<()>::regex(r"^a")
     .unwrap()
     // in `kinds` the value is not important, we just want to get the kind id
     .kinds([A(Default::default())])
     .select(|ctx| A(ctx.output.rest().len()));
 
   // yes we can use `append` and `append_with` to use an action with possible_kinds set
-  let mut lexer = Builder::<MyKind, (), ()>::default()
-    .append(action)
-    .build("aa");
+  let mut lexer = Builder::<MyKind>::default().append(action).build("aa");
 
   // the first lex should be accepted as `A(1)`
   let token = lexer.lex().token.unwrap();
@@ -58,13 +56,9 @@ fn kind_enum_with_calculated_value() {
 fn kind_enum_with_const_value() {
   // if the value is a constant, we can still use `action.bind` and `builder.define`
   // then all token yielded by the action will have the same value
-  let mut lexer = Builder::<MyKind, (), ()>::default()
-    .append(
-      Action::<(), (), ()>::regex(r"^a")
-        .unwrap()
-        .bind::<MyKind>(A(42)),
-    )
-    .define(A(66), Action::<(), (), ()>::regex(r"^b").unwrap())
+  let mut lexer = Builder::<MyKind>::default()
+    .append(Action::regex(r"^a").unwrap().bind(A(42)))
+    .define(A(66), Action::regex(r"^b").unwrap())
     .build("aabb");
   assert!(matches!(lexer.lex().token.unwrap().kind, A(42))); // the first lex for 42
   assert!(matches!(lexer.lex().token.unwrap().kind, A(42))); // the second lex for 42
@@ -77,11 +71,11 @@ fn into_kind_enum() {
   // `action.bind` accept `impl Into<YourKind>` as the parameter
   // so if YourKind implements `From<T>` you can use `T` directly
   assert!(matches!(
-    Builder::<MyKind, (), ()>::default()
+    Builder::<MyKind>::default()
       .append(
-        Action::<(), (), ()>::regex(r"^a")
+        Action::regex(r"^a")
           .unwrap()
-          .bind::<MyKind>(42) // here, use `42` directly
+          .bind(42) // here, use `42` directly
       )
       .build("aa")
       .lex()
@@ -93,7 +87,7 @@ fn into_kind_enum() {
 
   // `builder.define` and `builder.define_with` also accept `impl Into<YourKind>`
   assert!(matches!(
-    Builder::<MyKind, (), ()>::default()
+    Builder::<MyKind>::default()
       // here, use `42` directly
       .define(42, Action::regex(r"^a").unwrap())
       .build("aa")
@@ -104,7 +98,7 @@ fn into_kind_enum() {
     A(42)
   ));
   assert!(matches!(
-    Builder::<MyKind, (), ()>::default()
+    Builder::<MyKind>::default()
       // here, use `42` directly
       .define_with(42, |a| a.regex(r"^a").unwrap())
       .build("aa")
