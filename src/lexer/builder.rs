@@ -15,7 +15,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
   }
 }
 
-pub struct Builder<Kind: 'static, ActionState: 'static = (), ErrorType: 'static = ()>
+pub struct LexerBuilder<Kind: 'static, ActionState: 'static = (), ErrorType: 'static = ()>
 where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
@@ -23,7 +23,8 @@ where
   actions: Vec<Action<Kind, ActionState, ErrorType>>,
 }
 
-impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Builder<Kind, ActionState, ErrorType>
+impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
+  LexerBuilder<Kind, ActionState, ErrorType>
 where
   Kind: TokenKind<Kind> + Default + Clone,
   ActionState: Clone + Default,
@@ -74,19 +75,20 @@ where
   }
 }
 
-impl<Kind, ActionState, ErrorType> Default for Builder<Kind, ActionState, ErrorType>
+impl<Kind, ActionState, ErrorType> Default for LexerBuilder<Kind, ActionState, ErrorType>
 where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   fn default() -> Self {
-    Builder {
+    LexerBuilder {
       actions: Vec::new(),
     }
   }
 }
 
-impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Builder<Kind, ActionState, ErrorType>
+impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
+  LexerBuilder<Kind, ActionState, ErrorType>
 where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
@@ -210,7 +212,7 @@ where
 }
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  Into<StatelessLexer<Kind, ActionState, ErrorType>> for Builder<Kind, ActionState, ErrorType>
+  Into<StatelessLexer<Kind, ActionState, ErrorType>> for LexerBuilder<Kind, ActionState, ErrorType>
 where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
@@ -234,7 +236,7 @@ mod tests {
 
   #[test]
   fn append() {
-    let mut lexer: Lexer<MyKind, (), ()> = Builder::default()
+    let mut lexer: Lexer<MyKind, (), ()> = LexerBuilder::default()
       .append_with(|a| a.regex("a+").unwrap().bind(MyKind::UnitField))
       .build("aaa");
 
@@ -252,7 +254,7 @@ mod tests {
 
   #[test]
   fn ignore() {
-    let mut lexer: Lexer<MyKind, (), ()> = Builder::default()
+    let mut lexer: Lexer<MyKind, (), ()> = LexerBuilder::default()
       .ignore(Action::regex("a+").unwrap().bind(MyKind::UnitField))
       .build("aaa");
 

@@ -9,7 +9,7 @@ pub mod token;
 pub mod trimmed;
 
 pub use action::Action;
-pub use builder::Builder;
+pub use builder::LexerBuilder;
 
 use self::{
   expectation::Expectation,
