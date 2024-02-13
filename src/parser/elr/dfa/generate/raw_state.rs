@@ -53,7 +53,7 @@ impl RawState {
       self.id,
       self
         .candidates
-        .iter()
+        .into_iter()
         .map(|id| candidates[id.0].clone())
         .collect(),
       self.next_map,
