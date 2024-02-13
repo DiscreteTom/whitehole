@@ -41,7 +41,7 @@ fn maybe_muted() {
 
 #[test]
 fn builder_ignore() {
-  // when you use `builder.ignore` or `builder.ignore_from`
+  // when you use `builder.ignore` or `builder.ignore_with`
   // the builder will set the `maybe_muted` field to `true`
   assert!(
     Builder::<MyKind, (), ()>::default()
@@ -52,14 +52,14 @@ fn builder_ignore() {
   );
   assert!(
     Builder::<MyKind, (), ()>::default()
-      .ignore_from(|a| a.regex("^-").unwrap().bind(Anonymous))
+      .ignore_with(|a| a.regex("^-").unwrap().bind(Anonymous))
       .build_stateless()
       .actions()[0]
       .maybe_muted
   );
 
   // if your token kind implements `Default` and `Clone`
-  // you can use `builder.ignore_default` or `builder.ignore_default_from`
+  // you can use `builder.ignore_default` or `builder.ignore_default_with`
   // so that the builder will bind the A with the default kind
   let stateless = Builder::<MyKind, (), ()>::default()
     .ignore_default(Action::regex("^-").unwrap())
@@ -69,7 +69,7 @@ fn builder_ignore() {
   assert_eq!(action.possible_kinds().len(), 1);
   assert!(action.possible_kinds().contains(&Anonymous.id()));
   let stateless = Builder::<MyKind, (), ()>::default()
-    .ignore_default_from(|a| a.regex("^-").unwrap())
+    .ignore_default_with(|a| a.regex("^-").unwrap())
     .build_stateless();
   let action = &stateless.actions()[0];
   assert!(action.maybe_muted);

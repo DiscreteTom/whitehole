@@ -44,7 +44,7 @@ fn multi_kinds() {
   // but be aware, the possible kinds will NOT be checked during the runtime
   // so we MUST make sure the selector will always return a valid kind!
 
-  // to use an action with possible_kinds set, we can use `builder.append` or `builder.append_from`
+  // to use an action with possible_kinds set, we can use `builder.append` or `builder.append_with`
   let mut lexer = Builder::<MyKind, (), ()>::default()
     .append(action)
     .build("aa");

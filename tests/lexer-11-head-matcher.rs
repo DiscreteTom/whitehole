@@ -32,7 +32,7 @@ fn lex_with_head_matcher() {
 
   // let's see if there is no head matcher
   let mut lexer = Builder::<MyKind, MyState, ()>::default()
-    .define_from(True, |a| {
+    .define_with(True, |a| {
       a.simple(|input| {
         // mutate the action state when the action is evaluated
         // no matter if it's accepted or rejected
@@ -55,7 +55,7 @@ fn lex_with_head_matcher() {
 
   // now with head matcher
   let mut lexer = Builder::<MyKind, MyState, ()>::default()
-    .define_from(True, |a| {
+    .define_with(True, |a| {
       a.simple(|input| {
         // mutate the action state when the action is evaluated
         // no matter if it's accepted or rejected
@@ -87,7 +87,7 @@ fn lex_with_head_matcher() {
   // if an action has no head matcher
   // the action will always be evaluated
   let mut lexer = Builder::<MyKind, MyState, ()>::default()
-    .define_from(True, |a| {
+    .define_with(True, |a| {
       a.simple(|input| {
         // mutate the action state when the action is evaluated
         // no matter if it's accepted or rejected
@@ -117,7 +117,7 @@ fn lex_with_head_matcher() {
 
   // we can use head_not to exclude some characters
   let mut lexer = Builder::<MyKind, MyState, ()>::default()
-    .define_from(Others, |a| {
+    .define_with(Others, |a| {
       a.simple(|input| {
         input.state_mut().evaluated = true;
 
@@ -139,7 +139,7 @@ fn lex_with_head_matcher() {
 
   // we can also use head_unknown to match any unknown characters
   let mut lexer = Builder::<MyKind, MyState, ()>::default()
-    .define_from(Others, |a| {
+    .define_with(Others, |a| {
       a.simple(|input| {
         input.state_mut().evaluated = true;
 

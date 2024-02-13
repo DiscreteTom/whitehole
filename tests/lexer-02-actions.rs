@@ -44,14 +44,14 @@ fn action_decorators() {
   let mut lexer = Builder::<MyKind, MyState, &str>::default()
     // when using action decorators
     // rust compiler can't infer the action's generic parameters
-    // so we need to use `define_from`, `append_from` and `ignore_from` to define actions
+    // so we need to use `define_with`, `append_with` and `ignore_with` to define actions
     // these methods accept a function which takes an `ActionBuilder` as its parameter
     // so the action's generic parameters can be inferred from the `ActionBuilder`
-    .define_from(Anonymous, |a| {
+    .define_with(Anonymous, |a| {
       // to mute an action, we can use `mute` or `mute_if`
       a.regex(r"^\s+").unwrap().mute(true)
     })
-    .define_from(A, |a| {
+    .define_with(A, |a| {
       // to set token's error, we can use `check` or `error`
       a.regex(r"^a").unwrap().check(|ctx| {
         if ctx.output.rest().len() > 0 {
@@ -61,19 +61,19 @@ fn action_decorators() {
         }
       })
     })
-    .define_from(B, |a| {
+    .define_with(B, |a| {
       // to reject an action after the output is yielded, we can use `reject` or `reject_if`
       a.regex(r"^b")
         .unwrap()
         .reject_if(|ctx| ctx.output.rest().len() > 0)
     })
-    .define_from(C, |a| {
+    .define_with(C, |a| {
       // to reject an action before the output is yielded, we can use `prevent`
       a.regex(r"^c")
         .unwrap()
         .prevent(|input| input.state().reject)
     })
-    .define_from(D, |a| {
+    .define_with(D, |a| {
       // use `then` to run a callback if this action is accepted and is not a peek
       // this is usually used to modify lexer's action state
       a.regex(r"^d")

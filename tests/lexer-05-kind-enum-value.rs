@@ -33,7 +33,7 @@ fn kind_enum_with_calculated_value() {
     .kinds([A(Default::default())])
     .select(|ctx| A(ctx.output.rest().len()));
 
-  // yes we can use `append` and `append_from` to use an action with possible_kinds set
+  // yes we can use `append` and `append_with` to use an action with possible_kinds set
   let mut lexer = Builder::<MyKind, (), ()>::default()
     .append(action)
     .build("aa");
@@ -91,7 +91,7 @@ fn into_kind_enum() {
     A(42)
   ));
 
-  // `builder.define` and `builder.define_from` also accept `impl Into<YourKind>`
+  // `builder.define` and `builder.define_with` also accept `impl Into<YourKind>`
   assert!(matches!(
     Builder::<MyKind, (), ()>::default()
       // here, use `42` directly
@@ -106,7 +106,7 @@ fn into_kind_enum() {
   assert!(matches!(
     Builder::<MyKind, (), ()>::default()
       // here, use `42` directly
-      .define_from(42, |a| a.regex(r"^a").unwrap())
+      .define_with(42, |a| a.regex(r"^a").unwrap())
       .build("aa")
       .lex()
       .token

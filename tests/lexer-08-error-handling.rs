@@ -17,14 +17,14 @@ fn error_tokens() {
 
   // in this example we use `&str` as the error type
   let lexer = Builder::<MyKind, (), &str>::default()
-    .ignore_from(|a| {
+    .ignore_with(|a| {
       a.regex(r"^\s+")
         .unwrap()
         .bind(Anonymous)
         // set error by using `error`
         .error("ignored")
     })
-    .define_from(A, |a| {
+    .define_with(A, |a| {
       // set error by using `check`
       a.regex(r"^a").unwrap().check(|ctx| {
         if ctx.output.rest().len() == 0 {

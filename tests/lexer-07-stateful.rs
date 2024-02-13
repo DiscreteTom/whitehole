@@ -19,7 +19,7 @@ struct MyState {
 #[test]
 fn stateful_lexer() {
   let mut lexer = Builder::<MyKind, MyState, ()>::default()
-    .append_from(|a| {
+    .append_with(|a| {
       a.regex("^123")
         .unwrap()
         .bind(A)
