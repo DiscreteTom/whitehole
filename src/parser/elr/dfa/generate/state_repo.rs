@@ -21,6 +21,7 @@ pub struct StateRepo {
   // TODO: can we merge these two so we don't need to store BTreeSet twice?
   states: HashMap<StateId, RawState>,
   // BTreeSet is ordered and hash-able, HashSet is not.
+  // if 2 states have the same sorted candidates, they are the same state.
   cache: HashMap<BTreeSet<CandidateId>, StateId>,
 }
 
