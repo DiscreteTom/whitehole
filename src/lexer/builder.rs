@@ -34,22 +34,43 @@ where
   }
 
   /// Define [muted](Action::maybe_muted) action.
-  pub fn ignore_default_from<F>(self, factory: F) -> Self
+  pub fn ignore_default_with<F>(self, factory: F) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
   {
     self.ignore_default(factory(ActionBuilder::default()))
   }
 
+  /// Define [muted](Action::maybe_muted) action.
+  pub fn ignore_default_from<F>(self, factory_vec: impl Into<Vec<F>>) -> Self
+  where
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
+  {
+    factory_vec
+      .into()
+      .into_iter()
+      .fold(self, |builder, f| builder.ignore_default_with(f))
+  }
+
   pub fn append_default(self, actions: impl Into<Vec<Action<(), ActionState, ErrorType>>>) -> Self {
     self.append(Self::map_actions(actions, |a| a.bind(Kind::default())))
   }
 
-  pub fn append_default_from<F>(self, factory: F) -> Self
+  pub fn append_default_with<F>(self, factory: F) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
   {
     self.append_default(factory(ActionBuilder::default()))
+  }
+
+  pub fn append_default_from<F>(self, factory_vec: impl Into<Vec<F>>) -> Self
+  where
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
+  {
+    factory_vec
+      .into()
+      .into_iter()
+      .fold(self, |builder, f| builder.append_default_with(f))
   }
 }
 
@@ -88,11 +109,21 @@ where
     self
   }
 
-  pub fn append_from<F>(self, factory: F) -> Self
+  pub fn append_with<F>(self, factory: F) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
   {
     self.append(factory(ActionBuilder::default()))
+  }
+
+  pub fn append_from<F>(self, factory_vec: impl Into<Vec<F>>) -> Self
+  where
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
+  {
+    factory_vec
+      .into()
+      .into_iter()
+      .fold(self, |builder, f| builder.append_with(f))
   }
 
   pub fn define(
@@ -107,12 +138,39 @@ where
     self.append(Self::map_actions(actions, |a| a.bind(kind.clone())))
   }
 
-  pub fn define_from<F>(self, kind: impl Into<Kind>, factory: F) -> Self
+  pub fn from(
+    self,
+    defs: Vec<(
+      impl Into<Kind>,
+      impl Into<Vec<Action<(), ActionState, ErrorType>>>,
+    )>,
+  ) -> Self
+  where
+    Kind: Clone,
+  {
+    defs.into_iter().fold(self, |builder, (kind, actions)| {
+      builder.define(kind, actions)
+    })
+  }
+
+  pub fn define_with<F>(self, kind: impl Into<Kind>, factory: F) -> Self
   where
     Kind: Clone,
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
   {
     self.define(kind, factory(ActionBuilder::default()))
+  }
+
+  pub fn define_from<F>(self, kind: impl Into<Kind>, factory_vec: impl Into<Vec<F>>) -> Self
+  where
+    Kind: Clone,
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
+  {
+    let kind = kind.into();
+    factory_vec
+      .into()
+      .into_iter()
+      .fold(self, |builder, f| builder.define_with(kind.clone(), f))
   }
 
   /// Define [muted](Action::maybe_muted) action.
@@ -121,11 +179,22 @@ where
   }
 
   /// Define [muted](Action::maybe_muted) action.
-  pub fn ignore_from<F>(self, factory: F) -> Self
+  pub fn ignore_with<F>(self, factory: F) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
   {
     self.ignore(factory(ActionBuilder::default()))
+  }
+
+  /// Define [muted](Action::maybe_muted) action.
+  pub fn ignore_from<F>(self, factory_vec: impl Into<Vec<F>>) -> Self
+  where
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
+  {
+    factory_vec
+      .into()
+      .into_iter()
+      .fold(self, |builder, f| builder.ignore_with(f))
   }
 
   pub fn build<'buffer>(
@@ -155,7 +224,7 @@ mod tests {
   #[test]
   fn append() {
     let mut lexer: Lexer<MyKind, (), ()> = Builder::default()
-      .append_from(|a| a.regex("a+").unwrap().bind(MyKind::UnitField))
+      .append_with(|a| a.regex("a+").unwrap().bind(MyKind::UnitField))
       .build("aaa");
 
     let res = lexer.lex();
