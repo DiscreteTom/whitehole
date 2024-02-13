@@ -123,7 +123,7 @@ impl<
     match self.next_map.get(grammar_id) {
       // when building DFA
       // we should already calculated the next state for all grammars
-      None => unreachable!("No next state for grammar {:?}", grammar_id),
+      None => unreachable!("No next state for {:?} from {:?}", grammar_id, self.id),
       // here the next state still may be None (no candidates)
       // usually happen when try_reduce
       // TODO: is the comment correct?
