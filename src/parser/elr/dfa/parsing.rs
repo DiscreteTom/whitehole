@@ -3,7 +3,10 @@ use crate::{
     token::{TokenKind, TokenKindId},
     trimmed::TrimmedLexer,
   },
-  parser::{ast::ASTNode, elr::grammar::grammar::GrammarId},
+  parser::{
+    ast::{ASTNode, ASTNodeKind},
+    elr::grammar::grammar::GrammarId,
+  },
 };
 use std::{
   cell::RefCell,
@@ -142,52 +145,82 @@ impl<
       StateId,
       Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
-  ) -> bool {
-    let output = match self.state_stack.current().try_reduce(
-      &mut self.buffer,
-      &self.lexer,
-      &mut self.reducing_stack,
-      entry_nts,
-      follow_sets,
-    ) {
-      None => {
-        // reduce failed, try to lex more
-        self.need_lex = true;
-        return false;
+  ) -> TryReduceResult {
+    loop {
+      let output = match self.state_stack.current().try_reduce(
+        &mut self.buffer,
+        &self.lexer,
+        &mut self.reducing_stack,
+        entry_nts,
+        follow_sets,
+      ) {
+        None => {
+          // reduce failed, try to lex more
+          self.need_lex = true;
+          return TryReduceResult::NeedLex;
+        }
+        Some(output) => output,
+      };
+
+      // reduce success
+      // link children's parent
+      let node_index = self.buffer.len();
+      output
+        .node
+        .children
+        .iter()
+        .for_each(|i| self.buffer[*i].parent = Some(node_index));
+
+      // push new node to buffer
+      self.buffer.push(output.node);
+
+      // reduced n nodes, generate 1 node
+      self
+        .reducing_stack
+        .truncate(self.reducing_stack.len() - output.reduced);
+      self.reducing_stack.push(node_index);
+
+      // remove the reduced states
+      self.state_stack.pop_n(output.reduced);
+
+      // try to get next state, the next state may be none
+      let next_state = self
+        .state_stack
+        .current()
+        .try_get_next(&output.nt_grammar_id)
+        .map(|next| next.map(|next_id| states.get(&next_id).unwrap().clone()));
+
+      // TODO: optimize code
+      let next_exist = match &next_state {
+        None => false,
+        Some(next) => next.is_some(),
+      };
+      next_state.map(|next| next.map(|next| self.state_stack.push(next)));
+
+      // check if an entry NT is reduced as the last node
+      if self.reducing_stack.len() == 1
+        && entry_nts.contains(&match &self.buffer.last().unwrap().kind {
+          ASTNodeKind::NT(kind, _) => kind.id(),
+          _ => unreachable!("The last ASTNode must be an NT after a successful reduce"),
+        })
+      {
+        // if next exist, the parsing state is continue-able
+        return TryReduceResult::Done(next_exist.clone());
       }
-      Some(output) => output,
-    };
 
-    // reduce success
-    // link children's parent
-    let node_index = self.buffer.len();
-    output
-      .node
-      .children
-      .iter()
-      .for_each(|i| self.buffer[*i].parent = Some(node_index));
+      // empty next is allowed only if the parsing is done
+      // so now if next is empty, we should enter panic mode
+      if !next_exist {
+        return TryReduceResult::EnterPanicMode;
+      }
 
-    // push new node to buffer
-    self.buffer.push(output.node);
-
-    // reduced n nodes, generate 1 node
-    self
-      .reducing_stack
-      .truncate(self.reducing_stack.len() - output.reduced);
-    self.reducing_stack.push(node_index);
-
-    // remove the reduced states, push the new state
-    self.state_stack.pop_n(output.reduced);
-    let next_state = states
-      .get(
-        &match self.state_stack.current().get_next(&output.nt_grammar_id) {
-          Some(id) => id,
-          None => todo!(),
-        },
-      )
-      .unwrap()
-      .clone();
-    self.state_stack.push(next_state);
-    true
+      // else, parsing is not done and next exists, continue next reduce
+    }
   }
+}
+
+pub enum TryReduceResult {
+  NeedLex,
+  EnterPanicMode,
+  Done(bool),
 }

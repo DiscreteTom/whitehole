@@ -5,6 +5,11 @@ use crate::{
 };
 use std::{cell::RefCell, rc::Rc};
 
+pub enum ParseContinuable<StateStack> {
+  Yes(StateStack),
+  No,
+}
+
 pub struct ParseOutput<
   TKind: TokenKind<TKind> + 'static,
   NTKind: TokenKind<NTKind> + Clone + 'static,
@@ -15,9 +20,10 @@ pub struct ParseOutput<
   LexerErrorType: 'static,
 > {
   pub buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
-  pub state_stack:
-    Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
   pub errors: Vec<usize>,
+  pub continuable: ParseContinuable<
+    Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
+  >,
 }
 
 pub struct Parser<
@@ -95,8 +101,8 @@ impl<
     self.lexer = output.lexer;
     ParseOutput {
       buffer: output.buffer,
-      state_stack: output.state_stack,
       errors: output.errors,
+      continuable: output.continuable,
     }
   }
 

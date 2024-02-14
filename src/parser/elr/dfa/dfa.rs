@@ -1,5 +1,5 @@
 use super::{
-  parsing::{ParsingState, Stack},
+  parsing::{ParsingState, Stack, TryReduceResult},
   state::{State, StateId},
 };
 use crate::{
@@ -8,8 +8,8 @@ use crate::{
     trimmed::TrimmedLexer,
   },
   parser::{
-    ast::{ASTNode, ASTNodeKind},
-    elr::grammar::grammar::GrammarId,
+    ast::ASTNode,
+    elr::{grammar::grammar::GrammarId, parser::ParseContinuable},
   },
 };
 use std::{
@@ -30,9 +30,10 @@ pub struct DfaParseOutput<
 > {
   pub lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   pub buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
-  pub state_stack:
-    Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
   pub errors: Vec<usize>,
+  pub continuable: ParseContinuable<
+    Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
+  >,
 }
 
 pub struct Dfa<
@@ -134,30 +135,22 @@ impl<
       }
 
       // else, no need to lex, just try to reduce
-      if !parsing_state.try_reduce(&self.entry_nts, &self.follow_sets, &self.states) {
-        // reduce failed, try to lex more
-        continue;
+      match parsing_state.try_reduce(&self.entry_nts, &self.follow_sets, &self.states) {
+        TryReduceResult::NeedLex => continue,
+        TryReduceResult::EnterPanicMode => todo!(),
+        TryReduceResult::Done(continuable) => {
+          return DfaParseOutput {
+            lexer: parsing_state.lexer,
+            buffer: parsing_state.buffer,
+            errors: parsing_state.errors,
+            continuable: if continuable {
+              ParseContinuable::Yes(parsing_state.state_stack)
+            } else {
+              ParseContinuable::No
+            },
+          };
+        }
       }
-
-      // else, reduce success
-      if parsing_state.reducing_stack.len() == 1
-        && self
-          .entry_nts
-          .contains(&match &parsing_state.buffer.last().unwrap().kind {
-            ASTNodeKind::NT(kind, _) => kind.id(),
-            _ => unreachable!("The last ASTNode must be an NT after a successful reduce"),
-          })
-      {
-        // if the last ASTNode is an entry NT, and is the only node to be reduce, then parsing is done
-        return DfaParseOutput {
-          lexer: parsing_state.lexer,
-          buffer: parsing_state.buffer,
-          errors: parsing_state.errors,
-          state_stack: parsing_state.state_stack,
-        };
-      }
-
-      // else, should try reduce again, just continue
     }
   }
 }

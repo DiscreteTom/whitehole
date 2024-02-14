@@ -90,7 +90,7 @@ impl<
           node: output.node,
           lexer: output.lexer,
           next_candidate_index: i + 1,
-          next_state_id: next,
+          next_state_id: next.clone(),
         });
       }
     }
@@ -119,7 +119,7 @@ impl<
     None
   }
 
-  pub fn get_next(&self, grammar_id: &GrammarId) -> Option<StateId> {
+  fn get_next(&self, grammar_id: &GrammarId) -> &Option<StateId> {
     match self.next_map.get(grammar_id) {
       // when building DFA
       // we should already calculated the next state for all grammars
@@ -127,8 +127,12 @@ impl<
       // here the next state still may be None (no candidates)
       // usually happen when try_reduce
       // TODO: is the comment correct?
-      Some(next) => next.clone(),
+      Some(next) => next,
     }
+  }
+
+  pub fn try_get_next(&self, grammar_id: &GrammarId) -> Option<&Option<StateId>> {
+    self.next_map.get(grammar_id)
   }
 }
 
