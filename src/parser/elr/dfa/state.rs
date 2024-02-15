@@ -104,7 +104,6 @@ impl<
           node: output.node,
           nt_grammar_id: output.nt_grammar_id,
           reduced: output.reduced,
-          next_state_id: self.get_next_by_reduced_grammar(&output.nt_grammar_id),
         });
       }
     }
@@ -128,7 +127,7 @@ impl<
     }
   }
 
-  fn get_next_by_reduced_grammar(&self, grammar_id: &GrammarId) -> Option<StateId> {
+  pub fn get_next_by_reduced_grammar(&self, grammar_id: &GrammarId) -> Option<StateId> {
     self
       .next_map
       .get(grammar_id)
@@ -160,5 +159,4 @@ pub struct StateTryReduceOutput<NodeType> {
   pub node: NodeType,
   pub nt_grammar_id: GrammarId,
   pub reduced: usize,
-  pub next_state_id: Option<StateId>,
 }

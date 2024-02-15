@@ -184,8 +184,10 @@ impl<
       self.state_stack.pop_n(output.reduced);
 
       // try to push next state to state stack, the next state may be None
-      let next_exists = output
-        .next_state_id
+      let next_exists = self
+        .state_stack
+        .current()
+        .get_next_by_reduced_grammar(&output.nt_grammar_id)
         // update state stack if next state exists
         .map(|next_id| self.state_stack.push(states.get(&next_id).unwrap().clone()))
         .is_some();
