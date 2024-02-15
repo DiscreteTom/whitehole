@@ -135,7 +135,6 @@ impl StateRepo {
     }
   }
 
-  /// Return `None` if no next or next is already generated.
   fn generate_next<
     TKind: TokenKind<TKind>,
     NTKind: TokenKind<NTKind> + Clone + 'static,
