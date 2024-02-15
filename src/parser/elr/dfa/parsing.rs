@@ -183,38 +183,35 @@ impl<
       // remove the reduced states
       self.state_stack.pop_n(output.reduced);
 
-      // try to get next state, the next state may be none
-      let next_state = self
-        .state_stack
-        .current()
-        .try_get_next(&output.nt_grammar_id)
-        .map(|next| next.map(|next_id| states.get(&next_id).unwrap().clone()));
+      // try to push next state to state stack, the next state may be None
+      let next_exists = output
+        .next_state_id
+        // update state stack if next state exists
+        .map(|next_id| self.state_stack.push(states.get(&next_id).unwrap().clone()))
+        .is_some();
 
-      // TODO: optimize code
-      let next_exist = match &next_state {
-        None => false,
-        Some(next) => next.is_some(),
-      };
-      next_state.map(|next| next.map(|next| self.state_stack.push(next)));
-
-      // check if an entry NT is reduced as the last node
+      // check if an entry NT is reduced as the last node in the reducing stack
       if self.reducing_stack.len() == 1
         && entry_nts.contains(&match &self.buffer.last().unwrap().kind {
           ASTNodeKind::NT(kind, _) => kind.id(),
           _ => unreachable!("The last ASTNode must be an NT after a successful reduce"),
         })
       {
-        // if next exist, the parsing state is continue-able
-        return TryReduceResult::Done(next_exist.clone());
+        // this parse is done, maybe continuable
+        return TryReduceResult::Done {
+          // if no next state, the state stack was not updated
+          // and the parsing will not be continuable
+          continuable: next_exists,
+        };
       }
 
-      // empty next is allowed only if the parsing is done
-      // so now if next is empty, we should enter panic mode
-      if !next_exist {
+      // missing-next is only allowed if the parsing is done
+      // so now if next not exists, we should enter panic mode
+      if !next_exists {
         return TryReduceResult::EnterPanicMode;
       }
 
-      // else, parsing is not done and next exists, continue next reduce
+      // else, parsing is not done and next exists, continue next try-reduce
     }
   }
 }
@@ -222,5 +219,5 @@ impl<
 pub enum TryReduceResult {
   NeedLex,
   EnterPanicMode,
-  Done(bool),
+  Done { continuable: bool },
 }

@@ -78,19 +78,11 @@ impl<
   > {
     for (i, c) in self.candidates[from_index..].iter().enumerate() {
       if let Some(output) = c.try_lex(lexer, lexed_grammars, lexed_without_expectation, global) {
-        // get the next state by the lexed grammar
-        let next = match self.get_next(&output.grammar_id) {
-          // no next state, continue to try next candidate
-          // TODO: will this happen?
-          None => continue,
-          Some(next) => next,
-        };
-
         return Some(StateTryLexOutput {
           node: output.node,
           lexer: output.lexer,
           next_candidate_index: i + 1,
-          next_state_id: next.clone(),
+          next_state_id: self.get_next_by_lexed_grammar(&output.grammar_id).clone(),
         });
       }
     }
@@ -108,31 +100,52 @@ impl<
   ) -> Option<StateTryReduceOutput<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>> {
     for c in self.candidates.iter() {
       if let Some(output) = c.try_reduce(buffer, lexer, reducing_stack, entry_nts, follow_sets) {
-        // TODO: just return candidate output
         return Some(StateTryReduceOutput {
           node: output.node,
           nt_grammar_id: output.nt_grammar_id,
           reduced: output.reduced,
+          next_state_id: self.get_next_by_reduced_grammar(&output.nt_grammar_id),
         });
       }
     }
     None
   }
 
-  fn get_next(&self, grammar_id: &GrammarId) -> &Option<StateId> {
+  fn get_next_by_lexed_grammar(&self, grammar_id: &GrammarId) -> &StateId {
     match self.next_map.get(grammar_id) {
-      // when building DFA
-      // we should already calculated the next state for all grammars
-      None => unreachable!("No next state for {:?} from {:?}", grammar_id, self.id),
-      // here the next state still may be None (no candidates)
-      // usually happen when try_reduce
-      // TODO: is the comment correct?
-      Some(next) => next,
+      // cache miss. this should never happen since when building DFA
+      // we should already calculated the next state for all grammars in rules
+      None => unreachable!("{:?} next cache miss by lexed {:?}", self.id, grammar_id),
+      // cache hit
+      Some(hit) => match hit {
+        // cache hit but no next state
+        // this should never happen since if a grammar can be lexed by a candidate
+        // the candidate must have a next candidate and thus
+        // this state must have a next state
+        None => unreachable!("Lexed {:?} is not acceptable by {:?}", grammar_id, self.id),
+        Some(next) => next,
+      },
     }
   }
 
-  pub fn try_get_next(&self, grammar_id: &GrammarId) -> Option<&Option<StateId>> {
-    self.next_map.get(grammar_id)
+  fn get_next_by_reduced_grammar(&self, grammar_id: &GrammarId) -> Option<StateId> {
+    self
+      .next_map
+      .get(grammar_id)
+      // cache miss is acceptable here
+      // because when the reduced grammar is an entry-only NT
+      // the cache should miss and the parsing process should be done
+      .and_then(|hit| match hit {
+        // cache hit but no next state
+        // this should never happen since when we construct the state
+        // with NT closures, the reduced candidate should belong
+        // to another candidate's NT closure.
+        None => unreachable!(
+          "Reduced {:?} is not acceptable by {:?}",
+          grammar_id, self.id
+        ),
+        Some(next) => Some(next.clone()),
+      })
   }
 }
 
@@ -147,4 +160,5 @@ pub struct StateTryReduceOutput<NodeType> {
   pub node: NodeType,
   pub nt_grammar_id: GrammarId,
   pub reduced: usize,
+  pub next_state_id: Option<StateId>,
 }

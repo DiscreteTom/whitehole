@@ -138,7 +138,7 @@ impl<
       match parsing_state.try_reduce(&self.entry_nts, &self.follow_sets, &self.states) {
         TryReduceResult::NeedLex => continue,
         TryReduceResult::EnterPanicMode => todo!(),
-        TryReduceResult::Done(continuable) => {
+        TryReduceResult::Done { continuable } => {
           return DfaParseOutput {
             lexer: parsing_state.lexer,
             buffer: parsing_state.buffer,
