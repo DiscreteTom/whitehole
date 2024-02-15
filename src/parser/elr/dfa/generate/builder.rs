@@ -61,7 +61,11 @@ pub fn build_dfa<
   .collect::<BTreeSet<_>>();
 
   let mut state_repo = StateRepo::with_entry(entry_candidates);
-  state_repo.calc_all_states(&get_all_grammar_id(&gr_repo), &mut cs, &nt_closures);
+  state_repo.calc_all_states(
+    &get_all_grammar_id_from_rules(&gr_repo),
+    &mut cs,
+    &nt_closures,
+  );
 
   let follow_sets = calc_follow_sets(&gr_repo, &calc_first_sets(&nt_closures));
 
@@ -222,7 +226,7 @@ fn calc_all_nt_closures<
     .collect::<HashMap<_, _>>()
 }
 
-fn get_all_grammar_id<
+fn get_all_grammar_id_from_rules<
   TKind: TokenKind<TKind> + 'static,
   NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
