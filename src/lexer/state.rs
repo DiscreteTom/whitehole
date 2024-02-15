@@ -24,6 +24,10 @@ impl<'buffer> LexerState<'buffer> {
     self.trimmed
   }
 
+  pub fn rest(&self) -> &'buffer str {
+    &self.buffer[self.digested..]
+  }
+
   pub fn digest(&mut self, n: usize) {
     if n == 0 {
       return;

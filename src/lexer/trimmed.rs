@@ -65,24 +65,23 @@ where
   }
 
   pub fn stateless(&self) -> &StatelessLexer<Kind, ActionState, ErrorType> {
-    &self.lexer.stateless
+    self.lexer.stateless()
   }
   pub fn state(&self) -> &LexerState<'buffer> {
-    &self.lexer.state
+    self.lexer.state()
   }
   pub fn action_state(&self) -> &ActionState {
-    &self.lexer.action_state
+    self.lexer.action_state()
   }
-  // user can mutate the action state
   pub fn action_state_mut(&mut self) -> &mut ActionState {
-    &mut self.lexer.action_state
+    self.lexer.action_state_mut()
   }
 
   pub fn reload<'new_buffer>(
     self,
     buffer: &'new_buffer str,
   ) -> Lexer<'new_buffer, Kind, ActionState, ErrorType> {
-    // load a new buffer, so the result is not a trimmed lexer
+    // load a new buffer, the result is not a trimmed lexer
     self.lexer.reload(buffer)
   }
 
@@ -90,12 +89,8 @@ where
     &self,
     buffer: &'new_buffer str,
   ) -> Lexer<'new_buffer, Kind, ActionState, ErrorType> {
-    // load a new buffer, so the result is not a trimmed lexer
+    // load a new buffer, the result is not a trimmed lexer
     self.lexer.clone_with(buffer)
-  }
-
-  pub fn rest(&self) -> &'buffer str {
-    self.lexer.rest()
   }
 
   pub fn peek(&self) -> PeekOutput<Token<'buffer, Kind, ErrorType>, ActionState> {
@@ -109,6 +104,8 @@ where
     self.lexer.peek_expect(expectation)
   }
 
+  // this will mutate the lexer's state
+  // so consume the trimmed lexer, yield a lexer
   pub fn lex(
     self,
   ) -> TrimmedLexerLexOutput<
@@ -118,6 +115,8 @@ where
     self.lex_expect(Expectation::default())
   }
 
+  // this will mutate the lexer's state
+  // so consume the trimmed lexer, yield a lexer
   pub fn lex_expect<'expect_text>(
     mut self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
@@ -134,6 +133,8 @@ where
     }
   }
 
+  // this will mutate the lexer's state
+  // so consume the trimmed lexer, yield a lexer
   pub fn lex_all(
     mut self,
   ) -> TrimmedLexerLexAllOutput<
@@ -149,6 +150,8 @@ where
     }
   }
 
+  // this will mutate the lexer's state
+  // so consume the trimmed lexer, yield a lexer
   pub fn take(
     mut self,
     n: usize,
@@ -157,4 +160,6 @@ where
     self.lexer.take(n, state);
     self.lexer
   }
+
+  // there is no `trim` or `into_trimmed` for TrimmedLexer
 }

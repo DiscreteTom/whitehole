@@ -67,6 +67,7 @@ where
   pub fn stateless(&self) -> &Rc<StatelessLexer<Kind, ActionState, ErrorType>> {
     &self.stateless
   }
+  // user is not able to mutate the lexer state directly
   pub fn state(&self) -> &LexerState<'buffer> {
     &self.state
   }
@@ -102,10 +103,6 @@ where
       state: LexerState::new(buffer),
       action_state: ActionState::default(),
     }
-  }
-
-  pub fn rest(&self) -> &'buffer str {
-    &self.state.buffer()[self.state.digested()..]
   }
 
   /// Peek the next token without updating the state.
