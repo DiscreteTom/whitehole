@@ -128,10 +128,10 @@ impl<
         // try to lex a new one
         if parsing_state.try_lex(&self.states, global) {
           continue;
-        } else {
-          // TODO: enter panic mode
-          todo!()
         }
+
+        // TODO: enter panic mode
+        todo!()
       }
 
       // else, no need to lex, just try to reduce
