@@ -101,7 +101,7 @@ impl<
     }
 
     self.current().and_then(|current| {
-      let expectation = match current.kind() {
+      let (expectation, validator) = match current.kind() {
         GrammarKind::NT(_) => {
           // the current grammar is not a T, skip
           return None;
@@ -110,6 +110,7 @@ impl<
           // TODO: optimize code, reduce duplicated code
           if expectational_lex {
             // if current grammar is already lexed, skip
+            // TODO: should this skip?
             if lexed_grammars.contains(&current.id()) {
               return None;
             }
@@ -121,10 +122,18 @@ impl<
           }
 
           if expectational_lex {
-            Expectation::from(kind)
+            (
+              Expectation::from(kind),
+              // with expectational lex, we don't need to validate the output
+              None,
+            )
           } else {
-            // no expectation
-            Expectation::default()
+            (
+              // no expectation
+              Expectation::default(),
+              // validate the output
+              Some(LexGrammarTokenValidator::TKind(kind.id())),
+            )
           }
         }
         GrammarKind::Literal(text) => {
@@ -141,21 +150,25 @@ impl<
           }
 
           if expectational_lex {
-            Expectation::from(text.as_str())
+            (
+              Expectation::from(text.as_str()),
+              // with expectational lex, we don't need to validate the output
+              None,
+            )
           } else {
-            // no expectation
-            Expectation::default()
+            (
+              // no expectation
+              Expectation::default(),
+              // validate the output
+              Some(LexGrammarTokenValidator::Text(text)),
+            )
           }
         }
       };
-      Self::lex_grammar(expectation, lexer, global).map(|output| {
-        // TODO: validate expectation after the lexing if not expectational lex
-        // to make sure the lex output is valid?
-        CandidateTryLexOutput {
-          node: output.node,
-          lexer: output.lexer,
-          grammar_id: current.id().clone(),
-        }
+      Self::lex_grammar(expectation, validator, lexer, global).map(|output| CandidateTryLexOutput {
+        node: output.node,
+        lexer: output.lexer,
+        grammar_id: current.id().clone(),
       })
     })
   }
@@ -215,6 +228,7 @@ impl<
 
   fn lex_grammar<'buffer>(
     expectation: Expectation<TKind>,
+    validator: Option<LexGrammarTokenValidator<TKind>>,
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     global: &Rc<RefCell<Global>>,
   ) -> Option<
@@ -233,13 +247,34 @@ impl<
     let lexer = lexer.clone();
 
     let res = lexer.lex_expect(expectation);
-    res.token.map(move |token| {
+    res.token.and_then(move |token| {
+      // validate the output
+      if let Some(v) = validator {
+        match v {
+          LexGrammarTokenValidator::TKind(kind_id) => {
+            if token.kind.id() != kind_id {
+              return None;
+            }
+          }
+          LexGrammarTokenValidator::Text(text) => {
+            if token.content() != text {
+              return None;
+            }
+          }
+        }
+      }
+
       let lexer = res.lexer.into_trimmed().trimmed_lexer;
       // TODO: set node data
       let node = ASTNode::new_t(token.kind, token.range, global.clone(), None, None);
-      LexGrammarOutput { node, lexer }
+      Some(LexGrammarOutput { node, lexer })
     })
   }
+}
+
+enum LexGrammarTokenValidator<'a, TKind> {
+  TKind(TokenKindId<TKind>),
+  Text(&'a String),
 }
 
 struct LexGrammarOutput<NodeType, LexerType> {
