@@ -1,6 +1,7 @@
-use super::candidate::{Candidate, LexGrammarOutput};
+use super::{candidate::Candidate, utils::lex_grammar};
 use crate::{
   lexer::{
+    expectation::Expectation,
     token::{TokenKind, TokenKindId},
     trimmed::TrimmedLexer,
   },
@@ -103,7 +104,7 @@ impl<
     }
     *lexed_without_expectation = true;
 
-    Self::lex_grammar_without_expectation(lexer, global).map(|output| StateTryLexOutput {
+    lex_grammar(Expectation::default(), lexer, global).map(|output| StateTryLexOutput {
       node: output.node,
       lexer: output.lexer,
       next_candidate_index: 0,
@@ -205,47 +206,6 @@ impl<
         ),
         Some(next) => Some(next.clone()),
       })
-  }
-
-  fn lex_grammar_without_expectation<'buffer>(
-    lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
-    global: &Rc<RefCell<Global>>,
-  ) -> Option<
-    LexGrammarOutput<
-      'buffer,
-      TKind,
-      ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>,
-      TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
-    >,
-  > {
-    // TODO: merge with candidate.lex_grammar_with_expectation
-
-    // because of re-lex, we may store many lexers
-    // so we clone the lexer to prevent side effect.
-    // we must clone the lexer here to prevent unnecessary clone.
-    // you may think using peek is more efficient, but it's not,
-    // since we still need to clone and store the new lexer state and action state
-    // so it's actually the same.
-    // TODO: don't clone the lexer if we disable re-lex or when re-lex won't happen
-    let lexer = lexer.clone();
-
-    let res = lexer.lex();
-    res.token.and_then(move |token| {
-      // TODO: set node data
-      Some(LexGrammarOutput {
-        t_kind_id: token.kind.id(),
-        text: token.content,
-        node: ASTNode::new_t(
-          token.kind,
-          token.content,
-          token.range,
-          global.clone(),
-          None,
-          None,
-        ),
-        lexer: res.lexer.into(), // trim the lexer and convert into TrimmedLexer
-      })
-    })
   }
 }
 
