@@ -98,16 +98,20 @@ impl<
 
   pub fn define(
     self,
-    nt: NTKind,
-    rule: impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>,
+    gr: (
+      /* NT */ NTKind,
+      /* rule */ impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>,
+    ),
   ) -> Self {
-    self.define_with(nt, rule, |_| {})
+    self.define_with(gr, |_| {})
   }
 
   pub fn define_with<'a, 'buffer: 'a, F>(
     mut self,
-    nt: NTKind,
-    rule: impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>,
+    gr: (
+      /* NT */ NTKind,
+      /* rule */ impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>,
+    ),
     f: F,
   ) -> Self
   where
@@ -123,7 +127,8 @@ impl<
       >,
     ),
   {
-    let rule = rule.into();
+    let nt = gr.0;
+    let rule = gr.1.into();
     let expect = rule
       .iter()
       .enumerate()
