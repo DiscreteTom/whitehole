@@ -1,9 +1,6 @@
 use crate::{
   lexer::token::{TokenKind, TokenKindId},
-  parser::elr::grammar::{
-    grammar::{Grammar, GrammarId, GrammarKind},
-    grammar_map::GrammarMap,
-  },
+  parser::elr::grammar::grammar::{Grammar, GrammarId, GrammarKind},
 };
 use std::{
   collections::{hash_map::Entry, HashMap},
@@ -74,9 +71,5 @@ impl<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> GrammarRepo<TKind, NTKi
       GrammarKind::NT(kind) => self.get_or_create_nt(kind),
       GrammarKind::Literal(text) => self.get_or_create_literal(text),
     }
-  }
-
-  pub fn into_grammar_map(self) -> Rc<GrammarMap<TKind, NTKind>> {
-    Rc::new(GrammarMap::new(self.t_map, self.literal_map))
   }
 }

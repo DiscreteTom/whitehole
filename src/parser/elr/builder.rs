@@ -161,7 +161,6 @@ impl<
     Parser::new(
       build_dfa(
         self.entry_nts.into_iter().map(|e| e.id()).collect(),
-        self.grammars,
         self.gr_repo,
       ),
       self.lexer.into_lexer(input).into(),

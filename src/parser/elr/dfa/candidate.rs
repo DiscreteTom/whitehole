@@ -126,6 +126,27 @@ impl<
     })
   }
 
+  pub fn try_accept_t_node_without_expectation<'buffer>(
+    &self,
+    t_kind_id: &TokenKindId<TKind>,
+    text: &'buffer str,
+  ) -> Option<GrammarId> {
+    self.current().and_then(|current| {
+      if match current.kind() {
+        GrammarKind::NT(_) => {
+          // the current grammar is an NT, not lex-able, skip
+          false
+        }
+        GrammarKind::T(t) => &t.id() == t_kind_id,
+        GrammarKind::Literal(literal) => literal.as_str() == text,
+      } {
+        Some(current.id().clone())
+      } else {
+        None
+      }
+    })
+  }
+
   pub fn try_reduce<'buffer>(
     &self,
     buffer: &Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
