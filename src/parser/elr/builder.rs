@@ -63,6 +63,8 @@ pub struct ParserBuilder<
   LexerErrorType: 'static = (),
 > {
   lexer: StatelessLexer<TKind, LexerActionState, LexerErrorType>,
+  entry_nts: Vec<NTKind>,
+  global: Global,
   grammars: GrammarRepo<TKind, NTKind>,
   gr_repo:
     GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
@@ -78,9 +80,15 @@ impl<
     LexerErrorType: 'static,
   > ParserBuilder<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
-  pub fn new(lexer: impl Into<StatelessLexer<TKind, LexerActionState, LexerErrorType>>) -> Self {
+  pub fn new(
+    lexer: impl Into<StatelessLexer<TKind, LexerActionState, LexerErrorType>>,
+    entry_nts: impl Into<Vec<NTKind>>,
+    global: Global,
+  ) -> Self {
     Self {
       lexer: lexer.into(),
+      entry_nts: entry_nts.into(),
+      global,
       grammars: GrammarRepo::default(),
       gr_repo: GrammarRuleRepo::default(),
     }
@@ -140,19 +148,16 @@ impl<
 
   pub fn build<'buffer>(
     self,
-    // TODO: move entry_nts and global to constructor?
-    entry_nts: impl Into<Vec<NTKind>>,
-    global: Global,
     input: &'buffer str,
   ) -> Parser<'buffer, TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
   {
     Parser::new(
       build_dfa(
-        entry_nts.into().into_iter().map(|e| e.id()).collect(),
+        self.entry_nts.into_iter().map(|e| e.id()).collect(),
         self.gr_repo,
       ),
       self.lexer.into_lexer(input).into(),
-      Rc::new(RefCell::new(global)),
+      Rc::new(RefCell::new(self.global)),
     )
   }
 }
