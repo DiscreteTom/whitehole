@@ -91,7 +91,7 @@ impl<
           lexer: output.lexer,
           next_candidate_index: i + 1,
           next_state_id: self
-            .get_next_by_lexed_node(&output.t_kind_id, output.text)
+            .get_next_by_expectational_lexed_grammar(&output.grammar_id)
             .clone(),
         });
       }
@@ -109,7 +109,7 @@ impl<
       lexer: output.lexer,
       next_candidate_index: 0,
       next_state_id: self
-        .get_next_by_lexed_node(&output.t_kind_id, output.text)
+        .get_next_by_lexed_node_without_expectation(&output.t_kind_id, output.text)
         .clone(),
     })
   }
@@ -134,7 +134,25 @@ impl<
     None
   }
 
-  fn get_next_by_lexed_node<'buffer>(
+  fn get_next_by_expectational_lexed_grammar(&self, grammar_id: &GrammarId) -> &StateId {
+    match self.next_map.get(grammar_id) {
+      // cache miss. this should never happen since when building DFA
+      // we should already calculated the next state for all grammars in rules
+      // see [[@get_all_grammar_id_from_rules]]
+      None => unreachable!("{:?} next cache miss by lexed {:?}", self.id, grammar_id),
+      // cache hit
+      Some(hit) => match hit {
+        // cache hit but no next state
+        // this should never happen since if a grammar can be lexed by a candidate
+        // the candidate must have a next candidate and thus
+        // this state must have a next state
+        None => unreachable!("Lexed {:?} is not acceptable by {:?}", grammar_id, self.id),
+        Some(next) => next,
+      },
+    }
+  }
+
+  fn get_next_by_lexed_node_without_expectation<'buffer>(
     &self,
     t_kind_id: &TokenKindId<TKind>,
     text: &'buffer str,

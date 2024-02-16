@@ -88,8 +88,6 @@ impl<
     global: &Rc<RefCell<Global>>,
   ) -> Option<
     CandidateTryLexOutput<
-      'buffer,
-      TKind,
       ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>,
       TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     >,
@@ -121,8 +119,6 @@ impl<
       lexed_grammars.insert(grammar_id.clone());
 
       lex_grammar(expectation, lexer, global).map(|output| CandidateTryLexOutput {
-        t_kind_id: output.t_kind_id,
-        text: output.text,
         node: output.node,
         lexer: output.lexer,
         grammar_id: current.id().clone(),
@@ -185,9 +181,7 @@ impl<
   }
 }
 
-pub struct CandidateTryLexOutput<'buffer, TKind, NodeType, LexerType> {
-  pub t_kind_id: TokenKindId<TKind>,
-  pub text: &'buffer str,
+pub struct CandidateTryLexOutput<NodeType, LexerType> {
   pub node: NodeType,
   pub lexer: LexerType,
   pub grammar_id: GrammarId,
