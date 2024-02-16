@@ -81,7 +81,6 @@ pub fn build_dfa<
 /// E.g. knowing `A := B 'c'` and `B := 'd'`, we can infer `A := 'd' 'c'`.
 /// When we construct DFA state, if a state has the candidate `A := # B 'c'`,
 /// it should also have the candidate `B := # 'd'`.
-// TODO: just return id?
 fn calc_grs_closure<
   TKind: TokenKind<TKind> + 'static,
   NTKind: TokenKind<NTKind> + Clone + 'static,
@@ -226,6 +225,7 @@ fn calc_all_nt_closures<
     .collect::<HashMap<_, _>>()
 }
 
+// [[get_all_grammar_id_from_rules]]
 fn get_all_grammar_id_from_rules<
   TKind: TokenKind<TKind> + 'static,
   NTKind: TokenKind<NTKind> + Clone + 'static,
@@ -248,11 +248,8 @@ fn get_all_grammar_id_from_rules<
   // collect all grammars in grammar rules only,
   // don't collect grammar rules' NTs, because
   // some NTs might not appear in grammar rules (entry-only NTs).
-  // when entry-only NTs appear in parser's buffer (e.g. user provided buffer when parse),
-  // the `parser.parse` should throw StateCacheMissError.
-  // if we do collect entry-only NTs,
-  // the `parser.parse` will just reject the input without throwing StateCacheMissError.
-  // TODO: update comments above
+  // when entry-only NTs appear in parser's buffer (e.g. end of parsing),
+  // the parsing may stop. see [[@get_next_by_reduced_grammar]]
   gr_repo
     .grs()
     .iter()

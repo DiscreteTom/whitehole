@@ -114,6 +114,7 @@ impl<
     match self.next_map.get(grammar_id) {
       // cache miss. this should never happen since when building DFA
       // we should already calculated the next state for all grammars in rules
+      // see [[@get_all_grammar_id_from_rules]]
       None => unreachable!("{:?} next cache miss by lexed {:?}", self.id, grammar_id),
       // cache hit
       Some(hit) => match hit {
@@ -127,6 +128,7 @@ impl<
     }
   }
 
+  // [[get_next_by_reduced_grammar]]
   pub fn get_next_by_reduced_grammar(&self, grammar_id: &GrammarId) -> Option<StateId> {
     self
       .next_map
