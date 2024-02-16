@@ -140,21 +140,17 @@ impl<
 
   pub fn build<'buffer>(
     self,
+    // TODO: move entry_nts and global to constructor?
     entry_nts: impl Into<Vec<NTKind>>,
     global: Global,
     input: &'buffer str,
   ) -> Parser<'buffer, TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
   {
-    let entry_nts = entry_nts.into().into_iter().map(|e| e.id()).collect();
-    // collect known nts
-    let nts = self
-      .gr_repo
-      .grs()
-      .iter()
-      .map(|gr| gr.nt().id().clone())
-      .collect();
     Parser::new(
-      build_dfa(nts, entry_nts, self.gr_repo),
+      build_dfa(
+        entry_nts.into().into_iter().map(|e| e.id()).collect(),
+        self.gr_repo,
+      ),
       self.lexer.into_lexer(input).into(),
       Rc::new(RefCell::new(global)),
     )

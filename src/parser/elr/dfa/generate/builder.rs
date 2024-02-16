@@ -25,7 +25,6 @@ pub fn build_dfa<
   LexerActionState: Default + Clone + 'static,
   LexerErrorType: 'static,
 >(
-  nts: HashSet<GrammarId>, // TODO: don't pass nts because this can be calculated by gr_repo
   entry_nts: HashSet<TokenKindId<NTKind>>,
   gr_repo: GrammarRuleRepo<
     TKind,
@@ -37,6 +36,12 @@ pub fn build_dfa<
     LexerErrorType,
   >,
 ) -> Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> {
+  let nts = gr_repo
+    .grs()
+    .iter()
+    .map(|gr| gr.nt().id().clone())
+    .collect();
+
   let nt_closures = calc_all_nt_closures(&nts, &gr_repo);
 
   // init all initial candidates, initial candidate is candidate with digested=0
