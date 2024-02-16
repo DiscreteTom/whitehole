@@ -248,7 +248,7 @@ mod tests {
     assert!(matches!(token.kind, MyKind::UnitField));
     assert_eq!(token.range.start, 0);
     assert_eq!(token.range.end, 3);
-    assert_eq!(token.content(), "aaa");
+    assert_eq!(token.content, "aaa");
     assert!(matches!(token.error, None));
   }
 

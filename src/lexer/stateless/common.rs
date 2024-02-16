@@ -158,13 +158,14 @@ where
     input: &ActionInput<'buffer, '_, ActionState>,
     output: ActionOutput<Kind, ErrorType>,
   ) -> Token<'buffer, Kind, ErrorType> {
+    let range = Range {
+      start: input.start(),
+      end: input.start() + output.digested,
+    };
     Token {
       kind: output.kind,
-      buffer: input.buffer(),
-      range: Range {
-        start: input.start(),
-        end: input.start() + output.digested,
-      },
+      content: &input.buffer()[range.start..range.end],
+      range,
       error: output.error,
     }
   }

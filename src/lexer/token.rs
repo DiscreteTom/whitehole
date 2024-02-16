@@ -18,17 +18,9 @@ pub struct Range {
 pub struct Token<'buffer, Kind, ErrorType> {
   /// The kind and the binding data.
   pub kind: Kind,
-  /// The whole input text.
-  pub buffer: &'buffer str,
+  pub content: &'buffer str,
   pub range: Range,
   pub error: Option<ErrorType>,
-}
-
-impl<'buffer, Kind, ErrorType> Token<'buffer, Kind, ErrorType> {
-  /// Returns the content of the token.
-  pub fn content(&self) -> &str {
-    &self.buffer[self.range.start..self.range.end]
-  }
 }
 
 #[cfg(test)]
@@ -48,15 +40,14 @@ mod tests {
     let buffer = "123";
     let token = Token {
       kind: MyKind::UnitField,
-      buffer,
+      content: buffer,
       range: Range { start: 0, end: 3 },
       error: None::<()>,
     };
     assert!(matches!(token.kind, MyKind::UnitField));
-    assert_eq!(token.buffer, buffer);
     assert_eq!(token.range.start, 0);
     assert_eq!(token.range.end, 3);
-    assert_eq!(token.content(), "123");
+    assert_eq!(token.content, "123");
     assert_eq!(token.error, None);
   }
 
@@ -65,15 +56,14 @@ mod tests {
     let buffer = "123";
     let token = Token {
       kind: MyKind::UnnamedField(42),
-      buffer,
+      content: buffer,
       range: Range { start: 0, end: 3 },
       error: None::<()>,
     };
     assert!(matches!(token.kind, MyKind::UnnamedField(42)));
-    assert_eq!(token.buffer, buffer);
     assert_eq!(token.range.start, 0);
     assert_eq!(token.range.end, 3);
-    assert_eq!(token.content(), "123");
+    assert_eq!(token.content, "123");
     assert_eq!(token.error, None);
   }
 
