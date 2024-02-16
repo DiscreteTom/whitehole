@@ -53,12 +53,12 @@ impl<T> Stack<T> {
 }
 
 pub struct ParsingState<
+  'buffer,
   TKind: TokenKind<TKind> + 'static,
   NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
-  LexerType,
   LexerActionState: Default + Clone + 'static,
   LexerErrorType: 'static,
 > {
@@ -66,7 +66,7 @@ pub struct ParsingState<
   pub state_stack:
     Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
   pub reducing_stack: Vec<usize>,
-  pub lexer: LexerType,
+  pub lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   pub need_lex: bool,
   pub try_lex_index: usize,
   pub lexed_grammars: HashSet<GrammarId>,
@@ -84,16 +84,7 @@ impl<
     LexerActionState: Clone + Default,
     LexerErrorType,
   >
-  ParsingState<
-    TKind,
-    NTKind,
-    ASTData,
-    ErrorType,
-    Global,
-    TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
-    LexerActionState,
-    LexerErrorType,
-  >
+  ParsingState<'buffer, TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
   pub fn try_lex(
     &mut self,
