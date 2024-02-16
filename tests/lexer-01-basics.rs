@@ -76,7 +76,7 @@ fn lexer_basics() {
   assert!(matches!(token.kind, A));
   assert_eq!(token.range.start, 0);
   assert_eq!(token.range.end, 1);
-  assert_eq!(token.content(), "a");
+  assert_eq!(token.content, "a");
   assert!(matches!(token.error, None));
 
   // the second token should be `B`
@@ -86,7 +86,7 @@ fn lexer_basics() {
   assert!(matches!(token.kind, B));
   assert_eq!(token.range.start, 2);
   assert_eq!(token.range.end, 3);
-  assert_eq!(token.content(), "b");
+  assert_eq!(token.content, "b");
   assert!(matches!(token.error, None));
 
   // the third token should be `C`
@@ -94,6 +94,6 @@ fn lexer_basics() {
   assert!(matches!(token.kind, C));
   assert_eq!(token.range.start, 4);
   assert_eq!(token.range.end, 5);
-  assert_eq!(token.content(), "c");
+  assert_eq!(token.content, "c");
   assert!(matches!(token.error, None));
 }
