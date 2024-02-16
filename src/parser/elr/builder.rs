@@ -7,11 +7,11 @@ use super::{
   dfa::generate::{
     builder::build_dfa, grammar_repo::GrammarRepo, grammar_rule_repo::GrammarRuleRepo,
   },
-  grammar::grammar::GrammarKind,
+  grammar::{grammar::GrammarKind, grammar_rule::GrammarRuleId},
   parser::Parser,
 };
 use crate::lexer::{stateless::StatelessLexer, token::TokenKind};
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 pub struct ParserBuilderGrammar<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> {
   pub kind: GrammarKind<TKind, NTKind>,
@@ -68,6 +68,7 @@ pub struct ParserBuilder<
   grammars: GrammarRepo<TKind, NTKind>,
   gr_repo:
     GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+  defined_grs: HashSet<GrammarRuleId>,
 }
 
 impl<
@@ -91,6 +92,7 @@ impl<
       global,
       grammars: GrammarRepo::default(),
       gr_repo: GrammarRuleRepo::default(),
+      defined_grs: HashSet::new(),
     }
   }
 
@@ -135,14 +137,19 @@ impl<
     let mut ctx = GrammarRuleContextBuilder::default();
     f(&mut ctx);
 
-    // TODO: panic if defining duplicated grammar rule
-    self.gr_repo.get_or_add(
+    let gr = self.gr_repo.get_or_add(
       self.grammars.get_or_create_nt(nt).clone(),
       rule,
       expect,
       ctx.rejecter,
       None,
     );
+
+    // ensure we don't define the same grammar rule twice
+    if !self.defined_grs.insert(gr.id().clone()) {
+      panic!("Grammar rule already defined: {:?}", gr.id());
+    }
+
     self
   }
 
