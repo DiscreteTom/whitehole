@@ -15,12 +15,13 @@ use std::{
 
 pub struct RawState {
   id: StateId,
-  candidates: BTreeSet<CandidateId>,
+  // store candidates as Rc because we also need this in [[@StateRepo.cache]].
+  candidates: Rc<BTreeSet<CandidateId>>,
   next_map: HashMap<GrammarId, Option<StateId>>,
 }
 
 impl RawState {
-  pub fn new(id: StateId, candidates: BTreeSet<CandidateId>) -> Self {
+  pub fn new(id: StateId, candidates: Rc<BTreeSet<CandidateId>>) -> Self {
     RawState {
       id,
       candidates,
@@ -31,7 +32,7 @@ impl RawState {
   pub fn id(&self) -> &StateId {
     &self.id
   }
-  pub fn candidates(&self) -> &BTreeSet<CandidateId> {
+  pub fn candidates(&self) -> &Rc<BTreeSet<CandidateId>> {
     &self.candidates
   }
 
@@ -57,7 +58,7 @@ impl RawState {
       self.id,
       self
         .candidates
-        .into_iter()
+        .iter()
         .map(|id| candidates[id.0].clone())
         .collect(),
       self.next_map,

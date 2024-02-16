@@ -18,23 +18,23 @@ use std::{
 };
 
 pub struct StateRepo {
-  // TODO: can we merge these two so we don't need to store BTreeSet twice?
   states: HashMap<StateId, RawState>,
   // BTreeSet is ordered and hash-able, HashSet is not.
   // if 2 states have the same sorted candidates, they are the same state.
-  cache: HashMap<BTreeSet<CandidateId>, StateId>,
+  // we use Rc to prevent clone. [[StateRepo.cache]]
+  cache: HashMap<Rc<BTreeSet<CandidateId>>, StateId>,
 }
 
 impl StateRepo {
   pub fn with_entry(entry_candidates: BTreeSet<CandidateId>) -> Self {
+    let entry_candidates = Rc::new(entry_candidates);
     let state_id = StateId(0);
-    let entry_state = RawState::new(state_id, entry_candidates);
+    let entry_state = RawState::new(state_id, entry_candidates.clone());
     let mut states = HashMap::new();
     states.insert(state_id, entry_state);
-    Self {
-      states,
-      cache: HashMap::new(),
-    }
+    let mut cache = HashMap::new();
+    cache.insert(entry_candidates, state_id);
+    Self { states, cache }
   }
 
   pub fn states(&self) -> &HashMap<StateId, RawState> {
@@ -61,7 +61,6 @@ impl StateRepo {
       LexerActionState,
       LexerErrorType,
     >,
-    // TODO: nt_closures only store grammar rule id?
     nt_closures: &HashMap<
       GrammarId,
       Vec<
@@ -75,7 +74,6 @@ impl StateRepo {
     let mut unexpanded = self
       .states
       .iter()
-      // TODO: prevent the clone
       .map(|(id, state)| (id.clone(), state.candidates().clone()))
       .collect::<Vec<_>>();
 
@@ -112,9 +110,9 @@ impl StateRepo {
       unexpanded = generated
         .into_iter()
         .map(|(next_candidates, from_id, input_grammar_id)| {
+          let next_candidates = Rc::new(next_candidates);
           // construct new state
           let id = StateId(self.states.len());
-          // TODO: prevent the clone, use ref?
           let state = RawState::new(id, next_candidates.clone());
 
           // update cache
@@ -156,7 +154,6 @@ impl StateRepo {
       LexerActionState,
       LexerErrorType,
     >,
-    // TODO: nt_closures only store grammar rule id?
     nt_closures: &HashMap<
       GrammarId,
       Vec<
@@ -183,7 +180,6 @@ impl StateRepo {
     NextResult::New(next_candidates)
   }
 
-  // TODO: merge with generate_next
   fn calc_next_candidates<
     TKind: TokenKind<TKind>,
     NTKind: TokenKind<NTKind> + Clone + 'static,
@@ -204,7 +200,6 @@ impl StateRepo {
       LexerActionState,
       LexerErrorType,
     >,
-    // TODO: nt_closures only store grammar rule id?
     nt_closures: &HashMap<
       GrammarId,
       Vec<
