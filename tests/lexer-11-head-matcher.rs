@@ -161,3 +161,30 @@ fn lex_with_head_matcher() {
   // head matcher will take effect in lexing, expectational lexing,
   // peeking and trimming
 }
+
+#[test]
+fn utf8_head_matcher() {
+  // head matcher should work with utf8
+  let mut lexer = LexerBuilder::<MyKind, MyState>::default()
+    .define_with(True, |a| {
+      a.simple(|input| {
+        // mutate the action state when the action is evaluated
+        // no matter if it's accepted or rejected
+        input.state_mut().evaluated = true;
+
+        let pattern = "真";
+        if input.rest().starts_with(pattern) {
+          pattern.len()
+        } else {
+          0
+        }
+      })
+      .head_in(['真'])
+    })
+    .define(False, Action::regex(r"^假").unwrap().head_in(['假']))
+    .build("假");
+  // the lexed token should be `False`
+  assert!(matches!(lexer.lex().token.unwrap().kind, False));
+  // and the action for `True` is NOT evaluated
+  assert!(!lexer.action_state().evaluated);
+}
