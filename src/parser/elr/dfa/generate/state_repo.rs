@@ -1,13 +1,14 @@
 use super::{candidate_repo::CandidateRepo, raw_state::RawState};
 use crate::{
-  lexer::token::TokenKind,
+  lexer::token::{TokenKind, TokenKindId},
   parser::elr::{
     dfa::{
       candidate::{Candidate, CandidateId},
       state::{State, StateId},
     },
     grammar::{
-      grammar::{GrammarId, GrammarKind},
+      grammar::{Grammar, GrammarId, GrammarKind},
+      grammar_map::GrammarMap,
       grammar_rule::GrammarRule,
     },
   },
@@ -257,6 +258,7 @@ impl StateRepo {
     candidates: &Vec<
       Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
+    grammar_map: Rc<GrammarMap<TKind, NTKind>>,
   ) -> HashMap<
     StateId,
     Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
@@ -265,7 +267,7 @@ impl StateRepo {
       .states
       .into_iter()
       .map(|(id, state)| {
-        let state = state.into_state(candidates);
+        let state = state.into_state(candidates, grammar_map.clone());
         (id, Rc::new(state))
       })
       .collect()

@@ -62,7 +62,7 @@ pub struct ParsingState<
   LexerActionState: Default + Clone + 'static,
   LexerErrorType: 'static,
 > {
-  pub buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
+  pub buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
   pub state_stack:
     Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
   pub reducing_stack: Vec<usize>,

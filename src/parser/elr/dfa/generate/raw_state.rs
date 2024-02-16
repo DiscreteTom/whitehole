@@ -1,11 +1,14 @@
 use crate::{
-  lexer::token::TokenKind,
+  lexer::token::{TokenKind, TokenKindId},
   parser::elr::{
     dfa::{
       candidate::{Candidate, CandidateId},
       state::{State, StateId},
     },
-    grammar::grammar::GrammarId,
+    grammar::{
+      grammar::{Grammar, GrammarId},
+      grammar_map::GrammarMap,
+    },
   },
 };
 use std::{
@@ -53,6 +56,7 @@ impl RawState {
     candidates: &Vec<
       Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
+    grammar_map: Rc<GrammarMap<TKind, NTKind>>,
   ) -> State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> {
     State::new(
       self.id,
@@ -62,6 +66,7 @@ impl RawState {
         .map(|id| candidates[id.0].clone())
         .collect(),
       self.next_map,
+      grammar_map,
     )
   }
 }

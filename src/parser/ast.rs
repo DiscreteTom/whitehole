@@ -3,17 +3,19 @@ use crate::lexer::token::{Range, TokenKind};
 use std::{cell::RefCell, rc::Rc};
 
 pub enum ASTNodeKind<
+  'buffer,
   TKind: TokenKind<TKind>,
   NTKind: TokenKind<NTKind>,
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
 > {
-  T(TKind),
+  T(TKind, &'buffer str),
   NT(NTKind, Traverser<TKind, NTKind, ASTData, ErrorType, Global>),
 }
 
 pub struct ASTNode<
+  'buffer,
   TKind: TokenKind<TKind>,
   NTKind: TokenKind<NTKind>, // TODO: don't use TokenKind? use another trait?
   ASTData: 'static,
@@ -21,7 +23,7 @@ pub struct ASTNode<
   Global: 'static,
 > {
   // make these fields public so the user can destruct the struct and get the fields
-  pub kind: ASTNodeKind<TKind, NTKind, ASTData, ErrorType, Global>,
+  pub kind: ASTNodeKind<'buffer, TKind, NTKind, ASTData, ErrorType, Global>,
   pub range: Range,
   pub children: Vec<usize>,
   pub global: Rc<RefCell<Global>>,
@@ -31,22 +33,24 @@ pub struct ASTNode<
 }
 
 impl<
+    'buffer,
     TKind: TokenKind<TKind>,
     NTKind: TokenKind<NTKind>,
     ASTData: 'static,
     ErrorType: 'static,
     Global: 'static,
-  > ASTNode<TKind, NTKind, ASTData, ErrorType, Global>
+  > ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>
 {
   pub fn new_t(
     kind: TKind,
+    text: &'buffer str,
     range: Range,
     global: Rc<RefCell<Global>>,
     data: Option<ASTData>,
     error: Option<ErrorType>,
   ) -> Self {
     Self {
-      kind: ASTNodeKind::T(kind),
+      kind: ASTNodeKind::T(kind, text),
       range,
       children: Vec::new(),
       global,

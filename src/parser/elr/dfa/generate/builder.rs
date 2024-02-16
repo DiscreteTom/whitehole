@@ -1,5 +1,6 @@
 use super::{
-  candidate_repo::CandidateRepo, grammar_rule_repo::GrammarRuleRepo, state_repo::StateRepo,
+  candidate_repo::CandidateRepo, grammar_repo::GrammarRepo, grammar_rule_repo::GrammarRuleRepo,
+  state_repo::StateRepo,
 };
 use crate::{
   lexer::token::{TokenKind, TokenKindId},
@@ -26,6 +27,7 @@ pub fn build_dfa<
   LexerErrorType: 'static,
 >(
   entry_nts: HashSet<TokenKindId<NTKind>>,
+  grammar_repo: GrammarRepo<TKind, NTKind>,
   gr_repo: GrammarRuleRepo<
     TKind,
     NTKind,
@@ -76,7 +78,7 @@ pub fn build_dfa<
 
   // convert raw candidates/states to candidates/states
   let candidates = cs.into_candidates();
-  let states = state_repo.into_states(&candidates);
+  let states = state_repo.into_states(&candidates, grammar_repo.into_grammar_map());
 
   Dfa::new(entry_nts, states[&StateId(0)].clone(), states, follow_sets)
 }

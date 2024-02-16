@@ -79,108 +79,66 @@ impl<
     self.digested < self.gr.rule().len() - 1
   }
 
-  pub fn try_lex<'buffer>(
+  pub fn try_lex_with_expectation<'buffer>(
     &self,
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     lexed_grammars: &mut HashSet<GrammarId>,
-    lexed_without_expectation: &mut bool,
     global: &Rc<RefCell<Global>>,
   ) -> Option<
     CandidateTryLexOutput<
-      ASTNode<TKind, NTKind, ASTData, ErrorType, Global>,
+      'buffer,
+      TKind,
+      ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>,
       TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     >,
   > {
-    let expectational_lex = self.gr.expect().contains(&self.digested);
-
-    if !expectational_lex && *lexed_without_expectation {
+    if !self.gr.expect().contains(&self.digested) {
       // current grammar doesn't require an expectational lex
-      // and non-expectational lex has already been done
       // so we can skip
       return None;
     }
 
     self.current().and_then(|current| {
-      let (expectation, validator) = match current.kind() {
+      let (expectation, grammar_id) = match current.kind() {
         GrammarKind::NT(_) => {
-          // the current grammar is not a T, skip
+          // the current grammar is an NT, not lex-able, skip
           return None;
         }
-        GrammarKind::T(kind) => {
-          // TODO: optimize code, reduce duplicated code
-          if expectational_lex {
-            // if current grammar is already lexed, skip
-            // TODO: should this skip?
-            if lexed_grammars.contains(&current.id()) {
-              return None;
-            }
-            // else, mark this grammar as done, no matter if the lex is successful
-            lexed_grammars.insert(current.id().clone());
-          } else {
-            // mark non-expectational lex as done, no matter if the lex is successful
-            *lexed_without_expectation = true;
-          }
-
-          if expectational_lex {
-            (
-              Expectation::from(kind),
-              // with expectational lex, we don't need to validate the output
-              None,
-            )
-          } else {
-            (
-              // no expectation
-              Expectation::default(),
-              // validate the output
-              Some(LexGrammarTokenValidator::TKind(kind.id())),
-            )
-          }
-        }
-        GrammarKind::Literal(text) => {
-          if expectational_lex {
-            // if current grammar is already lexed, skip
-            if lexed_grammars.contains(&current.id()) {
-              return None;
-            }
-            // else, mark this grammar as done, no matter if the lex is successful
-            lexed_grammars.insert(current.id().clone());
-          } else {
-            // mark non-expectational lex as done, no matter if the lex is successful
-            *lexed_without_expectation = true;
-          }
-
-          if expectational_lex {
-            (
-              Expectation::from(text.as_str()),
-              // with expectational lex, we don't need to validate the output
-              None,
-            )
-          } else {
-            (
-              // no expectation
-              Expectation::default(),
-              // validate the output
-              Some(LexGrammarTokenValidator::Text(text)),
-            )
-          }
-        }
+        GrammarKind::T(t) => (Expectation::from(t), current.id()),
+        GrammarKind::Literal(text) => (Expectation::from(text.as_str()), current.id()),
       };
-      Self::lex_grammar(expectation, validator, lexer, global).map(|output| CandidateTryLexOutput {
-        node: output.node,
-        lexer: output.lexer,
-        grammar_id: current.id().clone(),
+
+      // if current grammar is already lexed
+      // the parsing state should already tried to reduce with the grammar and failed
+      // and this is a re-lex, so we can skip the expectational lex
+      if lexed_grammars.contains(grammar_id) {
+        return None;
+      }
+      // else, mark this grammar as done, no matter if the lex is successful
+      // because even the lex failed, we should not try to lex it again
+      lexed_grammars.insert(grammar_id.clone());
+
+      Self::lex_grammar_with_expectation(expectation, lexer, global).map(|output| {
+        CandidateTryLexOutput {
+          t_kind_id: output.t_kind_id,
+          text: output.text,
+          node: output.node,
+          lexer: output.lexer,
+          grammar_id: current.id().clone(),
+        }
       })
     })
   }
 
   pub fn try_reduce<'buffer>(
     &self,
-    buffer: &Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
+    buffer: &Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     reducing_stack: &Vec<usize>,
     entry_nts: &HashSet<TokenKindId<NTKind>>,
     follow_sets: &HashMap<GrammarId, HashSet<GrammarId>>,
-  ) -> Option<CandidateTryReduceOutput<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>> {
+  ) -> Option<CandidateTryReduceOutput<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>>
+  {
     if self.digested != self.gr.rule().len() {
       // this grammar rule is not fully digested, skip
       return None;
@@ -226,14 +184,15 @@ impl<
     })
   }
 
-  fn lex_grammar<'buffer>(
+  fn lex_grammar_with_expectation<'buffer>(
     expectation: Expectation<TKind>,
-    validator: Option<LexGrammarTokenValidator<TKind>>,
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     global: &Rc<RefCell<Global>>,
   ) -> Option<
     LexGrammarOutput<
-      ASTNode<TKind, NTKind, ASTData, ErrorType, Global>,
+      'buffer,
+      TKind,
+      ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>,
       TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     >,
   > {
@@ -248,41 +207,34 @@ impl<
 
     let res = lexer.lex_expect(expectation);
     res.token.and_then(move |token| {
-      // validate the output
-      if let Some(v) = validator {
-        match v {
-          LexGrammarTokenValidator::TKind(kind_id) => {
-            if token.kind.id() != kind_id {
-              return None;
-            }
-          }
-          LexGrammarTokenValidator::Text(text) => {
-            if token.content() != text {
-              return None;
-            }
-          }
-        }
-      }
-
-      let lexer = res.lexer.into_trimmed().trimmed_lexer;
       // TODO: set node data
-      let node = ASTNode::new_t(token.kind, token.range, global.clone(), None, None);
-      Some(LexGrammarOutput { node, lexer })
+      Some(LexGrammarOutput {
+        t_kind_id: token.kind.id(),
+        text: token.content,
+        node: ASTNode::new_t(
+          token.kind,
+          token.content,
+          token.range,
+          global.clone(),
+          None,
+          None,
+        ),
+        lexer: res.lexer.into(), // trim the lexer and convert into TrimmedLexer
+      })
     })
   }
 }
 
-enum LexGrammarTokenValidator<'a, TKind> {
-  TKind(TokenKindId<TKind>),
-  Text(&'a String),
-}
-
-struct LexGrammarOutput<NodeType, LexerType> {
+pub struct LexGrammarOutput<'buffer, TKind, NodeType, LexerType> {
+  pub t_kind_id: TokenKindId<TKind>,
+  pub text: &'buffer str,
   pub node: NodeType,
   pub lexer: LexerType,
 }
 
-pub struct CandidateTryLexOutput<NodeType, LexerType> {
+pub struct CandidateTryLexOutput<'buffer, TKind, NodeType, LexerType> {
+  pub t_kind_id: TokenKindId<TKind>,
+  pub text: &'buffer str,
   pub node: NodeType,
   pub lexer: LexerType,
   pub grammar_id: GrammarId,

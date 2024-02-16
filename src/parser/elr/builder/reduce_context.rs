@@ -15,7 +15,7 @@ pub struct ReduceContext<
   LexerErrorType: 'static,
 > {
   matched: &'a [usize],
-  buffer: &'a Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
+  buffer: &'a Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
   reducing_stack: &'a Vec<usize>,
   lexer: &'a TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   pub data: Option<ASTData>,
@@ -47,7 +47,7 @@ impl<
 {
   pub fn new(
     matched: &'a [usize],
-    buffer: &'a Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
+    buffer: &'a Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
     reducing_stack: &'a Vec<usize>,
     lexer: &'a TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   ) -> Self {
@@ -64,7 +64,7 @@ impl<
   pub fn matched(&self) -> &'a [usize] {
     self.matched
   }
-  pub fn buffer(&self) -> &'a Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>> {
+  pub fn buffer(&self) -> &'a Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>> {
     self.buffer
   }
   pub fn reducing_stack(&self) -> &'a Vec<usize> {
@@ -76,7 +76,7 @@ impl<
 
   pub fn matched_iter(
     &self,
-  ) -> impl Iterator<Item = &ASTNode<TKind, NTKind, ASTData, ErrorType, Global>> {
+  ) -> impl Iterator<Item = &ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>> {
     self.matched.iter().map(|index| &self.buffer[*index])
   }
 }

@@ -29,7 +29,7 @@ pub struct DfaParseOutput<
   LexerErrorType: 'static,
 > {
   pub lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
-  pub buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
+  pub buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
   pub errors: Vec<usize>,
   pub continuable: ParseContinuable<
     Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
@@ -93,7 +93,7 @@ impl<
 
   pub fn parse<'buffer>(
     &self,
-    buffer: Vec<ASTNode<TKind, NTKind, ASTData, ErrorType, Global>>,
+    buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
     state_stack: Stack<
       Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
