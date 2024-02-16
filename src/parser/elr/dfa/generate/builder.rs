@@ -347,7 +347,7 @@ fn calc_follow_sets<
         // some NT may not appear in grammar rules (e.g. entry NT)
         // so we have to insert new value for this situation
         .or_insert_with(|| HashSet::new())
-        .clone(); // TODO: prevent the clone
+        .clone();
 
       // last grammar may not already in result
       // since we only collect the result using the second last grammar
