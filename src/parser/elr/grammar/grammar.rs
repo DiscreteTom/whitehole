@@ -3,6 +3,7 @@ use crate::lexer::token::TokenKind;
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, PartialOrd, Ord)]
 pub struct GrammarId(pub usize);
 
+#[derive(Clone)]
 pub enum GrammarKind<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> {
   T(TKind),
   NT(NTKind),

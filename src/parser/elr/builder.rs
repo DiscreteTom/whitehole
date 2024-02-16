@@ -1,8 +1,11 @@
 pub mod conflict;
 pub mod grammar_rule_context_builder;
 pub mod reduce_context;
+pub mod temp_grammar_rule;
 
-use self::grammar_rule_context_builder::GrammarRuleContextBuilder;
+use self::{
+  grammar_rule_context_builder::GrammarRuleContextBuilder, temp_grammar_rule::TempGrammarRule,
+};
 use super::{
   dfa::generate::{
     builder::build_dfa, grammar_repo::GrammarRepo, grammar_rule_repo::GrammarRuleRepo,
@@ -72,7 +75,7 @@ pub struct ParserBuilder<
 }
 
 impl<
-    TKind: TokenKind<TKind>,
+    TKind: TokenKind<TKind> + Clone,
     NTKind: TokenKind<NTKind> + Clone + 'static,
     ASTData: 'static,
     ErrorType: 'static,
@@ -96,13 +99,13 @@ impl<
     }
   }
 
-  pub fn define(self, gr: (NTKind, impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>)) -> Self {
+  pub fn define(self, gr: Rc<TempGrammarRule<TKind, NTKind>>) -> Self {
     self.define_with(gr, |_| {})
   }
 
   pub fn define_with<'a, 'buffer: 'a, F>(
     mut self,
-    (nt, rule): (NTKind, impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>),
+    gr: Rc<TempGrammarRule<TKind, NTKind>>,
     f: F,
   ) -> Self
   where
@@ -118,22 +121,23 @@ impl<
       >,
     ),
   {
-    let rule = rule.into();
-    let expect = rule
+    let expect = gr
+      .rule()
       .iter()
       .enumerate()
       .filter_map(|(i, g)| if g.expect { Some(i) } else { None })
       .collect();
-    let rule = rule
-      .into_iter()
-      .map(|g| self.grammars.get_or_create(g.kind).clone())
+    let rule = gr
+      .rule()
+      .iter()
+      .map(|g| self.grammars.get_or_create(g.kind.clone()).clone())
       .collect();
 
     let mut ctx = GrammarRuleContextBuilder::default();
     f(&mut ctx);
 
     let gr = self.gr_repo.get_or_add(
-      self.grammars.get_or_create_nt(nt).clone(),
+      self.grammars.get_or_create_nt(gr.nt().clone()).clone(),
       rule,
       expect,
       ctx.rejecter,
