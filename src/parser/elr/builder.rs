@@ -109,7 +109,7 @@ impl<
     f: F,
   ) -> Self
   where
-    F: Fn(
+    F: FnOnce(
       &mut GrammarRuleContextBuilder<
         TKind,
         NTKind,
