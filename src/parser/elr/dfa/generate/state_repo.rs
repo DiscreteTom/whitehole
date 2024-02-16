@@ -173,7 +173,7 @@ impl StateRepo {
 
     // check cache whether the state already created
     if let Some(id) = self.cache.get(&next_candidates) {
-      return NextResult::InCache(id.clone()); // TODO: prevent clone
+      return NextResult::InCache(id.clone());
     }
 
     // create new
@@ -209,13 +209,14 @@ impl StateRepo {
       >,
     >,
   ) -> BTreeSet<CandidateId> {
-    // TODO: optimize code
-    let mut nts = HashSet::new();
-    // find grammar rules that can accept the input grammar
+    let mut to_be_expanded_nts = HashSet::new();
+
+    // find candidates that can accept the input grammar and use their next as next state's direct candidates
     let mut next_candidates = current_candidates
       .iter()
       .map(|c_id| {
         cs.get_or_add_next(c_id, input_grammar_id).map(|next| {
+          // collect NTs that can be expanded
           if let Some(next_current) = next.current().and_then(|current| {
             if let GrammarKind::NT(_) = current.kind() {
               Some(current)
@@ -223,23 +224,22 @@ impl StateRepo {
               None
             }
           }) {
-            nts.insert(next_current.id().clone());
+            to_be_expanded_nts.insert(next_current.id().clone());
           }
+
+          // return next candidate id
           next.id().clone()
         })
       })
-      .filter_map(|c| c) // TODO: is this the best way?
+      .flatten() // filter out None
       .collect::<BTreeSet<_>>();
 
-    let mut grs = HashSet::new();
-    for nt in nts {
+    // expand NTs to get indirect candidates for the next state
+    for nt in to_be_expanded_nts {
       nt_closures.get(&nt).unwrap().iter().for_each(|gr| {
-        grs.insert(gr.id());
+        next_candidates.insert(cs.get_initial(gr.id()).id().clone());
       });
     }
-    grs.iter().for_each(|gr_id| {
-      next_candidates.insert(cs.get_initial(gr_id).id().clone());
-    });
 
     next_candidates
   }
