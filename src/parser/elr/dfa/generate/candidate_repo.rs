@@ -24,7 +24,6 @@ pub struct CandidateRepo<
   LexerErrorType: 'static,
 > {
   gr_cache: HashMap<GrammarRuleId, HashMap</* digested */ usize, CandidateId>>,
-  // TODO: is this needed? can we just store candidates in caches?
   candidates:
     Vec<RawCandidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
 }
@@ -85,9 +84,7 @@ impl<
 
     if !candidate
       .current()
-      // TODO: can we omit the `*` and compare ref directly?
-      // will that compare the pointer value?
-      .is_some_and(|g| *g.id() == *input_grammar_id)
+      .is_some_and(|g| g.id() == input_grammar_id)
     {
       // can't digest more, or grammar mismatch
       return None;
