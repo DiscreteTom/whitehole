@@ -15,7 +15,6 @@ use super::token::TokenKindId;
 use std::collections::HashSet;
 
 pub enum ActionInputRestHeadMatcher {
-  // TODO: add test for utf8
   OneOf(HashSet<char>),
   Not(HashSet<char>),
   /// Match any characters that are not in known `OneOf` or `Not`.
