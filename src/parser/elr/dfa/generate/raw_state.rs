@@ -86,7 +86,7 @@ impl RawState {
     first_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
     follow_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
     end_set: &HashSet<GrammarId>,
-  ) -> HashMap<CandidateId, Vec<Conflict<GrammarRuleId>>> {
+  ) -> HashMap<CandidateId, Vec<Conflict<GrammarRuleId, Rc<Grammar<TKind, NTKind>>>>> {
     let mut res = HashMap::new();
 
     // first, check if there is any reduce-able candidate in the current state
@@ -110,7 +110,7 @@ impl RawState {
           .get(reducer.gr().nt().id())
           .unwrap()
           .intersection(follow_sets.get(another.gr().nt().id()).unwrap())
-          .map(|g| g.id().clone())
+          .map(|g| g.clone())
           .collect::<HashSet<_>>();
 
         // if reducer's NT and another's NT are both in end set, then we need to handle end of input
@@ -169,7 +169,7 @@ impl RawState {
                   kind: ConflictKind::ReduceShift,
                   another: shifter.gr().id().clone(),
                   condition: ConflictCondition {
-                    next: HashSet::from([shifter_current.id().clone()]),
+                    next: HashSet::from([shifter_current.clone()]),
                     eof: false, // we don't need to handle eof for RS conflict
                   },
                 });
@@ -181,7 +181,7 @@ impl RawState {
               .get(reducer.gr().nt().id())
               .unwrap()
               .intersection(first_sets.get(shifter_current.id()).unwrap())
-              .map(|g| g.id().clone())
+              .map(|g| g.clone())
               .collect::<HashSet<_>>();
 
             if overlap.len() > 0 {

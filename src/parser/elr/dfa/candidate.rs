@@ -157,7 +157,7 @@ impl<
     reducing_stack: &Vec<usize>,
     entry_nts: &HashSet<GrammarId>,
     follow_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
-    conflicts: &Vec<Conflict<GrammarRuleId>>,
+    conflicts: &Vec<Conflict<GrammarRuleId, Rc<Grammar<TKind, NTKind>>>>,
   ) -> Option<CandidateTryReduceOutput<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>>
   {
     if self.digested != self.gr.rule().len() {
