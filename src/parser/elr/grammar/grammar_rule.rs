@@ -72,7 +72,7 @@ impl<
   pub fn nt(&self) -> &Rc<Grammar<TKind, NTKind>> {
     &self.nt
   }
-  pub fn rule(&self) -> &[Rc<Grammar<TKind, NTKind>>] {
+  pub fn rule(&self) -> &Vec<Rc<Grammar<TKind, NTKind>>> {
     &self.rule
   }
 }
