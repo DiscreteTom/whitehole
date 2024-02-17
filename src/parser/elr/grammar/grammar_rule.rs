@@ -1,7 +1,10 @@
 use super::grammar::Grammar;
 use crate::{
   lexer::token::TokenKind,
-  parser::{elr::builder::reduce_context::Condition, traverser::Traverser},
+  parser::{
+    elr::builder::{reduce_context::Condition, resolver::ResolvedConflict},
+    traverser::Traverser,
+  },
 };
 use std::{collections::HashSet, rc::Rc};
 
@@ -17,14 +20,24 @@ pub struct GrammarRule<
   LexerActionState: Default + Clone + 'static,
   LexerErrorType: 'static,
 > {
+  // id, nt and rule is not mutable
   id: GrammarRuleId,
   // the NT should be a `Grammar` instead of an `NTKind`
   // because we need the grammar to get next state when `try_reduce`
   nt: Rc<Grammar<TKind, NTKind>>,
   rule: Vec<Rc<Grammar<TKind, NTKind>>>,
-  expect: HashSet<usize>,
-  rejecter: Condition<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
-  traverser: Option<Traverser<TKind, NTKind, ASTData, ErrorType, Global>>,
+
+  // these are mutable
+  pub expect: HashSet<usize>,
+  pub resolved_conflicts: Vec<
+    ResolvedConflict<
+      GrammarRuleId,
+      Condition<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+    >,
+  >,
+  pub rejecter:
+    Condition<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+  pub traverser: Option<Traverser<TKind, NTKind, ASTData, ErrorType, Global>>,
 }
 
 impl<
@@ -41,27 +54,18 @@ impl<
     id: GrammarRuleId,
     nt: Rc<Grammar<TKind, NTKind>>,
     rule: Vec<Rc<Grammar<TKind, NTKind>>>,
-    expect: HashSet<usize>,
-    rejecter: Condition<
-      TKind,
-      NTKind,
-      ASTData,
-      ErrorType,
-      Global,
-      LexerActionState,
-      LexerErrorType,
-    >,
-    traverser: Option<Traverser<TKind, NTKind, ASTData, ErrorType, Global>>,
   ) -> Self {
     Self {
       id,
       nt,
       rule,
-      expect,
-      rejecter,
-      traverser,
+      expect: HashSet::new(),
+      resolved_conflicts: Vec::new(),
+      rejecter: Box::new(|_| false),
+      traverser: None,
     }
   }
+
   pub fn id(&self) -> &GrammarRuleId {
     &self.id
   }
@@ -70,16 +74,5 @@ impl<
   }
   pub fn rule(&self) -> &[Rc<Grammar<TKind, NTKind>>] {
     &self.rule
-  }
-  pub fn expect(&self) -> &HashSet<usize> {
-    &self.expect
-  }
-  pub fn rejecter(
-    &self,
-  ) -> &Condition<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> {
-    &self.rejecter
-  }
-  pub fn traverser(&self) -> &Option<Traverser<TKind, NTKind, ASTData, ErrorType, Global>> {
-    &self.traverser
   }
 }

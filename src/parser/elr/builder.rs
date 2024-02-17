@@ -6,7 +6,8 @@ pub mod temp_grammar_rule;
 pub mod temp_resolver;
 
 use self::{
-  grammar_rule_context_builder::GrammarRuleContextBuilder, temp_grammar_rule::TempGrammarRule,
+  grammar_rule_context_builder::GrammarRuleContextBuilder, resolver::ResolvedConflict,
+  temp_grammar_rule::TempGrammarRule,
 };
 use super::{
   dfa::generate::{
@@ -145,18 +146,49 @@ impl<
 
     let ctx = f(GrammarRuleContextBuilder::default());
 
+    // prepare resolved conflicts
+    let resolved_conflicts = ctx
+      .resolved_conflicts
+      .into_iter()
+      .map(|r| ResolvedConflict {
+        kind: r.kind,
+        another_rule: self
+          .gr_repo
+          .get_or_add(
+            self
+              .grammars
+              .get_or_create_nt(r.another_rule.nt().clone())
+              .clone(),
+            r.another_rule
+              .rule()
+              .iter()
+              .map(|g| self.grammars.get_or_create(g.kind.clone()).clone())
+              .collect(),
+          )
+          .id()
+          .clone(),
+        accepter: r.accepter,
+        condition: r
+          .condition
+          .into_resolved_conflict_condition(&mut self.grammars),
+      })
+      .collect();
+
+    // the new grammar rule
     let gr = self.gr_repo.get_or_add(
       self.grammars.get_or_create_nt(gr.nt().clone()).clone(),
       rule,
-      expect,
-      ctx.rejecter,
-      None,
     );
 
     // ensure we don't define the same grammar rule twice
     if !self.defined_grs.insert(gr.id().clone()) {
       panic!("Grammar rule already defined: {:?}", gr.id());
     }
+
+    // since this is a define action, overwrite properties
+    gr.expect = expect;
+    gr.rejecter = ctx.rejecter;
+    gr.resolved_conflicts = resolved_conflicts;
 
     self
   }

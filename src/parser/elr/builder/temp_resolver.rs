@@ -1,5 +1,10 @@
-use super::{conflict::ConflictKind, reduce_context::Condition, ParserBuilderGrammar};
-use crate::lexer::token::TokenKind;
+use super::{
+  conflict::ConflictKind,
+  reduce_context::Condition,
+  resolver::{ResolvedConflictCondition, ResolvedConflictConditionNext},
+  ParserBuilderGrammar,
+};
+use crate::{lexer::token::TokenKind, parser::elr::dfa::generate::grammar_repo::GrammarRepo};
 
 pub enum TempResolvedConflictNext<
   TKind: TokenKind<TKind> + 'static,
@@ -15,6 +20,27 @@ pub struct TempResolvedConflictCondition<
 > {
   pub next: TempResolvedConflictNext<TKind, NTKind>,
   pub eof: bool,
+}
+
+impl<TKind: TokenKind<TKind> + 'static, NTKind: TokenKind<NTKind> + Clone + 'static>
+  TempResolvedConflictCondition<TKind, NTKind>
+{
+  pub fn into_resolved_conflict_condition(
+    self,
+    grammar_repo: &mut GrammarRepo<TKind, NTKind>,
+  ) -> ResolvedConflictCondition {
+    ResolvedConflictCondition {
+      next: match self.next {
+        TempResolvedConflictNext::Any => ResolvedConflictConditionNext::Any,
+        TempResolvedConflictNext::Some(v) => ResolvedConflictConditionNext::Some(
+          v.into_iter()
+            .map(|g| grammar_repo.get_or_create(g.kind).id().clone())
+            .collect(),
+        ),
+      },
+      eof: self.eof,
+    }
+  }
 }
 
 pub struct ReduceReduceResolverOptions<

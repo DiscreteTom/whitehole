@@ -1,20 +1,11 @@
 use crate::{
   lexer::token::TokenKind,
-  parser::{
-    elr::{
-      builder::reduce_context::Condition,
-      grammar::{
-        grammar::{Grammar, GrammarId},
-        grammar_rule::{GrammarRule, GrammarRuleId},
-      },
-    },
-    traverser::Traverser,
+  parser::elr::grammar::{
+    grammar::{Grammar, GrammarId},
+    grammar_rule::{GrammarRule, GrammarRuleId},
   },
 };
-use std::{
-  collections::{HashMap, HashSet},
-  rc::Rc,
-};
+use std::{collections::HashMap, rc::Rc};
 
 pub struct GrammarRuleRepo<
   TKind: TokenKind<TKind> + 'static,
@@ -65,17 +56,6 @@ impl<
     &mut self,
     nt: Rc<Grammar<TKind, NTKind>>,
     rule: Vec<Rc<Grammar<TKind, NTKind>>>,
-    expect: HashSet<usize>,
-    rejecter: Condition<
-      TKind,
-      NTKind,
-      ASTData,
-      ErrorType,
-      Global,
-      LexerActionState,
-      LexerErrorType,
-    >,
-    traverser: Option<Traverser<TKind, NTKind, ASTData, ErrorType, Global>>,
   ) -> &mut GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
   {
     let mut key = vec![nt.id().clone()];
@@ -86,9 +66,7 @@ impl<
     }
 
     let id = GrammarRuleId(self.grs.len());
-    self
-      .grs
-      .push(GrammarRule::new(id, nt, rule, expect, rejecter, traverser));
+    self.grs.push(GrammarRule::new(id, nt, rule));
     self.cache.insert(key, id);
     &mut self.grs[id.0]
   }

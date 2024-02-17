@@ -92,7 +92,7 @@ impl<
       TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     >,
   > {
-    if !self.gr.expect().contains(&self.digested) {
+    if !self.gr.expect.contains(&self.digested) {
       // current grammar doesn't require an expectational lex
       // so we can skip
       return None;
@@ -168,7 +168,7 @@ impl<
     let ctx = ReduceContext::new(matched, buffer, reducing_stack, lexer);
 
     // check rejecter
-    if (self.gr.rejecter())(&ctx) {
+    if (self.gr.rejecter)(&ctx) {
       return None;
     }
 
@@ -191,7 +191,7 @@ impl<
         None,
         self
           .gr
-          .traverser()
+          .traverser
           .as_ref()
           .map(|t| t.clone())
           .unwrap_or(Rc::new(default_traverser)),

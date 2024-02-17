@@ -2,13 +2,13 @@ use super::conflict::ConflictKind;
 use crate::parser::elr::grammar::grammar::GrammarId;
 use std::collections::HashSet;
 
-pub enum ResolvedConflictNext {
+pub enum ResolvedConflictConditionNext {
   Any,
   Some(HashSet<GrammarId>),
 }
 
 pub struct ResolvedConflictCondition {
-  pub next: ResolvedConflictNext,
+  pub next: ResolvedConflictConditionNext,
   pub eof: bool,
 }
 
