@@ -25,13 +25,13 @@ use std::{cell::RefCell, collections::HashSet, rc::Rc};
 pub struct ParserBuilderGrammar<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> {
   pub kind: GrammarKind<TKind, NTKind>,
   /// Only effective for T/Literal.
-  pub expect: bool,
+  pub expected: bool,
 }
 
 impl<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> ParserBuilderGrammar<TKind, NTKind> {
   /// Only effective for T/Literal.
   pub fn expect(mut self, value: bool) -> Self {
-    self.expect = value;
+    self.expected = value;
     self
   }
 }
@@ -42,7 +42,7 @@ pub fn T<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>>(
 ) -> ParserBuilderGrammar<TKind, NTKind> {
   ParserBuilderGrammar {
     kind: GrammarKind::T(t),
-    expect: false,
+    expected: false,
   }
 }
 #[allow(non_snake_case)]
@@ -51,7 +51,7 @@ pub fn NT<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>>(
 ) -> ParserBuilderGrammar<TKind, NTKind> {
   ParserBuilderGrammar {
     kind: GrammarKind::NT(nt),
-    expect: false,
+    expected: false,
   }
 }
 #[allow(non_snake_case)]
@@ -60,7 +60,7 @@ pub fn Literal<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>>(
 ) -> ParserBuilderGrammar<TKind, NTKind> {
   ParserBuilderGrammar {
     kind: GrammarKind::Literal(s.into()),
-    expect: false,
+    expected: false,
   }
 }
 
@@ -147,7 +147,7 @@ impl<
       .rule()
       .iter()
       .enumerate()
-      .filter_map(|(i, g)| if g.expect { Some(i) } else { None })
+      .filter_map(|(i, g)| if g.expected { Some(i) } else { None })
       .collect();
     let rule = gr
       .rule()
