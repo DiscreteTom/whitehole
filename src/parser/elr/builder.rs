@@ -102,7 +102,7 @@ impl<
   }
 
   pub fn define(self, gr: Rc<TempGrammarRule<TKind, NTKind>>) -> Self {
-    self.define_with(gr, |_| {})
+    self.define_with(gr, |ctx| ctx)
   }
 
   pub fn define_with<'a, 'buffer: 'a, F>(
@@ -112,7 +112,7 @@ impl<
   ) -> Self
   where
     F: FnOnce(
-      &mut GrammarRuleContextBuilder<
+      GrammarRuleContextBuilder<
         TKind,
         NTKind,
         ASTData,
@@ -121,7 +121,15 @@ impl<
         LexerActionState,
         LexerErrorType,
       >,
-    ),
+    ) -> GrammarRuleContextBuilder<
+      TKind,
+      NTKind,
+      ASTData,
+      ErrorType,
+      Global,
+      LexerActionState,
+      LexerErrorType,
+    >,
   {
     let expect = gr
       .rule()
@@ -135,8 +143,7 @@ impl<
       .map(|g| self.grammars.get_or_create(g.kind.clone()).clone())
       .collect();
 
-    let mut ctx = GrammarRuleContextBuilder::default();
-    f(&mut ctx);
+    let ctx = f(GrammarRuleContextBuilder::default());
 
     let gr = self.gr_repo.get_or_add(
       self.grammars.get_or_create_nt(gr.nt().clone()).clone(),
