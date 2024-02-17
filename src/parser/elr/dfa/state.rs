@@ -125,7 +125,7 @@ impl<
     buffer: &Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     reducing_stack: &Vec<usize>,
-    entry_nts: &HashSet<TokenKindId<NTKind>>,
+    entry_nts: &HashSet<GrammarId>,
     follow_sets: &HashMap<GrammarId, HashSet<GrammarId>>,
   ) -> Option<StateTryReduceOutput<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>> {
     for c in self.candidates.iter() {

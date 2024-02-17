@@ -1,6 +1,6 @@
 use super::{candidate_repo::CandidateRepo, state_repo::StateRepo};
 use crate::{
-  lexer::token::{TokenKind, TokenKindId},
+  lexer::token::TokenKind,
   parser::elr::{
     dfa::{dfa::Dfa, state::StateId},
     grammar::{
@@ -23,7 +23,7 @@ pub fn build_dfa<
   LexerActionState: Default + Clone + 'static,
   LexerErrorType: 'static,
 >(
-  entry_nts: HashSet<TokenKindId<NTKind>>,
+  entry_nts: HashSet<GrammarId>,
   all_grs: Vec<
     Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
   >,
@@ -38,12 +38,7 @@ pub fn build_dfa<
   let entry_candidates = calc_grs_closure(
     all_grs
       .iter()
-      .filter(|gr| {
-        entry_nts.contains(&match &gr.nt().kind() {
-          GrammarKind::NT(nt) => nt.id(),
-          _ => unreachable!("GrammarRule's NT must be NTKind"),
-        })
-      })
+      .filter(|gr| entry_nts.contains(gr.nt().id()))
       .map(|gr| gr.clone())
       .collect(),
     &all_grs,

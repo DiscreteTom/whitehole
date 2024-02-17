@@ -1,12 +1,6 @@
 use crate::{
-  lexer::{
-    token::{TokenKind, TokenKindId},
-    trimmed::TrimmedLexer,
-  },
-  parser::{
-    ast::{ASTNode, ASTNodeKind},
-    elr::grammar::grammar::GrammarId,
-  },
+  lexer::{token::TokenKind, trimmed::TrimmedLexer},
+  parser::{ast::ASTNode, elr::grammar::grammar::GrammarId},
 };
 use std::{
   cell::RefCell,
@@ -130,7 +124,7 @@ impl<
 
   pub fn try_reduce(
     &mut self,
-    entry_nts: &HashSet<TokenKindId<NTKind>>,
+    entry_nts: &HashSet<GrammarId>,
     follow_sets: &HashMap<GrammarId, HashSet<GrammarId>>,
     states: &HashMap<
       StateId,
@@ -184,12 +178,7 @@ impl<
         .is_some();
 
       // check if an entry NT is reduced as the last node in the reducing stack
-      if self.reducing_stack.len() == 1
-        && entry_nts.contains(&match &self.buffer.last().unwrap().kind {
-          ASTNodeKind::NT(kind, _) => kind.id(),
-          _ => unreachable!("The last ASTNode must be an NT after a successful reduce"),
-        })
-      {
+      if self.reducing_stack.len() == 1 && entry_nts.contains(&output.nt_grammar_id) {
         // this parse is done, maybe continuable
         return TryReduceResult::Done {
           // if no next state, the state stack was not updated

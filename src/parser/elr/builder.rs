@@ -13,7 +13,10 @@ use super::{
   dfa::generate::{
     builder::build_dfa, grammar_repo::GrammarRepo, grammar_rule_repo::GrammarRuleRepo,
   },
-  grammar::{grammar::GrammarKind, grammar_rule::GrammarRuleId},
+  grammar::{
+    grammar::{GrammarId, GrammarKind},
+    grammar_rule::GrammarRuleId,
+  },
   parser::Parser,
 };
 use crate::lexer::{stateless::StatelessLexer, token::TokenKind};
@@ -69,7 +72,7 @@ pub struct ParserBuilder<
   LexerErrorType: 'static = (),
 > {
   lexer: StatelessLexer<TKind, LexerActionState, LexerErrorType>,
-  entry_nts: Vec<NTKind>,
+  entry_nts: HashSet<GrammarId>,
   global: Global,
   grammars: GrammarRepo<TKind, NTKind>,
   gr_repo:
@@ -92,11 +95,17 @@ impl<
     entry_nts: impl Into<Vec<NTKind>>,
     global: Global,
   ) -> Self {
+    let mut grammars = GrammarRepo::default();
+    let entry_nts = entry_nts
+      .into()
+      .into_iter()
+      .map(|nt| grammars.get_or_create_nt(nt).id().clone())
+      .collect();
     Self {
       lexer: lexer.into(),
-      entry_nts: entry_nts.into(),
+      entry_nts,
       global,
-      grammars: GrammarRepo::default(),
+      grammars,
       gr_repo: GrammarRuleRepo::default(),
       defined_grs: HashSet::new(),
     }
@@ -202,7 +211,7 @@ impl<
     // because maybe some grammar rules only appears in resolvers but never defined
     Parser::new(
       build_dfa(
-        self.entry_nts.into_iter().map(|e| e.id()).collect(),
+        self.entry_nts,
         self.gr_repo.grs.into_iter().map(|gr| Rc::new(gr)).collect(),
       ),
       self.lexer.into_lexer(input).into(),

@@ -45,7 +45,7 @@ pub struct Dfa<
   LexerActionState: Default + Clone + 'static,
   LexerErrorType: 'static,
 > {
-  entry_nts: HashSet<TokenKindId<NTKind>>,
+  entry_nts: HashSet<GrammarId>,
   entry_state:
     Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
   states: HashMap<
@@ -67,7 +67,7 @@ impl<
   > Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
   pub fn new(
-    entry_nts: HashSet<TokenKindId<NTKind>>,
+    entry_nts: HashSet<GrammarId>,
     entry_state: Rc<
       State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
     >,
