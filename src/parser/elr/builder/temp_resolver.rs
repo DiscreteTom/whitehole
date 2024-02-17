@@ -4,7 +4,10 @@ use super::{
   resolver::{ResolvedConflictCondition, ResolvedConflictConditionNext},
   ParserBuilderGrammar,
 };
-use crate::{lexer::token::TokenKind, parser::elr::dfa::generate::grammar_repo::GrammarRepo};
+use crate::{
+  lexer::token::TokenKind,
+  parser::elr::{dfa::generate::grammar_repo::GrammarRepo, grammar::grammar::GrammarKind},
+};
 
 pub enum TempResolvedConflictNext<
   TKind: TokenKind<TKind> + 'static,
@@ -138,7 +141,14 @@ impl<
   }
 
   pub fn on_next(mut self, next: impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>) -> Self {
-    self.condition.next = TempResolvedConflictNext::Some(next.into());
+    let next = next.into();
+    // [[next can only be T or Literal]]
+    for n in &next {
+      if let GrammarKind::NT(_) = n.kind {
+        panic!("Next can only be T or Literal");
+      }
+    }
+    self.condition.next = TempResolvedConflictNext::Some(next);
     self
   }
 
@@ -250,7 +260,14 @@ impl<
   }
 
   pub fn on_next(mut self, next: impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>) -> Self {
-    self.condition.next = TempResolvedConflictNext::Some(next.into());
+    let next = next.into();
+    // [[@next can only be T or Literal]]
+    for n in &next {
+      if let GrammarKind::NT(_) = n.kind {
+        panic!("Next can only be T or Literal");
+      }
+    }
+    self.condition.next = TempResolvedConflictNext::Some(next);
     self
   }
 

@@ -7,7 +7,8 @@ pub enum ConflictKind {
 }
 
 pub struct ConflictCondition<GrammarType> {
-  /// A list of grammars that will cause conflicts when appear as the next node.
+  /// A list of T/Literal grammars that will cause conflicts when appear as the next node.
+  // [[@next can only be T or Literal]]
   pub next: HashSet<GrammarType>,
   /// Is this a conflict if reaching end of input?
   pub eof: bool,

@@ -8,6 +8,8 @@ pub enum ResolvedConflictConditionNext {
 }
 
 pub struct ResolvedConflictCondition {
+  /// A list of T/Literal grammars that will cause conflicts when appear as the next node.
+  // [[@next can only be T or Literal]]
   pub next: ResolvedConflictConditionNext,
   pub eof: bool,
 }
