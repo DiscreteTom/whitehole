@@ -6,7 +6,10 @@ use crate::{
       candidate::{Candidate, CandidateId},
       state::{State, StateId},
     },
-    grammar::grammar::{Grammar, GrammarId, GrammarKind},
+    grammar::{
+      grammar::{Grammar, GrammarId, GrammarKind},
+      grammar_rule::GrammarRuleId,
+    },
   },
 };
 use std::{
@@ -83,7 +86,7 @@ impl RawState {
     first_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
     follow_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
     end_set: &HashSet<GrammarId>,
-  ) -> HashMap<CandidateId, Vec<Conflict<CandidateId>>> {
+  ) -> HashMap<CandidateId, Vec<Conflict<GrammarRuleId>>> {
     let mut res = HashMap::new();
 
     // first, check if there is any reduce-able candidate in the current state
@@ -121,7 +124,7 @@ impl RawState {
             .or_insert_with(|| Vec::new())
             .push(Conflict {
               kind: ConflictKind::ReduceReduce,
-              another: another.id().clone(),
+              another: another.gr().id().clone(),
               condition: ConflictCondition {
                 next: follow_overlap,
                 eof: need_handle_end,
@@ -164,7 +167,7 @@ impl RawState {
                 .or_insert_with(|| Vec::new())
                 .push(Conflict {
                   kind: ConflictKind::ReduceShift,
-                  another: shifter.id().clone(),
+                  another: shifter.gr().id().clone(),
                   condition: ConflictCondition {
                     next: HashSet::from([shifter_current.id().clone()]),
                     eof: false, // we don't need to handle eof for RS conflict
@@ -193,7 +196,7 @@ impl RawState {
                 .or_insert_with(|| Vec::new())
                 .push(Conflict {
                   kind: ConflictKind::ReduceShift,
-                  another: shifter.id().clone(),
+                  another: shifter.gr().id().clone(),
                   condition: ConflictCondition {
                     next: overlap,
                     eof: false, // we don't need to handle eof for RS conflict

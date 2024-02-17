@@ -8,7 +8,10 @@ use crate::{
     ast::ASTNode,
     elr::{
       builder::conflict::Conflict,
-      grammar::grammar::{Grammar, GrammarId},
+      grammar::{
+        grammar::{Grammar, GrammarId},
+        grammar_rule::GrammarRuleId,
+      },
     },
   },
 };
@@ -34,7 +37,7 @@ pub struct State<
   candidates:
     Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
   next_map: HashMap<GrammarId, Option<StateId>>,
-  conflict_map: HashMap<CandidateId, Vec<Conflict<CandidateId>>>,
+  conflict_map: HashMap<CandidateId, Vec<Conflict<GrammarRuleId>>>,
 }
 
 impl<
@@ -53,7 +56,7 @@ impl<
       Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
     next_map: HashMap<GrammarId, Option<StateId>>,
-    conflict_map: HashMap<CandidateId, Vec<Conflict<CandidateId>>>,
+    conflict_map: HashMap<CandidateId, Vec<Conflict<GrammarRuleId>>>,
   ) -> Self {
     Self {
       id,
@@ -137,7 +140,14 @@ impl<
     follow_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
   ) -> Option<StateTryReduceOutput<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>> {
     for c in self.candidates.iter() {
-      if let Some(output) = c.try_reduce(buffer, lexer, reducing_stack, entry_nts, follow_sets) {
+      if let Some(output) = c.try_reduce(
+        buffer,
+        lexer,
+        reducing_stack,
+        entry_nts,
+        follow_sets,
+        self.conflict_map.get(c.id()).unwrap(),
+      ) {
         return Some(StateTryReduceOutput {
           node: output.node,
           nt_grammar_id: output.nt_grammar_id,

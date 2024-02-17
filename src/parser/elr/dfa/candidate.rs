@@ -7,10 +7,13 @@ use crate::{
   parser::{
     ast::ASTNode,
     elr::{
-      builder::reduce_context::ReduceContext,
+      builder::{
+        conflict::{Conflict, ConflictKind},
+        reduce_context::ReduceContext,
+      },
       grammar::{
         grammar::{Grammar, GrammarId, GrammarKind},
-        grammar_rule::GrammarRule,
+        grammar_rule::{GrammarRule, GrammarRuleId},
       },
     },
     traverser::default_traverser,
@@ -154,6 +157,7 @@ impl<
     reducing_stack: &Vec<usize>,
     entry_nts: &HashSet<GrammarId>,
     follow_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
+    conflicts: &Vec<Conflict<GrammarRuleId>>,
   ) -> Option<CandidateTryReduceOutput<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>>
   {
     if self.digested != self.gr.rule().len() {
