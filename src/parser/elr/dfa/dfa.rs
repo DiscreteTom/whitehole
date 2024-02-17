@@ -115,6 +115,7 @@ impl<
       buffer,
       state_stack,
       reducing_stack,
+      next_token: None,
       lexer,
       need_lex: true, // at the beginning we should lex for a new AST node // TODO: is this true? maybe we want to reduce when we already have nodes in buffer
       try_lex_index: 0, // from the first candidate

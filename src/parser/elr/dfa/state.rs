@@ -3,7 +3,11 @@ use super::{
   utils::lex_grammar,
 };
 use crate::{
-  lexer::{expectation::Expectation, token::TokenKind, trimmed::TrimmedLexer},
+  lexer::{
+    expectation::Expectation,
+    token::{Token, TokenKind},
+    trimmed::TrimmedLexer,
+  },
   parser::{
     ast::ASTNode,
     elr::{
@@ -134,6 +138,7 @@ impl<
   pub fn try_reduce<'buffer>(
     &self,
     buffer: &Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
+    next_token: &Option<Token<'buffer, TKind, LexerErrorType>>,
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     reducing_stack: &Vec<usize>,
     entry_nts: &HashSet<GrammarId>,
@@ -142,6 +147,7 @@ impl<
     for c in self.candidates.iter() {
       if let Some(output) = c.try_reduce(
         buffer,
+        next_token,
         lexer,
         reducing_stack,
         entry_nts,

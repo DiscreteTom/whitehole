@@ -1,5 +1,8 @@
 use crate::{
-  lexer::{token::TokenKind, trimmed::TrimmedLexer},
+  lexer::{
+    token::{Token, TokenKind},
+    trimmed::TrimmedLexer,
+  },
   parser::{
     ast::ASTNode,
     elr::grammar::grammar::{Grammar, GrammarId},
@@ -64,6 +67,8 @@ pub struct ParsingState<
     Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
   pub reducing_stack: Vec<usize>,
   pub lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+  /// `None` if not ready, `Some(None)` if EOF, `Some(Some(token))` if next token exists.
+  pub next_token: Option<Option<Token<'buffer, TKind, LexerErrorType>>>,
   pub need_lex: bool,
   pub try_lex_index: usize,
   pub lexed_grammars: HashSet<GrammarId>,
@@ -134,9 +139,38 @@ impl<
       Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
   ) -> TryReduceResult {
+    // before try reduce, we need to make sure next token is ready
+    if self.next_token.is_none() {
+      // here we can't use `self.try_lex` to get next token
+      // because `try_lex` will use current state's candidate to lex
+      // but that's not what we want.
+      // e.g. we have `S := A B`, `A := C` and we are trying to reduce `C := c`,
+      // `self.try_lex` will use `C := c` to lex but the lex is already done and we want to reduce.
+      // actually we want to lex using B's expectation in `S := A B` because it is the *final* reduce target
+      // but we don't know if the reduce will success or not
+      // so this lex is not expectational,
+      // which means expectational lex after an NT is not working.
+      // in our case, we can't lex `B` expectational because it is after `A`
+      // TODO: panic if user want expectational lex after NT
+      // TODO: prevent the clone of lexer
+      let output = self.lexer.clone().lex();
+      self.lexer = output.lexer.into(); // trim the lexer
+      match output.token {
+        None => {
+          self.next_token = Some(None);
+        }
+        Some(token) => {
+          self.next_token = Some(Some(token));
+        }
+      }
+    }
+    // TODO: set next token back to unready
+    // TODO: return next token to continue?
+
     loop {
       let output = match self.state_stack.current().try_reduce(
         &mut self.buffer,
+        self.next_token.as_ref().unwrap(),
         &self.lexer,
         &mut self.reducing_stack,
         entry_nts,

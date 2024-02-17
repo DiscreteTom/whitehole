@@ -1,7 +1,7 @@
 use crate::{
   lexer::{
     expectation::Expectation,
-    token::{Range, TokenKind, TokenKindId},
+    token::{Range, Token, TokenKind, TokenKindId},
     trimmed::TrimmedLexer,
   },
   parser::{
@@ -10,6 +10,7 @@ use crate::{
       builder::{
         conflict::{Conflict, ConflictKind},
         reduce_context::ReduceContext,
+        resolver::ResolvedConflictConditionNext,
       },
       grammar::{
         grammar::{Grammar, GrammarId, GrammarKind},
@@ -153,6 +154,7 @@ impl<
   pub fn try_reduce<'buffer>(
     &self,
     buffer: &Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
+    next_token: &Option<Token<'buffer, TKind, LexerErrorType>>,
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     reducing_stack: &Vec<usize>,
     entry_nts: &HashSet<GrammarId>,
@@ -168,14 +170,10 @@ impl<
     let matched = &reducing_stack[reducing_stack.len() - self.gr.rule().len()..];
     // TODO: check conflicts, etc.
 
-    let ctx = ReduceContext::new(matched, buffer, reducing_stack, lexer);
+    let ctx = ReduceContext::new(matched, buffer, reducing_stack, next_token, lexer);
 
     // do LR(1) peek, check whether the next token match current's follow set
-    // first we need to make sure there is a next token
-    // since the lexer is already trimmed, we only need to check if the rest is empty
-    let next_token_exists = lexer.state().rest().len() > 0;
-    let mut next_token = None;
-    if next_token_exists {
+    if let Some(token) = next_token {
       if entry_nts.contains(self.gr.nt().id()) {
         // TODO: feature: ignoreEntryFollow
         // entry NT, no need to check follow set if `ignoreEntryFollow` is set
@@ -183,31 +181,96 @@ impl<
         // TODO: if the entry NT's follow set is empty, can we ignore the next check and accept it directly?
       } else {
         // not entry NT, or not ignore entry follow(treat the entry NT as normal NT)
+        // check if any follow grammar match the token
+        let mut mismatch = true;
         for grammar in follow_sets.get(self.gr.nt().id()).unwrap() {
-          let expectation = match grammar.kind() {
-            GrammarKind::NT(_) => continue, // skip NT
-            GrammarKind::T(kind) => Expectation::from(kind),
-            GrammarKind::Literal(literal) => Expectation::from(literal.as_str()),
-          };
-          // TODO: prevent clone lexer
-          match lexer.clone().lex_expect(expectation).token {
-            Some(token) => {
-              // found valid follow, stop checking
-              next_token = Some(token);
-              break;
+          match grammar.kind() {
+            GrammarKind::NT(_) => continue, // NT is not lex-able, skip
+            GrammarKind::T(kind) => {
+              if kind.id() == token.kind.id() {
+                // found valid follow, stop checking
+                mismatch = false;
+                break;
+              }
             }
-            None => continue,
+            GrammarKind::Literal(text) => {
+              if text.as_str() == token.content {
+                // found valid follow, stop checking
+                mismatch = false;
+                break;
+              }
+            }
           }
         }
-
-        if next_token.is_none() {
-          // no valid follow found, reject
+        if mismatch {
+          // no valid follow found, reject to reduce
           return None;
         }
       }
     }
 
-    // TODO: check conflicts
+    // check conflicts
+    for c in conflicts {
+      // check EOF for RR conflict
+      if c.kind == ConflictKind::ReduceReduce {
+        if next_token.is_none() && c.condition.eof {
+          // reach EOF and this is an R-R conflict at EOF
+          // try to find a resolver, we only apply the first resolver, so we use `find`
+          if let Some(r) = self.gr.resolved_conflicts.iter().find(|r| {
+            r.kind == ConflictKind::ReduceReduce && r.another_rule == c.another && r.condition.eof
+          }) {
+            if !(r.accepter)(&ctx) {
+              // rejected by resolver
+              return None;
+            }
+          } else {
+            // resolver not found
+            // TODO: optimize error message
+            unreachable!("Every conflict should have a resolver")
+          }
+        }
+        // else, no need to handle EOF
+      }
+
+      // check if any next grammar in the conflict match the next token
+      // no matter if it's RR or SR conflict
+      match next_token {
+        None => {
+          // no next token, skip
+          continue;
+        }
+        Some(token) => {
+          // TODO: ensure conflicts have no overlap next grammar so we can iter the grammar without duplicated calculation
+          for grammar in c.condition.next.iter().filter(|g| {
+            match g.kind() {
+              // [[@next can only be T or Literal]]
+              GrammarKind::NT(_) => unreachable!("Next can only be T or Literal"),
+              GrammarKind::T(kind) => kind.id() == token.kind.id(),
+              GrammarKind::Literal(text) => text.as_str() == token.content,
+            }
+          }) {
+            // find resolver
+            // TODO: can this process pre-calculated? just provide a Map<GrammarId, Accepter>?
+            if let Some(r) = self.gr.resolved_conflicts.iter().find(|r| {
+              r.kind == c.kind
+                && r.another_rule == c.another
+                && match &r.condition.next {
+                  ResolvedConflictConditionNext::Any => true,
+                  ResolvedConflictConditionNext::Some(next) => next.contains(grammar.id()),
+                }
+            }) {
+              if !(r.accepter)(&ctx) {
+                // rejected by resolver
+                return None;
+              }
+            } else {
+              // TODO: optimize error message
+              unreachable!("Every conflict should have a resolver")
+            }
+          }
+        }
+      }
+    }
 
     // check rejecter
     if (self.gr.rejecter)(&ctx) {
@@ -216,7 +279,6 @@ impl<
 
     // accept
     // TODO: exec callback
-    // TODO: return next token
     Some(CandidateTryReduceOutput {
       node: ASTNode::new_nt(
         match self.gr.nt().kind() {
