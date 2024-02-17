@@ -31,7 +31,11 @@ pub struct ParserBuilderGrammar<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKin
 impl<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> ParserBuilderGrammar<TKind, NTKind> {
   /// Only effective for T/Literal.
   pub fn expect(mut self, value: bool) -> Self {
-    self.expected = value;
+    if let GrammarKind::T(_) | GrammarKind::Literal(_) = self.kind {
+      self.expected = value;
+    } else {
+      panic!("Only T and Literal can have expected value");
+    }
     self
   }
 }
