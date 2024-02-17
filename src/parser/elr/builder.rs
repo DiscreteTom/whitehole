@@ -1,7 +1,9 @@
 pub mod conflict;
 pub mod grammar_rule_context_builder;
 pub mod reduce_context;
+pub mod resolver;
 pub mod temp_grammar_rule;
+pub mod temp_resolver;
 
 use self::{
   grammar_rule_context_builder::GrammarRuleContextBuilder, temp_grammar_rule::TempGrammarRule,
