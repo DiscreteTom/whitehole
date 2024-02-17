@@ -1,4 +1,4 @@
-use super::{reduce_context::Condition, ParserBuilderGrammar};
+use super::{conflict::ConflictKind, reduce_context::Condition, ParserBuilderGrammar};
 use crate::lexer::token::TokenKind;
 
 pub enum TempResolvedConflictNext<
@@ -241,4 +241,17 @@ impl<
   }
 
   // R-S conflict doesn't need to handle EOF
+}
+
+pub struct TempResolvedConflict<
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
+  GrammarRuleType,
+  AccepterType,
+> {
+  pub kind: ConflictKind,
+  /// If this is a R-S conflict, this rule is a shifter rule. If this is a R-R conflict, this rule is a reducer rule.
+  pub another_rule: GrammarRuleType,
+  pub accepter: AccepterType,
+  pub condition: TempResolvedConflictCondition<TKind, NTKind>,
 }
