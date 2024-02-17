@@ -28,9 +28,8 @@ pub struct GrammarRuleRepo<
   // vec is hash-able.
   // if 2 grammar rules have the same nt and rule, they are the same grammar rule.
   cache: HashMap<Vec<GrammarId>, GrammarRuleId>,
-  grs: Vec<
-    Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
-  >,
+  pub grs:
+    Vec<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
 }
 
 impl<
@@ -62,14 +61,6 @@ impl<
     LexerErrorType: 'static,
   > GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
-  pub fn grs(
-    &self,
-  ) -> &Vec<
-    Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
-  > {
-    &self.grs
-  }
-
   pub fn get_or_add(
     &mut self,
     nt: Rc<Grammar<TKind, NTKind>>,
@@ -85,19 +76,20 @@ impl<
       LexerErrorType,
     >,
     traverser: Option<Traverser<TKind, NTKind, ASTData, ErrorType, Global>>,
-  ) -> &GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> {
+  ) -> &mut GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
+  {
     let mut key = vec![nt.id().clone()];
     key.extend(rule.iter().map(|g| g.id()));
 
     if let Some(id) = self.cache.get(&key) {
-      return &self.grs[id.0];
+      return &mut self.grs[id.0];
     }
 
     let id = GrammarRuleId(self.grs.len());
-    self.grs.push(Rc::new(GrammarRule::new(
-      id, nt, rule, expect, rejecter, traverser,
-    )));
+    self
+      .grs
+      .push(GrammarRule::new(id, nt, rule, expect, rejecter, traverser));
     self.cache.insert(key, id);
-    &self.grs[id.0]
+    &mut self.grs[id.0]
   }
 }

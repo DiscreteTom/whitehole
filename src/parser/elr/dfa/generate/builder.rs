@@ -1,6 +1,4 @@
-use super::{
-  candidate_repo::CandidateRepo, grammar_rule_repo::GrammarRuleRepo, state_repo::StateRepo,
-};
+use super::{candidate_repo::CandidateRepo, state_repo::StateRepo};
 use crate::{
   lexer::token::{TokenKind, TokenKindId},
   parser::elr::{
@@ -26,30 +24,19 @@ pub fn build_dfa<
   LexerErrorType: 'static,
 >(
   entry_nts: HashSet<TokenKindId<NTKind>>,
-  gr_repo: GrammarRuleRepo<
-    TKind,
-    NTKind,
-    ASTData,
-    ErrorType,
-    Global,
-    LexerActionState,
-    LexerErrorType,
+  all_grs: Vec<
+    Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
   >,
 ) -> Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> {
-  let nts = gr_repo
-    .grs()
-    .iter()
-    .map(|gr| gr.nt().id().clone())
-    .collect();
+  let nts = all_grs.iter().map(|gr| gr.nt().id().clone()).collect();
 
-  let nt_closures = calc_all_nt_closures(&nts, &gr_repo);
+  let nt_closures = calc_all_nt_closures(&nts, &all_grs);
 
   // init all initial candidates, initial candidate is candidate with digested=0
-  let mut cs = CandidateRepo::with_initial(gr_repo.grs());
+  let mut cs = CandidateRepo::with_initial(&all_grs);
 
   let entry_candidates = calc_grs_closure(
-    gr_repo
-      .grs()
+    all_grs
       .iter()
       .filter(|gr| {
         entry_nts.contains(&match &gr.nt().kind() {
@@ -59,7 +46,7 @@ pub fn build_dfa<
       })
       .map(|gr| gr.clone())
       .collect(),
-    &gr_repo,
+    &all_grs,
   )
   .iter()
   .map(|gr| cs.get_initial(gr.id()).id().clone())
@@ -67,12 +54,12 @@ pub fn build_dfa<
 
   let mut state_repo = StateRepo::with_entry(entry_candidates);
   state_repo.calc_all_states(
-    &get_all_grammar_id_from_rules(&gr_repo),
+    &get_all_grammar_id_from_rules(&all_grs),
     &mut cs,
     &nt_closures,
   );
 
-  let follow_sets = calc_follow_sets(&gr_repo, &calc_first_sets(&nt_closures));
+  let follow_sets = calc_follow_sets(&all_grs, &calc_first_sets(&nt_closures));
 
   // convert raw candidates/states to candidates/states
   let candidates = cs.into_candidates();
@@ -98,14 +85,8 @@ fn calc_grs_closure<
   grs: Vec<
     Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
   >,
-  gr_repo: &GrammarRuleRepo<
-    TKind,
-    NTKind,
-    ASTData,
-    ErrorType,
-    Global,
-    LexerActionState,
-    LexerErrorType,
+  all_grs: &Vec<
+    Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
   >,
 ) -> Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>
 {
@@ -130,8 +111,7 @@ fn calc_grs_closure<
       // only expand if the unexpanded grammar rule's first grammar is NT
       let first = &gr.rule()[0];
       if let GrammarKind::NT(_) = first.kind() {
-        gr_repo
-          .grs()
+        all_grs
           .iter()
           // find all grammar rules that yields the NT
           .filter(|gr2| gr2.nt().id() == first.id())
@@ -179,25 +159,18 @@ fn calc_nt_closure<
   LexerErrorType: 'static,
 >(
   nt_id: &GrammarId,
-  gr_repo: &GrammarRuleRepo<
-    TKind,
-    NTKind,
-    ASTData,
-    ErrorType,
-    Global,
-    LexerActionState,
-    LexerErrorType,
+  all_grs: &Vec<
+    Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
   >,
 ) -> Vec<Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>
 {
   calc_grs_closure(
-    gr_repo
-      .grs()
+    all_grs
       .iter()
       .filter(|gr| gr.nt().id() == nt_id)
       .map(|gr| gr.clone())
       .collect(),
-    gr_repo,
+    all_grs,
   )
 }
 
@@ -211,14 +184,8 @@ fn calc_all_nt_closures<
   LexerErrorType: 'static,
 >(
   nt_ids: &HashSet<GrammarId>,
-  gr_repo: &GrammarRuleRepo<
-    TKind,
-    NTKind,
-    ASTData,
-    ErrorType,
-    Global,
-    LexerActionState,
-    LexerErrorType,
+  all_grs: &Vec<
+    Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
   >,
 ) -> HashMap<
   GrammarId,
@@ -226,7 +193,7 @@ fn calc_all_nt_closures<
 > {
   nt_ids
     .iter()
-    .map(|nt_id| (nt_id.clone(), calc_nt_closure(nt_id, gr_repo)))
+    .map(|nt_id| (nt_id.clone(), calc_nt_closure(nt_id, all_grs)))
     .collect::<HashMap<_, _>>()
 }
 
@@ -240,14 +207,8 @@ fn get_all_grammar_id_from_rules<
   LexerActionState: Default + Clone + 'static,
   LexerErrorType: 'static,
 >(
-  gr_repo: &GrammarRuleRepo<
-    TKind,
-    NTKind,
-    ASTData,
-    ErrorType,
-    Global,
-    LexerActionState,
-    LexerErrorType,
+  all_grs: &Vec<
+    Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
   >,
 ) -> HashSet<GrammarId> {
   // collect all grammars in grammar rules only,
@@ -255,8 +216,7 @@ fn get_all_grammar_id_from_rules<
   // some NTs might not appear in grammar rules (entry-only NTs).
   // when entry-only NTs appear in parser's buffer (e.g. end of parsing),
   // the parsing may stop. see [[@get_next_by_reduced_grammar]]
-  gr_repo
-    .grs()
+  all_grs
     .iter()
     .map(|gr| gr.rule().iter().map(|g| g.id().clone()).collect::<Vec<_>>())
     .flat_map(|ids| ids.into_iter())
@@ -302,21 +262,15 @@ fn calc_follow_sets<
   LexerActionState: Default + Clone + 'static,
   LexerErrorType: 'static,
 >(
-  gr_repo: &GrammarRuleRepo<
-    TKind,
-    NTKind,
-    ASTData,
-    ErrorType,
-    Global,
-    LexerActionState,
-    LexerErrorType,
+  all_grs: &Vec<
+    Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
   >,
   first_sets: &HashMap<GrammarId, HashSet<GrammarId>>,
 ) -> HashMap<GrammarId, HashSet<GrammarId>> {
   let mut result = HashMap::new();
 
   // collect follow from grammar rules
-  gr_repo.grs().iter().for_each(|gr| {
+  all_grs.iter().for_each(|gr| {
     gr.rule().iter().enumerate().for_each(|(i, g)| {
       if i < gr.rule().len() - 1 {
         let next_grammar = &gr.rule()[i + 1];
@@ -340,7 +294,7 @@ fn calc_follow_sets<
   loop {
     let mut changed = false;
 
-    gr_repo.grs().iter().for_each(|gr| {
+    all_grs.iter().for_each(|gr| {
       let last_grammar = gr.rule().last().unwrap();
       let nt_follow = result
         .entry(gr.nt().id().clone())

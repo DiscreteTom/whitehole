@@ -39,7 +39,7 @@ impl<
   > CandidateRepo<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
   pub fn with_initial(
-    grs: &Vec<
+    all_grs: &Vec<
       Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
   ) -> Self {
@@ -48,7 +48,7 @@ impl<
     let digested = 0;
 
     // use index as the candidate_id
-    for (i, gr) in grs.iter().enumerate() {
+    for (i, gr) in all_grs.iter().enumerate() {
       let candidate_id = CandidateId(i);
       let candidate = RawCandidate::new(candidate_id, gr.clone(), digested);
       candidates.push(candidate);

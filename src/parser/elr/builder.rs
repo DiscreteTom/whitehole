@@ -166,10 +166,12 @@ impl<
     input: &'buffer str,
   ) -> Parser<'buffer, TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
   {
+    // TODO: check if all grammar rules are defined
+    // because maybe some grammar rules only appears in resolvers but never defined
     Parser::new(
       build_dfa(
         self.entry_nts.into_iter().map(|e| e.id()).collect(),
-        self.gr_repo,
+        self.gr_repo.grs.into_iter().map(|gr| Rc::new(gr)).collect(),
       ),
       self.lexer.into_lexer(input).into(),
       Rc::new(RefCell::new(self.global)),
