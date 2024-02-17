@@ -13,10 +13,9 @@ pub struct ConflictCondition {
   pub eof: bool,
 }
 
-pub struct Conflict<GrammarRuleType> {
+pub struct Conflict<PeerType> {
   pub kind: ConflictKind,
-  pub reducer_rule: GrammarRuleType,
   /// If this is a R-S conflict, this rule is a shifter rule. If this is a R-R conflict, this rule is a reducer rule.
-  pub another_rule: GrammarRuleType,
+  pub another: PeerType,
   pub condition: ConflictCondition,
 }

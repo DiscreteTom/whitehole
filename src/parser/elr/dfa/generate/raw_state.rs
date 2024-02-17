@@ -64,11 +64,11 @@ impl RawState {
       .map(|id| candidates[id.0].clone())
       .collect();
 
-    let conflicts = Self::calc_conflicts(&candidates, first_sets, follow_sets, end_set);
-    State::new(self.id, candidates, self.next_map, conflicts)
+    let conflict_map = Self::calc_conflict_map(&candidates, first_sets, follow_sets, end_set);
+    State::new(self.id, candidates, self.next_map, conflict_map)
   }
 
-  fn calc_conflicts<
+  fn calc_conflict_map<
     TKind: TokenKind<TKind>,
     NTKind: TokenKind<NTKind> + Clone + 'static,
     ASTData: 'static,
@@ -83,8 +83,8 @@ impl RawState {
     first_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
     follow_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
     end_set: &HashSet<GrammarId>,
-  ) -> Vec<Conflict<CandidateId>> {
-    let mut res = Vec::new();
+  ) -> HashMap<CandidateId, Vec<Conflict<CandidateId>>> {
+    let mut res = HashMap::new();
 
     // first, check if there is any reduce-able candidate in the current state
     let reducer_candidates: Vec<_> = candidates.iter().filter(|c| !c.can_digest_more()).collect();
@@ -116,15 +116,17 @@ impl RawState {
 
         // append conflict if needed
         if follow_overlap.len() > 0 || need_handle_end {
-          res.push(Conflict {
-            kind: ConflictKind::ReduceReduce,
-            reducer_rule: reducer.id().clone(),
-            another_rule: another.id().clone(),
-            condition: ConflictCondition {
-              next: follow_overlap,
-              eof: need_handle_end,
-            },
-          });
+          res
+            .entry(reducer.id().clone())
+            .or_insert_with(|| Vec::new())
+            .push(Conflict {
+              kind: ConflictKind::ReduceReduce,
+              another: another.id().clone(),
+              condition: ConflictCondition {
+                next: follow_overlap,
+                eof: need_handle_end,
+              },
+            });
         }
       }
     }
@@ -157,15 +159,17 @@ impl RawState {
               // because the collected conflicts are in the state level, not in the grammar rule level
               // and every candidate is unique
 
-              res.push(Conflict {
-                kind: ConflictKind::ReduceShift,
-                reducer_rule: reducer.id().clone(),
-                another_rule: shifter.id().clone(),
-                condition: ConflictCondition {
-                  next: HashSet::from([shifter_current.id().clone()]),
-                  eof: false, // we don't need to handle eof for RS conflict
-                },
-              });
+              res
+                .entry(reducer.id().clone())
+                .or_insert_with(|| Vec::new())
+                .push(Conflict {
+                  kind: ConflictKind::ReduceShift,
+                  another: shifter.id().clone(),
+                  condition: ConflictCondition {
+                    next: HashSet::from([shifter_current.id().clone()]),
+                    eof: false, // we don't need to handle eof for RS conflict
+                  },
+                });
             }
           }
           GrammarKind::NT(_) => {
@@ -184,15 +188,17 @@ impl RawState {
               // because the collected conflicts are in the state level, not in the grammar rule level
               // and every candidate is unique
 
-              res.push(Conflict {
-                kind: ConflictKind::ReduceShift,
-                reducer_rule: reducer.id().clone(),
-                another_rule: shifter.id().clone(),
-                condition: ConflictCondition {
-                  next: overlap,
-                  eof: false, // we don't need to handle eof for RS conflict
-                },
-              });
+              res
+                .entry(reducer.id().clone())
+                .or_insert_with(|| Vec::new())
+                .push(Conflict {
+                  kind: ConflictKind::ReduceShift,
+                  another: shifter.id().clone(),
+                  condition: ConflictCondition {
+                    next: overlap,
+                    eof: false, // we don't need to handle eof for RS conflict
+                  },
+                });
             }
           }
         }

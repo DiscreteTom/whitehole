@@ -34,7 +34,7 @@ pub struct State<
   candidates:
     Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
   next_map: HashMap<GrammarId, Option<StateId>>,
-  conflicts: Vec<Conflict<CandidateId>>,
+  conflict_map: HashMap<CandidateId, Vec<Conflict<CandidateId>>>,
 }
 
 impl<
@@ -53,13 +53,13 @@ impl<
       Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
     next_map: HashMap<GrammarId, Option<StateId>>,
-    conflicts: Vec<Conflict<CandidateId>>,
+    conflict_map: HashMap<CandidateId, Vec<Conflict<CandidateId>>>,
   ) -> Self {
     Self {
       id,
       candidates,
       next_map,
-      conflicts,
+      conflict_map,
     }
   }
 
