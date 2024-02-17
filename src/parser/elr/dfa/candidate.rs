@@ -162,10 +162,48 @@ impl<
     }
 
     let matched = &reducing_stack[reducing_stack.len() - self.gr.rule().len()..];
-    // TODO: set name
     // TODO: check conflicts, etc.
 
     let ctx = ReduceContext::new(matched, buffer, reducing_stack, lexer);
+
+    // do LR(1) peek, check whether the next token match current's follow set
+    // first we need to make sure there is a next token
+    // since the lexer is already trimmed, we only need to check if the rest is empty
+    let next_token_exists = lexer.state().rest().len() > 0;
+    let mut next_token = None;
+    if next_token_exists {
+      if entry_nts.contains(self.gr.nt().id()) {
+        // TODO: feature: ignoreEntryFollow
+        // entry NT, no need to check follow set if `ignoreEntryFollow` is set
+        // e.g. when we parse `int a; int b;`, we don't need to check follow set for `;`
+        // TODO: if the entry NT's follow set is empty, can we ignore the next check and accept it directly?
+      } else {
+        // not entry NT, or not ignore entry follow(treat the entry NT as normal NT)
+        for grammar in follow_sets.get(self.gr.nt().id()).unwrap() {
+          let expectation = match grammar.kind() {
+            GrammarKind::NT(_) => continue, // skip NT
+            GrammarKind::T(kind) => Expectation::from(kind),
+            GrammarKind::Literal(literal) => Expectation::from(literal.as_str()),
+          };
+          // TODO: prevent clone lexer
+          match lexer.clone().lex_expect(expectation).token {
+            Some(token) => {
+              // found valid follow, stop checking
+              next_token = Some(token);
+              break;
+            }
+            None => continue,
+          }
+        }
+
+        if next_token.is_none() {
+          // no valid follow found, reject
+          return None;
+        }
+      }
+    }
+
+    // TODO: check conflicts
 
     // check rejecter
     if (self.gr.rejecter)(&ctx) {
@@ -173,6 +211,8 @@ impl<
     }
 
     // accept
+    // TODO: exec callback
+    // TODO: return next token
     Some(CandidateTryReduceOutput {
       node: ASTNode::new_nt(
         match self.gr.nt().kind() {
