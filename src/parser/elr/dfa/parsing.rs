@@ -1,6 +1,9 @@
 use crate::{
   lexer::{token::TokenKind, trimmed::TrimmedLexer},
-  parser::{ast::ASTNode, elr::grammar::grammar::GrammarId},
+  parser::{
+    ast::ASTNode,
+    elr::grammar::grammar::{Grammar, GrammarId},
+  },
 };
 use std::{
   cell::RefCell,
@@ -125,7 +128,7 @@ impl<
   pub fn try_reduce(
     &mut self,
     entry_nts: &HashSet<GrammarId>,
-    follow_sets: &HashMap<GrammarId, HashSet<GrammarId>>,
+    follow_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
     states: &HashMap<
       StateId,
       Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,

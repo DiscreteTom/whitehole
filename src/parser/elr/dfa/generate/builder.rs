@@ -4,7 +4,7 @@ use crate::{
   parser::elr::{
     dfa::{dfa::Dfa, state::StateId},
     grammar::{
-      grammar::{GrammarId, GrammarKind},
+      grammar::{Grammar, GrammarId, GrammarKind},
       grammar_rule::GrammarRule,
     },
   },
@@ -233,7 +233,7 @@ fn calc_first_sets<
       Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
   >,
-) -> HashMap<GrammarId, HashSet<GrammarId>> {
+) -> HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>> {
   let mut result = HashMap::new();
 
   nt_closures.iter().for_each(|(nt, grs)| {
@@ -241,7 +241,7 @@ fn calc_first_sets<
     // for each direct/indirect grammar rule, add first grammar to first set
     // including T and NT
     grs.iter().for_each(|gr| {
-      grammar_set.insert(gr.rule()[0].id().clone());
+      grammar_set.insert(gr.rule()[0].clone());
     });
   });
 
@@ -260,8 +260,8 @@ fn calc_follow_sets<
   all_grs: &Vec<
     Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
   >,
-  first_sets: &HashMap<GrammarId, HashSet<GrammarId>>,
-) -> HashMap<GrammarId, HashSet<GrammarId>> {
+  first_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
+) -> HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>> {
   let mut result = HashMap::new();
 
   // collect follow from grammar rules
@@ -273,7 +273,7 @@ fn calc_follow_sets<
         let grammar_set = result
           .entry(g.id().clone())
           .or_insert_with(|| HashSet::new());
-        grammar_set.insert(next_grammar.id().clone());
+        grammar_set.insert(next_grammar.clone());
         // if next grammar is also NT, merge with its first set
         if let GrammarKind::NT(_) = next_grammar.kind() {
           // every NT should have a first set, so we can unwrap the result

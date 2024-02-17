@@ -1,11 +1,10 @@
 use super::{candidate::Candidate, utils::lex_grammar};
 use crate::{
-  lexer::{
-    expectation::Expectation,
-    token::{TokenKind, TokenKindId},
-    trimmed::TrimmedLexer,
+  lexer::{expectation::Expectation, token::TokenKind, trimmed::TrimmedLexer},
+  parser::{
+    ast::ASTNode,
+    elr::grammar::grammar::{Grammar, GrammarId},
   },
-  parser::{ast::ASTNode, elr::grammar::grammar::GrammarId},
 };
 use std::{
   cell::RefCell,
@@ -126,7 +125,7 @@ impl<
     lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     reducing_stack: &Vec<usize>,
     entry_nts: &HashSet<GrammarId>,
-    follow_sets: &HashMap<GrammarId, HashSet<GrammarId>>,
+    follow_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
   ) -> Option<StateTryReduceOutput<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>> {
     for c in self.candidates.iter() {
       if let Some(output) = c.try_reduce(buffer, lexer, reducing_stack, entry_nts, follow_sets) {

@@ -3,13 +3,13 @@ use super::{
   state::{State, StateId},
 };
 use crate::{
-  lexer::{
-    token::{TokenKind, TokenKindId},
-    trimmed::TrimmedLexer,
-  },
+  lexer::{token::TokenKind, trimmed::TrimmedLexer},
   parser::{
     ast::ASTNode,
-    elr::{grammar::grammar::GrammarId, parser::ParseContinuable},
+    elr::{
+      grammar::grammar::{Grammar, GrammarId},
+      parser::ParseContinuable,
+    },
   },
 };
 use std::{
@@ -52,7 +52,7 @@ pub struct Dfa<
     StateId,
     Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
   >,
-  follow_sets: HashMap<GrammarId, HashSet<GrammarId>>,
+  follow_sets: HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
   // TODO: token_ast_mapper
 }
 
@@ -75,7 +75,7 @@ impl<
       StateId,
       Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
-    follow_sets: HashMap<GrammarId, HashSet<GrammarId>>,
+    follow_sets: HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
   ) -> Self {
     Self {
       entry_nts,
