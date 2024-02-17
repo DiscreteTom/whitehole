@@ -24,10 +24,12 @@ use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 pub struct ParserBuilderGrammar<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> {
   pub kind: GrammarKind<TKind, NTKind>,
+  /// Only effective for T/Literal.
   pub expect: bool,
 }
 
 impl<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> ParserBuilderGrammar<TKind, NTKind> {
+  /// Only effective for T/Literal.
   pub fn expect(mut self, value: bool) -> Self {
     self.expect = value;
     self
