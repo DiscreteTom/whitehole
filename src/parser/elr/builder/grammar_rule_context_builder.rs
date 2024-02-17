@@ -2,7 +2,7 @@ use super::{
   conflict::ConflictKind,
   reduce_context::{Condition, ReduceContext},
   temp_grammar_rule::TempGrammarRule,
-  temp_resolver::{ReduceShiftResolverOptions, TempResolvedConflict},
+  temp_resolver::{ReduceReduceResolverOptions, ReduceShiftResolverOptions, TempResolvedConflict},
 };
 use crate::lexer::token::TokenKind;
 use std::rc::Rc;
@@ -112,6 +112,38 @@ impl<
     let ctx = f(ReduceShiftResolverOptions::default());
     self.resolved_conflicts.push(TempResolvedConflict {
       kind: ConflictKind::ReduceShift,
+      another_rule: gr,
+      accepter: ctx.accepter,
+      condition: ctx.condition,
+    });
+    self
+  }
+
+  pub fn resolve_rr<F>(mut self, gr: Rc<TempGrammarRule<TKind, NTKind>>, f: F) -> Self
+  where
+    F: FnOnce(
+      ReduceReduceResolverOptions<
+        TKind,
+        NTKind,
+        ASTData,
+        ErrorType,
+        Global,
+        LexerActionState,
+        LexerErrorType,
+      >,
+    ) -> ReduceReduceResolverOptions<
+      TKind,
+      NTKind,
+      ASTData,
+      ErrorType,
+      Global,
+      LexerActionState,
+      LexerErrorType,
+    >,
+  {
+    let ctx = f(ReduceReduceResolverOptions::default());
+    self.resolved_conflicts.push(TempResolvedConflict {
+      kind: ConflictKind::ReduceReduce,
       another_rule: gr,
       accepter: ctx.accepter,
       condition: ctx.condition,
