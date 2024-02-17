@@ -1,9 +1,15 @@
-use super::{candidate::Candidate, utils::lex_grammar};
+use super::{
+  candidate::{Candidate, CandidateId},
+  utils::lex_grammar,
+};
 use crate::{
   lexer::{expectation::Expectation, token::TokenKind, trimmed::TrimmedLexer},
   parser::{
     ast::ASTNode,
-    elr::grammar::grammar::{Grammar, GrammarId},
+    elr::{
+      builder::conflict::Conflict,
+      grammar::grammar::{Grammar, GrammarId},
+    },
   },
 };
 use std::{
@@ -28,6 +34,7 @@ pub struct State<
   candidates:
     Vec<Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
   next_map: HashMap<GrammarId, Option<StateId>>,
+  conflicts: Vec<Conflict<CandidateId>>,
 }
 
 impl<
@@ -46,11 +53,13 @@ impl<
       Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
     next_map: HashMap<GrammarId, Option<StateId>>,
+    conflicts: Vec<Conflict<CandidateId>>,
   ) -> Self {
     Self {
       id,
       candidates,
       next_map,
+      conflicts,
     }
   }
 

@@ -7,7 +7,7 @@ use crate::{
       state::{State, StateId},
     },
     grammar::{
-      grammar::{GrammarId, GrammarKind},
+      grammar::{Grammar, GrammarId, GrammarKind},
       grammar_rule::GrammarRule,
     },
   },
@@ -257,6 +257,9 @@ impl StateRepo {
     candidates: &Vec<
       Rc<Candidate<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
+    first_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
+    follow_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
+    end_set: HashSet<GrammarId>,
   ) -> HashMap<
     StateId,
     Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
@@ -265,7 +268,7 @@ impl StateRepo {
       .states
       .into_iter()
       .map(|(id, state)| {
-        let state = state.into_state(candidates);
+        let state = state.into_state(candidates, first_sets, follow_sets, &end_set);
         (id, Rc::new(state))
       })
       .collect()

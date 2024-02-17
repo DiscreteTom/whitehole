@@ -54,11 +54,17 @@ pub fn build_dfa<
     &nt_closures,
   );
 
-  let follow_sets = calc_follow_sets(&all_grs, &calc_first_sets(&nt_closures));
+  let first_sets = calc_first_sets(&nt_closures);
+  let follow_sets = calc_follow_sets(&all_grs, &first_sets);
 
   // convert raw candidates/states to candidates/states
   let candidates = cs.into_candidates();
-  let states = state_repo.into_states(&candidates);
+  let states = state_repo.into_states(
+    &candidates,
+    &first_sets,
+    &follow_sets,
+    calc_end_set(&entry_nts, &all_grs),
+  );
 
   Dfa::new(entry_nts, states[&StateId(0)].clone(), states, follow_sets)
 }
@@ -316,4 +322,53 @@ fn calc_follow_sets<
   }
 
   result
+}
+
+/// Return a grammar set contains NTs which might appear at EOF.
+/// E.g. entry NT is `A`, and we have `A: B C | D E`, then the result will be `{A, C, E}`.
+/// The result will be used to check if some grammar rules have R-R conflict when reach EOF.
+fn calc_end_set<
+  TKind: TokenKind<TKind> + 'static,
+  NTKind: TokenKind<NTKind> + Clone + 'static,
+  ASTData: 'static,
+  ErrorType: 'static,
+  Global: 'static,
+  LexerActionState: Default + Clone + 'static,
+  LexerErrorType: 'static,
+>(
+  entry_nts: &HashSet<GrammarId>,
+  all_grs: &Vec<
+    Rc<GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+  >,
+) -> HashSet<GrammarId> {
+  // first, entry NTs might be the last grammar of course
+  let mut res = entry_nts.clone();
+  let mut to_be_expanded = entry_nts.clone();
+
+  loop {
+    let mut to_be_appended = HashSet::new();
+    for gr in all_grs {
+      if to_be_expanded.contains(&gr.nt().id()) {
+        // gr's NT is in result, so we need to check the last grammar of gr's rule
+        let last = gr.rule().last().unwrap();
+        if let GrammarKind::NT(_) = last.kind() {
+          // last grammar is a NT, so we need to append it in result
+          // we don't need to check to_be_expanded because `res` is a super set of `to_be_expanded`
+          if !res.contains(last.id()) && !to_be_appended.contains(last.id()) {
+            to_be_appended.insert(last.id().clone());
+          }
+        }
+      }
+    }
+
+    if to_be_appended.len() == 0 {
+      break;
+    }
+
+    // TODO: don't clone, use slice ref?
+    res.extend(to_be_appended.clone());
+    to_be_expanded = to_be_appended;
+  }
+
+  res
 }
