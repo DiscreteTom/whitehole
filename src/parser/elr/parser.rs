@@ -1,4 +1,4 @@
-use super::dfa::{dfa::Dfa, parsing::Stack, state::State};
+use super::dfa::{dfa::Dfa, parsing::Stack, state::StatefulState};
 use crate::{
   lexer::{token::TokenKind, trimmed::TrimmedLexer},
   parser::ast::ASTNode,
@@ -23,7 +23,9 @@ pub struct ParseOutput<
   pub buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
   pub errors: Vec<usize>,
   pub continuable: ParseContinuable<
-    Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
+    Stack<
+      StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+    >,
   >,
 }
 
@@ -75,7 +77,7 @@ impl<
   > {
     self.parse_with(
       Vec::new(),
-      Stack::new(vec![self.dfa.entry_state().clone()]),
+      Stack::new(vec![self.dfa.entry_state().clone().into()]),
       [],
     )
   }
@@ -85,7 +87,7 @@ impl<
     &mut self,
     buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
     state_stack: Stack<
-      Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+      StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
     >,
   ) -> ParseOutput<
     'buffer,
@@ -105,7 +107,7 @@ impl<
     &mut self,
     buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
     state_stack: Stack<
-      Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+      StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
     >,
     reducing_stack: impl Into<Vec<usize>>,
   ) -> ParseOutput<

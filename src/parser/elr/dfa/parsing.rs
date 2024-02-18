@@ -1,3 +1,4 @@
+use super::state::{State, StateId, StatefulState};
 use crate::{
   lexer::{
     token::{Token, TokenKind},
@@ -14,8 +15,7 @@ use std::{
   rc::Rc,
 };
 
-use super::state::{State, StateId};
-
+// TODO: move to utils?
 pub struct Stack<T> {
   stack: Vec<T>,
 }
@@ -38,8 +38,8 @@ impl<T> Stack<T> {
   pub fn push(&mut self, item: T) {
     self.stack.push(item);
   }
-  pub fn current(&self) -> &T {
-    self.stack.last().unwrap()
+  pub fn current(&mut self) -> &mut T {
+    self.stack.last_mut().unwrap()
   }
   pub fn clear(&mut self) {
     self.stack.clear();
@@ -62,17 +62,16 @@ pub struct ParsingState<
   LexerActionState: Default + Clone + 'static,
   LexerErrorType: 'static,
 > {
+  // TODO: type alias for buffer, state_stack, etc
   pub buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
-  pub state_stack:
-    Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
+  pub state_stack: Stack<
+    StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+  >,
   pub reducing_stack: Vec<usize>,
   pub lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   /// `None` if not ready, `Some(None)` if EOF, `Some(Some(token))` if next token exists.
   pub next_token: Option<Option<Token<'buffer, TKind, LexerErrorType>>>,
   pub need_lex: bool,
-  pub try_lex_index: usize,
-  pub lexed_grammars: HashSet<GrammarId>,
-  pub lexed_without_expectation: bool,
   pub errors: Vec<usize>,
 }
 
@@ -98,13 +97,7 @@ impl<
   ) -> bool {
     let current_state = self.state_stack.current();
 
-    match current_state.try_lex(
-      &self.lexer,
-      self.try_lex_index,
-      &mut self.lexed_grammars,
-      &mut self.lexed_without_expectation,
-      global,
-    ) {
+    match current_state.try_lex(&self.lexer, global) {
       // TODO: re-lex if the lex is not successful
       None => false,
       Some(output) => {
@@ -114,17 +107,14 @@ impl<
         if output.node.error.is_some() {
           self.errors.push(node_index);
         }
+        // push next state to state stack
         self
           .state_stack
-          .push(states.get(&output.next_state_id).unwrap().clone()); // push next state to state stack
+          .push(states.get(&output.next_state_id).unwrap().clone().into());
         self.reducing_stack.push(node_index); // append new node to reducing stack
         self.buffer.push(output.node);
         self.lexer = output.lexer;
         self.need_lex = false;
-        // reset lexed state since we have a new state
-        self.try_lex_index = 0;
-        self.lexed_grammars.clear();
-        self.lexed_without_expectation = false;
         true
       }
     }
@@ -187,9 +177,8 @@ impl<
               .current()
               .try_accept_t_node_without_expectation(&token.kind.id(), token.content)
             {
-              self
-                .state_stack
-                .push(states.get(&next_state_id).unwrap().clone());
+              let next_state = states.get(next_state_id).unwrap().clone().into();
+              self.state_stack.push(next_state);
             } else {
               // current state can't accept the token, enter panic mode just like try_lex failed
               // TODO: do we need to restore lexer state?
@@ -205,10 +194,6 @@ impl<
               None,
               None,
             ));
-            // reset lexed state since we have a new state
-            self.try_lex_index = 0;
-            self.lexed_grammars.clear();
-            self.lexed_without_expectation = false;
             return TryReduceResult::NeedLex;
           }
           // no next token and reduce failed, enter panic mode
@@ -244,7 +229,11 @@ impl<
         .current()
         .get_next_by_reduced_grammar(&output.nt_grammar_id)
         // update state stack if next state exists
-        .map(|next_id| self.state_stack.push(states.get(&next_id).unwrap().clone()))
+        .map(|next_id| {
+          self
+            .state_stack
+            .push(states.get(&next_id).unwrap().clone().into())
+        })
         .is_some();
 
       // check if an entry NT is reduced as the last node in the reducing stack

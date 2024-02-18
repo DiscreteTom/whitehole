@@ -1,6 +1,6 @@
 use super::{
   parsing::{ParsingState, Stack, TryReduceResult},
-  state::{State, StateId},
+  state::{State, StateId, StatefulState},
 };
 use crate::{
   lexer::{token::TokenKind, trimmed::TrimmedLexer},
@@ -32,7 +32,9 @@ pub struct DfaParseOutput<
   pub buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
   pub errors: Vec<usize>,
   pub continuable: ParseContinuable<
-    Stack<Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>>,
+    Stack<
+      StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+    >,
   >,
 }
 
@@ -95,7 +97,7 @@ impl<
     &self,
     buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
     state_stack: Stack<
-      Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
+      StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
     >,
     reducing_stack: Vec<usize>,
     lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
@@ -118,9 +120,6 @@ impl<
       next_token: None,
       lexer,
       need_lex: true, // at the beginning we should lex for a new AST node // TODO: is this true? maybe we want to reduce when we already have nodes in buffer
-      try_lex_index: 0, // from the first candidate
-      lexed_grammars: HashSet::new(), // no grammars are lexed at the beginning
-      lexed_without_expectation: false, // non-expectational lex is not done at the beginning
       errors: Vec::new(),
     };
 
