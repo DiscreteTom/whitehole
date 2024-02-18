@@ -168,8 +168,6 @@ impl<
     }
 
     let matched = &reducing_stack[reducing_stack.len() - self.gr.rule().len()..];
-    // TODO: check conflicts, etc.
-
     let ctx = ReduceContext::new(matched, buffer, reducing_stack, next_token, lexer);
 
     // do LR(1) peek, check whether the next token match current's follow set
