@@ -136,7 +136,7 @@ impl<
       }
 
       // else, no need to lex, just try to reduce
-      match parsing_state.try_reduce(&self.entry_nts, &self.follow_sets, &self.states) {
+      match parsing_state.try_reduce(&self.entry_nts, &self.follow_sets, &self.states, global) {
         TryReduceResult::NeedLex => continue,
         TryReduceResult::EnterPanicMode => todo!(),
         TryReduceResult::Done { continuable } => {

@@ -138,6 +138,7 @@ impl<
       StateId,
       Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
+    global: &Rc<RefCell<Global>>,
   ) -> TryReduceResult {
     // before try reduce, we need to make sure next token is ready
     if self.next_token.is_none() {
@@ -164,9 +165,8 @@ impl<
         }
       }
     }
-    // TODO: set next token back to unready
-    // TODO: return next token to continue?
 
+    // the next_token will be used by multi iterations of the loop
     loop {
       let output = match self.state_stack.current().try_reduce(
         &mut self.buffer,
@@ -179,7 +179,40 @@ impl<
         None => {
           // reduce failed, try to lex more
           self.need_lex = true;
-          return TryReduceResult::NeedLex;
+          // reset next_token, append buffer if next_token exists
+          if let Some(token) = self.next_token.take().unwrap() {
+            // push next state to state stack if the token is accepted by the current state
+            if let Some(next_state_id) = self
+              .state_stack
+              .current()
+              .try_accept_t_node_without_expectation(&token.kind.id(), token.content)
+            {
+              self
+                .state_stack
+                .push(states.get(&next_state_id).unwrap().clone());
+            } else {
+              // current state can't accept the token, enter panic mode just like try_lex failed
+              // TODO: do we need to restore lexer state?
+              return TryReduceResult::EnterPanicMode;
+            }
+            let node_index = self.buffer.len();
+            self.reducing_stack.push(node_index); // append new node to reducing stack
+            self.buffer.push(ASTNode::new_t(
+              token.kind,
+              token.content,
+              token.range,
+              global.clone(),
+              None,
+              None,
+            ));
+            // reset lexed state since we have a new state
+            self.try_lex_index = 0;
+            self.lexed_grammars.clear();
+            self.lexed_without_expectation = false;
+            return TryReduceResult::NeedLex;
+          }
+          // no next token and reduce failed, enter panic mode
+          return TryReduceResult::EnterPanicMode;
         }
         Some(output) => output,
       };
@@ -206,7 +239,7 @@ impl<
       self.state_stack.pop_n(output.reduced);
 
       // try to push next state to state stack, the next state may be None
-      let next_exists = self
+      let next_state_exists = self
         .state_stack
         .current()
         .get_next_by_reduced_grammar(&output.nt_grammar_id)
@@ -217,16 +250,18 @@ impl<
       // check if an entry NT is reduced as the last node in the reducing stack
       if self.reducing_stack.len() == 1 && entry_nts.contains(&output.nt_grammar_id) {
         // this parse is done, maybe continuable
+        // TODO: set next token back to None?
+        // TODO: return next token to continue?
         return TryReduceResult::Done {
           // if no next state, the state stack was not updated
           // and the parsing will not be continuable
-          continuable: next_exists,
+          continuable: next_state_exists,
         };
       }
 
       // missing-next is only allowed if the parsing is done
       // so now if next not exists, we should enter panic mode
-      if !next_exists {
+      if !next_state_exists {
         return TryReduceResult::EnterPanicMode;
       }
 
