@@ -5,7 +5,7 @@ use super::{
 use crate::{
   lexer::{
     expectation::Expectation,
-    token::{Token, TokenKind},
+    token::{Token, TokenKind, TokenKindId},
     trimmed::TrimmedLexer,
   },
   parser::{
@@ -115,23 +115,17 @@ impl<
 
     // lex without expectation
     lex_grammar(Expectation::default(), lexer, global).and_then(|output| {
-      // check if any candidate can accept the lexed node
-      for c in &self.candidates {
-        if let Some(grammar_id) =
-          c.try_accept_t_node_without_expectation(&output.t_kind_id, output.text)
-        {
-          return Some(StateTryLexOutput {
+      self
+        .try_accept_t_node_without_expectation(&output.t_kind_id, output.text)
+        .map(|next_state_id| {
+          StateTryLexOutput {
             node: output.node,
             lexer: output.lexer,
             next_expectational_lex_candidate_index: self.candidates.len(), // no next expectational lex
             // treat as the candidate lexed the node
-            next_state_id: self.get_next_by_lexed_grammar(&grammar_id).clone(),
-          });
-        }
-      }
-
-      // no candidate can accept the lexed node
-      None
+            next_state_id: next_state_id.clone(),
+          }
+        })
     })
   }
 
@@ -161,6 +155,21 @@ impl<
         });
       }
     }
+    None
+  }
+
+  pub fn try_accept_t_node_without_expectation<'buffer>(
+    &self,
+    t_kind_id: &TokenKindId<TKind>,
+    text: &'buffer str,
+  ) -> Option<&StateId> {
+    // check if any candidate can accept the lexed node
+    for c in &self.candidates {
+      if let Some(grammar_id) = c.try_accept_t_node_without_expectation(t_kind_id, text) {
+        return Some(self.get_next_by_lexed_grammar(&grammar_id));
+      }
+    }
+    // no candidate can accept the lexed node
     None
   }
 
