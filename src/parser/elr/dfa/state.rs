@@ -205,7 +205,7 @@ impl<
         reducing_stack,
         entry_nts,
         follow_sets,
-        self.core.conflict_map().get(c.id()).unwrap(),
+        self.core.conflict_map().get(c.id()),
       ) {
         return Some(StateTryReduceOutput {
           node: output.node,

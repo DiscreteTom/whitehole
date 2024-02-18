@@ -159,7 +159,7 @@ impl<
     reducing_stack: &Vec<usize>,
     entry_nts: &HashSet<GrammarId>,
     follow_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,
-    conflicts: &Vec<Conflict<GrammarRuleId, Rc<Grammar<TKind, NTKind>>>>,
+    conflicts: Option<&Vec<Conflict<GrammarRuleId, Rc<Grammar<TKind, NTKind>>>>>,
   ) -> Option<CandidateTryReduceOutput<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>>
   {
     if self.digested != self.gr.rule().len() {
@@ -210,62 +210,64 @@ impl<
     }
 
     // check conflicts
-    for c in conflicts {
-      // check EOF for RR conflict
-      if c.kind == ConflictKind::ReduceReduce {
-        if next_token.is_none() && c.condition.eof {
-          // reach EOF and this is an R-R conflict at EOF
-          // try to find a resolver, we only apply the first resolver, so we use `find`
-          if let Some(r) = self.gr.resolved_conflicts.iter().find(|r| {
-            r.kind == ConflictKind::ReduceReduce && r.another_rule == c.another && r.condition.eof
-          }) {
-            if !(r.accepter)(&ctx) {
-              // rejected by resolver
-              return None;
-            }
-          } else {
-            // resolver not found
-            // TODO: optimize error message
-            unreachable!("Every conflict should have a resolver")
-          }
-        }
-        // else, no need to handle EOF
-      }
-
-      // check if any next grammar in the conflict match the next token
-      // no matter if it's RR or SR conflict
-      match next_token {
-        None => {
-          // no next token, skip
-          continue;
-        }
-        Some(token) => {
-          // TODO: ensure conflicts have no overlap next grammar so we can iter the grammar without duplicated calculation
-          for grammar in c.condition.next.iter().filter(|g| {
-            match g.kind() {
-              // [[@next can only be T or Literal]]
-              GrammarKind::NT(_) => unreachable!("Next can only be T or Literal"),
-              GrammarKind::T(kind) => kind.id() == token.kind.id(),
-              GrammarKind::Literal(text) => text.as_str() == token.content,
-            }
-          }) {
-            // find resolver
-            // TODO: can this process pre-calculated? just provide a Map<GrammarId, Accepter>?
+    if let Some(conflicts) = conflicts {
+      for c in conflicts {
+        // check EOF for RR conflict
+        if c.kind == ConflictKind::ReduceReduce {
+          if next_token.is_none() && c.condition.eof {
+            // reach EOF and this is an R-R conflict at EOF
+            // try to find a resolver, we only apply the first resolver, so we use `find`
             if let Some(r) = self.gr.resolved_conflicts.iter().find(|r| {
-              r.kind == c.kind
-                && r.another_rule == c.another
-                && match &r.condition.next {
-                  ResolvedConflictConditionNext::Any => true,
-                  ResolvedConflictConditionNext::Some(next) => next.contains(grammar.id()),
-                }
+              r.kind == ConflictKind::ReduceReduce && r.another_rule == c.another && r.condition.eof
             }) {
               if !(r.accepter)(&ctx) {
                 // rejected by resolver
                 return None;
               }
             } else {
+              // resolver not found
               // TODO: optimize error message
               unreachable!("Every conflict should have a resolver")
+            }
+          }
+          // else, no need to handle EOF
+        }
+
+        // check if any next grammar in the conflict match the next token
+        // no matter if it's RR or SR conflict
+        match next_token {
+          None => {
+            // no next token, skip
+            continue;
+          }
+          Some(token) => {
+            // TODO: ensure conflicts have no overlap next grammar so we can iter the grammar without duplicated calculation
+            for grammar in c.condition.next.iter().filter(|g| {
+              match g.kind() {
+                // [[@next can only be T or Literal]]
+                GrammarKind::NT(_) => unreachable!("Next can only be T or Literal"),
+                GrammarKind::T(kind) => kind.id() == token.kind.id(),
+                GrammarKind::Literal(text) => text.as_str() == token.content,
+              }
+            }) {
+              // find resolver
+              // TODO: can this process pre-calculated? just provide a Map<GrammarId, Accepter>?
+              if let Some(r) = self.gr.resolved_conflicts.iter().find(|r| {
+                r.kind == c.kind
+                  && r.another_rule == c.another
+                  && match &r.condition.next {
+                    ResolvedConflictConditionNext::Any => true,
+                    ResolvedConflictConditionNext::Some(next) => next.contains(grammar.id()),
+                  }
+              }) {
+                if !(r.accepter)(&ctx) {
+                  // rejected by resolver
+                  return None;
+                }
+              } else {
+                // TODO: optimize error message
+                unreachable!("Every conflict should have a resolver")
+              }
             }
           }
         }
