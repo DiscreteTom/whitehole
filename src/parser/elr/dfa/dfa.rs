@@ -1,5 +1,6 @@
 use super::{
-  parsing::{ParsingState, Stack, TryReduceResult},
+  parsing::{ParsingState, TryReduceResult},
+  stack::Stack,
   state::{State, StateId, StatefulState},
 };
 use crate::{

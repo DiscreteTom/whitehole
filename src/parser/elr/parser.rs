@@ -1,4 +1,4 @@
-use super::dfa::{dfa::Dfa, parsing::Stack, state::StatefulState};
+use super::dfa::{dfa::Dfa, stack::Stack, state::StatefulState};
 use crate::{
   lexer::{token::TokenKind, trimmed::TrimmedLexer},
   parser::ast::ASTNode,
