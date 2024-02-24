@@ -49,8 +49,9 @@ where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
-  fn from(lexer: Lexer<'buffer, Kind, ActionState, ErrorType>) -> Self {
-    lexer.into_trimmed().trimmed_lexer
+  fn from(mut lexer: Lexer<'buffer, Kind, ActionState, ErrorType>) -> Self {
+    lexer.trim();
+    TrimmedLexer { lexer }
   }
 }
 
