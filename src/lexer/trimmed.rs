@@ -74,10 +74,6 @@ where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
-  pub fn new(lexer: Lexer<'buffer, Kind, ActionState, ErrorType>) -> Self {
-    TrimmedLexer { lexer }
-  }
-
   pub fn stateless(&self) -> &StatelessLexer<Kind, ActionState, ErrorType> {
     self.lexer.stateless()
   }
