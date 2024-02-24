@@ -31,6 +31,18 @@ where
 }
 
 impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
+  Into<Lexer<'buffer, Kind, ActionState, ErrorType>>
+  for TrimmedLexer<'buffer, Kind, ActionState, ErrorType>
+where
+  Kind: TokenKind<Kind>,
+  ActionState: Clone + Default,
+{
+  fn into(self) -> Lexer<'buffer, Kind, ActionState, ErrorType> {
+    self.lexer
+  }
+}
+
+impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
   From<Lexer<'buffer, Kind, ActionState, ErrorType>>
   for TrimmedLexer<'buffer, Kind, ActionState, ErrorType>
 where
