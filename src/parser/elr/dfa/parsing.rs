@@ -202,21 +202,18 @@ impl<
         })
         .is_some();
 
-      // check if an entry NT is reduced as the last node in the reducing stack
-      if self.reducing_stack.len() == 1 && entry_nts.contains(&output.nt_grammar_id) {
-        // this parse is done, maybe continuable
-        // TODO: set next token back to None?
-        // TODO: return next token to continue?
-        return TryReduceResult::Done {
-          // if no next state, the state stack was not updated
-          // and the parsing will not be continuable
-          continuable: next_state_exists,
-        };
+      // finish parsing if an entry NT is reduced as the last node in the reducing stack
+      // and no next token
+      if self.reducing_stack.len() == 1
+        && entry_nts.contains(&output.nt_grammar_id)
+        && matches!(self.next_token, Some(None))
+      {
+        return TryReduceResult::Done;
       }
 
       // missing-next is only allowed if the parsing is done
       // so now if next not exists, we should enter panic mode
-      if !next_state_exists {
+      if !next_state_exists && matches!(self.next_token, Some(None)) {
         return TryReduceResult::EnterPanicMode;
       }
 
@@ -228,5 +225,5 @@ impl<
 pub enum TryReduceResult {
   NeedLex,
   EnterPanicMode,
-  Done { continuable: bool },
+  Done,
 }

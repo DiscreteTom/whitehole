@@ -5,11 +5,6 @@ use crate::{
 };
 use std::{cell::RefCell, rc::Rc};
 
-pub enum ParseContinuable<StateStack> {
-  Yes(StateStack),
-  No,
-}
-
 pub struct ParseOutput<
   'buffer,
   TKind: TokenKind<TKind> + 'static,
@@ -17,16 +12,9 @@ pub struct ParseOutput<
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
-  LexerActionState: Default + Clone + 'static,
-  LexerErrorType: 'static,
 > {
   pub buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
   pub errors: Vec<usize>,
-  pub continuable: ParseContinuable<
-    Stack<
-      StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
-    >,
-  >,
 }
 
 pub struct Parser<
@@ -63,18 +51,7 @@ impl<
     Self { dfa, lexer, global }
   }
 
-  pub fn parse(
-    &mut self,
-  ) -> ParseOutput<
-    'buffer,
-    TKind,
-    NTKind,
-    ASTData,
-    ErrorType,
-    Global,
-    LexerActionState,
-    LexerErrorType,
-  > {
+  pub fn parse(&mut self) -> ParseOutput<'buffer, TKind, NTKind, ASTData, ErrorType, Global> {
     self.parse_with(
       Vec::new(),
       Stack::new(vec![self.dfa.entry_state().clone().into()]),
@@ -89,16 +66,7 @@ impl<
     state_stack: Stack<
       StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
     >,
-  ) -> ParseOutput<
-    'buffer,
-    TKind,
-    NTKind,
-    ASTData,
-    ErrorType,
-    Global,
-    LexerActionState,
-    LexerErrorType,
-  > {
+  ) -> ParseOutput<'buffer, TKind, NTKind, ASTData, ErrorType, Global> {
     let last = buffer.len() - 1;
     self.parse_with(buffer, state_stack, [last])
   }
@@ -110,16 +78,7 @@ impl<
       StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
     >,
     reducing_stack: impl Into<Vec<usize>>,
-  ) -> ParseOutput<
-    'buffer,
-    TKind,
-    NTKind,
-    ASTData,
-    ErrorType,
-    Global,
-    LexerActionState,
-    LexerErrorType,
-  > {
+  ) -> ParseOutput<'buffer, TKind, NTKind, ASTData, ErrorType, Global> {
     let output = self.dfa.parse(
       buffer,
       state_stack,
@@ -132,22 +91,10 @@ impl<
     ParseOutput {
       buffer: output.buffer,
       errors: output.errors,
-      continuable: output.continuable,
     }
   }
 
-  pub fn parse_all(
-    &mut self,
-  ) -> ParseOutput<
-    'buffer,
-    TKind,
-    NTKind,
-    ASTData,
-    ErrorType,
-    Global,
-    LexerActionState,
-    LexerErrorType,
-  > {
+  pub fn parse_all(&mut self) -> ParseOutput<'buffer, TKind, NTKind, ASTData, ErrorType, Global> {
     todo!()
   }
 }

@@ -7,10 +7,7 @@ use crate::{
   lexer::{token::TokenKind, trimmed::TrimmedLexer},
   parser::{
     ast::ASTNode,
-    elr::{
-      grammar::grammar::{Grammar, GrammarId},
-      parser::ParseContinuable,
-    },
+    elr::grammar::grammar::{Grammar, GrammarId},
   },
 };
 use std::{
@@ -32,11 +29,6 @@ pub struct DfaParseOutput<
   pub lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   pub buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
   pub errors: Vec<usize>,
-  pub continuable: ParseContinuable<
-    Stack<
-      StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
-    >,
-  >,
 }
 
 pub struct Dfa<
@@ -139,16 +131,11 @@ impl<
       match parsing_state.try_reduce(&self.entry_nts, &self.follow_sets, &self.states, global) {
         TryReduceResult::NeedLex => continue,
         TryReduceResult::EnterPanicMode => todo!(),
-        TryReduceResult::Done { continuable } => {
+        TryReduceResult::Done => {
           return DfaParseOutput {
             lexer: parsing_state.lexer,
             buffer: parsing_state.buffer,
             errors: parsing_state.errors,
-            continuable: if continuable {
-              ParseContinuable::Yes(parsing_state.state_stack)
-            } else {
-              ParseContinuable::No
-            },
           };
         }
       }

@@ -172,38 +172,37 @@ impl<
 
     // do LR(1) peek, check whether the next token match current's follow set
     if let Some(token) = next_token {
-      if entry_nts.contains(self.gr.nt().id()) {
-        // TODO: feature: ignoreEntryFollow
-        // entry NT, no need to check follow set if `ignoreEntryFollow` is set
-        // e.g. when we parse `int a; int b;`, we don't need to check follow set for `;`
-        // TODO: if the entry NT's follow set is empty, can we ignore the next check and accept it directly?
-      } else {
-        // not entry NT, or not ignore entry follow(treat the entry NT as normal NT)
-        // check if any follow grammar match the token
-        let mut mismatch = true;
-        for grammar in follow_sets.get(self.gr.nt().id()).unwrap() {
-          match grammar.kind() {
-            GrammarKind::NT(_) => continue, // NT is not lex-able, skip
-            GrammarKind::T(kind) => {
-              if kind.id() == token.kind.id() {
-                // found valid follow, stop checking
-                mismatch = false;
-                break;
-              }
+      // check if any follow grammar match the token
+      let mut mismatch = true;
+      for grammar in follow_sets.get(self.gr.nt().id()).unwrap() {
+        match grammar.kind() {
+          GrammarKind::NT(_) => continue, // NT is not lex-able, skip
+          GrammarKind::T(kind) => {
+            if kind.id() == token.kind.id() {
+              // found valid follow, stop checking
+              mismatch = false;
+              break;
             }
-            GrammarKind::Literal(text) => {
-              if text.as_str() == token.content {
-                // found valid follow, stop checking
-                mismatch = false;
-                break;
-              }
+          }
+          GrammarKind::Literal(text) => {
+            if text.as_str() == token.content {
+              // found valid follow, stop checking
+              mismatch = false;
+              break;
             }
           }
         }
-        if mismatch {
-          // no valid follow found, reject to reduce
-          return None;
-        }
+      }
+      if mismatch {
+        // no valid follow found, reject to reduce
+        return None;
+      }
+    } else {
+      // next token is None, check if the current grammar is an entry NT
+      // TODO: don't check entry NT, check end set?
+      if !entry_nts.contains(self.gr.nt().id()) {
+        // not an entry NT, reject to reduce
+        return None;
       }
     }
 
