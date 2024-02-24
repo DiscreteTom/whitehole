@@ -43,9 +43,9 @@ pub fn lex_grammar<
   // since we still need to clone and store the new lexer state and action state
   // so it's actually the same.
   // TODO: don't clone the lexer if we disable re-lex or when re-lex won't happen
-  let lexer = lexer.clone();
+  let mut lexer = lexer.clone();
 
-  let res = lexer.lex_expect(expectation);
+  let (res, _) = lexer.lex_expect(expectation);
   res.token.and_then(move |token| {
     // TODO: set node data
     Some(LexGrammarOutput {
@@ -59,7 +59,7 @@ pub fn lex_grammar<
         None,
         None,
       ),
-      lexer: res.lexer.into(), // trim the lexer and convert into TrimmedLexer
+      lexer,
     })
   })
 }

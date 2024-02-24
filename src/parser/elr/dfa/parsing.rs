@@ -249,7 +249,7 @@ impl<
     lexer_panic_handler: &LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
   ) -> Option<Token<'buffer, TKind, LexerErrorType>> {
     while lexer.state().rest().len() > 0 {
-      let output = lexer.lex_and_trim();
+      let (output, _) = lexer.lex();
       match output.token {
         None => {
           // lex failed, enter panic mode
