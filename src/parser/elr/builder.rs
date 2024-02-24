@@ -7,10 +7,12 @@ pub mod temp_grammar_rule;
 pub mod temp_resolver;
 
 use self::{
+  conflict::ConflictKind,
   grammar_rule_context_builder::GrammarRuleContextBuilder,
   lexer_panic_handler::{default_lexer_panic_handler, LexerPanicHandler},
   resolver::ResolvedConflict,
   temp_grammar_rule::TempGrammarRule,
+  temp_resolver::{ReduceReduceResolverOptions, ReduceShiftResolverOptions},
 };
 use super::{
   dfa::generate::{
@@ -122,6 +124,7 @@ impl<
     }
   }
 
+  // TODO: make gr a ref? so that we don't need to clone it outside
   pub fn define(self, gr: Rc<TempGrammarRule<TKind, NTKind>>) -> Self {
     self.define_with(gr, |ctx| ctx)
   }
@@ -209,6 +212,153 @@ impl<
     gr.expect = expect;
     gr.rejecter = ctx.rejecter;
     gr.resolved_conflicts = resolved_conflicts;
+
+    self
+  }
+
+  pub fn resolve_rs<F>(
+    mut self,
+    reducer_rule: Rc<TempGrammarRule<TKind, NTKind>>,
+    another_rule: Rc<TempGrammarRule<TKind, NTKind>>,
+    f: F,
+  ) -> Self
+  where
+    F: FnOnce(
+      ReduceShiftResolverOptions<
+        TKind,
+        NTKind,
+        ASTData,
+        ErrorType,
+        Global,
+        LexerActionState,
+        LexerErrorType,
+      >,
+    ) -> ReduceShiftResolverOptions<
+      TKind,
+      NTKind,
+      ASTData,
+      ErrorType,
+      Global,
+      LexerActionState,
+      LexerErrorType,
+    >,
+  {
+    // get another rule from gr_repo
+    let another_rule = self
+      .gr_repo
+      .get_or_add(
+        self
+          .grammars
+          .get_or_create_nt(another_rule.nt().clone())
+          .clone(),
+        another_rule
+          .rule()
+          .iter()
+          .map(|g| self.grammars.get_or_create(g.kind.clone()).clone())
+          .collect(),
+      )
+      .id()
+      .clone();
+
+    let ctx = f(ReduceShiftResolverOptions::default());
+
+    // get reducer rule from gr_repo
+    self
+      .gr_repo
+      .get_or_add(
+        self
+          .grammars
+          .get_or_create_nt(reducer_rule.nt().clone())
+          .clone(),
+        reducer_rule
+          .rule()
+          .iter()
+          .map(|g| self.grammars.get_or_create(g.kind.clone()).clone())
+          .collect(),
+      )
+      .resolved_conflicts
+      .push(ResolvedConflict {
+        kind: ConflictKind::ReduceShift,
+        another_rule,
+        accepter: ctx.accepter,
+        condition: ctx
+          .condition
+          .into_resolved_conflict_condition(&mut self.grammars),
+      });
+
+    self
+  }
+
+  pub fn resolve_rr<F>(
+    mut self,
+    reducer_rule: Rc<TempGrammarRule<TKind, NTKind>>,
+    another_rule: Rc<TempGrammarRule<TKind, NTKind>>,
+    f: F,
+  ) -> Self
+  where
+    F: FnOnce(
+      ReduceReduceResolverOptions<
+        TKind,
+        NTKind,
+        ASTData,
+        ErrorType,
+        Global,
+        LexerActionState,
+        LexerErrorType,
+      >,
+    ) -> ReduceReduceResolverOptions<
+      TKind,
+      NTKind,
+      ASTData,
+      ErrorType,
+      Global,
+      LexerActionState,
+      LexerErrorType,
+    >,
+  {
+    // TODO: simplify code
+    // get another rule from gr_repo
+    let another_rule = self
+      .gr_repo
+      .get_or_add(
+        self
+          .grammars
+          .get_or_create_nt(another_rule.nt().clone())
+          .clone(),
+        another_rule
+          .rule()
+          .iter()
+          .map(|g| self.grammars.get_or_create(g.kind.clone()).clone())
+          .collect(),
+      )
+      .id()
+      .clone();
+
+    let ctx = f(ReduceReduceResolverOptions::default());
+
+    // get reducer rule from gr_repo
+    self
+      .gr_repo
+      .get_or_add(
+        self
+          .grammars
+          .get_or_create_nt(reducer_rule.nt().clone())
+          .clone(),
+        reducer_rule
+          .rule()
+          .iter()
+          .map(|g| self.grammars.get_or_create(g.kind.clone()).clone())
+          .collect(),
+      )
+      .resolved_conflicts
+      .push(ResolvedConflict {
+        kind: ConflictKind::ReduceReduce,
+        another_rule,
+        accepter: ctx.accepter,
+        condition: ctx
+          .condition
+          .into_resolved_conflict_condition(&mut self.grammars),
+      });
 
     self
   }
