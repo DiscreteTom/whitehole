@@ -1,4 +1,4 @@
-use whitehole::lexer::{Action, LexerBuilder};
+use whitehole::lexer::{trimmed::TrimmedLexer, Action, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -60,8 +60,8 @@ fn trim_lexer() {
 
   let mut lexer = LexerBuilder::<MyKind>::default()
     .ignore(Action::regex(r"^\s+").unwrap().bind(Anonymous))
-    .define(A, Action::regex(r"a").unwrap())
-    .define(B, Action::regex(r"a").unwrap())
+    .define(A, Action::regex(r"^a").unwrap())
+    .define(B, Action::regex(r"^a").unwrap())
     .build(" a");
 
   // for example, this peek will first ignore the whitespace then yield `A`
@@ -86,14 +86,30 @@ fn trim_lexer() {
   let peek = lexer.peek_expect(&B);
   assert!(matches!(peek.token.unwrap().kind, B));
   assert_eq!(peek.digested, 1);
+}
 
-  // for strict typing, we also have a `TrimmedLexer` struct,
-  // you can use `lexer.into_trimmed` to consume the lexer and get the `TrimmedLexer`.
-  let res = lexer.reload(" a").into_trimmed();
-  assert_eq!(res.digested, 1);
-  // get the trimmed lexer
-  let trimmed_lexer = res.trimmed_lexer;
-  let peek = trimmed_lexer.peek();
-  assert!(matches!(peek.token.unwrap().kind, A));
-  assert_eq!(peek.digested, 1);
+#[test]
+fn trimmed_lexer() {
+  let lexer = LexerBuilder::<MyKind>::default()
+    .ignore(Action::regex(r"^\s+").unwrap().bind(Anonymous))
+    .define(A, Action::regex(r"^(a|b|c)").unwrap())
+    .build(" a b c");
+
+  // for strict typing, we also have a `TrimmedLexer` struct
+  let mut trimmed_lexer: TrimmedLexer<_, _, _> = lexer.into();
+
+  // once the lexer is transformed into a trimmed lexer, the lexer is trimmed
+  assert!(trimmed_lexer.state().trimmed());
+  assert_eq!(trimmed_lexer.state().digested(), 1);
+
+  // trimmed lexer's lex and take methods are similar to the lexer's
+  // but after that the lexer will be trimmed
+  let (lex_output, trim_output) = trimmed_lexer.lex();
+  assert_eq!(lex_output.digested, 1); // digest the `a`
+  assert_eq!(trim_output.digested, 1); // digest the whitespace after `a`
+  assert!(trimmed_lexer.state().trimmed());
+  // take `b` from the buffer
+  let (_, trim_output) = trimmed_lexer.take(1, None);
+  assert_eq!(trim_output.digested, 1); // digest the whitespace after `b`
+  assert!(trimmed_lexer.state().trimmed());
 }
