@@ -1,6 +1,6 @@
 use super::{
   expectation::Expectation,
-  output::PeekOutput,
+  output::{LexOutput, PeekOutput},
   state::LexerState,
   stateless::StatelessLexer,
   token::{Token, TokenKind},
@@ -26,6 +26,7 @@ where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
+  /// The lexer should always be trimmed.
   lexer: Lexer<'buffer, Kind, ActionState, ErrorType>,
 }
 
@@ -106,6 +107,7 @@ where
 
   // this will mutate the lexer's state
   // so consume the trimmed lexer, yield a lexer
+  // TODO: rename to `into_lexed`
   pub fn lex(
     self,
   ) -> TrimmedLexerLexOutput<
@@ -152,6 +154,7 @@ where
 
   // this will mutate the lexer's state
   // so consume the trimmed lexer, yield a lexer
+  // TODO: rename to `into_taken`
   pub fn take(
     mut self,
     n: usize,
@@ -159,6 +162,30 @@ where
   ) -> Lexer<'buffer, Kind, ActionState, ErrorType> {
     self.lexer.take(n, state);
     self.lexer
+  }
+
+  /// Apply a function to the inner lexer.
+  /// After that the inner lexer will be trimmed.
+  pub fn apply<F, R>(&mut self, f: F) -> R
+  where
+    F: FnOnce(&mut Lexer<'buffer, Kind, ActionState, ErrorType>) -> R,
+  {
+    let res = f(&mut self.lexer);
+    self.lexer.trim();
+    res
+  }
+
+  // TODO: rename to `take`
+  pub fn take_and_trim(&mut self, n: usize, state: Option<ActionState>) -> &mut Self {
+    self.apply(|lexer| {
+      lexer.take(n, state);
+    });
+    self
+  }
+
+  // TODO: rename to `lex`
+  pub fn lex_and_trim(&mut self) -> LexOutput<Token<'buffer, Kind, ErrorType>> {
+    self.apply(|lexer| lexer.lex())
   }
 
   // there is no `trim` or `into_trimmed` for TrimmedLexer
