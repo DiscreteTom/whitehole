@@ -115,7 +115,7 @@ impl<
     self
   }
 
-  pub fn reducer<F>(self, f: F) -> Self
+  pub fn reducer<F, T>(self, f: F) -> Self
   where
     F: Fn(
         &mut ReduceContext<
@@ -127,11 +127,12 @@ impl<
           LexerActionState,
           LexerErrorType,
         >,
-      ) -> Option<ASTData>
+      ) -> T
       + 'static,
+    T: Into<Option<ASTData>>,
   {
     self.then(move |ctx| {
-      ctx.data = f(ctx);
+      ctx.data = f(ctx).into();
     })
   }
 
