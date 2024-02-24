@@ -14,6 +14,43 @@ pub enum ASTNodeKind<
   NT(NTKind, Traverser<TKind, NTKind, ASTData, ErrorType, Global>),
 }
 
+impl<
+    'buffer,
+    TKind: TokenKind<TKind>,
+    NTKind: TokenKind<NTKind>,
+    ASTData: 'static,
+    ErrorType: 'static,
+    Global: 'static,
+  > ASTNodeKind<'buffer, TKind, NTKind, ASTData, ErrorType, Global>
+{
+  pub fn is_t(&self) -> bool {
+    matches!(self, ASTNodeKind::T(_, _))
+  }
+  pub fn is_nt(&self) -> bool {
+    matches!(self, ASTNodeKind::NT(_, _))
+  }
+  // TODO: optimize return type?
+  pub fn as_t(&self) -> Option<(&TKind, &str)> {
+    if let ASTNodeKind::T(kind, text) = self {
+      Some((kind, text))
+    } else {
+      None
+    }
+  }
+  pub fn as_nt(
+    &self,
+  ) -> Option<(
+    &NTKind,
+    &Traverser<TKind, NTKind, ASTData, ErrorType, Global>,
+  )> {
+    if let ASTNodeKind::NT(kind, traverser) = self {
+      Some((kind, traverser))
+    } else {
+      None
+    }
+  }
+}
+
 pub struct ASTNode<
   'buffer,
   TKind: TokenKind<TKind>,
