@@ -7,7 +7,10 @@ use crate::{
   lexer::{token::TokenKind, trimmed::TrimmedLexer},
   parser::{
     ast::ASTNode,
-    elr::grammar::grammar::{Grammar, GrammarId},
+    elr::{
+      builder::lexer_panic_handler::LexerPanicHandler,
+      grammar::grammar::{Grammar, GrammarId},
+    },
   },
 };
 use std::{
@@ -94,6 +97,7 @@ impl<
     >,
     reducing_stack: Vec<usize>,
     lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer_panic_handler: &LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
     global: &Rc<RefCell<Global>>,
   ) -> DfaParseOutput<
     'buffer,
@@ -111,7 +115,7 @@ impl<
       state_stack,
       reducing_stack,
       next_token: None,
-      lexer,
+      lexer: Some(lexer),
       need_lex: true, // at the beginning we should lex for a new AST node // TODO: is this true? maybe we want to reduce when we already have nodes in buffer
       errors: Vec::new(),
     };
@@ -119,21 +123,28 @@ impl<
     loop {
       if parsing_state.need_lex {
         // try to lex a new one
-        if parsing_state.try_lex(&self.states, global) {
+        if parsing_state.try_lex(&self.states, global, lexer_panic_handler) {
           continue;
         }
 
-        // TODO: enter panic mode
-        todo!()
+        // else, reach EOF and can't lex anymore
+        // enter parser panic mode
+        todo!();
       }
 
       // else, no need to lex, just try to reduce
-      match parsing_state.try_reduce(&self.entry_nts, &self.follow_sets, &self.states, global) {
+      match parsing_state.try_reduce(
+        &self.entry_nts,
+        &self.follow_sets,
+        &self.states,
+        global,
+        lexer_panic_handler,
+      ) {
         TryReduceResult::NeedLex => continue,
         TryReduceResult::EnterPanicMode => todo!(),
         TryReduceResult::Done => {
           return DfaParseOutput {
-            lexer: parsing_state.lexer,
+            lexer: parsing_state.lexer.unwrap(),
             buffer: parsing_state.buffer,
             errors: parsing_state.errors,
           };

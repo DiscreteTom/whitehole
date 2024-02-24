@@ -1,12 +1,15 @@
 pub mod conflict;
 pub mod grammar_rule_context_builder;
+pub mod lexer_panic_handler;
 pub mod reduce_context;
 pub mod resolver;
 pub mod temp_grammar_rule;
 pub mod temp_resolver;
 
 use self::{
-  grammar_rule_context_builder::GrammarRuleContextBuilder, resolver::ResolvedConflict,
+  grammar_rule_context_builder::GrammarRuleContextBuilder,
+  lexer_panic_handler::{default_lexer_panic_handler, LexerPanicHandler},
+  resolver::ResolvedConflict,
   temp_grammar_rule::TempGrammarRule,
 };
 use super::{
@@ -19,7 +22,7 @@ use super::{
   },
   parser::Parser,
 };
-use crate::lexer::{stateless::StatelessLexer, token::TokenKind};
+use crate::lexer::{stateless::StatelessLexer, token::TokenKind, trimmed::TrimmedLexer};
 use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 pub struct ParserBuilderGrammar<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> {
@@ -84,6 +87,7 @@ pub struct ParserBuilder<
   gr_repo:
     GrammarRuleRepo<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
   defined_grs: HashSet<GrammarRuleId>,
+  lexer_panic_handler: LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
 }
 
 impl<
@@ -114,6 +118,7 @@ impl<
       grammars,
       gr_repo: GrammarRuleRepo::default(),
       defined_grs: HashSet::new(),
+      lexer_panic_handler: Box::new(default_lexer_panic_handler),
     }
   }
 
@@ -208,6 +213,18 @@ impl<
     self
   }
 
+  /// Set the lexer panic handler. By default the handler is [`default_lexer_panic_handler`].
+  pub fn on_lexer_panic<F>(mut self, f: F) -> Self
+  where
+    F: Fn(
+        TrimmedLexer<TKind, LexerActionState, LexerErrorType>,
+      ) -> TrimmedLexer<TKind, LexerActionState, LexerErrorType>
+      + 'static,
+  {
+    self.lexer_panic_handler = Box::new(f);
+    self
+  }
+
   pub fn build<'buffer>(
     self,
     input: &'buffer str,
@@ -221,6 +238,7 @@ impl<
         self.gr_repo.grs.into_iter().map(|gr| Rc::new(gr)).collect(),
       ),
       self.lexer.into_lexer(input).into(),
+      self.lexer_panic_handler,
       Rc::new(RefCell::new(self.global)),
     )
   }

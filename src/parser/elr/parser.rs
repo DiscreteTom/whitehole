@@ -1,4 +1,7 @@
-use super::dfa::{dfa::Dfa, stack::Stack, state::StatefulState};
+use super::{
+  builder::lexer_panic_handler::LexerPanicHandler,
+  dfa::{dfa::Dfa, stack::Stack, state::StatefulState},
+};
 use crate::{
   lexer::{token::TokenKind, trimmed::TrimmedLexer},
   parser::ast::ASTNode,
@@ -29,6 +32,7 @@ pub struct Parser<
 > {
   dfa: Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
   lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+  lexer_panic_handler: LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
   global: Rc<RefCell<Global>>,
 }
 
@@ -46,9 +50,15 @@ impl<
   pub fn new(
     dfa: Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
     lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer_panic_handler: LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
     global: Rc<RefCell<Global>>,
   ) -> Self {
-    Self { dfa, lexer, global }
+    Self {
+      dfa,
+      lexer,
+      global,
+      lexer_panic_handler,
+    }
   }
 
   pub fn parse(&mut self) -> ParseOutput<'buffer, TKind, NTKind, ASTData, ErrorType, Global> {
@@ -85,6 +95,7 @@ impl<
       reducing_stack.into(),
       // TODO: prevent clone?
       self.lexer.clone(),
+      &self.lexer_panic_handler,
       &self.global,
     );
     self.lexer = output.lexer;

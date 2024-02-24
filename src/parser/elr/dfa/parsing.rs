@@ -9,7 +9,10 @@ use crate::{
   },
   parser::{
     ast::ASTNode,
-    elr::grammar::grammar::{Grammar, GrammarId},
+    elr::{
+      builder::lexer_panic_handler::LexerPanicHandler,
+      grammar::grammar::{Grammar, GrammarId},
+    },
   },
 };
 use std::{
@@ -34,7 +37,9 @@ pub struct ParsingState<
     StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
   >,
   pub reducing_stack: Vec<usize>,
-  pub lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+  /// This should always be `Some`.
+  // TODO: use NonNull or something instead of Option
+  pub lexer: Option<TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>>,
   /// `None` if not ready, `Some(None)` if EOF, `Some(Some(token))` if next token exists.
   pub next_token: Option<Option<Token<'buffer, TKind, LexerErrorType>>>,
   pub need_lex: bool,
@@ -60,30 +65,41 @@ impl<
       Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
     global: &Rc<RefCell<Global>>,
+    lexer_panic_handler: &LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
   ) -> bool {
-    let current_state = self.state_stack.current();
+    // only lex if the lexer can yield a token.
+    // since the lexer is already trimmed, we only need to check the length of the rest of input
+    while self.lexer.as_ref().unwrap().state().rest().len() > 0 {
+      let current_state = self.state_stack.current();
 
-    match current_state.try_lex(&self.lexer, global) {
-      // TODO: re-lex if the lex is not successful
-      None => false,
-      Some(output) => {
-        // TODO: store re-lex info
-
-        let node_index = self.buffer.len();
-        if output.node.error.is_some() {
-          self.errors.push(node_index);
+      match current_state.try_lex(&self.lexer.as_ref().unwrap(), global) {
+        None => {
+          // lex failed, enter panic mode
+          self.lexer = Some(lexer_panic_handler(self.lexer.take().unwrap()));
+          // try lex again
+          continue;
         }
-        // push next state to state stack
-        self
-          .state_stack
-          .push(states.get(&output.next_state_id).unwrap().clone().into());
-        self.reducing_stack.push(node_index); // append new node to reducing stack
-        self.buffer.push(output.node);
-        self.lexer = output.lexer;
-        self.need_lex = false;
-        true
+        Some(output) => {
+          // TODO: store re-lex info
+
+          let node_index = self.buffer.len();
+          if output.node.error.is_some() {
+            self.errors.push(node_index);
+          }
+          // push next state to state stack
+          self
+            .state_stack
+            .push(states.get(&output.next_state_id).unwrap().clone().into());
+          self.reducing_stack.push(node_index); // append new node to reducing stack
+          self.buffer.push(output.node);
+          self.lexer = Some(output.lexer);
+          self.need_lex = false;
+          return true;
+        }
       }
     }
+    // TODO: re-lex if the lex is not successful
+    false
   }
 
   pub fn try_reduce(
@@ -95,6 +111,7 @@ impl<
       Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     >,
     global: &Rc<RefCell<Global>>,
+    lexer_panic_handler: &LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
   ) -> TryReduceResult {
     // before try reduce, we need to make sure next token is ready
     if self.next_token.is_none() {
@@ -109,17 +126,10 @@ impl<
       // which means expectational lex after an NT is not working.
       // in our case, we can't lex `B` expectational because it is after `A`
       // TODO: panic if user want expectational lex after NT
-      // TODO: prevent the clone of lexer
-      let output = self.lexer.clone().lex();
-      self.lexer = output.lexer.into(); // trim the lexer
-      match output.token {
-        None => {
-          self.next_token = Some(None);
-        }
-        Some(token) => {
-          self.next_token = Some(Some(token));
-        }
-      }
+      let (lexer, token) =
+        Self::lex_without_expectation(self.lexer.take().unwrap(), lexer_panic_handler);
+      self.lexer = Some(lexer);
+      self.next_token = Some(token);
     }
 
     // the next_token will be used by multi iterations of the loop
@@ -127,7 +137,7 @@ impl<
       let output = match self.state_stack.current().try_reduce(
         &mut self.buffer,
         self.next_token.as_ref().unwrap(),
-        &self.lexer,
+        &self.lexer.as_ref().unwrap(),
         &mut self.reducing_stack,
         entry_nts,
         follow_sets,
@@ -219,6 +229,31 @@ impl<
 
       // else, parsing is not done and next exists, continue next try-reduce
     }
+  }
+
+  fn lex_without_expectation(
+    mut lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer_panic_handler: &LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
+  ) -> (
+    TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    Option<Token<'buffer, TKind, LexerErrorType>>,
+  ) {
+    while lexer.state().rest().len() > 0 {
+      let output = lexer.lex();
+      lexer = output.lexer.into(); // trim the result lexer
+      match output.token {
+        None => {
+          // lex failed, enter panic mode
+          lexer = lexer_panic_handler(lexer);
+          // try lex again
+          continue;
+        }
+        Some(token) => {
+          return (lexer, Some(token));
+        }
+      }
+    }
+    (lexer, None)
   }
 }
 
