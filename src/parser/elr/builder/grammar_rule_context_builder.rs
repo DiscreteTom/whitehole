@@ -1,6 +1,6 @@
 use super::{
   conflict::ConflictKind,
-  reduce_context::{Condition, ReduceContext},
+  reduce_context::{Callback, Condition, ReduceContext},
   temp_grammar_rule::TempGrammarRule,
   temp_resolver::{ReduceReduceResolverOptions, ReduceShiftResolverOptions, TempResolvedConflict},
 };
@@ -16,8 +16,11 @@ pub struct GrammarRuleContextBuilder<
   LexerActionState: Default + Clone + 'static,
   LexerErrorType: 'static,
 > {
+  // TODO: benchmark Option<fn> vs empty closure
   pub rejecter:
     Condition<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+  pub callback:
+    Callback<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
   pub resolved_conflicts: Vec<
     TempResolvedConflict<
       TKind,
@@ -50,6 +53,7 @@ impl<
   fn default() -> Self {
     Self {
       rejecter: Box::new(|_| false),
+      callback: Box::new(|_| {}),
       resolved_conflicts: Vec::new(),
     }
   }
@@ -76,6 +80,7 @@ impl<
     LexerErrorType,
   >
 {
+  /// Set the rejecter, override the original one.
   pub fn rejecter<F>(mut self, condition: F) -> Self
   where
     F: Fn(
@@ -85,6 +90,49 @@ impl<
   {
     self.rejecter = Box::new(condition);
     self
+  }
+
+  /// Append a callback.
+  pub fn then<F>(mut self, callback: F) -> Self
+  where
+    F: Fn(
+        &mut ReduceContext<
+          TKind,
+          NTKind,
+          ASTData,
+          ErrorType,
+          Global,
+          LexerActionState,
+          LexerErrorType,
+        >,
+      ) + 'static,
+  {
+    let original = self.callback;
+    self.callback = Box::new(move |ctx| {
+      original(ctx);
+      callback(ctx);
+    });
+    self
+  }
+
+  pub fn reducer<F>(self, f: F) -> Self
+  where
+    F: Fn(
+        &mut ReduceContext<
+          TKind,
+          NTKind,
+          ASTData,
+          ErrorType,
+          Global,
+          LexerActionState,
+          LexerErrorType,
+        >,
+      ) -> Option<ASTData>
+      + 'static,
+  {
+    self.then(move |ctx| {
+      ctx.data = f(ctx);
+    })
   }
 
   pub fn resolve_rs<F>(mut self, gr: Rc<TempGrammarRule<TKind, NTKind>>, f: F) -> Self

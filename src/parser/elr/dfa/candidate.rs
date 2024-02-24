@@ -168,7 +168,7 @@ impl<
     }
 
     let matched = &reducing_stack[reducing_stack.len() - self.gr.rule().len()..];
-    let ctx = ReduceContext::new(matched, buffer, reducing_stack, next_token, lexer);
+    let mut ctx = ReduceContext::new(matched, buffer, reducing_stack, next_token, lexer);
 
     // do LR(1) peek, check whether the next token match current's follow set
     if let Some(token) = next_token {
@@ -276,8 +276,8 @@ impl<
       return None;
     }
 
-    // accept
-    // TODO: exec callback
+    // accept, call callback and return output
+    (self.gr.callback)(&mut ctx);
     Some(CandidateTryReduceOutput {
       node: ASTNode::new_nt(
         match self.gr.nt().kind() {

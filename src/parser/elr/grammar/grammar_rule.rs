@@ -2,7 +2,10 @@ use super::grammar::Grammar;
 use crate::{
   lexer::token::TokenKind,
   parser::{
-    elr::builder::{reduce_context::Condition, resolver::ResolvedConflict},
+    elr::builder::{
+      reduce_context::{Callback, Condition},
+      resolver::ResolvedConflict,
+    },
     traverser::Traverser,
   },
 };
@@ -37,6 +40,8 @@ pub struct GrammarRule<
   >,
   pub rejecter:
     Condition<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+  pub callback:
+    Callback<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
   pub traverser: Option<Traverser<TKind, NTKind, ASTData, ErrorType, Global>>,
 }
 
@@ -62,6 +67,7 @@ impl<
       expect: HashSet::new(),
       resolved_conflicts: Vec::new(),
       rejecter: Box::new(|_| false),
+      callback: Box::new(|_| {}),
       traverser: None,
     }
   }

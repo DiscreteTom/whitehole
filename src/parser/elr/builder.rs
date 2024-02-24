@@ -212,6 +212,7 @@ impl<
     gr.expect = expect;
     gr.rejecter = ctx.rejecter;
     gr.resolved_conflicts = resolved_conflicts;
+    gr.callback = ctx.callback;
 
     self
   }

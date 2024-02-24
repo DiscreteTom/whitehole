@@ -97,3 +97,17 @@ pub type Condition<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, 
       &ReduceContext<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
     ) -> bool,
   >;
+pub type Callback<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> =
+  Box<
+    dyn Fn(
+      &mut ReduceContext<
+        TKind,
+        NTKind,
+        ASTData,
+        ErrorType,
+        Global,
+        LexerActionState,
+        LexerErrorType,
+      >,
+    ),
+  >;
