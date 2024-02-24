@@ -84,12 +84,14 @@ impl<
     self.lexer
   }
 
+  /// Get the matched node with the index.
   pub fn matched(
     &self,
     index: usize,
   ) -> &ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global> {
     &self.buffer[self.matched_indexes[index]]
   }
+  /// Get an iterator of the matched nodes.
   pub fn matched_iter(
     &self,
   ) -> impl Iterator<Item = &ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>> {
@@ -98,6 +100,7 @@ impl<
       .iter()
       .map(|index| &self.buffer[*index])
   }
+  /// Get the `ASTData`'s value of the matched node with the index.
   /// Shortcut for `self.matched(index).data.as_ref().unwrap()`.
   pub fn values(&self, index: usize) -> &ASTData {
     self.matched(index).data.as_ref().unwrap()
