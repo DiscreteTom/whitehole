@@ -1,32 +1,19 @@
 use super::{
   expectation::Expectation,
-  output::{LexOutput, PeekOutput},
+  output::{LexAllOutput, LexOutput, PeekOutput, TrimOutput},
   state::LexerState,
   stateless::StatelessLexer,
   token::{Token, TokenKind},
   Lexer,
 };
 
-pub struct TrimmedLexerLexOutput<TokenType, Lexer> {
-  pub token: Option<TokenType>,
-  pub digested: usize,
-  pub errors: Vec<TokenType>,
-  pub lexer: Lexer,
-}
-
-pub struct TrimmedLexerLexAllOutput<TokenType, Lexer> {
-  pub tokens: Vec<TokenType>,
-  pub digested: usize,
-  pub errors: Vec<TokenType>,
-  pub lexer: Lexer,
-}
-
+/// The `TrimmedLexer` is always trimmed.
 pub struct TrimmedLexer<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
 where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
-  /// The lexer should always be trimmed.
+  /// This should always be trimmed.
   lexer: Lexer<'buffer, Kind, ActionState, ErrorType>,
 }
 
@@ -114,88 +101,56 @@ where
     self.lexer.peek_expect(expectation)
   }
 
-  // this will mutate the lexer's state
-  // so consume the trimmed lexer, yield a lexer
-  // TODO: rename to `into_lexed`
-  pub fn lex(
-    self,
-  ) -> TrimmedLexerLexOutput<
-    Token<'buffer, Kind, ErrorType>,
-    Lexer<'buffer, Kind, ActionState, ErrorType>,
-  > {
-    self.lex_expect(Expectation::default())
-  }
-
-  // this will mutate the lexer's state
-  // so consume the trimmed lexer, yield a lexer
-  pub fn lex_expect<'expect_text>(
-    mut self,
-    expectation: impl Into<Expectation<'expect_text, Kind>>,
-  ) -> TrimmedLexerLexOutput<
-    Token<'buffer, Kind, ErrorType>,
-    Lexer<'buffer, Kind, ActionState, ErrorType>,
-  > {
-    let output = self.lexer.lex_expect(expectation);
-    TrimmedLexerLexOutput {
-      token: output.token,
-      digested: output.digested,
-      errors: output.errors,
-      lexer: self.lexer,
-    }
-  }
-
-  // this will mutate the lexer's state
-  // so consume the trimmed lexer, yield a lexer
-  pub fn lex_all(
-    mut self,
-  ) -> TrimmedLexerLexAllOutput<
-    Token<'buffer, Kind, ErrorType>,
-    Lexer<'buffer, Kind, ActionState, ErrorType>,
-  > {
-    let output = self.lexer.lex_all();
-    TrimmedLexerLexAllOutput {
-      tokens: output.tokens,
-      digested: output.digested,
-      errors: output.errors,
-      lexer: self.lexer,
-    }
-  }
-
-  // this will mutate the lexer's state
-  // so consume the trimmed lexer, yield a lexer
-  // TODO: rename to `into_taken`
-  pub fn take(
-    mut self,
-    n: usize,
-    state: Option<ActionState>,
-  ) -> Lexer<'buffer, Kind, ActionState, ErrorType> {
-    self.lexer.take(n, state);
-    self.lexer
-  }
-
   /// Apply a function to the inner lexer.
   /// After that the inner lexer will be trimmed.
-  pub fn apply<F, R>(&mut self, f: F) -> R
+  pub fn apply<F, R>(&mut self, f: F) -> (R, TrimOutput<Token<'buffer, Kind, ErrorType>>)
   where
     F: FnOnce(&mut Lexer<'buffer, Kind, ActionState, ErrorType>) -> R,
   {
     let res = f(&mut self.lexer);
-    self.lexer.trim();
-    res
+    let output = self.lexer.trim();
+    (res, output)
   }
 
-  // TODO: rename to `take`
-  pub fn take_and_trim(&mut self, n: usize, state: Option<ActionState>) -> &mut Self {
-    self.apply(|lexer| {
-      lexer.take(n, state);
-    });
-    self
-  }
-
-  // TODO: rename to `lex`
-  pub fn lex_and_trim(&mut self) -> LexOutput<Token<'buffer, Kind, ErrorType>> {
+  /// Similar to [`Lexer::lex`], but the lexer is trimmed after that.
+  pub fn lex(
+    &mut self,
+  ) -> (
+    LexOutput<Token<'buffer, Kind, ErrorType>>,
+    TrimOutput<Token<'buffer, Kind, ErrorType>>,
+  ) {
     self.apply(|lexer| lexer.lex())
   }
+  /// Similar to [`Lexer::lex_expect`], but the lexer is trimmed after that.
+  pub fn lex_expect(
+    &mut self,
+    expectation: Expectation<'_, Kind>,
+  ) -> (
+    LexOutput<Token<'buffer, Kind, ErrorType>>,
+    TrimOutput<Token<'buffer, Kind, ErrorType>>,
+  ) {
+    self.apply(|lexer| lexer.lex_expect(expectation))
+  }
+  /// Similar to [`Lexer::lex_all`], but the lexer is trimmed after that.
+  pub fn lex_all(
+    &mut self,
+  ) -> (
+    LexAllOutput<Token<'buffer, Kind, ErrorType>>,
+    TrimOutput<Token<'buffer, Kind, ErrorType>>,
+  ) {
+    self.apply(|lexer| lexer.lex_all())
+  }
+  /// Similar to [`Lexer::take`], but the lexer is trimmed after that.
+  pub fn take(
+    &mut self,
+    n: usize,
+    state: Option<ActionState>,
+  ) -> (&mut Self, TrimOutput<Token<'buffer, Kind, ErrorType>>) {
+    let (_, output) = self.apply(|lexer| {
+      lexer.take(n, state);
+    });
+    (self, output)
+  }
 
-  // there is no `trim` or `into_trimmed` for TrimmedLexer
+  // there is no `trim` for TrimmedLexer
 }
