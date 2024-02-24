@@ -98,6 +98,10 @@ impl<
       .iter()
       .map(|index| &self.buffer[*index])
   }
+  /// Shortcut for `self.matched(index).data.as_ref().unwrap()`.
+  pub fn values(&self, index: usize) -> &ASTData {
+    self.matched(index).data.as_ref().unwrap()
+  }
 }
 
 pub type Condition<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType> =
