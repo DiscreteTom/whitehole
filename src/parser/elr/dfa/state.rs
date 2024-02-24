@@ -280,6 +280,14 @@ impl<
         Some(next) => Some(next.clone()),
       })
   }
+
+  /// Reset the stateful state so that all cache is cleared.
+  /// This should be called when the lexer's state is reset.
+  pub fn reset(&mut self) {
+    self.lexed_grammars.clear();
+    self.lexed_without_expectation = false;
+    self.next_expectational_lex_index = 0;
+  }
 }
 
 pub struct StateTryLexOutput<NodeType, LexerType> {

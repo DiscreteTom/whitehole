@@ -76,6 +76,8 @@ impl<
         None => {
           // lex failed, enter panic mode
           self.lexer = Some(lexer_panic_handler(self.lexer.take().unwrap()));
+          // since lexer's state is reset, we have to reset state
+          current_state.reset();
           // try lex again
           continue;
         }
@@ -126,8 +128,11 @@ impl<
       // which means expectational lex after an NT is not working.
       // in our case, we can't lex `B` expectational because it is after `A`
       // TODO: panic if user want expectational lex after NT
-      let (lexer, token) =
-        Self::lex_without_expectation(self.lexer.take().unwrap(), lexer_panic_handler);
+      let (lexer, token) = Self::lex_without_expectation(
+        self.lexer.take().unwrap(),
+        self.state_stack.current(),
+        lexer_panic_handler,
+      );
       self.lexer = Some(lexer);
       self.next_token = Some(token);
     }
@@ -233,6 +238,15 @@ impl<
 
   fn lex_without_expectation(
     mut lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    current_state: &mut StatefulState<
+      TKind,
+      NTKind,
+      ASTData,
+      ErrorType,
+      Global,
+      LexerActionState,
+      LexerErrorType,
+    >,
     lexer_panic_handler: &LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
   ) -> (
     TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
@@ -245,6 +259,8 @@ impl<
         None => {
           // lex failed, enter panic mode
           lexer = lexer_panic_handler(lexer);
+          // since lexer's state is reset, we have to reset state
+          current_state.reset();
           // try lex again
           continue;
         }
