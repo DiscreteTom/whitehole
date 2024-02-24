@@ -17,7 +17,7 @@ pub struct ReduceContext<
   LexerActionState: Default + Clone + 'static,
   LexerErrorType: 'static,
 > {
-  matched: &'a [usize],
+  matched_indexes: &'a [usize],
   buffer: &'a Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
   reducing_stack: &'a Vec<usize>,
   next_token: &'a Option<Token<'buffer, TKind, LexerErrorType>>,
@@ -50,14 +50,14 @@ impl<
   >
 {
   pub fn new(
-    matched: &'a [usize],
+    matched_indexes: &'a [usize],
     buffer: &'a Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
     reducing_stack: &'a Vec<usize>,
     next_token: &'a Option<Token<'buffer, TKind, LexerErrorType>>,
     lexer: &'a TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   ) -> Self {
     Self {
-      matched,
+      matched_indexes,
       buffer,
       reducing_stack,
       next_token,
@@ -67,8 +67,8 @@ impl<
     }
   }
 
-  pub fn matched(&self) -> &'a [usize] {
-    self.matched
+  pub fn matched_indexes(&self) -> &'a [usize] {
+    self.matched_indexes
   }
   pub fn buffer(&self) -> &'a Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>> {
     self.buffer
@@ -84,10 +84,19 @@ impl<
     self.lexer
   }
 
+  pub fn matched(
+    &self,
+    index: usize,
+  ) -> &ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global> {
+    &self.buffer[self.matched_indexes[index]]
+  }
   pub fn matched_iter(
     &self,
   ) -> impl Iterator<Item = &ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>> {
-    self.matched.iter().map(|index| &self.buffer[*index])
+    self
+      .matched_indexes
+      .iter()
+      .map(|index| &self.buffer[*index])
   }
 }
 
