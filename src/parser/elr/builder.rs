@@ -216,10 +216,7 @@ impl<
   /// Set the lexer panic handler. By default the handler is [`default_lexer_panic_handler`].
   pub fn on_lexer_panic<F>(mut self, f: F) -> Self
   where
-    F: Fn(
-        TrimmedLexer<TKind, LexerActionState, LexerErrorType>,
-      ) -> TrimmedLexer<TKind, LexerActionState, LexerErrorType>
-      + 'static,
+    F: Fn(&mut TrimmedLexer<TKind, LexerActionState, LexerErrorType>) + 'static,
   {
     self.lexer_panic_handler = Box::new(f);
     self

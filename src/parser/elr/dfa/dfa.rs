@@ -115,7 +115,7 @@ impl<
       state_stack,
       reducing_stack,
       next_token: None,
-      lexer: Some(lexer),
+      lexer,
       need_lex: true, // at the beginning we should lex for a new AST node // TODO: is this true? maybe we want to reduce when we already have nodes in buffer
       errors: Vec::new(),
     };
@@ -144,7 +144,7 @@ impl<
         TryReduceResult::EnterPanicMode => todo!(),
         TryReduceResult::Done => {
           return DfaParseOutput {
-            lexer: parsing_state.lexer.unwrap(),
+            lexer: parsing_state.lexer,
             buffer: parsing_state.buffer,
             errors: parsing_state.errors,
           };
