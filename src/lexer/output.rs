@@ -21,9 +21,3 @@ pub struct TrimOutput<TokenType> {
   pub digested: usize,
   pub errors: Vec<TokenType>,
 }
-
-pub struct IntoTrimmedOutput<TokenType, TrimmedLexer> {
-  pub digested: usize,
-  pub errors: Vec<TokenType>,
-  pub trimmed_lexer: TrimmedLexer,
-}

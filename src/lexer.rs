@@ -13,11 +13,10 @@ pub use builder::LexerBuilder;
 
 use self::{
   expectation::Expectation,
-  output::{IntoTrimmedOutput, LexAllOutput, LexOutput, PeekOutput, TrimOutput},
+  output::{LexAllOutput, LexOutput, PeekOutput, TrimOutput},
   state::LexerState,
   stateless::{lex::StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKind},
-  trimmed::TrimmedLexer,
 };
 use std::rc::Rc;
 
@@ -202,19 +201,5 @@ where
     );
     self.state.trim(res.digested);
     res
-  }
-
-  pub fn into_trimmed(
-    mut self,
-  ) -> IntoTrimmedOutput<
-    Token<'buffer, Kind, ErrorType>,
-    TrimmedLexer<'buffer, Kind, ActionState, ErrorType>,
-  > {
-    let res = self.trim();
-    IntoTrimmedOutput {
-      digested: res.digested,
-      errors: res.errors,
-      trimmed_lexer: TrimmedLexer::new(self),
-    }
   }
 }
