@@ -1,7 +1,4 @@
-use super::{
-  builder::lexer_panic_handler::LexerPanicHandler,
-  dfa::{dfa::Dfa, stack::Stack, state::StatefulState},
-};
+use super::{builder::lexer_panic_handler::LexerPanicHandler, dfa::dfa::Dfa};
 use crate::{
   lexer::{token::TokenKind, trimmed::TrimmedLexer},
   parser::ast::ASTNode,
@@ -62,37 +59,17 @@ impl<
   }
 
   pub fn parse(&mut self) -> ParseOutput<'buffer, TKind, NTKind, ASTData, ErrorType, Global> {
-    self.parse_with(
-      Vec::new(),
-      Stack::new(vec![self.dfa.entry_state().clone().into()]),
-      [],
-    )
+    self.parse_with(Vec::new())
   }
 
-  // TODO: better name
-  pub fn parse_continue(
-    &mut self,
-    buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
-    state_stack: Stack<
-      StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
-    >,
-  ) -> ParseOutput<'buffer, TKind, NTKind, ASTData, ErrorType, Global> {
-    let last = buffer.len() - 1;
-    self.parse_with(buffer, state_stack, [last])
-  }
-
+  /// Useful if you want to provision the buffer yourself.
+  /// E.g. `parser.parse_with(Vec::with_capacity(100))`
   pub fn parse_with(
     &mut self,
     buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
-    state_stack: Stack<
-      StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
-    >,
-    reducing_stack: impl Into<Vec<usize>>,
   ) -> ParseOutput<'buffer, TKind, NTKind, ASTData, ErrorType, Global> {
     let output = self.dfa.parse(
       buffer,
-      state_stack,
-      reducing_stack.into(),
       // TODO: prevent clone?
       self.lexer.clone(),
       &self.lexer_panic_handler,
@@ -103,9 +80,5 @@ impl<
       buffer: output.buffer,
       errors: output.errors,
     }
-  }
-
-  pub fn parse_all(&mut self) -> ParseOutput<'buffer, TKind, NTKind, ASTData, ErrorType, Global> {
-    todo!()
   }
 }

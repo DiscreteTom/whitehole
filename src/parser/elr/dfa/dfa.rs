@@ -1,7 +1,7 @@
 use super::{
   parsing::{ParsingState, TryReduceResult},
   stack::Stack,
-  state::{State, StateId, StatefulState},
+  state::{State, StateId},
 };
 use crate::{
   lexer::{token::TokenKind, trimmed::TrimmedLexer},
@@ -83,19 +83,9 @@ impl<
     }
   }
 
-  pub fn entry_state(
-    &self,
-  ) -> &Rc<State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>> {
-    &self.entry_state
-  }
-
   pub fn parse<'buffer>(
     &self,
     buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
-    state_stack: Stack<
-      StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
-    >,
-    reducing_stack: Vec<usize>,
     lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     lexer_panic_handler: &LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
     global: &Rc<RefCell<Global>>,
@@ -112,8 +102,8 @@ impl<
     // TODO: move to ParsingState::new()?
     let mut parsing_state = ParsingState {
       buffer,
-      state_stack,
-      reducing_stack,
+      state_stack: Stack::new(vec![self.entry_state.clone().into()]),
+      reducing_stack: Vec::new(),
       next_token: None,
       lexer,
       need_lex: true, // at the beginning we should lex for a new AST node // TODO: is this true? maybe we want to reduce when we already have nodes in buffer
