@@ -70,4 +70,12 @@ impl<
     self.cache.insert(key, id);
     &mut self.grs[id.0]
   }
+
+  pub fn get_mut(
+    &mut self,
+    id: &GrammarRuleId,
+  ) -> &mut GrammarRule<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
+  {
+    &mut self.grs[id.0]
+  }
 }

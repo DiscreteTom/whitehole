@@ -3,7 +3,6 @@ pub mod grammar_rule_context_builder;
 pub mod lexer_panic_handler;
 pub mod reduce_context;
 pub mod resolver;
-pub mod temp_grammar_rule;
 pub mod temp_resolver;
 
 use self::{
@@ -11,7 +10,6 @@ use self::{
   grammar_rule_context_builder::GrammarRuleContextBuilder,
   lexer_panic_handler::{default_lexer_panic_handler, LexerPanicHandler},
   resolver::ResolvedConflict,
-  temp_grammar_rule::TempGrammarRule,
   temp_resolver::{ReduceReduceResolverOptions, ReduceShiftResolverOptions},
 };
 use super::{
@@ -178,21 +176,7 @@ impl<
       .into_iter()
       .map(|r| ResolvedConflict {
         kind: r.kind,
-        another_rule: self
-          .gr_repo
-          .get_or_add(
-            self
-              .grammars
-              .get_or_create_nt(r.another_rule.nt().clone())
-              .clone(),
-            r.another_rule
-              .rule()
-              .iter()
-              .map(|g| self.grammars.get_or_create(g.kind.clone()).clone())
-              .collect(),
-          )
-          .id()
-          .clone(),
+        another_rule: r.another_rule,
         accepter: r.accepter,
         condition: r
           .condition
@@ -261,8 +245,8 @@ impl<
 
   pub fn resolve_rs<F>(
     mut self,
-    reducer_rule: Rc<TempGrammarRule<TKind, NTKind>>,
-    another_rule: Rc<TempGrammarRule<TKind, NTKind>>,
+    reducer_rule_id: GrammarRuleId,
+    another_rule_id: GrammarRuleId,
     f: F,
   ) -> Self
   where
@@ -286,43 +270,15 @@ impl<
       LexerErrorType,
     >,
   {
-    // get another rule from gr_repo
-    let another_rule = self
-      .gr_repo
-      .get_or_add(
-        self
-          .grammars
-          .get_or_create_nt(another_rule.nt().clone())
-          .clone(),
-        another_rule
-          .rule()
-          .iter()
-          .map(|g| self.grammars.get_or_create(g.kind.clone()).clone())
-          .collect(),
-      )
-      .id()
-      .clone();
-
     let ctx = f(ReduceShiftResolverOptions::default());
 
-    // get reducer rule from gr_repo
     self
       .gr_repo
-      .get_or_add(
-        self
-          .grammars
-          .get_or_create_nt(reducer_rule.nt().clone())
-          .clone(),
-        reducer_rule
-          .rule()
-          .iter()
-          .map(|g| self.grammars.get_or_create(g.kind.clone()).clone())
-          .collect(),
-      )
+      .get_mut(&reducer_rule_id)
       .resolved_conflicts
       .push(ResolvedConflict {
         kind: ConflictKind::ReduceShift,
-        another_rule,
+        another_rule: another_rule_id,
         accepter: ctx.accepter,
         condition: ctx
           .condition
@@ -334,8 +290,8 @@ impl<
 
   pub fn resolve_rr<F>(
     mut self,
-    reducer_rule: Rc<TempGrammarRule<TKind, NTKind>>,
-    another_rule: Rc<TempGrammarRule<TKind, NTKind>>,
+    reducer_rule_id: GrammarRuleId,
+    another_rule_id: GrammarRuleId,
     f: F,
   ) -> Self
   where
@@ -359,44 +315,16 @@ impl<
       LexerErrorType,
     >,
   {
-    // TODO: simplify code
-    // get another rule from gr_repo
-    let another_rule = self
-      .gr_repo
-      .get_or_add(
-        self
-          .grammars
-          .get_or_create_nt(another_rule.nt().clone())
-          .clone(),
-        another_rule
-          .rule()
-          .iter()
-          .map(|g| self.grammars.get_or_create(g.kind.clone()).clone())
-          .collect(),
-      )
-      .id()
-      .clone();
-
     let ctx = f(ReduceReduceResolverOptions::default());
 
     // get reducer rule from gr_repo
     self
       .gr_repo
-      .get_or_add(
-        self
-          .grammars
-          .get_or_create_nt(reducer_rule.nt().clone())
-          .clone(),
-        reducer_rule
-          .rule()
-          .iter()
-          .map(|g| self.grammars.get_or_create(g.kind.clone()).clone())
-          .collect(),
-      )
+      .get_mut(&reducer_rule_id)
       .resolved_conflicts
       .push(ResolvedConflict {
         kind: ConflictKind::ReduceReduce,
-        another_rule,
+        another_rule: another_rule_id,
         accepter: ctx.accepter,
         condition: ctx
           .condition

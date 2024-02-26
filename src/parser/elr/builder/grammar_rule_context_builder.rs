@@ -1,11 +1,9 @@
 use super::{
   conflict::ConflictKind,
   reduce_context::{Callback, Condition, ReduceContext},
-  temp_grammar_rule::TempGrammarRule,
   temp_resolver::{ReduceReduceResolverOptions, ReduceShiftResolverOptions, TempResolvedConflict},
 };
-use crate::lexer::token::TokenKind;
-use std::rc::Rc;
+use crate::{lexer::token::TokenKind, parser::elr::grammar::grammar_rule::GrammarRuleId};
 
 pub struct GrammarRuleContextBuilder<
   TKind: TokenKind<TKind> + 'static,
@@ -25,7 +23,7 @@ pub struct GrammarRuleContextBuilder<
     TempResolvedConflict<
       TKind,
       NTKind,
-      Rc<TempGrammarRule<TKind, NTKind>>,
+      GrammarRuleId,
       Condition<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
     >,
   >,
@@ -136,7 +134,7 @@ impl<
     })
   }
 
-  pub fn resolve_rs<F>(mut self, gr: Rc<TempGrammarRule<TKind, NTKind>>, f: F) -> Self
+  pub fn resolve_rs<F>(mut self, gr: GrammarRuleId, f: F) -> Self
   where
     F: FnOnce(
       ReduceShiftResolverOptions<
@@ -168,7 +166,7 @@ impl<
     self
   }
 
-  pub fn resolve_rr<F>(mut self, gr: Rc<TempGrammarRule<TKind, NTKind>>, f: F) -> Self
+  pub fn resolve_rr<F>(mut self, gr: GrammarRuleId, f: F) -> Self
   where
     F: FnOnce(
       ReduceReduceResolverOptions<
