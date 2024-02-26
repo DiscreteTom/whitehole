@@ -125,11 +125,11 @@ impl<
   }
 
   // TODO: make gr a ref? so that we don't need to clone it outside
-  pub fn define(self, gr: Rc<TempGrammarRule<TKind, NTKind>>) -> Self {
-    self.define_with(gr, |ctx| ctx)
+  pub fn append(self, gr: Rc<TempGrammarRule<TKind, NTKind>>) -> Self {
+    self.append_with(gr, |ctx| ctx)
   }
 
-  pub fn define_with<'a, 'buffer: 'a, F>(
+  pub fn append_with<'a, 'buffer: 'a, F>(
     mut self,
     gr: Rc<TempGrammarRule<TKind, NTKind>>,
     f: F,
