@@ -1,6 +1,7 @@
 pub mod conflict;
 pub mod grammar_rule_context_builder;
 pub mod lexer_panic_handler;
+pub mod priority;
 pub mod reduce_context;
 pub mod resolver;
 pub mod temp_resolver;
@@ -9,6 +10,7 @@ use self::{
   conflict::ConflictKind,
   grammar_rule_context_builder::GrammarRuleContextBuilder,
   lexer_panic_handler::{default_lexer_panic_handler, LexerPanicHandler},
+  priority::{Associativity, Priority},
   resolver::ResolvedConflict,
   temp_resolver::{ReduceReduceResolverOptions, ReduceShiftResolverOptions},
 };
@@ -340,6 +342,61 @@ impl<
     F: Fn(&mut TrimmedLexer<TKind, LexerActionState, LexerErrorType>) + 'static,
   {
     self.lexer_panic_handler = Box::new(f);
+    self
+  }
+
+  pub fn priority(mut self, groups: impl Into<Priority<GrammarRuleId>>) -> Self {
+    let groups = (groups.into() as Priority<GrammarRuleId>).0;
+
+    // TODO: optimize comments
+    // grammar rules with higher priority will always be reduced first
+    // e.g. priority([{ exp: `exp '*' exp` }], [{ exp: `exp '+' exp` }])
+    for (higher_index, higher_group) in groups.iter().enumerate() {
+      for lower_group in &groups[higher_index + 1..] {
+        for higher in &higher_group.group {
+          for lower in &lower_group.group {
+            self = self
+              .resolve_rs(*higher, *lower, |r| r.accept_on_any_next(true))
+              .resolve_rr(*higher, *lower, |r| r.accept_on_any_next(true).handle_eof())
+              .resolve_rs(*lower, *higher, |r| r.accept_on_any_next(false))
+              .resolve_rr(*lower, *higher, |r| {
+                r.accept_on_any_next(false).handle_eof()
+              });
+          }
+        }
+      }
+    }
+
+    // TODO: optimize comments
+    // grammar rules with the same priority will be accepted by associativity
+    // e.g. priority([{ exp: `exp '+' exp` }, { exp: `exp '-' exp` }])
+    for group in &groups {
+      for d1 in &group.group {
+        for d2 in &group.group {
+          // even d1 === d2, we still need to resolve them
+          // e.g. { exp: `exp '+' exp` } need to resolve RS conflicts with it self.
+          self = self.resolve_rs(*d1, *d2, |r| {
+            r.accept_on_any_next(matches!(group.associativity, Associativity::LeftToRight))
+          });
+
+          // the following conflicts are only valid if d1 !== d2
+          if d1 != d2 {
+            self = self
+              .resolve_rr(*d1, *d2, |r| {
+                r.accept_on_any_next(matches!(group.associativity, Associativity::LeftToRight))
+                  .handle_eof()
+              })
+              .resolve_rs(*d2, *d1, |r| {
+                r.accept_on_any_next(matches!(group.associativity, Associativity::LeftToRight))
+              })
+              .resolve_rr(*d2, *d1, |r| {
+                r.accept_on_any_next(matches!(group.associativity, Associativity::LeftToRight))
+              });
+          }
+        }
+      }
+    }
+
     self
   }
 
