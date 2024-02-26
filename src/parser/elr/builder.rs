@@ -124,13 +124,18 @@ impl<
     }
   }
 
-  pub fn define(&mut self, gr: Rc<TempGrammarRule<TKind, NTKind>>) -> GrammarRuleId {
-    self.define_with(gr, |ctx| ctx)
+  pub fn define(
+    &mut self,
+    nt: NTKind,
+    rule: impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>,
+  ) -> GrammarRuleId {
+    self.define_with(nt, rule, |ctx| ctx)
   }
 
   pub fn define_with<'a, 'buffer: 'a, F>(
     &mut self,
-    gr: Rc<TempGrammarRule<TKind, NTKind>>,
+    nt: NTKind,
+    rule: impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>,
     f: F,
   ) -> GrammarRuleId
   where
@@ -154,14 +159,13 @@ impl<
       LexerErrorType,
     >,
   {
-    let expect = gr
-      .rule()
+    let rule = rule.into();
+    let expect = rule
       .iter()
       .enumerate()
       .filter_map(|(i, g)| if g.expected { Some(i) } else { None })
       .collect();
-    let rule = gr
-      .rule()
+    let rule = rule
       .iter()
       .map(|g| self.grammars.get_or_create(g.kind.clone()).clone())
       .collect();
@@ -197,10 +201,9 @@ impl<
       .collect();
 
     // the new grammar rule
-    let gr = self.gr_repo.get_or_add(
-      self.grammars.get_or_create_nt(gr.nt().clone()).clone(),
-      rule,
-    );
+    let gr = self
+      .gr_repo
+      .get_or_add(self.grammars.get_or_create_nt(nt).clone(), rule);
 
     // ensure we don't define the same grammar rule twice
     if !self.defined_grs.insert(gr.id().clone()) {
@@ -217,13 +220,18 @@ impl<
   }
 
   // TODO: make gr a ref? so that we don't need to clone it outside
-  pub fn append(self, gr: Rc<TempGrammarRule<TKind, NTKind>>) -> Self {
-    self.append_with(gr, |ctx| ctx)
+  pub fn append(
+    self,
+    nt: NTKind,
+    rule: impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>,
+  ) -> Self {
+    self.append_with(nt, rule, |ctx| ctx)
   }
 
   pub fn append_with<'a, 'buffer: 'a, F>(
     mut self,
-    gr: Rc<TempGrammarRule<TKind, NTKind>>,
+    nt: NTKind,
+    rule: impl Into<Vec<ParserBuilderGrammar<TKind, NTKind>>>,
     f: F,
   ) -> Self
   where
@@ -247,7 +255,7 @@ impl<
       LexerErrorType,
     >,
   {
-    self.define_with(gr, f);
+    self.define_with(nt, rule, f);
     self
   }
 
