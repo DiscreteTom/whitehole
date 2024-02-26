@@ -124,16 +124,15 @@ impl<
     }
   }
 
-  // TODO: make gr a ref? so that we don't need to clone it outside
-  pub fn append(self, gr: Rc<TempGrammarRule<TKind, NTKind>>) -> Self {
-    self.append_with(gr, |ctx| ctx)
+  pub fn define(&mut self, gr: Rc<TempGrammarRule<TKind, NTKind>>) -> GrammarRuleId {
+    self.define_with(gr, |ctx| ctx)
   }
 
-  pub fn append_with<'a, 'buffer: 'a, F>(
-    mut self,
+  pub fn define_with<'a, 'buffer: 'a, F>(
+    &mut self,
     gr: Rc<TempGrammarRule<TKind, NTKind>>,
     f: F,
-  ) -> Self
+  ) -> GrammarRuleId
   where
     F: FnOnce(
       GrammarRuleContextBuilder<
@@ -214,6 +213,41 @@ impl<
     gr.resolved_conflicts = resolved_conflicts;
     gr.callback = ctx.callback;
 
+    gr.id().clone()
+  }
+
+  // TODO: make gr a ref? so that we don't need to clone it outside
+  pub fn append(self, gr: Rc<TempGrammarRule<TKind, NTKind>>) -> Self {
+    self.append_with(gr, |ctx| ctx)
+  }
+
+  pub fn append_with<'a, 'buffer: 'a, F>(
+    mut self,
+    gr: Rc<TempGrammarRule<TKind, NTKind>>,
+    f: F,
+  ) -> Self
+  where
+    F: FnOnce(
+      GrammarRuleContextBuilder<
+        TKind,
+        NTKind,
+        ASTData,
+        ErrorType,
+        Global,
+        LexerActionState,
+        LexerErrorType,
+      >,
+    ) -> GrammarRuleContextBuilder<
+      TKind,
+      NTKind,
+      ASTData,
+      ErrorType,
+      Global,
+      LexerActionState,
+      LexerErrorType,
+    >,
+  {
+    self.define_with(gr, f);
     self
   }
 
