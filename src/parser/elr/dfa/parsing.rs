@@ -38,7 +38,6 @@ pub struct ParsingState<
   >,
   pub reducing_stack: Vec<usize>,
   /// This should always be `Some`.
-  // TODO: use NonNull or something instead of Option
   pub lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   /// `None` if not ready, `Some(None)` if EOF, `Some(Some(token))` if next token exists.
   pub next_token: Option<Option<Token<'buffer, TKind, LexerErrorType>>>,
