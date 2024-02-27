@@ -57,6 +57,24 @@ impl<
   >
   ParsingState<'buffer, TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
+  pub fn new(
+    buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
+    lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    entry_state: Rc<
+      State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+    >,
+  ) -> Self {
+    Self {
+      buffer,
+      state_stack: Stack::new(vec![entry_state.clone().into()]),
+      reducing_stack: Vec::new(),
+      next_token: None,
+      lexer,
+      need_lex: true, // at the beginning we should lex for a new AST node // TODO: is this true? maybe we want to reduce when we already have nodes in buffer
+      errors: Vec::new(),
+    }
+  }
+
   pub fn try_lex(
     &mut self,
     states: &HashMap<
