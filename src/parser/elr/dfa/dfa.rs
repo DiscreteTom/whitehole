@@ -34,6 +34,7 @@ pub struct DfaParseOutput<
   pub errors: Vec<usize>,
 }
 
+/// DFA is stateless.
 pub struct Dfa<
   TKind: TokenKind<TKind> + 'static,
   NTKind: TokenKind<NTKind> + Clone + 'static,
