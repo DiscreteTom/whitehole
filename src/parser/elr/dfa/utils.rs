@@ -8,11 +8,10 @@ use crate::{
 };
 use std::{cell::RefCell, rc::Rc};
 
-pub struct LexGrammarOutput<'buffer, TKind, NodeType, LexerType> {
+pub struct LexGrammarOutput<'buffer, TKind, NodeType> {
   pub t_kind_id: TokenKindId<TKind>,
   pub text: &'buffer str,
   pub node: NodeType,
-  pub lexer: LexerType,
 }
 
 pub fn lex_grammar<
@@ -26,25 +25,11 @@ pub fn lex_grammar<
   LexerErrorType: 'static,
 >(
   expectation: Expectation<TKind>,
-  lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+  lexer: &mut TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   global: &Rc<RefCell<Global>>,
 ) -> Option<
-  LexGrammarOutput<
-    'buffer,
-    TKind,
-    ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>,
-    TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
-  >,
+  LexGrammarOutput<'buffer, TKind, ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
 > {
-  // because of re-lex, we may store many lexers
-  // so we clone the lexer to prevent side effect.
-  // we must clone the lexer here to prevent unnecessary clone.
-  // you may think using peek is more efficient, but it's not,
-  // since we still need to clone and store the new lexer state and action state
-  // so it's actually the same.
-  // TODO: don't clone the lexer if we disable re-lex or when re-lex won't happen
-  let mut lexer = lexer.clone();
-
   let (res, _) = lexer.lex_expect(expectation);
   res.token.and_then(move |token| {
     // TODO: set node data
@@ -59,7 +44,6 @@ pub fn lex_grammar<
         None,
         None,
       ),
-      lexer,
     })
   })
 }

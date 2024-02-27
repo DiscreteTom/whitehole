@@ -92,12 +92,11 @@ impl<
   ) -> ParseOutput<'buffer, TKind, NTKind, ASTData, ErrorType, Global> {
     let output = self.dfa.parse(
       buffer,
-      // TODO: prevent clone?
-      self.lexer.clone(),
+      &mut self.lexer,
       &self.lexer_panic_handler,
       &self.global,
+      true, // TODO: make this configurable
     );
-    self.lexer = output.lexer;
     ParseOutput {
       buffer: output.buffer,
       errors: output.errors,

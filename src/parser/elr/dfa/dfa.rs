@@ -25,10 +25,7 @@ pub struct DfaParseOutput<
   ASTData: 'static,
   ErrorType: 'static,
   Global: 'static,
-  LexerActionState: Default + Clone + 'static,
-  LexerErrorType: 'static,
 > {
-  pub lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   pub buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
   pub errors: Vec<usize>,
 }
@@ -86,25 +83,17 @@ impl<
   pub fn parse<'buffer>(
     &self,
     buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
-    lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: &mut TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     lexer_panic_handler: &LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
     global: &Rc<RefCell<Global>>,
-  ) -> DfaParseOutput<
-    'buffer,
-    TKind,
-    NTKind,
-    ASTData,
-    ErrorType,
-    Global,
-    LexerActionState,
-    LexerErrorType,
-  > {
+    re_lex: bool,
+  ) -> DfaParseOutput<'buffer, TKind, NTKind, ASTData, ErrorType, Global> {
     let mut parsing_state = ParsingState::new(buffer, lexer, self.entry_state.clone());
 
     loop {
       if parsing_state.need_lex {
         // try to lex a new one
-        if parsing_state.try_lex(&self.states, global, lexer_panic_handler) {
+        if parsing_state.try_lex(&self.states, global, lexer_panic_handler, re_lex) {
           continue;
         }
 
@@ -125,7 +114,6 @@ impl<
         TryReduceResult::EnterPanicMode => todo!(),
         TryReduceResult::Done => {
           return DfaParseOutput {
-            lexer: parsing_state.lexer,
             buffer: parsing_state.buffer,
             errors: parsing_state.errors,
           };

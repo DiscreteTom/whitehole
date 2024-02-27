@@ -140,9 +140,10 @@ impl<
 {
   pub fn try_lex<'buffer>(
     &mut self,
-    lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: &mut TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     // TODO: add param token_ast_mapper
     global: &Rc<RefCell<Global>>,
+    re_lex: bool,
   ) -> Option<
     StateTryLexOutput<
       ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>,
@@ -154,11 +155,13 @@ impl<
       .iter()
       .enumerate()
     {
-      if let Some(output) = c.try_lex_with_expectation(lexer, &mut self.lexed_grammars, global) {
+      if let Some(output) =
+        c.try_lex_with_expectation(lexer, &mut self.lexed_grammars, global, re_lex)
+      {
         self.next_expectational_lex_index = i + 1;
         return Some(StateTryLexOutput {
           node: output.node,
-          lexer: output.lexer,
+          re_lex_lexer: output.re_lex_lexer,
           next_state_id: self.get_next_by_lexed_grammar(&output.grammar_id).clone(),
         });
       }
@@ -174,15 +177,21 @@ impl<
 
     // lex without expectation
     self.next_expectational_lex_index = self.core.candidates().len(); // no next expectational lex
+
+    // now we can make sure the lex is unavoidable,
+    // if re-lex is enabled, we should store the original lexer before lex.
+    // we do this here instead of before, to prevent unnecessary lexer clone
+    let re_lex_lexer = if re_lex { Some(lexer.clone()) } else { None };
+
     lex_grammar(Expectation::default(), lexer, global).and_then(|output| {
       self
         .try_accept_t_node_without_expectation(&output.t_kind_id, output.text)
         .map(|next_state_id| {
           StateTryLexOutput {
             node: output.node,
-            lexer: output.lexer,
             // treat as the candidate lexed the node
             next_state_id: next_state_id.clone(),
+            re_lex_lexer,
           }
         })
     })
@@ -292,7 +301,7 @@ impl<
 
 pub struct StateTryLexOutput<NodeType, LexerType> {
   pub node: NodeType,
-  pub lexer: LexerType,
+  pub re_lex_lexer: Option<LexerType>,
   pub next_state_id: StateId,
 }
 

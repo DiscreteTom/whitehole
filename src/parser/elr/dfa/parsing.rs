@@ -24,6 +24,7 @@ use std::{
 
 pub struct ParsingState<
   'buffer,
+  'lexer,
   TKind: TokenKind<TKind> + 'static,
   NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
@@ -39,7 +40,7 @@ pub struct ParsingState<
   >,
   pub reducing_stack: Vec<usize>,
   /// This should always be `Some`.
-  pub lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+  pub lexer: &'lexer mut TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   /// `None` if not ready, `Some(None)` if EOF, `Some(Some(token))` if next token exists.
   pub next_token: Option<Option<Token<'buffer, TKind, LexerErrorType>>>,
   pub need_lex: bool,
@@ -54,6 +55,7 @@ pub struct ParsingState<
 
 impl<
     'buffer,
+    'lexer,
     TKind: TokenKind<TKind>,
     NTKind: TokenKind<NTKind> + Clone + 'static,
     ASTData: 'static,
@@ -62,11 +64,21 @@ impl<
     LexerActionState: Clone + Default,
     LexerErrorType,
   >
-  ParsingState<'buffer, TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
+  ParsingState<
+    'buffer,
+    'lexer,
+    TKind,
+    NTKind,
+    ASTData,
+    ErrorType,
+    Global,
+    LexerActionState,
+    LexerErrorType,
+  >
 {
   pub fn new(
     buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
-    lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: &'lexer mut TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     entry_state: Rc<
       State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
     >,
@@ -91,13 +103,14 @@ impl<
     >,
     global: &Rc<RefCell<Global>>,
     lexer_panic_handler: &LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
+    re_lex: bool,
   ) -> bool {
     // only lex if the lexer can yield a token.
     // since the lexer is already trimmed, we only need to check the length of the rest of input
     while self.lexer.state().rest().len() > 0 {
       let current_state = self.state_stack.current();
 
-      match current_state.try_lex(&self.lexer, global) {
+      match current_state.try_lex(&mut self.lexer, global, re_lex) {
         None => {
           // lex failed, enter panic mode
           lexer_panic_handler(&mut self.lexer);
@@ -119,7 +132,6 @@ impl<
             .push(states.get(&output.next_state_id).unwrap().clone().into());
           self.reducing_stack.push(node_index); // append new node to reducing stack
           self.buffer.push(output.node);
-          self.lexer = output.lexer;
           self.need_lex = false;
           return true;
         }

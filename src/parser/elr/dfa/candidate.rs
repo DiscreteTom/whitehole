@@ -87,9 +87,10 @@ impl<
 
   pub fn try_lex_with_expectation<'buffer>(
     &self,
-    lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: &mut TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     lexed_grammars: &mut HashSet<GrammarId>,
     global: &Rc<RefCell<Global>>,
+    re_lex: bool,
   ) -> Option<
     CandidateTryLexOutput<
       ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>,
@@ -122,10 +123,15 @@ impl<
       // because even the lex failed, we should not try to lex it again
       lexed_grammars.insert(grammar_id.clone());
 
+      // now we can make sure the lex is unavoidable,
+      // if re-lex is enabled, we should store the original lexer before lex.
+      // we do this here instead of before, to prevent unnecessary lexer clone
+      let re_lex_lexer = if re_lex { Some(lexer.clone()) } else { None };
+
       lex_grammar(expectation, lexer, global).map(|output| CandidateTryLexOutput {
         node: output.node,
-        lexer: output.lexer,
         grammar_id: current.id().clone(),
+        re_lex_lexer,
       })
     })
   }
@@ -308,7 +314,8 @@ impl<
 
 pub struct CandidateTryLexOutput<NodeType, LexerType> {
   pub node: NodeType,
-  pub lexer: LexerType,
+  /// If `None` then the re-lex is disabled, or not re-lex-able.
+  pub re_lex_lexer: Option<LexerType>,
   pub grammar_id: GrammarId,
 }
 
