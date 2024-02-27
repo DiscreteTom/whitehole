@@ -81,4 +81,23 @@ impl<
       errors: output.errors,
     }
   }
+
+  pub fn reload<'new_buffer>(
+    self,
+    buffer: &'new_buffer str,
+  ) -> Parser<
+    'new_buffer,
+    TKind,
+    NTKind,
+    ASTData,
+    ErrorType,
+    Global,
+    LexerActionState,
+    LexerErrorType,
+  > {
+    Parser {
+      lexer: self.lexer.reload(buffer).into(),
+      ..self
+    }
+  }
 }
