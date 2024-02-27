@@ -291,9 +291,8 @@ impl<
         },
         Vec::from(matched),
         buffer[matched[0]].global.clone(),
-        // TODO: set data & error
-        None,
-        None,
+        ctx.data,
+        ctx.error,
         self
           .gr
           .traverser
