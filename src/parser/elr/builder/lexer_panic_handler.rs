@@ -1,7 +1,8 @@
 use crate::lexer::{token::TokenKind, trimmed::TrimmedLexer};
+use std::rc::Rc;
 
 pub type LexerPanicHandler<TKind, LexerActionState, LexerErrorType> =
-  Box<dyn Fn(&mut TrimmedLexer<TKind, LexerActionState, LexerErrorType>)>;
+  Rc<dyn Fn(&mut TrimmedLexer<TKind, LexerActionState, LexerErrorType>)>;
 
 /// Take one char from the rest of the buffer and reset lexer's action state.
 pub fn default_lexer_panic_handler<

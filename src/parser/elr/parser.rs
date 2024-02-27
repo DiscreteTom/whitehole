@@ -27,10 +27,32 @@ pub struct Parser<
   LexerActionState: Clone + Default + 'static,
   LexerErrorType: 'static,
 > {
-  dfa: Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+  dfa: Rc<Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
   lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   lexer_panic_handler: LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
   global: Rc<RefCell<Global>>,
+}
+
+impl<
+    'buffer,
+    TKind: TokenKind<TKind> + 'static,
+    NTKind: TokenKind<NTKind> + Clone + 'static,
+    ASTData: 'static,
+    ErrorType: 'static,
+    Global: 'static,
+    LexerActionState: Clone + Default + 'static,
+    LexerErrorType: 'static,
+  > Clone
+  for Parser<'buffer, TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
+{
+  fn clone(&self) -> Self {
+    Parser {
+      dfa: self.dfa.clone(),
+      lexer: self.lexer.clone(),
+      lexer_panic_handler: self.lexer_panic_handler.clone(),
+      global: self.global.clone(),
+    }
+  }
 }
 
 impl<
@@ -45,7 +67,7 @@ impl<
   > Parser<'buffer, TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>
 {
   pub fn new(
-    dfa: Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+    dfa: Rc<Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
     lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     lexer_panic_handler: LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
     global: Rc<RefCell<Global>>,
@@ -98,6 +120,28 @@ impl<
     Parser {
       lexer: self.lexer.reload(buffer).into(),
       ..self
+    }
+  }
+
+  pub fn clone_with<'new_buffer>(
+    &self,
+    buffer: &'new_buffer str,
+    global: Rc<RefCell<Global>>,
+  ) -> Parser<
+    'new_buffer,
+    TKind,
+    NTKind,
+    ASTData,
+    ErrorType,
+    Global,
+    LexerActionState,
+    LexerErrorType,
+  > {
+    Parser {
+      dfa: self.dfa.clone(),
+      lexer: self.lexer.clone_with(buffer).into(),
+      lexer_panic_handler: self.lexer_panic_handler.clone(),
+      global,
     }
   }
 }

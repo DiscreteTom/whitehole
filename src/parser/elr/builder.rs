@@ -120,7 +120,7 @@ impl<
       grammars,
       gr_repo: GrammarRuleRepo::default(),
       defined_grs: HashSet::new(),
-      lexer_panic_handler: Box::new(default_lexer_panic_handler),
+      lexer_panic_handler: Rc::new(default_lexer_panic_handler),
     }
   }
 
@@ -341,7 +341,7 @@ impl<
   where
     F: Fn(&mut TrimmedLexer<TKind, LexerActionState, LexerErrorType>) + 'static,
   {
-    self.lexer_panic_handler = Box::new(f);
+    self.lexer_panic_handler = Rc::new(f);
     self
   }
 
@@ -408,10 +408,10 @@ impl<
     // TODO: check if all grammar rules are defined
     // because maybe some grammar rules only appears in resolvers but never defined
     Parser::new(
-      build_dfa(
+      Rc::new(build_dfa(
         self.entry_nts,
         self.gr_repo.grs.into_iter().map(|gr| Rc::new(gr)).collect(),
-      ),
+      )),
       self.lexer.into_lexer(input).into(),
       self.lexer_panic_handler,
       Rc::new(RefCell::new(self.global)),
