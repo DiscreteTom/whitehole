@@ -1,4 +1,5 @@
 use super::{
+  re_lex::ReLexState,
   stack::Stack,
   state::{State, StateId, StatefulState},
 };
@@ -43,6 +44,12 @@ pub struct ParsingState<
   pub next_token: Option<Option<Token<'buffer, TKind, LexerErrorType>>>,
   pub need_lex: bool,
   pub errors: Vec<usize>,
+  pub re_lex_stack: Stack<
+    ReLexState<
+      StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
+      TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    >,
+  >,
 }
 
 impl<
@@ -72,6 +79,7 @@ impl<
       lexer,
       need_lex: true, // at the beginning we should lex for a new AST node // TODO: is this true? maybe we want to reduce when we already have nodes in buffer
       errors: Vec::new(),
+      re_lex_stack: Stack::new(Vec::new()),
     }
   }
 
