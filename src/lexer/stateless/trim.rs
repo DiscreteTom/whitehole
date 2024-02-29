@@ -1,6 +1,6 @@
 use super::{common::Validator, StatelessLexer};
 use crate::lexer::{
-  output::TrimOutput,
+  output::{ReLexActionIndex, TrimOutput},
   stateless::common::OutputHandler,
   token::{Token, TokenKind},
 };
@@ -28,6 +28,7 @@ where
 
     let output = Self::execute_actions(
       &self.maybe_muted_head_map,
+      ReLexActionIndex(0),
       move |_| Validator {
         // we already filtered actions, so never skip
         skip_before_exec: Box::new(|_| false),

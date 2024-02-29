@@ -13,7 +13,7 @@ pub use builder::LexerBuilder;
 
 use self::{
   expectation::Expectation,
-  output::{LexAllOutput, LexOutput, PeekOutput, ReLexContext, TrimOutput},
+  output::{LexAllOutput, LexOutput, PeekOutput, ReLexActionIndex, ReLexContext, TrimOutput},
   state::LexerState,
   stateless::{lex::StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKind},
@@ -22,6 +22,7 @@ use std::rc::Rc;
 
 pub struct LexOptions<'expect_text, Kind: 'static> {
   pub expectation: Expectation<'expect_text, Kind>,
+  pub from_index: ReLexActionIndex,
   pub re_lex: bool,
 }
 
@@ -128,6 +129,8 @@ where
         start: self.state.digested(),
         action_state: &mut action_state,
         expectation: expectation.into(),
+        // TODO: add peek_with and make from_index configurable
+        from_index: ReLexActionIndex(0),
       },
     );
     PeekOutput {
@@ -148,6 +151,7 @@ where
   ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext<Self>> {
     self.lex_with(LexOptions {
       expectation: expectation.into(),
+      from_index: ReLexActionIndex(0),
       re_lex: false,
     })
   }
@@ -171,6 +175,7 @@ where
         start: self.state.digested(),
         action_state: &mut self.action_state,
         expectation: options.expectation,
+        from_index: options.from_index,
       },
     );
 
