@@ -1,7 +1,7 @@
 use super::{ActionHeadMap, StatelessLexer};
 use crate::lexer::{
   action::{input::ActionInput, output::ActionOutput, Action},
-  output::LexOutput,
+  output::{LexOutput, ReLexActionIndex},
   token::{Range, Token, TokenKind},
 };
 use std::rc::Rc;
@@ -37,7 +37,7 @@ where
     start: usize,
     state: &'state mut ActionState,
     handler: &OutputHandler,
-  ) -> LexOutput<Token<'buffer, Kind, ErrorType>>
+  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexActionIndex>
   where
     F: Fn(&ActionInput<ActionState>) -> Validator<'validator, Kind, ActionState, ErrorType>,
   {
@@ -45,6 +45,7 @@ where
       token: None, // should only be updated before return
       digested: 0,
       errors: Vec::new(),
+      re_lex: None,
     };
 
     loop {
@@ -70,7 +71,10 @@ where
         // but the digested and errors might be updated by the last iteration
         // so we have to return them
         None => return res,
-        Some(output) => {
+        Some(TraverseActionsOutput {
+          output,
+          re_lex_action_index,
+        }) => {
           if output.error.is_some() {
             // copy values before output is consumed
             let muted = output.muted;
@@ -95,26 +99,34 @@ where
             if handler.create_token {
               res.token = Some(token);
             }
-            return res;
-          } else {
-            // else, no error
 
-            if output.muted {
-              // don't emit token
-              // just update state and continue
-              res.digested += output.digested;
-              continue;
-            }
+            // set re-lex
+            res.re_lex = re_lex_action_index;
 
-            // else, not muted, check output handler
-            if handler.update_lex_output {
-              res.digested += output.digested;
-            }
-            if handler.create_token {
-              res.token = Some(Self::output2token(&input, output));
-            }
             return res;
           }
+
+          // else, no error
+
+          if output.muted {
+            // don't emit token
+            // just update state and continue
+            res.digested += output.digested;
+            continue;
+          }
+
+          // else, not muted, check output handler
+          if handler.update_lex_output {
+            res.digested += output.digested;
+          }
+          if handler.create_token {
+            res.token = Some(Self::output2token(&input, output));
+          }
+
+          // set re-lex
+          res.re_lex = re_lex_action_index;
+
+          return res;
         }
       }
     }
@@ -124,10 +136,17 @@ where
     input: &mut ActionInput<'buffer, 'state, ActionState>,
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
     validator: Validator<Kind, ActionState, ErrorType>,
-  ) -> Option<ActionOutput<Kind, ErrorType>> {
-    for action in actions {
+  ) -> Option<TraverseActionsOutput<Kind, ErrorType>> {
+    for (i, action) in actions.iter().enumerate() {
       if let Some(output) = Self::try_execute_action(input, action, &validator) {
-        return Some(output);
+        return Some(TraverseActionsOutput {
+          output,
+          re_lex_action_index: if i == actions.len() - 1 {
+            None
+          } else {
+            Some(ReLexActionIndex(i))
+          },
+        });
       }
     }
     None
@@ -169,4 +188,10 @@ where
       error: output.error,
     }
   }
+}
+
+struct TraverseActionsOutput<Kind, ErrorType> {
+  output: ActionOutput<Kind, ErrorType>,
+  /// `None` if the current lexed action is the last one (no next action to re-lex).
+  re_lex_action_index: Option<ReLexActionIndex>,
 }

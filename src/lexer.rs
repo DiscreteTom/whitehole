@@ -13,12 +13,17 @@ pub use builder::LexerBuilder;
 
 use self::{
   expectation::Expectation,
-  output::{LexAllOutput, LexOutput, PeekOutput, TrimOutput},
+  output::{LexAllOutput, LexOutput, PeekOutput, ReLexContext, TrimOutput},
   state::LexerState,
   stateless::{lex::StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKind},
 };
 use std::rc::Rc;
+
+pub struct LexOptions<'expect_text, Kind: 'static> {
+  pub expectation: Expectation<'expect_text, Kind>,
+  pub re_lex: bool,
+}
 
 pub struct Lexer<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
 where
@@ -133,27 +138,72 @@ where
     }
   }
 
-  pub fn lex(&mut self) -> LexOutput<Token<'buffer, Kind, ErrorType>> {
+  pub fn lex(&mut self) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext<Self>> {
     self.lex_expect(Expectation::default())
   }
 
   pub fn lex_expect<'expect_text>(
     &mut self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
-  ) -> LexOutput<Token<'buffer, Kind, ErrorType>> {
+  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext<Self>> {
+    self.lex_with(LexOptions {
+      expectation: expectation.into(),
+      re_lex: false,
+    })
+  }
+
+  pub fn lex_with<'expect_text>(
+    &mut self,
+    options: impl Into<LexOptions<'expect_text, Kind>>,
+  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext<Self>> {
+    let options = options.into() as LexOptions<_>;
+
+    // if re-lex is enabled, backup the action state before changing it
+    let action_state_bk = if options.re_lex {
+      Some(self.action_state.clone())
+    } else {
+      None
+    };
+
     let res = self.stateless.lex_with(
       self.state.buffer(),
       StatelessLexOptions {
         start: self.state.digested(),
         action_state: &mut self.action_state,
-        expectation: expectation.into(),
+        expectation: options.expectation,
       },
     );
 
-    // update state if not peek
+    // if re-lex is enabled and re-lex-able, backup the lexer state before changing it
+    let state_bk = if options.re_lex && res.re_lex.is_some() {
+      Some(self.state.clone())
+    } else {
+      None
+    };
+
+    // update state
     self.state.digest(res.digested);
 
-    res
+    LexOutput {
+      token: res.token,
+      digested: res.digested,
+      errors: res.errors,
+      re_lex: if options.re_lex {
+        res.re_lex.map(|i| ReLexContext {
+          action_index: i,
+          // construct a lexer with the state before lex
+          lexer: Self {
+            stateless: self.stateless.clone(),
+            // TODO: optimize code, prevent unwrap
+            state: state_bk.unwrap(),
+            action_state: action_state_bk.unwrap(),
+          },
+        })
+      } else {
+        // re-lex is not enabled
+        None
+      },
+    }
   }
 
   pub fn lex_all(&mut self) -> LexAllOutput<Token<'buffer, Kind, ErrorType>> {

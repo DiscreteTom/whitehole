@@ -1,10 +1,10 @@
 use super::{
   expectation::Expectation,
-  output::{LexAllOutput, LexOutput, PeekOutput, TrimOutput},
+  output::{LexAllOutput, LexOutput, PeekOutput, ReLexContext, TrimOutput},
   state::LexerState,
   stateless::StatelessLexer,
   token::{Token, TokenKind},
-  Lexer,
+  LexOptions, Lexer,
 };
 
 /// The `TrimmedLexer` is always trimmed.
@@ -116,7 +116,10 @@ where
   pub fn lex(
     &mut self,
   ) -> (
-    LexOutput<Token<'buffer, Kind, ErrorType>>,
+    LexOutput<
+      Token<'buffer, Kind, ErrorType>,
+      ReLexContext<Lexer<'buffer, Kind, ActionState, ErrorType>>,
+    >,
     TrimOutput<Token<'buffer, Kind, ErrorType>>,
   ) {
     self.apply(|lexer| lexer.lex())
@@ -126,10 +129,26 @@ where
     &mut self,
     expectation: Expectation<'_, Kind>,
   ) -> (
-    LexOutput<Token<'buffer, Kind, ErrorType>>,
+    LexOutput<
+      Token<'buffer, Kind, ErrorType>,
+      ReLexContext<Lexer<'buffer, Kind, ActionState, ErrorType>>,
+    >,
     TrimOutput<Token<'buffer, Kind, ErrorType>>,
   ) {
     self.apply(|lexer| lexer.lex_expect(expectation))
+  }
+  /// Similar to [`Lexer::lex_with`], but the lexer is trimmed after that.
+  pub fn lex_with<'expect_text>(
+    &mut self,
+    options: impl Into<LexOptions<'expect_text, Kind>>,
+  ) -> (
+    LexOutput<
+      Token<'buffer, Kind, ErrorType>,
+      ReLexContext<Lexer<'buffer, Kind, ActionState, ErrorType>>,
+    >,
+    TrimOutput<Token<'buffer, Kind, ErrorType>>,
+  ) {
+    self.apply(|lexer| lexer.lex_with(options))
   }
   /// Similar to [`Lexer::lex_all`], but the lexer is trimmed after that.
   pub fn lex_all(

@@ -5,10 +5,19 @@ pub struct PeekOutput<TokenType, ActionState> {
   pub action_state: ActionState,
 }
 
-pub struct LexOutput<TokenType> {
+pub struct LexOutput<TokenType, ReLexType> {
   pub token: Option<TokenType>,
   pub digested: usize,
   pub errors: Vec<TokenType>,
+  /// If `Some`, the lex is re-lex-able.
+  pub re_lex: Option<ReLexType>,
+}
+
+pub struct ReLexActionIndex(pub usize);
+
+pub struct ReLexContext<LexerType> {
+  pub action_index: ReLexActionIndex,
+  pub lexer: LexerType,
 }
 
 pub struct LexAllOutput<TokenType> {
