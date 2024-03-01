@@ -9,6 +9,8 @@ pub struct LexOutput<TokenType, ReLexType> {
   pub token: Option<TokenType>,
   pub digested: usize,
   pub errors: Vec<TokenType>,
+  /// This will always be `None`
+  /// unless you set [`LexOptions::fork`](crate::lexer::LexOptions::fork) to `true`.
   /// If `Some`, the lex is re-lex-able.
   pub re_lex: Option<ReLexType>,
 }

@@ -23,10 +23,9 @@ use std::rc::Rc;
 pub struct LexOptions<'expect_text, Kind: 'static> {
   pub expectation: Expectation<'expect_text, Kind>,
   /// If `true`, the [`LexOutput::re_lex`] might be `Some`.
-  // TODO: better name? e.g. `try_re_lex`?
-  pub re_lex: bool,
+  pub fork: bool,
   /// Provide this if the lex is a re-lex.
-  pub re_lex_context: Option<ReLexContext>,
+  pub re_lex: Option<ReLexContext>,
 }
 
 pub struct Lexer<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
@@ -133,7 +132,7 @@ where
         action_state: &mut action_state,
         expectation: expectation.into(),
         // TODO: add peek_with and make from_index configurable
-        re_lex_context: None,
+        re_lex: None,
       },
     );
     PeekOutput {
@@ -154,8 +153,8 @@ where
   ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<Self>> {
     self.lex_with(LexOptions {
       expectation: expectation.into(),
-      re_lex_context: None,
-      re_lex: false,
+      re_lex: None,
+      fork: false,
     })
   }
 
@@ -165,8 +164,8 @@ where
   ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<Self>> {
     let options = options.into() as LexOptions<_>;
 
-    // if re-lex is enabled, backup the action state before changing it
-    let action_state_bk = if options.re_lex {
+    // if fork is enabled, backup the action state before changing it
+    let action_state_bk = if options.fork {
       Some(self.action_state.clone())
     } else {
       None
@@ -178,12 +177,12 @@ where
         start: self.state.digested(),
         action_state: &mut self.action_state,
         expectation: options.expectation,
-        re_lex_context: options.re_lex_context,
+        re_lex: options.re_lex,
       },
     );
 
-    // if re-lex is enabled and re-lex-able, backup the lexer state before changing it
-    let state_bk = if options.re_lex && res.re_lex.is_some() {
+    // if fork is enabled and re-lex-able, backup the lexer state before changing it
+    let state_bk = if options.fork && res.re_lex.is_some() {
       Some(self.state.clone())
     } else {
       None
@@ -196,7 +195,7 @@ where
       token: res.token,
       digested: res.digested,
       errors: res.errors,
-      re_lex: if options.re_lex {
+      re_lex: if options.fork {
         res.re_lex.map(|i| ReLexable {
           context: i,
           // construct a lexer with the state before lex
@@ -208,7 +207,7 @@ where
           },
         })
       } else {
-        // re-lex is not enabled
+        // fork is not enabled
         None
       },
     }

@@ -10,7 +10,7 @@ pub struct StatelessLexOptions<'action_state, 'expect, Kind, ActionState: Clone 
   pub start: usize,
   pub action_state: &'action_state mut ActionState,
   pub expectation: Expectation<'expect, Kind>,
-  pub re_lex_context: Option<ReLexContext>,
+  pub re_lex: Option<ReLexContext>,
 }
 
 pub struct StatelessLexOutput<TokenType, ActionState> {
@@ -37,7 +37,7 @@ where
         start: 0,
         expectation: Expectation::default(),
         action_state: &mut action_state,
-        re_lex_context: None,
+        re_lex: None,
       },
     );
     StatelessLexOutput {
@@ -74,9 +74,9 @@ where
       exp_kind.map_or(&self.head_map, |kind| {
         self.kind_head_map.get(&kind).unwrap_or(&self.head_map)
       }),
-      // the default ReLexContext will set `start` and `action_index` to 0
-      // which means the re-lex is disabled
-      options.re_lex_context.unwrap_or(ReLexContext::default()),
+      // the default ReLexContext will set `skip` and `action_index` to 0
+      // which means this is not a re-lex
+      options.re_lex.unwrap_or(ReLexContext::default()),
       move |input| {
         let text_mismatch = exp_text.is_some_and(|text| !input.rest().starts_with(text));
         Validator {

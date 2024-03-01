@@ -32,7 +32,7 @@ where
 {
   pub fn execute_actions<'validator, F>(
     head_map: &ActionHeadMap<Kind, ActionState, ErrorType>,
-    re_lex_context: ReLexContext,
+    re_lex: ReLexContext,
     validator_factory: F,
     buffer: &'buffer str,
     start: usize,
@@ -65,7 +65,7 @@ where
         // TODO: maybe some day we can get a `&char` instead of a `char`
         .get(&(input.rest().chars().next().unwrap()))
         .unwrap_or(&head_map.unknown_fallback);
-      let output = Self::traverse_actions(&mut input, actions, &re_lex_context, validator);
+      let output = Self::traverse_actions(&mut input, actions, &re_lex, validator);
 
       match output {
         // all definition checked, no accepted action
@@ -136,14 +136,14 @@ where
   fn traverse_actions(
     input: &mut ActionInput<'buffer, 'state, ActionState>,
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
-    re_lex_context: &ReLexContext,
+    re_lex: &ReLexContext,
     validator: Validator<Kind, ActionState, ErrorType>,
   ) -> Option<TraverseActionsOutput<Kind, ErrorType>> {
     for (i, action) in actions
       .iter()
       .enumerate()
-      .skip(if input.start() == re_lex_context.start {
-        re_lex_context.skip
+      .skip(if input.start() == re_lex.start {
+        re_lex.skip
       } else {
         0
       })
