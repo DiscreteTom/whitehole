@@ -1,6 +1,7 @@
 pub mod action;
 pub mod builder;
 pub mod expectation;
+pub mod options;
 pub mod output;
 pub mod position;
 pub mod state;
@@ -13,20 +14,13 @@ pub use builder::LexerBuilder;
 
 use self::{
   expectation::Expectation,
-  output::{LexAllOutput, LexOutput, PeekOutput, ReLexContext, ReLexable, TrimOutput},
+  options::LexOptions,
+  output::{LexAllOutput, LexOutput, PeekOutput, ReLexable, TrimOutput},
   state::LexerState,
   stateless::{lex::StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKind},
 };
 use std::rc::Rc;
-
-pub struct LexOptions<'expect_text, Kind: 'static> {
-  pub expectation: Expectation<'expect_text, Kind>,
-  /// If `true`, the [`LexOutput::re_lex`] might be `Some`.
-  pub fork: bool,
-  /// Provide this if the lex is a re-lex.
-  pub re_lex: Option<ReLexContext>,
-}
 
 pub struct Lexer<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
 where
