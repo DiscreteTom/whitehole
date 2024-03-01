@@ -1,6 +1,6 @@
 use super::{
   expectation::Expectation,
-  options::LexOptions,
+  options::{LexOptions, ReLexContext},
   output::{LexAllOutput, LexOutput, PeekOutput, ReLexable, TrimOutput},
   state::LexerState,
   stateless::{lex::StatelessLexOptions, StatelessLexer},
@@ -151,15 +151,7 @@ where
       None
     };
 
-    let res = self.stateless.lex_with(
-      self.state.buffer(),
-      StatelessLexOptions {
-        start: self.state.digested(),
-        action_state: &mut self.action_state,
-        expectation: options.expectation,
-        re_lex: options.re_lex,
-      },
-    );
+    let res = self.lex_with_stateless(options.expectation, options.re_lex);
 
     // if fork is enabled and re-lex-able, backup the lexer state before changing it
     let state_bk = if options.fork && res.re_lex.is_some() {
@@ -238,5 +230,21 @@ where
     );
     self.state.trim(res.digested);
     res
+  }
+
+  fn lex_with_stateless<'expect_text>(
+    &mut self,
+    expectation: Expectation<'expect_text, Kind>,
+    re_lex: Option<ReLexContext>,
+  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext> {
+    self.stateless.lex_with(
+      self.state.buffer(),
+      StatelessLexOptions {
+        start: self.state.digested(),
+        action_state: &mut self.action_state,
+        expectation,
+        re_lex,
+      },
+    )
   }
 }
