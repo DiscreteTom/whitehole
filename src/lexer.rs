@@ -13,7 +13,7 @@ pub use builder::LexerBuilder;
 
 use self::{
   expectation::Expectation,
-  output::{LexAllOutput, LexOutput, PeekOutput, ReLexActionIndex, ReLexContext, TrimOutput},
+  output::{LexAllOutput, LexOutput, PeekOutput, ReLexActionContext, ReLexContext, TrimOutput},
   state::LexerState,
   stateless::{lex::StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKind},
@@ -22,7 +22,7 @@ use std::rc::Rc;
 
 pub struct LexOptions<'expect_text, Kind: 'static> {
   pub expectation: Expectation<'expect_text, Kind>,
-  pub from_index: ReLexActionIndex,
+  pub from_index: ReLexActionContext,
   pub re_lex: bool,
 }
 
@@ -130,7 +130,7 @@ where
         action_state: &mut action_state,
         expectation: expectation.into(),
         // TODO: add peek_with and make from_index configurable
-        from_index: ReLexActionIndex(0),
+        from_index: ReLexActionContext::default(),
       },
     );
     PeekOutput {
@@ -151,7 +151,7 @@ where
   ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext<Self>> {
     self.lex_with(LexOptions {
       expectation: expectation.into(),
-      from_index: ReLexActionIndex(0),
+      from_index: ReLexActionContext::default(),
       re_lex: false,
     })
   }
@@ -195,7 +195,7 @@ where
       errors: res.errors,
       re_lex: if options.re_lex {
         res.re_lex.map(|i| ReLexContext {
-          action_index: i,
+          action_context: i,
           // construct a lexer with the state before lex
           lexer: Self {
             stateless: self.stateless.clone(),

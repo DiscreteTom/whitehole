@@ -1,7 +1,7 @@
 use super::{common::Validator, StatelessLexer};
 use crate::lexer::{
   expectation::Expectation,
-  output::{LexOutput, ReLexActionIndex},
+  output::{LexOutput, ReLexActionContext},
   stateless::common::OutputHandler,
   token::{Token, TokenKind},
 };
@@ -10,7 +10,7 @@ pub struct StatelessLexOptions<'action_state, 'expect, Kind, ActionState: Clone 
   pub start: usize,
   pub action_state: &'action_state mut ActionState,
   pub expectation: Expectation<'expect, Kind>,
-  pub from_index: ReLexActionIndex,
+  pub from_index: ReLexActionContext,
 }
 
 pub struct StatelessLexOutput<TokenType, ActionState> {
@@ -37,7 +37,7 @@ where
         start: 0,
         expectation: Expectation::default(),
         action_state: &mut action_state,
-        from_index: ReLexActionIndex(0),
+        from_index: ReLexActionContext::default(),
       },
     );
     StatelessLexOutput {
@@ -52,7 +52,7 @@ where
     &self,
     buffer: &'buffer str,
     options: impl Into<StatelessLexOptions<'action_state, 'expect_text, Kind, ActionState>>,
-  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexActionIndex>
+  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexActionContext>
   where
     'buffer: 'expect_text,
   {
