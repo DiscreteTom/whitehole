@@ -13,6 +13,7 @@ pub struct LexOutput<TokenType, ReLexType> {
   pub re_lex: Option<ReLexType>,
 }
 
+#[derive(Default, Clone)]
 pub struct ReLexActionIndex(pub usize);
 
 pub struct ReLexContext<LexerType> {
