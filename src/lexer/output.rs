@@ -1,12 +1,5 @@
 use super::options::ReLexContext;
 
-pub struct PeekOutput<TokenType, ActionState> {
-  pub token: Option<TokenType>,
-  pub digested: usize,
-  pub errors: Vec<TokenType>,
-  pub action_state: ActionState,
-}
-
 pub struct LexOutput<TokenType, ReLexType> {
   pub token: Option<TokenType>,
   pub digested: usize,

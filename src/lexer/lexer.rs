@@ -1,7 +1,7 @@
 use super::{
   expectation::Expectation,
   options::{LexOptions, ReLexContext},
-  output::{LexAllOutput, LexOutput, PeekOutput, ReLexable, TrimOutput},
+  output::{LexAllOutput, LexOutput, ReLexable, TrimOutput},
   state::LexerState,
   stateless::{lex::StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKind},
@@ -94,33 +94,80 @@ where
 
   /// Peek the next token without updating the state.
   /// This will clone the ActionState and return it.
-  pub fn peek(&self) -> PeekOutput<Token<'buffer, Kind, ErrorType>, ActionState> {
-    self.peek_expect(Expectation::default())
+  pub fn peek(
+    &self,
+  ) -> (
+    LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<()>>,
+    ActionState,
+  ) {
+    self.peek_with(LexOptions::default())
   }
 
-  /// Peek the next token without updating the state.
+  /// Peek the next token with expectation, without updating the state.
   /// This will clone the ActionState and return it.
   pub fn peek_expect<'expect_text>(
     &self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
-  ) -> PeekOutput<Token<'buffer, Kind, ErrorType>, ActionState> {
-    let mut action_state = self.action_state().clone();
-    let output = self.stateless.lex_with(
-      self.state.buffer(),
-      StatelessLexOptions {
-        start: self.state.digested(),
-        action_state: &mut action_state,
-        expectation: expectation.into(),
-        // TODO: add peek_with and make from_index configurable
-        re_lex: None,
-      },
-    );
-    PeekOutput {
-      token: output.token,
-      digested: output.digested,
-      errors: output.errors,
-      action_state,
-    }
+  ) -> (
+    LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<()>>,
+    ActionState,
+  ) {
+    self.peek_with(LexOptions::default().expect(expectation))
+  }
+
+  /// Peek the next token and return the result with re-lex context, without updating the state.
+  /// This will clone the ActionState and return it.
+  pub fn peek_fork(
+    &self,
+  ) -> (
+    LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<()>>,
+    ActionState,
+  ) {
+    self.peek_with(LexOptions::default().fork())
+  }
+
+  pub fn peek_with<'expect_text>(
+    &self,
+    options: impl Into<LexOptions<'expect_text, Kind>>,
+  ) -> (
+    LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<()>>,
+    ActionState,
+  ) {
+    let options = options.into() as LexOptions<_>;
+
+    // because of peek, clone the action state to prevent mutation
+    let mut tmp_action_state = self.action_state().clone();
+
+    let output = if options.fork {
+      let res =
+        self.peek_with_stateless(&mut tmp_action_state, options.expectation, options.re_lex);
+      LexOutput {
+        token: res.token,
+        digested: res.digested,
+        errors: res.errors,
+        re_lex: res.re_lex.map(|context| {
+          ReLexable {
+            // since self is not mutated, we don't need to clone it
+            // nor construct a new lexer
+            lexer: (),
+            context,
+          }
+        }),
+      }
+    } else {
+      let res =
+        self.peek_with_stateless(&mut tmp_action_state, options.expectation, options.re_lex);
+      LexOutput {
+        token: res.token,
+        digested: res.digested,
+        errors: res.errors,
+        re_lex: None, // fork is not enabled, so re_lex is not available
+      }
+    };
+
+    // don't update lexer state
+
+    (output, tmp_action_state)
   }
 
   pub fn lex(&mut self) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<Self>> {
@@ -237,6 +284,24 @@ where
       StatelessLexOptions {
         start: self.state.digested(),
         action_state: &mut self.action_state,
+        expectation,
+        re_lex,
+      },
+    )
+  }
+
+  // TODO: merge duplicated code
+  fn peek_with_stateless<'expect_text>(
+    &self,
+    action_state: &mut ActionState,
+    expectation: Expectation<'expect_text, Kind>,
+    re_lex: Option<ReLexContext>,
+  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext> {
+    self.stateless.lex_with(
+      self.state.buffer(),
+      StatelessLexOptions {
+        start: self.state.digested(),
+        action_state,
         expectation,
         re_lex,
       },

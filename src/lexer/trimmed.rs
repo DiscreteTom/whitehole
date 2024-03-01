@@ -1,7 +1,7 @@
 use super::{
   expectation::Expectation,
   options::LexOptions,
-  output::{LexAllOutput, LexOutput, PeekOutput, ReLexable, TrimOutput},
+  output::{LexAllOutput, LexOutput, ReLexable, TrimOutput},
   state::LexerState,
   stateless::StatelessLexer,
   token::{Token, TokenKind},
@@ -91,15 +91,42 @@ where
     self.lexer.clone_with(buffer)
   }
 
-  pub fn peek(&self) -> PeekOutput<Token<'buffer, Kind, ErrorType>, ActionState> {
+  pub fn peek(
+    &self,
+  ) -> (
+    LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<()>>,
+    ActionState,
+  ) {
     self.lexer.peek()
   }
 
   pub fn peek_expect<'expect_text>(
     &self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
-  ) -> PeekOutput<Token<'buffer, Kind, ErrorType>, ActionState> {
+  ) -> (
+    LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<()>>,
+    ActionState,
+  ) {
     self.lexer.peek_expect(expectation)
+  }
+
+  pub fn peek_fork(
+    &self,
+  ) -> (
+    LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<()>>,
+    ActionState,
+  ) {
+    self.lexer.peek_fork()
+  }
+
+  pub fn peek_with(
+    &self,
+    options: LexOptions<'_, Kind>,
+  ) -> (
+    LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<()>>,
+    ActionState,
+  ) {
+    self.lexer.peek_with(options)
   }
 
   /// Apply a function to the inner lexer.
