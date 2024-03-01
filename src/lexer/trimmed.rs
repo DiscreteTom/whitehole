@@ -1,10 +1,11 @@
 use super::{
   expectation::Expectation,
+  options::LexOptions,
   output::{LexAllOutput, LexOutput, PeekOutput, ReLexable, TrimOutput},
   state::LexerState,
   stateless::StatelessLexer,
   token::{Token, TokenKind},
-  LexOptions, Lexer,
+  Lexer,
 };
 
 /// The `TrimmedLexer` is always trimmed.
