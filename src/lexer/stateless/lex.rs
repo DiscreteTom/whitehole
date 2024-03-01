@@ -1,7 +1,7 @@
 use super::{common::Validator, StatelessLexer};
 use crate::lexer::{
   expectation::Expectation,
-  output::{LexOutput, ReLexActionContext},
+  output::{LexOutput, ReLexContext},
   stateless::common::OutputHandler,
   token::{Token, TokenKind},
 };
@@ -10,7 +10,7 @@ pub struct StatelessLexOptions<'action_state, 'expect, Kind, ActionState: Clone 
   pub start: usize,
   pub action_state: &'action_state mut ActionState,
   pub expectation: Expectation<'expect, Kind>,
-  pub from_index: ReLexActionContext,
+  pub re_lex_context: Option<ReLexContext>,
 }
 
 pub struct StatelessLexOutput<TokenType, ActionState> {
@@ -37,7 +37,7 @@ where
         start: 0,
         expectation: Expectation::default(),
         action_state: &mut action_state,
-        from_index: ReLexActionContext::default(),
+        re_lex_context: None,
       },
     );
     StatelessLexOutput {
@@ -52,7 +52,7 @@ where
     &self,
     buffer: &'buffer str,
     options: impl Into<StatelessLexOptions<'action_state, 'expect_text, Kind, ActionState>>,
-  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexActionContext>
+  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext>
   where
     'buffer: 'expect_text,
   {
@@ -74,7 +74,9 @@ where
       exp_kind.map_or(&self.head_map, |kind| {
         self.kind_head_map.get(&kind).unwrap_or(&self.head_map)
       }),
-      options.from_index,
+      // the default ReLexContext will set `start` and `action_index` to 0
+      // which means the re-lex is disabled
+      options.re_lex_context.unwrap_or(ReLexContext::default()),
       move |input| {
         let text_mismatch = exp_text.is_some_and(|text| !input.rest().starts_with(text));
         Validator {

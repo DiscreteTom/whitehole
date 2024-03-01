@@ -17,18 +17,18 @@ pub struct LexOutput<TokenType, ReLexType> {
 // and the fields should never be accessed by user
 // because the `action_index` is an internal index
 #[derive(Default, Clone, Debug)]
-pub struct ReLexActionContext {
+pub struct ReLexContext {
   /// From which action to re-lex.
+  /// This is effective only if
+  /// the [`ActionInput::start`](crate::lexer::action::input::ActionInput::start)
+  /// equals to `self.start`.
   pub(crate) action_index: usize,
-  /// [`ReLexActionContext::action_index`] is effective only if
-  /// the [`ActionInput.start`](crate::lexer::action::input::ActionInput::start)
-  /// equals to this.
   pub(crate) start: usize,
 }
 
-pub struct ReLexContext<LexerType> {
+pub struct ReLexable<LexerType> {
   pub lexer: LexerType,
-  pub action_context: ReLexActionContext,
+  pub context: ReLexContext,
 }
 
 pub struct LexAllOutput<TokenType> {

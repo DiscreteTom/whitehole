@@ -1,6 +1,6 @@
 use super::{
   expectation::Expectation,
-  output::{LexAllOutput, LexOutput, PeekOutput, ReLexContext, TrimOutput},
+  output::{LexAllOutput, LexOutput, PeekOutput, ReLexable, TrimOutput},
   state::LexerState,
   stateless::StatelessLexer,
   token::{Token, TokenKind},
@@ -118,7 +118,7 @@ where
   ) -> (
     LexOutput<
       Token<'buffer, Kind, ErrorType>,
-      ReLexContext<Lexer<'buffer, Kind, ActionState, ErrorType>>,
+      ReLexable<Lexer<'buffer, Kind, ActionState, ErrorType>>,
     >,
     TrimOutput<Token<'buffer, Kind, ErrorType>>,
   ) {
@@ -131,7 +131,7 @@ where
   ) -> (
     LexOutput<
       Token<'buffer, Kind, ErrorType>,
-      ReLexContext<Lexer<'buffer, Kind, ActionState, ErrorType>>,
+      ReLexable<Lexer<'buffer, Kind, ActionState, ErrorType>>,
     >,
     TrimOutput<Token<'buffer, Kind, ErrorType>>,
   ) {
@@ -144,7 +144,7 @@ where
   ) -> (
     LexOutput<
       Token<'buffer, Kind, ErrorType>,
-      ReLexContext<Lexer<'buffer, Kind, ActionState, ErrorType>>,
+      ReLexable<Lexer<'buffer, Kind, ActionState, ErrorType>>,
     >,
     TrimOutput<Token<'buffer, Kind, ErrorType>>,
   ) {

@@ -13,7 +13,7 @@ pub use builder::LexerBuilder;
 
 use self::{
   expectation::Expectation,
-  output::{LexAllOutput, LexOutput, PeekOutput, ReLexActionContext, ReLexContext, TrimOutput},
+  output::{LexAllOutput, LexOutput, PeekOutput, ReLexContext, ReLexable, TrimOutput},
   state::LexerState,
   stateless::{lex::StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKind},
@@ -22,8 +22,11 @@ use std::rc::Rc;
 
 pub struct LexOptions<'expect_text, Kind: 'static> {
   pub expectation: Expectation<'expect_text, Kind>,
-  pub from_index: ReLexActionContext,
+  /// If `true`, the [`LexOutput::re_lex`] might be `Some`.
+  // TODO: better name? e.g. `try_re_lex`?
   pub re_lex: bool,
+  /// Provide this if the lex is a re-lex.
+  pub re_lex_context: Option<ReLexContext>,
 }
 
 pub struct Lexer<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
@@ -130,7 +133,7 @@ where
         action_state: &mut action_state,
         expectation: expectation.into(),
         // TODO: add peek_with and make from_index configurable
-        from_index: ReLexActionContext::default(),
+        re_lex_context: None,
       },
     );
     PeekOutput {
@@ -141,17 +144,17 @@ where
     }
   }
 
-  pub fn lex(&mut self) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext<Self>> {
+  pub fn lex(&mut self) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<Self>> {
     self.lex_expect(Expectation::default())
   }
 
   pub fn lex_expect<'expect_text>(
     &mut self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
-  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext<Self>> {
+  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<Self>> {
     self.lex_with(LexOptions {
       expectation: expectation.into(),
-      from_index: ReLexActionContext::default(),
+      re_lex_context: None,
       re_lex: false,
     })
   }
@@ -159,7 +162,7 @@ where
   pub fn lex_with<'expect_text>(
     &mut self,
     options: impl Into<LexOptions<'expect_text, Kind>>,
-  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext<Self>> {
+  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<Self>> {
     let options = options.into() as LexOptions<_>;
 
     // if re-lex is enabled, backup the action state before changing it
@@ -175,7 +178,7 @@ where
         start: self.state.digested(),
         action_state: &mut self.action_state,
         expectation: options.expectation,
-        from_index: options.from_index,
+        re_lex_context: options.re_lex_context,
       },
     );
 
@@ -194,8 +197,8 @@ where
       digested: res.digested,
       errors: res.errors,
       re_lex: if options.re_lex {
-        res.re_lex.map(|i| ReLexContext {
-          action_context: i,
+        res.re_lex.map(|i| ReLexable {
+          context: i,
           // construct a lexer with the state before lex
           lexer: Self {
             stateless: self.stateless.clone(),

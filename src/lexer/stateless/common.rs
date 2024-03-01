@@ -1,7 +1,7 @@
 use super::{ActionHeadMap, StatelessLexer};
 use crate::lexer::{
   action::{input::ActionInput, output::ActionOutput, Action},
-  output::{LexOutput, ReLexActionContext},
+  output::{LexOutput, ReLexContext},
   token::{Range, Token, TokenKind},
 };
 use std::rc::Rc;
@@ -32,13 +32,13 @@ where
 {
   pub fn execute_actions<'validator, F>(
     head_map: &ActionHeadMap<Kind, ActionState, ErrorType>,
-    from_index: ReLexActionContext,
+    re_lex_context: ReLexContext,
     validator_factory: F,
     buffer: &'buffer str,
     start: usize,
     state: &'state mut ActionState,
     handler: &OutputHandler,
-  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexActionContext>
+  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext>
   where
     F: Fn(&ActionInput<ActionState>) -> Validator<'validator, Kind, ActionState, ErrorType>,
   {
@@ -65,7 +65,7 @@ where
         // TODO: maybe some day we can get a `&char` instead of a `char`
         .get(&(input.rest().chars().next().unwrap()))
         .unwrap_or(&head_map.unknown_fallback);
-      let output = Self::traverse_actions(&mut input, actions, &from_index, validator);
+      let output = Self::traverse_actions(&mut input, actions, &re_lex_context, validator);
 
       match output {
         // all definition checked, no accepted action
@@ -136,18 +136,16 @@ where
   fn traverse_actions(
     input: &mut ActionInput<'buffer, 'state, ActionState>,
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
-    re_lex_action_context: &ReLexActionContext,
+    re_lex_context: &ReLexContext,
     validator: Validator<Kind, ActionState, ErrorType>,
   ) -> Option<TraverseActionsOutput<Kind, ErrorType>> {
     for (i, action) in actions.iter().enumerate() {
-      if let Some(output) =
-        Self::try_execute_action(input, action, i, re_lex_action_context, &validator)
-      {
+      if let Some(output) = Self::try_execute_action(input, action, i, re_lex_context, &validator) {
         return Some(TraverseActionsOutput {
           output,
           re_lex_action_context: if i < actions.len() - 1 {
             // start from the next action
-            Some(ReLexActionContext {
+            Some(ReLexContext {
               action_index: i + 1,
               start: input.start(),
             })
@@ -164,13 +162,11 @@ where
     input: &'input mut ActionInput<'buffer, 'state, ActionState>,
     action: &Action<Kind, ActionState, ErrorType>,
     action_index: usize,
-    re_lex_action_context: &ReLexActionContext,
+    re_lex_context: &ReLexContext,
     validator: &Validator<Kind, ActionState, ErrorType>,
   ) -> Option<ActionOutput<Kind, ErrorType>> {
     // skip by re-lex context
-    if input.start() == re_lex_action_context.start
-      && action_index < re_lex_action_context.action_index
-    {
+    if input.start() == re_lex_context.start && action_index < re_lex_context.action_index {
       return None;
     }
 
@@ -210,5 +206,5 @@ where
 struct TraverseActionsOutput<Kind, ErrorType> {
   output: ActionOutput<Kind, ErrorType>,
   /// `None` if the current lexed action is the last one (no next action to re-lex).
-  re_lex_action_context: Option<ReLexActionContext>,
+  re_lex_action_context: Option<ReLexContext>,
 }
