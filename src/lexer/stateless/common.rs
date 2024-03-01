@@ -139,17 +139,26 @@ where
     re_lex_context: &ReLexContext,
     validator: Validator<Kind, ActionState, ErrorType>,
   ) -> Option<TraverseActionsOutput<Kind, ErrorType>> {
-    for (i, action) in actions.iter().enumerate() {
-      if let Some(output) = Self::try_execute_action(input, action, i, re_lex_context, &validator) {
+    for (i, action) in actions
+      .iter()
+      .enumerate()
+      .skip(if input.start() == re_lex_context.start {
+        re_lex_context.skip
+      } else {
+        0
+      })
+    {
+      if let Some(output) = Self::try_execute_action(input, action, &validator) {
         return Some(TraverseActionsOutput {
           output,
           re_lex_action_context: if i < actions.len() - 1 {
-            // start from the next action
             Some(ReLexContext {
-              action_index: i + 1,
+              skip: i + 1,
               start: input.start(),
             })
           } else {
+            // current action is the last one
+            // no next action to re-lex
             None
           },
         });
@@ -161,15 +170,8 @@ where
   fn try_execute_action(
     input: &'input mut ActionInput<'buffer, 'state, ActionState>,
     action: &Action<Kind, ActionState, ErrorType>,
-    action_index: usize,
-    re_lex_context: &ReLexContext,
     validator: &Validator<Kind, ActionState, ErrorType>,
   ) -> Option<ActionOutput<Kind, ErrorType>> {
-    // skip by re-lex context
-    if input.start() == re_lex_context.start && action_index < re_lex_context.action_index {
-      return None;
-    }
-
     if (validator.skip_before_exec)(action) {
       return None;
     }

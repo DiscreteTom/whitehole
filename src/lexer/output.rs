@@ -18,11 +18,11 @@ pub struct LexOutput<TokenType, ReLexType> {
 // because the `action_index` is an internal index
 #[derive(Default, Clone, Debug)]
 pub struct ReLexContext {
-  /// From which action to re-lex.
+  /// How many actions are skipped.
   /// This is effective only if
   /// the [`ActionInput::start`](crate::lexer::action::input::ActionInput::start)
   /// equals to `self.start`.
-  pub(crate) action_index: usize,
+  pub(crate) skip: usize,
   pub(crate) start: usize,
 }
 
