@@ -138,18 +138,18 @@ where
   }
 
   pub fn lex(&mut self) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<Self>> {
-    self.lex_expect(Expectation::default())
+    self.lex_with(LexOptions::default())
   }
 
   pub fn lex_expect<'expect_text>(
     &mut self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
   ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<Self>> {
-    self.lex_with(LexOptions {
-      expectation: expectation.into(),
-      re_lex: None,
-      fork: false,
-    })
+    self.lex_with(LexOptions::default().expect(expectation))
+  }
+
+  pub fn lex_fork(&mut self) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<Self>> {
+    self.lex_with(LexOptions::default().fork())
   }
 
   pub fn lex_with<'expect_text>(

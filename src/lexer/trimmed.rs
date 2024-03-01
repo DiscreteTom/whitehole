@@ -137,6 +137,18 @@ where
   ) {
     self.apply(|lexer| lexer.lex_expect(expectation))
   }
+  /// Similar to [`Lexer::lex_fork`], but the lexer is trimmed after that.
+  pub fn lex_fork(
+    &mut self,
+  ) -> (
+    LexOutput<
+      Token<'buffer, Kind, ErrorType>,
+      ReLexable<Lexer<'buffer, Kind, ActionState, ErrorType>>,
+    >,
+    TrimOutput<Token<'buffer, Kind, ErrorType>>,
+  ) {
+    self.apply(|lexer| lexer.lex_fork())
+  }
   /// Similar to [`Lexer::lex_with`], but the lexer is trimmed after that.
   pub fn lex_with<'expect_text>(
     &mut self,
