@@ -203,9 +203,9 @@ where
 
   /// Digest the next n chars and set the action state.
   /// If the `state` is not provided, the action state will be reset to default.
-  pub fn take(&mut self, n: usize, state: Option<ActionState>) -> &mut Self {
+  pub fn take(&mut self, n: usize, state: impl Into<Option<ActionState>>) -> &mut Self {
     self.state.digest(n);
-    self.action_state = state.unwrap_or(ActionState::default());
+    self.action_state = state.into().unwrap_or(ActionState::default());
     self
   }
 
