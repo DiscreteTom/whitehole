@@ -8,10 +8,35 @@ use crate::lexer::{
 };
 
 pub struct StatelessLexOptions<'action_state, 'expect, Kind, ActionState: Clone + Default> {
-  pub start: usize,
   pub action_state: &'action_state mut ActionState,
+  pub start: usize,
   pub expectation: Expectation<'expect, Kind>,
   pub re_lex: Option<ReLexContext>,
+}
+
+impl<'action_state, 'expect, Kind, ActionState: Clone + Default>
+  StatelessLexOptions<'action_state, 'expect, Kind, ActionState>
+{
+  pub fn with_action_state(action_state: &'action_state mut ActionState) -> Self {
+    StatelessLexOptions {
+      action_state,
+      start: 0,
+      expectation: Expectation::default(),
+      re_lex: None,
+    }
+  }
+  pub fn start(mut self, start: usize) -> Self {
+    self.start = start;
+    self
+  }
+  pub fn expect(mut self, expectation: impl Into<Expectation<'expect, Kind>>) -> Self {
+    self.expectation = expectation.into();
+    self
+  }
+  pub fn re_lex(mut self, re_lex: ReLexContext) -> Self {
+    self.re_lex = Some(re_lex);
+    self
+  }
 }
 
 pub struct StatelessLexOutput<TokenType, ActionState> {
