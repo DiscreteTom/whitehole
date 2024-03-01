@@ -1,7 +1,8 @@
 use super::{ActionHeadMap, StatelessLexer};
 use crate::lexer::{
   action::{input::ActionInput, output::ActionOutput, Action},
-  output::{LexOutput, ReLexContext},
+  options::ReLexContext,
+  output::LexOutput,
   token::{Range, Token, TokenKind},
 };
 use std::rc::Rc;

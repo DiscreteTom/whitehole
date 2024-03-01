@@ -1,3 +1,5 @@
+use super::options::ReLexContext;
+
 pub struct PeekOutput<TokenType, ActionState> {
   pub token: Option<TokenType>,
   pub digested: usize,
@@ -10,22 +12,9 @@ pub struct LexOutput<TokenType, ReLexType> {
   pub digested: usize,
   pub errors: Vec<TokenType>,
   /// This will always be `None`
-  /// unless you set [`LexOptions::fork`](crate::lexer::LexOptions::fork) to `true`.
+  /// unless you set [`LexOptions::fork`](crate::lexer::options::LexOptions::fork) to `true`.
   /// If `Some`, the lex is re-lex-able.
   pub re_lex: Option<ReLexType>,
-}
-
-// this should never be constructed by user
-// and the fields should never be accessed by user
-// because the `action_index` is an internal index
-#[derive(Default, Clone, Debug)]
-pub struct ReLexContext {
-  /// How many actions are skipped.
-  /// This is effective only if
-  /// the [`ActionInput::start`](crate::lexer::action::input::ActionInput::start)
-  /// equals to `self.start`.
-  pub(crate) skip: usize,
-  pub(crate) start: usize,
 }
 
 pub struct ReLexable<LexerType> {

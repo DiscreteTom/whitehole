@@ -1,6 +1,7 @@
 use super::{common::Validator, StatelessLexer};
 use crate::lexer::{
-  output::{ReLexContext, TrimOutput},
+  options::ReLexContext,
+  output::TrimOutput,
   stateless::common::OutputHandler,
   token::{Token, TokenKind},
 };
