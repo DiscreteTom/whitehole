@@ -143,10 +143,11 @@ where
       if let Some(output) = Self::try_execute_action(input, action, &validator) {
         return Some(TraverseActionsOutput {
           output,
-          re_lex_action_index: if i == actions.len() - 1 {
-            None
+          re_lex_action_index: if i < actions.len() - 1 {
+            // start from the next action
+            Some(ReLexActionIndex(i + 1))
           } else {
-            Some(ReLexActionIndex(i))
+            None
           },
         });
       }
