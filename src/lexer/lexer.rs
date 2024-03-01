@@ -144,45 +144,40 @@ where
   ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<Self>> {
     let options = options.into() as LexOptions<_>;
 
-    // if fork is enabled, backup the action state before changing it
-    let action_state_bk = if options.fork {
-      Some(self.action_state.clone())
+    let output = if options.fork {
+      // fork is enabled, backup the action state before changing it
+      let action_state_bk = self.action_state.clone();
+      let res = self.lex_with_stateless(options.expectation, options.re_lex);
+      LexOutput {
+        token: res.token,
+        digested: res.digested,
+        errors: res.errors,
+        re_lex: res.re_lex.map(|context| {
+          ReLexable {
+            // construct a lexer with the state before lex
+            lexer: Self {
+              stateless: self.stateless.clone(),
+              state: self.state.clone(), // self.state is not mutated yet
+              action_state: action_state_bk,
+            },
+            context,
+          }
+        }),
+      }
     } else {
-      None
-    };
-
-    let res = self.lex_with_stateless(options.expectation, options.re_lex);
-
-    // if fork is enabled and re-lex-able, backup the lexer state before changing it
-    let state_bk = if options.fork && res.re_lex.is_some() {
-      Some(self.state.clone())
-    } else {
-      None
+      let res = self.lex_with_stateless(options.expectation, options.re_lex);
+      LexOutput {
+        token: res.token,
+        digested: res.digested,
+        errors: res.errors,
+        re_lex: None, // fork is not enabled, so re_lex is not available
+      }
     };
 
     // update state
-    self.state.digest(res.digested);
+    self.state.digest(output.digested);
 
-    LexOutput {
-      token: res.token,
-      digested: res.digested,
-      errors: res.errors,
-      re_lex: if options.fork {
-        res.re_lex.map(|i| ReLexable {
-          context: i,
-          // construct a lexer with the state before lex
-          lexer: Self {
-            stateless: self.stateless.clone(),
-            // TODO: optimize code, prevent unwrap
-            state: state_bk.unwrap(),
-            action_state: action_state_bk.unwrap(),
-          },
-        })
-      } else {
-        // fork is not enabled
-        None
-      },
-    }
+    output
   }
 
   pub fn lex_all(&mut self) -> LexAllOutput<Token<'buffer, Kind, ErrorType>> {
