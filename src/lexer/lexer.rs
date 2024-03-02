@@ -16,7 +16,8 @@ where
   // use Rc so that this is clone-able
   stateless: Rc<StatelessLexer<Kind, ActionState, ErrorType>>,
   state: LexerState<'buffer>,
-  action_state: ActionState,
+  // user can mutate the action state
+  pub action_state: ActionState,
 }
 
 impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static> Clone
@@ -57,13 +58,6 @@ where
   // user is not able to mutate the lexer state directly
   pub fn state(&self) -> &LexerState<'buffer> {
     &self.state
-  }
-  pub fn action_state(&self) -> &ActionState {
-    &self.action_state
-  }
-  // user can mutate the action state
-  pub fn action_state_mut(&mut self) -> &mut ActionState {
-    &mut self.action_state
   }
 
   /// Consume self, return a new lexer with the same actions and a new buffer.
@@ -136,7 +130,7 @@ where
     let options = options.into() as LexOptions<_>;
 
     // because of peek, clone the action state to prevent mutation
-    let mut tmp_action_state = self.action_state().clone();
+    let mut tmp_action_state = self.action_state.clone();
 
     let output = if options.fork {
       let res =

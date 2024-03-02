@@ -62,6 +62,8 @@ where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
+  // we shouldn't expose the inner lexer
+  // so we have to define these proxy methods
   pub fn stateless(&self) -> &StatelessLexer<Kind, ActionState, ErrorType> {
     self.lexer.stateless()
   }
@@ -69,10 +71,10 @@ where
     self.lexer.state()
   }
   pub fn action_state(&self) -> &ActionState {
-    self.lexer.action_state()
+    &self.lexer.action_state
   }
   pub fn action_state_mut(&mut self) -> &mut ActionState {
-    self.lexer.action_state_mut()
+    &mut self.lexer.action_state
   }
 
   pub fn reload<'new_buffer>(
