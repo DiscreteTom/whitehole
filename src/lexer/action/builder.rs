@@ -38,11 +38,34 @@ impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
     Action::regex(re)
   }
 
+  /// Return the action as is.
+  /// This is useful if you want to re-use existing action (e.g. action utils)
+  /// and need to modify it with action decorators.
+  /// # Examples
+  /// The following code won't pass the compile check
+  /// because the compiler can't infer the generic parameter type of `Action`.
+  /// ```compile_fail
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// LexerBuilder::<MyKind, i32, i32>::default()
+  ///   .define(MyKind::A, Action::exact("A").error(123));
+  /// ```
+  /// The following code will pass the compile
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// LexerBuilder::<MyKind, i32, i32>::default()
+  ///   .define_with(MyKind::A, |a| a.from(Action::exact("A")).error(123));
+  /// ```
   pub fn from<Kind>(
     self,
-    a: Action<Kind, ActionState, ErrorType>,
+    action: Action<Kind, ActionState, ErrorType>,
   ) -> Action<Kind, ActionState, ErrorType> {
-    a
+    action
   }
 }
 
