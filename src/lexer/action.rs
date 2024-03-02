@@ -5,10 +5,11 @@ pub mod output;
 mod regex;
 pub mod select;
 mod simple;
-pub mod utils;
+mod utils;
 
 pub use regex::regex;
 pub use simple::simple;
+pub use utils::*;
 
 use self::{
   input::ActionInput,
