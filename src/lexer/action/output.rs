@@ -100,3 +100,49 @@ impl<'buffer, Kind, ErrorType> Into<Option<ActionOutput<Kind, ErrorType>>>
     Some(self.into())
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn action_output_without_kind() {
+    let output = ActionOutputWithoutKind {
+      digested: 2,
+      muted: false,
+      error: None,
+    };
+    let output: ActionOutput<(), ()> = output.into();
+    assert_eq!(output.kind, ());
+    assert_eq!(output.digested, 2);
+    assert_eq!(output.muted, false);
+    assert_eq!(output.error, None);
+  }
+
+  #[test]
+  fn enhanced_action_output() {
+    let mut state = ();
+    let input = ActionInput::new("123", 1, &mut state);
+    let output = ActionOutputWithoutKind {
+      digested: 2,
+      muted: false,
+      error: None,
+    };
+    let output = EnhancedActionOutput::<(), ()>::new(&input, output.into());
+
+    // ensure we can deref and deref_mut
+    assert_eq!(output.digested, 2);
+    assert_eq!(output.muted, false);
+    assert_eq!(output.error, None);
+    assert!(matches!(output.kind, ()));
+
+    // access fields from input
+    assert_eq!(output.start, 1);
+    assert_eq!(output.buffer, "123");
+
+    // helpers
+    assert_eq!(output.end(), 3);
+    assert_eq!(output.content(), "23");
+    assert_eq!(output.rest(), "");
+  }
+}
