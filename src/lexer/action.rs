@@ -54,12 +54,12 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
 }
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
-  /// Shortcut for `!self.maybe_muted`.
+  /// Equals to `!self.maybe_muted`.
   pub fn never_muted(&self) -> bool {
     !self.maybe_muted
   }
 
-  /// Should only be set by [`Action::kinds`].
+  /// Should only be set by [`Action::bind`], [`Action::kinds`] or [`Action::kind_ids`].
   pub fn possible_kinds(&self) -> &HashSet<TokenKindId<Kind>> {
     &self.possible_kinds
   }
