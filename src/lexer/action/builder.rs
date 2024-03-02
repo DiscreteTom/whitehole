@@ -1,7 +1,7 @@
 use super::{input::ActionInput, output::ActionOutputWithoutKind, Action};
 use std::marker::PhantomData;
 
-/// A helper class to keep track of the generic parameters of [`lexer::Builder`](crate::lexer::Builder).
+/// A helper class to keep track of the generic parameters of [`lexer::Builder`](crate::lexer::builder::LexerBuilder).
 pub struct ActionBuilder<ActionState: 'static, ErrorType: 'static> {
   _action_state: PhantomData<ActionState>,
   _error_type: PhantomData<ErrorType>,
