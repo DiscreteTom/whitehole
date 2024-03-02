@@ -4,6 +4,16 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 
 #[proc_macro_derive(TokenKind)]
 pub fn token_kind_macro_derive(input: TokenStream) -> TokenStream {
+  common(quote! { whitehole }, input)
+}
+
+/// This is used internally in whitehole.
+#[proc_macro_derive(_TokenKind)]
+pub fn internal_token_kind_macro_derive(input: TokenStream) -> TokenStream {
+  common(quote! { crate }, input)
+}
+
+fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> TokenStream {
   let ast: DeriveInput = parse(input).unwrap();
 
   // ensure derive is only used on enums, then retrieve variants
@@ -13,11 +23,6 @@ pub fn token_kind_macro_derive(input: TokenStream) -> TokenStream {
   }
   .variants;
 
-  let crate_name = if std::env::var("CARGO_CRATE_NAME").unwrap() == "whitehole" {
-    quote! { crate }
-  } else {
-    quote! { whitehole }
-  };
   let enum_name = &ast.ident;
   let match_arms: Vec<proc_macro2::TokenStream> = variants
     .iter()
