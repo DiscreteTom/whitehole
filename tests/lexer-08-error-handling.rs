@@ -37,15 +37,15 @@ fn error_tokens() {
     .build(" a");
 
   // when `lex`, `peek` or `trim`, we can get error tokens from the output
-  let peek = lexer.peek();
+  let (output, _) = lexer.peek();
   // now even if the whitespace is muted, it contains an error
   // so we can get the error token from the peek result
   // be ware: `errors` in the result doesn't contain the peeked token
-  assert_eq!(peek.errors.len(), 1);
-  assert!(matches!(peek.errors[0].kind, Anonymous));
-  assert!(matches!(peek.errors[0].error, Some("ignored")));
+  assert_eq!(output.errors.len(), 1);
+  assert!(matches!(output.errors[0].kind, Anonymous));
+  assert!(matches!(output.errors[0].error, Some("ignored")));
   // we can still get the peeked (error) token
-  let token = peek.token.unwrap();
+  let token = output.token.unwrap();
   assert!(matches!(token.kind, A));
   assert!(matches!(token.error, Some("end")));
 }
@@ -63,17 +63,17 @@ fn panic_mode() {
   // in this case when we peek the lexer
   // the 'b' is not accepted by any action
   // and the peek will fail
-  let peek = lexer.peek();
-  assert!(peek.token.is_none());
-  assert_eq!(peek.digested, 0);
+  let (output, _) = lexer.peek();
+  assert!(output.token.is_none());
+  assert_eq!(output.digested, 0);
 
   // enter panic mode, take 1 char and try again
   // this will reset the lexer's action state, unless we provide a new state
   lexer.take(1, None);
   // now we can peek
-  let peek = lexer.peek();
-  assert!(matches!(peek.token.unwrap().kind, A));
-  assert_eq!(peek.digested, 2);
+  let (output, _) = lexer.peek();
+  assert!(matches!(output.token.unwrap().kind, A));
+  assert_eq!(output.digested, 2);
 
   // further more, if you know what you are doing
   // you can take more chars and manually set the action state

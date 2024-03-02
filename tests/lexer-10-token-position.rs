@@ -31,8 +31,8 @@ fn token_position() {
     .define(A, Action::regex(r"^123").unwrap())
     .build(text);
 
-  let peek = lexer.peek();
-  let token = peek.token.unwrap();
+  let (output, _) = lexer.peek();
+  let token = output.token.unwrap();
 
   // use `transform` to get the position from the index
   // it will use binary search to find the line index

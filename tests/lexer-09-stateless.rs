@@ -1,6 +1,4 @@
-use whitehole::lexer::{
-  expectation::Expectation, stateless::lex::StatelessLexOptions, Action, Lexer, LexerBuilder,
-};
+use whitehole::lexer::{stateless::lex::StatelessLexOptions, Action, Lexer, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -33,14 +31,7 @@ fn stateless_lexer() {
   assert!(matches!(output.token.unwrap().kind, A));
 
   // we can also manually provide the action state and other details
-  let output = stateless.lex_with(
-    "aaa",
-    StatelessLexOptions {
-      action_state: &mut (),
-      start: 0,
-      expectation: Expectation::default(),
-    },
-  );
+  let output = stateless.lex_with("aaa", StatelessLexOptions::with_action_state(&mut ()));
   assert!(matches!(output.token.unwrap().kind, A));
 }
 

@@ -20,10 +20,10 @@ fn peek_lexer() {
 
   // we can peek the next token without consuming it
   // and all muted tokens are not consumed as well
-  let peek = lexer.peek();
-  let token = peek.token.unwrap();
+  let (output, _) = lexer.peek();
+  let token = output.token.unwrap();
   assert!(matches!(token.kind, A));
-  assert_eq!(peek.digested, 2); // the whitespace is also digested
+  assert_eq!(output.digested, 2); // the whitespace is also digested
 
   // now use `lex` to consume the token and the muted leading whitespace
   let res = lexer.lex();
@@ -37,8 +37,8 @@ fn peek_lexer() {
   // we can directly apply them to the lexer if the peek result is what we want
   let mut lexer = lexer.reload(" a");
   assert_eq!(lexer.state().digested(), 0);
-  let peek = lexer.peek();
-  lexer.take(peek.digested, Some(peek.action_state));
+  let (output, action_state) = lexer.peek();
+  lexer.take(output.digested, Some(action_state));
   assert_eq!(lexer.state().digested(), 2);
 
   // as you can see, peek will clone the action state
@@ -47,8 +47,8 @@ fn peek_lexer() {
   // another thing to mention is that
   // you can provide expectations when peek just like in lex
   let lexer = lexer.reload(" a");
-  let peek = lexer.peek_expect("b");
-  assert!(peek.token.is_none());
+  let (output, _) = lexer.peek_expect("b");
+  assert!(output.token.is_none());
 }
 
 #[test]
@@ -65,27 +65,27 @@ fn trim_lexer() {
     .build(" a");
 
   // for example, this peek will first ignore the whitespace then yield `A`
-  let peek = lexer.peek_expect(&A);
-  assert!(matches!(peek.token.unwrap().kind, A));
-  assert_eq!(peek.digested, 2);
+  let (output, _) = lexer.peek_expect(&A);
+  assert!(matches!(output.token.unwrap().kind, A));
+  assert_eq!(output.digested, 2);
 
   // if then we do another peek with different expectation
   // the lexer will ignore the whitespace again
-  let peek = lexer.peek_expect(&B);
-  assert!(matches!(peek.token.unwrap().kind, B));
-  assert_eq!(peek.digested, 2);
+  let (output, _) = lexer.peek_expect(&B);
+  assert!(matches!(output.token.unwrap().kind, B));
+  assert_eq!(output.digested, 2);
 
   // to avoid duplicated lexing, we can first trim the lexer to remove the muted tokens
   // then peek the rest of the buffer
   lexer.trim(); // this will consume the whitespace
   assert_eq!(lexer.state().digested(), 1);
   // now we can peek the rest of the buffer
-  let peek = lexer.peek_expect(&A);
-  assert!(matches!(peek.token.unwrap().kind, A));
-  assert_eq!(peek.digested, 1);
-  let peek = lexer.peek_expect(&B);
-  assert!(matches!(peek.token.unwrap().kind, B));
-  assert_eq!(peek.digested, 1);
+  let (output, _) = lexer.peek_expect(&A);
+  assert!(matches!(output.token.unwrap().kind, A));
+  assert_eq!(output.digested, 1);
+  let (output, _) = lexer.peek_expect(&B);
+  assert!(matches!(output.token.unwrap().kind, B));
+  assert_eq!(output.digested, 1);
 }
 
 #[test]
