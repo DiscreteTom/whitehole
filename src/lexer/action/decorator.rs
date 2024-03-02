@@ -36,7 +36,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// builder.define_with(MyKind::A, |a| {
   ///   a.regex(r"^\s+")
   ///     .unwrap()
-  ///     .prevent(|input| input.state().reject)
+  ///     .prevent(|input| input.state.reject)
   /// });
   /// ```
   pub fn prevent<F>(mut self, condition: F) -> Self
@@ -268,7 +268,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// builder.define_with(MyKind::A, |a| {
   ///   a.regex(r"^\s+")
   ///     .unwrap()
-  ///     .then(|ctx| ctx.input.state().value += 1)
+  ///     .then(|ctx| ctx.input.state.value += 1)
   /// });
   /// ```
   pub fn then<F>(mut self, callback: F) -> Self
