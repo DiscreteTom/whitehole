@@ -64,7 +64,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     &self.possible_kinds
   }
 
-  /// Should only be set by [`Action::head_in`] or [`Action::head_not`].
+  /// Should only be set by [`Action::head_in`], [`Action::head_not`] and [`Action::head_unknown`].
   pub fn head_matcher(&self) -> &Option<ActionInputRestHeadMatcher> {
     &self.head_matcher
   }
