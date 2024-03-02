@@ -45,3 +45,63 @@ impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
     a
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lexer::action::output::ActionOutput;
+
+  fn assert_reject(action: Action<(), (), ()>) {
+    let mut action_state = ();
+    let mut input = ActionInput::new("123", 0, &mut action_state);
+    let output = action.exec(&mut input);
+    assert!(matches!(output, None));
+  }
+  fn assert_accept_all(action: Action<(), (), ()>) {
+    let mut action_state = ();
+    let mut input = ActionInput::new("123", 0, &mut action_state);
+    let output = action.exec(&mut input);
+    assert!(matches!(
+      output,
+      Some(ActionOutput {
+        kind: (),
+        digested: 3,
+        muted: false,
+        error: None
+      })
+    ));
+  }
+  fn default_() -> ActionBuilder<(), ()> {
+    ActionBuilder::default()
+  }
+
+  #[test]
+  fn action_builder_new() {
+    assert_reject(default_().new(|_| None));
+    assert_accept_all(default_().new(|input| {
+      Some(ActionOutputWithoutKind {
+        digested: input.rest().len(),
+        muted: false,
+        error: None,
+      })
+    }));
+  }
+
+  #[test]
+  fn action_builder_simple() {
+    assert_reject(default_().simple(|_| 0));
+    assert_accept_all(default_().simple(|input| input.rest().len()));
+  }
+
+  #[test]
+  fn action_builder_regex() {
+    assert_reject(default_().regex(r"aaa").unwrap());
+    assert_accept_all(default_().regex(r"123").unwrap());
+  }
+
+  #[test]
+  fn action_builder_from() {
+    assert_reject(default_().from(Action::regex(r"aaa").unwrap()));
+    assert_accept_all(default_().from(Action::regex(r"123").unwrap()));
+  }
+}
