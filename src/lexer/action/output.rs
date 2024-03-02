@@ -1,4 +1,5 @@
 use super::input::ActionInput;
+use std::ops::{Deref, DerefMut};
 
 pub struct ActionOutput<Kind, ErrorType> {
   pub kind: Kind,
@@ -36,6 +37,20 @@ pub struct EnhancedActionOutput<'buffer, Kind, ErrorType> {
   pub start: usize,
 }
 
+impl<'buffer, Kind, ErrorType> Deref for EnhancedActionOutput<'buffer, Kind, ErrorType> {
+  type Target = ActionOutput<Kind, ErrorType>;
+
+  fn deref(&self) -> &Self::Target {
+    &self.raw
+  }
+}
+
+impl<'buffer, Kind, ErrorType> DerefMut for EnhancedActionOutput<'buffer, Kind, ErrorType> {
+  fn deref_mut(&mut self) -> &mut Self::Target {
+    &mut self.raw
+  }
+}
+
 impl<'buffer, Kind, ErrorType> EnhancedActionOutput<'buffer, Kind, ErrorType> {
   pub fn new<ActionState>(
     input: &ActionInput<'buffer, '_, ActionState>,
@@ -48,22 +63,8 @@ impl<'buffer, Kind, ErrorType> EnhancedActionOutput<'buffer, Kind, ErrorType> {
     }
   }
 
-  // re-export output fields
-  pub fn kind(&self) -> &Kind {
-    &self.raw.kind
-  }
-  pub fn digested(&self) -> usize {
-    self.raw.digested
-  }
-  pub fn muted(&self) -> bool {
-    self.raw.muted
-  }
-  pub fn error(&self) -> &Option<ErrorType> {
-    &self.raw.error
-  }
-
   pub fn end(&self) -> usize {
-    self.start + self.digested()
+    self.start + self.digested
   }
 
   pub fn content(&self) -> &'buffer str {
