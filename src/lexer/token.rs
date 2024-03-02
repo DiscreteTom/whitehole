@@ -26,9 +26,9 @@ pub struct Token<'buffer, Kind, ErrorType> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use whitehole_macros::TokenKind;
+  use whitehole_macros::_TokenKind;
 
-  #[derive(TokenKind)]
+  #[derive(_TokenKind)]
   enum MyKind {
     UnitField,
     UnnamedField(i32),

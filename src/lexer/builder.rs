@@ -225,9 +225,9 @@ where
 #[cfg(test)]
 mod tests {
   use super::*;
-  use whitehole_macros::TokenKind;
+  use whitehole_macros::_TokenKind;
 
-  #[derive(TokenKind, Clone)]
+  #[derive(_TokenKind, Clone)]
   enum MyKind {
     UnitField,
     // UnnamedField(i32),
