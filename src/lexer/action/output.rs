@@ -8,12 +8,18 @@ pub struct ActionOutput<Kind, ErrorType> {
   /// If `true`, the action is accepted but no token is emitted,
   /// and the lexing process will continue.
   pub muted: bool,
+  /// If `Some`, the action is still accepted,
+  /// and error tokens will be collected in
+  /// [`LexOutput::errors`](crate::lexer::output::LexOutput::errors).
   pub error: Option<ErrorType>,
 }
 
 pub struct ActionOutputWithoutKind<ErrorType> {
+  /// See [`ActionOutput::digested`].
   pub digested: usize,
+  /// See [`ActionOutput::muted`].
   pub muted: bool,
+  /// See [`ActionOutput::error`].
   pub error: Option<ErrorType>,
 }
 

@@ -89,6 +89,7 @@ where
               // don't emit token
               // push the token to errors
               // update state and continue
+              // [[muted error tokens are also collected]]
               res.errors.push(token);
               res.digested += digested;
               continue;
