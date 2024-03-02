@@ -49,8 +49,8 @@ impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
-  /// LexerBuilder::<MyKind, i32, i32>::default()
-  ///   .define(MyKind::A, Action::exact("A").error(123));
+  /// # let mut builder = LexerBuilder::<MyKind, i32, i32>::default();
+  /// builder.define(MyKind::A, Action::exact("A").error(123));
   /// ```
   /// The following code will pass the compile
   /// ```
@@ -58,8 +58,8 @@ impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
-  /// LexerBuilder::<MyKind, i32, i32>::default()
-  ///   .define_with(MyKind::A, |a| a.from(Action::exact("A")).error(123));
+  /// # let mut builder = LexerBuilder::<MyKind, i32, i32>::default();
+  /// builder.define_with(MyKind::A, |a| a.from(Action::exact("A")).error(123));
   /// ```
   pub fn from<Kind>(
     self,
