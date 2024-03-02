@@ -422,6 +422,7 @@ mod tests {
   #[derive(_TokenKind, Clone)]
   enum MyKind {
     A,
+    B,
   }
   #[derive(Clone, Default)]
   struct MyState {
@@ -672,6 +673,24 @@ mod tests {
         error: None
       })
     ));
+
+    // maybe_muted should be true if any of the actions is muted
+    let action: Action<(), (), ()> = regex(r"^a").unwrap().mute(true) | regex(r"^b").unwrap();
+    assert!(action.maybe_muted);
+    let action: Action<(), (), ()> = regex(r"^a").unwrap() | regex(r"^b").unwrap().mute(true);
+    assert!(action.maybe_muted);
+    let action: Action<(), (), ()> =
+      regex(r"^a").unwrap().mute(true) | regex(r"^b").unwrap().mute(true);
+    assert!(action.maybe_muted);
+    let action: Action<(), (), ()> = regex(r"^a").unwrap() | regex(r"^b").unwrap();
+    assert!(!action.maybe_muted);
+
+    // possible kinds should be merged
+    let action: Action<MyKind, (), ()> =
+      regex(r"^a").unwrap().bind(MyKind::A) | regex(r"^b").unwrap().bind(MyKind::B);
+    assert_eq!(action.possible_kinds.len(), 2);
+    assert!(action.possible_kinds.contains(&MyKind::A.id()));
+    assert!(action.possible_kinds.contains(&MyKind::B.id()));
   }
 
   #[test]
