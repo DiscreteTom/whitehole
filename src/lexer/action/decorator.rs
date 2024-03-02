@@ -411,7 +411,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> ops::BitOr<Self>
 #[cfg(test)]
 mod tests {
   use crate::lexer::{
-    action::{input::ActionInput, output::ActionOutput, ActionInputRestHeadMatcher},
+    action::{input::ActionInput, output::ActionOutput, regex::regex, ActionInputRestHeadMatcher},
     token::TokenKind,
     Action,
   };
@@ -627,9 +627,7 @@ mod tests {
 
   #[test]
   fn action_or() {
-    let action = Action::<(), (), ()>::regex(r"^a")
-      .unwrap()
-      .or(Action::regex(r"^b").unwrap());
+    let action: Action<(), (), ()> = regex(r"^a").unwrap().or(regex(r"^b").unwrap());
 
     assert!(matches!(
       action.exec(&mut ActionInput::new("a", 0, &mut ())),
@@ -651,7 +649,7 @@ mod tests {
     ));
 
     // use `|` to combine actions
-    let action = Action::<(), (), ()>::regex(r"^a").unwrap() | Action::regex(r"^b").unwrap();
+    let action: Action<(), (), ()> = regex(r"^a").unwrap() | regex(r"^b").unwrap();
 
     assert!(matches!(
       action.exec(&mut ActionInput::new("a", 0, &mut ())),
@@ -700,7 +698,7 @@ mod tests {
 
   #[test]
   fn action_head_not() {
-    let action = Action::<(), (), ()>::regex(r"^a").unwrap().head_not(['b']);
+    let action: Action<(), (), ()> = regex(r"^a").unwrap().head_not(['b']);
     assert!(matches!(
       action.head_matcher,
       Some(ActionInputRestHeadMatcher::Not(set)) if set.contains(&'b') && set.len() == 1

@@ -33,11 +33,6 @@ impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
     Action::simple(f)
   }
 
-  /// Equals to [`Action::regex`](crate::lexer::action::Action::regex).
-  pub fn regex(self, re: &str) -> Result<Action<(), ActionState, ErrorType>, regex::Error> {
-    Action::regex(re)
-  }
-
   /// Return the action as is.
   /// This is useful if you want to re-use existing action (e.g. action utils)
   /// and need to modify it with action decorators.
@@ -72,7 +67,7 @@ impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::output::ActionOutput;
+  use crate::lexer::action::{output::ActionOutput, regex::regex};
 
   fn assert_reject(action: Action<(), (), ()>) {
     let mut action_state = ();
@@ -117,14 +112,8 @@ mod tests {
   }
 
   #[test]
-  fn action_builder_regex() {
-    assert_reject(default_().regex(r"aaa").unwrap());
-    assert_accept_all(default_().regex(r"123").unwrap());
-  }
-
-  #[test]
   fn action_builder_from() {
-    assert_reject(default_().from(Action::regex(r"aaa").unwrap()));
-    assert_accept_all(default_().from(Action::regex(r"123").unwrap()));
+    assert_reject(default_().from(regex(r"aaa").unwrap()));
+    assert_accept_all(default_().from(regex(r"123").unwrap()));
   }
 }

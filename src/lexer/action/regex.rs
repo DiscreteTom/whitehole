@@ -1,11 +1,36 @@
-use super::Action;
+// TODO: only available in feature `regex`
+use super::{builder::ActionBuilder, Action};
 use regex::Regex;
 
-// TODO: only in feature `regex`
-impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
-  pub fn regex(re: &str) -> Result<Self, regex::Error> {
-    Regex::new(re)
-      .map(|re| Action::simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
+/// Create a new action that uses a regex to match the rest of input.
+/// # Examples
+/// Usually the regex should start with `^` to match from the start of the rest of the input.
+/// ```
+/// # use whitehole::lexer::action::regex;
+/// # let action: Action<(), (), ()> =
+/// regex(r"^\d+").unwrap();
+/// ```
+/// It's recommended to use [`Action::head_matcher`] to optimize the lex performance.
+/// ```
+/// # use whitehole::lexer::action::regex;
+/// # use whitehole::lexer::action::ActionInputRestHeadMatcher;
+/// # let action: Action<(), (), ()> =
+/// regex(r"^abc").unwrap().head_in(['a']);
+/// # let action: Action<(), (), ()> =
+/// regex(r"^\d+").unwrap().head_in(('0'..='9').collect::<HashSet<_>>());
+/// # assert!(matches!(action.head_matcher), Some(ActionInputRestHeadMatcher::OneOf(set)) if set.contains(&'9') && set.contains(&'0') && set.len() == 10)
+/// ```
+pub fn regex<ActionState, ErrorType>(
+  re: &str,
+) -> Result<Action<(), ActionState, ErrorType>, regex::Error> {
+  Regex::new(re)
+    .map(|re| Action::simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
+}
+
+impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
+  /// Equals to [`regex`](crate::lexer::action::regex::regex).
+  pub fn regex(self, re: &str) -> Result<Action<(), ActionState, ErrorType>, regex::Error> {
+    regex(re)
   }
 }
 
@@ -15,44 +40,50 @@ mod tests {
   use crate::lexer::action::{input::ActionInput, output::ActionOutput};
 
   #[test]
-  fn regex_start() {
+  fn match_at_start() {
+    let action: Action<(), (), ()> = regex(r"^\d+").unwrap();
     let mut state = ();
-    let action: Action<(), (), _> = Action::regex(r"^\d+").unwrap();
     let mut input = ActionInput::new("123", 0, &mut state);
-    let output: Option<ActionOutput<(), _>> = action.exec(&mut input);
-    assert!(matches!(output, Some { .. }));
-    if let Some(ActionOutput {
-      kind,
-      digested,
-      muted,
-      error,
-    }) = output
-    {
-      assert_eq!(kind, ());
-      assert_eq!(digested, 3);
-      assert_eq!(muted, false);
-      assert_eq!(error, None::<()>);
-    }
+    assert!(matches!(
+      action.exec(&mut input),
+      Some(ActionOutput {
+        kind: (),
+        digested: 3,
+        muted: false,
+        error: None,
+      })
+    ));
   }
 
   #[test]
-  fn regex_middle() {
+  fn match_at_middle() {
+    let action: Action<(), (), ()> = regex(r"^\d+").unwrap();
     let mut state = ();
-    let action = Action::regex(r"^\d+").unwrap();
     let mut input = ActionInput::new("abc123", 3, &mut state);
-    let output = action.exec(&mut input);
-    assert!(matches!(output, Some { .. }));
-    if let Some(ActionOutput {
-      kind,
-      digested,
-      muted,
-      error,
-    }) = output
-    {
-      assert_eq!(kind, ());
-      assert_eq!(digested, 3);
-      assert_eq!(muted, false);
-      assert_eq!(error, None::<()>);
-    }
+    assert!(matches!(
+      action.exec(&mut input),
+      Some(ActionOutput {
+        kind: (),
+        digested: 3,
+        muted: false,
+        error: None,
+      })
+    ));
+  }
+
+  #[test]
+  fn regex_action_builder() {
+    let action: Action<(), (), ()> = ActionBuilder::default().regex(r"^\d+").unwrap();
+    let mut state = ();
+    let mut input = ActionInput::new("123", 0, &mut state);
+    assert!(matches!(
+      action.exec(&mut input),
+      Some(ActionOutput {
+        kind: (),
+        digested: 3,
+        muted: false,
+        error: None,
+      })
+    ));
   }
 }

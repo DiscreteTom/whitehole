@@ -225,6 +225,7 @@ where
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::lexer::action::regex::regex;
   use whitehole_macros::_TokenKind;
 
   #[derive(_TokenKind, Clone)]
@@ -255,7 +256,7 @@ mod tests {
   #[test]
   fn ignore() {
     let mut lexer: Lexer<MyKind, (), ()> = LexerBuilder::default()
-      .ignore(Action::regex("a+").unwrap().bind(MyKind::UnitField))
+      .ignore(regex("a+").unwrap().bind(MyKind::UnitField))
       .build("aaa");
 
     let res = lexer.lex();
