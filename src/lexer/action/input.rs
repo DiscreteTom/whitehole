@@ -1,6 +1,7 @@
 pub struct ActionInput<'buffer, 'state, ActionState> {
   buffer: &'buffer str,
   start: usize,
+  // user can mutate the action state
   pub state: &'state mut ActionState,
 }
 
