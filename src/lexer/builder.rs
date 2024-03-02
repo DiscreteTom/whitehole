@@ -225,7 +225,7 @@ where
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::regex::regex;
+  use crate::lexer::action::regex;
   use whitehole_macros::_TokenKind;
 
   #[derive(_TokenKind, Clone)]

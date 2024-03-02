@@ -11,7 +11,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Set [`Action::possible_kinds`].
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::action::regex::regex;
+  /// # use whitehole::lexer::action::regex;
   /// # use whitehole::lexer::action::Action;
   /// # use whitehole::lexer::token::TokenKind;
   /// # use whitehole_macros::TokenKind;
@@ -42,7 +42,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Set [`Action::possible_kinds`].
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::action::regex::regex;
+  /// # use whitehole::lexer::action::regex;
   /// # use whitehole::lexer::action::Action;
   /// # use whitehole_macros::TokenKind;
   /// # use Num::*;
@@ -89,7 +89,7 @@ impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
   /// so make sure the result is in `possible_kinds`.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::action::regex::regex;
+  /// # use whitehole::lexer::action::regex;
   /// # use whitehole::lexer::action::Action;
   /// # use whitehole_macros::TokenKind;
   /// # use Num::*;
@@ -134,7 +134,7 @@ impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::regex::regex;
+  use crate::lexer::action::regex;
   use whitehole_macros::_TokenKind;
   use Num::*;
 

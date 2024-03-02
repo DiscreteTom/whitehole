@@ -7,14 +7,14 @@ use regex::Regex;
 /// Usually the regex should start with `^` to match from the start of the rest of the input.
 /// ```
 /// # use whitehole::lexer::action::Action;
-/// # use whitehole::lexer::action::regex::regex;
+/// # use whitehole::lexer::action::regex;
 /// # let action: Action<(), (), ()> =
 /// regex(r"^\d+").unwrap();
 /// ```
 /// It's recommended to use [`Action::head_matcher`] to optimize the lex performance.
 /// ```
 /// # use whitehole::lexer::action::Action;
-/// # use whitehole::lexer::action::regex::regex;
+/// # use whitehole::lexer::action::regex;
 /// # use whitehole::lexer::action::ActionInputRestHeadMatcher;
 /// # use std::collections::HashSet;
 /// # let action: Action<(), (), ()> =
@@ -30,7 +30,7 @@ pub fn regex<ActionState, ErrorType>(
 }
 
 impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
-  /// Equals to [`regex`](crate::lexer::action::regex::regex).
+  /// Equals to [`regex`](crate::lexer::action::regex).
   pub fn regex(self, re: &str) -> Result<Action<(), ActionState, ErrorType>, regex::Error> {
     regex(re)
   }

@@ -293,7 +293,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// Return a new action.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole::lexer::{Action, LexerBuilder, action::exact};
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
@@ -301,7 +301,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// builder.define_with(MyKind::A, |a| {
   ///   a.regex(r"^\s+")
   ///     .unwrap()
-  ///     .or(Action::exact("A"))
+  ///     .or(exact("A"))
   /// });
   /// ```
   pub fn or(mut self, another: Self) -> Self {

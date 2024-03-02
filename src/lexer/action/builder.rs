@@ -32,21 +32,21 @@ impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
   /// The following code won't pass the compile check
   /// because the compiler can't infer the generic parameter type of `Action`.
   /// ```compile_fail
-  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole::lexer::{Action, LexerBuilder, action::exact};
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind, i32, i32>::default();
-  /// builder.define(MyKind::A, Action::exact("A").error(123));
+  /// builder.define(MyKind::A, exact("A").error(123));
   /// ```
   /// The following code will pass the compile
   /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole::lexer::{Action, LexerBuilder, action::exact};
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind, i32, i32>::default();
-  /// builder.define_with(MyKind::A, |a| a.from(Action::exact("A")).error(123));
+  /// builder.define_with(MyKind::A, |a| a.from(exact("A")).error(123));
   /// ```
   pub fn from<Kind>(
     self,
