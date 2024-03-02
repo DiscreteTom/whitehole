@@ -1,4 +1,7 @@
-use whitehole::lexer::{action::output::ActionOutputWithoutKind, Action, LexerBuilder};
+use whitehole::lexer::{
+  action::{output::ActionOutputWithoutKind, regex, simple},
+  Action, LexerBuilder,
+};
 use whitehole_macros::TokenKind;
 
 // define token kinds
@@ -30,23 +33,23 @@ fn lexer_basics() {
       // we can create actions from a regex pattern
       // and use `bind` to bind the action to a token kind
       // remember to use `^` to match the start of the rest string
-      Action::regex(r"^\s+").unwrap().bind(Anonymous),
+      regex(r"^\s+").unwrap().bind(Anonymous),
     )
     // for not muted actions, we can use `define` to define them
     // the first parameter is the target token kind
     // the second parameter is the action
     .define(
       A,
-      // when using `Action::simple`
+      // when using `simple`
       // the closure's return value indicates how many characters are digested by the action
       // `0` means the action is rejected
       // we don't need to call `bind` here because the action will be bound to `A`
-      Action::simple(|input| if input.rest().starts_with("a") { 1 } else { 0 }),
+      simple(|input| if input.rest().starts_with("a") { 1 } else { 0 }),
     )
     .define(
       B,
       // yes we can use regex here too
-      Action::regex("^b").unwrap(),
+      regex("^b").unwrap(),
     )
     .define(
       C,

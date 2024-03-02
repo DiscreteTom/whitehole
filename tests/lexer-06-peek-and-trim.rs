@@ -1,4 +1,4 @@
-use whitehole::lexer::{trimmed::TrimmedLexer, Action, LexerBuilder};
+use whitehole::lexer::{action::regex, trimmed::TrimmedLexer, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -14,8 +14,8 @@ enum MyKind {
 #[test]
 fn peek_lexer() {
   let mut lexer = LexerBuilder::<MyKind>::default()
-    .ignore(Action::regex(r"^\s+").unwrap().bind(Anonymous))
-    .define(A, Action::regex(r"a").unwrap())
+    .ignore(regex(r"^\s+").unwrap().bind(Anonymous))
+    .define(A, regex(r"a").unwrap())
     .build(" a");
 
   // we can peek the next token without consuming it
@@ -59,9 +59,9 @@ fn trim_lexer() {
   // which is not efficient
 
   let mut lexer = LexerBuilder::<MyKind>::default()
-    .ignore(Action::regex(r"^\s+").unwrap().bind(Anonymous))
-    .define(A, Action::regex(r"^a").unwrap())
-    .define(B, Action::regex(r"^a").unwrap())
+    .ignore(regex(r"^\s+").unwrap().bind(Anonymous))
+    .define(A, regex(r"^a").unwrap())
+    .define(B, regex(r"^a").unwrap())
     .build(" a");
 
   // for example, this peek will first ignore the whitespace then yield `A`
@@ -91,8 +91,8 @@ fn trim_lexer() {
 #[test]
 fn trimmed_lexer() {
   let lexer = LexerBuilder::<MyKind>::default()
-    .ignore(Action::regex(r"^\s+").unwrap().bind(Anonymous))
-    .define(A, Action::regex(r"^(a|b|c)").unwrap())
+    .ignore(regex(r"^\s+").unwrap().bind(Anonymous))
+    .define(A, regex(r"^(a|b|c)").unwrap())
     .build(" a b c");
 
   // for strict typing, we also have a `TrimmedLexer` struct

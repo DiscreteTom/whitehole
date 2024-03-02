@@ -1,4 +1,4 @@
-use whitehole::lexer::{Action, LexerBuilder};
+use whitehole::lexer::{action::regex, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -56,8 +56,8 @@ fn panic_mode() {
   // which will digest 1 char and try again
 
   let mut lexer = LexerBuilder::<MyKind, (), &str>::default()
-    .ignore(Action::regex(r"^\s+").unwrap().bind(Anonymous))
-    .define(A, Action::regex(r"^a").unwrap())
+    .ignore(regex(r"^\s+").unwrap().bind(Anonymous))
+    .define(A, regex(r"^a").unwrap())
     .build("b a");
 
   // in this case when we peek the lexer

@@ -1,4 +1,4 @@
-use whitehole::lexer::{stateless::lex::StatelessLexOptions, Action, Lexer, LexerBuilder};
+use whitehole::lexer::{action::regex, stateless::lex::StatelessLexOptions, Lexer, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -18,8 +18,8 @@ fn stateless_lexer() {
 
   // or use `lexer.stateless()` to get the stateless lexer from a stateful lexer
   let lexer = LexerBuilder::<MyKind>::default()
-    .ignore(Action::regex(r"^\s+").unwrap().bind(Anonymous))
-    .define(A, Action::regex(r"^a").unwrap())
+    .ignore(regex(r"^\s+").unwrap().bind(Anonymous))
+    .define(A, regex(r"^a").unwrap())
     .build(" a");
   // in this case the stateless lexer is wrapped in a `Rc`
   // so we can clone it

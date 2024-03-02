@@ -1,4 +1,4 @@
-use whitehole::lexer::{Action, LexerBuilder};
+use whitehole::lexer::{action::regex, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -46,7 +46,7 @@ fn lex_with_head_matcher() {
         }
       })
     })
-    .define(False, Action::regex(r"^false").unwrap())
+    .define(False, regex(r"^false").unwrap())
     .build("false");
   // the lexed token should be `False`
   assert!(matches!(lexer.lex().token.unwrap().kind, False));
@@ -73,7 +73,7 @@ fn lex_with_head_matcher() {
     })
     .define(
       False,
-      Action::regex(r"^false")
+      regex(r"^false")
         .unwrap()
         // only evaluate this action if the first character is `f`
         .head_in(['f']),
@@ -104,7 +104,7 @@ fn lex_with_head_matcher() {
     })
     .define(
       False,
-      Action::regex(r"^false")
+      regex(r"^false")
         .unwrap()
         // only evaluate this action if the first character is `f`
         .head_in(['f']),
@@ -130,7 +130,7 @@ fn lex_with_head_matcher() {
       // instead of using `head_in([',', ':', '{', '}', '[', ']'])`
       .head_not(['t', 'f'])
     })
-    .define(False, Action::regex(r"^false").unwrap().head_in(['f']))
+    .define(False, regex(r"^false").unwrap().head_in(['f']))
     .build("false");
   // the lexed token should be `False`
   assert!(matches!(lexer.lex().token.unwrap().kind, False));
@@ -151,7 +151,7 @@ fn lex_with_head_matcher() {
       })
       .head_unknown()
     })
-    .define(False, Action::regex(r"^false").unwrap().head_in(['f']))
+    .define(False, regex(r"^false").unwrap().head_in(['f']))
     .build("false");
   // the lexed token should be `False`
   assert!(matches!(lexer.lex().token.unwrap().kind, False));
@@ -181,7 +181,7 @@ fn utf8_head_matcher() {
       })
       .head_in(['真'])
     })
-    .define(False, Action::regex(r"^假").unwrap().head_in(['假']))
+    .define(False, regex(r"^假").unwrap().head_in(['假']))
     .build("假");
   // the lexed token should be `False`
   assert!(matches!(lexer.lex().token.unwrap().kind, False));

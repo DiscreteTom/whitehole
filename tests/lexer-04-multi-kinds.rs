@@ -1,4 +1,4 @@
-use whitehole::lexer::{token::TokenKind, Action, LexerBuilder};
+use whitehole::lexer::{action::regex, token::TokenKind, Action, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -17,7 +17,7 @@ fn possible_kinds() {
 
   // when you create a new Action, the target kind is `()`
   // so we have to use `bind` to bind the action to a specific kind
-  let action = Action::<()>::regex(r"^a").unwrap().bind::<MyKind>(A);
+  let action: Action<MyKind> = regex(r"^a").unwrap().bind::<MyKind>(A);
   // `MyKind` implemented `TokenKind` so we can use `id` to get the kind's id
   // and check if the action's `possible_kinds` contains the kind's id
   assert!(action.possible_kinds().contains(&A.id()));
@@ -32,10 +32,11 @@ fn multi_kinds() {
   // an action can be bound to multiple kinds
   // and we must provide a selector to choose a kind from the possible kinds
 
-  let action = Action::<()>::regex(r"^a")
-    .unwrap()
-    .kinds([A, B])
-    .select(|ctx| if ctx.output.rest().len() > 0 { A } else { B });
+  let action =
+    regex(r"^a")
+      .unwrap()
+      .kinds([A, B])
+      .select(|ctx| if ctx.output.rest().len() > 0 { A } else { B });
   assert!(action.possible_kinds().contains(&A.id()));
   assert!(action.possible_kinds().contains(&B.id()));
 
@@ -55,7 +56,7 @@ fn multi_kinds() {
 
   // if you want to provide kind ids directly
   // you can use Action.kind_ids
-  let action = Action::<()>::regex(r"^a")
+  let action: Action<MyKind> = regex(r"^a")
     .unwrap()
     .kind_ids([A.id(), B.id()])
     .select(|ctx| if ctx.output.rest().len() > 0 { A } else { B });

@@ -1,4 +1,4 @@
-use whitehole::lexer::{Action, LexerBuilder};
+use whitehole::lexer::{action::regex, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -24,10 +24,10 @@ struct MyState {
 fn action_orders() {
   let mut lexer = LexerBuilder::<MyKind, MyState>::default()
     // first defined actions have higher priority
-    .define(A, Action::regex(r"^a").unwrap())
-    .define(B, Action::regex(r"^a").unwrap())
+    .define(A, regex(r"^a").unwrap())
+    .define(B, regex(r"^a").unwrap())
     // different actions can share the same target token kind
-    .define(A, Action::regex(r"^b").unwrap())
+    .define(A, regex(r"^b").unwrap())
     .build("ab");
 
   // the first lex should be accepted as `A`
