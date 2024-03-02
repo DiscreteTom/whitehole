@@ -37,4 +37,11 @@ impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
   pub fn regex(self, re: &str) -> Result<Action<(), ActionState, ErrorType>, regex::Error> {
     Action::regex(re)
   }
+
+  pub fn from<Kind>(
+    self,
+    a: Action<Kind, ActionState, ErrorType>,
+  ) -> Action<Kind, ActionState, ErrorType> {
+    a
+  }
 }
