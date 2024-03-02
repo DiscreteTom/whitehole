@@ -4,7 +4,7 @@ use super::{
   Action, ActionInputRestHeadMatcher,
 };
 use crate::lexer::token::TokenKind;
-use std::collections::HashSet;
+use std::{collections::HashSet, ops};
 
 /// `input.state` is mutable. `output` is consumed.
 pub struct AcceptedActionDecoratorContext<'input, 'buffer, 'state, Kind, ActionState, ErrorType> {
@@ -397,3 +397,14 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   // so we have to provide `possible_kinds` manually if we implement `Action.map` or `Action.data`,
   // which is the same as calling `action.kinds().select()`.
 }
+
+impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> ops::BitOr<Self>
+  for Action<Kind, ActionState, ErrorType>
+{
+  type Output = Self;
+
+  fn bitor(self, rhs: Self) -> Self::Output {
+    self.or(rhs)
+  }
+}
+
