@@ -2,10 +2,13 @@ pub mod builder;
 pub mod decorator;
 pub mod input;
 pub mod output;
-pub mod regex;
+mod regex;
 pub mod select;
-pub mod simple;
+mod simple;
 pub mod utils;
+
+pub use regex::regex;
+pub use simple::simple;
 
 use self::{
   input::ActionInput,
