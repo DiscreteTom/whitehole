@@ -411,7 +411,10 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> ops::BitOr<Self>
 #[cfg(test)]
 mod tests {
   use crate::lexer::{
-    action::{input::ActionInput, output::ActionOutput, regex::regex, ActionInputRestHeadMatcher},
+    action::{
+      input::ActionInput, output::ActionOutput, regex::regex, simple::simple,
+      ActionInputRestHeadMatcher,
+    },
     token::TokenKind,
     Action,
   };
@@ -428,7 +431,7 @@ mod tests {
   #[test]
   fn action_prevent() {
     let mut state = MyState { value: 0 };
-    let output = Action::<(), MyState, ()>::simple(|input| {
+    let output = simple::<MyState, (), _>(|input| {
       // update the state if the action is executed
       input.state.value += 1;
       // digest all rest
@@ -443,7 +446,7 @@ mod tests {
 
   #[test]
   fn action_apply() {
-    let action: Action<MyKind, (), i32> = Action::simple(|input| input.rest().len())
+    let action: Action<MyKind, (), i32> = simple(|input| input.rest().len())
       .mute(true)
       .bind(MyKind::A)
       .head_in(['A'])
@@ -476,8 +479,7 @@ mod tests {
 
   #[test]
   fn action_mute_if() {
-    let action: Action<(), (), ()> =
-      Action::simple(|_| 1).mute_if(|ctx| ctx.output.rest().len() > 0);
+    let action: Action<(), (), ()> = simple(|_| 1).mute_if(|ctx| ctx.output.rest().len() > 0);
 
     // ensure `action.mute_if` will set `maybe_muted` to true
     assert!(action.maybe_muted);
@@ -496,8 +498,8 @@ mod tests {
 
   #[test]
   fn action_mute() {
-    let muted_action: Action<(), (), ()> = Action::simple(|_| 1).mute(true);
-    let not_muted_action: Action<(), (), ()> = Action::simple(|_| 1).mute(false);
+    let muted_action: Action<(), (), ()> = simple(|_| 1).mute(true);
+    let not_muted_action: Action<(), (), ()> = simple(|_| 1).mute(false);
 
     // ensure `action.mute` will set `maybe_muted`
     assert!(muted_action.maybe_muted);
@@ -525,7 +527,7 @@ mod tests {
 
   #[test]
   fn action_check() {
-    let action = Action::<(), (), &'static str>::simple(|_| 1).check(|ctx| {
+    let action = simple::<_, &'static str, _>(|_| 1).check(|ctx| {
       if ctx.output.rest().len() > 0 {
         Some("error")
       } else {
@@ -555,7 +557,7 @@ mod tests {
 
   #[test]
   fn action_error() {
-    let action = Action::<(), (), &'static str>::simple(|_| 1).error("error");
+    let action: Action<(), (), &'static str> = simple::<_, &'static str, _>(|_| 1).error("error");
 
     assert!(matches!(
       action.exec(&mut ActionInput::new("A", 0, &mut ())),
@@ -570,7 +572,7 @@ mod tests {
 
   #[test]
   fn action_reject_if() {
-    let action = Action::<(), (), ()>::simple(|_| 1).reject_if(|ctx| ctx.output.rest().len() > 0);
+    let action: Action<()> = simple(|_| 1).reject_if(|ctx| ctx.output.rest().len() > 0);
 
     assert!(matches!(
       action.exec(&mut ActionInput::new("A", 0, &mut ())),
@@ -589,8 +591,8 @@ mod tests {
 
   #[test]
   fn action_reject() {
-    let rejected_action = Action::<(), (), ()>::simple(|_| 1).reject(true);
-    let not_rejected_action = Action::<(), (), ()>::simple(|_| 1).reject(false);
+    let rejected_action: Action<()> = simple(|_| 1).reject(true);
+    let not_rejected_action: Action<()> = simple(|_| 1).reject(false);
 
     assert!(matches!(
       rejected_action.exec(&mut ActionInput::new("A", 0, &mut ())),
@@ -610,8 +612,9 @@ mod tests {
   #[test]
   fn action_then() {
     let mut state = MyState { value: 0 };
-    let action = Action::<(), MyState, ()>::simple(|input| input.rest().len())
-      .then(|ctx| ctx.input.state.value += 1);
+    let action: Action<(), MyState, ()> =
+      simple(|input: &mut ActionInput<MyState>| input.rest().len())
+        .then(|ctx| ctx.input.state.value += 1);
 
     assert!(matches!(
       action.exec(&mut ActionInput::new("A", 0, &mut state)),
@@ -673,7 +676,7 @@ mod tests {
 
   #[test]
   fn action_bind() {
-    let action = Action::<(), (), ()>::simple(|_| 1).bind(MyKind::A);
+    let action: Action<MyKind> = simple(|_| 1).bind(MyKind::A);
     assert_eq!(action.possible_kinds.len(), 1);
     assert!(action.possible_kinds.contains(&MyKind::A.id()));
     assert!(matches!(
@@ -689,7 +692,7 @@ mod tests {
 
   #[test]
   fn action_head_in() {
-    let action = Action::<(), (), ()>::simple(|_| 1).head_in(['a']);
+    let action: Action<()> = simple(|_| 1).head_in(['a']);
     assert!(matches!(
       action.head_matcher,
       Some(ActionInputRestHeadMatcher::OneOf(set)) if set.contains(&'a') && set.len() == 1
@@ -707,7 +710,7 @@ mod tests {
 
   #[test]
   fn action_head_unknown() {
-    let action = Action::<(), (), ()>::simple(|_| 1).head_unknown();
+    let action: Action<()> = simple(|_| 1).head_unknown();
     assert!(matches!(
       action.head_matcher,
       Some(ActionInputRestHeadMatcher::Unknown)

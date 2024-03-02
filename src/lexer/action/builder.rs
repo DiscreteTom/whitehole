@@ -25,14 +25,6 @@ impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
     Action::new(exec)
   }
 
-  /// Equals to [`Action::simple`](crate::lexer::action::Action::simple).
-  pub fn simple<F>(self, f: F) -> Action<(), ActionState, ErrorType>
-  where
-    F: Fn(&mut ActionInput<ActionState>) -> usize + 'static,
-  {
-    Action::simple(f)
-  }
-
   /// Return the action as is.
   /// This is useful if you want to re-use existing action (e.g. action utils)
   /// and need to modify it with action decorators.
@@ -103,12 +95,6 @@ mod tests {
         error: None,
       })
     }));
-  }
-
-  #[test]
-  fn action_builder_simple() {
-    assert_reject(default_().simple(|_| 0));
-    assert_accept_all(default_().simple(|input| input.rest().len()));
   }
 
   #[test]

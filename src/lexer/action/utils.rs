@@ -1,4 +1,4 @@
-use super::Action;
+use super::{simple::simple, Action};
 
 impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   /// Match unicode whitespaces greedy.
@@ -7,7 +7,7 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   /// For the list of whitespaces, see https://www.unicode.org/Public/UCD/latest/ucd/PropList.txt.
   pub fn whitespaces() -> Self {
     // TODO: benchmark this vs regex `^\s+`
-    Action::simple(|input| {
+    simple(|input| {
       let mut digested = 0;
       for (i, c) in input.rest().char_indices() {
         if c.is_whitespace() {
@@ -44,7 +44,7 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
     let open = open.into();
     let first = open.chars().next().unwrap();
     let close = close.into();
-    Action::simple(move |input| {
+    simple(move |input| {
       // open mismatch
       if !input.rest().starts_with(&open) {
         return 0;
@@ -66,7 +66,7 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   pub fn exact(s: impl Into<String>) -> Self {
     let s = s.into();
     let first = s.chars().next().unwrap();
-    Action::simple(move |input| {
+    simple(move |input| {
       if input.rest().starts_with(&s) {
         s.len()
       } else {

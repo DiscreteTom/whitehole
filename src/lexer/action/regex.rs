@@ -1,5 +1,5 @@
 // TODO: only available in feature `regex`
-use super::{builder::ActionBuilder, Action};
+use super::{builder::ActionBuilder, simple::simple, Action};
 use regex::Regex;
 
 /// Create a new action that uses a regex to match the rest of input.
@@ -26,8 +26,7 @@ use regex::Regex;
 pub fn regex<ActionState, ErrorType>(
   re: &str,
 ) -> Result<Action<(), ActionState, ErrorType>, regex::Error> {
-  Regex::new(re)
-    .map(|re| Action::simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
+  Regex::new(re).map(|re| simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
 }
 
 impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
