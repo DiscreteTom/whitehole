@@ -69,9 +69,7 @@ fn action_decorators() {
     })
     .define_with(C, |a| {
       // to reject an action before the output is yielded, we can use `prevent`
-      a.regex(r"^c")
-        .unwrap()
-        .prevent(|input| input.state().reject)
+      a.regex(r"^c").unwrap().prevent(|input| input.state.reject)
     })
     .define_with(D, |a| {
       // use `then` to run a callback if this action is accepted and is not a peek
@@ -79,10 +77,10 @@ fn action_decorators() {
       a.regex(r"^d")
         .unwrap()
         .then(|ctx| {
-          ctx.input.state_mut().reject = true;
+          ctx.input.state.reject = true;
         })
         // yes you can apply multi decorators to an action
-        .prevent(|input| input.state().reject)
+        .prevent(|input| input.state.reject)
     })
     .build("a b c");
 
@@ -115,7 +113,7 @@ fn action_decorators() {
   assert!(matches!(token.kind, D));
   assert_eq!(token.range.start, 2);
   assert_eq!(token.range.end, 3);
-  assert_eq!(lexer.action_state().reject, true);
+  assert_eq!(lexer.action_state.reject, true);
 
   // the third lex should be rejected
   let res = lexer.lex();

@@ -36,7 +36,7 @@ fn lex_with_head_matcher() {
       a.simple(|input| {
         // mutate the action state when the action is evaluated
         // no matter if it's accepted or rejected
-        input.state_mut().evaluated = true;
+        input.state.evaluated = true;
 
         let pattern = "true";
         if input.rest().starts_with(pattern) {
@@ -51,7 +51,7 @@ fn lex_with_head_matcher() {
   // the lexed token should be `False`
   assert!(matches!(lexer.lex().token.unwrap().kind, False));
   // but the action for `True` is evaluated
-  assert!(lexer.action_state().evaluated);
+  assert!(lexer.action_state.evaluated);
 
   // now with head matcher
   let mut lexer = LexerBuilder::<MyKind, MyState>::default()
@@ -59,7 +59,7 @@ fn lex_with_head_matcher() {
       a.simple(|input| {
         // mutate the action state when the action is evaluated
         // no matter if it's accepted or rejected
-        input.state_mut().evaluated = true;
+        input.state.evaluated = true;
 
         let pattern = "true";
         if input.rest().starts_with(pattern) {
@@ -82,7 +82,7 @@ fn lex_with_head_matcher() {
   // the lexed token should be `False`
   assert!(matches!(lexer.lex().token.unwrap().kind, False));
   // and the action for `True` is NOT evaluated
-  assert!(!lexer.action_state().evaluated);
+  assert!(!lexer.action_state.evaluated);
 
   // if an action has no head matcher
   // the action will always be evaluated
@@ -91,7 +91,7 @@ fn lex_with_head_matcher() {
       a.simple(|input| {
         // mutate the action state when the action is evaluated
         // no matter if it's accepted or rejected
-        input.state_mut().evaluated = true;
+        input.state.evaluated = true;
 
         let pattern = "true";
         if input.rest().starts_with(pattern) {
@@ -113,13 +113,13 @@ fn lex_with_head_matcher() {
   // the lexed token should be `False`
   assert!(matches!(lexer.lex().token.unwrap().kind, False));
   // but the action for `True` is evaluated
-  assert!(lexer.action_state().evaluated);
+  assert!(lexer.action_state.evaluated);
 
   // we can use head_not to exclude some characters
   let mut lexer = LexerBuilder::<MyKind, MyState>::default()
     .define_with(Others, |a| {
       a.simple(|input| {
-        input.state_mut().evaluated = true;
+        input.state.evaluated = true;
 
         if [',', ':', '{', '}', '[', ']'].contains(&(input.rest().chars().next().unwrap())) {
           1
@@ -135,13 +135,13 @@ fn lex_with_head_matcher() {
   // the lexed token should be `False`
   assert!(matches!(lexer.lex().token.unwrap().kind, False));
   // and the action for `True` is NOT evaluated
-  assert!(!lexer.action_state().evaluated);
+  assert!(!lexer.action_state.evaluated);
 
   // we can also use head_unknown to match any unknown characters
   let mut lexer = LexerBuilder::<MyKind, MyState>::default()
     .define_with(Others, |a| {
       a.simple(|input| {
-        input.state_mut().evaluated = true;
+        input.state.evaluated = true;
 
         if [',', ':', '{', '}', '[', ']'].contains(&(input.rest().chars().next().unwrap())) {
           1
@@ -156,7 +156,7 @@ fn lex_with_head_matcher() {
   // the lexed token should be `False`
   assert!(matches!(lexer.lex().token.unwrap().kind, False));
   // and the action for `True` is NOT evaluated
-  assert!(!lexer.action_state().evaluated);
+  assert!(!lexer.action_state.evaluated);
 
   // head matcher will take effect in lexing, expectational lexing,
   // peeking and trimming
@@ -170,7 +170,7 @@ fn utf8_head_matcher() {
       a.simple(|input| {
         // mutate the action state when the action is evaluated
         // no matter if it's accepted or rejected
-        input.state_mut().evaluated = true;
+        input.state.evaluated = true;
 
         let pattern = "真";
         if input.rest().starts_with(pattern) {
@@ -186,5 +186,5 @@ fn utf8_head_matcher() {
   // the lexed token should be `False`
   assert!(matches!(lexer.lex().token.unwrap().kind, False));
   // and the action for `True` is NOT evaluated
-  assert!(!lexer.action_state().evaluated);
+  assert!(!lexer.action_state.evaluated);
 }
