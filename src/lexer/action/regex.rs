@@ -6,19 +6,22 @@ use regex::Regex;
 /// # Examples
 /// Usually the regex should start with `^` to match from the start of the rest of the input.
 /// ```
-/// # use whitehole::lexer::action::regex;
+/// # use whitehole::lexer::action::Action;
+/// # use whitehole::lexer::action::regex::regex;
 /// # let action: Action<(), (), ()> =
 /// regex(r"^\d+").unwrap();
 /// ```
 /// It's recommended to use [`Action::head_matcher`] to optimize the lex performance.
 /// ```
-/// # use whitehole::lexer::action::regex;
+/// # use whitehole::lexer::action::Action;
+/// # use whitehole::lexer::action::regex::regex;
 /// # use whitehole::lexer::action::ActionInputRestHeadMatcher;
+/// # use std::collections::HashSet;
 /// # let action: Action<(), (), ()> =
 /// regex(r"^abc").unwrap().head_in(['a']);
 /// # let action: Action<(), (), ()> =
 /// regex(r"^\d+").unwrap().head_in(('0'..='9').collect::<HashSet<_>>());
-/// # assert!(matches!(action.head_matcher), Some(ActionInputRestHeadMatcher::OneOf(set)) if set.contains(&'9') && set.contains(&'0') && set.len() == 10)
+/// # assert!(matches!(action.head_matcher(), Some(ActionInputRestHeadMatcher::OneOf(set)) if set.contains(&'9') && set.contains(&'0') && set.len() == 10))
 /// ```
 pub fn regex<ActionState, ErrorType>(
   re: &str,
