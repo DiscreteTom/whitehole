@@ -69,14 +69,17 @@ impl<'buffer, Kind, ErrorType> EnhancedActionOutput<'buffer, Kind, ErrorType> {
     }
   }
 
+  /// The [`Range::end`](crate::lexer::token::Range::end) of the token that this action will emit.
   pub fn end(&self) -> usize {
     self.start + self.digested
   }
 
+  /// The content of the token that this action will emit.
   pub fn content(&self) -> &'buffer str {
     &self.buffer[self.start..self.end()]
   }
 
+  /// The rest of the input text after this action is accepted.
   pub fn rest(&self) -> &'buffer str {
     &self.buffer[self.end()..]
   }
