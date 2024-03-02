@@ -30,3 +30,17 @@ impl<'buffer, 'state, ActionState> ActionInput<'buffer, 'state, ActionState> {
     &self.buffer[self.start..]
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn action_input() {
+    let mut state = ();
+    let input = ActionInput::new("123", 1, &mut state);
+    assert_eq!(input.buffer(), "123");
+    assert_eq!(input.start(), 1);
+    assert_eq!(input.rest(), "23");
+  }
+}
