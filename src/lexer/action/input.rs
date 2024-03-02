@@ -1,7 +1,7 @@
 pub struct ActionInput<'buffer, 'state, ActionState> {
   buffer: &'buffer str,
   start: usize,
-  state: &'state mut ActionState,
+  pub state: &'state mut ActionState,
 }
 
 impl<'buffer, 'state, ActionState> ActionInput<'buffer, 'state, ActionState> {
@@ -21,13 +21,6 @@ impl<'buffer, 'state, ActionState> ActionInput<'buffer, 'state, ActionState> {
   /// From where to lex.
   pub fn start(&self) -> usize {
     self.start
-  }
-
-  pub fn state(&self) -> &ActionState {
-    self.state
-  }
-  pub fn state_mut(&mut self) -> &mut ActionState {
-    self.state
   }
 
   /// The rest of the input text.
