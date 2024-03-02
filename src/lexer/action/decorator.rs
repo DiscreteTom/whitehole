@@ -22,6 +22,23 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// Check the [`ActionInput`] before the action is executed.
   /// Reject the action if the `condition` returns `true`.
   /// Return a new action.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # #[derive(Clone, Default)]
+  /// # struct MyState {
+  /// #   pub reject: bool,
+  /// # }
+  /// # let mut builder = LexerBuilder::<MyKind, MyState>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^\s+")
+  ///     .unwrap()
+  ///     .prevent(|input| input.state().reject)
+  /// });
+  /// ```
   pub fn prevent<F>(mut self, condition: F) -> Self
   where
     F: Fn(&ActionInput<ActionState>) -> bool + 'static,
@@ -42,6 +59,19 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// Apply a decorator to this action.
   /// Usually used to modify the [`ActionOutput`].
   /// Return a new action.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^\s+")
+  ///     .unwrap()
+  ///     .apply(|ctx| ctx.output.into())
+  /// });
+  /// ```
   pub fn apply<NewErrorType, F>(self, decorator: F) -> Action<Kind, ActionState, NewErrorType>
   where
     F: Fn(
@@ -67,6 +97,19 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
 
   /// Set [`ActionOutput::muted`] if the action is accepted.
   /// Return a new action.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^\s+")
+  ///     .unwrap()
+  ///     .mute_if(|ctx| ctx.output.rest().len() > 0)
+  /// });
+  /// ```
   pub fn mute_if<F>(self, condition: F) -> Self
   where
     F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> bool + 'static,
@@ -83,6 +126,19 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
 
   /// Set [`ActionOutput::muted`] if the action is accepted.
   /// Return a new action.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^\s+")
+  ///     .unwrap()
+  ///     .mute(true)
+  /// });
+  /// ```
   pub fn mute(self, muted: bool) -> Self {
     // reminder: DON'T use `self.mute_if(move |_| muted)`
     // because we can set `maybe_muted` to `muted` directly
@@ -96,6 +152,23 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
 
   /// Set [`ActionOutput::error`] if the action is accepted.
   /// Return a new action.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind, (), &'static str>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^\s+").unwrap().check(|ctx| {
+  ///     if ctx.output.rest().len() > 0 {
+  ///       Some("error")
+  ///     } else {
+  ///       None
+  ///     }
+  ///   })
+  /// });
+  /// ```
   pub fn check<NewError, F>(self, condition: F) -> Action<Kind, ActionState, NewError>
   where
     F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> Option<NewError>
@@ -113,6 +186,17 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
 
   /// Set [`ActionOutput::error`] if the action is accepted.
   /// Return a new action.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind, (), &'static str>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^\s+").unwrap().error("error")
+  /// });
+  /// ```
   pub fn error<NewError>(self, error: NewError) -> Action<Kind, ActionState, NewError>
   where
     NewError: Clone + 'static,
@@ -122,6 +206,19 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
 
   /// Reject the action if the condition is met.
   /// Return a new action.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^\s+")
+  ///     .unwrap()
+  ///     .reject_if(|ctx| ctx.output.rest().len() > 0)
+  /// });
+  /// ```
   pub fn reject_if<F>(self, condition: F) -> Self
   where
     F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> bool + 'static,
@@ -137,12 +234,43 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
 
   /// Reject the action by the given value.
   /// Return a new action.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^\s+")
+  ///     .unwrap()
+  ///     .reject(true)
+  /// });
+  /// ```
   pub fn reject(self, rejected: bool) -> Self {
     self.reject_if(move |_| rejected)
   }
 
   /// Call the `callback` if the action is accepted.
+  /// This is often used to update the action state.
   /// Return a new action.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # #[derive(Clone, Default)]
+  /// # struct MyState {
+  /// #   pub value: i32,
+  /// # }
+  /// # let mut builder = LexerBuilder::<MyKind, MyState>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^\s+")
+  ///     .unwrap()
+  ///     .then(|ctx| ctx.input.state().value += 1)
+  /// });
+  /// ```
   pub fn then<F>(mut self, callback: F) -> Self
   where
     F: Fn(ActionCallbackContext<Kind, ActionState, ErrorType>) + 'static,
@@ -163,6 +291,19 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
 
   /// Execute another action if current action can't be accepted.
   /// Return a new action.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^\s+")
+  ///     .unwrap()
+  ///     .or(Action::exact("A"))
+  /// });
+  /// ```
   pub fn or(mut self, another: Self) -> Self {
     let exec = self.exec;
     let another_exec = another.exec;
@@ -174,6 +315,19 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
 
   /// Set the kind and the data binding for this action.
   /// Use this if your action can only yield one kind.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.append_with(|a| {
+  ///   a.regex(r"^\s+")
+  ///     .unwrap()
+  ///     .bind(MyKind::A)
+  /// });
+  /// ```
   pub fn bind<NewKind>(self, kind: impl Into<NewKind>) -> Action<NewKind, ActionState, ErrorType>
   where
     NewKind: TokenKind<NewKind> + Clone + 'static,
@@ -183,18 +337,57 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   }
 
   /// Set [`Action::head_matcher`] to [`OneOf`](ActionInputRestHeadMatcher::OneOf).
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^A")
+  ///     .unwrap()
+  ///     .head_in(['A'])
+  /// });
+  /// ```
   pub fn head_in(mut self, char_set: impl Into<HashSet<char>>) -> Self {
     self.head_matcher = Some(ActionInputRestHeadMatcher::OneOf(char_set.into()));
     self
   }
 
   /// Set [`Action::head_matcher`] to [`Not`](ActionInputRestHeadMatcher::Not).
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^A")
+  ///     .unwrap()
+  ///     .head_not(['B'])
+  /// });
+  /// ```
   pub fn head_not(mut self, char_set: impl Into<HashSet<char>>) -> Self {
     self.head_matcher = Some(ActionInputRestHeadMatcher::Not(char_set.into()));
     self
   }
 
   /// Set [`Action::head_matcher`] to [`Unknown`](ActionInputRestHeadMatcher::Unknown).
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^A")
+  ///     .unwrap()
+  ///     .head_unknown()
+  /// });
+  /// ```
   pub fn head_unknown(mut self) -> Self {
     self.head_matcher = Some(ActionInputRestHeadMatcher::Unknown);
     self
