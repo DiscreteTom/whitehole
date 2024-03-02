@@ -1,17 +1,11 @@
-use super::{output::ActionOutputWithoutKind, Action};
+use super::Action;
 use regex::Regex;
 
 // TODO: only in feature `regex`
 impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   pub fn regex(re: &str) -> Result<Self, regex::Error> {
-    let re = Regex::new(re)?;
-    Ok(Action::new(move |input| {
-      re.find(input.rest()).map(|m| ActionOutputWithoutKind {
-        digested: m.len(),
-        muted: false,
-        error: None,
-      })
-    }))
+    Regex::new(re)
+      .map(|re| Action::simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
   }
 }
 
