@@ -189,8 +189,8 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// builder.append_default_from([
-  ///   |a| a.from(word("A")).bind(A),
-  ///   |a| a.from(word("B")).bind(B)
+  ///   |a| a.from(word("A")),
+  ///   |a| a.from(word("B")),
   /// ]);
   /// ```
   pub fn append_default_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
@@ -363,7 +363,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # use MyKind::*;
-  /// # #[derive(TokenKind)]
+  /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A, B }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// // append a single action
@@ -391,7 +391,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # use MyKind::*;
-  /// # #[derive(TokenKind)]
+  /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A, B }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// builder.define_with(A, |a| a.from(word("A")));
@@ -412,7 +412,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # use MyKind::*;
-  /// # #[derive(TokenKind)]
+  /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A, B }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// builder.define_from(A, [
