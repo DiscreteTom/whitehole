@@ -2,6 +2,30 @@ use super::{input::ActionInput, output::ActionOutputWithoutKind, Action};
 use std::marker::PhantomData;
 
 /// A helper class to keep track of the generic parameters of [`lexer::Builder`](crate::lexer::builder::LexerBuilder).
+/// # Examples
+/// The following code won't pass the compile check
+/// because the compiler can't infer the generic parameter type of [`Action`]
+/// created by the [`action::exact`](crate::lexer::action::exact) function
+/// with the decorator [`error`](Action::error).
+/// ```compile_fail
+/// # use whitehole::lexer::{Action, LexerBuilder, action::exact};
+/// # use whitehole_macros::TokenKind;
+/// # #[derive(TokenKind, Clone)]
+/// # enum MyKind { A }
+/// # let mut builder = LexerBuilder::<MyKind, i32, i32>::default();
+/// builder.define(MyKind::A, exact("A").error(123));
+/// ```
+/// The following code will pass the compile
+/// because the variable `a` is an [`ActionBuilder`]
+/// and the generic params are inferred from the [`LexerBuilder`](crate::lexer::LexerBuilder).
+/// ```
+/// # use whitehole::lexer::{Action, LexerBuilder, action::exact};
+/// # use whitehole_macros::TokenKind;
+/// # #[derive(TokenKind, Clone)]
+/// # enum MyKind { A }
+/// # let mut builder = LexerBuilder::<MyKind, i32, i32>::default();
+/// builder.define_with(MyKind::A, |a| a.from(exact("A")).error(123));
+/// ```
 pub struct ActionBuilder<ActionState, ErrorType> {
   _action_state: PhantomData<ActionState>,
   _error_type: PhantomData<ErrorType>,
@@ -28,26 +52,6 @@ impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
   /// Return the action as is.
   /// This is useful if you want to re-use existing action (e.g. action utils)
   /// and need to modify it with action decorators.
-  /// # Examples
-  /// The following code won't pass the compile check
-  /// because the compiler can't infer the generic parameter type of `Action`.
-  /// ```compile_fail
-  /// # use whitehole::lexer::{Action, LexerBuilder, action::exact};
-  /// # use whitehole_macros::TokenKind;
-  /// # #[derive(TokenKind, Clone)]
-  /// # enum MyKind { A }
-  /// # let mut builder = LexerBuilder::<MyKind, i32, i32>::default();
-  /// builder.define(MyKind::A, exact("A").error(123));
-  /// ```
-  /// The following code will pass the compile
-  /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder, action::exact};
-  /// # use whitehole_macros::TokenKind;
-  /// # #[derive(TokenKind, Clone)]
-  /// # enum MyKind { A }
-  /// # let mut builder = LexerBuilder::<MyKind, i32, i32>::default();
-  /// builder.define_with(MyKind::A, |a| a.from(exact("A")).error(123));
-  /// ```
   pub fn from<Kind>(
     self,
     action: Action<Kind, ActionState, ErrorType>,
