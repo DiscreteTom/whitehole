@@ -75,10 +75,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self.head_matcher = Some(ActionInputRestHeadMatcher::Unknown);
     self
   }
-}
 
-// these methods are related to external functions so we have to add `'static` bound to generic params
-impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, ActionState, ErrorType> {
   /// Check the [`ActionInput`] before the action is executed.
   /// Reject the action if the `condition` returns `true`.
   /// Return a new action.
@@ -101,6 +98,9 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// ```
   pub fn prevent<F>(mut self, condition: F) -> Self
   where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
     F: Fn(&ActionInput<ActionState>) -> bool + 'static,
   {
     let exec = self.exec;
@@ -135,6 +135,9 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// ```
   pub fn apply<NewErrorType, F>(self, decorator: F) -> Action<Kind, ActionState, NewErrorType>
   where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
     F: Fn(
         AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>,
       ) -> Option<ActionOutput<Kind, NewErrorType>>
@@ -173,6 +176,9 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// ```
   pub fn mute_if<F>(self, condition: F) -> Self
   where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
     F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> bool + 'static,
   {
     let mut res = self.apply(move |mut ctx| {
@@ -200,7 +206,12 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   ///     .mute(true)
   /// });
   /// ```
-  pub fn mute(self, muted: bool) -> Self {
+  pub fn mute(self, muted: bool) -> Self
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+  {
     // reminder: DON'T use `self.mute_if(move |_| muted)`
     // because we can set `maybe_muted` to `muted` directly
     let mut res = self.apply(move |mut ctx| {
@@ -232,6 +243,9 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// ```
   pub fn check<NewError, F>(self, condition: F) -> Action<Kind, ActionState, NewError>
   where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
     F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> Option<NewError>
       + 'static,
   {
@@ -260,6 +274,9 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// ```
   pub fn error<NewError>(self, error: NewError) -> Action<Kind, ActionState, NewError>
   where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
     NewError: Clone + 'static,
   {
     self.check(move |_| Some(error.clone()))
@@ -282,6 +299,9 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// ```
   pub fn reject_if<F>(self, condition: F) -> Self
   where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
     F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> bool + 'static,
   {
     self.apply(move |ctx| {
@@ -308,7 +328,12 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   ///     .reject(true)
   /// });
   /// ```
-  pub fn reject(self, rejected: bool) -> Self {
+  pub fn reject(self, rejected: bool) -> Self
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+  {
     self.reject_if(move |_| rejected)
   }
 
@@ -334,6 +359,9 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// ```
   pub fn then<F>(mut self, callback: F) -> Self
   where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
     F: Fn(ActionCallbackContext<Kind, ActionState, ErrorType>) + 'static,
   {
     let exec = self.exec;
@@ -365,7 +393,12 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   ///     .or(exact("A"))
   /// });
   /// ```
-  pub fn or(mut self, another: Self) -> Self {
+  pub fn or(mut self, another: Self) -> Self
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+  {
     let exec = self.exec;
     let another_exec = another.exec;
     self.exec = Box::new(move |input| exec(input).or_else(|| another_exec(input)));
@@ -391,6 +424,9 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
   /// ```
   pub fn bind<NewKind>(self, kind: impl Into<NewKind>) -> Action<NewKind, ActionState, ErrorType>
   where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
     NewKind: TokenKind<NewKind> + Clone + 'static,
   {
     let kind = kind.into();
