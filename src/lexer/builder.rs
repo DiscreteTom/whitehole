@@ -189,6 +189,21 @@ impl<Kind, ActionState, ErrorType> Into<StatelessLexer<Kind, ActionState, ErrorT
     self.build_stateless()
   }
 }
+impl<Kind, ActionState, ErrorType> From<Vec<Action<Kind, ActionState, ErrorType>>>
+  for StatelessLexer<Kind, ActionState, ErrorType>
+{
+  fn from(actions: Vec<Action<Kind, ActionState, ErrorType>>) -> Self {
+    LexerBuilder::from(actions).into()
+  }
+}
+// TODO
+// impl<Kind, ActionState, ErrorType> From<Vec<Rc<Action<Kind, ActionState, ErrorType>>>>
+//   for StatelessLexer<Kind, ActionState, ErrorType>
+// {
+//   fn from(actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>) -> Self {
+//     LexerBuilder::from(actions).into()
+//   }
+// }
 
 #[cfg(test)]
 mod tests {
