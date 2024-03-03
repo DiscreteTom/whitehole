@@ -6,13 +6,27 @@ use super::{
 };
 use std::rc::Rc;
 
-// impl Into<Vec> for Action so that the builder can accept one or multiple actions
-// TODO: is this a good practice? maybe create a new type `ActionList`?
-impl<Kind, ActionState, ErrorType> Into<Vec<Action<Kind, ActionState, ErrorType>>>
-  for Action<Kind, ActionState, ErrorType>
+/// A helper struct to accept one or more actions.
+pub struct ActionList<Action>(pub Vec<Action>);
+impl<Kind, ActionState, ErrorType> From<Action<Kind, ActionState, ErrorType>>
+  for ActionList<Action<Kind, ActionState, ErrorType>>
 {
-  fn into(self) -> Vec<Action<Kind, ActionState, ErrorType>> {
-    vec![self]
+  fn from(value: Action<Kind, ActionState, ErrorType>) -> Self {
+    Self(vec![value])
+  }
+}
+impl<Kind, ActionState, ErrorType> From<Vec<Action<Kind, ActionState, ErrorType>>>
+  for ActionList<Action<Kind, ActionState, ErrorType>>
+{
+  fn from(value: Vec<Action<Kind, ActionState, ErrorType>>) -> Self {
+    Self(value)
+  }
+}
+impl<Kind, ActionState, ErrorType, const N: usize> From<[Action<Kind, ActionState, ErrorType>; N]>
+  for ActionList<Action<Kind, ActionState, ErrorType>>
+{
+  fn from(value: [Action<Kind, ActionState, ErrorType>; N]) -> Self {
+    Self(value.into())
   }
 }
 
@@ -32,13 +46,13 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   // TODO: add new as an alias of default
 
   fn map_actions<OldKind: 'static, NewKind, F>(
-    actions: impl Into<Vec<Action<OldKind, ActionState, ErrorType>>>,
+    actions: impl Into<ActionList<Action<OldKind, ActionState, ErrorType>>>,
     f: F,
   ) -> Vec<Action<NewKind, ActionState, ErrorType>>
   where
     F: Fn(Action<OldKind, ActionState, ErrorType>) -> Action<NewKind, ActionState, ErrorType>,
   {
-    actions.into().into_iter().map(f).collect::<Vec<_>>()
+    actions.into().0.into_iter().map(f).collect::<Vec<_>>()
   }
 
   /// Append actions to the builder.
@@ -55,9 +69,13 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// // append multiple actions
   /// builder.append([word("A").bind(A), word("B").bind(B)]);
   /// ```
-  pub fn append(mut self, actions: impl Into<Vec<Action<Kind, ActionState, ErrorType>>>) -> Self {
+  pub fn append(
+    mut self,
+    actions: impl Into<ActionList<Action<Kind, ActionState, ErrorType>>>,
+  ) -> Self {
     actions
       .into()
+      .0
       .into_iter()
       .for_each(|action| self.actions.push(action));
     self
@@ -122,7 +140,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// // append multiple actions
   /// builder.append_default([whitespaces(), word("_")]);
   /// ```
-  pub fn append_default(self, actions: impl Into<Vec<Action<(), ActionState, ErrorType>>>) -> Self
+  pub fn append_default(
+    self,
+    actions: impl Into<ActionList<Action<(), ActionState, ErrorType>>>,
+  ) -> Self
   where
     Kind: TokenKind<Kind> + Default + Clone + 'static,
     ActionState: 'static,
@@ -198,7 +219,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// // append multiple actions
   /// builder.ignore([word("A").bind(A), word("B").bind(B)]);
   /// ```
-  pub fn ignore(self, actions: impl Into<Vec<Action<Kind, ActionState, ErrorType>>>) -> Self
+  pub fn ignore(self, actions: impl Into<ActionList<Action<Kind, ActionState, ErrorType>>>) -> Self
   where
     Kind: 'static,
     ActionState: 'static,
@@ -271,7 +292,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// // append multiple actions
   /// builder.ignore_default([whitespaces(), word("_")]);
   /// ```
-  pub fn ignore_default(self, actions: impl Into<Vec<Action<(), ActionState, ErrorType>>>) -> Self
+  pub fn ignore_default(
+    self,
+    actions: impl Into<ActionList<Action<(), ActionState, ErrorType>>>,
+  ) -> Self
   where
     Kind: TokenKind<Kind> + Default + Clone + 'static,
     ActionState: 'static,
@@ -350,7 +374,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   pub fn define(
     self,
     kind: impl Into<Kind>,
-    actions: impl Into<Vec<Action<(), ActionState, ErrorType>>>,
+    actions: impl Into<ActionList<Action<(), ActionState, ErrorType>>>,
   ) -> Self
   where
     Kind: TokenKind<Kind> + Clone + 'static,
@@ -428,7 +452,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     self,
     defs: [(
       impl Into<Kind>,
-      impl Into<Vec<Action<(), ActionState, ErrorType>>>,
+      impl Into<ActionList<Action<(), ActionState, ErrorType>>>,
     ); N],
   ) -> Self
   where
