@@ -25,7 +25,7 @@ pub struct OutputHandler {
   pub create_token: bool,
 }
 
-impl<'input, 'buffer, 'state, Kind, ActionState, ErrorType>
+impl<'input, 'text, 'state, Kind, ActionState, ErrorType>
   StatelessLexer<Kind, ActionState, ErrorType>
 where
   Kind: TokenKind<Kind>,
@@ -35,11 +35,11 @@ where
     head_map: &ActionHeadMap<Kind, ActionState, ErrorType>,
     re_lex: ReLexContext,
     validator_factory: F,
-    buffer: &'buffer str,
+    text: &'text str,
     start: usize,
     state: &'state mut ActionState,
     handler: &OutputHandler,
-  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
   where
     F: Fn(&ActionInput<ActionState>) -> Validator<'validator, Kind, ActionState, ErrorType>,
   {
@@ -53,13 +53,13 @@ where
     loop {
       // first, ensure rest is not empty
       // since maybe some token is muted in the last iteration which cause the rest is empty
-      if start + res.digested >= buffer.len() {
+      if start + res.digested >= text.len() {
         return res;
       }
 
       // all actions will reuse this action input to reuse lazy values
       // so we have to create it outside of the loop
-      let mut input = ActionInput::new(buffer, start + res.digested, state);
+      let mut input = ActionInput::new(text, start + res.digested, state);
       let validator = validator_factory(&input);
       let actions = head_map
         .known_map
@@ -136,7 +136,7 @@ where
   }
 
   fn traverse_actions(
-    input: &mut ActionInput<'buffer, 'state, ActionState>,
+    input: &mut ActionInput<'text, 'state, ActionState>,
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
     re_lex: &ReLexContext,
     validator: Validator<Kind, ActionState, ErrorType>,
@@ -170,7 +170,7 @@ where
   }
 
   fn try_execute_action(
-    input: &'input mut ActionInput<'buffer, 'state, ActionState>,
+    input: &'input mut ActionInput<'text, 'state, ActionState>,
     action: &Action<Kind, ActionState, ErrorType>,
     validator: &Validator<Kind, ActionState, ErrorType>,
   ) -> Option<ActionOutput<Kind, ErrorType>> {
@@ -191,16 +191,16 @@ where
   }
 
   pub fn output2token(
-    input: &ActionInput<'buffer, '_, ActionState>,
+    input: &ActionInput<'text, '_, ActionState>,
     output: ActionOutput<Kind, ErrorType>,
-  ) -> Token<'buffer, Kind, ErrorType> {
+  ) -> Token<'text, Kind, ErrorType> {
     let range = Range {
       start: input.start(),
       end: input.start() + output.digested,
     };
     Token {
       kind: output.kind,
-      content: &input.buffer()[range.start..range.end],
+      content: &input.text()[range.start..range.end],
       range,
       error: output.error,
     }

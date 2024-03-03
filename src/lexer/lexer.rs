@@ -8,20 +8,20 @@ use super::{
 };
 use std::rc::Rc;
 
-pub struct Lexer<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
+pub struct Lexer<'text, Kind: 'static, ActionState: 'static, ErrorType: 'static>
 where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   // use Rc so that this is clone-able
   stateless: Rc<StatelessLexer<Kind, ActionState, ErrorType>>,
-  state: LexerState<'buffer>,
+  state: LexerState<'text>,
   // user can mutate the action state
   pub action_state: ActionState,
 }
 
-impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static> Clone
-  for Lexer<'buffer, Kind, ActionState, ErrorType>
+impl<'text, Kind: 'static, ActionState: 'static, ErrorType: 'static> Clone
+  for Lexer<'text, Kind, ActionState, ErrorType>
 where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
@@ -35,19 +35,19 @@ where
   }
 }
 
-impl<'buffer, Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  Lexer<'buffer, Kind, ActionState, ErrorType>
+impl<'text, Kind: 'static, ActionState: 'static, ErrorType: 'static>
+  Lexer<'text, Kind, ActionState, ErrorType>
 where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
   pub fn new(
     stateless: Rc<StatelessLexer<Kind, ActionState, ErrorType>>,
-    buffer: &'buffer str,
+    text: &'text str,
   ) -> Self {
     Lexer {
       stateless,
-      state: LexerState::new(buffer),
+      state: LexerState::new(text),
       action_state: ActionState::default(),
     }
   }
@@ -56,32 +56,32 @@ where
     &self.stateless
   }
   // user is not able to mutate the lexer state directly
-  pub fn state(&self) -> &LexerState<'buffer> {
+  pub fn state(&self) -> &LexerState<'text> {
     &self.state
   }
 
-  /// Consume self, return a new lexer with the same actions and a new buffer.
+  /// Consume self, return a new lexer with the same actions and a new text.
   /// LexerState and ActionState will be reset to default.
-  pub fn reload<'new_buffer>(
+  pub fn reload<'new_text>(
     self,
-    buffer: &'new_buffer str,
-  ) -> Lexer<'new_buffer, Kind, ActionState, ErrorType> {
+    text: &'new_text str,
+  ) -> Lexer<'new_text, Kind, ActionState, ErrorType> {
     Lexer {
       stateless: self.stateless,
-      state: LexerState::new(buffer),
+      state: LexerState::new(text),
       action_state: ActionState::default(),
     }
   }
 
   /// Clone the lexer and load a new input text.
   /// LexerState and ActionState will be reset to default.
-  pub fn clone_with<'new_buffer>(
+  pub fn clone_with<'new_text>(
     &self,
-    buffer: &'new_buffer str,
-  ) -> Lexer<'new_buffer, Kind, ActionState, ErrorType> {
+    text: &'new_text str,
+  ) -> Lexer<'new_text, Kind, ActionState, ErrorType> {
     Lexer {
       stateless: self.stateless.clone(),
-      state: LexerState::new(buffer),
+      state: LexerState::new(text),
       action_state: ActionState::default(),
     }
   }
@@ -91,7 +91,7 @@ where
   pub fn peek(
     &self,
   ) -> (
-    LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<()>>,
+    LexOutput<Token<'text, Kind, ErrorType>, ReLexable<()>>,
     ActionState,
   ) {
     self.peek_with(LexOptions::default())
@@ -103,7 +103,7 @@ where
     &self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
   ) -> (
-    LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<()>>,
+    LexOutput<Token<'text, Kind, ErrorType>, ReLexable<()>>,
     ActionState,
   ) {
     self.peek_with(LexOptions::default().expect(expectation))
@@ -114,7 +114,7 @@ where
   pub fn peek_fork(
     &self,
   ) -> (
-    LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<()>>,
+    LexOutput<Token<'text, Kind, ErrorType>, ReLexable<()>>,
     ActionState,
   ) {
     self.peek_with(LexOptions::default().fork())
@@ -124,7 +124,7 @@ where
     &self,
     options: impl Into<LexOptions<'expect_text, Kind>>,
   ) -> (
-    LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<()>>,
+    LexOutput<Token<'text, Kind, ErrorType>, ReLexable<()>>,
     ActionState,
   ) {
     let options = options.into() as LexOptions<_>;
@@ -164,25 +164,25 @@ where
     (output, tmp_action_state)
   }
 
-  pub fn lex(&mut self) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<Self>> {
+  pub fn lex(&mut self) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>> {
     self.lex_with(LexOptions::default())
   }
 
   pub fn lex_expect<'expect_text>(
     &mut self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
-  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<Self>> {
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>> {
     self.lex_with(LexOptions::default().expect(expectation))
   }
 
-  pub fn lex_fork(&mut self) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<Self>> {
+  pub fn lex_fork(&mut self) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>> {
     self.lex_with(LexOptions::default().fork())
   }
 
   pub fn lex_with<'expect_text>(
     &mut self,
     options: impl Into<LexOptions<'expect_text, Kind>>,
-  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexable<Self>> {
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>> {
     let options = options.into() as LexOptions<_>;
 
     let output = if options.fork {
@@ -221,7 +221,7 @@ where
     output
   }
 
-  pub fn lex_all(&mut self) -> LexAllOutput<Token<'buffer, Kind, ErrorType>> {
+  pub fn lex_all(&mut self) -> LexAllOutput<Token<'text, Kind, ErrorType>> {
     let mut output = LexAllOutput {
       tokens: Vec::new(),
       digested: 0,
@@ -250,7 +250,7 @@ where
     self
   }
 
-  pub fn trim(&mut self) -> TrimOutput<Token<'buffer, Kind, ErrorType>> {
+  pub fn trim(&mut self) -> TrimOutput<Token<'text, Kind, ErrorType>> {
     // if already trimmed, return empty output
     if self.state.trimmed() {
       return TrimOutput {
@@ -260,7 +260,7 @@ where
     }
 
     let res = self.stateless.trim(
-      self.state.buffer(),
+      self.state.text(),
       self.state.digested(),
       &mut self.action_state,
     );
@@ -272,9 +272,9 @@ where
     &mut self,
     expectation: Expectation<'expect_text, Kind>,
     re_lex: Option<ReLexContext>,
-  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext> {
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext> {
     self.stateless.lex_with(
-      self.state.buffer(),
+      self.state.text(),
       StatelessLexOptions {
         start: self.state.digested(),
         action_state: &mut self.action_state,
@@ -290,9 +290,9 @@ where
     action_state: &mut ActionState,
     expectation: Expectation<'expect_text, Kind>,
     re_lex: Option<ReLexContext>,
-  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext> {
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext> {
     self.stateless.lex_with(
-      self.state.buffer(),
+      self.state.text(),
       StatelessLexOptions {
         start: self.state.digested(),
         action_state,

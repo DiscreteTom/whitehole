@@ -1,21 +1,21 @@
 #[derive(Clone)]
-pub struct LexerState<'buffer> {
-  buffer: &'buffer str,
+pub struct LexerState<'text> {
+  text: &'text str,
   digested: usize,
   trimmed: bool,
 }
 
-impl<'buffer> LexerState<'buffer> {
-  pub fn new(buffer: &'buffer str) -> Self {
+impl<'text> LexerState<'text> {
+  pub fn new(text: &'text str) -> Self {
     LexerState {
-      buffer,
+      text,
       digested: 0,
-      trimmed: buffer.len() == 0, // if buffer is empty, no need to trim
+      trimmed: text.len() == 0, // if text is empty, no need to trim
     }
   }
 
-  pub fn buffer(&self) -> &'buffer str {
-    self.buffer
+  pub fn text(&self) -> &'text str {
+    self.text
   }
   pub fn digested(&self) -> usize {
     self.digested
@@ -24,8 +24,8 @@ impl<'buffer> LexerState<'buffer> {
     self.trimmed
   }
 
-  pub fn rest(&self) -> &'buffer str {
-    &self.buffer[self.digested..]
+  pub fn rest(&self) -> &'text str {
+    &self.text[self.digested..]
   }
 
   pub fn digest(&mut self, n: usize) {
@@ -35,7 +35,7 @@ impl<'buffer> LexerState<'buffer> {
 
     // update other states
     self.digested += n;
-    self.trimmed = self.digested == self.buffer.len(); // if all chars are digested, no need to trim
+    self.trimmed = self.digested == self.text.len(); // if all chars are digested, no need to trim
   }
 
   pub fn trim(&mut self, digested: usize) {

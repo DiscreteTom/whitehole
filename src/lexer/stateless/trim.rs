@@ -12,14 +12,14 @@ where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
-  pub fn trim<'buffer, 'action_state, 'expect_text>(
+  pub fn trim<'text, 'action_state, 'expect_text>(
     &self,
-    buffer: &'buffer str,
+    text: &'text str,
     start: usize,
     mut action_state: &'action_state mut ActionState,
-  ) -> TrimOutput<Token<'buffer, Kind, ErrorType>>
+  ) -> TrimOutput<Token<'text, Kind, ErrorType>>
   where
-    'buffer: 'expect_text,
+    'text: 'expect_text,
   {
     // use static to avoid allocation in each call
     static OUTPUT_HANDLER: OutputHandler = OutputHandler {
@@ -35,7 +35,7 @@ where
         skip_before_exec: Box::new(|_| false),
         accept_after_exec: Box::new(|_, _| true),
       },
-      buffer,
+      text,
       start,
       &mut action_state,
       &OUTPUT_HANDLER,

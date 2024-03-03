@@ -11,10 +11,10 @@ pub struct Range {
 }
 
 // make all fields public so the user can destruct the struct and get the fields
-pub struct Token<'buffer, Kind, ErrorType> {
+pub struct Token<'text, Kind, ErrorType> {
   /// The kind and the binding data.
   pub kind: Kind,
-  pub content: &'buffer str,
+  pub content: &'text str,
   pub range: Range,
   pub error: Option<ErrorType>,
 }

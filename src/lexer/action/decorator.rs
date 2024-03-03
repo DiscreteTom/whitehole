@@ -7,15 +7,15 @@ use crate::lexer::token::TokenKind;
 use std::{collections::HashSet, ops};
 
 /// `input.state` is mutable. `output` is consumed.
-pub struct AcceptedActionDecoratorContext<'input, 'buffer, 'state, Kind, ActionState, ErrorType> {
-  pub input: &'input mut ActionInput<'buffer, 'state, ActionState>,
-  pub output: EnhancedActionOutput<'buffer, Kind, ErrorType>,
+pub struct AcceptedActionDecoratorContext<'input, 'text, 'state, Kind, ActionState, ErrorType> {
+  pub input: &'input mut ActionInput<'text, 'state, ActionState>,
+  pub output: EnhancedActionOutput<'text, Kind, ErrorType>,
 }
 
 /// `input.state` is mutable. `output` is not mutable and not consumed.
-pub struct ActionCallbackContext<'input, 'buffer, 'state, 'output, Kind, ActionState, ErrorType> {
-  pub input: &'input mut ActionInput<'buffer, 'state, ActionState>,
-  pub output: &'output EnhancedActionOutput<'buffer, Kind, ErrorType>,
+pub struct ActionCallbackContext<'input, 'text, 'state, 'output, Kind, ActionState, ErrorType> {
+  pub input: &'input mut ActionInput<'text, 'state, ActionState>,
+  pub output: &'output EnhancedActionOutput<'text, Kind, ErrorType>,
 }
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {

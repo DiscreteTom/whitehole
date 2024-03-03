@@ -29,12 +29,39 @@ where
   Kind: TokenKind<Kind> + Default + Clone,
   ActionState: Clone + Default,
 {
-  /// Define [muted](Action::maybe_muted) action.
+  /// Define [muted](Action::maybe_muted) actions.
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, whitespaces}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// // make sure `Default` is implemented
+  /// #[derive(TokenKind, Clone, Default)]
+  /// enum MyKind {
+  ///   #[default]
+  ///   Anonymous,
+  /// }
+  /// LexerBuilder::<MyKind>::default()
+  ///   // single action
+  ///   .ignore_default(whitespaces())
+  ///   // multiple actions
+  ///   .ignore_default([whitespaces(), whitespaces()]);
+  /// ```
   pub fn ignore_default(self, actions: impl Into<Vec<Action<(), ActionState, ErrorType>>>) -> Self {
     self.ignore(Self::map_actions(actions, |a| a.bind(Kind::default())))
   }
 
-  /// Define [muted](Action::maybe_muted) action.
+  /// Define [muted](Action::maybe_muted) action with [`ActionBuilder`].
+  /// ```
+  /// # use whitehole::lexer::{action::Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// // make sure `Default` is implemented
+  /// #[derive(TokenKind, Clone, Default)]
+  /// enum MyKind {
+  ///   #[default]
+  ///   Anonymous,
+  /// }
+  /// let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.ignore_default_with(|a| a.regex(r"\s+").unwrap());
+  /// ```
   pub fn ignore_default_with<F>(self, factory: F) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
@@ -43,12 +70,11 @@ where
   }
 
   /// Define [muted](Action::maybe_muted) action.
-  pub fn ignore_default_from<F>(self, factory_vec: impl Into<Vec<F>>) -> Self
+  pub fn ignore_default_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
   {
     factory_vec
-      .into()
       .into_iter()
       .fold(self, |builder, f| builder.ignore_default_with(f))
   }
@@ -64,12 +90,11 @@ where
     self.append_default(factory(ActionBuilder::default()))
   }
 
-  pub fn append_default_from<F>(self, factory_vec: impl Into<Vec<F>>) -> Self
+  pub fn append_default_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
   {
     factory_vec
-      .into()
       .into_iter()
       .fold(self, |builder, f| builder.append_default_with(f))
   }
@@ -118,12 +143,11 @@ where
     self.append(factory(ActionBuilder::default()))
   }
 
-  pub fn append_from<F>(self, factory_vec: impl Into<Vec<F>>) -> Self
+  pub fn append_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
   {
     factory_vec
-      .into()
       .into_iter()
       .fold(self, |builder, f| builder.append_with(f))
   }
@@ -163,14 +187,13 @@ where
     self.define(kind, factory(ActionBuilder::default()))
   }
 
-  pub fn define_from<F>(self, kind: impl Into<Kind>, factory_vec: impl Into<Vec<F>>) -> Self
+  pub fn define_from<F, const N: usize>(self, kind: impl Into<Kind>, factory_vec: [F; N]) -> Self
   where
     Kind: Clone,
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
   {
     let kind = kind.into();
     factory_vec
-      .into()
       .into_iter()
       .fold(self, |builder, f| builder.define_with(kind.clone(), f))
   }
@@ -189,21 +212,17 @@ where
   }
 
   /// Define [muted](Action::maybe_muted) action.
-  pub fn ignore_from<F>(self, factory_vec: impl Into<Vec<F>>) -> Self
+  pub fn ignore_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
   {
     factory_vec
-      .into()
       .into_iter()
       .fold(self, |builder, f| builder.ignore_with(f))
   }
 
-  pub fn build<'buffer>(
-    self,
-    buffer: &'buffer str,
-  ) -> Lexer<'buffer, Kind, ActionState, ErrorType> {
-    Lexer::new(Rc::new(self.build_stateless()), buffer)
+  pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, ActionState, ErrorType> {
+    Lexer::new(Rc::new(self.build_stateless()), text)
   }
 
   pub fn build_stateless(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
@@ -263,5 +282,16 @@ mod tests {
     assert_eq!(res.digested, 3);
     assert_eq!(res.errors.len(), 0);
     assert!(res.token.is_none());
+
+    LexerBuilder::<MyKind, MyState>::default().define_with(MyKind::UnitField, |a| {
+      a.regex(r"^\s+")
+        .unwrap()
+        .prevent(|input| input.state.reject)
+    });
+  }
+
+  #[derive(Clone, Default)]
+  struct MyState {
+    pub reject: bool,
   }
 }

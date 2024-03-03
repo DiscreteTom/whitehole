@@ -52,13 +52,13 @@ where
   Kind: TokenKind<Kind>,
   ActionState: Clone + Default,
 {
-  pub fn lex<'buffer>(
+  pub fn lex<'text>(
     &self,
-    buffer: &'buffer str,
-  ) -> StatelessLexOutput<Token<'buffer, Kind, ErrorType>, ActionState> {
+    text: &'text str,
+  ) -> StatelessLexOutput<Token<'text, Kind, ErrorType>, ActionState> {
     let mut action_state = ActionState::default();
     let output = self.lex_with(
-      buffer,
+      text,
       StatelessLexOptions {
         start: 0,
         expectation: Expectation::default(),
@@ -74,13 +74,13 @@ where
     }
   }
 
-  pub fn lex_with<'buffer, 'action_state, 'expect_text>(
+  pub fn lex_with<'text, 'action_state, 'expect_text>(
     &self,
-    buffer: &'buffer str,
+    text: &'text str,
     options: impl Into<StatelessLexOptions<'action_state, 'expect_text, Kind, ActionState>>,
-  ) -> LexOutput<Token<'buffer, Kind, ErrorType>, ReLexContext>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
   where
-    'buffer: 'expect_text,
+    'text: 'expect_text,
   {
     // use static to avoid allocation in each call
     static OUTPUT_HANDLER: OutputHandler = OutputHandler {
@@ -121,7 +121,7 @@ where
           }),
         }
       },
-      buffer,
+      text,
       options.start,
       &mut action_state,
       &OUTPUT_HANDLER,

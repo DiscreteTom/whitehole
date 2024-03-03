@@ -1,6 +1,6 @@
 use super::{builder::ActionBuilder, input::ActionInput, output::ActionOutputWithoutKind, Action};
 
-/// Provide a function that digests the input buffer and returns the number of digested characters.
+/// Provide a function that digests the rest of the input text and returns the number of digested characters.
 /// Return `0` if the action is rejected.
 pub fn simple<ActionState, ErrorType, F>(f: F) -> Action<(), ActionState, ErrorType>
 where
@@ -34,7 +34,7 @@ mod tests {
   #[test]
   fn accept_all() {
     let mut state = ();
-    let action = simple(|input| input.buffer().len());
+    let action = simple(|input| input.text().len());
     let mut input = ActionInput::new("123", 0, &mut state);
     let output = action.exec(&mut input);
 

@@ -96,9 +96,9 @@ where
     &self.maybe_muted_head_map
   }
 
-  /// Consume self, create a new lexer with the provided buffer.
-  pub fn into_lexer(self, buffer: &str) -> Lexer<Kind, ActionState, ErrorType> {
-    Lexer::new(Rc::new(self), buffer)
+  /// Consume self, create a new lexer with the provided text.
+  pub fn into_lexer(self, text: &str) -> Lexer<Kind, ActionState, ErrorType> {
+    Lexer::new(Rc::new(self), text)
   }
 
   fn calc_head_map(

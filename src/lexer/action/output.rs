@@ -34,16 +34,16 @@ impl<ErrorType> Into<ActionOutput<(), ErrorType>> for ActionOutputWithoutKind<Er
   }
 }
 
-pub struct EnhancedActionOutput<'buffer, Kind, ErrorType> {
+pub struct EnhancedActionOutput<'text, Kind, ErrorType> {
   /// The original [`ActionOutput`].
   pub raw: ActionOutput<Kind, ErrorType>,
-  /// The [`ActionInput::buffer`].
-  pub buffer: &'buffer str,
+  /// The [`ActionInput::text`].
+  pub text: &'text str,
   /// The [`ActionInput::start`].
   pub start: usize,
 }
 
-impl<'buffer, Kind, ErrorType> Deref for EnhancedActionOutput<'buffer, Kind, ErrorType> {
+impl<'text, Kind, ErrorType> Deref for EnhancedActionOutput<'text, Kind, ErrorType> {
   type Target = ActionOutput<Kind, ErrorType>;
 
   fn deref(&self) -> &Self::Target {
@@ -51,21 +51,21 @@ impl<'buffer, Kind, ErrorType> Deref for EnhancedActionOutput<'buffer, Kind, Err
   }
 }
 
-impl<'buffer, Kind, ErrorType> DerefMut for EnhancedActionOutput<'buffer, Kind, ErrorType> {
+impl<'text, Kind, ErrorType> DerefMut for EnhancedActionOutput<'text, Kind, ErrorType> {
   fn deref_mut(&mut self) -> &mut Self::Target {
     &mut self.raw
   }
 }
 
-impl<'buffer, Kind, ErrorType> EnhancedActionOutput<'buffer, Kind, ErrorType> {
+impl<'text, Kind, ErrorType> EnhancedActionOutput<'text, Kind, ErrorType> {
   pub fn new<ActionState>(
-    input: &ActionInput<'buffer, '_, ActionState>,
+    input: &ActionInput<'text, '_, ActionState>,
     output: ActionOutput<Kind, ErrorType>,
   ) -> Self {
     EnhancedActionOutput {
       raw: output,
       start: input.start(),
-      buffer: input.buffer(),
+      text: input.text(),
     }
   }
 
@@ -75,26 +75,26 @@ impl<'buffer, Kind, ErrorType> EnhancedActionOutput<'buffer, Kind, ErrorType> {
   }
 
   /// The content of the token that this action will emit.
-  pub fn content(&self) -> &'buffer str {
-    &self.buffer[self.start..self.end()]
+  pub fn content(&self) -> &'text str {
+    &self.text[self.start..self.end()]
   }
 
   /// The rest of the input text after this action is accepted.
-  pub fn rest(&self) -> &'buffer str {
-    &self.buffer[self.end()..]
+  pub fn rest(&self) -> &'text str {
+    &self.text[self.end()..]
   }
 }
 
-impl<'buffer, Kind, ErrorType> Into<ActionOutput<Kind, ErrorType>>
-  for EnhancedActionOutput<'buffer, Kind, ErrorType>
+impl<'text, Kind, ErrorType> Into<ActionOutput<Kind, ErrorType>>
+  for EnhancedActionOutput<'text, Kind, ErrorType>
 {
   fn into(self) -> ActionOutput<Kind, ErrorType> {
     self.raw
   }
 }
 
-impl<'buffer, Kind, ErrorType> Into<Option<ActionOutput<Kind, ErrorType>>>
-  for EnhancedActionOutput<'buffer, Kind, ErrorType>
+impl<'text, Kind, ErrorType> Into<Option<ActionOutput<Kind, ErrorType>>>
+  for EnhancedActionOutput<'text, Kind, ErrorType>
 {
   fn into(self) -> Option<ActionOutput<Kind, ErrorType>> {
     Some(self.into())
@@ -138,7 +138,7 @@ mod tests {
 
     // access fields from input
     assert_eq!(output.start, 1);
-    assert_eq!(output.buffer, "123");
+    assert_eq!(output.text, "123");
 
     // helpers
     assert_eq!(output.end(), 3);

@@ -1,22 +1,20 @@
-pub struct ActionInput<'buffer, 'state, ActionState> {
-  buffer: &'buffer str,
+pub struct ActionInput<'text, 'state, ActionState> {
+  // we store the whole text instead of only storing the rest of text
+  // so that users can check chars before the start position if needed
+  text: &'text str,
   start: usize,
   // user can mutate the action state
   pub state: &'state mut ActionState,
 }
 
-impl<'buffer, 'state, ActionState> ActionInput<'buffer, 'state, ActionState> {
-  pub fn new(buffer: &'buffer str, start: usize, state: &'state mut ActionState) -> Self {
-    ActionInput {
-      buffer,
-      start,
-      state,
-    }
+impl<'text, 'state, ActionState> ActionInput<'text, 'state, ActionState> {
+  pub fn new(text: &'text str, start: usize, state: &'state mut ActionState) -> Self {
+    ActionInput { text, start, state }
   }
 
   /// The whole input text.
-  pub fn buffer(&self) -> &'buffer str {
-    self.buffer
+  pub fn text(&self) -> &'text str {
+    self.text
   }
 
   /// From where to lex.
@@ -24,10 +22,9 @@ impl<'buffer, 'state, ActionState> ActionInput<'buffer, 'state, ActionState> {
     self.start
   }
 
-  /// The rest of the input text.
-  /// This is a shortcut for `&self.buffer[self.start..]`.
-  pub fn rest(&self) -> &'buffer str {
-    &self.buffer[self.start..]
+  /// The undigested part of the input text.
+  pub fn rest(&self) -> &'text str {
+    &self.text[self.start..]
   }
 }
 
@@ -39,7 +36,7 @@ mod tests {
   fn action_input() {
     let mut state = ();
     let input = ActionInput::new("123", 1, &mut state);
-    assert_eq!(input.buffer(), "123");
+    assert_eq!(input.text(), "123");
     assert_eq!(input.start(), 1);
     assert_eq!(input.rest(), "23");
   }
