@@ -1,10 +1,6 @@
-mod token_kind_id;
+mod token_kind;
 
-pub use self::token_kind_id::TokenKindId;
-
-pub trait TokenKind<TokenKindType> {
-  fn id(&self) -> TokenKindId<TokenKindType>;
-}
+pub use token_kind::{TokenKind, TokenKindId};
 
 #[derive(Debug)]
 pub struct Range {

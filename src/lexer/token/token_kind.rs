@@ -1,5 +1,8 @@
-use super::TokenKind;
 use std::{hash::Hash, marker::PhantomData};
+
+pub trait TokenKind<TokenKindType> {
+  fn id(&self) -> TokenKindId<TokenKindType>;
+}
 
 /// The unique id of a token kind.
 /// Usually we use enum variants as token kinds, and the id is the variant's index.
