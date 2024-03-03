@@ -48,3 +48,24 @@ impl<TokenKindType> Ord for TokenKindId<TokenKindType> {
     self.0.cmp(&other.0)
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use whitehole_macros::_TokenKind;
+  use MyKind::*;
+
+  #[derive(_TokenKind)]
+  enum MyKind {
+    UnitField,
+    UnnamedField(i32),
+    NamedField { _a: i32 },
+  }
+
+  #[test]
+  fn token_kind_id() {
+    assert_eq!(UnitField.id().0, 0);
+    assert_eq!(UnnamedField(42).id().0, 1);
+    assert_eq!(NamedField { _a: 1 }.id().0, 2);
+  }
+}
