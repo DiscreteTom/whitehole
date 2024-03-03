@@ -8,11 +8,7 @@ use super::{
 };
 use std::rc::Rc;
 
-pub struct Lexer<'text, Kind: 'static, ActionState: 'static, ErrorType: 'static>
-where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
-{
+pub struct Lexer<'text, Kind, ActionState, ErrorType> {
   // use Rc so that this is clone-able
   stateless: Rc<StatelessLexer<Kind, ActionState, ErrorType>>,
   state: LexerState<'text>,
@@ -20,11 +16,9 @@ where
   pub action_state: ActionState,
 }
 
-impl<'text, Kind: 'static, ActionState: 'static, ErrorType: 'static> Clone
-  for Lexer<'text, Kind, ActionState, ErrorType>
+impl<'text, Kind, ActionState, ErrorType> Clone for Lexer<'text, Kind, ActionState, ErrorType>
 where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
+  ActionState: Clone,
 {
   fn clone(&self) -> Self {
     Lexer {
@@ -35,16 +29,11 @@ where
   }
 }
 
-impl<'text, Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  Lexer<'text, Kind, ActionState, ErrorType>
-where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
-{
-  pub fn new(
-    stateless: Rc<StatelessLexer<Kind, ActionState, ErrorType>>,
-    text: &'text str,
-  ) -> Self {
+impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorType> {
+  pub fn new(stateless: Rc<StatelessLexer<Kind, ActionState, ErrorType>>, text: &'text str) -> Self
+  where
+    ActionState: Default,
+  {
     Lexer {
       stateless,
       state: LexerState::new(text),
@@ -65,7 +54,10 @@ where
   pub fn reload<'new_text>(
     self,
     text: &'new_text str,
-  ) -> Lexer<'new_text, Kind, ActionState, ErrorType> {
+  ) -> Lexer<'new_text, Kind, ActionState, ErrorType>
+  where
+    ActionState: Default,
+  {
     Lexer {
       stateless: self.stateless,
       state: LexerState::new(text),
@@ -78,7 +70,10 @@ where
   pub fn clone_with<'new_text>(
     &self,
     text: &'new_text str,
-  ) -> Lexer<'new_text, Kind, ActionState, ErrorType> {
+  ) -> Lexer<'new_text, Kind, ActionState, ErrorType>
+  where
+    ActionState: Default,
+  {
     Lexer {
       stateless: self.stateless.clone(),
       state: LexerState::new(text),
@@ -93,7 +88,11 @@ where
   ) -> (
     LexOutput<Token<'text, Kind, ErrorType>, ReLexable<()>>,
     ActionState,
-  ) {
+  )
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.peek_with(LexOptions::default())
   }
 
@@ -105,7 +104,11 @@ where
   ) -> (
     LexOutput<Token<'text, Kind, ErrorType>, ReLexable<()>>,
     ActionState,
-  ) {
+  )
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.peek_with(LexOptions::default().expect(expectation))
   }
 
@@ -116,7 +119,11 @@ where
   ) -> (
     LexOutput<Token<'text, Kind, ErrorType>, ReLexable<()>>,
     ActionState,
-  ) {
+  )
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.peek_with(LexOptions::default().fork())
   }
 
@@ -126,7 +133,11 @@ where
   ) -> (
     LexOutput<Token<'text, Kind, ErrorType>, ReLexable<()>>,
     ActionState,
-  ) {
+  )
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     let options = options.into() as LexOptions<_>;
 
     // because of peek, clone the action state to prevent mutation
@@ -164,25 +175,41 @@ where
     (output, tmp_action_state)
   }
 
-  pub fn lex(&mut self) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>> {
+  pub fn lex(&mut self) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>>
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.lex_with(LexOptions::default())
   }
 
   pub fn lex_expect<'expect_text>(
     &mut self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>> {
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>>
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.lex_with(LexOptions::default().expect(expectation))
   }
 
-  pub fn lex_fork(&mut self) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>> {
+  pub fn lex_fork(&mut self) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>>
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.lex_with(LexOptions::default().fork())
   }
 
   pub fn lex_with<'expect_text>(
     &mut self,
     options: impl Into<LexOptions<'expect_text, Kind>>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>> {
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>>
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     let options = options.into() as LexOptions<_>;
 
     let output = if options.fork {
@@ -221,7 +248,11 @@ where
     output
   }
 
-  pub fn lex_all(&mut self) -> LexAllOutput<Token<'text, Kind, ErrorType>> {
+  pub fn lex_all(&mut self) -> LexAllOutput<Token<'text, Kind, ErrorType>>
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     let mut output = LexAllOutput {
       tokens: Vec::new(),
       digested: 0,
@@ -244,7 +275,10 @@ where
 
   /// Digest the next n chars and set the action state.
   /// If the `state` is not provided, the action state will be reset to default.
-  pub fn take(&mut self, n: usize, state: impl Into<Option<ActionState>>) -> &mut Self {
+  pub fn take(&mut self, n: usize, state: impl Into<Option<ActionState>>) -> &mut Self
+  where
+    ActionState: Default,
+  {
     self.state.digest(n);
     self.action_state = state.into().unwrap_or(ActionState::default());
     self
@@ -272,7 +306,10 @@ where
     &mut self,
     expectation: Expectation<'expect_text, Kind>,
     re_lex: Option<ReLexContext>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext> {
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
+  where
+    Kind: TokenKind<Kind>,
+  {
     self.stateless.lex_with(
       self.state.text(),
       StatelessLexOptions {
@@ -290,7 +327,10 @@ where
     action_state: &mut ActionState,
     expectation: Expectation<'expect_text, Kind>,
     re_lex: Option<ReLexContext>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext> {
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
+  where
+    Kind: TokenKind<Kind>,
+  {
     self.stateless.lex_with(
       self.state.text(),
       StatelessLexOptions {

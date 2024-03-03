@@ -7,15 +7,15 @@ use crate::lexer::{
   token::{Token, TokenKind},
 };
 
-pub struct StatelessLexOptions<'action_state, 'expect, Kind, ActionState: Clone + Default> {
+pub struct StatelessLexOptions<'action_state, 'expect_text, Kind, ActionState> {
   pub action_state: &'action_state mut ActionState,
   pub start: usize,
-  pub expectation: Expectation<'expect, Kind>,
+  pub expectation: Expectation<'expect_text, Kind>,
   pub re_lex: Option<ReLexContext>,
 }
 
-impl<'action_state, 'expect, Kind, ActionState: Clone + Default>
-  StatelessLexOptions<'action_state, 'expect, Kind, ActionState>
+impl<'action_state, 'expect_text, Kind, ActionState>
+  StatelessLexOptions<'action_state, 'expect_text, Kind, ActionState>
 {
   pub fn with_action_state(action_state: &'action_state mut ActionState) -> Self {
     StatelessLexOptions {
@@ -29,7 +29,7 @@ impl<'action_state, 'expect, Kind, ActionState: Clone + Default>
     self.start = start;
     self
   }
-  pub fn expect(mut self, expectation: impl Into<Expectation<'expect, Kind>>) -> Self {
+  pub fn expect(mut self, expectation: impl Into<Expectation<'expect_text, Kind>>) -> Self {
     self.expectation = expectation.into();
     self
   }
@@ -46,16 +46,15 @@ pub struct StatelessLexOutput<TokenType, ActionState> {
   pub action_state: ActionState,
 }
 
-impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  StatelessLexer<Kind, ActionState, ErrorType>
-where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
-{
+impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
   pub fn lex<'text>(
     &self,
     text: &'text str,
-  ) -> StatelessLexOutput<Token<'text, Kind, ErrorType>, ActionState> {
+  ) -> StatelessLexOutput<Token<'text, Kind, ErrorType>, ActionState>
+  where
+    Kind: TokenKind<Kind>,
+    ActionState: Default,
+  {
     let mut action_state = ActionState::default();
     let output = self.lex_with(
       text,
@@ -73,14 +72,17 @@ where
       action_state,
     }
   }
+}
 
-  pub fn lex_with<'text, 'action_state, 'expect_text>(
+impl<'action_state, Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
+  pub fn lex_with<'text, 'expect_text>(
     &self,
     text: &'text str,
     options: impl Into<StatelessLexOptions<'action_state, 'expect_text, Kind, ActionState>>,
   ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
   where
-    'text: 'expect_text,
+    Kind: TokenKind<Kind>,
+    ActionState: 'action_state,
   {
     // use static to avoid allocation in each call
     static OUTPUT_HANDLER: OutputHandler = OutputHandler {

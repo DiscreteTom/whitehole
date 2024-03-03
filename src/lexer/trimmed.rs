@@ -9,33 +9,21 @@ use super::{
 };
 
 /// The `TrimmedLexer` is always trimmed.
-pub struct TrimmedLexer<'text, Kind: 'static, ActionState: 'static, ErrorType: 'static>
-where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
-{
+pub struct TrimmedLexer<'text, Kind, ActionState, ErrorType> {
   /// This should always be trimmed.
   lexer: Lexer<'text, Kind, ActionState, ErrorType>,
 }
 
-impl<'text, Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  Into<Lexer<'text, Kind, ActionState, ErrorType>>
+impl<'text, Kind, ActionState, ErrorType> Into<Lexer<'text, Kind, ActionState, ErrorType>>
   for TrimmedLexer<'text, Kind, ActionState, ErrorType>
-where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
 {
   fn into(self) -> Lexer<'text, Kind, ActionState, ErrorType> {
     self.lexer
   }
 }
 
-impl<'text, Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  From<Lexer<'text, Kind, ActionState, ErrorType>>
+impl<'text, Kind, ActionState, ErrorType> From<Lexer<'text, Kind, ActionState, ErrorType>>
   for TrimmedLexer<'text, Kind, ActionState, ErrorType>
-where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
 {
   fn from(mut lexer: Lexer<'text, Kind, ActionState, ErrorType>) -> Self {
     lexer.trim();
@@ -43,11 +31,10 @@ where
   }
 }
 
-impl<'text, Kind: 'static, ActionState: 'static, ErrorType: 'static> Clone
+impl<'text, Kind, ActionState, ErrorType> Clone
   for TrimmedLexer<'text, Kind, ActionState, ErrorType>
 where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
+  ActionState: Clone,
 {
   fn clone(&self) -> Self {
     TrimmedLexer {
@@ -56,12 +43,7 @@ where
   }
 }
 
-impl<'text, Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  TrimmedLexer<'text, Kind, ActionState, ErrorType>
-where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
-{
+impl<'text, Kind, ActionState, ErrorType> TrimmedLexer<'text, Kind, ActionState, ErrorType> {
   // we shouldn't expose the inner lexer
   // so we have to define these proxy methods
   pub fn stateless(&self) -> &StatelessLexer<Kind, ActionState, ErrorType> {
@@ -80,7 +62,10 @@ where
   pub fn reload<'new_text>(
     self,
     text: &'new_text str,
-  ) -> Lexer<'new_text, Kind, ActionState, ErrorType> {
+  ) -> Lexer<'new_text, Kind, ActionState, ErrorType>
+  where
+    ActionState: Default, // TODO: add x_with
+  {
     // load a new text, the result is not a trimmed lexer
     self.lexer.reload(text)
   }
@@ -88,7 +73,10 @@ where
   pub fn clone_with<'new_text>(
     &self,
     text: &'new_text str,
-  ) -> Lexer<'new_text, Kind, ActionState, ErrorType> {
+  ) -> Lexer<'new_text, Kind, ActionState, ErrorType>
+  where
+    ActionState: Default, // TODO: add x_with
+  {
     // load a new text, the result is not a trimmed lexer
     self.lexer.clone_with(text)
   }
@@ -98,7 +86,11 @@ where
   ) -> (
     LexOutput<Token<'text, Kind, ErrorType>, ReLexable<()>>,
     ActionState,
-  ) {
+  )
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.lexer.peek()
   }
 
@@ -108,7 +100,11 @@ where
   ) -> (
     LexOutput<Token<'text, Kind, ErrorType>, ReLexable<()>>,
     ActionState,
-  ) {
+  )
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.lexer.peek_expect(expectation)
   }
 
@@ -117,7 +113,11 @@ where
   ) -> (
     LexOutput<Token<'text, Kind, ErrorType>, ReLexable<()>>,
     ActionState,
-  ) {
+  )
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.lexer.peek_fork()
   }
 
@@ -127,7 +127,11 @@ where
   ) -> (
     LexOutput<Token<'text, Kind, ErrorType>, ReLexable<()>>,
     ActionState,
-  ) {
+  )
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.lexer.peek_with(options)
   }
 
@@ -148,7 +152,11 @@ where
   ) -> (
     LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Lexer<'text, Kind, ActionState, ErrorType>>>,
     TrimOutput<Token<'text, Kind, ErrorType>>,
-  ) {
+  )
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.apply(|lexer| lexer.lex())
   }
   /// Similar to [`Lexer::lex_expect`], but the lexer is trimmed after that.
@@ -158,7 +166,11 @@ where
   ) -> (
     LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Lexer<'text, Kind, ActionState, ErrorType>>>,
     TrimOutput<Token<'text, Kind, ErrorType>>,
-  ) {
+  )
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.apply(|lexer| lexer.lex_expect(expectation))
   }
   /// Similar to [`Lexer::lex_fork`], but the lexer is trimmed after that.
@@ -167,7 +179,11 @@ where
   ) -> (
     LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Lexer<'text, Kind, ActionState, ErrorType>>>,
     TrimOutput<Token<'text, Kind, ErrorType>>,
-  ) {
+  )
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.apply(|lexer| lexer.lex_fork())
   }
   /// Similar to [`Lexer::lex_with`], but the lexer is trimmed after that.
@@ -177,7 +193,11 @@ where
   ) -> (
     LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Lexer<'text, Kind, ActionState, ErrorType>>>,
     TrimOutput<Token<'text, Kind, ErrorType>>,
-  ) {
+  )
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.apply(|lexer| lexer.lex_with(options))
   }
   /// Similar to [`Lexer::lex_all`], but the lexer is trimmed after that.
@@ -186,7 +206,11 @@ where
   ) -> (
     LexAllOutput<Token<'text, Kind, ErrorType>>,
     TrimOutput<Token<'text, Kind, ErrorType>>,
-  ) {
+  )
+  where
+    Kind: TokenKind<Kind> + 'static,
+    ActionState: Clone,
+  {
     self.apply(|lexer| lexer.lex_all())
   }
   /// Similar to [`Lexer::take`], but the lexer is trimmed after that.
@@ -194,7 +218,10 @@ where
     &mut self,
     n: usize,
     state: Option<ActionState>,
-  ) -> (&mut Self, TrimOutput<Token<'text, Kind, ErrorType>>) {
+  ) -> (&mut Self, TrimOutput<Token<'text, Kind, ErrorType>>)
+  where
+    ActionState: Default,
+  {
     let (_, output) = self.apply(|lexer| {
       lexer.take(n, state);
     });

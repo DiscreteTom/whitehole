@@ -3,11 +3,11 @@ use crate::lexer::{
   action::{Action, ActionInput, ActionOutput},
   options::ReLexContext,
   output::LexOutput,
-  token::{Range, Token, TokenKind},
+  token::{Range, Token},
 };
 use std::rc::Rc;
 
-pub struct Validator<'validator, Kind: 'static, ActionState: 'static, ErrorType: 'static> {
+pub struct Validator<'validator, Kind, ActionState, ErrorType> {
   /// If return `true`, the action will be skipped.
   pub skip_before_exec: Box<dyn Fn(&Action<Kind, ActionState, ErrorType>) -> bool>,
   /// If return `true`, the action will be accepted.
@@ -27,9 +27,6 @@ pub struct OutputHandler {
 
 impl<'input, 'text, 'state, Kind, ActionState, ErrorType>
   StatelessLexer<Kind, ActionState, ErrorType>
-where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
 {
   pub fn execute_actions<'validator, F>(
     head_map: &ActionHeadMap<Kind, ActionState, ErrorType>,

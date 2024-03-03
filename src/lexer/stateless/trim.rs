@@ -1,26 +1,15 @@
 use super::{common::Validator, StatelessLexer};
 use crate::lexer::{
-  options::ReLexContext,
-  output::TrimOutput,
-  stateless::common::OutputHandler,
-  token::{Token, TokenKind},
+  options::ReLexContext, output::TrimOutput, stateless::common::OutputHandler, token::Token,
 };
 
-impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  StatelessLexer<Kind, ActionState, ErrorType>
-where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
-{
+impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
   pub fn trim<'text, 'action_state, 'expect_text>(
     &self,
     text: &'text str,
     start: usize,
     mut action_state: &'action_state mut ActionState,
-  ) -> TrimOutput<Token<'text, Kind, ErrorType>>
-  where
-    'text: 'expect_text,
-  {
+  ) -> TrimOutput<Token<'text, Kind, ErrorType>> {
     // use static to avoid allocation in each call
     static OUTPUT_HANDLER: OutputHandler = OutputHandler {
       update_lex_output: false,

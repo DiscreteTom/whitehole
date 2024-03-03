@@ -11,7 +11,7 @@ use super::{
 };
 use std::{collections::HashMap, rc::Rc};
 
-pub struct ActionHeadMap<Kind: 'static, ActionState: 'static, ErrorType: 'static> {
+pub struct ActionHeadMap<Kind, ActionState, ErrorType> {
   /// Store actions for known chars.
   pub known_map: HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
   /// Store actions for unknown chars.
@@ -19,11 +19,7 @@ pub struct ActionHeadMap<Kind: 'static, ActionState: 'static, ErrorType: 'static
 }
 
 /// Stateless, immutable lexer.
-pub struct StatelessLexer<Kind: 'static, ActionState: 'static, ErrorType: 'static>
-where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
-{
+pub struct StatelessLexer<Kind, ActionState, ErrorType> {
   /// All actions.
   actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
   /// This is used to accelerate lexing by the first character when no expected kind.
@@ -37,7 +33,6 @@ where
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType>
 where
   Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
 {
   pub fn new(actions: Vec<Action<Kind, ActionState, ErrorType>>) -> Self {
     // TODO: move the build process into builder.generate?
@@ -99,7 +94,13 @@ where
   }
 
   /// Consume self, create a new lexer with the provided text.
-  pub fn into_lexer(self, text: &str) -> Lexer<Kind, ActionState, ErrorType> {
+  pub fn into_lexer(self, text: &str) -> Lexer<Kind, ActionState, ErrorType>
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+    ActionState: Default, // TODO: add a function that accept an action state instead of default
+  {
     Lexer::new(Rc::new(self), text)
   }
 

@@ -16,7 +16,7 @@ pub struct LexGrammarOutput<'buffer, TKind, NodeType> {
 
 pub fn lex_grammar<
   'buffer,
-  TKind: TokenKind<TKind>,
+  TKind: TokenKind<TKind> + 'static,
   NTKind: TokenKind<NTKind> + Clone + 'static,
   ASTData: 'static,
   ErrorType: 'static,
