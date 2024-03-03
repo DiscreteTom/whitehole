@@ -43,7 +43,9 @@ impl<Kind, ActionState, ErrorType> Default for LexerBuilder<Kind, ActionState, E
 }
 
 impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
-  // TODO: add new as an alias of default
+  pub fn new() -> Self {
+    Self::default()
+  }
 
   fn map_actions<OldKind: 'static, NewKind, F>(
     actions: impl Into<ActionList<Action<OldKind, ActionState, ErrorType>>>,
