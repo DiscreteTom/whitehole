@@ -6,7 +6,7 @@ pub use lex::{StatelessLexOptions, StatelessLexOutput};
 
 use super::{
   action::{Action, ActionInputRestHeadMatcher},
-  token::{TokenKind, TokenKindId},
+  token::TokenKindId,
   Lexer,
 };
 use std::{collections::HashMap, rc::Rc};
@@ -30,10 +30,7 @@ pub struct StatelessLexer<Kind, ActionState, ErrorType> {
   maybe_muted_head_map: ActionHeadMap<Kind, ActionState, ErrorType>,
 }
 
-impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType>
-where
-  Kind: TokenKind<Kind>,
-{
+impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
   pub fn new(actions: Vec<Action<Kind, ActionState, ErrorType>>) -> Self {
     // TODO: move the build process into builder.generate?
     let actions = actions.into_iter().map(Rc::new).collect::<Vec<_>>();
