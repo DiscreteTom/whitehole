@@ -83,11 +83,8 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   }
 }
 
-impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  Into<StatelessLexer<Kind, ActionState, ErrorType>> for LexerBuilder<Kind, ActionState, ErrorType>
-where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
+impl<Kind, ActionState, ErrorType> Into<StatelessLexer<Kind, ActionState, ErrorType>>
+  for LexerBuilder<Kind, ActionState, ErrorType>
 {
   fn into(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
     self.build_stateless()
