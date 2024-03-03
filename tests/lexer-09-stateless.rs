@@ -49,6 +49,6 @@ fn stateless_to_lexer() {
   // e.g. we get it from a stateful lexer
   let stateless = lexer.stateless().clone();
   // we can just use the `Lexer::new` to create a stateful lexer
-  let lexer = Lexer::new(stateless, "123");
+  let lexer = Lexer::with_default_action_state(stateless, "123");
   assert_eq!(lexer.state().text(), "123");
 }

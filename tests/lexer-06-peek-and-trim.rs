@@ -38,7 +38,7 @@ fn peek_lexer() {
   let mut lexer = lexer.reload(" a");
   assert_eq!(lexer.state().digested(), 0);
   let (output, action_state) = lexer.peek();
-  lexer.take(output.digested, Some(action_state));
+  lexer.take_with(output.digested, action_state);
   assert_eq!(lexer.state().digested(), 2);
 
   // as you can see, peek will clone the action state
@@ -109,7 +109,7 @@ fn trimmed_lexer() {
   assert_eq!(trim_output.digested, 1); // digest the whitespace after `a`
   assert!(trimmed_lexer.state().trimmed());
   // take `b` from the buffer
-  let (_, trim_output) = trimmed_lexer.take(1, None);
+  let (_, trim_output) = trimmed_lexer.take(1);
   assert_eq!(trim_output.digested, 1); // digest the whitespace after `b`
   assert!(trimmed_lexer.state().trimmed());
 }

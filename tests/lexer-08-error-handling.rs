@@ -69,7 +69,7 @@ fn panic_mode() {
 
   // enter panic mode, take 1 char and try again
   // this will reset the lexer's action state, unless we provide a new state
-  lexer.take(1, None);
+  lexer.take(1);
   // now we can peek
   let (output, _) = lexer.peek();
   assert!(matches!(output.token.unwrap().kind, A));
