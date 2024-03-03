@@ -1,5 +1,5 @@
 use whitehole::lexer::{
-  action::{output::ActionOutputWithoutKind, regex, simple},
+  action::{regex, simple, ActionOutputWithoutKind},
   Action, LexerBuilder,
 };
 use whitehole_macros::TokenKind;
