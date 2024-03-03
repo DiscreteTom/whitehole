@@ -43,4 +43,11 @@ mod tests {
     assert_eq!(input.start(), 1);
     assert_eq!(input.rest(), "23");
   }
+
+  #[test]
+  fn action_input_no_rest() {
+    let mut state = ();
+    let input = ActionInput::new("123", 3, &mut state);
+    assert_eq!(input.rest(), "");
+  }
 }
