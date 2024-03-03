@@ -433,38 +433,6 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
       .fold(self, |builder, f| builder.define_with(kind.clone(), f))
   }
 
-  /// Define actions and bind them to the provided kind.
-  /// # Examples
-  /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # use MyKind::*;
-  /// # #[derive(TokenKind)]
-  /// # enum MyKind { A, B }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.from([
-  ///   (A, word("A")), // single action
-  ///   (B, [word("B"), word("BB")]), // multiple actions
-  /// ]);
-  /// ```
-  // TODO: move to impl From
-  pub fn from<const N: usize>(
-    self,
-    defs: [(
-      impl Into<Kind>,
-      impl Into<ActionList<Action<(), ActionState, ErrorType>>>,
-    ); N],
-  ) -> Self
-  where
-    Kind: TokenKind<Kind> + Clone + 'static,
-    ActionState: 'static,
-    ErrorType: 'static,
-  {
-    defs.into_iter().fold(self, |builder, (kind, actions)| {
-      builder.define(kind, actions)
-    })
-  }
-
   pub fn build_stateless(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
     StatelessLexer::new(self.actions)
   }
