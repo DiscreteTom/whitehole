@@ -1,6 +1,8 @@
 mod common;
-pub mod lex;
-pub mod trim;
+mod lex;
+mod trim;
+
+pub use lex::{StatelessLexOptions, StatelessLexOutput};
 
 use super::{
   action::{Action, ActionInputRestHeadMatcher},
