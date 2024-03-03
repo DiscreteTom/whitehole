@@ -7,104 +7,20 @@ use super::{
 use std::rc::Rc;
 
 // impl Into<Vec> for Action so that the builder can accept one or multiple actions
-impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  Into<Vec<Action<Kind, ActionState, ErrorType>>> for Action<Kind, ActionState, ErrorType>
+// TODO: is this a good practice? maybe create a new type `ActionList`?
+impl<Kind, ActionState, ErrorType> Into<Vec<Action<Kind, ActionState, ErrorType>>>
+  for Action<Kind, ActionState, ErrorType>
 {
   fn into(self) -> Vec<Action<Kind, ActionState, ErrorType>> {
     vec![self]
   }
 }
 
-pub struct LexerBuilder<Kind: 'static, ActionState: 'static = (), ErrorType: 'static = ()>
-where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
-{
+pub struct LexerBuilder<Kind, ActionState = (), ErrorType = ()> {
   actions: Vec<Action<Kind, ActionState, ErrorType>>,
 }
 
-impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  LexerBuilder<Kind, ActionState, ErrorType>
-where
-  Kind: TokenKind<Kind> + Default + Clone,
-  ActionState: Clone + Default,
-{
-  /// Define [muted](Action::maybe_muted) actions.
-  /// ```
-  /// # use whitehole::lexer::{action::{Action, whitespaces}, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// // make sure `Default` is implemented
-  /// #[derive(TokenKind, Clone, Default)]
-  /// enum MyKind {
-  ///   #[default]
-  ///   Anonymous,
-  /// }
-  /// LexerBuilder::<MyKind>::default()
-  ///   // single action
-  ///   .ignore_default(whitespaces())
-  ///   // multiple actions
-  ///   .ignore_default([whitespaces(), whitespaces()]);
-  /// ```
-  pub fn ignore_default(self, actions: impl Into<Vec<Action<(), ActionState, ErrorType>>>) -> Self {
-    self.ignore(Self::map_actions(actions, |a| a.bind(Kind::default())))
-  }
-
-  /// Define [muted](Action::maybe_muted) action with [`ActionBuilder`].
-  /// ```
-  /// # use whitehole::lexer::{action::Action, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// // make sure `Default` is implemented
-  /// #[derive(TokenKind, Clone, Default)]
-  /// enum MyKind {
-  ///   #[default]
-  ///   Anonymous,
-  /// }
-  /// let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.ignore_default_with(|a| a.regex(r"\s+").unwrap());
-  /// ```
-  pub fn ignore_default_with<F>(self, factory: F) -> Self
-  where
-    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
-  {
-    self.ignore_default(factory(ActionBuilder::default()))
-  }
-
-  /// Define [muted](Action::maybe_muted) action.
-  pub fn ignore_default_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
-  where
-    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
-  {
-    factory_vec
-      .into_iter()
-      .fold(self, |builder, f| builder.ignore_default_with(f))
-  }
-
-  pub fn append_default(self, actions: impl Into<Vec<Action<(), ActionState, ErrorType>>>) -> Self {
-    self.append(Self::map_actions(actions, |a| a.bind(Kind::default())))
-  }
-
-  pub fn append_default_with<F>(self, factory: F) -> Self
-  where
-    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
-  {
-    self.append_default(factory(ActionBuilder::default()))
-  }
-
-  pub fn append_default_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
-  where
-    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
-  {
-    factory_vec
-      .into_iter()
-      .fold(self, |builder, f| builder.append_default_with(f))
-  }
-}
-
-impl<Kind, ActionState, ErrorType> Default for LexerBuilder<Kind, ActionState, ErrorType>
-where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
-{
+impl<Kind, ActionState, ErrorType> Default for LexerBuilder<Kind, ActionState, ErrorType> {
   fn default() -> Self {
     LexerBuilder {
       actions: Vec::new(),
@@ -112,12 +28,9 @@ where
   }
 }
 
-impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  LexerBuilder<Kind, ActionState, ErrorType>
-where
-  Kind: TokenKind<Kind>,
-  ActionState: Clone + Default,
-{
+impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
+  // TODO: add new as an alias of default
+
   fn map_actions<OldKind: 'static, NewKind, F>(
     actions: impl Into<Vec<Action<OldKind, ActionState, ErrorType>>>,
     f: F,
@@ -128,6 +41,20 @@ where
     actions.into().into_iter().map(f).collect::<Vec<_>>()
   }
 
+  /// Append actions to the builder.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind)]
+  /// # enum MyKind { A, B }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// // append a single action
+  /// builder.append(word("A").bind(A));
+  /// // append multiple actions
+  /// builder.append([word("A").bind(A), word("B").bind(B)]);
+  /// ```
   pub fn append(mut self, actions: impl Into<Vec<Action<Kind, ActionState, ErrorType>>>) -> Self {
     actions
       .into()
@@ -136,6 +63,17 @@ where
     self
   }
 
+  /// Append an action with [`ActionBuilder`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind)]
+  /// # enum MyKind { A, B }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.append_with(|a| a.from(word("A")).bind(A));
+  /// ```
   pub fn append_with<F>(self, factory: F) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
@@ -143,6 +81,21 @@ where
     self.append(factory(ActionBuilder::default()))
   }
 
+  // TODO: rename?
+  /// Append actions with a list of [`ActionBuilder`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind)]
+  /// # enum MyKind { A, B }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.append_from([
+  ///   |a| a.from(word("A")).bind(A),
+  ///   |a| a.from(word("B")).bind(B)
+  /// ]);
+  /// ```
   pub fn append_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
@@ -152,44 +105,302 @@ where
       .fold(self, |builder, f| builder.append_with(f))
   }
 
+  /// Append actions and bind them to the default kind.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind, Default, Clone)]
+  /// # enum MyKind {
+  /// #   #[default]
+  /// #   Anonymous,
+  /// # }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// // append a single action
+  /// builder.append_default(whitespaces());
+  /// // append multiple actions
+  /// builder.append_default([whitespaces(), word("_")]);
+  /// ```
+  pub fn append_default(self, actions: impl Into<Vec<Action<(), ActionState, ErrorType>>>) -> Self
+  where
+    Kind: TokenKind<Kind> + Default + Clone + 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+  {
+    self.append(Self::map_actions(actions, |a| a.bind(Kind::default())))
+  }
+
+  /// Append an action with [`ActionBuilder`] and bind it to the default kind.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind, Default, Clone)]
+  /// # enum MyKind {
+  /// #   #[default]
+  /// #   Anonymous,
+  /// # }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.append_default_with(|a| a.from(whitespaces()));
+  /// ```
+  pub fn append_default_with<F>(self, factory: F) -> Self
+  where
+    Kind: TokenKind<Kind> + Default + Clone + 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
+  {
+    self.append_default(factory(ActionBuilder::default()))
+  }
+
+  /// Append actions with a list of [`ActionBuilder`] and bind them to the default kind.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind, Default, Clone)]
+  /// # enum MyKind {
+  /// #   #[default]
+  /// #   Anonymous,
+  /// # }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.append_default_from([
+  ///   |a| a.from(word("A")).bind(A),
+  ///   |a| a.from(word("B")).bind(B)
+  /// ]);
+  /// ```
+  pub fn append_default_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
+  where
+    Kind: TokenKind<Kind> + Default + Clone + 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
+  {
+    factory_vec
+      .into_iter()
+      .fold(self, |builder, f| builder.append_default_with(f))
+  }
+
+  /// Define [`muted`](Action::maybe_muted) actions by calling [`Action::mute`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind)]
+  /// # enum MyKind { A, B }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// // append a single action
+  /// builder.ignore(word("A").bind(A));
+  /// // append multiple actions
+  /// builder.ignore([word("A").bind(A), word("B").bind(B)]);
+  /// ```
+  pub fn ignore(self, actions: impl Into<Vec<Action<Kind, ActionState, ErrorType>>>) -> Self
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+  {
+    self.append(Self::map_actions(actions, |a| a.mute(true)))
+  }
+
+  /// Define a [`muted`](Action::maybe_muted) action by calling [`Action::mute`] with [`ActionBuilder`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind)]
+  /// # enum MyKind { A, B }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.ignore_with(|a| a.from(word("A")).bind(A));
+  /// ```
+  pub fn ignore_with<F>(self, factory: F) -> Self
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
+  {
+    self.ignore(factory(ActionBuilder::default()))
+  }
+
+  /// Define [`muted`](Action::maybe_muted) actions by calling [`Action::mute`] with a list of [`ActionBuilder`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind)]
+  /// # enum MyKind { A, B }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.append_from([
+  ///   |a| a.from(word("A")).bind(A),
+  ///   |a| a.from(word("B")).bind(B)
+  /// ]);
+  /// ```
+  pub fn ignore_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
+  {
+    factory_vec
+      .into_iter()
+      .fold(self, |builder, f| builder.ignore_with(f))
+  }
+
+  /// Define [`muted`](Action::maybe_muted) actions by calling [`Action::mute`] and bind them to the default kind.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind, Default, Clone)]
+  /// # enum MyKind {
+  /// #   #[default]
+  /// #   Anonymous,
+  /// # }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// // append a single action
+  /// builder.ignore_default(whitespaces());
+  /// // append multiple actions
+  /// builder.ignore_default([whitespaces(), word("_")]);
+  /// ```
+  pub fn ignore_default(self, actions: impl Into<Vec<Action<(), ActionState, ErrorType>>>) -> Self
+  where
+    Kind: TokenKind<Kind> + Default + Clone + 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+  {
+    self.ignore(Self::map_actions(actions, |a| a.bind(Kind::default())))
+  }
+
+  /// Define a [`muted`](Action::maybe_muted) action by calling [`Action::mute`] with [`ActionBuilder`] and bind it to the default kind.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind, Default, Clone)]
+  /// # enum MyKind {
+  /// #   #[default]
+  /// #   Anonymous,
+  /// # }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.ignore_default_with(|a| a.from(whitespaces()));
+  /// ```
+  pub fn ignore_default_with<F>(self, factory: F) -> Self
+  where
+    Kind: TokenKind<Kind> + Default + Clone + 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
+  {
+    self.ignore_default(factory(ActionBuilder::default()))
+  }
+
+  /// Define [`muted`](Action::maybe_muted) actions by calling [`Action::mute`] with a list of [`ActionBuilder`] and bind them to the default kind.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind, Default, Clone)]
+  /// # enum MyKind {
+  /// #   #[default]
+  /// #   Anonymous,
+  /// # }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.ignore_default_from([
+  ///   |a| a.from(word("A")).bind(A),
+  ///   |a| a.from(word("B")).bind(B)
+  /// ]);
+  /// ```
+  pub fn ignore_default_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
+  where
+    Kind: TokenKind<Kind> + Default + Clone + 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
+  {
+    factory_vec
+      .into_iter()
+      .fold(self, |builder, f| builder.ignore_default_with(f))
+  }
+
+  /// Define actions and bind them to the provided kind.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind)]
+  /// # enum MyKind { A, B }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// // append a single action
+  /// builder.define(A, word("A"));
+  /// // append multiple actions
+  /// builder.define(A, [word("A"), word("AA")]);
+  /// ```
   pub fn define(
     self,
     kind: impl Into<Kind>,
     actions: impl Into<Vec<Action<(), ActionState, ErrorType>>>,
   ) -> Self
   where
-    Kind: Clone,
+    Kind: TokenKind<Kind> + Clone + 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
   {
     let kind = kind.into();
     self.append(Self::map_actions(actions, |a| a.bind(kind.clone())))
   }
 
-  pub fn from(
-    self,
-    defs: Vec<(
-      impl Into<Kind>,
-      impl Into<Vec<Action<(), ActionState, ErrorType>>>,
-    )>,
-  ) -> Self
-  where
-    Kind: Clone,
-  {
-    defs.into_iter().fold(self, |builder, (kind, actions)| {
-      builder.define(kind, actions)
-    })
-  }
-
+  /// Define an action with [`ActionBuilder`] and bind it to the provided kind.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind)]
+  /// # enum MyKind { A, B }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(A, |a| a.from(word("A")));
+  /// ```
   pub fn define_with<F>(self, kind: impl Into<Kind>, factory: F) -> Self
   where
-    Kind: Clone,
+    Kind: TokenKind<Kind> + Clone + 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
   {
     self.define(kind, factory(ActionBuilder::default()))
   }
 
+  /// Define actions with a list of [`ActionBuilder`] and bind them to the provided kind.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind)]
+  /// # enum MyKind { A, B }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_from(A, [
+  ///   |a| a.from(word("A")).bind(A),
+  ///   |a| a.from(word("B")).bind(B)
+  /// ]);
+  /// ```
   pub fn define_from<F, const N: usize>(self, kind: impl Into<Kind>, factory_vec: [F; N]) -> Self
   where
-    Kind: Clone,
+    Kind: TokenKind<Kind> + Clone + 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
   {
     let kind = kind.into();
@@ -198,37 +409,49 @@ where
       .fold(self, |builder, f| builder.define_with(kind.clone(), f))
   }
 
-  /// Define [muted](Action::maybe_muted) action.
-  pub fn ignore(self, actions: impl Into<Vec<Action<Kind, ActionState, ErrorType>>>) -> Self {
-    self.append(Self::map_actions(actions, |a| a.mute(true)))
-  }
-
-  /// Define [muted](Action::maybe_muted) action.
-  pub fn ignore_with<F>(self, factory: F) -> Self
+  /// Define actions and bind them to the provided kind.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind)]
+  /// # enum MyKind { A, B }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.from([
+  ///   (A, word("A")), // single action
+  ///   (B, [word("B"), word("BB")]), // multiple actions
+  /// ]);
+  /// ```
+  // TODO: move to impl From
+  pub fn from<const N: usize>(
+    self,
+    defs: [(
+      impl Into<Kind>,
+      impl Into<Vec<Action<(), ActionState, ErrorType>>>,
+    ); N],
+  ) -> Self
   where
-    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
+    Kind: TokenKind<Kind> + Clone + 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
   {
-    self.ignore(factory(ActionBuilder::default()))
+    defs.into_iter().fold(self, |builder, (kind, actions)| {
+      builder.define(kind, actions)
+    })
   }
-
-  /// Define [muted](Action::maybe_muted) action.
-  pub fn ignore_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
-  where
-    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
-  {
-    factory_vec
-      .into_iter()
-      .fold(self, |builder, f| builder.ignore_with(f))
-  }
-
-  pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, ActionState, ErrorType> {
-    Lexer::with_default_action_state(Rc::new(self.build_stateless()), text)
-  }
-  // TODO: add build_with
 
   pub fn build_stateless(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
     StatelessLexer::new(self.actions)
   }
+
+  pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, ActionState, ErrorType>
+  where
+    ActionState: Default,
+  {
+    Lexer::with_default_action_state(Rc::new(self.build_stateless()), text)
+  }
+  // TODO: add build_with
 }
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
