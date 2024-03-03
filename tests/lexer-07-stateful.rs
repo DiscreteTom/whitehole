@@ -28,6 +28,7 @@ fn stateful_lexer() {
         .prevent(|input| input.state.reject)
         // if the action is accepted, set the state's `reject` field to `true`.
         .then(|ctx| ctx.input.state.reject = true)
+        .into()
     })
     // with this input text the lexer can lex twice
     .build("123123");

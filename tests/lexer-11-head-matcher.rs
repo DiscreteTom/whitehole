@@ -45,6 +45,7 @@ fn lex_with_head_matcher() {
           0
         }
       })
+      .into()
     })
     .define(False, regex(r"^false").unwrap())
     .build("false");
@@ -70,6 +71,7 @@ fn lex_with_head_matcher() {
       })
       // only evaluate this action if the first character is `t`
       .head_in(['t'])
+      .into()
     })
     .define(
       False,
@@ -100,6 +102,7 @@ fn lex_with_head_matcher() {
           0
         }
       })
+      .into()
       // no head matcher for this action
     })
     .define(
@@ -129,6 +132,7 @@ fn lex_with_head_matcher() {
       })
       // instead of using `head_in([',', ':', '{', '}', '[', ']'])`
       .head_not(['t', 'f'])
+      .into()
     })
     .define(False, regex(r"^false").unwrap().head_in(['f']))
     .build("false");
@@ -150,6 +154,7 @@ fn lex_with_head_matcher() {
         }
       })
       .head_unknown()
+      .into()
     })
     .define(False, regex(r"^false").unwrap().head_in(['f']))
     .build("false");
@@ -180,6 +185,7 @@ fn utf8_head_matcher() {
         }
       })
       .head_in(['真'])
+      .into()
     })
     .define(False, regex(r"^假").unwrap().head_in(['假']))
     .build("假");

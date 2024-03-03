@@ -100,7 +100,7 @@ fn into_kind_enum() {
   assert!(matches!(
     LexerBuilder::<MyKind>::default()
       // here, use `42` directly
-      .define_with(42, |a| a.regex(r"^a").unwrap())
+      .define_with(42, |a| a.regex(r"^a").unwrap().into())
       .build("aa")
       .lex()
       .token

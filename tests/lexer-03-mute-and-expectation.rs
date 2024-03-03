@@ -54,7 +54,7 @@ fn builder_ignore() {
   );
   assert!(
     LexerBuilder::<MyKind>::default()
-      .ignore_with(|a| a.regex("^-").unwrap().bind(Anonymous))
+      .ignore_with(|a| a.regex("^-").unwrap().bind(Anonymous).into())
       .build_stateless()
       .actions()[0]
       .maybe_muted
@@ -71,7 +71,7 @@ fn builder_ignore() {
   assert_eq!(action.possible_kinds().len(), 1);
   assert!(action.possible_kinds().contains(&Anonymous.id()));
   let stateless = LexerBuilder::<MyKind>::default()
-    .ignore_default_with(|a| a.regex("^-").unwrap())
+    .ignore_default_with(|a| a.regex("^-").unwrap().into())
     .build_stateless();
   let action = &stateless.actions()[0];
   assert!(action.maybe_muted);

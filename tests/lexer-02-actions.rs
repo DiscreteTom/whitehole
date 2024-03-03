@@ -49,27 +49,34 @@ fn action_decorators() {
     // so the action's generic parameters can be inferred from the `ActionBuilder`
     .define_with(Anonymous, |a| {
       // to mute an action, we can use `mute` or `mute_if`
-      a.regex(r"^\s+").unwrap().mute(true)
+      a.regex(r"^\s+").unwrap().mute(true).into()
     })
     .define_with(A, |a| {
       // to set token's error, we can use `check` or `error`
-      a.regex(r"^a").unwrap().check(|ctx| {
-        if ctx.output.rest().len() > 0 {
-          Some("error")
-        } else {
-          None
-        }
-      })
+      a.regex(r"^a")
+        .unwrap()
+        .check(|ctx| {
+          if ctx.output.rest().len() > 0 {
+            Some("error")
+          } else {
+            None
+          }
+        })
+        .into()
     })
     .define_with(B, |a| {
       // to reject an action after the output is yielded, we can use `reject` or `reject_if`
       a.regex(r"^b")
         .unwrap()
         .reject_if(|ctx| ctx.output.rest().len() > 0)
+        .into()
     })
     .define_with(C, |a| {
       // to reject an action before the output is yielded, we can use `prevent`
-      a.regex(r"^c").unwrap().prevent(|input| input.state.reject)
+      a.regex(r"^c")
+        .unwrap()
+        .prevent(|input| input.state.reject)
+        .into()
     })
     .define_with(D, |a| {
       // use `then` to run a callback if this action is accepted and is not a peek
@@ -81,6 +88,7 @@ fn action_decorators() {
         })
         // yes you can apply multi decorators to an action
         .prevent(|input| input.state.reject)
+        .into()
     })
     .build("a b c");
 

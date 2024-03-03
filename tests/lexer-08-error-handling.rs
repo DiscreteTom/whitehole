@@ -23,16 +23,20 @@ fn error_tokens() {
         .bind(Anonymous)
         // set error by using `error`
         .error("ignored")
+        .into()
     })
     .define_with(A, |a| {
       // set error by using `check`
-      a.regex(r"^a").unwrap().check(|ctx| {
-        if ctx.output.rest().len() == 0 {
-          Some("end")
-        } else {
-          None
-        }
-      })
+      a.regex(r"^a")
+        .unwrap()
+        .check(|ctx| {
+          if ctx.output.rest().len() == 0 {
+            Some("end")
+          } else {
+            None
+          }
+        })
+        .into()
     })
     .build(" a");
 
