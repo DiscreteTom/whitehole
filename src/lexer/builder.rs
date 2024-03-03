@@ -103,7 +103,7 @@ mod tests {
   #[test]
   fn append() {
     let mut lexer: Lexer<MyKind, (), ()> = LexerBuilder::default()
-      .append_with(|a| a.regex("a+").unwrap().bind(MyKind::UnitField))
+      .append_with(|a| a.regex("a+").unwrap().bind(MyKind::UnitField).into())
       .build("aaa");
 
     let res = lexer.lex();
@@ -133,6 +133,7 @@ mod tests {
       a.regex(r"^\s+")
         .unwrap()
         .prevent(|input| input.state.reject)
+        .into()
     });
   }
 

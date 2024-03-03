@@ -30,7 +30,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     self.append(Self::map_actions(actions, |a| a.bind(kind.clone())))
   }
 
-  /// Define an action with [`ActionBuilder`] and bind it to the provided kind.
+  /// Define actions with [`ActionBuilder`] and bind it to the provided kind.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
@@ -39,47 +39,25 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A, B }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define_with(A, |a| a.from(word("A")));
+  /// // append a single action
+  /// builder.define_with(A, |a| a.from(word("A")).into());
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// // append multiple actions
+  /// builder.define_with(A, |a| [
+  ///   a.from(word("A")),
+  ///   a.from(word("AA"))
+  /// ].into());
   /// ```
   pub fn define_with<F>(self, kind: impl Into<Kind>, factory: F) -> Self
   where
     Kind: TokenKind<Kind> + Clone + 'static,
     ActionState: 'static,
     ErrorType: 'static,
-    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
+    F: FnOnce(
+      ActionBuilder<ActionState, ErrorType>,
+    ) -> ActionList<Action<(), ActionState, ErrorType>>,
   {
     self.define(kind, factory(ActionBuilder::default()))
-  }
-
-  /// Define actions with a list of [`ActionBuilder`] and bind them to the provided kind.
-  /// # Examples
-  /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # use MyKind::*;
-  /// # #[derive(TokenKind, Clone)]
-  /// # enum MyKind { A, B }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define_many_with(A, [
-  ///   |a| a.from(word("A")).bind(A),
-  ///   |a| a.from(word("B")).bind(B)
-  /// ]);
-  /// ```
-  pub fn define_many_with<F, const N: usize>(
-    self,
-    kind: impl Into<Kind>,
-    factory_vec: [F; N],
-  ) -> Self
-  where
-    Kind: TokenKind<Kind> + Clone + 'static,
-    ActionState: 'static,
-    ErrorType: 'static,
-    F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
-  {
-    let kind = kind.into();
-    factory_vec
-      .into_iter()
-      .fold(self, |builder, f| builder.define_with(kind.clone(), f))
   }
 
   /// Define actions and bind them to the provided kind.
