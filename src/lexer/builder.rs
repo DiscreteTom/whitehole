@@ -111,12 +111,12 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # #[derive(TokenKind)]
   /// # enum MyKind { A, B }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.append_from([
+  /// builder.append_many_with([
   ///   |a| a.from(word("A")).bind(A),
   ///   |a| a.from(word("B")).bind(B)
   /// ]);
   /// ```
-  pub fn append_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
+  pub fn append_many_with<F, const N: usize>(self, factory_vec: [F; N]) -> Self
   where
     F: FnOnce(ActionBuilder<ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
   {
@@ -190,12 +190,12 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// #   Anonymous,
   /// # }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.append_default_from([
+  /// builder.append_many_default_with([
   ///   |a| a.from(word("A")),
   ///   |a| a.from(word("B")),
   /// ]);
   /// ```
-  pub fn append_default_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
+  pub fn append_many_default_with<F, const N: usize>(self, factory_vec: [F; N]) -> Self
   where
     Kind: TokenKind<Kind> + Default + Clone + 'static,
     ActionState: 'static,
@@ -260,12 +260,12 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # #[derive(TokenKind)]
   /// # enum MyKind { A, B }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.append_from([
+  /// builder.ignore_many_with([
   ///   |a| a.from(word("A")).bind(A),
   ///   |a| a.from(word("B")).bind(B)
   /// ]);
   /// ```
-  pub fn ignore_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
+  pub fn ignore_many_with<F, const N: usize>(self, factory_vec: [F; N]) -> Self
   where
     Kind: 'static,
     ActionState: 'static,
@@ -342,12 +342,12 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// #   Anonymous,
   /// # }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.ignore_default_from([
+  /// builder.ignore_many_default_with([
   ///   |a| a.from(word("A")).bind(A),
   ///   |a| a.from(word("B")).bind(B)
   /// ]);
   /// ```
-  pub fn ignore_default_from<F, const N: usize>(self, factory_vec: [F; N]) -> Self
+  pub fn ignore_many_default_with<F, const N: usize>(self, factory_vec: [F; N]) -> Self
   where
     Kind: TokenKind<Kind> + Default + Clone + 'static,
     ActionState: 'static,
@@ -417,12 +417,16 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A, B }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define_from(A, [
+  /// builder.define_many_with(A, [
   ///   |a| a.from(word("A")).bind(A),
   ///   |a| a.from(word("B")).bind(B)
   /// ]);
   /// ```
-  pub fn define_from<F, const N: usize>(self, kind: impl Into<Kind>, factory_vec: [F; N]) -> Self
+  pub fn define_many_with<F, const N: usize>(
+    self,
+    kind: impl Into<Kind>,
+    factory_vec: [F; N],
+  ) -> Self
   where
     Kind: TokenKind<Kind> + Clone + 'static,
     ActionState: 'static,
