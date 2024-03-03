@@ -67,13 +67,20 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     StatelessLexer::new(self.actions)
   }
 
+  pub fn build_with<'text>(
+    self,
+    action_state: ActionState,
+    text: &'text str,
+  ) -> Lexer<'text, Kind, ActionState, ErrorType> {
+    Lexer::new(Rc::new(self.build_stateless()), action_state, text)
+  }
+
   pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, ActionState, ErrorType>
   where
     ActionState: Default,
   {
-    Lexer::with_default_action_state(Rc::new(self.build_stateless()), text)
+    self.build_with(ActionState::default(), text)
   }
-  // TODO: add build_with
 }
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static>
