@@ -8,11 +8,12 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # use MyKind::*;
-  /// # #[derive(TokenKind)]
+  /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A, B }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// // append a single action
   /// builder.ignore(word("A").bind(A));
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// // append multiple actions
   /// builder.ignore([word("A").bind(A), word("B").bind(B)]);
   /// ```
@@ -31,11 +32,11 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # use MyKind::*;
-  /// # #[derive(TokenKind)]
+  /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A, B }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// // append a single action
-  /// builder.ignore_with(|a| a.from(word("A")).bind(A).into);
+  /// builder.ignore_with(|a| a.from(word("A")).bind(A).into());
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// // append multiple actions
   /// builder.ignore_with(|a| [
@@ -98,7 +99,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// // append a single action
-  /// builder.ignore_default_with(|a| a.from(whitespaces()));
+  /// builder.ignore_default_with(|a| a.from(whitespaces()).into());
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// // append multiple actions
   /// builder.ignore_default_with(|a| [

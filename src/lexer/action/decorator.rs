@@ -31,6 +31,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   a.regex(r"^A")
   ///     .unwrap()
   ///     .head_in(['A'])
+  ///     .into()
   /// });
   /// ```
   pub fn head_in(mut self, char_set: impl Into<HashSet<char>>) -> Self {
@@ -50,6 +51,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   a.regex(r"^A")
   ///     .unwrap()
   ///     .head_not(['B'])
+  ///     .into()
   /// });
   /// ```
   pub fn head_not(mut self, char_set: impl Into<HashSet<char>>) -> Self {
@@ -69,6 +71,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   a.regex(r"^A")
   ///     .unwrap()
   ///     .head_unknown()
+  ///     .into()
   /// });
   /// ```
   pub fn head_unknown(mut self) -> Self {
@@ -94,6 +97,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   a.regex(r"^\s+")
   ///     .unwrap()
   ///     .prevent(|input| input.state.reject)
+  ///     .into()
   /// });
   /// ```
   pub fn prevent<F>(mut self, condition: F) -> Self
@@ -131,6 +135,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   a.regex(r"^\s+")
   ///     .unwrap()
   ///     .apply(|ctx| ctx.output.into())
+  ///     .into()
   /// });
   /// ```
   pub fn apply<NewErrorType, F>(self, decorator: F) -> Action<Kind, ActionState, NewErrorType>
@@ -172,6 +177,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   a.regex(r"^\s+")
   ///     .unwrap()
   ///     .mute_if(|ctx| ctx.output.rest().len() > 0)
+  ///     .into()
   /// });
   /// ```
   pub fn mute_if<F>(self, condition: F) -> Self
@@ -204,6 +210,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   a.regex(r"^\s+")
   ///     .unwrap()
   ///     .mute(true)
+  ///     .into()
   /// });
   /// ```
   pub fn mute(self, muted: bool) -> Self
@@ -238,7 +245,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///     } else {
   ///       None
   ///     }
-  ///   })
+  ///   }).into()
   /// });
   /// ```
   pub fn check<NewError, F>(self, condition: F) -> Action<Kind, ActionState, NewError>
@@ -269,7 +276,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind, (), &'static str>::default();
   /// builder.define_with(MyKind::A, |a| {
-  ///   a.regex(r"^\s+").unwrap().error("error")
+  ///   a.regex(r"^\s+").unwrap().error("error").into()
   /// });
   /// ```
   pub fn error<NewError>(self, error: NewError) -> Action<Kind, ActionState, NewError>
@@ -295,6 +302,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   a.regex(r"^\s+")
   ///     .unwrap()
   ///     .reject_if(|ctx| ctx.output.rest().len() > 0)
+  ///     .into()
   /// });
   /// ```
   pub fn reject_if<F>(self, condition: F) -> Self
@@ -326,6 +334,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   a.regex(r"^\s+")
   ///     .unwrap()
   ///     .reject(true)
+  ///     .into()
   /// });
   /// ```
   pub fn reject(self, rejected: bool) -> Self
@@ -355,6 +364,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   a.regex(r"^\s+")
   ///     .unwrap()
   ///     .then(|ctx| ctx.input.state.value += 1)
+  ///     .into()
   /// });
   /// ```
   pub fn then<F>(mut self, callback: F) -> Self
@@ -391,6 +401,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   a.regex(r"^\s+")
   ///     .unwrap()
   ///     .or(exact("A"))
+  ///     .into()
   /// });
   /// ```
   pub fn or(mut self, another: Self) -> Self
@@ -420,6 +431,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   a.regex(r"^\s+")
   ///     .unwrap()
   ///     .bind(MyKind::A)
+  ///     .into()
   /// });
   /// ```
   pub fn bind<NewKind>(self, kind: impl Into<NewKind>) -> Action<NewKind, ActionState, ErrorType>

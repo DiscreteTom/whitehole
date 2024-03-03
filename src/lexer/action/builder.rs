@@ -24,7 +24,7 @@ use std::marker::PhantomData;
 /// # #[derive(TokenKind, Clone)]
 /// # enum MyKind { A }
 /// # let mut builder = LexerBuilder::<MyKind, i32, i32>::default();
-/// builder.define_with(MyKind::A, |a| a.from(exact("A")).error(123));
+/// builder.define_with(MyKind::A, |a| a.from(exact("A")).error(123).into());
 /// ```
 pub struct ActionBuilder<ActionState, ErrorType> {
   _action_state: PhantomData<ActionState>,

@@ -8,11 +8,12 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # use MyKind::*;
-  /// # #[derive(TokenKind)]
+  /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A, B }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// // append a single action
   /// builder.append(word("A").bind(A));
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// // append multiple actions
   /// builder.append([word("A").bind(A), word("B").bind(B)]);
   /// ```
@@ -69,6 +70,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// // append a single action
   /// builder.append_default(whitespaces());
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// // append multiple actions
   /// builder.append_default([whitespaces(), word("_")]);
   /// ```

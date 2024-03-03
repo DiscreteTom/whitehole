@@ -13,6 +13,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// // append a single action
   /// builder.define(A, word("A"));
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// // append multiple actions
   /// builder.define(A, [word("A"), word("AA")]);
   /// ```
