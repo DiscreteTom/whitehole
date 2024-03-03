@@ -119,3 +119,119 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     self.append_default(factory(ActionBuilder::default()))
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lexer::action::word;
+  use whitehole_macros::_TokenKind;
+  use MyKind::*;
+
+  #[derive(_TokenKind, Default, Clone)]
+  enum MyKind {
+    #[default]
+    Anonymous,
+    A,
+    B,
+  }
+
+  #[test]
+  fn lexer_builder_append() {
+    // single
+    assert_eq!(
+      LexerBuilder::<MyKind>::default()
+        .append(word("A").bind(A))
+        .build_stateless()
+        .actions()
+        .len(),
+      1
+    );
+
+    // many
+    assert_eq!(
+      LexerBuilder::<MyKind>::default()
+        .append([word("A").bind(A), word("B").bind(B)])
+        .build_stateless()
+        .actions()
+        .len(),
+      2
+    );
+  }
+
+  #[test]
+  fn lexer_builder_append_with() {
+    // single
+    assert_eq!(
+      LexerBuilder::<MyKind>::default()
+        .append_with(|a| a.from(word("A")).bind(A).into())
+        .build_stateless()
+        .actions()
+        .len(),
+      1
+    );
+
+    // many
+    assert_eq!(
+      LexerBuilder::<MyKind>::default()
+        .append_with(|a| [a.from(word("A")).bind(A), a.from(word("B")).bind(B)].into())
+        .build_stateless()
+        .actions()
+        .len(),
+      2
+    );
+  }
+
+  #[test]
+  fn lexer_builder_append_default() {
+    // single
+    let stateless = LexerBuilder::<MyKind>::default()
+      .append_default(word("A"))
+      .build_stateless();
+    assert_eq!(stateless.actions().len(), 1);
+    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
+    assert!(stateless.actions()[0]
+      .possible_kinds()
+      .contains(&Anonymous.id()),);
+
+    // many
+    let stateless = LexerBuilder::<MyKind>::default()
+      .append_default([word("A"), word("B")])
+      .build_stateless();
+    assert_eq!(stateless.actions().len(), 2);
+    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
+    assert!(stateless.actions()[0]
+      .possible_kinds()
+      .contains(&Anonymous.id()),);
+    assert_eq!(stateless.actions()[1].possible_kinds().len(), 1);
+    assert!(stateless.actions()[1]
+      .possible_kinds()
+      .contains(&Anonymous.id()));
+  }
+
+  #[test]
+  fn lexer_builder_append_default_with() {
+    // single
+    let stateless = LexerBuilder::<MyKind>::default()
+      .append_default_with(|a| a.from(word("A")).into())
+      .build_stateless();
+    assert_eq!(stateless.actions().len(), 1);
+    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
+    assert!(stateless.actions()[0]
+      .possible_kinds()
+      .contains(&Anonymous.id()),);
+
+    // many
+    let stateless = LexerBuilder::<MyKind>::default()
+      .append_default_with(|a| [a.from(word("A")), a.from(word("B"))].into())
+      .build_stateless();
+    assert_eq!(stateless.actions().len(), 2);
+    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
+    assert!(stateless.actions()[0]
+      .possible_kinds()
+      .contains(&Anonymous.id()),);
+    assert_eq!(stateless.actions()[1].possible_kinds().len(), 1);
+    assert!(stateless.actions()[1]
+      .possible_kinds()
+      .contains(&Anonymous.id()),);
+  }
+}

@@ -92,3 +92,76 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     })
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lexer::action::word;
+  use whitehole_macros::_TokenKind;
+  use MyKind::*;
+
+  #[derive(_TokenKind, Clone)]
+  enum MyKind {
+    A,
+    B,
+  }
+
+  #[test]
+  fn lexer_builder_define() {
+    // single
+    let stateless = LexerBuilder::<MyKind>::default()
+      .define(A, word("A"))
+      .build_stateless();
+    assert_eq!(stateless.actions().len(), 1);
+    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
+    assert!(stateless.actions()[0].possible_kinds().contains(&A.id()));
+
+    // multiple
+    let stateless = LexerBuilder::<MyKind>::default()
+      .define(A, [word("A"), word("AA")])
+      .build_stateless();
+    assert_eq!(stateless.actions().len(), 2);
+    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
+    assert!(stateless.actions()[0].possible_kinds().contains(&A.id()));
+    assert_eq!(stateless.actions()[1].possible_kinds().len(), 1);
+    assert!(stateless.actions()[1].possible_kinds().contains(&A.id()));
+  }
+
+  #[test]
+  fn lexer_builder_define_with() {
+    // single
+    let stateless = LexerBuilder::<MyKind>::default()
+      .define_with(A, |a| a.from(word("A")).into())
+      .build_stateless();
+    assert_eq!(stateless.actions().len(), 1);
+    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
+    assert!(stateless.actions()[0].possible_kinds().contains(&A.id()));
+
+    // multiple
+    let stateless = LexerBuilder::<MyKind>::default()
+      .define_with(A, |a| [a.from(word("A")), a.from(word("AA"))].into())
+      .build_stateless();
+    assert_eq!(stateless.actions().len(), 2);
+    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
+    assert!(stateless.actions()[0].possible_kinds().contains(&A.id()));
+    assert_eq!(stateless.actions()[1].possible_kinds().len(), 1);
+    assert!(stateless.actions()[1].possible_kinds().contains(&A.id()));
+  }
+
+  #[test]
+  fn lexer_builder_define_from() {
+    let stateless = LexerBuilder::<MyKind>::default()
+      .define_from([
+        (A, word("A").into()),               // single
+        (B, [word("B"), word("BB")].into()), // multiple
+      ])
+      .build_stateless();
+    assert_eq!(stateless.actions().len(), 3);
+    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
+    assert!(stateless.actions()[0].possible_kinds().contains(&A.id()));
+    assert_eq!(stateless.actions()[1].possible_kinds().len(), 1);
+    assert!(stateless.actions()[1].possible_kinds().contains(&B.id()));
+    assert_eq!(stateless.actions()[2].possible_kinds().len(), 1);
+    assert!(stateless.actions()[2].possible_kinds().contains(&B.id()));
+  }
+}

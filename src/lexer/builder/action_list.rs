@@ -24,3 +24,30 @@ impl<Kind, ActionState, ErrorType, const N: usize> From<[Action<Kind, ActionStat
     Self(value.into())
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lexer::action::word;
+
+  #[test]
+  fn action_list_from_action() {
+    let action: Action<()> = word("A");
+    let list: ActionList<_> = action.into();
+    assert_eq!(list.0.len(), 1);
+  }
+
+  #[test]
+  fn action_list_from_vec() {
+    let action: Action<()> = word("A");
+    let list: ActionList<_> = vec![action].into();
+    assert_eq!(list.0.len(), 1);
+  }
+
+  #[test]
+  fn action_list_from_array() {
+    let action: Action<()> = word("A");
+    let list: ActionList<_> = [action].into();
+    assert_eq!(list.0.len(), 1);
+  }
+}
