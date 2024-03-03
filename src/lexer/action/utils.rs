@@ -81,7 +81,9 @@ pub fn exact<ActionState, ErrorType>(s: impl Into<String>) -> Action<(), ActionS
 
 /// Match a word, lookahead one char to ensure there is a word boundary or end of input.
 /// The head matcher will be set automatically.
-pub fn word<ActionState, ErrorType>(s: impl Into<String>) -> Action<(), ActionState, ErrorType> {
+pub fn word<ActionState: 'static, ErrorType: 'static>(
+  s: impl Into<String>,
+) -> Action<(), ActionState, ErrorType> {
   exact(s).reject_if(|ctx| {
     ctx
       .output

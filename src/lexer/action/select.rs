@@ -27,7 +27,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   }
   /// });
   /// ```
-  pub fn kind_ids<NewKind: 'static>(
+  pub fn kind_ids<NewKind>(
     self,
     possible_kinds: impl Into<HashSet<TokenKindId<NewKind>>>,
   ) -> MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
@@ -57,7 +57,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   }
   /// });
   /// ```
-  pub fn kinds<NewKind: 'static>(
+  pub fn kinds<NewKind>(
     self,
     possible_kinds: impl Into<Vec<NewKind>>,
   ) -> MultiKindAction<NewKind, Kind, ActionState, ErrorType>

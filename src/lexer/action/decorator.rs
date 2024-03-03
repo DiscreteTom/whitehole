@@ -18,6 +18,66 @@ pub struct ActionCallbackContext<'input, 'buffer, 'state, 'output, Kind, ActionS
   pub output: &'output EnhancedActionOutput<'buffer, Kind, ErrorType>,
 }
 
+impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
+  /// Set [`Action::head_matcher`] to [`OneOf`](ActionInputRestHeadMatcher::OneOf).
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^A")
+  ///     .unwrap()
+  ///     .head_in(['A'])
+  /// });
+  /// ```
+  pub fn head_in(mut self, char_set: impl Into<HashSet<char>>) -> Self {
+    self.head_matcher = Some(ActionInputRestHeadMatcher::OneOf(char_set.into()));
+    self
+  }
+
+  /// Set [`Action::head_matcher`] to [`Not`](ActionInputRestHeadMatcher::Not).
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^A")
+  ///     .unwrap()
+  ///     .head_not(['B'])
+  /// });
+  /// ```
+  pub fn head_not(mut self, char_set: impl Into<HashSet<char>>) -> Self {
+    self.head_matcher = Some(ActionInputRestHeadMatcher::Not(char_set.into()));
+    self
+  }
+
+  /// Set [`Action::head_matcher`] to [`Unknown`](ActionInputRestHeadMatcher::Unknown).
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^A")
+  ///     .unwrap()
+  ///     .head_unknown()
+  /// });
+  /// ```
+  pub fn head_unknown(mut self) -> Self {
+    self.head_matcher = Some(ActionInputRestHeadMatcher::Unknown);
+    self
+  }
+}
+
+// these methods are related to external functions so we have to add `'static` bound to generic params
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, ActionState, ErrorType> {
   /// Check the [`ActionInput`] before the action is executed.
   /// Reject the action if the `condition` returns `true`.
@@ -58,6 +118,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
 
   /// Apply a decorator to this action.
   /// Usually used to modify the [`ActionOutput`].
+  /// For most cases you don't need to use this directly.
   /// Return a new action.
   /// # Examples
   /// ```
@@ -335,67 +396,6 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> Action<Kind, Actio
     let kind = kind.into();
     self.kind_ids([kind.id()]).select(move |_| kind.clone())
   }
-
-  /// Set [`Action::head_matcher`] to [`OneOf`](ActionInputRestHeadMatcher::OneOf).
-  /// # Examples
-  /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # #[derive(TokenKind, Clone)]
-  /// # enum MyKind { A }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define_with(MyKind::A, |a| {
-  ///   a.regex(r"^A")
-  ///     .unwrap()
-  ///     .head_in(['A'])
-  /// });
-  /// ```
-  pub fn head_in(mut self, char_set: impl Into<HashSet<char>>) -> Self {
-    self.head_matcher = Some(ActionInputRestHeadMatcher::OneOf(char_set.into()));
-    self
-  }
-
-  /// Set [`Action::head_matcher`] to [`Not`](ActionInputRestHeadMatcher::Not).
-  /// # Examples
-  /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # #[derive(TokenKind, Clone)]
-  /// # enum MyKind { A }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define_with(MyKind::A, |a| {
-  ///   a.regex(r"^A")
-  ///     .unwrap()
-  ///     .head_not(['B'])
-  /// });
-  /// ```
-  pub fn head_not(mut self, char_set: impl Into<HashSet<char>>) -> Self {
-    self.head_matcher = Some(ActionInputRestHeadMatcher::Not(char_set.into()));
-    self
-  }
-
-  /// Set [`Action::head_matcher`] to [`Unknown`](ActionInputRestHeadMatcher::Unknown).
-  /// # Examples
-  /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # #[derive(TokenKind, Clone)]
-  /// # enum MyKind { A }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define_with(MyKind::A, |a| {
-  ///   a.regex(r"^A")
-  ///     .unwrap()
-  ///     .head_unknown()
-  /// });
-  /// ```
-  pub fn head_unknown(mut self) -> Self {
-    self.head_matcher = Some(ActionInputRestHeadMatcher::Unknown);
-    self
-  }
-
-  // there is no `Action.map` or `Action.data` like in retsac since rust doesn't support value-level type or type union,
-  // so we have to provide `possible_kinds` manually if we implement `Action.map` or `Action.data`,
-  // which is the same as calling `action.kinds().select()`.
 }
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> ops::BitOr<Self>
