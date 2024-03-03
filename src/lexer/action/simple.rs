@@ -18,7 +18,7 @@ where
 
 impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
   /// Equals to [`action::simple`](crate::lexer::action::simple::simple).
-  pub fn simple<F>(self, f: F) -> Action<(), ActionState, ErrorType>
+  pub fn simple<F>(&self, f: F) -> Action<(), ActionState, ErrorType>
   where
     F: Fn(&mut ActionInput<ActionState>) -> usize + 'static,
   {

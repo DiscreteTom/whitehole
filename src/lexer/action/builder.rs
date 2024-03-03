@@ -42,7 +42,7 @@ impl<ActionState, ErrorType> Default for ActionBuilder<ActionState, ErrorType> {
 
 impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
   /// Equals to [`Action::new`](crate::lexer::action::Action::new).
-  pub fn new<F>(self, exec: F) -> Action<(), ActionState, ErrorType>
+  pub fn new<F>(&self, exec: F) -> Action<(), ActionState, ErrorType>
   where
     F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutputWithoutKind<ErrorType>> + 'static,
   {
@@ -53,7 +53,7 @@ impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
   /// This is useful if you want to re-use existing action (e.g. action utils)
   /// and need to modify it with action decorators.
   pub fn from<Kind>(
-    self,
+    &self,
     action: Action<Kind, ActionState, ErrorType>,
   ) -> Action<Kind, ActionState, ErrorType> {
     action

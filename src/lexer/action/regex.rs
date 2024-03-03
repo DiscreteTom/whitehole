@@ -31,7 +31,7 @@ pub fn regex<ActionState, ErrorType>(
 
 impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
   /// Equals to [`action::regex`](crate::lexer::action::regex::regex).
-  pub fn regex(self, re: &str) -> Result<Action<(), ActionState, ErrorType>, regex::Error> {
+  pub fn regex(&self, re: &str) -> Result<Action<(), ActionState, ErrorType>, regex::Error> {
     regex(re)
   }
 }
