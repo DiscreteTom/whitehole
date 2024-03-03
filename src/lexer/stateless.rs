@@ -101,7 +101,7 @@ where
     ErrorType: 'static,
     ActionState: Default, // TODO: add a function that accept an action state instead of default
   {
-    Lexer::new(Rc::new(self), text)
+    Lexer::with_default_action_state(Rc::new(self), text)
   }
 
   fn calc_head_map(

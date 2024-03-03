@@ -138,7 +138,7 @@ impl<
   > {
     Parser {
       dfa: self.dfa.clone(),
-      lexer: self.lexer.clone_with(buffer).into(),
+      lexer: self.lexer.clone_with_default_action_state(buffer).into(),
       lexer_panic_handler: self.lexer_panic_handler.clone(),
       global,
     }

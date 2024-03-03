@@ -8,6 +8,7 @@ use super::{
 };
 use std::rc::Rc;
 
+// TODO: impl iterator?
 pub struct Lexer<'text, Kind, ActionState, ErrorType> {
   // use Rc so that this is clone-able
   stateless: Rc<StatelessLexer<Kind, ActionState, ErrorType>>,
@@ -21,7 +22,7 @@ where
   ActionState: Clone,
 {
   fn clone(&self) -> Self {
-    Lexer {
+    Self {
       stateless: self.stateless.clone(),
       state: self.state.clone(),
       action_state: self.action_state.clone(),
@@ -30,15 +31,26 @@ where
 }
 
 impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorType> {
-  pub fn new(stateless: Rc<StatelessLexer<Kind, ActionState, ErrorType>>, text: &'text str) -> Self
+  pub fn new(
+    stateless: Rc<StatelessLexer<Kind, ActionState, ErrorType>>,
+    action_state: ActionState,
+    text: &'text str,
+  ) -> Self {
+    Self {
+      stateless,
+      state: LexerState::new(text),
+      action_state,
+    }
+  }
+
+  pub fn with_default_action_state(
+    stateless: Rc<StatelessLexer<Kind, ActionState, ErrorType>>,
+    text: &'text str,
+  ) -> Self
   where
     ActionState: Default,
   {
-    Lexer {
-      stateless,
-      state: LexerState::new(text),
-      action_state: ActionState::default(),
-    }
+    Self::new(stateless, ActionState::default(), text)
   }
 
   pub fn stateless(&self) -> &Rc<StatelessLexer<Kind, ActionState, ErrorType>> {
@@ -49,8 +61,23 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     &self.state
   }
 
+  /// Consume self, return a new lexer with the same actions
+  /// and the provided text and action state.
+  /// The [`Self::state`] will be reset to default.
+  pub fn reload_with<'new_text>(
+    self,
+    action_state: ActionState,
+    text: &'new_text str,
+  ) -> Lexer<'new_text, Kind, ActionState, ErrorType> {
+    Lexer {
+      stateless: self.stateless,
+      state: LexerState::new(text),
+      action_state,
+    }
+  }
+
   /// Consume self, return a new lexer with the same actions and a new text.
-  /// LexerState and ActionState will be reset to default.
+  /// The [`Self::state`] and [`Self::action_state`] will be reset to default.
   pub fn reload<'new_text>(
     self,
     text: &'new_text str,
@@ -58,16 +85,26 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   where
     ActionState: Default,
   {
+    self.reload_with(ActionState::default(), text)
+  }
+
+  /// Clone the lexer and load a new input text and action state.
+  /// The [`Self::state`] will be reset to default.
+  pub fn clone_with<'new_text>(
+    &self,
+    action_state: ActionState,
+    text: &'new_text str,
+  ) -> Lexer<'new_text, Kind, ActionState, ErrorType> {
     Lexer {
-      stateless: self.stateless,
+      stateless: self.stateless.clone(),
       state: LexerState::new(text),
-      action_state: ActionState::default(),
+      action_state,
     }
   }
 
   /// Clone the lexer and load a new input text.
-  /// LexerState and ActionState will be reset to default.
-  pub fn clone_with<'new_text>(
+  /// The [`Self::state`] and [`Self::action_state`] will be reset to default.
+  pub fn clone_with_default_action_state<'new_text>(
     &self,
     text: &'new_text str,
   ) -> Lexer<'new_text, Kind, ActionState, ErrorType>
@@ -82,7 +119,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   }
 
   /// Peek the next token without updating the state.
-  /// This will clone the ActionState and return it.
+  /// This will clone the [`Self::action_state`] and return it.
   pub fn peek(
     &self,
   ) -> (
@@ -96,8 +133,8 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     self.peek_with(LexOptions::default())
   }
 
-  /// Peek the next token with expectation, without updating the state.
-  /// This will clone the ActionState and return it.
+  /// Peek the next token with expectation, without updating [`Self::state`] and [`Self::action_state`].
+  /// This will clone the [`Self::action_state`] and return it.
   pub fn peek_expect<'expect_text>(
     &self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
@@ -112,8 +149,9 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     self.peek_with(LexOptions::default().expect(expectation))
   }
 
-  /// Peek the next token and return the result with re-lex context, without updating the state.
-  /// This will clone the ActionState and return it.
+  /// Peek the next token without updating [`Self::state`] and [`Self::action_state`].
+  /// If the lex is re-lex-able, the [`LexOutput::re_lex`] will be `Some`.
+  /// This will clone the [`Self::action_state`] and return it.
   pub fn peek_fork(
     &self,
   ) -> (
@@ -127,6 +165,8 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     self.peek_with(LexOptions::default().fork())
   }
 
+  /// Peek the next token with custom options, without updating [`Self::state`] and [`Self::action_state`].
+  /// This will clone the [`Self::action_state`] and return it.
   pub fn peek_with<'expect_text>(
     &self,
     options: impl Into<LexOptions<'expect_text, Kind>>,
@@ -175,6 +215,8 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     (output, tmp_action_state)
   }
 
+  /// Try to yield the next token.
+  /// [`Self::state`] and [`Self::action_state`] will be updated.
   pub fn lex(&mut self) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>>
   where
     Kind: TokenKind<Kind> + 'static,
@@ -183,6 +225,8 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     self.lex_with(LexOptions::default())
   }
 
+  /// Try to yield the next token with expectation.
+  /// [`Self::state`] and [`Self::action_state`] will be updated.
   pub fn lex_expect<'expect_text>(
     &mut self,
     expectation: impl Into<Expectation<'expect_text, Kind>>,
@@ -194,6 +238,9 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     self.lex_with(LexOptions::default().expect(expectation))
   }
 
+  /// Try to yield the next token.
+  /// If the lex is re-lex-able, the [`LexOutput::re_lex`] will be `Some`.
+  /// [`Self::state`] and [`Self::action_state`] will be updated.
   pub fn lex_fork(&mut self) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>>
   where
     Kind: TokenKind<Kind> + 'static,
@@ -202,13 +249,15 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     self.lex_with(LexOptions::default().fork())
   }
 
+  /// Try to yield the next token with custom options.
+  /// [`Self::state`] and [`Self::action_state`] will be updated.
   pub fn lex_with<'expect_text>(
     &mut self,
     options: impl Into<LexOptions<'expect_text, Kind>>,
   ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>>
   where
     Kind: TokenKind<Kind> + 'static,
-    ActionState: Clone,
+    ActionState: Clone, // TODO: lex shouldn't require Clone, maybe add new method `lex_fork_with`
   {
     let options = options.into() as LexOptions<_>;
 
@@ -248,6 +297,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     output
   }
 
+  // TODO: add options?
   pub fn lex_all(&mut self) -> LexAllOutput<Token<'text, Kind, ErrorType>>
   where
     Kind: TokenKind<Kind> + 'static,
@@ -273,17 +323,22 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     }
   }
 
-  /// Digest the next n chars and set the action state.
-  /// If the `state` is not provided, the action state will be reset to default.
-  pub fn take(&mut self, n: usize, state: impl Into<Option<ActionState>>) -> &mut Self
-  where
-    ActionState: Default,
-  {
-    self.state.digest(n);
-    self.action_state = state.into().unwrap_or(ActionState::default());
+  /// Digest the next (at most) n chars and set the [`Self::action_state`].
+  pub fn take_with(&mut self, n: usize, action_state: ActionState) -> &mut Self {
+    self.state.digest(n); // TODO: validate n
+    self.action_state = action_state;
     self
   }
 
+  /// Digest the next (at most) n chars and set the [`Self::action_state`] to default.
+  pub fn take(&mut self, n: usize) -> &mut Self
+  where
+    ActionState: Default,
+  {
+    self.take_with(n, ActionState::default())
+  }
+
+  /// Digest all muted tokens from the rest of the text.
   pub fn trim(&mut self) -> TrimOutput<Token<'text, Kind, ErrorType>> {
     // if already trimmed, return empty output
     if self.state.trimmed() {

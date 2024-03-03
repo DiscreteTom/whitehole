@@ -13,5 +13,5 @@ pub fn default_lexer_panic_handler<
 >(
   lexer: &mut TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
 ) {
-  lexer.take(1, None);
+  lexer.take(1);
 }

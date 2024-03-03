@@ -222,8 +222,9 @@ where
   }
 
   pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, ActionState, ErrorType> {
-    Lexer::new(Rc::new(self.build_stateless()), text)
+    Lexer::with_default_action_state(Rc::new(self.build_stateless()), text)
   }
+  // TODO: add build_with
 
   pub fn build_stateless(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
     StatelessLexer::new(self.actions)
