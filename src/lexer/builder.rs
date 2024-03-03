@@ -40,10 +40,10 @@ impl<
     ActionState: 'static,
     ErrorType: 'static,
     const N: usize,
-  > From<[(Kind, Vec<Action<(), ActionState, ErrorType>>); N]>
+  > From<[(Kind, ActionList<Action<(), ActionState, ErrorType>>); N]>
   for LexerBuilder<Kind, ActionState, ErrorType>
 {
-  fn from(actions: [(Kind, Vec<Action<(), ActionState, ErrorType>>); N]) -> Self {
+  fn from(actions: [(Kind, ActionList<Action<(), ActionState, ErrorType>>); N]) -> Self {
     Self::default().define_from(actions)
   }
 }

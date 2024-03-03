@@ -71,15 +71,15 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # enum MyKind { A, B }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// builder.define_from([
-  ///   (A, vec![word("A")]),
-  ///   (B, vec![word("B"), word("BB")]),
+  ///   (A, word("A").into()), // append a single action
+  ///   (B, [word("B"), word("BB")].into()), // append multiple actions
   /// ]);
   /// ```
   pub fn define_from<const N: usize>(
     self,
     defs: [(
       impl Into<Kind>,
-      impl Into<Vec<Action<(), ActionState, ErrorType>>>,
+      ActionList<Action<(), ActionState, ErrorType>>,
     ); N],
   ) -> Self
   where
@@ -88,7 +88,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     ErrorType: 'static,
   {
     defs.into_iter().fold(self, |builder, (kind, actions)| {
-      builder.define(kind, actions.into())
+      builder.define(kind, actions)
     })
   }
 }
