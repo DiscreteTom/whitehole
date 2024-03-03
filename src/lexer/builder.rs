@@ -1,5 +1,5 @@
 use super::{
-  action::{builder::ActionBuilder, Action},
+  action::{Action, ActionBuilder},
   stateless::StatelessLexer,
   token::TokenKind,
   Lexer,

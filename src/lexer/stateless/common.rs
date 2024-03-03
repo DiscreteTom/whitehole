@@ -1,6 +1,6 @@
 use super::{ActionHeadMap, StatelessLexer};
 use crate::lexer::{
-  action::{input::ActionInput, output::ActionOutput, Action},
+  action::{Action, ActionInput, ActionOutput},
   options::ReLexContext,
   output::LexOutput,
   token::{Range, Token, TokenKind},
