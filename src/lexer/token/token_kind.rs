@@ -38,16 +38,6 @@ impl<TokenKindType> Clone for TokenKindId<TokenKindType> {
   }
 }
 impl<TokenKindType> Copy for TokenKindId<TokenKindType> {}
-impl<TokenKindType> PartialOrd for TokenKindId<TokenKindType> {
-  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-    self.0.partial_cmp(&other.0)
-  }
-}
-impl<TokenKindType> Ord for TokenKindId<TokenKindType> {
-  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-    self.0.cmp(&other.0)
-  }
-}
 
 #[cfg(test)]
 mod tests {
