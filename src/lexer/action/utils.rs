@@ -164,9 +164,6 @@ pub fn exact<ActionState, ErrorType>(
 /// Be ware if you provide multiple words:
 /// ```
 /// # use whitehole::lexer::action::{Action, word};
-/// // this will always match `"a"` and never match `"ab"`
-/// # let action: Action<()> =
-/// word(["a", "ab"]);
 /// // this will skip the check of `"a"` when re-lex
 /// // since this is one action instead of two.
 /// # let action: Action<()> =
@@ -175,17 +172,57 @@ pub fn exact<ActionState, ErrorType>(
 pub fn word<ActionState: 'static, ErrorType: 'static>(
   ss: impl Into<StringList>,
 ) -> Action<(), ActionState, ErrorType> {
-  exact(ss).reject_if(|ctx| {
-    ctx
-      .output
-      .rest()
-      .chars()
-      .next()
-      // if next char exists and is alphanumeric or `_` then reject
-      .map(|c| c.is_alphanumeric() || c == '_')
-      // if next char does not exist (reach EOF), don't reject
-      .unwrap_or(false)
+  // don't use `exact(ss).reject_if(...)` here
+  // e.g. `exact(["a", "ab"])` will accept "ab" as "a"
+  // then reject since no word boundary after "a"
+  // however "ab" is accepted by `word(["a", "ab"])`
+
+  let ss: Vec<String> = ss.into().0;
+
+  if ss.len() == 0 {
+    panic!("empty word list");
+  }
+
+  // optimize for single string // TODO: is this needed?
+  if ss.len() == 1 {
+    let s = ss.into_iter().next().unwrap();
+    let head = s.chars().next().unwrap();
+    return simple(move |input| {
+      if input.rest().starts_with(&s)
+        && input.rest()[s.len()..]
+          .chars()
+          .next()
+          // if next char exists, it can't be alphanumeric or `_`
+          .map(|c| !c.is_alphanumeric() && c != '_')
+          // if no next char (EOF), it's ok
+          .unwrap_or(true)
+      {
+        s.len()
+      } else {
+        0
+      }
+    })
+    .head_in([head]);
+  }
+
+  let heads: HashSet<_> = ss.iter().map(|s| s.chars().next().unwrap()).collect();
+  simple(move |input| {
+    for s in &ss {
+      if input.rest().starts_with(s)
+        && input.rest()[s.len()..]
+          .chars()
+          .next()
+          // if next char exists, it can't be alphanumeric or `_`
+          .map(|c| !c.is_alphanumeric() && c != '_')
+          // if no next char (EOF), it's ok
+          .unwrap_or(true)
+      {
+        return s.len();
+      }
+    }
+    0 // no match
   })
+  .head_in(heads)
 }
 
 // TODO: add tests
