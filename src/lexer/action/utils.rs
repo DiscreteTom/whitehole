@@ -83,7 +83,7 @@ pub fn comment<ActionState, ErrorType>(
   .head_in([first])
 }
 
-/// Match one of the provided strings exactly, ***NO LOOKAHEAD***.
+/// Match one of the provided strings exactly, in one action, ***NO LOOKAHEAD***.
 /// Stop at the first match.
 /// The head matcher will be set automatically.
 /// # Examples
