@@ -27,7 +27,7 @@ fn stateful_lexer() {
         // in this example we reject the action if the state's `reject` field is `true`.
         .prevent(|input| input.state.reject)
         // if the action is accepted, set the state's `reject` field to `true`.
-        .then(|ctx| ctx.input.state.reject = true)
+        .callback(|ctx| ctx.input.state.reject = true)
         .into()
     })
     // with this input text the lexer can lex twice
