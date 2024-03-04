@@ -186,4 +186,67 @@ mod tests {
     let action: Action<()> = word(["a", "ab"]);
     assert_accept(&action, "ab", 2);
   }
+
+  #[test]
+  #[should_panic]
+  fn action_utils_word_vec_empty() {
+    word_vec::<(), ()>(vec![]);
+  }
+
+  #[test]
+  fn action_utils_word_vec() {
+    let actions: Vec<Action<()>> = word_vec(["int", "bool"]);
+    assert_accept(&actions[0], "int", 3);
+    assert_accept(&actions[1], "bool", 4);
+    // lookahead
+    assert_accept(&actions[0], "int ", 3);
+    assert_accept(&actions[1], "bool\t", 4);
+    assert_accept(&actions[0], "int+", 3);
+    assert_accept(&actions[1], "bool,", 4);
+    assert_reject(&actions[0], "int1");
+    assert_reject(&actions[1], "bool_");
+    // head matcher
+    assert!(matches!(
+      actions[0].head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'i')
+    ));
+    assert!(matches!(
+      actions[1].head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'b')
+    ));
+  }
+
+  #[test]
+  #[should_panic]
+  fn action_utils_word_chars_empty() {
+    word_chars::<(), ()>("");
+  }
+
+  #[test]
+  fn action_utils_word_chars() {
+    let actions: Vec<Action<()>> = word_chars("abc");
+    assert_accept(&actions[0], "a", 1);
+    assert_accept(&actions[1], "b", 1);
+    assert_accept(&actions[2], "c", 1);
+    // lookahead
+    assert_accept(&actions[0], "a ", 1);
+    assert_accept(&actions[1], "b\t", 1);
+    assert_accept(&actions[2], "c\n", 1);
+    assert_reject(&actions[0], "ab");
+    assert_reject(&actions[1], "bc");
+    assert_reject(&actions[2], "ca");
+    // head matcher
+    assert!(matches!(
+      actions[0].head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'a')
+    ));
+    assert!(matches!(
+      actions[1].head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'b')
+    ));
+    assert!(matches!(
+      actions[2].head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'c')
+    ));
+  }
 }

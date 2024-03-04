@@ -154,4 +154,64 @@ mod tests {
     let action: Action<()> = exact(["a", "ab"]);
     assert_accept(&action, "ab", 1);
   }
+
+  #[test]
+  #[should_panic]
+  fn action_utils_exact_vec_empty() {
+    exact_vec::<(), ()>(vec![]);
+  }
+
+  #[test]
+  fn action_utils_exact_vec() {
+    let actions: Vec<Action<()>> = exact_vec(["++", "--"]);
+    assert_accept(&actions[0], "++", 2);
+    assert_accept(&actions[1], "--", 2);
+    // no lookahead
+    assert_accept(&actions[0], "+++", 2);
+    assert_accept(&actions[1], "---", 2);
+    // head matcher
+    assert!(matches!(
+      actions[0].head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'+')
+    ));
+    assert!(matches!(
+      actions[1].head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'-')
+    ));
+  }
+
+  #[test]
+  #[should_panic]
+  fn action_utils_exact_chars_empty() {
+    exact_chars::<(), ()>("");
+  }
+
+  #[test]
+  fn action_utils_exact_chars() {
+    let actions: Vec<Action<()>> = exact_chars("+-*/");
+    assert_accept(&actions[0], "+", 1);
+    assert_accept(&actions[1], "-", 1);
+    assert_accept(&actions[2], "*", 1);
+    assert_accept(&actions[3], "/", 1);
+    // no lookahead
+    assert_accept(&actions[0], "++", 1);
+    assert_accept(&actions[1], "--", 1);
+    // head matcher
+    assert!(matches!(
+      actions[0].head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'+')
+    ));
+    assert!(matches!(
+      actions[1].head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'-')
+    ));
+    assert!(matches!(
+      actions[2].head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'*')
+    ));
+    assert!(matches!(
+      actions[3].head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'/')
+    ));
+  }
 }
