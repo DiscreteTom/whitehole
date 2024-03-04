@@ -346,7 +346,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self.reject_if(move |_| rejected)
   }
 
-  /// Call the `callback` if the action is accepted.
+  /// Call the `cb` if the action is accepted.
   /// This is often used to update the action state.
   /// Return a new action.
   /// # Examples
@@ -363,11 +363,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// builder.define_with(MyKind::A, |a| {
   ///   a.regex(r"^\s+")
   ///     .unwrap()
-  ///     .then(|ctx| ctx.input.state.value += 1)
+  ///     .callback(|ctx| ctx.input.state.value += 1)
   ///     .into()
   /// });
   /// ```
-  pub fn then<F>(mut self, callback: F) -> Self
+  pub fn callback<F>(mut self, cb: F) -> Self
   where
     Kind: 'static,
     ActionState: 'static,
@@ -378,7 +378,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self.exec = Box::new(move |input| {
       exec(input).and_then(|output| {
         let output = EnhancedActionOutput::new(&input, output);
-        callback(ActionCallbackContext {
+        cb(ActionCallbackContext {
           output: &output,
           input,
         });
@@ -659,11 +659,11 @@ mod tests {
   }
 
   #[test]
-  fn action_then() {
+  fn action_callback() {
     let mut state = MyState { value: 0 };
     let action: Action<(), MyState, ()> =
       simple(|input: &mut ActionInput<MyState>| input.rest().len())
-        .then(|ctx| ctx.input.state.value += 1);
+        .callback(|ctx| ctx.input.state.value += 1);
 
     assert!(matches!(
       action.exec(&mut ActionInput::new("A", 0, &mut state)),
