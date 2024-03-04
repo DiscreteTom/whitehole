@@ -152,6 +152,7 @@ mod tests {
   fn action_utils_word() {
     // single string
     let action: Action<()> = word("a");
+    assert_reject(&action, "b");
     assert_accept(&action, "a", 1);
     // lookahead
     assert_accept(&action, "a ", 1);
@@ -173,8 +174,13 @@ mod tests {
 
     // multi strings
     let action: Action<()> = word(["a", "b"]);
+    assert_reject(&action, "c");
+    assert_reject(&action, "aa");
+    assert_reject(&action, "bc");
     assert_accept(&action, "a", 1);
+    assert_accept(&action, "a ", 1);
     assert_accept(&action, "b", 1);
+    assert_accept(&action, "b,", 1);
     // head matcher
     assert!(matches!(
       action.head_matcher().as_ref().unwrap(),

@@ -123,11 +123,17 @@ mod tests {
       expected
     );
   }
+  fn assert_reject(action: &Action<()>, text: &str) {
+    assert!(action
+      .exec(&mut ActionInput::new(text, 0, &mut ()))
+      .is_none());
+  }
 
   #[test]
   fn action_utils_exact() {
     // single string
     let action: Action<()> = exact("a");
+    assert_reject(&action, "b");
     assert_accept(&action, "a", 1);
     // no lookahead
     assert_accept(&action, "ab", 1);
@@ -139,6 +145,7 @@ mod tests {
 
     // multi strings
     let action: Action<()> = exact(["a", "b"]);
+    assert_reject(&action, "c");
     assert_accept(&action, "a", 1);
     assert_accept(&action, "b", 1);
     // no lookahead

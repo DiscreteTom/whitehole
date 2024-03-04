@@ -102,12 +102,19 @@ mod tests {
       expected
     );
   }
+  fn assert_reject(action: &Action<()>, text: &str) {
+    assert!(action
+      .exec(&mut ActionInput::new(text, 0, &mut ()))
+      .is_none());
+  }
 
   #[test]
   fn action_utils_whitespaces() {
     let action: Action<()> = whitespaces();
 
     // common cases
+    assert_reject(&action, "123");
+    assert_reject(&action, "abc");
     assert_accept(&action, " \n\t", 3);
 
     // full cases
@@ -134,6 +141,9 @@ mod tests {
 
     // common cases
     let text = "// this is a comment\n";
+    assert_reject(&action, "123");
+    assert_reject(&action, "  // ");
+    assert_reject(&action, "/");
     assert_accept(&action, &text, text.len());
 
     // no close
