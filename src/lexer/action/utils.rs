@@ -1,4 +1,9 @@
+mod string_list;
+
+pub use string_list::*;
+
 use super::{simple::simple, Action};
+use std::collections::HashSet;
 
 /// Match unicode whitespaces greedy.
 /// The head matcher will be set automatically.
@@ -78,27 +83,99 @@ pub fn comment<ActionState, ErrorType>(
   .head_in([first])
 }
 
-/// Match a string exactly, ***NO LOOKAHEAD***.
+/// Match one of the provided strings exactly, ***NO LOOKAHEAD***.
+/// Stop at the first match.
 /// The head matcher will be set automatically.
-pub fn exact<ActionState, ErrorType>(s: impl Into<String>) -> Action<(), ActionState, ErrorType> {
-  let s: String = s.into();
-  let first = s.chars().next().unwrap();
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{Action, exact};
+/// # let action: Action<()> =
+/// // single string
+/// exact("a");
+/// # let action: Action<()> =
+/// // multiple strings
+/// // try to match "a" first, then "b", in one action
+/// exact(["a", "b"]);
+/// ```
+/// # Caveats
+/// Be ware if you provide multiple strings:
+/// ```
+/// # use whitehole::lexer::action::{Action, exact};
+/// // this will always match `"a"` and never match `"ab"`
+/// # let action: Action<()> =
+/// exact(["a", "ab"]);
+/// // this will skip the check of `"a"` when re-lex
+/// // since this is one action instead of two.
+/// # let action: Action<()> =
+/// exact(["ab", "a"]);
+/// ```
+pub fn exact<ActionState, ErrorType>(
+  ss: impl Into<StringList>,
+) -> Action<(), ActionState, ErrorType> {
+  let ss: Vec<String> = ss.into().0;
+
+  if ss.len() == 0 {
+    panic!("empty string list");
+  }
+
+  // optimize for single string
+  if ss.len() == 1 {
+    let s = ss.into_iter().next().unwrap();
+    let head = s.chars().next().unwrap();
+    return simple(move |input| {
+      if input.rest().starts_with(&s) {
+        s.len()
+      } else {
+        0
+      }
+    })
+    .head_in([head]);
+  }
+
+  let heads: HashSet<_> = ss.iter().map(|s| s.chars().next().unwrap()).collect();
   simple(move |input| {
-    if input.rest().starts_with(&s) {
-      s.len()
-    } else {
-      0
+    for s in &ss {
+      if input.rest().starts_with(s) {
+        return s.len();
+      }
     }
+    0 // no match
   })
-  .head_in([first])
+  .head_in(heads)
 }
 
-/// Match a word, lookahead one char to ensure there is a word boundary or end of input.
+/// Match one of the provided words,
+/// ***LOOKAHEAD*** one char to ensure there is a word boundary
+/// (alphanumeric or `_`) or end of input after the word.
+/// Stop at the first match.
 /// The head matcher will be set automatically.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{Action, word};
+/// # let action: Action<()> =
+/// // single word
+/// word("a");
+/// # let action: Action<()> =
+/// // multiple words
+/// // try to match "a" first, then "b", in one action
+/// word(["a", "b"]);
+/// ```
+/// # Caveats
+/// Be ware if you provide multiple words:
+/// ```
+/// # use whitehole::lexer::action::{Action, word};
+/// // this will always match `"a"` and never match `"ab"`
+/// # let action: Action<()> =
+/// word(["a", "ab"]);
+/// // this will skip the check of `"a"` when re-lex
+/// // since this is one action instead of two.
+/// # let action: Action<()> =
+/// word(["ab", "a"]);
+/// ```
 pub fn word<ActionState: 'static, ErrorType: 'static>(
-  s: impl Into<String>,
+  ss: impl Into<StringList>,
 ) -> Action<(), ActionState, ErrorType> {
-  exact(s).reject_if(|ctx| {
+  exact(ss).reject_if(|ctx| {
     ctx
       .output
       .rest()
@@ -106,7 +183,7 @@ pub fn word<ActionState: 'static, ErrorType: 'static>(
       .next()
       // if next char exists and is alphanumeric or `_` then reject
       .map(|c| c.is_alphanumeric() || c == '_')
-      // if next char does not exist, then accept
+      // if next char does not exist (reach EOF), don't reject
       .unwrap_or(false)
   })
 }
