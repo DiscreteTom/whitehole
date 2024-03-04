@@ -40,6 +40,20 @@ pub fn whitespaces<ActionState, ErrorType>() -> Action<(), ActionState, ErrorTyp
 /// Match from the `open` to the `close`, including the `open` and `close`.
 /// If the `close` is not found, accept all rest as the comment.
 /// The head matcher will be set automatically.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{Action, comment};
+/// // single line comment
+/// # let action: Action<()> =
+/// comment("//", "\n");
+/// # let action: Action<()> =
+/// comment("#", "\n");
+/// // multi line comment
+/// # let action: Action<()> =
+/// comment("/*", "*/");
+/// # let action: Action<()> =
+/// comment("<!--", "-->");
+/// ```
 pub fn comment<ActionState, ErrorType>(
   open: impl Into<String>,
   close: impl Into<String>,
@@ -102,7 +116,7 @@ pub fn word<ActionState: 'static, ErrorType: 'static>(
 
 #[cfg(test)]
 mod tests {
-  use crate::lexer::action::ActionInput;
+  use crate::lexer::action::{ActionInput, ActionInputRestHeadMatcher};
 
   use super::*;
   #[test]
@@ -135,5 +149,42 @@ mod tests {
         .digested,
       text.len()
     );
+
+    // head matcher
+    assert!(matches!(
+      action.head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == text.chars().count() && set.iter().all(|c| text.contains(*c))
+    ));
+  }
+
+  #[test]
+  fn action_utils_comment() {
+    let action: Action<()> = comment("//", "\n");
+
+    // common cases
+    let text = "// this is a comment\n";
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new(text, 0, &mut ()))
+        .unwrap()
+        .digested,
+      text.len()
+    );
+
+    // no close
+    let text = "// this is a comment";
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new(text, 0, &mut ()))
+        .unwrap()
+        .digested,
+      text.len()
+    );
+
+    // head matcher
+    assert!(matches!(
+      action.head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'/')
+    ));
   }
 }
