@@ -301,4 +301,178 @@ mod tests {
       ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'/')
     ));
   }
+
+  #[test]
+  #[should_panic]
+  fn action_utils_exact_empty() {
+    exact::<(), ()>(vec![]);
+  }
+
+  #[test]
+  fn action_utils_exact() {
+    // single string
+    let action: Action<()> = exact("a");
+    let text = "a";
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new(text, 0, &mut ()))
+        .unwrap()
+        .digested,
+      text.len()
+    );
+    // head matcher
+    assert!(matches!(
+      action.head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'a')
+    ));
+    // no lookahead
+    let text = "ab";
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new(text, 0, &mut ()))
+        .unwrap()
+        .digested,
+      1
+    );
+
+    // multi strings
+    let action: Action<()> = exact(["a", "b"]);
+    let text = "b";
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new(text, 0, &mut ()))
+        .unwrap()
+        .digested,
+      text.len()
+    );
+    // head matcher
+    assert!(matches!(
+      action.head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 2 && set.contains(&'a') && set.contains(&'b')
+    ));
+
+    // caveats
+    let action: Action<()> = exact(["a", "ab"]);
+    let text = "ab";
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new(text, 0, &mut ()))
+        .unwrap()
+        .digested,
+      1
+    );
+  }
+
+  #[test]
+  #[should_panic]
+  fn action_utils_word_empty() {
+    word::<(), ()>(vec![]);
+  }
+
+  #[test]
+  fn action_utils_word() {
+    // single string
+    let action: Action<()> = word("a");
+    let text = "a";
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new(text, 0, &mut ()))
+        .unwrap()
+        .digested,
+      text.len()
+    );
+    // head matcher
+    assert!(matches!(
+      action.head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'a')
+    ));
+    // lookahead
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new("a ", 0, &mut ()))
+        .unwrap()
+        .digested,
+      1
+    );
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new("a\t", 0, &mut ()))
+        .unwrap()
+        .digested,
+      1
+    );
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new("a\n", 0, &mut ()))
+        .unwrap()
+        .digested,
+      1
+    );
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new("a+", 0, &mut ()))
+        .unwrap()
+        .digested,
+      1
+    );
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new("a,", 0, &mut ()))
+        .unwrap()
+        .digested,
+      1
+    );
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new("a=", 0, &mut ()))
+        .unwrap()
+        .digested,
+      1
+    );
+    assert_eq!(
+      action
+        // punctuation in other languages also count as word boundary
+        .exec(&mut ActionInput::new("a，", 0, &mut ()))
+        .unwrap()
+        .digested,
+      1
+    );
+    assert!(action
+      .exec(&mut ActionInput::new("ab", 0, &mut ()))
+      .is_none());
+    assert!(action
+      .exec(&mut ActionInput::new("a_", 0, &mut ()))
+      .is_none());
+    assert!(action
+      .exec(&mut ActionInput::new("a我", 0, &mut ()))
+      .is_none());
+
+    // multi strings
+    let action: Action<()> = word(["a", "b"]);
+    let text = "b";
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new(text, 0, &mut ()))
+        .unwrap()
+        .digested,
+      text.len()
+    );
+    // head matcher
+    assert!(matches!(
+      action.head_matcher().as_ref().unwrap(),
+      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 2 && set.contains(&'a') && set.contains(&'b')
+    ));
+
+    // caveats
+    // this is not acceptable by `exact` but acceptable by `word`
+    let action: Action<()> = word(["a", "ab"]);
+    let text = "ab";
+    assert_eq!(
+      action
+        .exec(&mut ActionInput::new(text, 0, &mut ()))
+        .unwrap()
+        .digested,
+      2
+    );
+  }
 }
