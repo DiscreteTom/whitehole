@@ -58,11 +58,9 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     Self::default()
   }
 
-  // TODO: move into `generate`?
-  pub fn build_stateless(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
-    // wrap actions in Rc and make them immutable
-    let actions = self.actions.into_iter().map(Rc::new).collect::<Vec<_>>();
-
+  pub fn build_stateless_from(
+    actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
+  ) -> StatelessLexer<Kind, ActionState, ErrorType> {
     let mut kind_map = HashMap::new();
     // prepare kind map, add value for all possible kinds
     for a in &actions {
@@ -100,6 +98,12 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     let maybe_muted_head_map = Self::calc_head_map(&maybe_muted_actions);
 
     StatelessLexer::new(actions, head_map, kind_head_map, maybe_muted_head_map)
+  }
+
+  // TODO: move into `generate`?
+  pub fn build_stateless(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
+    // wrap actions with Rc, make them immutable and clone-able
+    Self::build_stateless_from(self.actions.into_iter().map(Rc::new).collect::<Vec<_>>())
   }
 
   pub fn build_with<'text>(
@@ -196,14 +200,13 @@ impl<Kind, ActionState, ErrorType> From<Vec<Action<Kind, ActionState, ErrorType>
     LexerBuilder::from(actions).into()
   }
 }
-// TODO
-// impl<Kind, ActionState, ErrorType> From<Vec<Rc<Action<Kind, ActionState, ErrorType>>>>
-//   for StatelessLexer<Kind, ActionState, ErrorType>
-// {
-//   fn from(actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>) -> Self {
-//     LexerBuilder::from(actions).into()
-//   }
-// }
+impl<Kind, ActionState, ErrorType> From<Vec<Rc<Action<Kind, ActionState, ErrorType>>>>
+  for StatelessLexer<Kind, ActionState, ErrorType>
+{
+  fn from(actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>) -> Self {
+    LexerBuilder::build_stateless_from(actions)
+  }
+}
 
 #[cfg(test)]
 mod tests {
