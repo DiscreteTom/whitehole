@@ -398,11 +398,13 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// builder.define_with(MyKind::A, |a| {
-  ///   a.regex(r"^\s+")
-  ///     .unwrap()
-  ///     .or(exact("A"))
+  ///   a.from(exact("A"))
+  ///     .or(exact("AA"))
   ///     .into()
   /// });
+  /// // use `|` as a shortcut
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define(MyKind::A, exact("A") | exact("AA"));
   /// ```
   pub fn or(mut self, another: Self) -> Self
   where
