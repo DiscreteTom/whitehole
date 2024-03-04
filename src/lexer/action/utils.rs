@@ -109,6 +109,7 @@ pub fn comment<ActionState, ErrorType>(
 /// # let action: Action<()> =
 /// exact(["ab", "a"]);
 /// ```
+/// To avoid the above, try [`exact_vec`] or [`exact_chars`].
 pub fn exact<ActionState, ErrorType>(
   ss: impl Into<StringList>,
 ) -> Action<(), ActionState, ErrorType> {
@@ -118,7 +119,7 @@ pub fn exact<ActionState, ErrorType>(
     panic!("empty string list");
   }
 
-  // optimize for single string
+  // optimize for single string // TODO: is this needed?
   if ss.len() == 1 {
     let s = ss.into_iter().next().unwrap();
     let head = s.chars().next().unwrap();
@@ -144,7 +145,46 @@ pub fn exact<ActionState, ErrorType>(
   .head_in(heads)
 }
 
-/// Match one of the provided words,
+/// Similar to [`exact`], but create an action for each string.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{Action, exact_vec};
+/// # let actions: Vec<Action<()>> =
+/// exact_vec(["++", "--"]);
+/// ```
+pub fn exact_vec<ActionState, ErrorType>(
+  ss: impl Into<StringList>,
+) -> Vec<Action<(), ActionState, ErrorType>> {
+  let ss: Vec<String> = ss.into().0;
+
+  if ss.len() == 0 {
+    panic!("empty string list");
+  }
+
+  ss.into_iter().map(|s| exact(s)).collect()
+}
+
+/// Similar to [`exact`], but accept one string
+/// and create an action for each char.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{Action, exact_vec};
+/// # let actions: Vec<Action<()>> =
+/// exact_chars("+-*/()");
+/// ```
+pub fn exact_chars<ActionState, ErrorType>(
+  s: impl Into<String>,
+) -> Vec<Action<(), ActionState, ErrorType>> {
+  let s: String = s.into();
+
+  if s.len() == 0 {
+    panic!("empty string");
+  }
+
+  s.chars().map(|c| exact(c.to_string())).collect()
+}
+
+/// Match one of the provided words, in one action,
 /// ***LOOKAHEAD*** one char to ensure there is a word boundary
 /// (alphanumeric or `_`) or end of input after the word.
 /// Stop at the first match.
@@ -169,6 +209,7 @@ pub fn exact<ActionState, ErrorType>(
 /// # let action: Action<()> =
 /// word(["ab", "a"]);
 /// ```
+/// To avoid the above, try [`word_vec`] or [`word_chars`].
 pub fn word<ActionState, ErrorType>(
   ss: impl Into<StringList>,
 ) -> Action<(), ActionState, ErrorType> {
@@ -223,6 +264,45 @@ pub fn word<ActionState, ErrorType>(
     0 // no match
   })
   .head_in(heads)
+}
+
+/// Similar to [`word`], but create an action for each string.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{Action, word_vec};
+/// # let actions: Vec<Action<()>> =
+/// word_vec(["++", "--"]);
+/// ```
+pub fn word_vec<ActionState, ErrorType>(
+  ss: impl Into<StringList>,
+) -> Vec<Action<(), ActionState, ErrorType>> {
+  let ss: Vec<String> = ss.into().0;
+
+  if ss.len() == 0 {
+    panic!("empty word list");
+  }
+
+  ss.into_iter().map(|s| word(s)).collect()
+}
+
+/// Similar to [`word`], but accept one string
+/// and create an action for each char.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{Action, word_chars};
+/// # let actions: Vec<Action<()>> =
+/// word_chars("+-*/()");
+/// ```
+pub fn word_chars<ActionState, ErrorType>(
+  s: impl Into<String>,
+) -> Vec<Action<(), ActionState, ErrorType>> {
+  let s: String = s.into();
+
+  if s.len() == 0 {
+    panic!("empty string");
+  }
+
+  s.chars().map(|c| word(c.to_string())).collect()
 }
 
 // TODO: add tests
