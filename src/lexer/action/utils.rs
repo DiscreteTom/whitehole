@@ -169,7 +169,7 @@ pub fn exact<ActionState, ErrorType>(
 /// # let action: Action<()> =
 /// word(["ab", "a"]);
 /// ```
-pub fn word<ActionState: 'static, ErrorType: 'static>(
+pub fn word<ActionState, ErrorType>(
   ss: impl Into<StringList>,
 ) -> Action<(), ActionState, ErrorType> {
   // don't use `exact(ss).reject_if(...)` here
