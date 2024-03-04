@@ -114,43 +114,36 @@ mod tests {
     exact::<(), ()>(vec![]);
   }
 
-  #[test]
-  fn action_utils_exact() {
-    // single string
-    let action: Action<()> = exact("a");
-    let text = "a";
+  fn assert_accept(action: &Action<()>, text: &str, expected: usize) {
     assert_eq!(
       action
         .exec(&mut ActionInput::new(text, 0, &mut ()))
         .unwrap()
         .digested,
-      text.len()
+      expected
     );
+  }
+
+  #[test]
+  fn action_utils_exact() {
+    // single string
+    let action: Action<()> = exact("a");
+    assert_accept(&action, "a", 1);
+    // no lookahead
+    assert_accept(&action, "ab", 1);
     // head matcher
     assert!(matches!(
       action.head_matcher().as_ref().unwrap(),
       ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'a')
     ));
-    // no lookahead
-    let text = "ab";
-    assert_eq!(
-      action
-        .exec(&mut ActionInput::new(text, 0, &mut ()))
-        .unwrap()
-        .digested,
-      1
-    );
 
     // multi strings
     let action: Action<()> = exact(["a", "b"]);
-    let text = "b";
-    assert_eq!(
-      action
-        .exec(&mut ActionInput::new(text, 0, &mut ()))
-        .unwrap()
-        .digested,
-      text.len()
-    );
+    assert_accept(&action, "a", 1);
+    assert_accept(&action, "b", 1);
+    // no lookahead
+    assert_accept(&action, "ab", 1);
+    assert_accept(&action, "ba", 1);
     // head matcher
     assert!(matches!(
       action.head_matcher().as_ref().unwrap(),
@@ -159,13 +152,6 @@ mod tests {
 
     // caveats
     let action: Action<()> = exact(["a", "ab"]);
-    let text = "ab";
-    assert_eq!(
-      action
-        .exec(&mut ActionInput::new(text, 0, &mut ()))
-        .unwrap()
-        .digested,
-      1
-    );
+    assert_accept(&action, "ab", 1);
   }
 }

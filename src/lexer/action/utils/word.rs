@@ -133,94 +133,48 @@ mod tests {
     word::<(), ()>(vec![]);
   }
 
-  #[test]
-  fn action_utils_word() {
-    // single string
-    let action: Action<()> = word("a");
-    let text = "a";
+  fn assert_accept(action: &Action<()>, text: &str, expected: usize) {
     assert_eq!(
       action
         .exec(&mut ActionInput::new(text, 0, &mut ()))
         .unwrap()
         .digested,
-      text.len()
+      expected
     );
+  }
+  fn assert_reject(action: &Action<()>, text: &str) {
+    assert!(action
+      .exec(&mut ActionInput::new(text, 0, &mut ()))
+      .is_none());
+  }
+
+  #[test]
+  fn action_utils_word() {
+    // single string
+    let action: Action<()> = word("a");
+    assert_accept(&action, "a", 1);
+    // lookahead
+    assert_accept(&action, "a ", 1);
+    assert_accept(&action, "a\t", 1);
+    assert_accept(&action, "a\n", 1);
+    assert_accept(&action, "a+", 1);
+    assert_accept(&action, "a,", 1);
+    assert_accept(&action, "a=", 1);
+    assert_accept(&action, "a，", 1); // punctuation in other languages also count as word boundary
+    assert_reject(&action, "ab");
+    assert_reject(&action, "a1");
+    assert_reject(&action, "a_");
+    assert_reject(&action, "a我");
     // head matcher
     assert!(matches!(
       action.head_matcher().as_ref().unwrap(),
       ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'a')
     ));
-    // lookahead
-    assert_eq!(
-      action
-        .exec(&mut ActionInput::new("a ", 0, &mut ()))
-        .unwrap()
-        .digested,
-      1
-    );
-    assert_eq!(
-      action
-        .exec(&mut ActionInput::new("a\t", 0, &mut ()))
-        .unwrap()
-        .digested,
-      1
-    );
-    assert_eq!(
-      action
-        .exec(&mut ActionInput::new("a\n", 0, &mut ()))
-        .unwrap()
-        .digested,
-      1
-    );
-    assert_eq!(
-      action
-        .exec(&mut ActionInput::new("a+", 0, &mut ()))
-        .unwrap()
-        .digested,
-      1
-    );
-    assert_eq!(
-      action
-        .exec(&mut ActionInput::new("a,", 0, &mut ()))
-        .unwrap()
-        .digested,
-      1
-    );
-    assert_eq!(
-      action
-        .exec(&mut ActionInput::new("a=", 0, &mut ()))
-        .unwrap()
-        .digested,
-      1
-    );
-    assert_eq!(
-      action
-        // punctuation in other languages also count as word boundary
-        .exec(&mut ActionInput::new("a，", 0, &mut ()))
-        .unwrap()
-        .digested,
-      1
-    );
-    assert!(action
-      .exec(&mut ActionInput::new("ab", 0, &mut ()))
-      .is_none());
-    assert!(action
-      .exec(&mut ActionInput::new("a_", 0, &mut ()))
-      .is_none());
-    assert!(action
-      .exec(&mut ActionInput::new("a我", 0, &mut ()))
-      .is_none());
 
     // multi strings
     let action: Action<()> = word(["a", "b"]);
-    let text = "b";
-    assert_eq!(
-      action
-        .exec(&mut ActionInput::new(text, 0, &mut ()))
-        .unwrap()
-        .digested,
-      text.len()
-    );
+    assert_accept(&action, "a", 1);
+    assert_accept(&action, "b", 1);
     // head matcher
     assert!(matches!(
       action.head_matcher().as_ref().unwrap(),
@@ -228,15 +182,8 @@ mod tests {
     ));
 
     // caveats
-    // this is not acceptable by `exact` but acceptable by `word`
+    // this will digest 1 by `exact` but digest 2 by `word`
     let action: Action<()> = word(["a", "ab"]);
-    let text = "ab";
-    assert_eq!(
-      action
-        .exec(&mut ActionInput::new(text, 0, &mut ()))
-        .unwrap()
-        .digested,
-      2
-    );
+    assert_accept(&action, "ab", 2);
   }
 }

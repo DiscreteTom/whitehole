@@ -93,19 +93,22 @@ mod tests {
   use super::*;
   use crate::lexer::action::{ActionInput, ActionInputRestHeadMatcher};
 
-  #[test]
-  fn action_utils_whitespaces() {
-    let action: Action<()> = whitespaces();
-
-    // common cases
-    let text = " \n\t";
+  fn assert_accept(action: &Action<()>, text: &str, expected: usize) {
     assert_eq!(
       action
         .exec(&mut ActionInput::new(text, 0, &mut ()))
         .unwrap()
         .digested,
-      text.len()
+      expected
     );
+  }
+
+  #[test]
+  fn action_utils_whitespaces() {
+    let action: Action<()> = whitespaces();
+
+    // common cases
+    assert_accept(&action, " \n\t", 3);
 
     // full cases
     let text: String = [
@@ -116,13 +119,7 @@ mod tests {
     ]
     .into_iter()
     .collect();
-    assert_eq!(
-      action
-        .exec(&mut ActionInput::new(text.as_str(), 0, &mut ()))
-        .unwrap()
-        .digested,
-      text.len()
-    );
+    assert_accept(&action, &text, text.len());
 
     // head matcher
     assert!(matches!(
@@ -137,23 +134,11 @@ mod tests {
 
     // common cases
     let text = "// this is a comment\n";
-    assert_eq!(
-      action
-        .exec(&mut ActionInput::new(text, 0, &mut ()))
-        .unwrap()
-        .digested,
-      text.len()
-    );
+    assert_accept(&action, &text, text.len());
 
     // no close
     let text = "// this is a comment";
-    assert_eq!(
-      action
-        .exec(&mut ActionInput::new(text, 0, &mut ()))
-        .unwrap()
-        .digested,
-      text.len()
-    );
+    assert_accept(&action, &text, text.len());
 
     // head matcher
     assert!(matches!(
