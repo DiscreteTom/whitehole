@@ -89,7 +89,7 @@ pub fn word<ActionState, ErrorType>(
 /// ```
 /// # use whitehole::lexer::action::{Action, word_vec};
 /// # let actions: Vec<Action<()>> =
-/// word_vec(["++", "--"]);
+/// word_vec(["int", "bool"]);
 /// ```
 pub fn word_vec<ActionState, ErrorType>(
   ss: impl Into<StringList>,
@@ -109,7 +109,7 @@ pub fn word_vec<ActionState, ErrorType>(
 /// ```
 /// # use whitehole::lexer::action::{Action, word_chars};
 /// # let actions: Vec<Action<()>> =
-/// word_chars("+-*/()");
+/// word_chars("abc");
 /// ```
 pub fn word_chars<ActionState, ErrorType>(
   s: impl Into<String>,
