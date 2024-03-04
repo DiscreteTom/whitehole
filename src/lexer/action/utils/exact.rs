@@ -87,7 +87,7 @@ pub fn exact_vec<ActionState, ErrorType>(
 /// and create an action for each char.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::{Action, exact_vec};
+/// # use whitehole::lexer::action::{Action, exact_chars};
 /// # let actions: Vec<Action<()>> =
 /// exact_chars("+-*/()");
 /// ```
