@@ -16,7 +16,7 @@ pub use select::*;
 pub use simple::*;
 pub use utils::*;
 
-use super::token::TokenKindId;
+use super::token::{MockTokenKind, TokenKindId};
 use std::collections::HashSet;
 
 pub enum ActionInputRestHeadMatcher {
@@ -54,7 +54,28 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
       maybe_muted: false,
       possible_kinds: HashSet::new(),
       head_matcher: None,
-      exec: Box::new(move |input| exec(input).map(|output| output.into())),
+      exec: Box::new(move |input| {
+        // transform ActionOutputWithoutKind tp ActionOutput
+        exec(input).map(|output| output.into())
+      }),
+    }
+  }
+}
+
+impl<ActionState, ErrorType, T> Action<MockTokenKind<T>, ActionState, ErrorType> {
+  /// Create an action with the [`MockTokenKind`] as the kind.
+  /// This is usually used to pass data to downstream actions.
+  pub fn with_data<F>(exec: F) -> Self
+  where
+    F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<MockTokenKind<T>, ErrorType>>
+      + 'static,
+  {
+    Action {
+      maybe_muted: false,
+      // MockTokenKind only has one kind, so we can set it to 0.
+      possible_kinds: HashSet::from([TokenKindId::new(0)]),
+      head_matcher: None,
+      exec: Box::new(exec),
     }
   }
 }
