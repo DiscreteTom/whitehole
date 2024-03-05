@@ -39,6 +39,18 @@ impl<TokenKindType> Clone for TokenKindId<TokenKindType> {
 }
 impl<TokenKindType> Copy for TokenKindId<TokenKindType> {}
 
+/// A mock struct which implements `TokenKind`.
+/// This is useful in action utils to pass data to downstream actions.
+pub struct MockTokenKind<T> {
+  pub data: T,
+}
+
+impl<T> TokenKind<MockTokenKind<T>> for MockTokenKind<T> {
+  fn id(&self) -> TokenKindId<MockTokenKind<T>> {
+    TokenKindId::new(0)
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
