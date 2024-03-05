@@ -1,6 +1,6 @@
 mod token_kind;
 
-pub use token_kind::{TokenKind, TokenKindId};
+pub use token_kind::*;
 
 #[derive(Debug)]
 pub struct Range {
