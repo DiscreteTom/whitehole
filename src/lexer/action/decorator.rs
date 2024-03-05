@@ -7,15 +7,15 @@ use crate::lexer::token::{MockTokenKind, TokenKind, TokenKindId};
 use std::{collections::HashSet, ops};
 
 /// `input.state` is mutable. `output` is consumed.
-pub struct AcceptedActionDecoratorContext<'input, 'text, 'state, Kind, ActionState, ErrorType> {
-  pub input: &'input mut ActionInput<'text, 'state, ActionState>,
-  pub output: EnhancedActionOutput<'text, Kind, ErrorType>,
+pub struct AcceptedActionDecoratorContext<'input, InputType, OutputType> {
+  pub input: &'input mut InputType,
+  pub output: OutputType,
 }
 
 /// `input.state` is mutable. `output` is not mutable and not consumed.
-pub struct ActionCallbackContext<'input, 'text, 'state, 'output, Kind, ActionState, ErrorType> {
-  pub input: &'input mut ActionInput<'text, 'state, ActionState>,
-  pub output: &'output EnhancedActionOutput<'text, Kind, ErrorType>,
+pub struct ActionCallbackContext<'input, 'output, InputType, OutputType> {
+  pub input: &'input mut InputType,
+  pub output: &'output OutputType,
 }
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
@@ -144,7 +144,10 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
     F: Fn(
-        AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>,
+        AcceptedActionDecoratorContext<
+          ActionInput<ActionState>,
+          EnhancedActionOutput<Kind, ErrorType>,
+        >,
       ) -> Option<ActionOutput<Kind, NewErrorType>>
       + 'static,
   {
@@ -185,7 +188,13 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
-    F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> bool + 'static,
+    F: Fn(
+        &AcceptedActionDecoratorContext<
+          ActionInput<ActionState>,
+          EnhancedActionOutput<Kind, ErrorType>,
+        >,
+      ) -> bool
+      + 'static,
   {
     let mut res = self.apply(move |mut ctx| {
       ctx.output.muted = condition(&ctx);
@@ -253,7 +262,12 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
-    F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> Option<NewError>
+    F: Fn(
+        &AcceptedActionDecoratorContext<
+          ActionInput<ActionState>,
+          EnhancedActionOutput<Kind, ErrorType>,
+        >,
+      ) -> Option<NewError>
       + 'static,
   {
     self.apply(move |ctx| {
@@ -310,7 +324,13 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
-    F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> bool + 'static,
+    F: Fn(
+        &AcceptedActionDecoratorContext<
+          ActionInput<ActionState>,
+          EnhancedActionOutput<Kind, ErrorType>,
+        >,
+      ) -> bool
+      + 'static,
   {
     self.apply(move |ctx| {
       if condition(&ctx) {
@@ -372,7 +392,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
-    F: Fn(ActionCallbackContext<Kind, ActionState, ErrorType>) + 'static,
+    F: Fn(ActionCallbackContext<ActionInput<ActionState>, EnhancedActionOutput<Kind, ErrorType>>)
+      + 'static,
   {
     let exec = self.exec;
     self.exec = Box::new(move |input| {

@@ -106,7 +106,13 @@ impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
   /// ```
   pub fn select<F>(self, selector: F) -> Action<NewKind, ActionState, ErrorType>
   where
-    F: Fn(&AcceptedActionDecoratorContext<Kind, ActionState, ErrorType>) -> NewKind + 'static,
+    F: Fn(
+        &AcceptedActionDecoratorContext<
+          ActionInput<ActionState>,
+          EnhancedActionOutput<Kind, ErrorType>,
+        >,
+      ) -> NewKind
+      + 'static,
   {
     let exec = self.exec;
     Action {
