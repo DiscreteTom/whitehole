@@ -3,7 +3,7 @@ use super::{
   output::{ActionOutput, EnhancedActionOutput},
   Action, ActionInputRestHeadMatcher,
 };
-use crate::lexer::token::TokenKind;
+use crate::lexer::token::{MockTokenKind, TokenKind, TokenKindId};
 use std::{collections::HashSet, ops};
 
 /// `input.state` is mutable. `output` is consumed.
@@ -503,6 +503,33 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     let kind = kind.into();
     self.kind_ids([kind.id()]).select(move |_| kind.clone())
   }
+
+  // TODO: add comments and tests
+  pub fn map<T, F>(self, transformer: F) -> Action<MockTokenKind<T>, ActionState, ErrorType>
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+    F: Fn(Kind) -> T + 'static,
+  {
+    let exec = self.exec;
+    Action {
+      exec: Box::new(move |input| {
+        exec(input).map(|output| ActionOutput {
+          kind: MockTokenKind {
+            data: transformer(output.kind),
+          },
+          digested: output.digested,
+          muted: output.muted,
+          error: output.error,
+        })
+      }),
+      maybe_muted: self.maybe_muted,
+      head_matcher: self.head_matcher,
+      // for MockTokenKind the possible kinds is always 0
+      possible_kinds: HashSet::from([TokenKindId::new(0)]),
+    }
+  }
 }
 
 impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> ops::BitOr<Self>
@@ -536,6 +563,7 @@ mod tests {
     Action,
   };
   use whitehole_macros::_TokenKind;
+
   #[derive(_TokenKind, Clone)]
   enum MyKind {
     A,
