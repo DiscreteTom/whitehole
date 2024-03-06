@@ -107,26 +107,37 @@ impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
   pub fn select<F>(self, selector: F) -> Action<NewKind, ActionState, ErrorType>
   where
     F: Fn(
-        &AcceptedActionDecoratorContext<
+        AcceptedActionDecoratorContext<
           ActionInput<ActionState>,
-          EnhancedActionOutput<Kind, Option<ErrorType>>,
+          EnhancedActionOutput<Kind, &Option<ErrorType>>,
         >,
       ) -> NewKind
       + 'static,
   {
     let exec = self.exec;
     Action {
-      exec: Box::new(move |input: &mut ActionInput<ActionState>| {
+      exec: Box::new(move |input| {
         exec(input).map(|output| {
           let ctx = AcceptedActionDecoratorContext {
-            output: EnhancedActionOutput::new(input, output),
+            output: EnhancedActionOutput::new(
+              input,
+              // construct a new ActionOutput
+              ActionOutput {
+                // consume the original output.kind
+                kind: output.kind,
+                digested: output.digested,
+                muted: output.muted,
+                // but don't consume the error
+                error: &output.error,
+              },
+            ),
             input,
           };
           ActionOutput {
-            kind: selector(&ctx),
-            digested: ctx.output.raw.digested,
-            muted: ctx.output.raw.muted,
-            error: ctx.output.raw.error,
+            kind: selector(ctx),
+            digested: output.digested,
+            muted: output.muted,
+            error: output.error,
           }
         })
       }),
