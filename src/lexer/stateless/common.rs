@@ -12,7 +12,7 @@ pub struct Validator<'validator, Kind, ActionState, ErrorType> {
   pub skip_before_exec: Box<dyn Fn(&Action<Kind, ActionState, ErrorType>) -> bool>,
   /// If return `true`, the action will be accepted.
   pub accept_after_exec: Box<
-    dyn Fn(&ActionInput<ActionState>, &ActionOutput<Kind, ErrorType>) -> bool + 'validator, // make sure validator is not outlive the checker
+    dyn Fn(&ActionInput<ActionState>, &ActionOutput<Kind, Option<ErrorType>>) -> bool + 'validator, // make sure validator is not outlive the checker
   >,
 }
 
@@ -170,7 +170,7 @@ impl<'input, 'text, 'state, Kind, ActionState, ErrorType>
     input: &'input mut ActionInput<'text, 'state, ActionState>,
     action: &Action<Kind, ActionState, ErrorType>,
     validator: &Validator<Kind, ActionState, ErrorType>,
-  ) -> Option<ActionOutput<Kind, ErrorType>> {
+  ) -> Option<ActionOutput<Kind, Option<ErrorType>>> {
     if (validator.skip_before_exec)(action) {
       return None;
     }
@@ -189,7 +189,7 @@ impl<'input, 'text, 'state, Kind, ActionState, ErrorType>
 
   pub fn output2token(
     input: &ActionInput<'text, '_, ActionState>,
-    output: ActionOutput<Kind, ErrorType>,
+    output: ActionOutput<Kind, Option<ErrorType>>,
   ) -> Token<'text, Kind, ErrorType> {
     let range = Range {
       start: input.start(),
@@ -205,7 +205,7 @@ impl<'input, 'text, 'state, Kind, ActionState, ErrorType>
 }
 
 struct TraverseActionsOutput<Kind, ErrorType> {
-  output: ActionOutput<Kind, ErrorType>,
+  output: ActionOutput<Kind, Option<ErrorType>>,
   /// `None` if the current lexed action is the last one (no next action to re-lex).
   re_lex_action_context: Option<ReLexContext>,
 }

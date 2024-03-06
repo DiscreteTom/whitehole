@@ -1,7 +1,7 @@
 use super::input::ActionInput;
 use std::ops::{Deref, DerefMut};
 
-pub struct ActionOutput<Kind, ErrorType> {
+pub struct ActionOutput<Kind, OptionErrorType> {
   pub kind: Kind,
   /// How many characters are digested by this action.
   pub digested: usize,
@@ -11,20 +11,22 @@ pub struct ActionOutput<Kind, ErrorType> {
   /// If `Some`, the action is still accepted,
   /// and error tokens will be collected in
   /// [`LexOutput::errors`](crate::lexer::output::LexOutput::errors).
-  pub error: Option<ErrorType>,
+  pub error: OptionErrorType, // this will be `Option<ErrorType>` or `&Option<ErrorType>`
 }
 
-pub struct ActionOutputWithoutKind<ErrorType> {
+pub struct ActionOutputWithoutKind<OptionErrorType> {
   /// See [`ActionOutput::digested`].
   pub digested: usize,
   /// See [`ActionOutput::muted`].
   pub muted: bool,
   /// See [`ActionOutput::error`].
-  pub error: Option<ErrorType>,
+  pub error: OptionErrorType,
 }
 
-impl<ErrorType> Into<ActionOutput<(), ErrorType>> for ActionOutputWithoutKind<ErrorType> {
-  fn into(self) -> ActionOutput<(), ErrorType> {
+impl<OptionErrorType> Into<ActionOutput<(), OptionErrorType>>
+  for ActionOutputWithoutKind<OptionErrorType>
+{
+  fn into(self) -> ActionOutput<(), OptionErrorType> {
     ActionOutput {
       kind: (),
       digested: self.digested,
@@ -34,33 +36,33 @@ impl<ErrorType> Into<ActionOutput<(), ErrorType>> for ActionOutputWithoutKind<Er
   }
 }
 
-pub struct EnhancedActionOutput<'text, Kind, ErrorType> {
+pub struct EnhancedActionOutput<'text, Kind, OptionErrorType> {
   /// The original [`ActionOutput`].
-  pub raw: ActionOutput<Kind, ErrorType>,
+  pub raw: ActionOutput<Kind, OptionErrorType>,
   /// The [`ActionInput::text`].
   pub text: &'text str,
   /// The [`ActionInput::start`].
   pub start: usize,
 }
 
-impl<'text, Kind, ErrorType> Deref for EnhancedActionOutput<'text, Kind, ErrorType> {
-  type Target = ActionOutput<Kind, ErrorType>;
+impl<'text, Kind, OptionErrorType> Deref for EnhancedActionOutput<'text, Kind, OptionErrorType> {
+  type Target = ActionOutput<Kind, OptionErrorType>;
 
   fn deref(&self) -> &Self::Target {
     &self.raw
   }
 }
 
-impl<'text, Kind, ErrorType> DerefMut for EnhancedActionOutput<'text, Kind, ErrorType> {
+impl<'text, Kind, OptionErrorType> DerefMut for EnhancedActionOutput<'text, Kind, OptionErrorType> {
   fn deref_mut(&mut self) -> &mut Self::Target {
     &mut self.raw
   }
 }
 
-impl<'text, Kind, ErrorType> EnhancedActionOutput<'text, Kind, ErrorType> {
+impl<'text, Kind, OptionErrorType> EnhancedActionOutput<'text, Kind, OptionErrorType> {
   pub fn new<ActionState>(
     input: &ActionInput<'text, '_, ActionState>,
-    output: ActionOutput<Kind, ErrorType>,
+    output: ActionOutput<Kind, OptionErrorType>,
   ) -> Self {
     EnhancedActionOutput {
       raw: output,
@@ -85,18 +87,18 @@ impl<'text, Kind, ErrorType> EnhancedActionOutput<'text, Kind, ErrorType> {
   }
 }
 
-impl<'text, Kind, ErrorType> Into<ActionOutput<Kind, ErrorType>>
-  for EnhancedActionOutput<'text, Kind, ErrorType>
+impl<'text, Kind, OptionErrorType> Into<ActionOutput<Kind, OptionErrorType>>
+  for EnhancedActionOutput<'text, Kind, OptionErrorType>
 {
-  fn into(self) -> ActionOutput<Kind, ErrorType> {
+  fn into(self) -> ActionOutput<Kind, OptionErrorType> {
     self.raw
   }
 }
 
-impl<'text, Kind, ErrorType> Into<Option<ActionOutput<Kind, ErrorType>>>
-  for EnhancedActionOutput<'text, Kind, ErrorType>
+impl<'text, Kind, OptionErrorType> Into<Option<ActionOutput<Kind, OptionErrorType>>>
+  for EnhancedActionOutput<'text, Kind, OptionErrorType>
 {
-  fn into(self) -> Option<ActionOutput<Kind, ErrorType>> {
+  fn into(self) -> Option<ActionOutput<Kind, OptionErrorType>> {
     Some(self.into())
   }
 }
@@ -112,7 +114,7 @@ mod tests {
       muted: false,
       error: None,
     };
-    let output: ActionOutput<(), ()> = output.into();
+    let output: ActionOutput<(), Option<()>> = output.into();
     assert_eq!(output.kind, ());
     assert_eq!(output.digested, 2);
     assert_eq!(output.muted, false);
@@ -128,7 +130,7 @@ mod tests {
       muted: false,
       error: None,
     };
-    let output = EnhancedActionOutput::<(), ()>::new(&input, output.into());
+    let output = EnhancedActionOutput::<(), Option<()>>::new(&input, output.into());
 
     // ensure we can deref and deref_mut
     assert_eq!(output.digested, 2);

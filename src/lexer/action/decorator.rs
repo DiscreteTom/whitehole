@@ -146,9 +146,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     F: Fn(
         AcceptedActionDecoratorContext<
           ActionInput<ActionState>,
-          EnhancedActionOutput<Kind, ErrorType>,
+          EnhancedActionOutput<Kind, Option<ErrorType>>,
         >,
-      ) -> Option<ActionOutput<Kind, NewErrorType>>
+      ) -> Option<ActionOutput<Kind, Option<NewErrorType>>>
       + 'static,
   {
     let exec = self.exec;
@@ -191,7 +191,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     F: Fn(
         &AcceptedActionDecoratorContext<
           ActionInput<ActionState>,
-          EnhancedActionOutput<Kind, ErrorType>,
+          EnhancedActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> bool
       + 'static,
@@ -265,7 +265,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     F: Fn(
         &AcceptedActionDecoratorContext<
           ActionInput<ActionState>,
-          EnhancedActionOutput<Kind, ErrorType>,
+          EnhancedActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> Option<NewError>
       + 'static,
@@ -327,7 +327,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     F: Fn(
         &AcceptedActionDecoratorContext<
           ActionInput<ActionState>,
-          EnhancedActionOutput<Kind, ErrorType>,
+          EnhancedActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> bool
       + 'static,
@@ -392,8 +392,12 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
-    F: Fn(ActionCallbackContext<ActionInput<ActionState>, EnhancedActionOutput<Kind, ErrorType>>)
-      + 'static,
+    F: Fn(
+        ActionCallbackContext<
+          ActionInput<ActionState>,
+          EnhancedActionOutput<Kind, Option<ErrorType>>,
+        >,
+      ) + 'static,
   {
     let exec = self.exec;
     self.exec = Box::new(move |input| {

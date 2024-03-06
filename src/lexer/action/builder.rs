@@ -44,7 +44,8 @@ impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
   /// Equals to [`Action::new`](crate::lexer::action::Action::new).
   pub fn new<F>(&self, exec: F) -> Action<(), ActionState, ErrorType>
   where
-    F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutputWithoutKind<ErrorType>> + 'static,
+    F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutputWithoutKind<Option<ErrorType>>>
+      + 'static,
   {
     Action::new(exec)
   }

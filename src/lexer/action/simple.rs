@@ -79,7 +79,7 @@ mod tests {
     let mut state = ();
     let action = &simple(|_| 0);
     let mut input = ActionInput::new("123", 0, &mut state);
-    let output: Option<ActionOutput<(), ()>> = action.exec(&mut input);
+    let output: Option<ActionOutput<(), Option<()>>> = action.exec(&mut input);
     assert!(matches!(output, None));
   }
 

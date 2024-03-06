@@ -78,7 +78,7 @@ pub struct MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
   possible_kinds: HashSet<TokenKindId<NewKind>>,
   head_matcher: Option<ActionInputRestHeadMatcher>,
   maybe_muted: bool,
-  exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
+  exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
 }
 
 impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
@@ -109,7 +109,7 @@ impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
     F: Fn(
         &AcceptedActionDecoratorContext<
           ActionInput<ActionState>,
-          EnhancedActionOutput<Kind, ErrorType>,
+          EnhancedActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> NewKind
       + 'static,

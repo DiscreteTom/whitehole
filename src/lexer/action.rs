@@ -40,7 +40,7 @@ pub struct Action<Kind, ActionState = (), ErrorType = ()> {
   /// See [`Action::head_matcher`].
   head_matcher: Option<ActionInputRestHeadMatcher>,
   // input is mutable so the action can mutate the action state.
-  exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, ErrorType>>>,
+  exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
 }
 
 impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
@@ -48,7 +48,8 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   /// To set the kind, use [`Action::bind`], [`Action::kinds`] or [`Action::kind_ids`].
   pub fn new<F>(exec: F) -> Self
   where
-    F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutputWithoutKind<ErrorType>> + 'static,
+    F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutputWithoutKind<Option<ErrorType>>>
+      + 'static,
   {
     Action {
       maybe_muted: false,
@@ -67,7 +68,7 @@ impl<ActionState, ErrorType, T> Action<MockTokenKind<T>, ActionState, ErrorType>
   /// This is usually used to pass data to downstream actions.
   pub fn with_data<F>(exec: F) -> Self
   where
-    F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<MockTokenKind<T>, ErrorType>>
+    F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<MockTokenKind<T>, Option<ErrorType>>>
       + 'static,
   {
     Action {
@@ -102,7 +103,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   pub fn exec(
     &self,
     input: &mut ActionInput<ActionState>,
-  ) -> Option<ActionOutput<Kind, ErrorType>> {
+  ) -> Option<ActionOutput<Kind, Option<ErrorType>>> {
     (self.exec)(input)
   }
 }
