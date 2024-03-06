@@ -78,6 +78,8 @@ impl<ActionState, ErrorType, T> Action<MockTokenKind<T>, ActionState, ErrorType>
       head_matcher: None,
       exec: Box::new(exec),
     }
+    // since there is just on possible kinds in MockTokenKind
+    // we don't need to call `action.kinds().select()` here
   }
 }
 

@@ -554,6 +554,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       // for MockTokenKind the possible kinds is always 0
       possible_kinds: HashSet::from([TokenKindId::new(0)]),
     }
+    // since there is just on possible kinds in MockTokenKind
+    // we don't need to call `action.kinds().select()` here
   }
 }
 
