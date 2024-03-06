@@ -39,7 +39,7 @@ where
 /// returns the number of digested characters and the data.
 /// `0` is allowed as an accepted number of digested characters.
 /// Return `None` if the action is rejected.
-pub fn simple_option_with_data<T, ActionState, ErrorType, F>(
+pub fn simple_option_with_data<ActionState, ErrorType, T, F>(
   f: F,
 ) -> Action<MockTokenKind<T>, ActionState, ErrorType>
 where
