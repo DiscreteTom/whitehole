@@ -37,6 +37,9 @@ impl<OptionErrorType> Into<ActionOutput<(), OptionErrorType>>
   }
 }
 
+/// Enhance the original [`ActionOutput`] with
+/// [`start`](Self::start), [`text`](Self::text), [`end`](Self::end),
+/// [`content`](Self::content) and [`rest`](Self::rest).
 pub struct EnhancedActionOutput<'text, Kind, OptionErrorType> {
   /// The original [`ActionOutput`].
   pub base: ActionOutput<Kind, OptionErrorType>,
@@ -48,7 +51,6 @@ pub struct EnhancedActionOutput<'text, Kind, OptionErrorType> {
 
 impl<'text, Kind, OptionErrorType> Deref for EnhancedActionOutput<'text, Kind, OptionErrorType> {
   type Target = ActionOutput<Kind, OptionErrorType>;
-
   fn deref(&self) -> &Self::Target {
     &self.base
   }
@@ -77,13 +79,15 @@ impl<'text, Kind, OptionErrorType> EnhancedActionOutput<'text, Kind, OptionError
     self.start + self.digested
   }
 
-  /// The content of the token that this action will emit.
+  /// The [`content`](crate::lexer::token::Token::content) of the token that this action will emit.
   pub fn content(&self) -> &'text str {
+    // TODO: cache the slice?
     &self.text[self.start..self.end()]
   }
 
   /// The rest of the input text after this action is accepted.
   pub fn rest(&self) -> &'text str {
+    // we don't cache this slice since it might not be used frequently
     &self.text[self.end()..]
   }
 }
