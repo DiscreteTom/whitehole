@@ -31,13 +31,13 @@ pub struct Action<Kind, ActionState = (), ErrorType = ()> {
   /// The lexer will based on this flag to accelerate the lexing process.
   /// If `true`, this action's output may be muted.
   /// If `false`, this action's output will never be muted.
-  /// For most cases this field will be set automatically (e.g. via [`Action::mute`] or [`Action::mute_if`]),
+  /// For most cases this field will be set automatically (e.g. via [`Self::mute`] or [`Self::mute_if`]),
   /// so don't set this field manually unless you know what you are doing.
   pub maybe_muted: bool,
 
-  /// See [`Action::possible_kinds`].
+  /// See [`Self::possible_kinds`].
   possible_kinds: HashSet<TokenKindId<Kind>>,
-  /// See [`Action::head_matcher`].
+  /// See [`Self::head_matcher`].
   head_matcher: Option<ActionInputRestHeadMatcher>,
   // input is mutable so the action can mutate the action state.
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
@@ -45,7 +45,7 @@ pub struct Action<Kind, ActionState = (), ErrorType = ()> {
 
 impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   /// Create a new action with no kind.
-  /// To set the kind, use [`Action::bind`], [`Action::kinds`] or [`Action::kind_ids`].
+  /// To set the kind, use [`Self::bind`], [`Self::kinds`] or [`Self::kind_ids`].
   pub fn new<F>(exec: F) -> Self
   where
     F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutputWithoutKind<Option<ErrorType>>>
@@ -66,6 +66,7 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
 impl<ActionState, ErrorType, T> Action<MockTokenKind<T>, ActionState, ErrorType> {
   /// Create an action with the [`MockTokenKind`] as the kind.
   /// This is usually used to pass data to downstream actions.
+  // TODO: update comments
   pub fn with_data<F>(exec: F) -> Self
   where
     F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<MockTokenKind<T>, Option<ErrorType>>>
@@ -90,14 +91,14 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   }
 
   /// This is used to accelerate expectational lexing.
-  /// Every action should have this field set by [`Action::bind`] [`Action::kinds`] or [`Action::kind_ids`].
+  /// Every action should have this field set by [`Self::bind`] [`Self::kinds`] or [`Self::kind_ids`].
   pub fn possible_kinds(&self) -> &HashSet<TokenKindId<Kind>> {
     &self.possible_kinds
   }
 
   /// This is used to accelerate lexing by the first character
   /// of the rest of the input. This is optional but highly recommended.
-  /// Should only be set by [`Action::head_in`], [`Action::head_not`] and [`Action::head_unknown`].
+  /// Should only be set by [`Self::head_in`], [`Self::head_not`] and [`Self::head_unknown`].
   pub fn head_matcher(&self) -> &Option<ActionInputRestHeadMatcher> {
     &self.head_matcher
   }
@@ -107,5 +108,29 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     input: &mut ActionInput<ActionState>,
   ) -> Option<ActionOutput<Kind, Option<ErrorType>>> {
     (self.exec)(input)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn action_new() {
+    let action: Action<()> = Action::new(|_| None);
+    assert!(!action.maybe_muted);
+    assert_eq!(action.possible_kinds().len(), 0);
+    assert!(action.head_matcher().is_none());
+    assert!(action.never_muted())
+  }
+
+  #[test]
+  fn action_with_data() {
+    let action: Action<MockTokenKind<()>> = Action::with_data(|_| None);
+    assert!(!action.maybe_muted);
+    assert_eq!(action.possible_kinds().len(), 1);
+    assert!(action.possible_kinds().contains(&TokenKindId::new(0)));
+    assert!(action.head_matcher().is_none());
+    assert!(action.never_muted())
   }
 }
