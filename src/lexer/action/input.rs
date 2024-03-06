@@ -1,15 +1,23 @@
-pub struct ActionInput<'text, 'state, ActionState> {
+pub struct ActionInput<'text, ActionState> {
   // we store the whole text instead of only storing the rest of text
   // so that users can check chars before the start position if needed
   text: &'text str,
   start: usize,
+  // cache the rest of the text
+  // to prevent create the slice every time
+  rest: &'text str,
   // user can mutate the action state
-  pub state: &'state mut ActionState,
+  pub state: ActionState,
 }
 
-impl<'text, 'state, ActionState> ActionInput<'text, 'state, ActionState> {
-  pub fn new(text: &'text str, start: usize, state: &'state mut ActionState) -> Self {
-    ActionInput { text, start, state }
+impl<'text, ActionState> ActionInput<'text, ActionState> {
+  pub fn new(text: &'text str, start: usize, state: ActionState) -> Self {
+    ActionInput {
+      text,
+      start,
+      state,
+      rest: &text[start..],
+    }
   }
 
   /// The whole input text.
@@ -24,7 +32,7 @@ impl<'text, 'state, ActionState> ActionInput<'text, 'state, ActionState> {
 
   /// The undigested part of the input text.
   pub fn rest(&self) -> &'text str {
-    &self.text[self.start..]
+    self.rest
   }
 }
 
