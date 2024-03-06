@@ -62,7 +62,7 @@ impl<'text, Kind, OptionErrorType> DerefMut for EnhancedActionOutput<'text, Kind
 
 impl<'text, Kind, OptionErrorType> EnhancedActionOutput<'text, Kind, OptionErrorType> {
   pub fn new<ActionState>(
-    input: &ActionInput<'text, '_, ActionState>,
+    input: &ActionInput<'text, ActionState>,
     output: ActionOutput<Kind, OptionErrorType>,
   ) -> Self {
     EnhancedActionOutput {
