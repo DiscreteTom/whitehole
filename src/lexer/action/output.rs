@@ -39,7 +39,7 @@ impl<OptionErrorType> Into<ActionOutput<(), OptionErrorType>>
 
 pub struct EnhancedActionOutput<'text, Kind, OptionErrorType> {
   /// The original [`ActionOutput`].
-  pub raw: ActionOutput<Kind, OptionErrorType>,
+  pub base: ActionOutput<Kind, OptionErrorType>,
   /// The [`ActionInput::text`].
   pub text: &'text str,
   /// The [`ActionInput::start`].
@@ -50,13 +50,13 @@ impl<'text, Kind, OptionErrorType> Deref for EnhancedActionOutput<'text, Kind, O
   type Target = ActionOutput<Kind, OptionErrorType>;
 
   fn deref(&self) -> &Self::Target {
-    &self.raw
+    &self.base
   }
 }
 
 impl<'text, Kind, OptionErrorType> DerefMut for EnhancedActionOutput<'text, Kind, OptionErrorType> {
   fn deref_mut(&mut self) -> &mut Self::Target {
-    &mut self.raw
+    &mut self.base
   }
 }
 
@@ -66,7 +66,7 @@ impl<'text, Kind, OptionErrorType> EnhancedActionOutput<'text, Kind, OptionError
     output: ActionOutput<Kind, OptionErrorType>,
   ) -> Self {
     EnhancedActionOutput {
-      raw: output,
+      base: output,
       start: input.start(),
       text: input.text(),
     }
@@ -92,7 +92,7 @@ impl<'text, Kind, OptionErrorType> Into<ActionOutput<Kind, OptionErrorType>>
   for EnhancedActionOutput<'text, Kind, OptionErrorType>
 {
   fn into(self) -> ActionOutput<Kind, OptionErrorType> {
-    self.raw
+    self.base
   }
 }
 
