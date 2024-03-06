@@ -122,8 +122,83 @@ mod tests {
   }
 
   #[test]
-  fn reject() {
+  fn simple_reject_on_0() {
     let action: Action<()> = simple(|_| 0);
+    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()));
+    assert!(matches!(output, None));
+  }
+
+  #[test]
+  fn simple_option_accept() {
+    let action: Action<()> = simple_option(|input| Some(input.text().len()));
+    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()));
+    assert!(matches!(
+      output,
+      Some(ActionOutput {
+        kind: (),
+        digested: 3,
+        muted: false,
+        error: None
+      })
+    ));
+  }
+
+  #[test]
+  fn simple_option_accept_0() {
+    let action: Action<()> = simple_option(|_| Some(0));
+    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()));
+    assert!(matches!(
+      output,
+      Some(ActionOutput {
+        kind: (),
+        digested: 0,
+        muted: false,
+        error: None
+      })
+    ));
+  }
+
+  #[test]
+  fn simple_option_reject() {
+    let action: Action<()> = simple_option(|_| None);
+    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()));
+    assert!(matches!(output, None));
+  }
+
+  #[test]
+  fn simple_option_with_data_accept() {
+    let action: Action<MockTokenKind<u32>> =
+      simple_option_with_data(|input| Some((input.text().len(), 123)));
+    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()));
+    assert!(matches!(
+      output,
+      Some(ActionOutput {
+        kind: MockTokenKind { data: 123 },
+        digested: 3,
+        muted: false,
+        error: None
+      })
+    ));
+  }
+
+  #[test]
+  fn simple_option_with_data_accept_0() {
+    let action: Action<MockTokenKind<u32>> = simple_option_with_data(|_| Some((0, 123)));
+    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()));
+    assert!(matches!(
+      output,
+      Some(ActionOutput {
+        kind: MockTokenKind { data: 123 },
+        digested: 0,
+        muted: false,
+        error: None
+      })
+    ));
+  }
+
+  #[test]
+  fn simple_option_with_data_reject() {
+    let action: Action<MockTokenKind<u32>> = simple_option_with_data(|_| None);
     let output = action.exec(&mut ActionInput::new("123", 0, &mut ()));
     assert!(matches!(output, None));
   }
@@ -136,6 +211,38 @@ mod tests {
       output,
       Some(ActionOutput {
         kind: (),
+        digested: 2,
+        muted: false,
+        error: None
+      })
+    ));
+  }
+
+  #[test]
+  fn action_builder_simple_option() {
+    let action: Action<()> =
+      ActionBuilder::default().simple_option(|input| Some(input.rest().len()));
+    let output = action.exec(&mut ActionInput::new("123", 1, &mut ()));
+    assert!(matches!(
+      output,
+      Some(ActionOutput {
+        kind: (),
+        digested: 2,
+        muted: false,
+        error: None
+      })
+    ));
+  }
+
+  #[test]
+  fn action_builder_simple_option_with_data() {
+    let action: Action<MockTokenKind<u32>> =
+      ActionBuilder::default().simple_option_with_data(|input| Some((input.rest().len(), 123)));
+    let output = action.exec(&mut ActionInput::new("123", 1, &mut ()));
+    assert!(matches!(
+      output,
+      Some(ActionOutput {
+        kind: MockTokenKind { data: 123 },
         digested: 2,
         muted: false,
         error: None
