@@ -91,63 +91,47 @@ mod tests {
   use crate::lexer::action::output::ActionOutput;
 
   #[test]
-  fn accept_all() {
-    let mut state = ();
-    let action = simple(|input| input.text().len());
-    let mut input = ActionInput::new("123", 0, &mut state);
-    let output = action.exec(&mut input);
+  fn simple_accept_all() {
+    let action: Action<()> = simple(|input| input.text().len());
+    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()));
 
-    assert!(matches!(output, Some { .. }));
-    if let Some(ActionOutput {
-      kind,
-      digested,
-      muted,
-      error,
-    }) = output
-    {
-      assert_eq!(kind, ());
-      assert_eq!(digested, 3);
-      assert_eq!(muted, false);
-      assert_eq!(error, None::<()>);
-    }
+    assert!(matches!(
+      output,
+      Some(ActionOutput {
+        kind: (),
+        digested: 3,
+        muted: false,
+        error: None
+      })
+    ));
   }
 
   #[test]
-  fn accept_rest() {
-    let mut state = ();
-    let action = &simple(|input| input.rest().len());
-    let mut input = ActionInput::new("123", 1, &mut state);
-    let output = action.exec(&mut input);
-    assert!(matches!(output, Some { .. }));
-    if let Some(ActionOutput {
-      kind,
-      digested,
-      muted,
-      error,
-    }) = output
-    {
-      assert_eq!(kind, ());
-      assert_eq!(digested, 2);
-      assert_eq!(muted, false);
-      assert_eq!(error, None::<()>);
-    }
+  fn simple_accept_rest() {
+    let action: Action<()> = simple(|input| input.rest().len());
+    let output = action.exec(&mut ActionInput::new("123", 1, &mut ()));
+    assert!(matches!(
+      output,
+      Some(ActionOutput {
+        kind: (),
+        digested: 2,
+        muted: false,
+        error: None
+      })
+    ));
   }
 
   #[test]
   fn reject() {
-    let mut state = ();
-    let action = &simple(|_| 0);
-    let mut input = ActionInput::new("123", 0, &mut state);
-    let output: Option<ActionOutput<(), Option<()>>> = action.exec(&mut input);
+    let action: Action<()> = simple(|_| 0);
+    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()));
     assert!(matches!(output, None));
   }
 
   #[test]
   fn action_builder_simple() {
     let action: Action<()> = ActionBuilder::default().simple(|input| input.rest().len());
-    let mut state = ();
-    let mut input = ActionInput::new("123", 1, &mut state);
-    let output = action.exec(&mut input);
+    let output = action.exec(&mut ActionInput::new("123", 1, &mut ()));
     assert!(matches!(
       output,
       Some(ActionOutput {
