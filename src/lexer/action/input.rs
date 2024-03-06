@@ -5,6 +5,7 @@ pub struct ActionInput<'text, ActionState> {
   start: usize,
   // cache the rest of the text
   // to prevent create the slice every time
+  // because `input.rest` is frequently used across all actions
   rest: &'text str,
   // user can mutate the action state
   pub state: ActionState,
