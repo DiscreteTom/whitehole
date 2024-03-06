@@ -42,7 +42,16 @@ mod tests {
   use super::*;
 
   #[test]
-  fn action_input() {
+  fn action_input_at_start() {
+    let mut state = ();
+    let input = ActionInput::new("123", 0, &mut state);
+    assert_eq!(input.text(), "123");
+    assert_eq!(input.start(), 0);
+    assert_eq!(input.rest(), "123");
+  }
+
+  #[test]
+  fn action_input_in_the_middle() {
     let mut state = ();
     let input = ActionInput::new("123", 1, &mut state);
     assert_eq!(input.text(), "123");
