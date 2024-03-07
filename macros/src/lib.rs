@@ -52,6 +52,9 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> TokenStre
   let gen = quote! {
     impl #crate_name::lexer::token::TokenKind<#enum_name> for #enum_name {
       fn id(&self) -> #crate_name::lexer::token::TokenKindId<#enum_name> {
+        // TODO: is pattern matching the best way to do this?
+        // e.g. maybe mem::Discriminant is faster? need benchmarks
+        // see https://doc.rust-lang.org/std/mem/fn.discriminant.html
         match self {
           #(#match_arms)*
         }
