@@ -180,10 +180,8 @@ mod tests {
     ));
 
     // ensure the result is correct
-    let mut state = ();
-    let mut input = ActionInput::new("123", 0, &mut state);
     assert!(matches!(
-      action.exec(&mut input),
+      action.exec(&mut ActionInput::new("123", 0, &mut ())),
       Some(ActionOutput {
         kind: Odd,
         digested: 3,
@@ -191,9 +189,8 @@ mod tests {
         error: None
       })
     ));
-    let mut input = ActionInput::new("124", 0, &mut state);
     assert!(matches!(
-      action.exec(&mut input),
+      action.exec(&mut ActionInput::new("124", 0, &mut ())),
       Some(ActionOutput {
         kind: Even,
         digested: 3,

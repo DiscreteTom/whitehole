@@ -44,10 +44,8 @@ mod tests {
   #[test]
   fn match_at_start() {
     let action: Action<(), (), ()> = regex(r"^\d+").unwrap();
-    let mut state = ();
-    let mut input = ActionInput::new("123", 0, &mut state);
     assert!(matches!(
-      action.exec(&mut input),
+      action.exec(&mut ActionInput::new("123", 0, &mut ())),
       Some(ActionOutput {
         kind: (),
         digested: 3,
@@ -60,10 +58,8 @@ mod tests {
   #[test]
   fn match_at_middle() {
     let action: Action<(), (), ()> = regex(r"^\d+").unwrap();
-    let mut state = ();
-    let mut input = ActionInput::new("abc123", 3, &mut state);
     assert!(matches!(
-      action.exec(&mut input),
+      action.exec(&mut ActionInput::new("abc123", 3, &mut ())),
       Some(ActionOutput {
         kind: (),
         digested: 3,
@@ -76,10 +72,8 @@ mod tests {
   #[test]
   fn regex_action_builder() {
     let action: Action<(), (), ()> = ActionBuilder::default().regex(r"^\d+").unwrap();
-    let mut state = ();
-    let mut input = ActionInput::new("123", 0, &mut state);
     assert!(matches!(
-      action.exec(&mut input),
+      action.exec(&mut ActionInput::new("123", 0, &mut ())),
       Some(ActionOutput {
         kind: (),
         digested: 3,

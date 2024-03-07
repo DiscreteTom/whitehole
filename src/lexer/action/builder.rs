@@ -67,15 +67,11 @@ mod tests {
   use crate::lexer::action::{output::ActionOutput, regex::regex};
 
   fn assert_reject(action: Action<(), (), ()>) {
-    let mut action_state = ();
-    let mut input = ActionInput::new("123", 0, &mut action_state);
-    let output = action.exec(&mut input);
+    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()));
     assert!(matches!(output, None));
   }
   fn assert_accept_all(action: Action<(), (), ()>) {
-    let mut action_state = ();
-    let mut input = ActionInput::new("123", 0, &mut action_state);
-    let output = action.exec(&mut input);
+    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()));
     assert!(matches!(
       output,
       Some(ActionOutput {
