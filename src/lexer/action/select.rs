@@ -102,6 +102,19 @@ impl<NewKind, Kind, ActionState, ErrorType> MultiKindAction<NewKind, Kind, Actio
   ///   }
   /// });
   /// ```
+  /// You can consume the original output's kind to get the data.
+  /// ```
+  /// # use whitehole::lexer::{action::simple_option_with_data, Action};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind)]
+  /// # enum MyKind { Numbers(Vec<i32>) }
+  /// # let action: Action<MyKind, (), ()> =
+  /// simple_option_with_data(|_| Some((1, vec![1])))
+  ///     .kinds([Numbers(vec![])])
+  ///     .select(|ctx| Numbers(ctx.output.base.kind.data));
+  /// ```
+  // TODO: better example
   pub fn select<F>(self, selector: F) -> Action<NewKind, ActionState, ErrorType>
   where
     NewKind: 'static,
