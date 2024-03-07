@@ -29,6 +29,23 @@ pub fn regex<ActionState, ErrorType>(
   Regex::new(re).map(|re| simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
 }
 
+// TODO: add this function when there is a need / good use case
+/// Create a new action that uses a regex to match the rest of input and transform the captures.
+// pub fn regex_captures<ActionState, ErrorType, T, F>(
+//   re: &str,
+//   capture_transformer: F,
+// ) -> Result<Action<MockTokenKind<T>, ActionState, ErrorType>, Error>
+// where
+//   F: Fn(Captures) -> T + 'static,
+// {
+//   Regex::new(re).map(|re| {
+//     simple_option_with_data(move |input| {
+//       re.captures(input.rest())
+//         .map(|captures| (captures[0].len(), capture_transformer(captures)))
+//     })
+//   })
+// }
+
 impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
   /// Equals to [`action::regex`](crate::lexer::action::regex::regex).
   pub fn regex(&self, re: &str) -> Result<Action<(), ActionState, ErrorType>, Error> {
