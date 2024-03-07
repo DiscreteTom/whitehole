@@ -1,4 +1,4 @@
-pub struct ActionInput<'text, ActionState> {
+pub struct ActionInput<'text, 'action_state, ActionState> {
   // we store the whole text instead of only storing the rest of text
   // so that users can check chars before the start position if needed
   text: &'text str,
@@ -8,11 +8,11 @@ pub struct ActionInput<'text, ActionState> {
   // because `input.rest` is frequently used across all actions
   rest: &'text str,
   // user can mutate the action state
-  pub state: ActionState,
+  pub state: &'action_state mut ActionState,
 }
 
-impl<'text, ActionState> ActionInput<'text, ActionState> {
-  pub fn new(text: &'text str, start: usize, state: ActionState) -> Self {
+impl<'text, 'action_state, ActionState> ActionInput<'text, 'action_state, ActionState> {
+  pub fn new(text: &'text str, start: usize, state: &'action_state mut ActionState) -> Self {
     ActionInput {
       text,
       start,
