@@ -153,7 +153,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   {
     let exec = self.exec;
     Action {
-      exec: Box::new(move |input: &mut ActionInput<ActionState>| {
+      exec: Box::new(move |input| {
         exec(input).and_then(|output| {
           decorator(AcceptedActionDecoratorContext {
             output: EnhancedActionOutput::new(input, output),
