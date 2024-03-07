@@ -273,9 +273,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self.apply(move |ctx| {
       Some(ActionOutput {
         error: condition(&ctx),
-        kind: ctx.output.raw.kind,
-        digested: ctx.output.raw.digested,
-        muted: ctx.output.raw.muted,
+        kind: ctx.output.base.kind,
+        digested: ctx.output.base.digested,
+        muted: ctx.output.base.muted,
       })
     })
   }
