@@ -81,9 +81,7 @@ pub struct MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
 }
 
-impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
-  MultiKindAction<NewKind, Kind, ActionState, ErrorType>
-{
+impl<NewKind, Kind, ActionState, ErrorType> MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
   /// Define a selector to select a kind from action's kinds by action's input and output.
   /// **Be ware**: the result won't be checked against `possible_kinds`
   /// so make sure the result is in `possible_kinds`.
@@ -106,6 +104,10 @@ impl<NewKind, Kind: 'static, ActionState: 'static, ErrorType: 'static>
   /// ```
   pub fn select<F>(self, selector: F) -> Action<NewKind, ActionState, ErrorType>
   where
+    NewKind: 'static,
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
     F: Fn(
         AcceptedActionDecoratorContext<
           ActionInput<ActionState>,
