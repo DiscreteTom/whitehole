@@ -1,6 +1,6 @@
 // TODO: only available in feature `regex`
 use super::{builder::ActionBuilder, simple::simple, Action};
-use regex::Regex;
+use regex::{Error, Regex};
 
 /// Create a new action that uses a regex to match the rest of input.
 /// # Examples
@@ -25,13 +25,13 @@ use regex::Regex;
 /// ```
 pub fn regex<ActionState, ErrorType>(
   re: &str,
-) -> Result<Action<(), ActionState, ErrorType>, regex::Error> {
+) -> Result<Action<(), ActionState, ErrorType>, Error> {
   Regex::new(re).map(|re| simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
 }
 
 impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
   /// Equals to [`action::regex`](crate::lexer::action::regex::regex).
-  pub fn regex(&self, re: &str) -> Result<Action<(), ActionState, ErrorType>, regex::Error> {
+  pub fn regex(&self, re: &str) -> Result<Action<(), ActionState, ErrorType>, Error> {
     regex(re)
   }
 }
