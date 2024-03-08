@@ -74,8 +74,7 @@ impl<ActionState, ErrorType, T> Action<MockTokenKind<T>, ActionState, ErrorType>
   {
     Action {
       maybe_muted: false,
-      // MockTokenKind only has one kind, so we can set it to 0.
-      possible_kinds: HashSet::from([TokenKindId::new(0)]),
+      possible_kinds: MockTokenKind::possible_kinds(),
       head_matcher: None,
       exec: Box::new(exec),
     }

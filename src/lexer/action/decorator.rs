@@ -553,8 +553,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       }),
       maybe_muted: self.maybe_muted,
       head_matcher: self.head_matcher,
-      // for MockTokenKind the possible kinds is always 0
-      possible_kinds: HashSet::from([TokenKindId::new(0)]),
+      possible_kinds: MockTokenKind::possible_kinds(),
     }
     // since there is just on possible kinds in MockTokenKind
     // we don't need to call `action.kinds().select()` here
