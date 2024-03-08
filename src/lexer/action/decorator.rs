@@ -504,6 +504,64 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     }
   }
 
+  // TODO: add comments, examples and tests
+  pub fn and_then<AnotherKind, ResultType, F>(
+    self,
+    another: Action<AnotherKind, ActionState, ErrorType>,
+    data_factory: F,
+  ) -> Action<MockTokenKind<ResultType>, ActionState, ErrorType>
+  where
+    AnotherKind: 'static,
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+    F: Fn(
+        EnhancedActionOutput<Kind, Option<ErrorType>>,
+        ActionOutput<AnotherKind, &Option<ErrorType>>,
+      ) -> Option<MockTokenKind<ResultType>>
+      + 'static,
+  {
+    let exec = self.exec;
+    let another_exec = another.exec;
+    Action {
+      exec: Box::new(move |input_1| {
+        exec(input_1).and_then(|output_1| {
+          // the first action is accepted, exec the second action
+          let mut input_2 = ActionInput::new(
+            input_1.text(),
+            input_1.start() + output_1.digested,
+            input_1.state,
+          );
+          another_exec(&mut input_2).and_then(|output_2| {
+            // merge the digested length and store it, because we will consume the output_1
+            let total_digested = output_1.digested + output_2.digested;
+            data_factory(
+              // consume the output_1
+              EnhancedActionOutput::new(input_1, output_1),
+              // don't consume the output_2 because we need the error
+              ActionOutput {
+                kind: output_2.kind,
+                digested: output_2.digested,
+                muted: output_2.muted,
+                error: &output_2.error,
+              },
+            )
+            .map(|result| ActionOutput {
+              kind: result,
+              digested: total_digested,
+              muted: output_2.muted,
+              error: output_2.error,
+            })
+          })
+        })
+      }),
+      head_matcher: self.head_matcher,
+      // `self.maybe_muted` is ignored because we apply the output_2.muted
+      maybe_muted: another.maybe_muted,
+      possible_kinds: MockTokenKind::possible_kinds(),
+    }
+  }
+
   /// Set the kind and the data binding for this action.
   /// Use this if your action can only yield one kind.
   /// # Examples
