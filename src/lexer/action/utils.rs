@@ -1,7 +1,9 @@
+mod chars;
 mod exact;
 mod string_list;
 mod word;
 
+pub use chars::*;
 pub use exact::*;
 pub use string_list::*;
 pub use word::*;
