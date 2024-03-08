@@ -447,7 +447,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 
   /// Execute another action after the current action is accepted.
   /// Current action's [`maybe_muted`](Self::maybe_muted), [`possible_kinds`](Self::possible_kinds)
-  /// and generated [`error`](ActionOutput::error) are ignored.
+  /// and generated [`kind`](ActionOutput::kind), [`muted`](ActionOutput::muted),
+  /// [`error`](ActionOutput::error) are ignored.
   /// Next action's [`head_matcher`](Self::head_matcher) is ignored.
   /// Return a new action.
   /// # Examples
@@ -455,16 +456,17 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # use whitehole::lexer::{Action, LexerBuilder, action::exact};
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
-  /// # enum MyKind { A }
+  /// # enum MyKind { AB }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define_with(MyKind::A, |a| {
+  /// let mut lexer = builder.define_with(MyKind::AB, |a| {
   ///   a.from(exact("A"))
   ///     .and_then(exact("B"))
   ///     .into()
-  /// });
+  /// }).build("AB");
+  /// assert_eq!(lexer.lex().token.unwrap().content, "AB");
   /// // use `+` as a shortcut
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define(MyKind::A, exact("A") + exact("B"));
+  /// builder.define(MyKind::AB, exact("A") + exact("B"));
   /// ```
   pub fn and_then<NewKind>(
     self,
