@@ -4,7 +4,10 @@ use super::{
   Action, ActionInputRestHeadMatcher,
 };
 use crate::lexer::token::{MockTokenKind, TokenKind};
-use std::{collections::HashSet, ops};
+use std::{
+  collections::HashSet,
+  ops::{self, RangeInclusive},
+};
 
 /// `input.state` is mutable. `output` is consumed.
 pub struct AcceptedActionDecoratorContext<'input, InputType, OutputType> {
@@ -37,6 +40,28 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   pub fn head_in(mut self, char_set: impl Into<HashSet<char>>) -> Self {
     self.head_matcher = Some(ActionInputRestHeadMatcher::OneOf(char_set.into()));
     self
+  }
+
+  /// Set [`Action::head_matcher`] to [`OneOf`](ActionInputRestHeadMatcher::OneOf)
+  /// with the given range.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(MyKind::A, |a| {
+  ///   a.regex(r"^[A-Z]")
+  ///     .unwrap()
+  ///     .head_in_range('A'..='Z')
+  ///     .into()
+  /// });
+  pub fn head_in_range(
+    self,
+    range: impl Into<RangeInclusive<char>>,
+  ) -> Action<Kind, ActionState, ErrorType> {
+    self.head_in(range.into().into_iter().collect::<HashSet<_>>())
   }
 
   /// Set [`Action::head_matcher`] to [`Not`](ActionInputRestHeadMatcher::Not).
@@ -1013,6 +1038,15 @@ mod tests {
     assert!(matches!(
       action.head_matcher,
       Some(ActionInputRestHeadMatcher::OneOf(set)) if set.contains(&'a') && set.len() == 1
+    ));
+  }
+
+  #[test]
+  fn action_head_in_range() {
+    let action: Action<()> = simple(|_| 1).head_in_range('a'..='z');
+    assert!(matches!(
+      action.head_matcher,
+      Some(ActionInputRestHeadMatcher::OneOf(set)) if set.contains(&'a') && set.contains(&'z') && set.len() == 26
     ));
   }
 
