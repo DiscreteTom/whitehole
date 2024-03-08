@@ -1,4 +1,4 @@
-use std::{hash::Hash, marker::PhantomData};
+use std::{collections::HashSet, hash::Hash, marker::PhantomData};
 
 pub trait TokenKind<TokenKindType> {
   fn id(&self) -> TokenKindId<TokenKindType>;
@@ -39,10 +39,22 @@ impl<TokenKindType> Clone for TokenKindId<TokenKindType> {
 }
 impl<TokenKindType> Copy for TokenKindId<TokenKindType> {}
 
-/// A mock struct which implements `TokenKind`.
+/// A mock struct which implements [`TokenKind`].
 /// This is useful in action utils to pass data to downstream actions.
 pub struct MockTokenKind<T> {
   pub data: T,
+}
+
+impl<T> MockTokenKind<T> {
+  /// Return the only possible kind id for [`MockTokenKind`].
+  pub fn id() -> TokenKindId<MockTokenKind<T>> {
+    TokenKindId::new(0)
+  }
+
+  /// Return a [`HashSet`] containing the only possible kind id for [`MockTokenKind`].
+  pub fn possible_kinds() -> HashSet<TokenKindId<MockTokenKind<T>>> {
+    HashSet::from([Self::id()])
+  }
 }
 
 impl<T> TokenKind<MockTokenKind<T>> for MockTokenKind<T> {
