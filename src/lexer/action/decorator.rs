@@ -3,7 +3,7 @@ use super::{
   output::{ActionOutput, EnhancedActionOutput},
   Action, ActionInputRestHeadMatcher,
 };
-use crate::lexer::token::{MockTokenKind, TokenKind, TokenKindId};
+use crate::lexer::token::{MockTokenKind, TokenKind};
 use std::{collections::HashSet, ops};
 
 /// `input.state` is mutable. `output` is consumed.
@@ -473,8 +473,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     another: Action<NewKind, ActionState, ErrorType>,
   ) -> Action<NewKind, ActionState, ErrorType>
   where
-    Kind: 'static,
     NewKind: 'static,
+    Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
