@@ -11,12 +11,13 @@ use std::{collections::HashSet, ops::RangeInclusive};
 /// ```
 pub fn chars<ActionState, ErrorType, F>(condition: F) -> Action<(), ActionState, ErrorType>
 where
-  F: Fn(char) -> bool + 'static,
+  F: Fn(&char) -> bool + 'static,
 {
   simple(move |input| {
     let mut i = 0;
+    // TODO: maybe someday we can get a `&char` instead of a `char` here
     for ch in input.rest().chars() {
-      if !condition(ch) {
+      if !condition(&ch) {
         break;
       }
       i += ch.len_utf8();
@@ -39,7 +40,7 @@ pub fn char_range<ActionState, ErrorType>(
 ) -> Action<(), ActionState, ErrorType> {
   let range: RangeInclusive<_> = range.into();
   let head = *range.start();
-  chars(move |ch| range.contains(&ch)).head_in([head])
+  chars(move |ch| range.contains(ch)).head_in([head])
 }
 
 /// Match chars greedily by a set.
@@ -56,7 +57,7 @@ pub fn charset<ActionState, ErrorType>(
 ) -> Action<(), ActionState, ErrorType> {
   let charset: HashSet<_> = set.into();
   let head = charset.clone();
-  chars(move |ch| charset.contains(&ch)).head_in(head)
+  chars(move |ch| charset.contains(ch)).head_in(head)
 }
 
 #[cfg(test)]
