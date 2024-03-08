@@ -460,7 +460,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// let mut lexer = builder.define_with(MyKind::AB, |a| {
   ///   a.from(exact("A"))
-  ///     .and_then(exact("B"))
+  ///     .and(exact("B"))
   ///     .into()
   /// }).build("AB");
   /// assert_eq!(lexer.lex().token.unwrap().content, "AB");
@@ -468,7 +468,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// builder.define(MyKind::AB, exact("A") + exact("B"));
   /// ```
-  pub fn and_then<NewKind>(
+  pub fn and<NewKind>(
     self,
     another: Action<NewKind, ActionState, ErrorType>,
   ) -> Action<NewKind, ActionState, ErrorType>
@@ -577,7 +577,7 @@ impl<NewKind: 'static, Kind: 'static, ActionState: 'static, ErrorType: 'static>
   type Output = Action<NewKind, ActionState, ErrorType>;
 
   fn add(self, rhs: Action<NewKind, ActionState, ErrorType>) -> Self::Output {
-    self.and_then(rhs)
+    self.and(rhs)
   }
 }
 
@@ -868,8 +868,8 @@ mod tests {
   }
 
   #[test]
-  fn action_and_then() {
-    let action: Action<(), (), ()> = regex(r"^a").unwrap().and_then(regex(r"^b").unwrap());
+  fn action_and() {
+    let action: Action<(), (), ()> = regex(r"^a").unwrap().and(regex(r"^b").unwrap());
 
     assert!(matches!(
       action.exec(&mut ActionInput::new("ab", 0, &mut ())),
@@ -882,22 +882,17 @@ mod tests {
     ));
 
     // maybe_muted should be true if the next action is muted
-    let action: Action<(), (), ()> = regex(r"^a")
-      .unwrap()
-      .and_then(regex(r"^b").unwrap().mute(true));
+    let action: Action<(), (), ()> = regex(r"^a").unwrap().and(regex(r"^b").unwrap().mute(true));
     assert!(action.maybe_muted);
     // maybe_muted for the first action is ignored
-    let action: Action<(), (), ()> = regex(r"^a")
-      .unwrap()
-      .mute(true)
-      .and_then(regex(r"^b").unwrap());
+    let action: Action<(), (), ()> = regex(r"^a").unwrap().mute(true).and(regex(r"^b").unwrap());
     assert!(!action.maybe_muted);
 
     // first action's possible kinds should be ignored
     let action: Action<MyKind, (), ()> = regex(r"^a")
       .unwrap()
       .bind::<MyKind>(MyKind::A)
-      .and_then(regex(r"^b").unwrap().bind(MyKind::B));
+      .and(regex(r"^b").unwrap().bind(MyKind::B));
     assert_eq!(action.possible_kinds.len(), 1);
     assert!(action.possible_kinds.contains(&MyKind::B.id()));
 
@@ -905,7 +900,7 @@ mod tests {
     let action: Action<(), (), &'static str> = regex::<(), &'static str>(r"^a")
       .unwrap()
       .error("error")
-      .and_then(regex(r"^b").unwrap());
+      .and(regex(r"^b").unwrap());
     assert!(matches!(
       action.exec(&mut ActionInput::new("ab", 0, &mut ())),
       Some(ActionOutput {
@@ -920,7 +915,7 @@ mod tests {
     let action: Action<(), (), ()> = regex(r"^a")
       .unwrap()
       .head_in(['a'])
-      .and_then(regex(r"^b").unwrap().head_in(['b']));
+      .and(regex(r"^b").unwrap().head_in(['b']));
     assert!(matches!(
       action.head_matcher.as_ref().unwrap(),
       ActionInputRestHeadMatcher::OneOf(set) if set.contains(&'a') && set.len() == 1
