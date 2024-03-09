@@ -541,7 +541,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// ```
   /// # use whitehole::lexer::action::{Action, exact};
   /// # let action: Action<_> =
-  /// exact("A").and_then(exact("B"), |o1, o2| (o1.kind, o2.kind));
+  /// exact("A").and_then(exact("B"), |o1, o2| (o1.base.kind, o2.base.kind));
   /// ```
   pub fn and_then<AnotherKind, ResultType, F>(
     self,
@@ -555,8 +555,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ErrorType: 'static,
     F: Fn(
         EnhancedActionOutput<Kind, Option<ErrorType>>,
-        // TODO: make this EnhancedActionOutput too
-        ActionOutput<AnotherKind, &Option<ErrorType>>,
+        EnhancedActionOutput<AnotherKind, &Option<ErrorType>>,
       ) -> ResultType
       + 'static,
   {
@@ -566,26 +565,33 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       exec: Box::new(move |input_1| {
         exec(input_1).and_then(|output_1| {
           // the first action is accepted, exec the second action
-          let mut input_2 = ActionInput::new(
-            input_1.text(),
-            input_1.start() + output_1.digested,
-            input_1.state,
-          );
+          let text = input_1.text();
+          let input_1_start = input_1.start();
+          let mut input_2 =
+            ActionInput::new(text, input_1_start + output_1.digested, input_1.state);
           another_exec(&mut input_2).map(|output_2| {
             ActionOutput {
               digested: output_1.digested + output_2.digested,
               kind: MockTokenKind {
                 data: data_factory(
                   // consume the output_1
-                  EnhancedActionOutput::new(input_1, output_1),
+                  EnhancedActionOutput {
+                    base: output_1,
+                    text,
+                    start: input_1_start,
+                  },
                   // don't consume the output_2 because we need the error
                   // but we can consume output_2.kind
                   // so we build a new ActionOutput
-                  ActionOutput {
-                    kind: output_2.kind,
-                    digested: output_2.digested,
-                    muted: output_2.muted,
-                    error: &output_2.error,
+                  EnhancedActionOutput {
+                    base: ActionOutput {
+                      kind: output_2.kind,
+                      digested: output_2.digested,
+                      muted: output_2.muted,
+                      error: &output_2.error,
+                    },
+                    text,
+                    start: input_2.start(),
                   },
                 ),
               },
@@ -1078,13 +1084,23 @@ mod tests {
           error: Some("err2"),
         })
       }),
-      |o1, o2| (o1.base, o2.kind, o2.digested, o2.muted),
+      |o1, o2| {
+        (
+          o1.base,
+          o1.start,
+          o2.base.kind,
+          o2.base.digested,
+          o2.base.muted,
+          o2.start,
+        )
+      },
     );
     assert!(matches!(
       action.exec(&mut ActionInput::new("ab", 0, &mut ())),
       Some(ActionOutput {
         kind: MockTokenKind {
           data: (
+            // output 1
             ActionOutput {
               // output 1
               kind: MockTokenKind { data: data1 },
@@ -1092,10 +1108,14 @@ mod tests {
               muted: true,
               error: Some("err1")
             },
+            // input_1.start
+            0,
             // output 2's kind, digested and muted
             MockTokenKind { data: data2 },
             2,
             false,
+            // input_2.start
+            1,
           )
         },
         // the total digested length is 3
