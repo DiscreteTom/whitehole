@@ -89,6 +89,10 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         AcceptedActionDecoratorContext<
           // user can mutate input.state
           &mut ActionInput<ActionState>,
+          // TODO: don't build EnhancedActionOutput?
+          // e.g. add a new method `ActionOutput.enhance(input)`
+          // so that user can build the EnhancedActionOutput by themselves on demand?
+          // will this improve the performance?
           EnhancedActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> Option<ActionOutput<Kind, Option<NewErrorType>>>
