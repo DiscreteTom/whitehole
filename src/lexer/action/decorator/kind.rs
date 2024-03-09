@@ -1,11 +1,10 @@
+use super::AcceptedActionDecoratorContext;
 use crate::lexer::{
   action::{ActionInput, ActionInputRestHeadMatcher, ActionOutput, EnhancedActionOutput},
   token::{TokenKind, TokenKindId},
   Action,
 };
 use std::collections::HashSet;
-
-use super::AcceptedActionDecoratorContext;
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Set [`Action::possible_kinds`].
@@ -71,6 +70,33 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         .map(TokenKindId::from)
         .collect::<HashSet<_>>(),
     )
+  }
+
+  /// Set the kind and the data binding for this action.
+  /// Use this if your action can only yield one kind.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.append_with(|a| {
+  ///   a.regex(r"^\s+")
+  ///     .unwrap()
+  ///     .bind(MyKind::A)
+  ///     .into()
+  /// });
+  /// ```
+  pub fn bind<NewKind>(self, kind: impl Into<NewKind>) -> Action<NewKind, ActionState, ErrorType>
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+    NewKind: TokenKind<NewKind> + Clone + 'static,
+  {
+    let kind = kind.into();
+    self.kind_ids([kind.id()]).select(move |_| kind.clone())
   }
 }
 
@@ -167,7 +193,7 @@ impl<NewKind, Kind, ActionState, ErrorType> MultiKindAction<NewKind, Kind, Actio
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::regex;
+  use crate::lexer::action::{regex, simple};
   use whitehole_macros::_TokenKind;
   use Num::*;
 
@@ -240,5 +266,21 @@ mod tests {
         }
       })
     });
+  }
+
+  #[test]
+  fn action_bind() {
+    let action: Action<Num> = simple(|_| 1).bind(Even);
+    assert_eq!(action.possible_kinds.len(), 1);
+    assert!(action.possible_kinds.contains(&Even.id()));
+    assert!(matches!(
+      action.exec(&mut ActionInput::new("A", 0, &mut ())),
+      Some(ActionOutput {
+        kind: Even,
+        digested: 1,
+        muted: false,
+        error: None
+      })
+    ));
   }
 }
