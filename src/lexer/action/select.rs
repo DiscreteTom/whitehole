@@ -123,7 +123,9 @@ impl<NewKind, Kind, ActionState, ErrorType> MultiKindAction<NewKind, Kind, Actio
     ErrorType: 'static,
     F: Fn(
         AcceptedActionDecoratorContext<
-          ActionInput<ActionState>,
+          // user can't mutate the input
+          &ActionInput<ActionState>,
+          // output is consumed except the error
           EnhancedActionOutput<Kind, &Option<ErrorType>>,
         >,
       ) -> NewKind
@@ -133,23 +135,22 @@ impl<NewKind, Kind, ActionState, ErrorType> MultiKindAction<NewKind, Kind, Actio
     Action {
       exec: Box::new(move |input| {
         exec(input).map(|output| {
-          let ctx = AcceptedActionDecoratorContext {
-            output: EnhancedActionOutput::new(
-              input,
-              // construct a new ActionOutput
-              ActionOutput {
-                // consume the original output.kind
-                kind: output.kind,
-                digested: output.digested,
-                muted: output.muted,
-                // but don't consume the error
-                error: &output.error,
-              },
-            ),
-            input,
-          };
           ActionOutput {
-            kind: selector(ctx),
+            kind: selector(AcceptedActionDecoratorContext {
+              output: EnhancedActionOutput::new(
+                input,
+                // construct a new ActionOutput
+                ActionOutput {
+                  // consume the original output.kind
+                  kind: output.kind,
+                  digested: output.digested,
+                  muted: output.muted,
+                  // but don't consume the error
+                  error: &output.error,
+                },
+              ),
+              input,
+            }),
             digested: output.digested,
             muted: output.muted,
             error: output.error,

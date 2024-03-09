@@ -9,16 +9,9 @@ use std::{
   ops::{self, RangeInclusive},
 };
 
-/// `input.state` is mutable. `output` is consumed.
-pub struct AcceptedActionDecoratorContext<'input, InputType, OutputType> {
-  pub input: &'input mut InputType,
+pub struct AcceptedActionDecoratorContext<InputType, OutputType> {
+  pub input: InputType,
   pub output: OutputType,
-}
-
-/// `input.state` is mutable. `output` is not mutable and not consumed.
-pub struct ActionCallbackContext<'input, 'output, InputType, OutputType> {
-  pub input: &'input mut InputType,
-  pub output: &'output OutputType,
 }
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
@@ -170,7 +163,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ErrorType: 'static,
     F: Fn(
         AcceptedActionDecoratorContext<
-          ActionInput<ActionState>,
+          // user can mutate input.state
+          &mut ActionInput<ActionState>,
           EnhancedActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> Option<ActionOutput<Kind, Option<NewErrorType>>>
@@ -214,8 +208,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
     F: Fn(
+        // user can't mutate the context
         &AcceptedActionDecoratorContext<
-          ActionInput<ActionState>,
+          &mut ActionInput<ActionState>,
           EnhancedActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> bool
@@ -288,8 +283,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
     F: Fn(
+        // user can't mutate the context
         &AcceptedActionDecoratorContext<
-          ActionInput<ActionState>,
+          &mut ActionInput<ActionState>,
           EnhancedActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> Option<NewError>
@@ -350,8 +346,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
     F: Fn(
+        // user can't mutate the context
         &AcceptedActionDecoratorContext<
-          ActionInput<ActionState>,
+          &mut ActionInput<ActionState>,
           EnhancedActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> bool
@@ -418,9 +415,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
     F: Fn(
-        ActionCallbackContext<
-          ActionInput<ActionState>,
-          EnhancedActionOutput<Kind, Option<ErrorType>>,
+        AcceptedActionDecoratorContext<
+          // user can mutate the input.state
+          &mut ActionInput<ActionState>,
+          // user can't mutate the output
+          &EnhancedActionOutput<Kind, Option<ErrorType>>,
         >,
       ) + 'static,
   {
@@ -428,7 +427,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self.exec = Box::new(move |input| {
       exec(input).and_then(|output| {
         let output = EnhancedActionOutput::new(&input, output);
-        cb(ActionCallbackContext {
+        cb(AcceptedActionDecoratorContext {
           output: &output,
           input,
         });
@@ -650,7 +649,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ErrorType: 'static,
     F: Fn(
         AcceptedActionDecoratorContext<
-          ActionInput<ActionState>,
+          // user can't mutate the input
+          &ActionInput<ActionState>,
+          // output is consumed except the error
           EnhancedActionOutput<Kind, &Option<ErrorType>>,
         >,
       ) -> T
