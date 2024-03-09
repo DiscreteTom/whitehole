@@ -476,6 +476,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// [`error`](ActionOutput::error) are ignored.
   /// Next action's [`head_matcher`](Self::head_matcher) is ignored.
   /// Return a new action.
+  ///
+  /// If you want to retrieve the output of the first action, see [`Self::and_then`].
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{Action, LexerBuilder, action::exact};
@@ -529,7 +531,18 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     }
   }
 
-  // TODO: add comments, examples and tests
+  /// Execute another action after the current action is accepted.
+  /// Current action's [`maybe_muted`](Self::maybe_muted) and [`possible_kinds`](Self::possible_kinds)
+  /// are ignored. Next action's [`head_matcher`](Self::head_matcher) is ignored.
+  /// Return a new action with [`MockTokenKind`] as the kind.
+  /// You can retrieve the output of both actions and store them in [`MockTokenKind::data`]
+  /// for further processing.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::action::{Action, exact};
+  /// # let action: Action<_> =
+  /// exact("A").and_then(exact("B"), |o1, o2| (o1.kind, o2.kind));
+  /// ```
   pub fn and_then<AnotherKind, ResultType, F>(
     self,
     another: Action<AnotherKind, ActionState, ErrorType>,
@@ -672,7 +685,7 @@ mod tests {
       input::ActionInput, output::ActionOutput, regex::regex, simple::simple,
       ActionInputRestHeadMatcher,
     },
-    token::TokenKind,
+    token::{MockTokenKind, TokenKind},
     Action,
   };
   use whitehole_macros::_TokenKind;
@@ -1026,6 +1039,71 @@ mod tests {
         muted: false,
         error: None
       })
+    ));
+  }
+
+  #[test]
+  fn action_and_then() {
+    // reject if any action reject
+    let action: Action<_, (), ()> = simple(|_| 0).and_then(simple(|_| 1), |_, _| 1);
+    assert!(matches!(
+      action.exec(&mut ActionInput::new("a", 0, &mut ())),
+      None
+    ));
+    let action: Action<_, (), ()> = simple(|_| 1).and_then(simple(|_| 0), |_, _| 1);
+    assert!(matches!(
+      action.exec(&mut ActionInput::new("a", 0, &mut ())),
+      None
+    ));
+
+    // ensure the first output can be consumed, and the second output's kind can be consumed
+    let action: Action<_, (), &str> = Action::with_data(|_| {
+      Some(ActionOutput {
+        kind: MockTokenKind {
+          data: Box::new(111),
+        },
+        digested: 1,
+        muted: true,
+        error: Some("err1"),
+      })
+    })
+    .and_then(
+      Action::with_data(|_| {
+        Some(ActionOutput {
+          kind: MockTokenKind {
+            data: Box::new(222),
+          },
+          digested: 2,
+          muted: false,
+          error: Some("err2"),
+        })
+      }),
+      |o1, o2| (o1.base, o2.kind, o2.digested, o2.muted),
+    );
+    assert!(matches!(
+      action.exec(&mut ActionInput::new("ab", 0, &mut ())),
+      Some(ActionOutput {
+        kind: MockTokenKind {
+          data: (
+            ActionOutput {
+              // output 1
+              kind: MockTokenKind { data: data1 },
+              digested: 1,
+              muted: true,
+              error: Some("err1")
+            },
+            // output 2's kind, digested and muted
+            MockTokenKind { data: data2 },
+            2,
+            false,
+          )
+        },
+        // the total digested length is 3
+        digested: 3,
+        // apply second output's muted & error
+        muted: false,
+        error: Some("err2")
+      }) if *data1 == 111 && *data2 == 222
     ));
   }
 
