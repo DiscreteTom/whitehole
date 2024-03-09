@@ -3,6 +3,9 @@
 ```bash
 cargo test
 
+# install tarpaulin for coverage report
+cargo install cargo-tarpaulin
+
 # generate coverage report
 cargo tarpaulin --out Html
 
