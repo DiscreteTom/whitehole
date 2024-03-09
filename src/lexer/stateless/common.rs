@@ -7,7 +7,7 @@ use crate::lexer::{
 };
 use std::rc::Rc;
 
-pub struct Validator<'validator, Kind, ActionState, ErrorType> {
+pub(crate) struct Validator<'validator, Kind, ActionState, ErrorType> {
   /// If return `true`, the action will be skipped.
   pub skip_before_exec: Box<dyn Fn(&Action<Kind, ActionState, ErrorType>) -> bool>,
   /// If return `true`, the action will be accepted.
@@ -18,7 +18,7 @@ pub struct Validator<'validator, Kind, ActionState, ErrorType> {
 
 /// [`OutputHandler`] controls the behaviour of [`StatelessLexer::execute_actions`]
 /// when an un-muted action is accepted.
-pub struct OutputHandler {
+pub(crate) struct OutputHandler {
   /// If `true`, fields in [`LexOutput`] (like [`digested`](LexOutput::digested)) should be updated.
   pub update_lex_output: bool,
   /// If `true`, the [`LexOutput`] should have a token created by the [`ActionOutput`].
@@ -28,7 +28,7 @@ pub struct OutputHandler {
 impl<'input, 'text, 'state, Kind, ActionState, ErrorType>
   StatelessLexer<Kind, ActionState, ErrorType>
 {
-  pub fn execute_actions<'validator, F>(
+  pub(crate) fn execute_actions<'validator, F>(
     head_map: &ActionHeadMap<Kind, ActionState, ErrorType>,
     re_lex: ReLexContext,
     validator_factory: F,
