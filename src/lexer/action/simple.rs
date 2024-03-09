@@ -1,6 +1,4 @@
-use super::{
-  builder::ActionBuilder, input::ActionInput, output::ActionOutputWithoutKind, Action, ActionOutput,
-};
+use super::{input::ActionInput, output::ActionOutputWithoutKind, Action, ActionOutput};
 use crate::lexer::token::MockTokenKind;
 
 /// Provide a function that digests the rest of the input text and returns the number of digested characters.
@@ -56,33 +54,6 @@ where
       .into()
     })
   })
-}
-
-impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
-  /// Equals to [`action::simple`](crate::lexer::action::simple::simple).
-  pub fn simple<F>(&self, f: F) -> Action<(), ActionState, ErrorType>
-  where
-    F: Fn(&mut ActionInput<ActionState>) -> usize + 'static,
-  {
-    simple(f)
-  }
-  /// Equals to [`action::simple_option`](crate::lexer::action::simple::simple_option).
-  pub fn simple_option<F>(&self, f: F) -> Action<(), ActionState, ErrorType>
-  where
-    F: Fn(&mut ActionInput<ActionState>) -> Option<usize> + 'static,
-  {
-    simple_option(f)
-  }
-  /// Equals to [`action::simple_option_with_data`](crate::lexer::action::simple::simple_option_with_data).
-  pub fn simple_option_with_data<T, F>(
-    &self,
-    f: F,
-  ) -> Action<MockTokenKind<T>, ActionState, ErrorType>
-  where
-    F: Fn(&mut ActionInput<ActionState>) -> Option<(usize, T)> + 'static,
-  {
-    simple_option_with_data(f)
-  }
 }
 
 #[cfg(test)]
@@ -201,52 +172,5 @@ mod tests {
     let action: Action<MockTokenKind<u32>> = simple_option_with_data(|_| None);
     let output = action.exec(&mut ActionInput::new("123", 0, &mut ()));
     assert!(matches!(output, None));
-  }
-
-  #[test]
-  fn action_builder_simple() {
-    let action: Action<()> = ActionBuilder::default().simple(|input| input.rest().len());
-    let output = action.exec(&mut ActionInput::new("123", 1, &mut ()));
-    assert!(matches!(
-      output,
-      Some(ActionOutput {
-        kind: (),
-        digested: 2,
-        muted: false,
-        error: None
-      })
-    ));
-  }
-
-  #[test]
-  fn action_builder_simple_option() {
-    let action: Action<()> =
-      ActionBuilder::default().simple_option(|input| Some(input.rest().len()));
-    let output = action.exec(&mut ActionInput::new("123", 1, &mut ()));
-    assert!(matches!(
-      output,
-      Some(ActionOutput {
-        kind: (),
-        digested: 2,
-        muted: false,
-        error: None
-      })
-    ));
-  }
-
-  #[test]
-  fn action_builder_simple_option_with_data() {
-    let action: Action<MockTokenKind<u32>> =
-      ActionBuilder::default().simple_option_with_data(|input| Some((input.rest().len(), 123)));
-    let output = action.exec(&mut ActionInput::new("123", 1, &mut ()));
-    assert!(matches!(
-      output,
-      Some(ActionOutput {
-        kind: MockTokenKind { data: 123 },
-        digested: 2,
-        muted: false,
-        error: None
-      })
-    ));
   }
 }

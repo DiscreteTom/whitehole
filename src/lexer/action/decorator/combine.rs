@@ -15,11 +15,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define_with(MyKind::A, |a| {
-  ///   a.from(exact("A"))
-  ///     .or(exact("AA"))
-  ///     .into()
-  /// });
+  /// builder.define(MyKind::A, exact("A").or(exact("AA")));
   /// // use `|` as a shortcut
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// builder.define(MyKind::A, exact("A") | exact("AA"));
@@ -53,12 +49,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { AB }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// let mut lexer = builder.define_with(MyKind::AB, |a| {
-  ///   a.from(exact("A"))
-  ///     .and(exact("B"))
-  ///     .into()
-  /// }).build("AB");
+  /// let mut lexer = builder.define(
+  ///   MyKind::AB, exact("A").and(exact("B"))
+  /// ).build("AB");
   /// assert_eq!(lexer.lex().token.unwrap().content, "AB");
+  ///
   /// // use `+` as a shortcut
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// builder.define(MyKind::AB, exact("A") + exact("B"));

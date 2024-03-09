@@ -26,7 +26,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Return a new action.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
@@ -35,12 +35,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// #   pub reject: bool,
   /// # }
   /// # let mut builder = LexerBuilder::<MyKind, MyState>::default();
-  /// builder.define_with(MyKind::A, |a| {
-  ///   a.regex(r"^\s+")
-  ///     .unwrap()
-  ///     .prevent(|input| input.state.reject)
-  ///     .into()
-  /// });
+  /// builder.define_with(
+  ///   MyKind::A,
+  ///   regex(r"^\s+").unwrap(),
+  ///   |a| a.prevent(|input| input.state.reject)
+  /// );
   /// ```
   pub fn prevent<F>(mut self, condition: F) -> Self
   where
@@ -68,17 +67,20 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Return a new action.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define_with(MyKind::A, |a| {
-  ///   a.regex(r"^\s+")
+  /// builder.define(
+  ///   MyKind::A,
+  ///   regex(r"^\s+")
   ///     .unwrap()
-  ///     .apply(|ctx| ctx.output.into())
-  ///     .into()
-  /// });
+  ///     .apply(|mut ctx| {
+  ///       ctx.output.muted = true;
+  ///       ctx.output.into()
+  ///     })
+  /// );
   /// ```
   pub fn apply<NewErrorType, F>(self, decorator: F) -> Action<Kind, ActionState, NewErrorType>
   where
@@ -118,17 +120,17 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Return a new action.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define_with(MyKind::A, |a| {
-  ///   a.regex(r"^\s+")
+  /// builder.define(
+  ///   MyKind::A,
+  ///   regex(r"^\s+")
   ///     .unwrap()
   ///     .mute_if(|ctx| ctx.output.rest().len() > 0)
-  ///     .into()
-  /// });
+  /// );
   /// ```
   pub fn mute_if<F>(self, condition: F) -> Self
   where
@@ -158,17 +160,17 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Return a new action.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define_with(MyKind::A, |a| {
-  ///   a.regex(r"^\s+")
+  /// builder.define(
+  ///   MyKind::A,
+  ///   regex(r"^\s+")
   ///     .unwrap()
   ///     .mute(true)
-  ///     .into()
-  /// });
+  /// );
   /// ```
   pub fn mute(self, muted: bool) -> Self
   where
@@ -190,20 +192,22 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Return a new action.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind, (), &'static str>::default();
-  /// builder.define_with(MyKind::A, |a| {
-  ///   a.regex(r"^\s+").unwrap().check(|ctx| {
+  /// builder.define_with(
+  ///   MyKind::A,
+  ///   regex(r"^\s+").unwrap(),
+  ///   |a| a.check(|ctx| {
   ///     if ctx.output.rest().len() > 0 {
   ///       Some("error")
   ///     } else {
   ///       None
   ///     }
-  ///   }).into()
-  /// });
+  ///   })
+  /// );
   /// ```
   pub fn check<NewError, F>(self, condition: F) -> Action<Kind, ActionState, NewError>
   where
@@ -233,14 +237,16 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Return a new action.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind, (), &'static str>::default();
-  /// builder.define_with(MyKind::A, |a| {
-  ///   a.regex(r"^\s+").unwrap().error("error").into()
-  /// });
+  /// builder.define_with(
+  ///   MyKind::A,
+  ///   regex(r"^\s+").unwrap(),
+  ///   |a| a.error("error")
+  /// );
   /// ```
   pub fn error<NewError>(self, error: NewError) -> Action<Kind, ActionState, NewError>
   where
@@ -256,17 +262,17 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Return a new action.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define_with(MyKind::A, |a| {
-  ///   a.regex(r"^\s+")
+  /// builder.define(
+  ///   MyKind::A,
+  ///   regex(r"^\s+")
   ///     .unwrap()
   ///     .reject_if(|ctx| ctx.output.rest().len() > 0)
-  ///     .into()
-  /// });
+  /// );
   /// ```
   pub fn reject_if<F>(self, condition: F) -> Self
   where
@@ -295,17 +301,17 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Return a new action.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define_with(MyKind::A, |a| {
-  ///   a.regex(r"^\s+")
+  /// builder.define(
+  ///   MyKind::A,
+  ///   regex(r"^\s+")
   ///     .unwrap()
   ///     .reject(true)
-  ///     .into()
-  /// });
+  /// );
   /// ```
   pub fn reject(self, rejected: bool) -> Self
   where
@@ -321,7 +327,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Return a new action.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
@@ -330,12 +336,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// #   pub value: i32,
   /// # }
   /// # let mut builder = LexerBuilder::<MyKind, MyState>::default();
-  /// builder.define_with(MyKind::A, |a| {
-  ///   a.regex(r"^\s+")
-  ///     .unwrap()
-  ///     .callback(|ctx| ctx.input.state.value += 1)
-  ///     .into()
-  /// });
+  /// builder.define_with(
+  ///   MyKind::A,
+  ///   regex(r"^\s+").unwrap(),
+  ///   |a| a.callback(|ctx| ctx.input.state.value += 1)
+  /// );
   /// ```
   pub fn callback<F>(mut self, cb: F) -> Self
   where

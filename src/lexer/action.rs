@@ -1,4 +1,3 @@
-mod builder;
 mod decorator;
 mod input;
 mod output;
@@ -6,7 +5,6 @@ mod regex;
 mod simple;
 mod utils;
 
-pub use builder::*;
 pub use decorator::*;
 pub use input::*;
 pub use output::*;

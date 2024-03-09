@@ -1,5 +1,5 @@
 // TODO: only available in feature `regex`
-use super::{builder::ActionBuilder, simple::simple, Action};
+use super::{simple::simple, Action};
 use regex::{Error, Regex};
 
 /// Create a new action that uses a regex to match the rest of input.
@@ -46,13 +46,6 @@ pub fn regex<ActionState, ErrorType>(
 //   })
 // }
 
-impl<ActionState, ErrorType> ActionBuilder<ActionState, ErrorType> {
-  /// Equals to [`action::regex`](crate::lexer::action::regex::regex).
-  pub fn regex(&self, re: &str) -> Result<Action<(), ActionState, ErrorType>, Error> {
-    regex(re)
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -77,20 +70,6 @@ mod tests {
     let action: Action<(), (), ()> = regex(r"^\d+").unwrap();
     assert!(matches!(
       action.exec(&mut ActionInput::new("abc123", 3, &mut ())),
-      Some(ActionOutput {
-        kind: (),
-        digested: 3,
-        muted: false,
-        error: None,
-      })
-    ));
-  }
-
-  #[test]
-  fn regex_action_builder() {
-    let action: Action<(), (), ()> = ActionBuilder::default().regex(r"^\d+").unwrap();
-    assert!(matches!(
-      action.exec(&mut ActionInput::new("123", 0, &mut ())),
       Some(ActionOutput {
         kind: (),
         digested: 3,

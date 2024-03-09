@@ -1,5 +1,5 @@
 use super::{ActionList, LexerBuilder};
-use crate::lexer::{action::ActionBuilder, token::TokenKind, Action};
+use crate::lexer::{token::TokenKind, Action};
 
 impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// Define actions and bind them to the provided kind.
@@ -31,34 +31,47 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     self.append(Self::map_actions(actions, |a| a.bind(kind.clone())))
   }
 
-  /// Define actions with [`ActionBuilder`] and bind it to the provided kind.
+  /// Define actions with a decorator and bind them to the provided kind.
   /// # Examples
+  /// The following code won't pass the compile check
+  /// because the compiler can't infer the generic parameter type of [`Action`]
+  /// when using [`error`](Action::error) to modify the generic parameter type.
+  /// ```compile_fail
+  /// # use whitehole::lexer::{Action, LexerBuilder, action::exact};
+  /// # use whitehole_macros::TokenKind;
+  /// # use MyKind::*;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
+  /// builder.define(A, exact("A").error(123));
+  /// ```
+  /// The following code will pass the compile.
   /// ```
   /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # use MyKind::*;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A, B }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
   /// // append a single action
-  /// builder.define_with(A, |a| a.from(word("A")).into());
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// builder.define_with(A, word("A"), |a| a.error(123));
+  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
   /// // append multiple actions
-  /// builder.define_with(A, |a| [
-  ///   a.from(word("A")),
-  ///   a.from(word("AA"))
-  /// ].into());
+  /// builder.define_with(A, [word("A"), word("B")], |a| a.error(123));
   /// ```
-  pub fn define_with<F>(self, kind: impl Into<Kind>, factory: F) -> Self
+  pub fn define_with<F>(
+    self,
+    kind: impl Into<Kind>,
+    actions: impl Into<ActionList<Action<(), ActionState, ErrorType>>>,
+    decorator: F,
+  ) -> Self
   where
     Kind: TokenKind<Kind> + Clone + 'static,
     ActionState: 'static,
     ErrorType: 'static,
-    F: FnOnce(
-      ActionBuilder<ActionState, ErrorType>,
-    ) -> ActionList<Action<(), ActionState, ErrorType>>,
+    F: Fn(Action<(), ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
   {
-    self.define(kind, factory(ActionBuilder::default()))
+    self.define(kind, Self::map_actions(actions, decorator))
   }
 
   /// Define actions and bind them to the provided kind.
@@ -130,22 +143,25 @@ mod tests {
   #[test]
   fn lexer_builder_define_with() {
     // single
-    let stateless = LexerBuilder::<MyKind>::default()
-      .define_with(A, |a| a.from(word("A")).into())
+    let stateless = LexerBuilder::<MyKind, (), i32>::default()
+      .define_with(A, word("A"), |a| a.error(123))
       .build_stateless();
     assert_eq!(stateless.actions().len(), 1);
     assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
     assert!(stateless.actions()[0].possible_kinds().contains(&A.id()));
+    assert_eq!(stateless.lex("A").token.unwrap().error.unwrap(), 123);
 
     // multiple
-    let stateless = LexerBuilder::<MyKind>::default()
-      .define_with(A, |a| [a.from(word("A")), a.from(word("AA"))].into())
+    let stateless = LexerBuilder::<MyKind, (), i32>::default()
+      .define_with(A, [word("A"), word("B")], |a| a.error(123))
       .build_stateless();
     assert_eq!(stateless.actions().len(), 2);
     assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
     assert!(stateless.actions()[0].possible_kinds().contains(&A.id()));
     assert_eq!(stateless.actions()[1].possible_kinds().len(), 1);
     assert!(stateless.actions()[1].possible_kinds().contains(&A.id()));
+    assert_eq!(stateless.lex("A").token.unwrap().error.unwrap(), 123);
+    assert_eq!(stateless.lex("B").token.unwrap().error.unwrap(), 123);
   }
 
   #[test]

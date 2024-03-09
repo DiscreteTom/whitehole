@@ -76,17 +76,12 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Use this if your action can only yield one kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{Action, LexerBuilder};
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.append_with(|a| {
-  ///   a.regex(r"^\s+")
-  ///     .unwrap()
-  ///     .bind(MyKind::A)
-  ///     .into()
-  /// });
+  /// builder.append(regex(r"^\s+").unwrap().bind(MyKind::A));
   /// ```
   pub fn bind<NewKind>(self, kind: impl Into<NewKind>) -> Action<NewKind, ActionState, ErrorType>
   where
