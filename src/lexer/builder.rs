@@ -61,24 +61,27 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   pub fn build_stateless_from(
     actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
   ) -> StatelessLexer<Kind, ActionState, ErrorType> {
-    let mut kind_map = HashMap::new();
-    // prepare kind map, add value for all possible kinds
+    // known kinds => actions
+    let mut kinds_action_map = HashMap::new();
+    // prepare kind map, add value for all known possible kinds
+    // this has to be done before filling the map
+    // because we need to iter over all possible kinds when filling the map
     for a in &actions {
       for k in a.possible_kinds() {
-        kind_map.entry(k.clone()).or_insert(Vec::new());
+        kinds_action_map.entry(k.clone()).or_insert(Vec::new());
       }
     }
-    // fill kind_map
+    // fill it
     for a in &actions {
       if a.maybe_muted {
         // maybe muted, add to all kinds
-        for (_, vec) in kind_map.iter_mut() {
+        for (_, vec) in kinds_action_map.iter_mut() {
           vec.push(a.clone());
         }
       } else {
         // never muted, only add to possible kinds
         for k in a.possible_kinds() {
-          kind_map.get_mut(k).unwrap().push(a.clone());
+          kinds_action_map.get_mut(k).unwrap().push(a.clone());
         }
       }
     }
@@ -90,7 +93,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
       .map(|a| a.clone())
       .collect();
 
-    let kind_head_map = kind_map
+    let kind_head_map = kinds_action_map
       .iter()
       .map(|(k, v)| (k.clone(), Self::calc_head_map(&v)))
       .collect();
@@ -128,7 +131,8 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
       known_map: HashMap::new(),
       unknown_fallback: Vec::new(),
     };
-    // collect all known chars
+    // collect all known chars, this must be done before filling the head map
+    // because we need to iter over all known chars when filling the head map
     for a in actions {
       if let Some(head_matcher) = a.head_matcher() {
         for c in match head_matcher {
@@ -140,7 +144,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
         }
       }
     }
-    // fill the head_map
+    // fill the head map
     for a in actions {
       if let Some(head_matcher) = a.head_matcher() {
         match head_matcher {
