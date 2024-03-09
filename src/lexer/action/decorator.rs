@@ -542,8 +542,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ErrorType: 'static,
     F: Fn(
         EnhancedActionOutput<Kind, Option<ErrorType>>,
+        // TODO: make this EnhancedActionOutput too
         ActionOutput<AnotherKind, &Option<ErrorType>>,
-      ) -> Option<ResultType>
+      ) -> ResultType
       + 'static,
   {
     let exec = self.exec;
@@ -557,26 +558,27 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
             input_1.start() + output_1.digested,
             input_1.state,
           );
-          another_exec(&mut input_2).and_then(|output_2| {
-            // merge the digested length and store it, because we will consume the output_1
-            let total_digested = output_1.digested + output_2.digested;
-            data_factory(
-              // consume the output_1
-              EnhancedActionOutput::new(input_1, output_1),
-              // don't consume the output_2 because we need the error
-              ActionOutput {
-                kind: output_2.kind,
-                digested: output_2.digested,
-                muted: output_2.muted,
-                error: &output_2.error,
+          another_exec(&mut input_2).map(|output_2| {
+            ActionOutput {
+              digested: output_1.digested + output_2.digested,
+              kind: MockTokenKind {
+                data: data_factory(
+                  // consume the output_1
+                  EnhancedActionOutput::new(input_1, output_1),
+                  // don't consume the output_2 because we need the error
+                  // but we can consume output_2.kind
+                  // so we build a new ActionOutput
+                  ActionOutput {
+                    kind: output_2.kind,
+                    digested: output_2.digested,
+                    muted: output_2.muted,
+                    error: &output_2.error,
+                  },
+                ),
               },
-            )
-            .map(|result| ActionOutput {
-              kind: MockTokenKind { data: result },
-              digested: total_digested,
               muted: output_2.muted,
               error: output_2.error,
-            })
+            }
           })
         })
       }),
