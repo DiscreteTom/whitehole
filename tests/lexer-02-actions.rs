@@ -47,49 +47,51 @@ fn action_decorators() {
     // so we need to use `define_with`, `append_with` and `ignore_with` to define actions
     // these methods accept a function which takes an `ActionBuilder` as its parameter
     // so the action's generic parameters can be inferred from the `ActionBuilder`
-    .define_with(Anonymous, |a| {
+    .define(
+      Anonymous,
       // to mute an action, we can use `mute` or `mute_if`
-      a.regex(r"^\s+").unwrap().mute(true).into()
-    })
-    .define_with(A, |a| {
+      regex(r"^\s+").unwrap().mute(true),
+    )
+    .define_with(
+      A,
       // to set token's error, we can use `check` or `error`
-      a.regex(r"^a")
-        .unwrap()
-        .check(|ctx| {
+      regex(r"^a").unwrap(),
+      |a| {
+        a.check(|ctx| {
           if ctx.output.rest().len() > 0 {
             Some("error")
           } else {
             None
           }
         })
-        .into()
-    })
-    .define_with(B, |a| {
+      },
+    )
+    .define(
+      B,
       // to reject an action after the output is yielded, we can use `reject` or `reject_if`
-      a.regex(r"^b")
+      regex(r"^b")
         .unwrap()
-        .reject_if(|ctx| ctx.output.rest().len() > 0)
-        .into()
-    })
-    .define_with(C, |a| {
+        .reject_if(|ctx| ctx.output.rest().len() > 0),
+    )
+    .define_with(
+      C,
       // to reject an action before the output is yielded, we can use `prevent`
-      a.regex(r"^c")
-        .unwrap()
-        .prevent(|input| input.state.reject)
-        .into()
-    })
-    .define_with(D, |a| {
+      regex(r"^c").unwrap(),
+      |a| a.prevent(|input| input.state.reject),
+    )
+    .define_with(
+      D,
       // use `then` to run a callback if this action is accepted and is not a peek
       // this is usually used to modify lexer's action state
-      a.regex(r"^d")
-        .unwrap()
-        .callback(|ctx| {
+      regex(r"^d").unwrap(),
+      |a| {
+        a.callback(|ctx| {
           ctx.input.state.reject = true;
         })
         // yes you can apply multi decorators to an action
         .prevent(|input| input.state.reject)
-        .into()
-    })
+      },
+    )
     .build("a b c");
 
   // the first lex should be accepted but with error set

@@ -1,4 +1,4 @@
-use whitehole::lexer::LexerBuilder;
+use whitehole::lexer::{action::regex, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -19,10 +19,8 @@ struct MyState {
 #[test]
 fn stateful_lexer() {
   let mut lexer = LexerBuilder::<MyKind, MyState>::default()
-    .append_with(|a| {
-      a.regex("^123")
-        .unwrap()
-        .bind(A)
+    .append_with(regex("^123").unwrap().bind(A), |a| {
+      a
         // access lexer's action state by `input.state()` or `input.state_mut()`.
         // in this example we reject the action if the state's `reject` field is `true`.
         .prevent(|input| input.state.reject)

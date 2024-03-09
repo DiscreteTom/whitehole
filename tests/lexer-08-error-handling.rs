@@ -17,26 +17,22 @@ fn error_tokens() {
 
   // in this example we use `&str` as the error type
   let lexer = LexerBuilder::<MyKind, (), &str>::default()
-    .ignore_with(|a| {
-      a.regex(r"^\s+")
-        .unwrap()
-        .bind(Anonymous)
+    .ignore_with(regex(r"^\s+").unwrap().bind(Anonymous), |a| {
+      a
         // set error by using `error`
         .error("ignored")
         .into()
     })
-    .define_with(A, |a| {
+    .define_with(A, regex(r"^a").unwrap(), |a| {
       // set error by using `check`
-      a.regex(r"^a")
-        .unwrap()
-        .check(|ctx| {
-          if ctx.output.rest().len() == 0 {
-            Some("end")
-          } else {
-            None
-          }
-        })
-        .into()
+      a.check(|ctx| {
+        if ctx.output.rest().len() == 0 {
+          Some("end")
+        } else {
+          None
+        }
+      })
+      .into()
     })
     .build(" a");
 

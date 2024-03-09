@@ -1,4 +1,7 @@
-use whitehole::lexer::{action::regex, LexerBuilder};
+use whitehole::lexer::{
+  action::{regex, simple, ActionInput},
+  LexerBuilder,
+};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -32,8 +35,9 @@ fn lex_with_head_matcher() {
 
   // let's see if there is no head matcher
   let mut lexer = LexerBuilder::<MyKind, MyState>::default()
-    .define_with(True, |a| {
-      a.simple(|input| {
+    .define(
+      True,
+      simple(|input: &mut ActionInput<MyState>| {
         // mutate the action state when the action is evaluated
         // no matter if it's accepted or rejected
         input.state.evaluated = true;
@@ -44,9 +48,8 @@ fn lex_with_head_matcher() {
         } else {
           0
         }
-      })
-      .into()
-    })
+      }),
+    )
     .define(False, regex(r"^false").unwrap())
     .build("false");
   // the lexed token should be `False`
@@ -56,8 +59,9 @@ fn lex_with_head_matcher() {
 
   // now with head matcher
   let mut lexer = LexerBuilder::<MyKind, MyState>::default()
-    .define_with(True, |a| {
-      a.simple(|input| {
+    .define(
+      True,
+      simple(|input: &mut ActionInput<MyState>| {
         // mutate the action state when the action is evaluated
         // no matter if it's accepted or rejected
         input.state.evaluated = true;
@@ -70,9 +74,8 @@ fn lex_with_head_matcher() {
         }
       })
       // only evaluate this action if the first character is `t`
-      .head_in(['t'])
-      .into()
-    })
+      .head_in(['t']),
+    )
     .define(
       False,
       regex(r"^false")
@@ -89,8 +92,9 @@ fn lex_with_head_matcher() {
   // if an action has no head matcher
   // the action will always be evaluated
   let mut lexer = LexerBuilder::<MyKind, MyState>::default()
-    .define_with(True, |a| {
-      a.simple(|input| {
+    .define(
+      True,
+      simple(|input: &mut ActionInput<MyState>| {
         // mutate the action state when the action is evaluated
         // no matter if it's accepted or rejected
         input.state.evaluated = true;
@@ -101,10 +105,8 @@ fn lex_with_head_matcher() {
         } else {
           0
         }
-      })
-      .into()
-      // no head matcher for this action
-    })
+      }), // no head matcher for this action
+    )
     .define(
       False,
       regex(r"^false")
@@ -120,8 +122,9 @@ fn lex_with_head_matcher() {
 
   // we can use head_not to exclude some characters
   let mut lexer = LexerBuilder::<MyKind, MyState>::default()
-    .define_with(Others, |a| {
-      a.simple(|input| {
+    .define(
+      Others,
+      simple(|input: &mut ActionInput<MyState>| {
         input.state.evaluated = true;
 
         if [',', ':', '{', '}', '[', ']'].contains(&(input.rest().chars().next().unwrap())) {
@@ -131,9 +134,8 @@ fn lex_with_head_matcher() {
         }
       })
       // instead of using `head_in([',', ':', '{', '}', '[', ']'])`
-      .head_not(['t', 'f'])
-      .into()
-    })
+      .head_not(['t', 'f']),
+    )
     .define(False, regex(r"^false").unwrap().head_in(['f']))
     .build("false");
   // the lexed token should be `False`
@@ -143,8 +145,9 @@ fn lex_with_head_matcher() {
 
   // we can also use head_unknown to match any unknown characters
   let mut lexer = LexerBuilder::<MyKind, MyState>::default()
-    .define_with(Others, |a| {
-      a.simple(|input| {
+    .define(
+      Others,
+      simple(|input: &mut ActionInput<MyState>| {
         input.state.evaluated = true;
 
         if [',', ':', '{', '}', '[', ']'].contains(&(input.rest().chars().next().unwrap())) {
@@ -153,9 +156,8 @@ fn lex_with_head_matcher() {
           0
         }
       })
-      .head_unknown()
-      .into()
-    })
+      .head_unknown(),
+    )
     .define(False, regex(r"^false").unwrap().head_in(['f']))
     .build("false");
   // the lexed token should be `False`
@@ -171,8 +173,9 @@ fn lex_with_head_matcher() {
 fn utf8_head_matcher() {
   // head matcher should work with utf8
   let mut lexer = LexerBuilder::<MyKind, MyState>::default()
-    .define_with(True, |a| {
-      a.simple(|input| {
+    .define(
+      True,
+      simple(|input: &mut ActionInput<MyState>| {
         // mutate the action state when the action is evaluated
         // no matter if it's accepted or rejected
         input.state.evaluated = true;
@@ -184,9 +187,8 @@ fn utf8_head_matcher() {
           0
         }
       })
-      .head_in(['真'])
-      .into()
-    })
+      .head_in(['真']),
+    )
     .define(False, regex(r"^假").unwrap().head_in(['假']))
     .build("假");
   // the lexed token should be `False`
