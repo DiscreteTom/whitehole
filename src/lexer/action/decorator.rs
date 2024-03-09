@@ -543,7 +543,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     F: Fn(
         EnhancedActionOutput<Kind, Option<ErrorType>>,
         ActionOutput<AnotherKind, &Option<ErrorType>>,
-      ) -> Option<MockTokenKind<ResultType>>
+      ) -> Option<ResultType>
       + 'static,
   {
     let exec = self.exec;
@@ -572,7 +572,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
               },
             )
             .map(|result| ActionOutput {
-              kind: result,
+              kind: MockTokenKind { data: result },
               digested: total_digested,
               muted: output_2.muted,
               error: output_2.error,
@@ -951,8 +951,19 @@ mod tests {
 
   #[test]
   fn action_and() {
-    let action: Action<(), (), ()> = regex(r"^a").unwrap().and(regex(r"^b").unwrap());
+    // reject if any action reject
+    let action: Action<(), (), ()> = simple(|_| 0) + simple(|_| 1);
+    assert!(matches!(
+      action.exec(&mut ActionInput::new("a", 0, &mut ())),
+      None
+    ));
+    let action: Action<(), (), ()> = simple(|_| 1) + simple(|_| 0);
+    assert!(matches!(
+      action.exec(&mut ActionInput::new("a", 0, &mut ())),
+      None
+    ));
 
+    let action: Action<(), (), ()> = regex(r"^a").unwrap().and(regex(r"^b").unwrap());
     assert!(matches!(
       action.exec(&mut ActionInput::new("ab", 0, &mut ())),
       Some(ActionOutput {
