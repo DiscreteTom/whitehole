@@ -1,11 +1,11 @@
-use super::{
-  decorator::AcceptedActionDecoratorContext,
-  input::ActionInput,
-  output::{ActionOutput, EnhancedActionOutput},
-  Action, ActionInputRestHeadMatcher,
+use crate::lexer::{
+  action::{ActionInput, ActionInputRestHeadMatcher, ActionOutput, EnhancedActionOutput},
+  token::{TokenKind, TokenKindId},
+  Action,
 };
-use crate::lexer::token::{TokenKind, TokenKindId};
 use std::collections::HashSet;
+
+use super::AcceptedActionDecoratorContext;
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Set [`Action::possible_kinds`].

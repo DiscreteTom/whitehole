@@ -3,7 +3,6 @@ mod decorator;
 mod input;
 mod output;
 mod regex;
-mod select;
 mod simple;
 mod utils;
 
@@ -12,7 +11,6 @@ pub use decorator::*;
 pub use input::*;
 pub use output::*;
 pub use regex::*;
-pub use select::*;
 pub use simple::*;
 pub use utils::*;
 
