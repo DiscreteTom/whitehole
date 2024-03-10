@@ -27,6 +27,18 @@ where
   }
 }
 
+impl<'expect_text, Kind: TokenKind<Kind>> From<Kind> for Expectation<'expect_text, Kind>
+where
+  Kind: TokenKind<Kind>,
+{
+  fn from(kind: Kind) -> Self {
+    Expectation {
+      kind: Some(kind.id()),
+      text: None,
+    }
+  }
+}
+
 impl<'expect_text, Kind> From<&'expect_text str> for Expectation<'expect_text, Kind> {
   fn from(text: &'expect_text str) -> Self {
     Expectation {
