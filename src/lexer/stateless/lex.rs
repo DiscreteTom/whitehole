@@ -3,7 +3,7 @@ use crate::lexer::{
   expectation::Expectation,
   options::ReLexContext,
   output::LexOutput,
-  stateless::common::OutputHandler,
+  stateless::common::UnMutedOutputHandler,
   token::{Token, TokenKind},
 };
 
@@ -149,7 +149,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     Kind: TokenKind<Kind>,
   {
     // use static to avoid allocation in each call
-    static OUTPUT_HANDLER: OutputHandler = OutputHandler {
+    static OUTPUT_HANDLER: UnMutedOutputHandler = UnMutedOutputHandler {
       update_lex_output: true,
       create_token: true,
     };

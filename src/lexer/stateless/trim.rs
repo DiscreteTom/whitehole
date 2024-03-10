@@ -1,6 +1,6 @@
 use super::{common::Validator, StatelessLexer};
 use crate::lexer::{
-  options::ReLexContext, output::TrimOutput, stateless::common::OutputHandler, token::Token,
+  options::ReLexContext, output::TrimOutput, stateless::common::UnMutedOutputHandler, token::Token,
 };
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
@@ -39,10 +39,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     start: usize,
     action_state: &mut ActionState,
   ) -> TrimOutput<Token<'text, Kind, ErrorType>> {
+    // TODO: when trim the un-muted token might change the action state!
+    // maybe we need to clone the action state every step?
+
     // use static to avoid allocation in each call
-    static OUTPUT_HANDLER: OutputHandler = OutputHandler {
-      update_lex_output: false,
-      create_token: false,
+    static OUTPUT_HANDLER: UnMutedOutputHandler = UnMutedOutputHandler {
+      update_lex_output: false, // don't update `digested` for the un-muted token
+      create_token: false,      // we don't need the un-muted token
     };
     static RE_LEX_CONTEXT: ReLexContext = ReLexContext { start: 0, skip: 0 };
 

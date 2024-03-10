@@ -16,12 +16,12 @@ pub(crate) struct Validator<'validator, Kind, ActionState, ErrorType> {
   >,
 }
 
-/// [`OutputHandler`] controls the behaviour of [`StatelessLexer::execute_actions`]
+/// This controls the behaviour of [`StatelessLexer::execute_actions`]
 /// when an un-muted action is accepted.
-pub(crate) struct OutputHandler {
+pub(crate) struct UnMutedOutputHandler {
   /// If `true`, fields in [`LexOutput`] (like [`digested`](LexOutput::digested)) should be updated.
   pub update_lex_output: bool,
-  /// If `true`, the [`LexOutput`] should have a token created by the [`ActionOutput`].
+  /// If `true`, the [`LexOutput::token`] should be set.
   pub create_token: bool,
 }
 
@@ -33,7 +33,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     text: &'text str,
     start: usize,
     state: &mut ActionState,
-    handler: &OutputHandler,
+    handler: &UnMutedOutputHandler,
   ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
   where
     F: Fn(&ActionInput<ActionState>) -> Validator<'validator, Kind, ActionState, ErrorType>,
@@ -52,7 +52,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         return res;
       }
 
-      // all actions will reuse this action input to reuse lazy values
+      // all actions will reuse this action input
       // so we have to create it outside of the loop
       let mut input = ActionInput::new(text, start + res.digested, state);
       let validator = validator_factory(&input);
@@ -68,17 +68,17 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         // but the digested and errors might be updated by the last iteration
         // so we have to return them
         None => return res,
-        Some(TraverseActionsOutput {
-          output,
-          re_lex_action_context: re_lex_action_index,
-        }) => {
+        Some(TraverseActionsOutput { output, re_lex }) => {
           if output.error.is_some() {
-            // copy values before output is consumed
+            // error exists, we must create the token even muted
+            // so we can collect the token in res.errors or res.token
+
+            // backup values before output is consumed
             let muted = output.muted;
             let digested = output.digested;
 
             // create the error token
-            let token = Self::output2token(&input, output);
+            let token = Self::create_token(&input, output);
 
             if muted {
               // don't emit token
@@ -99,12 +99,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             }
 
             // set re-lex
-            res.re_lex = re_lex_action_index;
+            res.re_lex = re_lex;
 
             return res;
           }
 
-          // else, no error
+          // else, no error, only create token if not muted
 
           if output.muted {
             // don't emit token
@@ -118,11 +118,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             res.digested += output.digested;
           }
           if handler.create_token {
-            res.token = Some(Self::output2token(&input, output));
+            res.token = Some(Self::create_token(&input, output));
           }
 
           // set re-lex
-          res.re_lex = re_lex_action_index;
+          res.re_lex = re_lex;
 
           return res;
         }
@@ -148,7 +148,10 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       if let Some(output) = Self::try_execute_action(input, action, &validator) {
         return Some(TraverseActionsOutput {
           output,
-          re_lex_action_context: if i < actions.len() - 1 {
+          re_lex: if i < actions.len() - 1 {
+            // current action is not the last one
+            // so the lex is re-lex-able
+            // TODO: only create this when enable fork
             Some(ReLexContext {
               skip: i + 1,
               start: input.start(),
@@ -161,6 +164,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         });
       }
     }
+    // all actions are checked, no accepted action
     None
   }
 
@@ -173,19 +177,16 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       return None;
     }
 
-    let output = action.exec(input);
-
-    if let Some(output) = output {
+    action.exec(input).and_then(|output| {
       if (validator.accept_after_exec)(input, &output) {
-        return Some(output);
+        Some(output)
+      } else {
+        None
       }
-    }
-
-    // output is None, action is rejected
-    None
+    })
   }
 
-  pub fn output2token<'text>(
+  fn create_token<'text>(
     input: &ActionInput<'text, '_, ActionState>,
     output: ActionOutput<Kind, Option<ErrorType>>,
   ) -> Token<'text, Kind, ErrorType> {
@@ -205,5 +206,5 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 struct TraverseActionsOutput<Kind, ErrorType> {
   output: ActionOutput<Kind, Option<ErrorType>>,
   /// `None` if the current lexed action is the last one (no next action to re-lex).
-  re_lex_action_context: Option<ReLexContext>,
+  re_lex: Option<ReLexContext>,
 }
