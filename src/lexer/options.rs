@@ -2,15 +2,26 @@ use super::expectation::Expectation;
 
 // this should never be constructed by user
 // and the fields should never be accessed by user
-// because the `action_index` is an internal index
-#[derive(Default, Clone, Debug)]
+// because the `action_index` is an internal index.
+// so we make fields only public for crate.
+#[derive(Clone, Debug)]
 pub struct ReLexContext {
+  /// Re-lex is effective only if the
+  /// [`ActionInput::start`](crate::lexer::action::ActionInput::start)
+  /// equals to this.
+  pub(crate) start: usize,
   /// How many actions are skipped.
   /// This is effective only if
-  /// the [`ActionInput::start`](crate::lexer::action::input::ActionInput::start)
-  /// equals to `self.start`.
+  /// the [`ActionInput::start`](crate::lexer::action::ActionInput::start)
+  /// equals to [`Self::start`].
   pub(crate) skip: usize,
-  pub(crate) start: usize,
+}
+
+impl Default for ReLexContext {
+  fn default() -> Self {
+    // set skip to 0 means this is not a re-lex
+    Self { start: 0, skip: 0 }
+  }
 }
 
 pub struct LexOptions<'expect_text, Kind: 'static> {
