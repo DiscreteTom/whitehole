@@ -161,8 +161,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
     Self::execute_actions(
       exp_kind.map_or(
-        // if no expected kind, use the head map with all actions
-        &self.head_map,
+        &self.head_map, // if no expected kind, use the head map with all actions
         |kind| {
           self
             .kind_head_map
@@ -175,18 +174,28 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       // which means this is not a re-lex
       &options.re_lex.unwrap_or(ReLexContext::default()),
       move |input| {
+        // pre-calc and cache the text mismatch
         let text_mismatch = exp_text.is_some_and(|text| !input.rest().starts_with(text));
         Validator {
-          // since we already filtered actions, we only need to skip actions
-          // which are never muted and text mismatch
-          skip_before_exec: Box::new(move |action| action.never_muted() && text_mismatch),
+          // since we already filtered actions, we don't need to skip actions by kinds,
+          // we only need to check text mismatch and maybe muted
+          skip_before_exec: if text_mismatch {
+            // text mismatch, only muted actions should be executed
+            // so we skip never muted actions
+            Box::new(|action| action.never_muted())
+          } else {
+            // text match, we shouldn't skip any action
+            Box::new(|_| false)
+          },
           accept_after_exec: Box::new(move |input, output| {
+            // muted output is always accepted regardless of the expectation
             output.muted
               || (
                 // ensure expectation match.
                 // we still need to check the kind after exec
-                // because muted actions may yield unexpected kinds
+                // because maybe_muted actions may yield unexpected kinds and actually not muted
                 exp_kind.map_or(true, |kind| output.kind.id() == kind)
+                // same as the text, maybe_muted actions may accept unexpected text and actually not muted
                   && exp_text.map_or(true, |text| &input.rest()[..output.digested] == text)
               )
           }),
