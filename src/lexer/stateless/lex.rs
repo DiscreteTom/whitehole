@@ -8,8 +8,10 @@ use crate::lexer::{
 };
 
 pub struct StatelessLexOptions<'expect_text, Kind> {
-  pub start: usize,
   pub expectation: Expectation<'expect_text, Kind>,
+  /// The start index of the text to lex.
+  pub start: usize,
+  /// Provide this if the lex is a re-lex.
   pub re_lex: Option<ReLexContext>,
 }
 
@@ -24,6 +26,7 @@ impl<'expect_text, Kind> Default for StatelessLexOptions<'expect_text, Kind> {
 }
 
 impl<'expect_text, Kind> StatelessLexOptions<'expect_text, Kind> {
+  /// The start index of the text to lex.
   pub fn start(mut self, start: usize) -> Self {
     self.start = start;
     self
@@ -32,6 +35,7 @@ impl<'expect_text, Kind> StatelessLexOptions<'expect_text, Kind> {
     self.expectation = expectation.into();
     self
   }
+  /// Provide this if the lex is a re-lex.
   pub fn re_lex(mut self, re_lex: ReLexContext) -> Self {
     self.re_lex = Some(re_lex);
     self
@@ -39,7 +43,13 @@ impl<'expect_text, Kind> StatelessLexOptions<'expect_text, Kind> {
 }
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
-  /// Lex from the start of the text, with the default action state.
+  /// Lex with the default action state and the default [`StatelessLexOptions`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::exact, LexerBuilder};
+  /// # let stateless = LexerBuilder::<()>::new().append_default(exact("1")).build_stateless();
+  /// stateless.lex("123");
+  /// ```
   pub fn lex<'text>(
     &self,
     text: &'text str,
@@ -54,6 +64,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     self.lex_with_default(text, |o| o)
   }
 
+  /// Lex with the default action state and the given [`StatelessLexOptions`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::exact, LexerBuilder};
+  /// # let stateless = LexerBuilder::<()>::new().append_default(exact("2")).build_stateless();
+  /// stateless.lex_with_default("123", |o| o.start(1));
+  /// ```
   pub fn lex_with_default<'text, 'expect_text>(
     &self,
     text: &'text str,
@@ -75,6 +92,14 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     )
   }
 
+  /// Lex with the given action state and the given [`StatelessLexOptions`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::exact, LexerBuilder};
+  /// # let stateless = LexerBuilder::<()>::new().append_default(exact("2")).build_stateless();
+  /// # let mut action_state = ();
+  /// stateless.lex_with("123", &mut action_state, |o| o.start(1));
+  /// ```
   pub fn lex_with<'text, 'expect_text>(
     &self,
     text: &'text str,
