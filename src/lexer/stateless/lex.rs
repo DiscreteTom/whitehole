@@ -1,27 +1,70 @@
 use super::{common::Validator, StatelessLexer};
 use crate::lexer::{
   expectation::Expectation,
-  options::ReLexContext,
+  options::{LexOptions, ReLexContext},
   output::LexOutput,
   stateless::common::UnMutedOutputHandler,
   token::{Token, TokenKind},
 };
+use std::ops::{Deref, DerefMut};
 
 pub struct StatelessLexOptions<'expect_text, Kind> {
-  pub expectation: Expectation<'expect_text, Kind>,
   /// The start index of the text to lex.
   pub start: usize,
-  /// Provide this if the lex is a re-lex.
-  pub re_lex: Option<ReLexContext>,
+  pub base: LexOptions<'expect_text, Kind>,
 }
 
 impl<'expect_text, Kind> Default for StatelessLexOptions<'expect_text, Kind> {
   fn default() -> Self {
     Self {
       start: 0,
-      expectation: Expectation::default(),
-      re_lex: None,
+      base: LexOptions::default(),
     }
+  }
+}
+
+impl<'expect_text, Kind> From<Expectation<'expect_text, Kind>>
+  for StatelessLexOptions<'expect_text, Kind>
+{
+  fn from(expectation: Expectation<'expect_text, Kind>) -> Self {
+    Self {
+      start: 0,
+      base: expectation.into(),
+    }
+  }
+}
+
+impl<'expect_text, Kind> From<ReLexContext> for StatelessLexOptions<'expect_text, Kind> {
+  fn from(re_lex: ReLexContext) -> Self {
+    Self {
+      start: 0,
+      base: re_lex.into(),
+    }
+  }
+}
+
+impl<'expect_text, Kind> From<LexOptions<'expect_text, Kind>>
+  for StatelessLexOptions<'expect_text, Kind>
+{
+  fn from(options: LexOptions<'expect_text, Kind>) -> Self {
+    Self {
+      start: 0,
+      base: options,
+    }
+  }
+}
+
+impl<'expect_text, Kind> DerefMut for StatelessLexOptions<'expect_text, Kind> {
+  fn deref_mut(&mut self) -> &mut Self::Target {
+    &mut self.base
+  }
+}
+
+impl<'expect_text, Kind> Deref for StatelessLexOptions<'expect_text, Kind> {
+  type Target = LexOptions<'expect_text, Kind>;
+
+  fn deref(&self) -> &Self::Target {
+    &self.base
   }
 }
 
@@ -33,6 +76,11 @@ impl<'expect_text, Kind> StatelessLexOptions<'expect_text, Kind> {
   }
   pub fn expect(mut self, expectation: impl Into<Expectation<'expect_text, Kind>>) -> Self {
     self.expectation = expectation.into();
+    self
+  }
+  /// If set, the [`LexOutput::re_lex`](crate::lexer::output::LexOutput::re_lex) might be `Some`.
+  pub fn fork(mut self) -> Self {
+    self.fork = true;
     self
   }
   /// Provide this if the lex is a re-lex.
@@ -172,7 +220,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       ),
       // the default ReLexContext will set `skip` and `action_index` to 0
       // which means this is not a re-lex
-      &options.re_lex.unwrap_or(ReLexContext::default()),
+      &options.base.re_lex.unwrap_or(ReLexContext::default()),
       move |input| {
         // pre-calc and cache the text mismatch
         let text_mismatch = exp_text.is_some_and(|text| !input.rest().starts_with(text));

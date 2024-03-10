@@ -370,8 +370,11 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
       &mut self.action_state,
       StatelessLexOptions {
         start: self.state.digested(),
-        expectation,
-        re_lex,
+        base: LexOptions {
+          expectation,
+          fork: false, // TODO: directly use LexOptions
+          re_lex,
+        },
       },
     )
   }
@@ -391,8 +394,11 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
       action_state,
       StatelessLexOptions {
         start: self.state.digested(),
-        expectation,
-        re_lex,
+        base: LexOptions {
+          expectation,
+          fork: false, // TODO: directly use LexOptions
+          re_lex,
+        },
       },
     )
   }
