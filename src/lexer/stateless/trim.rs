@@ -44,10 +44,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       update_lex_output: false,
       create_token: false,
     };
+    static RE_LEX_CONTEXT: ReLexContext = ReLexContext { start: 0, skip: 0 };
 
     let output = Self::execute_actions(
       &self.maybe_muted_head_map,
-      &ReLexContext::default(),
+      &RE_LEX_CONTEXT,
       move |_| Validator {
         // we already filtered actions, so never skip
         skip_before_exec: Box::new(|_| false),
