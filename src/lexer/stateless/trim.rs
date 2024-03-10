@@ -4,6 +4,13 @@ use crate::lexer::{
 };
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
+  /// Trim from the start of the text with the default action state.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::exact, LexerBuilder};
+  /// # let stateless = LexerBuilder::<()>::new().append_default(exact("1")).build_stateless();
+  /// stateless.trim("123");
+  /// ```
   pub fn trim<'text>(
     &self,
     text: &'text str,
@@ -15,6 +22,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     (self.trim_with(text, 0, &mut action_state), action_state)
   }
 
+  /// Trim the text with the given start position and action state.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::exact, LexerBuilder};
+  /// # let stateless = LexerBuilder::<()>::new().append_default(exact("1")).build_stateless();
+  /// stateless.trim_with("123", 0, &mut ());
+  /// ```
   pub fn trim_with<'text>(
     &self,
     text: &'text str,
