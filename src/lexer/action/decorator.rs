@@ -438,6 +438,16 @@ mod tests {
         error: Some(123)
       })
     ));
+
+    // `action.apply` can modify input.state
+    let mut state = MyState { value: 0 };
+    let action: Action<(), MyState, ()> =
+      simple(|input: &mut ActionInput<MyState>| input.rest().len()).apply(|ctx| {
+        ctx.input.state.value += 1;
+        ctx.output.into()
+      });
+    action.exec(&mut ActionInput::new("A", 0, &mut state));
+    assert_eq!(state.value, 1);
   }
 
   #[test]
@@ -574,6 +584,7 @@ mod tests {
 
   #[test]
   fn action_callback() {
+    // ensure callback can update the state
     let mut state = MyState { value: 0 };
     let action: Action<(), MyState, ()> =
       simple(|input: &mut ActionInput<MyState>| input.rest().len())
