@@ -4,11 +4,22 @@ use crate::lexer::{
 };
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
-  pub fn trim<'text, 'action_state, 'expect_text>(
+  pub fn trim<'text>(
+    &self,
+    text: &'text str,
+  ) -> (TrimOutput<Token<'text, Kind, ErrorType>>, ActionState)
+  where
+    ActionState: Default,
+  {
+    let mut action_state = ActionState::default();
+    (self.trim_with(text, 0, &mut action_state), action_state)
+  }
+
+  pub fn trim_with<'text>(
     &self,
     text: &'text str,
     start: usize,
-    mut action_state: &'action_state mut ActionState,
+    action_state: &mut ActionState,
   ) -> TrimOutput<Token<'text, Kind, ErrorType>> {
     // use static to avoid allocation in each call
     static OUTPUT_HANDLER: OutputHandler = OutputHandler {
@@ -26,7 +37,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       },
       text,
       start,
-      &mut action_state,
+      action_state,
       &OUTPUT_HANDLER,
     );
 

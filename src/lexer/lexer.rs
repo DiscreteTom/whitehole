@@ -348,7 +348,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
       };
     }
 
-    let res = self.stateless.trim(
+    let res = self.stateless.trim_with(
       self.state.text(),
       self.state.digested(),
       &mut self.action_state,
