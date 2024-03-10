@@ -3,7 +3,7 @@ use super::{
   options::{LexOptions, ReLexContext},
   output::{LexAllOutput, LexOutput, ReLexable, TrimOutput},
   state::LexerState,
-  stateless::StatelessLexer,
+  stateless::{StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKind},
 };
 use std::rc::Rc;
@@ -365,15 +365,15 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   where
     Kind: TokenKind<Kind>,
   {
-    self
-      .stateless
-      .lex_with(self.state.text(), &mut self.action_state, |o| {
-        let mut o = o.start(self.state.digested()).expect(expectation);
-        if let Some(re_lex) = re_lex {
-          o = o.re_lex(re_lex)
-        }
-        o
-      })
+    self.stateless.lex_with_options(
+      self.state.text(),
+      &mut self.action_state,
+      StatelessLexOptions {
+        start: self.state.digested(),
+        expectation,
+        re_lex,
+      },
+    )
   }
 
   // TODO: merge duplicated code
@@ -386,14 +386,14 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   where
     Kind: TokenKind<Kind>,
   {
-    self
-      .stateless
-      .lex_with(self.state.text(), action_state, |o| {
-        let mut o = o.start(self.state.digested()).expect(expectation);
-        if let Some(re_lex) = re_lex {
-          o = o.re_lex(re_lex)
-        }
-        o
-      })
+    self.stateless.lex_with_options(
+      self.state.text(),
+      action_state,
+      StatelessLexOptions {
+        start: self.state.digested(),
+        expectation,
+        re_lex,
+      },
+    )
   }
 }
