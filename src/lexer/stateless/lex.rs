@@ -208,3 +208,25 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     )
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use crate::lexer::{action::exact, LexerBuilder};
+  use whitehole_macros::_TokenKind;
+  use MyKind::*;
+
+  #[derive(_TokenKind, Clone)]
+  enum MyKind {
+    A,
+    B,
+  }
+
+  #[test]
+  #[should_panic]
+  fn stateless_lexer_lex_with_unknown_kind() {
+    let stateless = LexerBuilder::<MyKind>::new()
+      .define(A, exact("A"))
+      .build_stateless();
+    stateless.lex_with("A", &mut (), |o| o.expect(B));
+  }
+}
