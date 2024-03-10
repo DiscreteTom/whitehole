@@ -8,7 +8,9 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
-  /// # let stateless = LexerBuilder::<()>::new().append_default(exact("1")).build_stateless();
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)] enum MyKind { A }
+  /// # let stateless = LexerBuilder::<MyKind>::new().define(MyKind::A, exact("1")).build_stateless();
   /// stateless.trim("123");
   /// ```
   pub fn trim<'text>(
@@ -26,7 +28,9 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
-  /// # let stateless = LexerBuilder::<()>::new().append_default(exact("1")).build_stateless();
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)] enum MyKind { A }
+  /// # let stateless = LexerBuilder::<MyKind>::new().define(MyKind::A, exact("1")).build_stateless();
   /// stateless.trim_with("123", 0, &mut ());
   /// ```
   pub fn trim_with<'text>(

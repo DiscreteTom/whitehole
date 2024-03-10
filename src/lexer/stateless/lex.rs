@@ -47,7 +47,9 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
-  /// # let stateless = LexerBuilder::<()>::new().append_default(exact("1")).build_stateless();
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)] enum MyKind { A }
+  /// # let stateless = LexerBuilder::<MyKind>::new().define(MyKind::A, exact("1")).build_stateless();
   /// stateless.lex("123");
   /// ```
   pub fn lex<'text>(
@@ -72,7 +74,9 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
-  /// # let stateless = LexerBuilder::<()>::new().append_default(exact("2")).build_stateless();
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)] enum MyKind { A }
+  /// # let stateless = LexerBuilder::<MyKind>::new().define(MyKind::A, exact("2")).build_stateless();
   /// stateless.lex_with_default("123", |o| o.start(1));
   /// ```
   pub fn lex_with_default<'text, 'expect_text>(
@@ -100,7 +104,9 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
-  /// # let stateless = LexerBuilder::<()>::new().append_default(exact("2")).build_stateless();
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)] enum MyKind { A }
+  /// # let stateless = LexerBuilder::<MyKind>::new().define(MyKind::A, exact("2")).build_stateless();
   /// # let mut action_state = ();
   /// stateless.lex_with("123", &mut action_state, |o| o.start(1));
   /// ```
@@ -125,8 +131,10 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// Lex with the given action state and the given [`StatelessLexOptions`].
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::exact, LexerBuilder};
-  /// # let stateless = LexerBuilder::<()>::new().append_default(exact("2")).build_stateless();
+  /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessLexOptions};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)] enum MyKind { A }
+  /// # let stateless = LexerBuilder::<MyKind>::new().define(MyKind::A, exact("2")).build_stateless();
   /// # let mut action_state = ();
   /// # let options = StatelessLexOptions::default();
   /// stateless.lex_with_options("123", &mut action_state, options);
