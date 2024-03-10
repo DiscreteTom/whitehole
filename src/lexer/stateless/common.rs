@@ -182,10 +182,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
           // we still need to check the kind after exec
           // because maybe_muted actions may yield unexpected kinds and actually not muted
           expectation.kind.map_or(true, |kind| output.kind.id() == kind)
-          // same as the text, maybe_muted actions may accept unexpected text and actually not muted
+          // same to the text, maybe_muted actions may accept unexpected text and actually not muted
             && expectation.text.map_or(true, |text| &input.rest()[..output.digested] == text)
         )
       {
+        // muted, or match expectation
         Some(output)
       } else {
         None
