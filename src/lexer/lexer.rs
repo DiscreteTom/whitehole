@@ -1,7 +1,7 @@
 use super::{
   expectation::Expectation,
   options::{LexOptions, ReLexContext},
-  output::{LexAllOutput, LexOutput, ReLexable, TrimOutput},
+  output::{LexAllOutput, LexOutput, ReLexable},
   state::LexerState,
   stateless::{StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKind},

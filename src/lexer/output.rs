@@ -24,8 +24,3 @@ pub struct LexAllOutput<TokenType> {
   pub digested: usize,
   pub errors: Vec<TokenType>,
 }
-
-pub struct TrimOutput<TokenType> {
-  pub digested: usize,
-  pub errors: Vec<TokenType>,
-}
