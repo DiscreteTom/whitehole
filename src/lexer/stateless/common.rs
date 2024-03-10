@@ -25,16 +25,14 @@ pub(crate) struct OutputHandler {
   pub create_token: bool,
 }
 
-impl<'input, 'text, 'state, Kind, ActionState, ErrorType>
-  StatelessLexer<Kind, ActionState, ErrorType>
-{
-  pub(crate) fn execute_actions<'validator, F>(
+impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
+  pub(crate) fn execute_actions<'text, 'validator, F>(
     head_map: &ActionHeadMap<Kind, ActionState, ErrorType>,
     re_lex: ReLexContext,
     validator_factory: F,
     text: &'text str,
     start: usize,
-    state: &'state mut ActionState,
+    state: &mut ActionState,
     handler: &OutputHandler,
   ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
   where
@@ -133,7 +131,7 @@ impl<'input, 'text, 'state, Kind, ActionState, ErrorType>
   }
 
   fn traverse_actions(
-    input: &mut ActionInput<'text, 'state, ActionState>,
+    input: &mut ActionInput<ActionState>,
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
     re_lex: &ReLexContext,
     validator: Validator<Kind, ActionState, ErrorType>,
@@ -167,7 +165,7 @@ impl<'input, 'text, 'state, Kind, ActionState, ErrorType>
   }
 
   fn try_execute_action(
-    input: &'input mut ActionInput<'text, 'state, ActionState>,
+    input: &mut ActionInput<ActionState>,
     action: &Action<Kind, ActionState, ErrorType>,
     validator: &Validator<Kind, ActionState, ErrorType>,
   ) -> Option<ActionOutput<Kind, Option<ErrorType>>> {
@@ -187,7 +185,7 @@ impl<'input, 'text, 'state, Kind, ActionState, ErrorType>
     None
   }
 
-  pub fn output2token(
+  pub fn output2token<'text>(
     input: &ActionInput<'text, '_, ActionState>,
     output: ActionOutput<Kind, Option<ErrorType>>,
   ) -> Token<'text, Kind, ErrorType> {
