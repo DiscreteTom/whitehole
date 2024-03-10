@@ -28,6 +28,7 @@ pub(crate) struct UnMutedOutputHandler {
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
   pub(crate) fn execute_actions<'text, 'validator, F>(
     head_map: &ActionHeadMap<Kind, ActionState, ErrorType>,
+    fork: bool,
     re_lex: &ReLexContext,
     validator_factory: F,
     text: &'text str,
@@ -61,7 +62,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         // TODO: maybe some day we can get a `&char` instead of a `char`
         .get(&(input.rest().chars().next().unwrap()))
         .unwrap_or(&head_map.unknown_fallback);
-      let output = Self::traverse_actions(&mut input, actions, re_lex, validator);
+      let output = Self::traverse_actions(&mut input, actions, fork, re_lex, validator);
 
       match output {
         // all definition checked, no accepted action
@@ -133,6 +134,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   fn traverse_actions(
     input: &mut ActionInput<ActionState>,
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
+    fork: bool,
     re_lex: &ReLexContext,
     validator: Validator<Kind, ActionState, ErrorType>,
   ) -> Option<TraverseActionsOutput<Kind, ErrorType>> {
@@ -148,15 +150,15 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       if let Some(output) = Self::try_execute_action(input, action, &validator) {
         return Some(TraverseActionsOutput {
           output,
-          re_lex: if i < actions.len() - 1 {
+          re_lex: if fork && i < actions.len() - 1 {
             // current action is not the last one
             // so the lex is re-lex-able
-            // TODO: only create this when enable fork
             Some(ReLexContext {
               skip: i + 1,
               start: input.start(),
             })
           } else {
+            // fork is disabled or
             // current action is the last one
             // no next action to re-lex
             None

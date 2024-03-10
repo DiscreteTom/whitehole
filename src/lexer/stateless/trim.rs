@@ -51,6 +51,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
     let output = Self::execute_actions(
       &self.maybe_muted_head_map,
+      false, // don't fork
       &RE_LEX_CONTEXT,
       move |_| Validator {
         // we already filtered actions, so never skip

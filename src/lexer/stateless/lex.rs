@@ -220,6 +220,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             .expect("expected kind should exists in some action's possible kinds")
         },
       ),
+      options.fork,
       // the default ReLexContext will set `skip` and `action_index` to 0
       // which means this is not a re-lex
       &options.base.re_lex.unwrap_or(ReLexContext::default()),
