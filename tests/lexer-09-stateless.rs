@@ -1,4 +1,4 @@
-use whitehole::lexer::{action::regex, stateless::StatelessLexOptions, Lexer, LexerBuilder};
+use whitehole::lexer::{action::regex, Lexer, LexerBuilder};
 use whitehole_macros::TokenKind;
 use MyKind::*; // use the enum variants directly
 
@@ -28,10 +28,10 @@ fn stateless_lexer() {
   // stateless lexer is useful if we only want to
   // lex the head of a input buffer, with the default action state
   let output = stateless.lex("aaa");
-  assert!(matches!(output.token.unwrap().kind, A));
+  assert!(matches!(output.0.token.unwrap().kind, A));
 
   // we can also manually provide the action state and other details
-  let output = stateless.lex_with("aaa", StatelessLexOptions::with_action_state(&mut ()));
+  let output = stateless.lex_with("aaa", &mut (), |o| o.start(1));
   assert!(matches!(output.token.unwrap().kind, A));
 }
 
