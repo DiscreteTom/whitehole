@@ -119,7 +119,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     Kind: TokenKind<Kind>,
     ActionState: Clone, // TODO: add a method that doesn't require Clone?
   {
-    let options = options.into();
+    let options: StatelessLexOptions<_> = options.into();
 
     Self::execute_actions(
       options.expectation.kind.map_or(
@@ -139,11 +139,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       },
       // the default ReLexContext will set `skip` and `action_index` to 0
       // which means this is not a re-lex
-      &options
-        .base
-        .re_lex
-        .as_ref()
-        .unwrap_or(&ReLexContext::default()),
+      options.re_lex.as_ref().unwrap_or(&ReLexContext::default()),
       text,
       options.start,
       action_state,

@@ -24,10 +24,10 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     Kind: TokenKind<Kind>,
   {
     let mut res = LexOutput {
-      token: None, // should only be updated before return
-      digested: 0,
-      errors: Vec::new(),
-      re_lex: None,
+      digested: 0,        // might be updated during the loop
+      errors: Vec::new(), // might be updated during the loop
+      token: None,        // should only be set before return
+      re_lex: None,       // should only be set before return
     };
 
     loop {
@@ -48,38 +48,37 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         // TODO: maybe some day we can get a `&char` instead of a `char`
         .get(&(input.rest().chars().next().unwrap()))
         .unwrap_or(&head_map.unknown_fallback);
+
       match Self::traverse_actions(&mut input, actions, re_lex, text_mismatch, &expectation) {
         // all definition checked, no accepted action
         // but the digested and errors might be updated by the last iteration
         // so we have to return them
         None => return res,
         Some((output, action_index)) => {
+          // update digested, no matter the output is muted or not
+          res.digested += output.digested;
+
           if output.error.is_some() {
             // error exists, we must create the token even muted
             // so we can collect the token in res.errors or res.token
 
             // backup values before output is consumed
             let muted = output.muted;
-            let digested = output.digested;
 
             // create the error token
             let token = Self::create_token(&input, output);
 
             if muted {
               // don't emit token
-              // push the token to errors
-              // update state and continue
+              // collect errors and continue
               // [[muted error tokens are also collected]]
               res.errors.push(token);
-              res.digested += digested;
               continue;
             }
 
             // else, not muted
-            res.digested += digested;
+            // don't push token to errors, set the res.token
             res.token = Some(token);
-
-            // set re-lex
             res.re_lex = Self::create_re_lexable(fork, &input, actions, action_index);
 
             return res;
@@ -89,16 +88,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
           if output.muted {
             // don't emit token
-            // just update state and continue
-            res.digested += output.digested;
             continue;
           }
 
           // else, not muted
-          res.digested += output.digested;
           res.token = Some(Self::create_token(&input, output));
-
-          // set re-lex
           res.re_lex = Self::create_re_lexable(fork, &input, actions, action_index);
 
           return res;
@@ -193,7 +187,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
     action_index: usize,
   ) -> Option<StatelessReLexable<ActionState>> {
-    fork.and_then(|action_state| {
+    fork.and_then(|action_state_bk| {
       if action_index < actions.len() - 1 {
         // current action is not the last one
         // so the lex is re-lex-able
@@ -202,7 +196,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             skip: action_index + 1,
             start: input.start(),
           },
-          state: action_state,
+          state: action_state_bk,
         })
       } else {
         // fork is disabled or
