@@ -191,11 +191,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     &self,
     text: &'text str,
     action_state: &mut ActionState,
-    options: StatelessLexOptions<'expect_text, Kind>,
+    options: impl Into<StatelessLexOptions<'expect_text, Kind>>,
   ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
   where
     Kind: TokenKind<Kind>,
   {
+    let options = options.into();
+
     // use static to avoid allocation in each call
     static OUTPUT_HANDLER: UnMutedOutputHandler = UnMutedOutputHandler {
       update_lex_output: true,
