@@ -3,7 +3,7 @@ use super::{
   options::{LexOptions, ReLexContext},
   output::{LexAllOutput, LexOutput, ReLexable},
   state::LexerState,
-  stateless::{StatelessLexOptions, StatelessLexer},
+  stateless::{StatelessLexOptions, StatelessLexer, StatelessReLexable},
   token::{Token, TokenKind},
 };
 use std::rc::Rc;
@@ -180,9 +180,11 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   {
     let options = options.into() as LexOptions<_>;
 
+    // TODO: prevent clone here?
     // because of peek, clone the action state to prevent mutation
     let mut tmp_action_state = self.action_state.clone();
 
+    // TODO: optimize code, push down fork logic to stateless?
     let output = if options.fork {
       let res =
         self.peek_with_stateless(&mut tmp_action_state, options.expectation, options.re_lex);
@@ -190,12 +192,12 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
         token: res.token,
         digested: res.digested,
         errors: res.errors,
-        re_lex: res.re_lex.map(|context| {
+        re_lex: res.re_lex.map(|re_lexable| {
           ReLexable {
             // since self is not mutated, we don't need to clone it
             // nor construct a new lexer
             lexer: (),
-            context,
+            context: re_lexable.context,
           }
         }),
       }
@@ -261,40 +263,28 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   {
     let options = options.into() as LexOptions<_>;
 
-    let output = if options.fork {
-      // fork is enabled, backup the action state before changing it
-      let action_state_bk = self.action_state.clone();
-      let res = self.lex_with_stateless(options.expectation, options.re_lex);
-      LexOutput {
-        token: res.token,
-        digested: res.digested,
-        errors: res.errors,
-        re_lex: res.re_lex.map(|context| {
-          ReLexable {
-            // construct a lexer with the state before lex
-            lexer: Self {
-              stateless: self.stateless.clone(),
-              state: self.state.clone(), // self.state is not mutated yet
-              action_state: action_state_bk,
-            },
-            context,
-          }
-        }),
-      }
-    } else {
-      let res = self.lex_with_stateless(options.expectation, options.re_lex);
-      LexOutput {
-        token: res.token,
-        digested: res.digested,
-        errors: res.errors,
-        re_lex: None, // fork is not enabled, so re_lex is not available
-      }
+    let output = self.lex_with_stateless(options.expectation, options.re_lex);
+    let res = LexOutput {
+      token: output.token,
+      digested: output.digested,
+      errors: output.errors,
+      re_lex: output.re_lex.map(|re_lexable| {
+        ReLexable {
+          // construct a lexer with the state before lex
+          lexer: Self {
+            stateless: self.stateless.clone(),
+            state: self.state.clone(), // self.state is not mutated yet
+            action_state: re_lexable.state,
+          },
+          context: re_lexable.context,
+        }
+      }),
     };
 
     // update state
     self.state.digest(output.digested);
 
-    output
+    res
   }
 
   // TODO: add options?
@@ -342,9 +332,10 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     &mut self,
     expectation: Expectation<'expect_text, Kind>,
     re_lex: Option<ReLexContext>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, StatelessReLexable<ActionState>>
   where
     Kind: TokenKind<Kind>,
+    ActionState: Clone,
   {
     self.stateless.lex_with_options(
       self.state.text(),
@@ -366,9 +357,10 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     action_state: &mut ActionState,
     expectation: Expectation<'expect_text, Kind>,
     re_lex: Option<ReLexContext>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, StatelessReLexable<ActionState>>
   where
     Kind: TokenKind<Kind>,
+    ActionState: Clone,
   {
     self.stateless.lex_with_options(
       self.state.text(),

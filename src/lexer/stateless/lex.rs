@@ -5,6 +5,12 @@ use crate::lexer::{
   token::{Token, TokenKind},
 };
 
+// TODO: add comments and examples
+pub struct StatelessReLexable<ActionState> {
+  pub state: ActionState,
+  pub context: ReLexContext,
+}
+
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
   /// Lex with the default action state and the default [`StatelessLexOptions`].
   /// # Examples
@@ -19,12 +25,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     &self,
     text: &'text str,
   ) -> (
-    LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>,
+    LexOutput<Token<'text, Kind, ErrorType>, StatelessReLexable<ActionState>>,
     ActionState,
   )
   where
     Kind: TokenKind<Kind>,
-    ActionState: Default,
+    ActionState: Default + Clone,
   {
     let mut action_state = ActionState::default();
     (
@@ -49,12 +55,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       StatelessLexOptions<'expect_text, Kind>,
     ) -> StatelessLexOptions<'expect_text, Kind>,
   ) -> (
-    LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>,
+    LexOutput<Token<'text, Kind, ErrorType>, StatelessReLexable<ActionState>>,
     ActionState,
   )
   where
     Kind: TokenKind<Kind>,
-    ActionState: Default,
+    ActionState: Default + Clone,
   {
     let mut action_state = ActionState::default();
     (
@@ -80,9 +86,10 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     options_builder: impl FnOnce(
       StatelessLexOptions<'expect_text, Kind>,
     ) -> StatelessLexOptions<'expect_text, Kind>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, StatelessReLexable<ActionState>>
   where
     Kind: TokenKind<Kind>,
+    ActionState: Clone,
   {
     self.lex_with_options(
       text,
@@ -107,9 +114,10 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     text: &'text str,
     action_state: &mut ActionState,
     options: impl Into<StatelessLexOptions<'expect_text, Kind>>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, StatelessReLexable<ActionState>>
   where
     Kind: TokenKind<Kind>,
+    ActionState: Clone, // TODO: add a method that doesn't require Clone?
   {
     let options = options.into();
 
@@ -124,7 +132,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             .expect("expected kind should exists in some action's possible kinds")
         },
       ),
-      options.fork,
+      if options.fork {
+        Some(action_state.clone())
+      } else {
+        None
+      },
       // the default ReLexContext will set `skip` and `action_index` to 0
       // which means this is not a re-lex
       &options

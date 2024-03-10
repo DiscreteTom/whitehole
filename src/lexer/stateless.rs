@@ -2,6 +2,7 @@ mod common;
 mod lex;
 mod options;
 
+pub use lex::*;
 pub use options::*;
 
 use super::{action::Action, token::TokenKindId, Lexer};

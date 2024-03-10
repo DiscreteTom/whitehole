@@ -1,4 +1,4 @@
-use super::{ActionHeadMap, StatelessLexer};
+use super::{lex::StatelessReLexable, ActionHeadMap, StatelessLexer};
 use crate::lexer::{
   action::{Action, ActionInput, ActionOutput},
   expectation::Expectation,
@@ -8,16 +8,18 @@ use crate::lexer::{
 };
 use std::rc::Rc;
 
+// TODO: rename module to `private` or `execute`
+
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
   pub(crate) fn execute_actions<'text, 'expect_text>(
     head_map: &ActionHeadMap<Kind, ActionState, ErrorType>,
-    fork: bool,
+    fork: Option<ActionState>,
     re_lex: &ReLexContext,
     text: &'text str,
     start: usize,
     state: &mut ActionState,
     expectation: &Expectation<'expect_text, Kind>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, StatelessReLexable<ActionState>>
   where
     Kind: TokenKind<Kind>,
   {
@@ -46,21 +48,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         // TODO: maybe some day we can get a `&char` instead of a `char`
         .get(&(input.rest().chars().next().unwrap()))
         .unwrap_or(&head_map.unknown_fallback);
-      let output = Self::traverse_actions(
-        &mut input,
-        actions,
-        fork,
-        re_lex,
-        text_mismatch,
-        &expectation,
-      );
-
-      match output {
+      match Self::traverse_actions(&mut input, actions, re_lex, text_mismatch, &expectation) {
         // all definition checked, no accepted action
         // but the digested and errors might be updated by the last iteration
         // so we have to return them
         None => return res,
-        Some(TraverseActionsOutput { output, re_lex }) => {
+        Some((output, action_index)) => {
           if output.error.is_some() {
             // error exists, we must create the token even muted
             // so we can collect the token in res.errors or res.token
@@ -87,7 +80,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             res.token = Some(token);
 
             // set re-lex
-            res.re_lex = re_lex;
+            res.re_lex = Self::create_re_lexable(fork, &input, actions, action_index);
 
             return res;
           }
@@ -106,7 +99,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
           res.token = Some(Self::create_token(&input, output));
 
           // set re-lex
-          res.re_lex = re_lex;
+          res.re_lex = Self::create_re_lexable(fork, &input, actions, action_index);
 
           return res;
         }
@@ -117,11 +110,10 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   fn traverse_actions(
     input: &mut ActionInput<ActionState>,
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
-    fork: bool,
     re_lex: &ReLexContext,
     text_mismatch: bool,
     expectation: &Expectation<Kind>,
-  ) -> Option<TraverseActionsOutput<Kind, ErrorType>>
+  ) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize)>
   where
     Kind: TokenKind<Kind>,
   {
@@ -135,22 +127,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       })
     {
       if let Some(output) = Self::try_execute_action(input, action, text_mismatch, expectation) {
-        return Some(TraverseActionsOutput {
-          output,
-          re_lex: if fork && i < actions.len() - 1 {
-            // current action is not the last one
-            // so the lex is re-lex-able
-            Some(ReLexContext {
-              skip: i + 1,
-              start: input.start(),
-            })
-          } else {
-            // fork is disabled or
-            // current action is the last one
-            // no next action to re-lex
-            None
-          },
-        });
+        return Some((output, i));
       }
     }
     // all actions are checked, no accepted action
@@ -209,10 +186,30 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       error: output.error,
     }
   }
-}
 
-struct TraverseActionsOutput<Kind, ErrorType> {
-  output: ActionOutput<Kind, Option<ErrorType>>,
-  /// `None` if the current lexed action is the last one (no next action to re-lex).
-  re_lex: Option<ReLexContext>,
+  fn create_re_lexable(
+    fork: Option<ActionState>,
+    input: &ActionInput<ActionState>,
+    actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
+    action_index: usize,
+  ) -> Option<StatelessReLexable<ActionState>> {
+    fork.and_then(|action_state| {
+      if action_index < actions.len() - 1 {
+        // current action is not the last one
+        // so the lex is re-lex-able
+        Some(StatelessReLexable {
+          context: ReLexContext {
+            skip: action_index + 1,
+            start: input.start(),
+          },
+          state: action_state,
+        })
+      } else {
+        // fork is disabled or
+        // current action is the last one
+        // no next action to re-lex
+        None
+      }
+    })
+  }
 }
