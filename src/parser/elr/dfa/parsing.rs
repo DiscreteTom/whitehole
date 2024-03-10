@@ -6,7 +6,7 @@ use super::{
 use crate::{
   lexer::{
     token::{Token, TokenKind},
-    trimmed::TrimmedLexer,
+    Lexer,
   },
   parser::{
     ast::ASTNode,
@@ -40,7 +40,7 @@ pub struct ParsingState<
   >,
   pub reducing_stack: Vec<usize>,
   /// This should always be `Some`.
-  pub lexer: &'lexer mut TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+  pub lexer: &'lexer mut Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   /// `None` if not ready, `Some(None)` if EOF, `Some(Some(token))` if next token exists.
   pub next_token: Option<Option<Token<'buffer, TKind, LexerErrorType>>>,
   pub need_lex: bool,
@@ -48,7 +48,7 @@ pub struct ParsingState<
   pub re_lex_stack: Stack<
     ReLexState<
       StatefulState<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
-      TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+      Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     >,
   >,
 }
@@ -78,7 +78,7 @@ impl<
 {
   pub fn new(
     buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
-    lexer: &'lexer mut TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: &'lexer mut Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     entry_state: Rc<
       State<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>,
     >,
@@ -273,7 +273,7 @@ impl<
   }
 
   fn lex_without_expectation(
-    lexer: &mut TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: &mut Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     current_state: &mut StatefulState<
       TKind,
       NTKind,
@@ -286,7 +286,7 @@ impl<
     lexer_panic_handler: &LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
   ) -> Option<Token<'buffer, TKind, LexerErrorType>> {
     while lexer.state().rest().len() > 0 {
-      let (output, _) = lexer.lex();
+      let output = lexer.lex();
       match output.token {
         None => {
           // lex failed, enter panic mode

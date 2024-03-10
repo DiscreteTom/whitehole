@@ -338,25 +338,6 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     self.take_with(n, ActionState::default())
   }
 
-  /// Digest all muted tokens from the rest of the text.
-  pub fn trim(&mut self) -> TrimOutput<Token<'text, Kind, ErrorType>> {
-    // if already trimmed, return empty output
-    if self.state.trimmed() {
-      return TrimOutput {
-        digested: 0,
-        errors: Vec::new(),
-      };
-    }
-
-    let res = self.stateless.trim_with(
-      self.state.text(),
-      self.state.digested(),
-      &mut self.action_state,
-    );
-    self.state.trim(res.digested);
-    res
-  }
-
   fn lex_with_stateless<'expect_text>(
     &mut self,
     expectation: Expectation<'expect_text, Kind>,

@@ -2,7 +2,7 @@ use crate::{
   lexer::{
     expectation::Expectation,
     token::{Range, Token, TokenKind, TokenKindId},
-    trimmed::TrimmedLexer,
+    Lexer,
   },
   parser::{
     ast::ASTNode,
@@ -87,14 +87,14 @@ impl<
 
   pub fn try_lex_with_expectation<'buffer>(
     &self,
-    lexer: &mut TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: &mut Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     lexed_grammars: &mut HashSet<GrammarId>,
     global: &Rc<RefCell<Global>>,
     re_lex: bool,
   ) -> Option<
     CandidateTryLexOutput<
       ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>,
-      TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+      Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     >,
   > {
     if !self.gr.expect.contains(&self.digested) {
@@ -161,7 +161,7 @@ impl<
     &self,
     buffer: &Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
     next_token: &Option<Token<'buffer, TKind, LexerErrorType>>,
-    lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: &Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     reducing_stack: &Vec<usize>,
     entry_nts: &HashSet<GrammarId>,
     follow_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,

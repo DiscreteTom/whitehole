@@ -24,7 +24,7 @@ use super::{
   },
   parser::Parser,
 };
-use crate::lexer::{stateless::StatelessLexer, token::TokenKind, trimmed::TrimmedLexer};
+use crate::lexer::{stateless::StatelessLexer, token::TokenKind, Lexer};
 use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 pub struct ParserBuilderGrammar<TKind: TokenKind<TKind>, NTKind: TokenKind<NTKind>> {
@@ -339,7 +339,7 @@ impl<
   /// Set the lexer panic handler. By default the handler is [`default_lexer_panic_handler`].
   pub fn on_lexer_panic<F>(mut self, f: F) -> Self
   where
-    F: Fn(&mut TrimmedLexer<TKind, LexerActionState, LexerErrorType>) + 'static,
+    F: Fn(&mut Lexer<TKind, LexerActionState, LexerErrorType>) + 'static,
   {
     self.lexer_panic_handler = Rc::new(f);
     self

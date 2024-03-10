@@ -2,7 +2,7 @@ use crate::{
   lexer::{
     expectation::Expectation,
     token::{TokenKind, TokenKindId},
-    trimmed::TrimmedLexer,
+    Lexer,
   },
   parser::ast::ASTNode,
 };
@@ -25,12 +25,12 @@ pub fn lex_grammar<
   LexerErrorType: 'static,
 >(
   expectation: Expectation<TKind>,
-  lexer: &mut TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+  lexer: &mut Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   global: &Rc<RefCell<Global>>,
 ) -> Option<
   LexGrammarOutput<'buffer, TKind, ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
 > {
-  let (res, _) = lexer.lex_expect(expectation);
+  let res = lexer.lex_expect(expectation);
   res.token.and_then(move |token| {
     // TODO: set node data
     Some(LexGrammarOutput {

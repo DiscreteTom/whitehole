@@ -1,6 +1,6 @@
 use super::{builder::lexer_panic_handler::LexerPanicHandler, dfa::dfa::Dfa};
 use crate::{
-  lexer::{token::TokenKind, trimmed::TrimmedLexer},
+  lexer::{token::TokenKind, Lexer},
   parser::ast::ASTNode,
 };
 use std::{cell::RefCell, rc::Rc};
@@ -28,7 +28,7 @@ pub struct Parser<
   LexerErrorType: 'static,
 > {
   dfa: Rc<Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
-  lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+  lexer: Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   lexer_panic_handler: LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
   global: Rc<RefCell<Global>>,
 }
@@ -68,7 +68,7 @@ impl<
 {
   pub fn new(
     dfa: Rc<Dfa<TKind, NTKind, ASTData, ErrorType, Global, LexerActionState, LexerErrorType>>,
-    lexer: TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     lexer_panic_handler: LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
     global: Rc<RefCell<Global>>,
   ) -> Self {

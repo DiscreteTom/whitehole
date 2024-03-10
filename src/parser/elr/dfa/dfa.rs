@@ -3,7 +3,7 @@ use super::{
   state::{State, StateId},
 };
 use crate::{
-  lexer::{token::TokenKind, trimmed::TrimmedLexer},
+  lexer::{token::TokenKind, Lexer},
   parser::{
     ast::ASTNode,
     elr::{
@@ -83,7 +83,7 @@ impl<
   pub fn parse<'buffer>(
     &self,
     buffer: Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
-    lexer: &mut TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: &mut Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     lexer_panic_handler: &LexerPanicHandler<TKind, LexerActionState, LexerErrorType>,
     global: &Rc<RefCell<Global>>,
     re_lex: bool,

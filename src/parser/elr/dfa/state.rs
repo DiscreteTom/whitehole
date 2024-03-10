@@ -6,7 +6,7 @@ use crate::{
   lexer::{
     expectation::Expectation,
     token::{Token, TokenKind, TokenKindId},
-    trimmed::TrimmedLexer,
+    Lexer,
   },
   parser::{
     ast::ASTNode,
@@ -140,14 +140,14 @@ impl<
 {
   pub fn try_lex<'buffer>(
     &mut self,
-    lexer: &mut TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: &mut Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     // TODO: add param token_ast_mapper
     global: &Rc<RefCell<Global>>,
     re_lex: bool,
   ) -> Option<
     StateTryLexOutput<
       ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>,
-      TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+      Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     >,
   > {
     // first, try expectational lex
@@ -201,7 +201,7 @@ impl<
     &self,
     buffer: &Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
     next_token: &Option<Token<'buffer, TKind, LexerErrorType>>,
-    lexer: &TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: &Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
     reducing_stack: &Vec<usize>,
     entry_nts: &HashSet<GrammarId>,
     follow_sets: &HashMap<GrammarId, HashSet<Rc<Grammar<TKind, NTKind>>>>,

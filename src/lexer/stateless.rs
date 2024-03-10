@@ -1,6 +1,5 @@
 mod common;
 mod lex;
-mod trim;
 
 pub use lex::StatelessLexOptions;
 

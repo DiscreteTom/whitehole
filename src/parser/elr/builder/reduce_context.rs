@@ -1,7 +1,7 @@
 use crate::{
   lexer::{
     token::{Token, TokenKind},
-    trimmed::TrimmedLexer,
+    Lexer,
   },
   parser::ast::ASTNode,
 };
@@ -21,7 +21,7 @@ pub struct ReduceContext<
   buffer: &'a Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
   reducing_stack: &'a Vec<usize>,
   next_token: &'a Option<Token<'buffer, TKind, LexerErrorType>>,
-  lexer: &'a TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+  lexer: &'a Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   pub data: Option<ASTData>,
   pub error: Option<ErrorType>,
 }
@@ -54,7 +54,7 @@ impl<
     buffer: &'a Vec<ASTNode<'buffer, TKind, NTKind, ASTData, ErrorType, Global>>,
     reducing_stack: &'a Vec<usize>,
     next_token: &'a Option<Token<'buffer, TKind, LexerErrorType>>,
-    lexer: &'a TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType>,
+    lexer: &'a Lexer<'buffer, TKind, LexerActionState, LexerErrorType>,
   ) -> Self {
     Self {
       matched_indexes,
@@ -80,7 +80,7 @@ impl<
     self.next_token
   }
   /// The lexer after lex the [`ReduceContext::next_token`].
-  pub fn lexer(&self) -> &'a TrimmedLexer<'buffer, TKind, LexerActionState, LexerErrorType> {
+  pub fn lexer(&self) -> &'a Lexer<'buffer, TKind, LexerActionState, LexerErrorType> {
     self.lexer
   }
 

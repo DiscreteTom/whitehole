@@ -8,7 +8,6 @@ pub mod position;
 pub mod state;
 pub mod stateless;
 pub mod token;
-pub mod trimmed;
 
 pub use action::Action;
 pub use builder::LexerBuilder;
