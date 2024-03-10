@@ -61,7 +61,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     Kind: TokenKind<Kind>,
     ActionState: Default,
   {
-    self.lex_with_default(text, |o| o)
+    let mut action_state = ActionState::default();
+    (
+      self.lex_with_options(text, &mut action_state, StatelessLexOptions::default()),
+      action_state,
+    )
   }
 
   /// Lex with the default action state and the given [`StatelessLexOptions`].
@@ -111,17 +115,40 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   where
     Kind: TokenKind<Kind>,
   {
+    self.lex_with_options(
+      text,
+      action_state,
+      options_builder(StatelessLexOptions::default()),
+    )
+  }
+
+  /// Lex with the given action state and the given [`StatelessLexOptions`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::exact, LexerBuilder};
+  /// # let stateless = LexerBuilder::<()>::new().append_default(exact("2")).build_stateless();
+  /// # let mut action_state = ();
+  /// # let options = StatelessLexOptions::default();
+  /// stateless.lex_with_options("123", &mut action_state, options);
+  /// ```
+  pub fn lex_with_options<'text, 'expect_text>(
+    &self,
+    text: &'text str,
+    action_state: &mut ActionState,
+    options: StatelessLexOptions<'expect_text, Kind>,
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
+  where
+    Kind: TokenKind<Kind>,
+  {
     // use static to avoid allocation in each call
     static OUTPUT_HANDLER: OutputHandler = OutputHandler {
       update_lex_output: true,
       create_token: true,
     };
 
-    let options = options_builder(StatelessLexOptions::default());
     let Expectation {
       kind: exp_kind,
       text: exp_text,
-      ..
     } = options.expectation;
 
     Self::execute_actions(
