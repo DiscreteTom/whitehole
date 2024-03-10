@@ -1,43 +1,25 @@
 use super::{ActionHeadMap, StatelessLexer};
 use crate::lexer::{
   action::{Action, ActionInput, ActionOutput},
+  expectation::Expectation,
   options::ReLexContext,
   output::LexOutput,
-  token::{Range, Token},
+  token::{Range, Token, TokenKind},
 };
 use std::rc::Rc;
 
-pub(crate) struct Validator<'validator, Kind, ActionState, ErrorType> {
-  /// If return `true`, the action will be skipped.
-  pub skip_before_exec: Box<dyn Fn(&Action<Kind, ActionState, ErrorType>) -> bool>,
-  /// If return `true`, the action will be accepted.
-  pub accept_after_exec: Box<
-    dyn Fn(&ActionInput<ActionState>, &ActionOutput<Kind, Option<ErrorType>>) -> bool + 'validator, // make sure validator is not outlive the checker
-  >,
-}
-
-/// This controls the behaviour of [`StatelessLexer::execute_actions`]
-/// when an un-muted action is accepted.
-pub(crate) struct UnMutedOutputHandler {
-  /// If `true`, fields in [`LexOutput`] (like [`digested`](LexOutput::digested)) should be updated.
-  pub update_lex_output: bool,
-  /// If `true`, the [`LexOutput::token`] should be set.
-  pub create_token: bool,
-}
-
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
-  pub(crate) fn execute_actions<'text, 'validator, F>(
+  pub(crate) fn execute_actions<'text, 'expect_text>(
     head_map: &ActionHeadMap<Kind, ActionState, ErrorType>,
     fork: bool,
     re_lex: &ReLexContext,
-    validator_factory: F,
     text: &'text str,
     start: usize,
     state: &mut ActionState,
-    handler: &UnMutedOutputHandler,
+    expectation: &Expectation<'expect_text, Kind>,
   ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
   where
-    F: Fn(&ActionInput<ActionState>) -> Validator<'validator, Kind, ActionState, ErrorType>,
+    Kind: TokenKind<Kind>,
   {
     let mut res = LexOutput {
       token: None, // should only be updated before return
@@ -56,13 +38,22 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       // all actions will reuse this action input
       // so we have to create it outside of the loop
       let mut input = ActionInput::new(text, start + res.digested, state);
-      let validator = validator_factory(&input);
+      let text_mismatch = expectation
+        .text
+        .is_some_and(|text| !input.rest().starts_with(text));
       let actions = head_map
         .known_map
         // TODO: maybe some day we can get a `&char` instead of a `char`
         .get(&(input.rest().chars().next().unwrap()))
         .unwrap_or(&head_map.unknown_fallback);
-      let output = Self::traverse_actions(&mut input, actions, fork, re_lex, validator);
+      let output = Self::traverse_actions(
+        &mut input,
+        actions,
+        fork,
+        re_lex,
+        text_mismatch,
+        &expectation,
+      );
 
       match output {
         // all definition checked, no accepted action
@@ -91,13 +82,9 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
               continue;
             }
 
-            // else, not muted, check output handler
-            if handler.update_lex_output {
-              res.digested += digested;
-            }
-            if handler.create_token {
-              res.token = Some(token);
-            }
+            // else, not muted
+            res.digested += digested;
+            res.token = Some(token);
 
             // set re-lex
             res.re_lex = re_lex;
@@ -114,13 +101,9 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             continue;
           }
 
-          // else, not muted, check output handler
-          if handler.update_lex_output {
-            res.digested += output.digested;
-          }
-          if handler.create_token {
-            res.token = Some(Self::create_token(&input, output));
-          }
+          // else, not muted
+          res.digested += output.digested;
+          res.token = Some(Self::create_token(&input, output));
 
           // set re-lex
           res.re_lex = re_lex;
@@ -136,8 +119,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
     fork: bool,
     re_lex: &ReLexContext,
-    validator: Validator<Kind, ActionState, ErrorType>,
-  ) -> Option<TraverseActionsOutput<Kind, ErrorType>> {
+    text_mismatch: bool,
+    expectation: &Expectation<Kind>,
+  ) -> Option<TraverseActionsOutput<Kind, ErrorType>>
+  where
+    Kind: TokenKind<Kind>,
+  {
     for (i, action) in actions
       .iter()
       .enumerate()
@@ -147,7 +134,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         0
       })
     {
-      if let Some(output) = Self::try_execute_action(input, action, &validator) {
+      if let Some(output) = Self::try_execute_action(input, action, text_mismatch, expectation) {
         return Some(TraverseActionsOutput {
           output,
           re_lex: if fork && i < actions.len() - 1 {
@@ -173,14 +160,32 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   fn try_execute_action(
     input: &mut ActionInput<ActionState>,
     action: &Action<Kind, ActionState, ErrorType>,
-    validator: &Validator<Kind, ActionState, ErrorType>,
-  ) -> Option<ActionOutput<Kind, Option<ErrorType>>> {
-    if (validator.skip_before_exec)(action) {
+    text_mismatch: bool,
+    expectation: &Expectation<Kind>,
+  ) -> Option<ActionOutput<Kind, Option<ErrorType>>>
+  where
+    Kind: TokenKind<Kind>,
+  {
+    // TODO: pre-calc and cache never muted actions
+    if text_mismatch && action.never_muted() {
+      // text mismatch, only muted actions should be executed
+      // so we skip never muted actions
       return None;
     }
 
     action.exec(input).and_then(|output| {
-      if (validator.accept_after_exec)(input, &output) {
+      if
+      // muted output is always accepted regardless of the expectation
+      output.muted
+        || (
+          // ensure expectation match.
+          // we still need to check the kind after exec
+          // because maybe_muted actions may yield unexpected kinds and actually not muted
+          expectation.kind.map_or(true, |kind| output.kind.id() == kind)
+          // same as the text, maybe_muted actions may accept unexpected text and actually not muted
+            && expectation.text.map_or(true, |text| &input.rest()[..output.digested] == text)
+        )
+      {
         Some(output)
       } else {
         None
