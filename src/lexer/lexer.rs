@@ -365,16 +365,15 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   where
     Kind: TokenKind<Kind>,
   {
-    self.stateless.lex_with(self.state.text(), |o| {
-      let mut o = o
-        .start(self.state.digested())
-        .state(&mut self.action_state)
-        .expect(expectation);
-      if let Some(re_lex) = re_lex {
-        o = o.re_lex(re_lex)
-      }
-      o
-    })
+    self
+      .stateless
+      .lex_with(self.state.text(), &mut self.action_state, |o| {
+        let mut o = o.start(self.state.digested()).expect(expectation);
+        if let Some(re_lex) = re_lex {
+          o = o.re_lex(re_lex)
+        }
+        o
+      })
   }
 
   // TODO: merge duplicated code
@@ -387,15 +386,14 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   where
     Kind: TokenKind<Kind>,
   {
-    self.stateless.lex_with(self.state.text(), |o| {
-      let mut o = o
-        .start(self.state.digested())
-        .state(action_state)
-        .expect(expectation);
-      if let Some(re_lex) = re_lex {
-        o = o.re_lex(re_lex)
-      }
-      o
-    })
+    self
+      .stateless
+      .lex_with(self.state.text(), action_state, |o| {
+        let mut o = o.start(self.state.digested()).expect(expectation);
+        if let Some(re_lex) = re_lex {
+          o = o.re_lex(re_lex)
+        }
+        o
+      })
   }
 }
