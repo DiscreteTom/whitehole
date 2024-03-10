@@ -28,7 +28,7 @@ pub(crate) struct OutputHandler {
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
   pub(crate) fn execute_actions<'text, 'validator, F>(
     head_map: &ActionHeadMap<Kind, ActionState, ErrorType>,
-    re_lex: ReLexContext,
+    re_lex: &ReLexContext,
     validator_factory: F,
     text: &'text str,
     start: usize,
@@ -61,7 +61,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         // TODO: maybe some day we can get a `&char` instead of a `char`
         .get(&(input.rest().chars().next().unwrap()))
         .unwrap_or(&head_map.unknown_fallback);
-      let output = Self::traverse_actions(&mut input, actions, &re_lex, validator);
+      let output = Self::traverse_actions(&mut input, actions, re_lex, validator);
 
       match output {
         // all definition checked, no accepted action

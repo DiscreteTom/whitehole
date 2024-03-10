@@ -173,7 +173,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       ),
       // the default ReLexContext will set `skip` and `action_index` to 0
       // which means this is not a re-lex
-      options.re_lex.unwrap_or(ReLexContext::default()),
+      &options.re_lex.unwrap_or(ReLexContext::default()),
       move |input| {
         let text_mismatch = exp_text.is_some_and(|text| !input.rest().starts_with(text));
         Validator {
