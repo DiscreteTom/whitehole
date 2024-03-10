@@ -99,9 +99,17 @@ impl<'action_state, Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionSta
     let mut action_state = options.action_state;
 
     Self::execute_actions(
-      exp_kind.map_or(&self.head_map, |kind| {
-        self.kind_head_map.get(&kind).unwrap_or(&self.head_map)
-      }),
+      exp_kind.map_or(
+        // if no expected kind, use the head map with all actions
+        &self.head_map,
+        |kind| {
+          self
+            .kind_head_map
+            .get(&kind)
+            // this must be `Some`, unless the user set the wrong possible kinds for actions
+            .expect("expected kind should exists in some action's possible kinds")
+        },
+      ),
       // the default ReLexContext will set `skip` and `action_index` to 0
       // which means this is not a re-lex
       options.re_lex.unwrap_or(ReLexContext::default()),
