@@ -1,7 +1,8 @@
 mod common;
 mod lex;
+mod options;
 
-pub use lex::StatelessLexOptions;
+pub use options::*;
 
 use super::{action::Action, token::TokenKindId, Lexer};
 use std::{collections::HashMap, rc::Rc};
