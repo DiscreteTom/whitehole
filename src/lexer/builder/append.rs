@@ -186,7 +186,7 @@ mod tests {
       .append_with(word("A").bind(A), |a| a.error("123"))
       .build_stateless();
     assert_eq!(stateless.actions().len(), 1);
-    assert_eq!(stateless.lex("A").token.unwrap().error.unwrap(), "123");
+    assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), "123");
 
     // many
     let stateless = LexerBuilder::<MyKind, (), &str>::default()
@@ -194,8 +194,8 @@ mod tests {
       .build_stateless();
     assert_eq!(stateless.actions().len(), 2);
     // ensure decorator is applied to all actions
-    assert_eq!(stateless.lex("A").token.unwrap().error.unwrap(), "123");
-    assert_eq!(stateless.lex("B").token.unwrap().error.unwrap(), "123");
+    assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), "123");
+    assert_eq!(stateless.lex("B").0.token.unwrap().error.unwrap(), "123");
   }
 
   #[test]
@@ -236,7 +236,7 @@ mod tests {
     assert!(stateless.actions()[0]
       .possible_kinds()
       .contains(&Anonymous.id()),);
-    assert_eq!(stateless.lex("A").token.unwrap().error.unwrap(), "123");
+    assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), "123");
 
     // many
     let stateless = LexerBuilder::<MyKind, (), &str>::default()
@@ -252,7 +252,7 @@ mod tests {
       .possible_kinds()
       .contains(&Anonymous.id()),);
     // ensure decorator is applied to all actions
-    assert_eq!(stateless.lex("A").token.unwrap().error.unwrap(), "123");
-    assert_eq!(stateless.lex("B").token.unwrap().error.unwrap(), "123");
+    assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), "123");
+    assert_eq!(stateless.lex("B").0.token.unwrap().error.unwrap(), "123");
   }
 }

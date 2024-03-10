@@ -11,7 +11,7 @@ pub struct StatelessLexOptions<'action_state, 'expect_text, Kind, ActionState> {
   pub action_state: &'action_state mut ActionState,
   pub start: usize,
   pub expectation: Expectation<'expect_text, Kind>,
-  pub re_lex: Option<ReLexContext>, // TODO: rename to fork?
+  pub re_lex: Option<ReLexContext>,
 }
 
 impl<'action_state, 'expect_text, Kind, ActionState>
@@ -42,32 +42,22 @@ impl<'action_state, 'expect_text, Kind, ActionState>
   }
 }
 
-pub struct StatelessLexOutput<TokenType, ActionState> {
-  pub token: Option<TokenType>,
-  pub digested: usize,
-  pub errors: Vec<TokenType>,
-  pub action_state: ActionState,
-  // TODO: add re_lex
-}
-
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
   /// Lex from the start of the text, with the default action state.
   pub fn lex<'text>(
     &self,
     text: &'text str,
-  ) -> StatelessLexOutput<Token<'text, Kind, ErrorType>, ActionState>
+  ) -> (
+    LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>,
+    ActionState,
+  )
   where
     Kind: TokenKind<Kind>,
     ActionState: Default,
   {
     let mut action_state = ActionState::default();
     let output = self.lex_with(text, |o| o.state(&mut action_state));
-    StatelessLexOutput {
-      token: output.token,
-      digested: output.digested,
-      errors: output.errors,
-      action_state,
-    }
+    (output, action_state)
   }
 
   pub fn lex_default_with<'text, 'action_state, 'expect_text>(
@@ -77,13 +67,17 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       StatelessLexOptions<'_, 'expect_text, Kind, ActionState>,
     )
       -> StatelessLexOptions<'action_state, 'expect_text, Kind, ActionState>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
+  ) -> (
+    LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>,
+    ActionState,
+  )
   where
     Kind: TokenKind<Kind>,
     ActionState: Default + 'action_state,
   {
     let mut action_state = ActionState::default();
-    self.lex_with(text, |o| options_builder(o.state(&mut action_state)))
+    let output = self.lex_with(text, |o| options_builder(o.state(&mut action_state)));
+    (output, action_state)
   }
 
   pub fn lex_with<'text, 'action_state, 'expect_text, F>(

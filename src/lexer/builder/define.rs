@@ -149,7 +149,7 @@ mod tests {
     assert_eq!(stateless.actions().len(), 1);
     assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
     assert!(stateless.actions()[0].possible_kinds().contains(&A.id()));
-    assert_eq!(stateless.lex("A").token.unwrap().error.unwrap(), 123);
+    assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), 123);
 
     // multiple
     let stateless = LexerBuilder::<MyKind, (), i32>::default()
@@ -160,8 +160,8 @@ mod tests {
     assert!(stateless.actions()[0].possible_kinds().contains(&A.id()));
     assert_eq!(stateless.actions()[1].possible_kinds().len(), 1);
     assert!(stateless.actions()[1].possible_kinds().contains(&A.id()));
-    assert_eq!(stateless.lex("A").token.unwrap().error.unwrap(), 123);
-    assert_eq!(stateless.lex("B").token.unwrap().error.unwrap(), 123);
+    assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), 123);
+    assert_eq!(stateless.lex("B").0.token.unwrap().error.unwrap(), 123);
   }
 
   #[test]

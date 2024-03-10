@@ -2,7 +2,7 @@ mod common;
 mod lex;
 mod trim;
 
-pub use lex::{StatelessLexOptions, StatelessLexOutput};
+pub use lex::StatelessLexOptions;
 
 use super::{action::Action, token::TokenKindId, Lexer};
 use std::{collections::HashMap, rc::Rc};

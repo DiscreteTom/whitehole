@@ -3,7 +3,7 @@ use super::{
   options::{LexOptions, ReLexContext},
   output::{LexAllOutput, LexOutput, ReLexable, TrimOutput},
   state::LexerState,
-  stateless::{StatelessLexOptions, StatelessLexer},
+  stateless::StatelessLexer,
   token::{Token, TokenKind},
 };
 use std::rc::Rc;
