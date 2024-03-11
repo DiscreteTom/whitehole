@@ -8,8 +8,6 @@ pub struct LexOutput<TokenType, ReLexType> {
   /// [`LexOutput::token`] will not be included in this list
   /// even if it's an error token.
   pub errors: Vec<TokenType>, // [[@muted error tokens are also collected]]
-  /// This will always be `None`
-  /// unless you set [`LexOptions::fork`](crate::lexer::options::LexOptions::fork) to `true`.
   /// If `Some`, the lex is re-lex-able.
   pub re_lex: Option<ReLexType>,
 }

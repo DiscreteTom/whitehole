@@ -74,11 +74,6 @@ impl<'expect_text, Kind> StatelessLexOptions<'expect_text, Kind> {
     self.expectation = expectation.into();
     self
   }
-  /// If set, the [`LexOutput::re_lex`](crate::lexer::output::LexOutput::re_lex) might be `Some`.
-  pub fn fork(mut self) -> Self {
-    self.fork = true;
-    self
-  }
   /// Provide this if the lex is a re-lex.
   pub fn re_lex(mut self, re_lex: ReLexContext) -> Self {
     self.re_lex = Some(re_lex);
