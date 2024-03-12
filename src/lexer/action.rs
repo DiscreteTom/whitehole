@@ -18,7 +18,8 @@ use std::collections::HashSet;
 pub enum ActionInputRestHeadMatcher {
   OneOf(HashSet<char>),
   Not(HashSet<char>),
-  /// Match any characters that are not known in `OneOf` or `Not`.
+  /// Match any characters that are not known in
+  /// [`OneOf`](ActionInputRestHeadMatcher::OneOf) or [`Not`](ActionInputRestHeadMatcher::Not).
   Unknown,
 }
 
