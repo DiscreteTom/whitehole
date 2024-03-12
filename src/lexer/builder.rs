@@ -73,7 +73,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     }
     // fill it
     for a in &actions {
-      if a.maybe_muted {
+      if a.maybe_muted() {
         // maybe muted, add to all kinds
         for (_, vec) in kinds_action_map.iter_mut() {
           vec.push(a.clone());
@@ -89,7 +89,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
 
     let maybe_muted_actions = actions
       .iter()
-      .filter(|a| a.maybe_muted)
+      .filter(|a| a.maybe_muted())
       .map(|a| a.clone())
       .collect();
 

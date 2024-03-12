@@ -162,15 +162,15 @@ mod tests {
       .ignore(word("A").bind(A))
       .build_stateless();
     assert_eq!(stateless.actions().len(), 1);
-    assert!(stateless.actions()[0].maybe_muted);
+    assert!(stateless.actions()[0].maybe_muted());
 
     // many
     let stateless = LexerBuilder::<MyKind>::default()
       .ignore([word("A").bind(A), word("B").bind(B)])
       .build_stateless();
     assert_eq!(stateless.actions().len(), 2);
-    assert!(stateless.actions()[0].maybe_muted);
-    assert!(stateless.actions()[1].maybe_muted);
+    assert!(stateless.actions()[0].maybe_muted());
+    assert!(stateless.actions()[1].maybe_muted());
   }
 
   #[test]
@@ -180,15 +180,15 @@ mod tests {
       .ignore_with(word("A").bind(A), |a| a.error(123))
       .build_stateless();
     assert_eq!(stateless.actions().len(), 1);
-    assert!(stateless.actions()[0].maybe_muted);
+    assert!(stateless.actions()[0].maybe_muted());
 
     // many
     let stateless = LexerBuilder::<MyKind, (), i32>::default()
       .ignore_with([word("A").bind(A), word("B").bind(B)], |a| a.error(123))
       .build_stateless();
     assert_eq!(stateless.actions().len(), 2);
-    assert!(stateless.actions()[0].maybe_muted);
-    assert!(stateless.actions()[1].maybe_muted);
+    assert!(stateless.actions()[0].maybe_muted());
+    assert!(stateless.actions()[1].maybe_muted());
   }
 
   #[test]
@@ -202,7 +202,7 @@ mod tests {
     assert!(stateless.actions()[0]
       .possible_kinds()
       .contains(&Anonymous.id()),);
-    assert!(stateless.actions()[0].maybe_muted);
+    assert!(stateless.actions()[0].maybe_muted());
 
     // many
     let stateless = LexerBuilder::<MyKind>::default()
@@ -217,8 +217,8 @@ mod tests {
     assert!(stateless.actions()[1]
       .possible_kinds()
       .contains(&Anonymous.id()));
-    assert!(stateless.actions()[0].maybe_muted);
-    assert!(stateless.actions()[1].maybe_muted);
+    assert!(stateless.actions()[0].maybe_muted());
+    assert!(stateless.actions()[1].maybe_muted());
   }
 
   #[test]
@@ -232,7 +232,7 @@ mod tests {
     assert!(stateless.actions()[0]
       .possible_kinds()
       .contains(&Anonymous.id()),);
-    assert!(stateless.actions()[0].maybe_muted);
+    assert!(stateless.actions()[0].maybe_muted());
 
     // many
     let stateless = LexerBuilder::<MyKind, (), i32>::default()
@@ -247,7 +247,7 @@ mod tests {
     assert!(stateless.actions()[1]
       .possible_kinds()
       .contains(&Anonymous.id()),);
-    assert!(stateless.actions()[0].maybe_muted);
-    assert!(stateless.actions()[1].maybe_muted);
+    assert!(stateless.actions()[0].maybe_muted());
+    assert!(stateless.actions()[1].maybe_muted());
   }
 }

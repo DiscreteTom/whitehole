@@ -24,20 +24,14 @@ pub enum ActionInputRestHeadMatcher {
 }
 
 pub struct Action<Kind, ActionState = (), ErrorType = ()> {
-  /// This flag is to indicate whether this action's output might be muted.
-  /// The lexer will based on this flag to accelerate the lexing process.
-  /// If `true`, this action's output may be muted.
-  /// If `false`, this action's output will never be muted.
-  /// For most cases this field will be set automatically (e.g. via [`Self::mute`] or [`Self::mute_if`]),
-  /// so don't set this field manually unless you know what you are doing.
-  pub maybe_muted: bool,
-
+  // input is mutable so the action can mutate the action state.
+  exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
   /// See [`Self::possible_kinds`].
   possible_kinds: HashSet<TokenKindId<Kind>>,
   /// See [`Self::head_matcher`].
   head_matcher: Option<ActionInputRestHeadMatcher>,
-  // input is mutable so the action can mutate the action state.
-  exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
+  /// See [`Self::maybe_muted`].
+  maybe_muted: bool,
 }
 
 impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
@@ -81,7 +75,17 @@ impl<ActionState, ErrorType, T> Action<MockTokenKind<T>, ActionState, ErrorType>
 }
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
-  /// Equals to `!self.maybe_muted`.
+  /// This flag is to indicate whether this action's output might be muted.
+  /// The lexer will based on this flag to accelerate the lexing process.
+  /// If `true`, this action's output may be muted.
+  /// If `false`, this action's output will never be muted.
+  /// This field should only be set via [`Self::mute`] or [`Self::mute_if`].
+  pub fn maybe_muted(&self) -> bool {
+    self.maybe_muted
+  }
+
+  /// Equals to `!self.maybe_muted()`.
+  /// See [`Self::maybe_muted`].
   pub fn never_muted(&self) -> bool {
     !self.maybe_muted
   }
@@ -94,7 +98,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 
   /// This is used to accelerate lexing by the first character
   /// of the rest of the input. This is optional but highly recommended.
-  /// Should only be set by [`Self::head_in`], [`Self::head_not`] and [`Self::head_unknown`].
+  /// This should only be set by [`Self::head_in`], [`Self::head_in_range`],
+  /// [`Self::head_not`] and [`Self::head_unknown`].
   pub fn head_matcher(&self) -> &Option<ActionInputRestHeadMatcher> {
     &self.head_matcher
   }
