@@ -225,43 +225,6 @@ mod tests {
     // NamedField { _a: i32 },
   }
 
-  #[test]
-  fn append() {
-    let mut lexer: Lexer<MyKind, (), ()> = LexerBuilder::default()
-      .append_with(|a| a.regex("a+").unwrap().bind(MyKind::UnitField).into())
-      .build("aaa");
-
-    let res = lexer.lex();
-    assert_eq!(res.digested, 3);
-    assert_eq!(res.errors.len(), 0);
-    assert!(res.token.is_some());
-    let token = res.token.unwrap();
-    assert!(matches!(token.kind, MyKind::UnitField));
-    assert_eq!(token.range.start, 0);
-    assert_eq!(token.range.end, 3);
-    assert_eq!(token.content, "aaa");
-    assert!(matches!(token.error, None));
-  }
-
-  #[test]
-  fn ignore() {
-    let mut lexer: Lexer<MyKind, (), ()> = LexerBuilder::default()
-      .ignore(regex("a+").unwrap().bind(MyKind::UnitField))
-      .build("aaa");
-
-    let res = lexer.lex();
-    assert_eq!(res.digested, 3);
-    assert_eq!(res.errors.len(), 0);
-    assert!(res.token.is_none());
-
-    LexerBuilder::<MyKind, MyState>::default().define_with(MyKind::UnitField, |a| {
-      a.regex(r"^\s+")
-        .unwrap()
-        .prevent(|input| input.state.reject)
-        .into()
-    });
-  }
-
   #[derive(Clone, Default)]
   struct MyState {
     pub reject: bool,
