@@ -32,24 +32,28 @@ pub struct Action<Kind, ActionState = (), ErrorType = ()> {
   head_matcher: Option<ActionInputRestHeadMatcher>,
   /// See [`Self::maybe_muted`].
   maybe_muted: bool,
+  /// See [`Self::may_mutate_state`].
+  may_mutate_state: bool,
 }
 
 impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
   /// Create a new action with no kind.
   /// To set the kind, use [`Self::bind`], [`Self::kinds`] or [`Self::kind_ids`].
+  // TODO: make this private or unsafe
   pub fn new<F>(exec: F) -> Self
   where
     F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutputWithoutKind<Option<ErrorType>>>
       + 'static,
   {
     Action {
-      maybe_muted: false,
-      possible_kinds: HashSet::new(),
-      head_matcher: None,
       exec: Box::new(move |input| {
         // transform ActionOutputWithoutKind tp ActionOutput
         exec(input).map(|output| output.into())
       }),
+      possible_kinds: HashSet::new(),
+      head_matcher: None,
+      maybe_muted: false,
+      may_mutate_state: false,
     }
   }
 }
@@ -64,10 +68,11 @@ impl<ActionState, ErrorType, T> Action<MockTokenKind<T>, ActionState, ErrorType>
       + 'static,
   {
     Action {
-      maybe_muted: false,
+      exec: Box::new(exec),
       possible_kinds: MockTokenKind::possible_kinds(),
       head_matcher: None,
-      exec: Box::new(exec),
+      maybe_muted: false,
+      may_mutate_state: false,
     }
     // since there is just on possible kinds in MockTokenKind
     // we don't need to call `action.kinds().select()` here
@@ -88,6 +93,20 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// See [`Self::maybe_muted`].
   pub fn never_muted(&self) -> bool {
     !self.maybe_muted
+  }
+
+  /// This flag is to indicate whether this action might mutate the `ActionState`.
+  /// This is used to lazy-clone the `ActionState` when lexing with fork enabled.
+  /// This will be `false` by default, and will be `true` if [`Self::prepare`]
+  /// or [`Self::callback`] is called.
+  pub fn may_mutate_state(&self) -> bool {
+    self.may_mutate_state
+  }
+
+  /// Equals to `!self.may_mutate_state()`.
+  /// See [`Self::may_mutate_state`].
+  pub fn never_mutate_state(&self) -> bool {
+    !self.may_mutate_state
   }
 
   /// This is used to accelerate expectational lexing.

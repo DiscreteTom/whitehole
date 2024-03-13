@@ -86,6 +86,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
           })
         })
       }),
+      may_mutate_state: self.may_mutate_state || another.may_mutate_state,
       head_matcher: self.head_matcher,
       // `self.maybe_muted` is ignored since only the `output.digested` is used
       maybe_muted: another.maybe_muted,
@@ -164,6 +165,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
           })
         })
       }),
+      may_mutate_state: self.may_mutate_state || another.may_mutate_state,
       head_matcher: self.head_matcher,
       // `self.maybe_muted` is ignored because we apply the output_2.muted
       maybe_muted: another.maybe_muted,

@@ -31,9 +31,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     possible_kinds: impl Into<HashSet<TokenKindId<NewKind>>>,
   ) -> MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
     MultiKindAction {
+      // TODO: why can't we just store action in MultiKindAction?
       possible_kinds: possible_kinds.into(),
       head_matcher: self.head_matcher,
       maybe_muted: self.maybe_muted,
+      may_mutate_state: self.may_mutate_state,
       exec: self.exec,
     }
   }
@@ -96,9 +98,15 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 }
 
 pub struct MultiKindAction<NewKind, Kind, ActionState, ErrorType> {
+  /// See [`Action::possible_kinds`].
   possible_kinds: HashSet<TokenKindId<NewKind>>,
+  /// See [`Action::head_matcher`].
   head_matcher: Option<ActionInputRestHeadMatcher>,
+  /// See [`Action::maybe_muted`].
   maybe_muted: bool,
+  /// See [`Action::may_mutate_state`].
+  may_mutate_state: bool,
+  /// See [`Action::exec`].
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
 }
 
@@ -178,6 +186,7 @@ impl<NewKind, Kind, ActionState, ErrorType> MultiKindAction<NewKind, Kind, Actio
           }
         })
       }),
+      may_mutate_state: self.may_mutate_state,
       maybe_muted: self.maybe_muted,
       possible_kinds: self.possible_kinds,
       head_matcher: self.head_matcher,

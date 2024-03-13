@@ -53,6 +53,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
           error: output.error,
         })
       }),
+      may_mutate_state: self.may_mutate_state,
       maybe_muted: self.maybe_muted,
       head_matcher: self.head_matcher,
       possible_kinds: MockTokenKind::possible_kinds(),
@@ -93,6 +94,7 @@ impl<Data, ActionState, ErrorType> Action<MockTokenKind<Data>, ActionState, Erro
           error: output.error,
         })
       }),
+      may_mutate_state: self.may_mutate_state,
       maybe_muted: self.maybe_muted,
       head_matcher: self.head_matcher,
       possible_kinds: MockTokenKind::possible_kinds(),

@@ -61,6 +61,41 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self
   }
 
+  /// Modify `ActionState` before the action is executed.
+  /// This will set [`Self::may_mutate_state`] to `true`.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
+  /// # use whitehole_macros::TokenKind;
+  /// # #[derive(TokenKind, Clone)]
+  /// # enum MyKind { A }
+  /// # #[derive(Clone, Default)]
+  /// # struct MyState {
+  /// #   pub value: i32,
+  /// # }
+  /// # let mut builder = LexerBuilder::<MyKind, MyState>::default();
+  /// builder.define_with(
+  ///   MyKind::A,
+  ///   regex(r"^\s+").unwrap(),
+  ///   |a| a.prepare(|input| input.state.value += 1)
+  /// );
+  /// ```
+  pub fn prepare<F>(mut self, modifier: F) -> Self
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+    F: Fn(&mut ActionInput<ActionState>) + 'static,
+  {
+    let exec = self.exec;
+    self.exec = Box::new(move |input| {
+      modifier(input);
+      exec(input)
+    });
+    self.may_mutate_state = true;
+    self
+  }
+
   /// Apply a decorator to this action.
   /// Usually used to modify the [`ActionOutput`].
   /// For most cases you don't need to use this directly.
@@ -82,6 +117,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///     })
   /// );
   /// ```
+  // TODO: make this private, don't let user to mutate output directly
+  // because it might break the integrity of maybe_muted or may_mutate_state
   pub fn apply<NewErrorType, F>(self, decorator: F) -> Action<Kind, ActionState, NewErrorType>
   where
     Kind: 'static,
@@ -113,6 +150,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       maybe_muted: self.maybe_muted,
       possible_kinds: self.possible_kinds,
       head_matcher: self.head_matcher,
+      may_mutate_state: self.may_mutate_state,
     }
   }
 
@@ -323,7 +361,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   }
 
   /// Call the `cb` if the action is accepted.
-  /// This is often used to update the action state.
+  /// You can modify [`ActionInput::state`] in the `cb`.
+  /// This will set [`Self::may_mutate_state`] to `true`.
   /// Return a new action.
   /// # Examples
   /// ```
@@ -367,6 +406,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         output.into()
       })
     });
+    self.may_mutate_state = true;
     self
   }
 }
