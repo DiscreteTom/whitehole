@@ -64,13 +64,13 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> TokenStre
   gen.into()
 }
 
-#[proc_macro_derive(NewTokenKind, attributes(token_kind))]
+#[proc_macro_derive(NewTokenKind, attributes(TokenKindGroup))]
 pub fn new_token_kind_macro_derive(input: TokenStream) -> TokenStream {
   new_common(quote! { whitehole }, input)
 }
 
 /// This is used internally in whitehole.
-#[proc_macro_derive(_NewTokenKind, attributes(token_kind))]
+#[proc_macro_derive(_NewTokenKind, attributes(TokenKindGroup))]
 pub fn new_internal_token_kind_macro_derive(input: TokenStream) -> TokenStream {
   new_common(quote! { crate }, input)
 }
@@ -86,7 +86,7 @@ fn new_common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> Token
   .variants;
 
   let enum_name = &ast.ident;
-  let mut generated_vec: Vec<proc_macro2::TokenStream> = Vec::new();
+  let mut generated_vec = Vec::new();
   variants
     .iter()
     .enumerate()
@@ -159,6 +159,7 @@ fn new_common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> Token
           }
         }
       });
+      // TODO: collect groups and generated structs
     });
 
   let gen = quote! {
