@@ -1,10 +1,10 @@
 use super::AcceptedActionDecoratorContext;
 use crate::lexer::{
   action::{ActionInput, ActionInputRestHeadMatcher, ActionOutput, EnhancedActionOutput},
-  token::{TokenKind, TokenKindId},
+  token::{TokenKind, TokenKindId, TokenKindIdBinding},
   Action,
 };
-use std::collections::HashSet;
+use std::{collections::HashSet, marker::PhantomData};
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Set [`Action::possible_kinds`].
@@ -69,9 +69,27 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       possible_kinds
         .into()
         .into_iter()
-        .map(TokenKindId::from)
+        .map(|k| k.id().clone())
         .collect::<HashSet<_>>(),
     )
+  }
+
+  // TODO: replace `kinds` with this
+  pub fn new_kinds<NewKind, ViaKind>(
+    self,
+    (possible_kinds, _): (
+      HashSet<TokenKindId<TokenKindIdBinding<NewKind>>>,
+      PhantomData<ViaKind>,
+    ),
+  ) -> NewMultiKindAction<NewKind, ViaKind, Kind, ActionState, ErrorType> {
+    NewMultiKindAction {
+      possible_kinds,
+      head_matcher: self.head_matcher,
+      maybe_muted: self.maybe_muted,
+      may_mutate_state: self.may_mutate_state,
+      exec: self.exec,
+      via_kind: PhantomData,
+    }
   }
 
   /// Set the kind and the data binding for this action.
@@ -93,7 +111,77 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     NewKind: TokenKind<NewKind> + Clone + 'static,
   {
     let kind = kind.into();
-    self.kind_ids([kind.id()]).select(move |_| kind.clone())
+    self
+      .kind_ids([kind.id().clone()])
+      .select(move |_| kind.clone())
+  }
+}
+
+pub struct NewMultiKindAction<NewKind, ViaKind, Kind, ActionState, ErrorType> {
+  /// See [`Action::possible_kinds`].
+  possible_kinds: HashSet<TokenKindId<TokenKindIdBinding<NewKind>>>,
+  /// See [`Action::head_matcher`].
+  head_matcher: Option<ActionInputRestHeadMatcher>,
+  /// See [`Action::maybe_muted`].
+  maybe_muted: bool,
+  /// See [`Action::may_mutate_state`].
+  may_mutate_state: bool,
+  /// See [`Action::exec`].
+  exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
+  via_kind: PhantomData<ViaKind>,
+}
+
+impl<NewKind, ViaKind, Kind, ActionState, ErrorType>
+  NewMultiKindAction<NewKind, ViaKind, Kind, ActionState, ErrorType>
+{
+  pub fn select<F>(self, selector: F) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
+  where
+    ViaKind: Into<TokenKindIdBinding<NewKind>>,
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
+    F: Fn(
+        AcceptedActionDecoratorContext<
+          // user can't mutate the input
+          &ActionInput<ActionState>,
+          // output is consumed except the error
+          EnhancedActionOutput<Kind, &Option<ErrorType>>,
+        >,
+      ) -> ViaKind
+      + 'static,
+  {
+    let exec = self.exec;
+    Action {
+      exec: Box::new(move |input| {
+        exec(input).map(|output| {
+          ActionOutput {
+            kind: selector(AcceptedActionDecoratorContext {
+              output: EnhancedActionOutput::new(
+                input,
+                // construct a new ActionOutput
+                ActionOutput {
+                  // consume the original output.kind
+                  kind: output.kind,
+                  digested: output.digested,
+                  muted: output.muted,
+                  // but don't consume the error
+                  error: &output.error,
+                },
+              ),
+              input,
+            })
+            .into(),
+            digested: output.digested,
+            muted: output.muted,
+            error: output.error,
+          }
+        })
+      }),
+      may_mutate_state: self.may_mutate_state,
+      maybe_muted: self.maybe_muted,
+      possible_kinds: self.possible_kinds,
+      head_matcher: self.head_matcher,
+    }
   }
 }
 
