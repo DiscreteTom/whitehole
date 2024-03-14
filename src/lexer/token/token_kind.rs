@@ -16,8 +16,8 @@ impl<TokenKindType: TokenKind<TokenKindType>> From<TokenKindType> for TokenKindI
 }
 
 impl<TokenKindType> TokenKindId<TokenKindType> {
-  pub fn new(index: usize) -> Self {
-    TokenKindId(index, PhantomData)
+  pub fn new(id: usize) -> Self {
+    TokenKindId(id, PhantomData)
   }
 }
 
