@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::{self, parse, Data, DeriveInput, Fields};
 
 #[proc_macro_derive(TokenKind)]
@@ -85,59 +85,84 @@ fn new_common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> Token
   }
   .variants;
 
-  let mut generated_structs: Vec<proc_macro2::TokenStream> = Vec::new();
   let enum_name = &ast.ident;
-  let match_arms: Vec<proc_macro2::TokenStream> = variants
+  let mut generated_vec: Vec<proc_macro2::TokenStream> = Vec::new();
+  variants
     .iter()
     .enumerate()
-    .map(|(index, variant)| {
+    .for_each(|(index, variant)| {
       let variant_name = &variant.ident;
-      match variant.fields {
-        Fields::Named(_) => {
-          quote! {
-            #enum_name::#variant_name { .. } => #crate_name::lexer::token::TokenKindId::new(#index),
-          }
-        }
-        Fields::Unnamed(_) => {
-          quote! {
-            #enum_name::#variant_name(..) => #crate_name::lexer::token::TokenKindId::new(#index),
-          }
-        }
-        Fields::Unit => {
-          generated_structs.push(quote! {
-            pub struct #variant_name;
-            impl #variant_name {
-              fn possible_kinds() -> (std::collections::HashSet<#crate_name::lexer::token::TokenKindId<#enum_name>>, std::marker::PhantomData<#variant_name>) {
-                (std::collections::HashSet::from([#crate_name::lexer::token::TokenKindId::new(#index)]), std::marker::PhantomData)
-              }
-            }
-            impl Into<#enum_name> for #variant_name {
-              fn into(self) -> #enum_name {
-                #enum_name::#variant_name
+      match &variant.fields {
+        Fields::Named(fields) => {
+          let generated_fields: Vec<_> = fields.named.iter().map(|f|{
+            let ts = f.to_token_stream(); 
+            quote! { pub #ts } // make all fields public
+          }).collect();
+          let generated_assign: Vec<_> = fields.named.iter().map(|f| {
+            let name = f.ident.clone().unwrap();
+            quote!{ #name: self.#name }
+          }).collect();
+          generated_vec.push(quote! {
+            pub struct #variant_name{ #(#generated_fields),* };
+            impl Into<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
+              fn into(self) -> #crate_name::lexer::token::TokenKindIdBinding<#enum_name> {
+                #crate_name::lexer::token::TokenKindIdBinding::new(
+                  #index, 
+                  #enum_name::#variant_name{ #(#generated_assign),* }
+                )
               }
             }
           });
-          quote! {
-            #enum_name::#variant_name => #crate_name::lexer::token::TokenKindId::new(#index),
+        }
+        Fields::Unnamed(fields) => {
+          let types: Vec<_> = fields.unnamed.iter().map(|f|{
+            let ts = f.ty.to_token_stream(); 
+            quote!{ pub #ts } // make all fields public
+          }).collect();
+          let placeholders: Vec<_> = (0..fields.unnamed.len()).into_iter().map(|i|{
+            let i = syn::Index::from(i);
+             quote!{ self.#i }
+          }).collect();
+          generated_vec.push(quote! {
+            pub struct #variant_name(#(#types),*);
+            impl Into<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
+              fn into(self) -> #crate_name::lexer::token::TokenKindIdBinding<#enum_name> {
+                #crate_name::lexer::token::TokenKindIdBinding::new(
+                  #index, 
+                  #enum_name::#variant_name(#(#placeholders),*)
+                )
+              }
+            }
+          });
+        }
+        Fields::Unit => {
+          generated_vec.push(quote! {
+            pub struct #variant_name;
+            impl Into<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
+              fn into(self) -> #crate_name::lexer::token::TokenKindIdBinding<#enum_name> {
+                #crate_name::lexer::token::TokenKindIdBinding::new(#index, #enum_name::#variant_name)
+              }
+            }
+          });
+        }
+      }
+      generated_vec.push(quote! {
+        impl #variant_name {
+          fn possible_kinds() -> (
+            std::collections::HashSet<#crate_name::lexer::token::TokenKindId<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>>>,
+            std::marker::PhantomData<#variant_name>
+          ) {
+            (
+              std::collections::HashSet::from([#crate_name::lexer::token::TokenKindId::new(#index)]),
+              std::marker::PhantomData
+            )
           }
         }
-      }
-    })
-    .collect();
+      });
+    });
 
   let gen = quote! {
-    impl #crate_name::lexer::token::TokenKind<#enum_name> for #enum_name {
-      fn id(&self) -> #crate_name::lexer::token::TokenKindId<#enum_name> {
-        // TODO: is pattern matching the best way to do this?
-        // e.g. maybe mem::Discriminant is faster? need benchmarks
-        // see https://doc.rust-lang.org/std/mem/fn.discriminant.html
-        match self {
-          #(#match_arms)*
-        }
-      }
-    }
-
-    #(#generated_structs)*
+    #(#generated_vec)*
   };
   // println!("{}", gen.to_string());
   gen.into()
