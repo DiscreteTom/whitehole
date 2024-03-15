@@ -4,6 +4,17 @@ use std::collections::HashSet;
 pub trait TokenKind<TokenKindType> {
   // use associate type instead of generic type
   // because we want the token kind only have one possible target type
+  /// For most cases this should be `Self`.
+  /// ```
+  /// # struct MyType(usize);
+  /// impl TokenKind<MyType> for MyType {
+  ///   type TargetType = Self;
+  /// #   fn id(&self) -> &TokenKindId<Self> { &self.id }
+  /// #   fn possible_kinds() -> HashSet<TokenKindId<Self::TargetType>> {
+  /// #     HashSet::from([TokenKindId::new(0)])
+  /// #   }
+  /// }
+  /// ```
   type TargetType; // TODO: defaults to TokenKindType. waiting https://github.com/rust-lang/rust/issues/29661
 
   /// The unique id of this token kind value.
