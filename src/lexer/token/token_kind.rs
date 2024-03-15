@@ -1,7 +1,14 @@
 use std::{collections::HashSet, hash::Hash, marker::PhantomData, ops::Deref};
 
 pub trait TokenKind<TokenKindType> {
+  // use associate type instead of generic type
+  // because we want the token kind only have one possible target type
+  type TargetType;
+
+  /// The unique id of this token kind value.
   fn id(&self) -> &TokenKindId<TokenKindType>;
+  /// Return a set containing all possible kind ids of this token kind.
+  fn possible_kinds() -> HashSet<TokenKindId<Self::TargetType>>;
 }
 
 /// The unique id of a token kind value.
