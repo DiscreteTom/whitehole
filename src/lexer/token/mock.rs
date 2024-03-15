@@ -37,3 +37,22 @@ impl<T> TokenKind<Self> for MockTokenKind<T> {
     HashSet::from([Self::id().clone()])
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn mock_token_kind_id() {
+    let kind = MockTokenKind { data: () };
+    assert_eq!(kind.id().0, 0);
+    assert_eq!(MockTokenKind::<()>::id().0, 0);
+  }
+
+  #[test]
+  fn mock_token_kind_possible_kinds() {
+    let possible_kinds = MockTokenKind::<()>::possible_kinds();
+    assert_eq!(possible_kinds.len(), 1);
+    assert!(possible_kinds.contains(MockTokenKind::<()>::id()));
+  }
+}
