@@ -34,16 +34,17 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// ```
 #[proc_macro_derive(TokenKind, attributes(TokenKindGroup))]
 pub fn token_kind_macro_derive(input: TokenStream) -> TokenStream {
-  common(quote! { whitehole }, input)
+  common(quote! { whitehole }, input).into()
 }
 
-/// This is used internally in whitehole.
+// TODO: make this only available in dev mode for whitehole
+/// This is only used internally in whitehole.
 #[proc_macro_derive(_TokenKind, attributes(TokenKindGroup))]
 pub fn internal_token_kind_macro_derive(input: TokenStream) -> TokenStream {
-  common(quote! { crate }, input)
+  common(quote! { crate }, input).into()
 }
 
-fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> TokenStream {
+fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macro2::TokenStream {
   let ast: DeriveInput = parse(input).unwrap();
 
   // ensure derive is only used on enums, then retrieve variants
@@ -163,9 +164,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> TokenStre
     }
   });
 
-  let res = quote! {
+  quote! {
     #(#gen)*
-  };
-  // println!("{}", gen.to_string());
-  res.into()
+  }
 }
