@@ -23,7 +23,7 @@ use std::{hash::Hash, marker::PhantomData};
 pub struct TokenKindId<TokenKindType>(pub usize, PhantomData<TokenKindType>);
 
 impl<TokenKindType> TokenKindId<TokenKindType> {
-  pub fn new(id: usize) -> Self {
+  pub const fn new(id: usize) -> Self {
     TokenKindId(id, PhantomData)
   }
 
