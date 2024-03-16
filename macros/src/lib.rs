@@ -18,14 +18,17 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// ```
 /// will generate:
 /// ```no_run
+/// #[derive(Clone, Debug)]
 /// pub struct A;
 /// impl Into<TokenKindIdBinding<MyKind>> for A { ... }
 /// impl TokenKind<TokenKindIdBinding<MyKind>> for A { ... }
 ///
+/// #[derive(Clone, Debug)]
 /// pub struct B(pub i32);
 /// impl Into<TokenKindIdBinding<MyKind>> for B { ... }
 /// impl TokenKind<TokenKindIdBinding<MyKind>> for B { ... }
 ///
+/// #[derive(Clone, Debug)]
 /// pub struct C { pub c: i32 }
 /// impl Into<TokenKindIdBinding<MyKind>> for C { ... }
 /// impl TokenKind<TokenKindIdBinding<MyKind>> for C { ... }
@@ -88,6 +91,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
           })
           .collect();
         gen.push(quote! {
+          #[derive(Clone, Debug)]
           pub struct #variant_name{ #(#generated_fields),* }
           impl Into<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
             fn into(self) -> #crate_name::lexer::token::TokenKindIdBinding<#enum_name> {
@@ -116,6 +120,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
           })
           .collect();
         gen.push(quote! {
+          #[derive(Clone, Debug)]
           pub struct #variant_name(#(#generated_fields),*);
           impl Into<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
             fn into(self) -> #crate_name::lexer::token::TokenKindIdBinding<#enum_name> {
@@ -129,6 +134,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
       }
       Fields::Unit => {
         gen.push(quote! {
+          #[derive(Clone, Debug)]
           pub struct #variant_name;
           impl Into<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
             fn into(self) -> #crate_name::lexer::token::TokenKindIdBinding<#enum_name> {
