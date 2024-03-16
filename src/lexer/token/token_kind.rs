@@ -1,23 +1,17 @@
 use super::TokenKindId;
 use std::collections::HashSet;
 
-/// If a type is a [`TokenKind`], every possible value of this type
-/// should have a [`TokenKindId`], and all the possible [`TokenKindId`]
+/// If a type implement this, all the possible [`TokenKindId`]
 /// should be able to be retrieved by [`TokenKind::possible_kinds`].
 /// This can be auto implemented by deriving [`whitehole_macros::TokenKind`].
 /// # Examples
 /// ```
 /// use std::collections::HashSet;
 /// use whitehole_macros::TokenKind;
-/// use whitehole::lexer::token::{TokenKindId, TokenKind, TokenKindIdBinding};
+/// use whitehole::lexer::token::{TokenKindId, TokenKind};
 ///
 /// #[derive(TokenKind)]
 /// enum MyKind { A, B }
-///
-/// let a: TokenKindIdBinding<MyKind> = A.into();
-/// let b: TokenKindIdBinding<MyKind> = B.into();
-/// assert_eq!(a.id(), &TokenKindId::new(0));
-/// assert_eq!(b.id(), &TokenKindId::new(1));
 ///
 /// assert_eq!(MyKind::possible_kinds(), HashSet::from([
 ///   TokenKindId::new(0),
@@ -25,8 +19,6 @@ use std::collections::HashSet;
 /// ]));
 /// ```
 pub trait TokenKind<TokenKindType> {
-  /// The unique id of this token kind value.
-  fn id(&self) -> &TokenKindId<TokenKindType>;
   /// Return a set containing all possible kind ids of this token kind.
   fn possible_kinds() -> HashSet<TokenKindId<TokenKindType>>;
 }
