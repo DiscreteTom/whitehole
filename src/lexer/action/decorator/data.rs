@@ -1,7 +1,7 @@
 use super::AcceptedActionDecoratorContext;
 use crate::lexer::{
   action::{ActionInput, ActionOutput, EnhancedActionOutput},
-  token::MockTokenKind,
+  token::{MockTokenKind, TokenKind},
   Action,
 };
 

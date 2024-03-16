@@ -1,6 +1,6 @@
 use crate::lexer::{
   action::{ActionInput, ActionOutput, EnhancedActionOutput},
-  token::MockTokenKind,
+  token::{MockTokenKind, TokenKind},
   Action,
 };
 use std::ops::{Add, BitOr};
@@ -197,10 +197,7 @@ impl<NewKind: 'static, Kind: 'static, ActionState: 'static, ErrorType: 'static>
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::{
-    action::{regex, simple, ActionInputRestHeadMatcher},
-    token::TokenKind,
-  };
+  use crate::lexer::action::{regex, simple, ActionInputRestHeadMatcher};
   use whitehole_macros::_TokenKind;
 
   #[derive(_TokenKind, Clone)]
