@@ -20,17 +20,17 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// ```no_run
 /// pub struct A;
 /// impl Into<TokenKindIdBinding<MyKind>> for A { ... }
-/// impl TokenKind<MyKind> for A { ... }
+/// impl TokenKind<TokenKindIdBinding<MyKind>> for A { ... }
 ///
 /// pub struct B(pub i32);
 /// impl Into<TokenKindIdBinding<MyKind>> for B { ... }
-/// impl TokenKind<MyKind> for B { ... }
+/// impl TokenKind<TokenKindIdBinding<MyKind>> for B { ... }
 ///
 /// pub struct C { pub c: i32 }
 /// impl Into<TokenKindIdBinding<MyKind>> for C { ... }
-/// impl TokenKind<MyKind> for C { ... }
+/// impl TokenKind<TokenKindIdBinding<MyKind>> for C { ... }
 ///
-/// impl TokenKind<MyKind> for MyKind { ... }
+/// impl TokenKind<TokenKindIdBinding<MyKind>> for MyKind { ... }
 /// ```
 #[proc_macro_derive(TokenKind, attributes(TokenKindGroup))]
 pub fn token_kind_macro_derive(input: TokenStream) -> TokenStream {
@@ -141,9 +141,11 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
 
     // impl TokenKind for the generated struct
     gen.push(quote! {
-      impl #crate_name::lexer::token::TokenKind<#enum_name> for #variant_name {
+      impl #crate_name::lexer::token::TokenKind<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
         fn possible_kinds() -> std::collections::HashSet<
-          #crate_name::lexer::token::TokenKindId<#enum_name>
+          #crate_name::lexer::token::TokenKindId<
+            #crate_name::lexer::token::TokenKindIdBinding<#enum_name>
+          >
         >
         {
           // the generated struct only has one kind
@@ -163,9 +165,11 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
     })
     .collect();
   gen.push(quote! {
-    impl #crate_name::lexer::token::TokenKind<#enum_name> for #enum_name {
+    impl #crate_name::lexer::token::TokenKind<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #enum_name {
       fn possible_kinds() -> std::collections::HashSet<
-        #crate_name::lexer::token::TokenKindId<#enum_name>
+        #crate_name::lexer::token::TokenKindId<
+          #crate_name::lexer::token::TokenKindIdBinding<#enum_name>
+        >
       >
       {
         std::collections::HashSet::from([#(#generated_token_kind_ids),*])
