@@ -113,13 +113,20 @@ mod tests {
     fn cast_to_unit<T>(id: &TokenKindId<T>) -> &TokenKindId<()> {
       id.cast()
     }
+    let id0 = TokenKindId::new(0) as TokenKindId<()>;
+    let id1 = TokenKindId::new(0) as TokenKindId<i32>;
+    let id2 = TokenKindId::new(0) as TokenKindId<Box<i32>>;
+    let id3 = TokenKindId::new(0) as TokenKindId<Option<i32>>;
+    let id4 = TokenKindId::new(0) as TokenKindId<Result<i32, i32>>;
+
     let ids = [
-      cast_to_unit(&TokenKindId::new(0) as &TokenKindId<()>),
-      cast_to_unit(&TokenKindId::new(0) as &TokenKindId<i32>),
-      cast_to_unit(&TokenKindId::new(0) as &TokenKindId<Box<i32>>),
-      cast_to_unit(&TokenKindId::new(0) as &TokenKindId<Option<i32>>),
-      cast_to_unit(&TokenKindId::new(0) as &TokenKindId<Result<i32, i32>>),
+      cast_to_unit(&id0),
+      cast_to_unit(&id1),
+      cast_to_unit(&id2),
+      cast_to_unit(&id3),
+      cast_to_unit(&id4),
     ];
+
     // ensure their memory layout is the same
     for i in 0..ids.len() {
       for j in 0..ids.len() {
