@@ -1,11 +1,11 @@
 mod binding;
 mod mock;
-mod token_kind;
+mod sub_token_kind;
 mod token_kind_id;
 
 pub use binding::*;
 pub use mock::*;
-pub use token_kind::*;
+pub use sub_token_kind::*;
 pub use token_kind_id::*;
 
 pub type Range = std::ops::Range<usize>;
