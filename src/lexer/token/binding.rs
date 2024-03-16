@@ -20,6 +20,7 @@ use std::ops::Deref;
 /// assert!(matches!(a.value(), MyKind::A));
 /// assert!(matches!(b.value(), MyKind::B));
 /// ```
+#[derive(Debug)]
 pub struct TokenKindIdBinding<TokenKindType> {
   // be ware, this should NOT be `TokenKindId<TokenKindIdBinding<TokenKindType>>`
   // because we want the id to be the TokenKindType's id
