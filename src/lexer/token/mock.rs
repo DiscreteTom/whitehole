@@ -53,8 +53,15 @@ mod tests {
 
   #[test]
   fn mock_token_kind_possible_kinds() {
-    let possible_kinds = MockTokenKind::<()>::possible_kinds();
-    assert_eq!(possible_kinds.len(), 1);
-    assert!(possible_kinds.contains(MockTokenKind::<()>::id()));
+    assert_eq!(
+      MockTokenKind::<()>::possible_kinds(),
+      HashSet::from([MockTokenKind::<()>::id().clone()])
+    );
+  }
+
+  #[test]
+  fn mock_token_kind_new() {
+    let kind = MockTokenKind::new(42);
+    assert_eq!(kind.data, 42);
   }
 }
