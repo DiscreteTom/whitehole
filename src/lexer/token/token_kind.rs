@@ -1,26 +1,34 @@
 use super::TokenKindId;
 use std::collections::HashSet;
 
+/// If a type is a [`TokenKind`], every possible value of this type
+/// should have a [`TokenKindId`], and all the possible [`TokenKindId`]
+/// should be able to be retrieved by [`TokenKind::possible_kinds`].
+/// This can be auto implemented by deriving [`whitehole_macros::TokenKind`].
+/// # Examples
+/// ```
+/// use std::collections::HashSet;
+/// use whitehole_macros::TokenKind;
+/// use whitehole::lexer::token::{TokenKindId, TokenKind, TokenKindIdBinding};
+///
+/// #[derive(TokenKind)]
+/// enum MyKind { A, B }
+///
+/// let a: TokenKindIdBinding<MyKind> = MyKind::A.into();
+/// let b: TokenKindIdBinding<MyKind> = MyKind::B.into();
+/// assert_eq!(a.id(), &TokenKindId::new(0));
+/// assert_eq!(b.id(), &TokenKindId::new(1));
+///
+/// assert_eq!(MyKind::possible_kinds(), HashSet::from([
+///   TokenKindId::new(0),
+///   TokenKindId::new(1)
+/// ]));
+/// ```
 pub trait TokenKind<TokenKindType> {
-  // use associate type instead of generic type
-  // because we want the token kind only have one possible target type
-  /// For most cases this should be `Self`.
-  /// ```
-  /// # struct MyType(usize);
-  /// impl TokenKind<MyType> for MyType {
-  ///   type TargetType = Self;
-  /// #   fn id(&self) -> &TokenKindId<Self> { &self.id }
-  /// #   fn possible_kinds() -> HashSet<TokenKindId<Self::TargetType>> {
-  /// #     HashSet::from([TokenKindId::new(0)])
-  /// #   }
-  /// }
-  /// ```
-  type TargetType; // TODO: defaults to TokenKindType. waiting https://github.com/rust-lang/rust/issues/29661
-
   /// The unique id of this token kind value.
   fn id(&self) -> &TokenKindId<TokenKindType>;
   /// Return a set containing all possible kind ids of this token kind.
-  fn possible_kinds() -> HashSet<TokenKindId<Self::TargetType>>;
+  fn possible_kinds() -> HashSet<TokenKindId<TokenKindType>>;
 }
 
 #[cfg(test)]
