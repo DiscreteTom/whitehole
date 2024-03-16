@@ -14,8 +14,8 @@ use std::collections::HashSet;
 /// #[derive(TokenKind)]
 /// enum MyKind { A, B }
 ///
-/// let a: TokenKindIdBinding<MyKind> = MyKind::A.into();
-/// let b: TokenKindIdBinding<MyKind> = MyKind::B.into();
+/// let a: TokenKindIdBinding<MyKind> = A.into();
+/// let b: TokenKindIdBinding<MyKind> = B.into();
 /// assert_eq!(a.id(), &TokenKindId::new(0));
 /// assert_eq!(b.id(), &TokenKindId::new(1));
 ///

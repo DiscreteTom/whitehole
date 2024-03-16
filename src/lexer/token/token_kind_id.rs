@@ -12,12 +12,10 @@ use std::{hash::Hash, marker::PhantomData};
 /// #[derive(TokenKind)]
 /// enum MyKind { A, B }
 ///
-/// let a: TokenKindIdBinding<MyKind> = MyKind::A.into();
-/// let b: TokenKindIdBinding<MyKind> = MyKind::B.into();
+/// let a: TokenKindIdBinding<MyKind> = A.into();
+/// let b: TokenKindIdBinding<MyKind> = B.into();
 /// assert_eq!(a.id(), &TokenKindId::new(0));
 /// assert_eq!(b.id(), &TokenKindId::new(1));
-/// assert!(matches!(a.value(), MyKind::A));
-/// assert!(matches!(b.value(), MyKind::B));
 /// ```
 #[derive(Debug)]
 pub struct TokenKindId<TokenKindType>(pub usize, PhantomData<TokenKindType>);

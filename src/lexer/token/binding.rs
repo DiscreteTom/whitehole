@@ -3,6 +3,21 @@ use std::ops::Deref;
 
 /// Bind the token kind value with an [`TokenKindId`].
 /// This is readonly to make sure the binding is not broken.
+/// # Examples
+/// ```
+/// use whitehole_macros::TokenKind;
+/// use whitehole::lexer::token::{TokenKindId, TokenKindIdBinding};
+///
+/// #[derive(TokenKind)]
+/// enum MyKind { A, B }
+///
+/// let a: TokenKindIdBinding<MyKind> = A.into();
+/// let b: TokenKindIdBinding<MyKind> = B.into();
+/// assert_eq!(a.id(), &TokenKindId::new(0));
+/// assert_eq!(b.id(), &TokenKindId::new(1));
+/// assert!(matches!(a.value(), MyKind::A));
+/// assert!(matches!(b.value(), MyKind::B));
+/// ```
 pub struct TokenKindIdBinding<TokenKindType> {
   id: TokenKindId<TokenKindType>,
   value: TokenKindType,
