@@ -84,6 +84,7 @@ pub trait TokenKindIdProvider<TokenKindType> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::lexer::token::{TokenKind, TokenKindIdBinding};
   use std::collections::HashSet;
   use whitehole_macros::_TokenKind;
 
@@ -127,7 +128,7 @@ mod tests {
     }
   }
 
-  #[derive(_TokenKind)]
+  #[derive(_TokenKind, Debug)]
   enum MyKind {
     UnitField,
     UnnamedField(i32),
@@ -142,21 +143,29 @@ mod tests {
     let _ = NamedField { _a: 1 };
 
     // into TokenKindIdBinding and get the id
-    assert_eq!(UnitField.into().id().0, 0);
-    assert_eq!(UnnamedField(42).into().id().0, 1);
-    assert_eq!(NamedField { _a: 1 }.into().id().0, 2);
+    assert_eq!(TokenKindIdBinding::from(UnitField.into()).id().0, 0);
+    assert_eq!(
+      (TokenKindIdBinding::from(UnnamedField(42).into())).id().0,
+      1
+    );
+    assert_eq!(
+      (TokenKindIdBinding::from(NamedField { _a: 1 }.into()))
+        .id()
+        .0,
+      2
+    );
 
     // possible kinds for generated structs
     assert_eq!(
-      UnitField.possible_kinds(),
+      UnitField::possible_kinds(),
       HashSet::from([TokenKindId::new(0)])
     );
     assert_eq!(
-      UnnamedField(42).possible_kinds(),
+      UnnamedField::possible_kinds(),
       HashSet::from([TokenKindId::new(1)])
     );
     assert_eq!(
-      NamedField { _a: 1 }.possible_kinds(),
+      NamedField::possible_kinds(),
       HashSet::from([TokenKindId::new(2)])
     );
 
