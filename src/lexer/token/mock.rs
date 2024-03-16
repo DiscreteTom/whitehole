@@ -4,6 +4,7 @@ use std::collections::HashSet;
 /// A mock struct which implements [`TokenKind`] and [`TokenKindIdProvider`],
 /// and only has one possible kind id.
 /// This is useful in action utils to pass data to downstream actions.
+#[derive(Debug)]
 pub struct MockTokenKind<T> {
   // the struct only have one possible id,
   // so even the data is mutable, the binding is not broken
