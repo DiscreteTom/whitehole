@@ -22,6 +22,10 @@ impl<T> MockTokenKind<T> {
   pub fn id() -> &'static TokenKindId<Self> {
     &MOCK_TOKEN_KIND_ID.cast()
   }
+
+  pub fn new(data: T) -> Self {
+    Self { data }
+  }
 }
 
 impl<T> TokenKind<Self> for MockTokenKind<T> {
