@@ -1,5 +1,5 @@
 use super::StringList;
-use crate::lexer::{action::simple, Action};
+use crate::lexer::{action::simple, token::MockTokenKind, Action};
 use std::collections::HashSet;
 
 /// Match one of the provided words, in one action,
@@ -10,10 +10,10 @@ use std::collections::HashSet;
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, word};
-/// # let action: Action<()> =
+/// # let action: Action<MockTokenKind<()>> =
 /// // single word
 /// word("a");
-/// # let action: Action<()> =
+/// # let action: Action<MockTokenKind<()>> =
 /// // multiple words
 /// // try to match "a" first, then "b", in one action
 /// word(["a", "b"]);
@@ -24,13 +24,13 @@ use std::collections::HashSet;
 /// # use whitehole::lexer::action::{Action, word};
 /// // this will skip the check of `"a"` when re-lex
 /// // since this is one action instead of two.
-/// # let action: Action<()> =
+/// # let action: Action<MockTokenKind<()>> =
 /// word(["ab", "a"]);
 /// ```
 /// To avoid the above, try [`word_vec`] or [`word_chars`].
 pub fn word<ActionState, ErrorType>(
   ss: impl Into<StringList>,
-) -> Action<(), ActionState, ErrorType> {
+) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   // don't use `exact(ss).reject_if(...)` here
   // e.g. `exact(["a", "ab"])` will accept "ab" as "a"
   // then reject since no word boundary after "a"
@@ -88,12 +88,12 @@ pub fn word<ActionState, ErrorType>(
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, word_vec};
-/// # let actions: Vec<Action<()>> =
+/// # let actions: Vec<Action<MockTokenKind<()>>> =
 /// word_vec(["int", "bool"]);
 /// ```
 pub fn word_vec<ActionState, ErrorType>(
   ss: impl Into<StringList>,
-) -> Vec<Action<(), ActionState, ErrorType>> {
+) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>> {
   let ss: Vec<String> = ss.into().0;
 
   if ss.len() == 0 {
@@ -108,12 +108,12 @@ pub fn word_vec<ActionState, ErrorType>(
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, word_chars};
-/// # let actions: Vec<Action<()>> =
+/// # let actions: Vec<Action<MockTokenKind<()>>> =
 /// word_chars("abc");
 /// ```
 pub fn word_chars<ActionState, ErrorType>(
   s: impl Into<String>,
-) -> Vec<Action<(), ActionState, ErrorType>> {
+) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>> {
   let s: String = s.into();
 
   if s.len() == 0 {
@@ -133,7 +133,7 @@ mod tests {
     word::<(), ()>(vec![]);
   }
 
-  fn assert_accept(action: &Action<()>, text: &str, expected: usize) {
+  fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
       action
         .exec(&mut ActionInput::new(text, 0, &mut ()))
@@ -142,7 +142,7 @@ mod tests {
       expected
     );
   }
-  fn assert_reject(action: &Action<()>, text: &str) {
+  fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
     assert!(action
       .exec(&mut ActionInput::new(text, 0, &mut ()))
       .is_none());
@@ -151,7 +151,7 @@ mod tests {
   #[test]
   fn action_utils_word() {
     // single string
-    let action: Action<()> = word("a");
+    let action: Action<MockTokenKind<()>> = word("a");
     assert_reject(&action, "b");
     assert_accept(&action, "a", 1);
     // lookahead
@@ -173,7 +173,7 @@ mod tests {
     ));
 
     // multi strings
-    let action: Action<()> = word(["a", "b"]);
+    let action: Action<MockTokenKind<()>> = word(["a", "b"]);
     assert_reject(&action, "c");
     assert_reject(&action, "aa");
     assert_reject(&action, "bc");
@@ -189,7 +189,7 @@ mod tests {
 
     // caveats
     // this will digest 1 by `exact` but digest 2 by `word`
-    let action: Action<()> = word(["a", "ab"]);
+    let action: Action<MockTokenKind<()>> = word(["a", "ab"]);
     assert_accept(&action, "ab", 2);
   }
 
@@ -201,7 +201,7 @@ mod tests {
 
   #[test]
   fn action_utils_word_vec() {
-    let actions: Vec<Action<()>> = word_vec(["int", "bool"]);
+    let actions: Vec<Action<MockTokenKind<()>>> = word_vec(["int", "bool"]);
     assert_accept(&actions[0], "int", 3);
     assert_accept(&actions[1], "bool", 4);
     // lookahead
@@ -230,7 +230,7 @@ mod tests {
 
   #[test]
   fn action_utils_word_chars() {
-    let actions: Vec<Action<()>> = word_chars("abc");
+    let actions: Vec<Action<MockTokenKind<()>>> = word_chars("abc");
     assert_accept(&actions[0], "a", 1);
     assert_accept(&actions[1], "b", 1);
     assert_accept(&actions[2], "c", 1);

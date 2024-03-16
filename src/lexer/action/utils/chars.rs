@@ -1,4 +1,4 @@
-use crate::lexer::{action::simple, Action};
+use crate::lexer::{action::simple, token::MockTokenKind, Action};
 use std::{collections::HashSet, ops::RangeInclusive};
 
 /// Match chars greedily by a condition.
@@ -9,7 +9,9 @@ use std::{collections::HashSet, ops::RangeInclusive};
 /// # let action: Action<()> =
 /// chars(|ch| ch.is_ascii_digit());
 /// ```
-pub fn chars<ActionState, ErrorType, F>(condition: F) -> Action<(), ActionState, ErrorType>
+pub fn chars<ActionState, ErrorType, F>(
+  condition: F,
+) -> Action<MockTokenKind<()>, ActionState, ErrorType>
 where
   F: Fn(&char) -> bool + 'static,
 {
@@ -37,7 +39,7 @@ where
 /// ```
 pub fn char_range<ActionState, ErrorType>(
   range: impl Into<RangeInclusive<char>>,
-) -> Action<(), ActionState, ErrorType> {
+) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   let range: RangeInclusive<_> = range.into();
   let head = *range.start();
   chars(move |ch| range.contains(ch)).head_in([head])
@@ -54,7 +56,7 @@ pub fn char_range<ActionState, ErrorType>(
 /// ```
 pub fn charset<ActionState, ErrorType>(
   set: impl Into<HashSet<char>>,
-) -> Action<(), ActionState, ErrorType> {
+) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   let charset: HashSet<_> = set.into();
   let head = charset.clone();
   chars(move |ch| charset.contains(ch)).head_in(head)
@@ -65,7 +67,7 @@ mod tests {
   use super::*;
   use crate::lexer::action::ActionInput;
 
-  fn assert_accept(action: &Action<()>, text: &str, expected: usize) {
+  fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
       action
         .exec(&mut ActionInput::new(text, 0, &mut ()))
@@ -74,7 +76,7 @@ mod tests {
       expected
     );
   }
-  fn assert_reject(action: &Action<()>, text: &str) {
+  fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
     assert!(action
       .exec(&mut ActionInput::new(text, 0, &mut ()))
       .is_none());

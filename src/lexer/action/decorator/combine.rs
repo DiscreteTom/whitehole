@@ -1,6 +1,6 @@
 use crate::lexer::{
   action::{ActionInput, ActionOutput, EnhancedActionOutput},
-  token::{MockTokenKind, TokenKind},
+  token::{MockTokenKind, SubTokenKind},
   Action,
 };
 use std::ops::{Add, BitOr};
@@ -26,11 +26,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
+    // TODO: assert kind_id is the same
     let exec = self.exec;
     let another_exec = another.exec;
     self.exec = Box::new(move |input| exec(input).or_else(|| another_exec(input)));
     self.maybe_muted = self.maybe_muted || another.maybe_muted;
-    self.possible_kinds.extend(another.possible_kinds); // merge possible kinds
     self
   }
 
@@ -91,7 +91,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       // `self.maybe_muted` is ignored since only the `output.digested` is used
       maybe_muted: another.maybe_muted,
       // `self.possible_kinds` is ignored since only the `output.digested` is used
-      possible_kinds: another.possible_kinds,
+      kind_id: another.kind_id,
     }
   }
 
@@ -169,7 +169,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       head_matcher: self.head_matcher,
       // `self.maybe_muted` is ignored because we apply the output_2.muted
       maybe_muted: another.maybe_muted,
-      possible_kinds: MockTokenKind::possible_kinds(),
+      kind_id: MockTokenKind::kind_id(),
     }
   }
 }
@@ -197,10 +197,13 @@ impl<NewKind: 'static, Kind: 'static, ActionState: 'static, ErrorType: 'static>
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::{regex, simple, ActionInputRestHeadMatcher};
+  use crate::lexer::{
+    action::{regex, simple, ActionInputRestHeadMatcher},
+    token::TokenKindIdBinding,
+  };
   use whitehole_macros::_TokenKind;
 
-  #[derive(_TokenKind, Clone)]
+  #[derive(_TokenKind, Clone, Debug)]
   enum MyKind {
     A,
     B,
@@ -263,11 +266,9 @@ mod tests {
     assert!(!action.maybe_muted);
 
     // possible kinds should be merged
-    let action: Action<MyKind, (), ()> =
-      regex(r"^a").unwrap().bind(MyKind::A) | regex(r"^b").unwrap().bind(MyKind::B);
-    assert_eq!(action.possible_kinds.len(), 2);
-    assert!(action.possible_kinds.contains(&MyKind::A.id()));
-    assert!(action.possible_kinds.contains(&MyKind::B.id()));
+    let action: Action<TokenKindIdBinding<MyKind>> =
+      regex(r"^a").unwrap().bind(A) | regex(r"^b").unwrap().bind(B);
+    assert_eq!(action.kind_id, MyKind::kind_id());
   }
 
   #[test]
@@ -303,12 +304,11 @@ mod tests {
     assert!(!action.maybe_muted);
 
     // first action's possible kinds should be ignored
-    let action: Action<MyKind, (), ()> = regex(r"^a")
+    let action: Action<TokenKindIdBinding<MyKind>, (), ()> = regex(r"^a")
       .unwrap()
-      .bind::<MyKind>(MyKind::A)
-      .and(regex(r"^b").unwrap().bind(MyKind::B));
-    assert_eq!(action.possible_kinds.len(), 1);
-    assert!(action.possible_kinds.contains(&MyKind::B.id()));
+      .bind(A)
+      .and(regex(r"^b").unwrap().bind(B));
+    assert_eq!(action.kind_id, B::kind_id());
 
     // first action's error should be ignored
     let action: Action<(), (), &'static str> = regex::<(), &'static str>(r"^a")

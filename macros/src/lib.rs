@@ -18,17 +18,15 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// ```no_run
 /// pub struct A;
 /// impl Into<TokenKindIdBinding<MyKind>> for A { ... }
-/// impl TokenKind<TokenKindIdBinding<MyKind>> for A { ... }
+/// impl SubTokenKind<TokenKindIdBinding<MyKind>> for A { ... }
 ///
 /// pub struct B(pub i32);
 /// impl Into<TokenKindIdBinding<MyKind>> for B { ... }
-/// impl TokenKind<TokenKindIdBinding<MyKind>> for B { ... }
+/// impl SubTokenKind<TokenKindIdBinding<MyKind>> for B { ... }
 ///
 /// pub struct C { pub c: i32 }
 /// impl Into<TokenKindIdBinding<MyKind>> for C { ... }
-/// impl TokenKind<TokenKindIdBinding<MyKind>> for C { ... }
-///
-/// impl TokenKind<TokenKindIdBinding<MyKind>> for MyKind { ... }
+/// impl SubTokenKind<TokenKindIdBinding<MyKind>> for C { ... }
 /// ```
 #[proc_macro_derive(TokenKind)]
 pub fn token_kind_macro_derive(input: TokenStream) -> TokenStream {
@@ -137,42 +135,20 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
       }
     }
 
-    // impl TokenKind for the generated struct
+    // impl SubTokenKind for the generated struct
     gen.push(quote! {
-      impl #crate_name::lexer::token::TokenKind<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
-        fn possible_kinds() -> std::collections::HashSet<
+      impl #crate_name::lexer::token::SubTokenKind<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
+        fn kind_id() -> 
           #crate_name::lexer::token::TokenKindId<
             #crate_name::lexer::token::TokenKindIdBinding<#enum_name>
           >
-        >
         {
-          // the generated struct only has one kind
-          std::collections::HashSet::from([#crate_name::lexer::token::TokenKindId::new(#index)])
+          #crate_name::lexer::token::TokenKindId::new(#index)
         }
       }
     });
 
     // TODO: collect groups and generated structs
-  });
-
-  // impl TokenKind for the enum
-  let generated_token_kind_ids: Vec<_> = (0..variants.len())
-    .into_iter()
-    .map(|i| {
-      quote! { #crate_name::lexer::token::TokenKindId::new(#i) }
-    })
-    .collect();
-  gen.push(quote! {
-    impl #crate_name::lexer::token::TokenKind<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #enum_name {
-      fn possible_kinds() -> std::collections::HashSet<
-        #crate_name::lexer::token::TokenKindId<
-          #crate_name::lexer::token::TokenKindIdBinding<#enum_name>
-        >
-      >
-      {
-        std::collections::HashSet::from([#(#generated_token_kind_ids),*])
-      }
-    }
   });
 
   quote! {

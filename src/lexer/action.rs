@@ -12,7 +12,7 @@ pub use regex::*;
 pub use simple::*;
 pub use utils::*;
 
-use super::token::{MockTokenKind, TokenKind, TokenKindId};
+use super::token::{MockTokenKind, SubTokenKind, TokenKindId};
 use std::collections::HashSet;
 
 pub enum ActionInputRestHeadMatcher {
@@ -26,8 +26,8 @@ pub enum ActionInputRestHeadMatcher {
 pub struct Action<Kind, ActionState = (), ErrorType = ()> {
   // input is mutable so the action can mutate the action state.
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
-  /// See [`Self::possible_kinds`].
-  possible_kinds: HashSet<TokenKindId<Kind>>,
+  /// See [`Self::kind_id`].
+  kind_id: TokenKindId<Kind>,
   /// See [`Self::head_matcher`].
   head_matcher: Option<ActionInputRestHeadMatcher>,
   /// See [`Self::maybe_muted`].
@@ -36,7 +36,7 @@ pub struct Action<Kind, ActionState = (), ErrorType = ()> {
   may_mutate_state: bool,
 }
 
-impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
+impl<ActionState, ErrorType> Action<MockTokenKind<()>, ActionState, ErrorType> {
   /// Create a new action with no kind.
   /// To set the kind, use [`Self::bind`], [`Self::kinds`] or [`Self::kind_ids`].
   // TODO: make this private or unsafe
@@ -50,7 +50,7 @@ impl<ActionState, ErrorType> Action<(), ActionState, ErrorType> {
         // transform ActionOutputWithoutKind tp ActionOutput
         exec(input).map(|output| output.into())
       }),
-      possible_kinds: HashSet::new(),
+      kind_id: MockTokenKind::kind_id(),
       head_matcher: None,
       maybe_muted: false,
       may_mutate_state: false,
@@ -69,7 +69,7 @@ impl<ActionState, ErrorType, T> Action<MockTokenKind<T>, ActionState, ErrorType>
   {
     Action {
       exec: Box::new(exec),
-      possible_kinds: MockTokenKind::possible_kinds(),
+      kind_id: MockTokenKind::kind_id(),
       head_matcher: None,
       maybe_muted: false,
       may_mutate_state: false,
@@ -111,8 +111,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 
   /// This is used to accelerate expectational lexing.
   /// Every action should have this field set by [`Self::bind`] [`Self::kinds`] or [`Self::kind_ids`].
-  pub fn possible_kinds(&self) -> &HashSet<TokenKindId<Kind>> {
-    &self.possible_kinds
+  pub fn kind_id(&self) -> &TokenKindId<Kind> {
+    &self.kind_id
   }
 
   /// This is used to accelerate lexing by the first character
@@ -137,9 +137,8 @@ mod tests {
 
   #[test]
   fn action_new() {
-    let action: Action<()> = Action::new(|_| None);
+    let action: Action<MockTokenKind<()>> = Action::new(|_| None);
     assert!(!action.maybe_muted);
-    assert_eq!(action.possible_kinds().len(), 0);
     assert!(action.head_matcher().is_none());
     assert!(action.never_muted())
   }
@@ -148,8 +147,7 @@ mod tests {
   fn action_with_data() {
     let action: Action<MockTokenKind<()>> = Action::with_data(|_| None);
     assert!(!action.maybe_muted);
-    assert_eq!(action.possible_kinds().len(), 1);
-    assert!(action.possible_kinds().contains(&TokenKindId::new(0)));
+    assert_eq!(action.kind_id(), &TokenKindId::new(0));
     assert!(action.head_matcher().is_none());
     assert!(action.never_muted())
   }

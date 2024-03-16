@@ -9,6 +9,7 @@ pub use string_list::*;
 pub use word::*;
 
 use super::{simple::simple, Action};
+use crate::lexer::token::MockTokenKind;
 
 /// Match unicode whitespaces greedy.
 /// The head matcher will be set automatically.
@@ -23,7 +24,7 @@ use super::{simple::simple, Action};
 /// # enum MyKind { #[default] Anonymous }
 /// # let builder = LexerBuilder::<MyKind>::new();
 /// builder.ignore_default(whitespaces());
-pub fn whitespaces<ActionState, ErrorType>() -> Action<(), ActionState, ErrorType> {
+pub fn whitespaces<ActionState, ErrorType>() -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   // TODO: benchmark this vs regex `^\s+`
   chars(|ch| ch.is_whitespace())
     // 0009..000D    ; White_Space # Cc   [5] <control-0009>..<control-000D>
@@ -65,7 +66,7 @@ pub fn whitespaces<ActionState, ErrorType>() -> Action<(), ActionState, ErrorTyp
 pub fn comment<ActionState, ErrorType>(
   open: impl Into<String>,
   close: impl Into<String>,
-) -> Action<(), ActionState, ErrorType> {
+) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   let open: String = open.into();
   let close: String = close.into();
   let first = open.chars().next().unwrap();
@@ -93,7 +94,7 @@ mod tests {
   use super::*;
   use crate::lexer::action::{ActionInput, ActionInputRestHeadMatcher};
 
-  fn assert_accept(action: &Action<()>, text: &str, expected: usize) {
+  fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
       action
         .exec(&mut ActionInput::new(text, 0, &mut ()))
@@ -102,7 +103,7 @@ mod tests {
       expected
     );
   }
-  fn assert_reject(action: &Action<()>, text: &str) {
+  fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
     assert!(action
       .exec(&mut ActionInput::new(text, 0, &mut ()))
       .is_none());
@@ -110,7 +111,7 @@ mod tests {
 
   #[test]
   fn action_utils_whitespaces() {
-    let action: Action<()> = whitespaces();
+    let action: Action<MockTokenKind<()>> = whitespaces();
 
     // common cases
     assert_reject(&action, "123");
@@ -137,7 +138,7 @@ mod tests {
 
   #[test]
   fn action_utils_comment() {
-    let action: Action<()> = comment("//", "\n");
+    let action: Action<MockTokenKind<()>> = comment("//", "\n");
 
     // common cases
     let text = "// this is a comment\n";

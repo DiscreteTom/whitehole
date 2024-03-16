@@ -1,14 +1,9 @@
-use super::{TokenKind, TokenKindId, TokenKindIdProvider};
-use std::collections::HashSet;
+use super::{SubTokenKind, TokenKindId, TokenKindIdProvider};
 
-/// A mock struct which implements [`TokenKind`] and [`TokenKindIdProvider`],
-/// and only has one possible kind id.
+/// A mock struct which implements [`SubTokenKind`] and [`TokenKindIdProvider`].
 /// This is useful in action utils to pass data to downstream actions.
 #[derive(Debug)]
 pub struct MockTokenKind<T> {
-  // the struct only have one possible id,
-  // so even the data is mutable, the binding is not broken
-  // so we make the data public
   pub data: T,
 }
 
@@ -19,7 +14,6 @@ pub struct MockTokenKind<T> {
 const MOCK_TOKEN_KIND_ID: TokenKindId<MockTokenKind<()>> = TokenKindId::new(0);
 
 impl<T> MockTokenKind<T> {
-  /// Return the only possible kind id.
   pub fn id() -> &'static TokenKindId<Self> {
     &MOCK_TOKEN_KIND_ID.cast()
   }
@@ -30,16 +24,14 @@ impl<T> MockTokenKind<T> {
 }
 
 impl<T> TokenKindIdProvider<MockTokenKind<T>> for MockTokenKind<T> {
-  /// Return the only possible kind id.
   fn id(&self) -> &TokenKindId<Self> {
     &MOCK_TOKEN_KIND_ID.cast()
   }
 }
 
-impl<T> TokenKind<Self> for MockTokenKind<T> {
-  /// Return a [`HashSet`] containing the only possible kind id.
-  fn possible_kinds() -> HashSet<TokenKindId<Self>> {
-    HashSet::from([MOCK_TOKEN_KIND_ID.cast().clone()])
+impl<T> SubTokenKind<Self> for MockTokenKind<T> {
+  fn kind_id() -> TokenKindId<Self> {
+    MOCK_TOKEN_KIND_ID.cast().clone()
   }
 }
 
@@ -57,8 +49,8 @@ mod tests {
   #[test]
   fn mock_token_kind_possible_kinds() {
     assert_eq!(
-      MockTokenKind::<()>::possible_kinds(),
-      HashSet::from([MockTokenKind::<()>::id().clone()])
+      MockTokenKind::<()>::kind_id(),
+      MockTokenKind::<()>::id().clone()
     );
   }
 

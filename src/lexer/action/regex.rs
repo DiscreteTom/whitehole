@@ -1,3 +1,5 @@
+use crate::lexer::token::MockTokenKind;
+
 // TODO: only available in feature `regex`
 use super::{simple::simple, Action};
 use regex::{Error, Regex};
@@ -25,7 +27,7 @@ use regex::{Error, Regex};
 /// ```
 pub fn regex<ActionState, ErrorType>(
   re: &str,
-) -> Result<Action<(), ActionState, ErrorType>, Error> {
+) -> Result<Action<MockTokenKind<()>, ActionState, ErrorType>, Error> {
   Regex::new(re).map(|re| simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
 }
 
@@ -49,33 +51,36 @@ pub fn regex<ActionState, ErrorType>(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::{input::ActionInput, output::ActionOutput};
+  use crate::lexer::{
+    action::{input::ActionInput, output::ActionOutput},
+    token::TokenKindIdProvider,
+  };
 
   #[test]
   fn match_at_start() {
-    let action: Action<(), (), ()> = regex(r"^\d+").unwrap();
+    let action: Action<MockTokenKind<()>> = regex(r"^\d+").unwrap();
     assert!(matches!(
       action.exec(&mut ActionInput::new("123", 0, &mut ())),
       Some(ActionOutput {
-        kind: (),
+        kind: mock,
         digested: 3,
         muted: false,
         error: None,
-      })
+      }) if matches!(mock.data, ()) && mock.id().0 == 0
     ));
   }
 
   #[test]
   fn match_at_middle() {
-    let action: Action<(), (), ()> = regex(r"^\d+").unwrap();
+    let action: Action<MockTokenKind<()>> = regex(r"^\d+").unwrap();
     assert!(matches!(
       action.exec(&mut ActionInput::new("abc123", 3, &mut ())),
       Some(ActionOutput {
-        kind: (),
+        kind: mock,
         digested: 3,
         muted: false,
         error: None,
-      })
+      }) if matches!(mock.data, ()) && mock.id().0 == 0
     ));
   }
 }

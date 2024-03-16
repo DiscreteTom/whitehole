@@ -1,7 +1,7 @@
 use super::AcceptedActionDecoratorContext;
 use crate::lexer::{
   action::{ActionInput, ActionOutput, EnhancedActionOutput},
-  token::{TokenKind, TokenKindIdBinding},
+  token::{SubTokenKind, TokenKindIdBinding},
   Action,
 };
 
@@ -24,7 +24,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     kind: ViaKind,
   ) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
   where
-    ViaKind: TokenKind<TokenKindIdBinding<NewKind>> + Into<TokenKindIdBinding<NewKind>>,
+    ViaKind: SubTokenKind<TokenKindIdBinding<NewKind>> + Into<TokenKindIdBinding<NewKind>>,
     NewKind: Clone + 'static,
     Kind: 'static,
     ActionState: 'static,
@@ -33,7 +33,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     let exec = self.exec;
     let kind = kind.into();
     Action {
-      possible_kinds: ViaKind::possible_kinds(),
+      kind_id: ViaKind::kind_id(),
       head_matcher: self.head_matcher,
       maybe_muted: self.maybe_muted,
       may_mutate_state: self.may_mutate_state,
@@ -73,7 +73,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     selector: F,
   ) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
   where
-    ViaKind: Into<TokenKindIdBinding<NewKind>> + TokenKind<TokenKindIdBinding<NewKind>>,
+    ViaKind: Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKindIdBinding<NewKind>>,
     Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
@@ -89,7 +89,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   {
     let exec = self.exec;
     Action {
-      possible_kinds: ViaKind::possible_kinds(),
+      kind_id: ViaKind::kind_id(),
       head_matcher: self.head_matcher,
       maybe_muted: self.maybe_muted,
       may_mutate_state: self.may_mutate_state,

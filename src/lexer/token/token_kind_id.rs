@@ -84,8 +84,7 @@ pub trait TokenKindIdProvider<TokenKindType> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::token::{TokenKind, TokenKindIdBinding};
-  use std::collections::HashSet;
+  use crate::lexer::token::{SubTokenKind, TokenKindIdBinding};
   use whitehole_macros::_TokenKind;
 
   #[test]
@@ -163,27 +162,8 @@ mod tests {
     );
 
     // possible kinds for generated structs
-    assert_eq!(
-      UnitField::possible_kinds(),
-      HashSet::from([TokenKindId::new(0)])
-    );
-    assert_eq!(
-      UnnamedField::possible_kinds(),
-      HashSet::from([TokenKindId::new(1)])
-    );
-    assert_eq!(
-      NamedField::possible_kinds(),
-      HashSet::from([TokenKindId::new(2)])
-    );
-
-    // possible kinds for the original enum
-    assert_eq!(
-      MyKind::possible_kinds(),
-      HashSet::from([
-        TokenKindId::new(0),
-        TokenKindId::new(1),
-        TokenKindId::new(2)
-      ])
-    );
+    assert_eq!(UnitField::kind_id(), TokenKindId::new(0));
+    assert_eq!(UnnamedField::kind_id(), TokenKindId::new(1));
+    assert_eq!(NamedField::kind_id(), TokenKindId::new(2));
   }
 }

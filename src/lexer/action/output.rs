@@ -1,3 +1,5 @@
+use crate::lexer::token::MockTokenKind;
+
 use super::input::ActionInput;
 use std::ops::{Deref, DerefMut};
 
@@ -24,12 +26,12 @@ pub struct ActionOutputWithoutKind<OptionErrorType> {
   pub error: OptionErrorType,
 }
 
-impl<OptionErrorType> Into<ActionOutput<(), OptionErrorType>>
+impl<OptionErrorType> Into<ActionOutput<MockTokenKind<()>, OptionErrorType>>
   for ActionOutputWithoutKind<OptionErrorType>
 {
-  fn into(self) -> ActionOutput<(), OptionErrorType> {
+  fn into(self) -> ActionOutput<MockTokenKind<()>, OptionErrorType> {
     ActionOutput {
-      kind: (),
+      kind: MockTokenKind::new(()),
       digested: self.digested,
       muted: self.muted,
       error: self.error,
@@ -112,6 +114,8 @@ impl<'text, Kind, OptionErrorType> Into<Option<ActionOutput<Kind, OptionErrorTyp
 
 #[cfg(test)]
 mod tests {
+  use crate::lexer::token::TokenKindIdProvider;
+
   use super::*;
 
   #[test]
@@ -121,8 +125,9 @@ mod tests {
       muted: false,
       error: None,
     };
-    let output: ActionOutput<(), Option<()>> = output.into();
-    assert_eq!(output.kind, ());
+    let output: ActionOutput<MockTokenKind<()>, Option<()>> = output.into();
+    assert_eq!(output.kind.id().0, 0);
+    assert!(matches!(output.kind.data, ()));
     assert_eq!(output.digested, 2);
     assert_eq!(output.muted, false);
     assert_eq!(output.error, None);
@@ -137,13 +142,14 @@ mod tests {
       muted: false,
       error: None,
     };
-    let output = EnhancedActionOutput::<(), Option<()>>::new(&input, output.into());
+    let output = EnhancedActionOutput::<MockTokenKind<()>, Option<()>>::new(&input, output.into());
 
     // ensure we can deref and deref_mut
     assert_eq!(output.digested, 2);
     assert_eq!(output.muted, false);
     assert_eq!(output.error, None);
-    assert!(matches!(output.kind, ()));
+    assert!(matches!(output.kind.data, ()));
+    assert_eq!(output.kind.id().0, 0);
 
     // access fields from input
     assert_eq!(output.start, 1);

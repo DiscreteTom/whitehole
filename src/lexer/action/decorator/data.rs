@@ -1,7 +1,7 @@
 use super::AcceptedActionDecoratorContext;
 use crate::lexer::{
   action::{ActionInput, ActionOutput, EnhancedActionOutput},
-  token::{MockTokenKind, TokenKind},
+  token::{MockTokenKind, SubTokenKind},
   Action,
 };
 
@@ -56,7 +56,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       may_mutate_state: self.may_mutate_state,
       maybe_muted: self.maybe_muted,
       head_matcher: self.head_matcher,
-      possible_kinds: MockTokenKind::possible_kinds(),
+      kind_id: MockTokenKind::kind_id(),
     }
     // since there is just on possible kinds in MockTokenKind
     // we don't need to call `action.kinds().select()` here
@@ -97,7 +97,7 @@ impl<Data, ActionState, ErrorType> Action<MockTokenKind<Data>, ActionState, Erro
       may_mutate_state: self.may_mutate_state,
       maybe_muted: self.maybe_muted,
       head_matcher: self.head_matcher,
-      possible_kinds: MockTokenKind::possible_kinds(),
+      kind_id: MockTokenKind::kind_id(),
     }
     // since there is just on possible kinds in MockTokenKind
     // we don't need to call `action.kinds().select()` here

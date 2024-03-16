@@ -3,8 +3,8 @@ mod data;
 mod head;
 mod kind;
 
-pub use kind::*;
 // these modules have no exportable items for now
+// pub use kind::*;
 // pub use combine::*;
 // pub use data::*;
 // pub use head::*;
@@ -148,7 +148,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         })
       }),
       maybe_muted: self.maybe_muted,
-      possible_kinds: self.possible_kinds,
+      kind_id: self.kind_id,
       head_matcher: self.head_matcher,
       may_mutate_state: self.may_mutate_state,
     }
@@ -417,7 +417,7 @@ mod tests {
     action::{
       input::ActionInput, output::ActionOutput, simple::simple, ActionInputRestHeadMatcher,
     },
-    token::TokenKind,
+    token::{TokenKindIdBinding, TokenKindIdProvider},
     Action,
   };
   use whitehole_macros::_TokenKind;
@@ -449,9 +449,9 @@ mod tests {
 
   #[test]
   fn action_apply() {
-    let action: Action<MyKind, (), i32> = simple(|input| input.rest().len())
+    let action: Action<TokenKindIdBinding<MyKind>, (), i32> = simple(|input| input.rest().len())
       .mute(true)
-      .bind(MyKind::A)
+      .bind(A)
       .head_in(['A'])
       .apply(|mut ctx| {
         ctx.output.digested = 0;
@@ -461,8 +461,8 @@ mod tests {
 
     // ensure `action.apply` won't change `maybe_muted`, `possible_kinds`, and `head_matcher`
     assert!(action.maybe_muted);
-    assert_eq!(action.possible_kinds.len(), 1);
-    assert!(action.possible_kinds.contains(&MyKind::A.id()));
+    assert_eq!(action.kind_id.len(), 1);
+    // assert!(action.possible_kinds.contains(A.()));
     assert!(matches!(
       &action.head_matcher,
       Some(ActionInputRestHeadMatcher::OneOf(set)) if set.contains(&'A') && set.len() == 1
@@ -472,11 +472,11 @@ mod tests {
     assert!(matches!(
       action.exec(&mut ActionInput::new("A", 0, &mut ())),
       Some(ActionOutput {
-        kind: MyKind::A,
+        kind: binding,
         digested: 0,
         muted: true,
         error: Some(123)
-      })
+      }) if matches!(binding.value(), MyKind::A) && binding.id().0 == 0
     ));
 
     // `action.apply` can modify input.state
