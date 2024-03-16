@@ -78,7 +78,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> TokenStre
           })
           .collect();
         gen.push(quote! {
-          pub struct #variant_name{ #(#generated_fields),* };
+          pub struct #variant_name{ #(#generated_fields),* }
           impl Into<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
             fn into(self) -> #crate_name::lexer::token::TokenKindIdBinding<#enum_name> {
               #crate_name::lexer::token::TokenKindIdBinding::new(
