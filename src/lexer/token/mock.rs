@@ -25,15 +25,13 @@ impl<T> MockTokenKind<T> {
 }
 
 impl<T> TokenKind<Self> for MockTokenKind<T> {
-  type TargetType = Self;
-
   /// Return the only possible kind id.
   fn id(&self) -> &TokenKindId<Self> {
     Self::id()
   }
 
   /// Return a [`HashSet`] containing the only possible kind id.
-  fn possible_kinds() -> HashSet<TokenKindId<Self::TargetType>> {
+  fn possible_kinds() -> HashSet<TokenKindId<Self>> {
     HashSet::from([Self::id().clone()])
   }
 }
