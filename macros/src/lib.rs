@@ -44,6 +44,15 @@ pub fn internal_token_kind_macro_derive(input: TokenStream) -> TokenStream {
   common(quote! { crate }, input).into()
 }
 
+// TODO: make this only available in dev mode for whitehole
+/// This is only used internally in whitehole.
+#[proc_macro_derive(__TokenKind, attributes(TokenKindGroup))]
+pub fn debug_token_kind_macro_derive(input: TokenStream) -> TokenStream {
+  let ts = common(quote! { crate }, input);
+  println!("{}", ts.to_string());
+  ts.into()
+}
+
 fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macro2::TokenStream {
   let ast: DeriveInput = parse(input).unwrap();
 
