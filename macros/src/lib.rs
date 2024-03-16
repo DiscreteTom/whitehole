@@ -2,8 +2,6 @@ use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{self, parse, Data, DeriveInput, Fields};
 
-// TODO: impl TokenKindGroup
-
 /// This derive macro will transform an enum into a token kind.
 /// # Examples
 /// The following code
@@ -32,21 +30,21 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 ///
 /// impl TokenKind<TokenKindIdBinding<MyKind>> for MyKind { ... }
 /// ```
-#[proc_macro_derive(TokenKind, attributes(TokenKindGroup))]
+#[proc_macro_derive(TokenKind)]
 pub fn token_kind_macro_derive(input: TokenStream) -> TokenStream {
   common(quote! { whitehole }, input).into()
 }
 
 // TODO: make this only available in dev mode for whitehole
 /// This is only used internally in whitehole.
-#[proc_macro_derive(_TokenKind, attributes(TokenKindGroup))]
+#[proc_macro_derive(_TokenKind)]
 pub fn internal_token_kind_macro_derive(input: TokenStream) -> TokenStream {
   common(quote! { crate }, input).into()
 }
 
 // TODO: make this only available in dev mode for whitehole
 /// This is only used internally in whitehole.
-#[proc_macro_derive(__TokenKind, attributes(TokenKindGroup))]
+#[proc_macro_derive(__TokenKind)]
 pub fn debug_token_kind_macro_derive(input: TokenStream) -> TokenStream {
   let ts = common(quote! { crate }, input);
   println!("{}", ts.to_string());
