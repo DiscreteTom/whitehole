@@ -1,5 +1,4 @@
-use super::token::TokenKindId;
-use crate::lexer::token::TokenKind;
+use super::token::{TokenKindId, TokenKindIdProvider};
 
 pub struct Expectation<'expect_text, Kind> {
   pub kind: Option<TokenKindId<Kind>>,
@@ -15,25 +14,25 @@ impl<'expect_text, Kind> Default for Expectation<'expect_text, Kind> {
   }
 }
 
-impl<'expect_text, Kind: TokenKind<Kind>> From<&Kind> for Expectation<'expect_text, Kind>
+impl<'expect_text, Kind> From<&Kind> for Expectation<'expect_text, Kind>
 where
-  Kind: TokenKind<Kind>,
+  Kind: TokenKindIdProvider<Kind>,
 {
   fn from(kind: &Kind) -> Self {
     Expectation {
-      kind: Some(kind.id()),
+      kind: Some(kind.id().clone()), // TODO: prevent clone
       text: None,
     }
   }
 }
 
-impl<'expect_text, Kind: TokenKind<Kind>> From<Kind> for Expectation<'expect_text, Kind>
+impl<'expect_text, Kind> From<Kind> for Expectation<'expect_text, Kind>
 where
-  Kind: TokenKind<Kind>,
+  Kind: TokenKindIdProvider<Kind>,
 {
   fn from(kind: Kind) -> Self {
     Expectation {
-      kind: Some(kind.id()),
+      kind: Some(kind.id().clone()), // TODO: prevent clone
       text: None,
     }
   }
@@ -48,11 +47,14 @@ impl<'expect_text, Kind> From<&'expect_text str> for Expectation<'expect_text, K
   }
 }
 
-impl<'expect_text, Kind: TokenKind<Kind>> Expectation<'expect_text, Kind> {
+impl<'expect_text, Kind> Expectation<'expect_text, Kind> {
   /// Set the expected kind of the token.
   /// Only the kind id is compared, data will be ignored.
-  pub fn kind(mut self, kind: impl Into<Kind>) -> Self {
-    self.kind = Some(kind.into().id());
+  pub fn kind(mut self, kind: impl Into<Kind>) -> Self
+  where
+    Kind: TokenKindIdProvider<Kind>,
+  {
+    self.kind = Some(kind.into().id().clone()); // TODO: prevent clone
     self
   }
 }

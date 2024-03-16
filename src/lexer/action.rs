@@ -12,7 +12,7 @@ pub use regex::*;
 pub use simple::*;
 pub use utils::*;
 
-use super::token::{MockTokenKind, TokenKindId};
+use super::token::{MockTokenKind, TokenKind, TokenKindId};
 use std::collections::HashSet;
 
 pub enum ActionInputRestHeadMatcher {
