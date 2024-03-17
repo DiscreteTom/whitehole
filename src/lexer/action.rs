@@ -110,7 +110,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   }
 
   /// This is used to accelerate expectational lexing.
-  /// Every action should have this field set by [`Self::bind`] [`Self::kinds`] or [`Self::kind_ids`].
+  /// Every action should have this field set by [`Self::bind`] and [`Self::select`].
   pub fn kind_id(&self) -> &TokenKindId<Kind> {
     &self.kind_id
   }
