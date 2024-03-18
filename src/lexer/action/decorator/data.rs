@@ -58,8 +58,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       head_matcher: self.head_matcher,
       kind_id: MockTokenKind::kind_id(),
     }
-    // since there is just on possible kinds in MockTokenKind
-    // we don't need to call `action.kinds().select()` here
   }
 }
 
@@ -99,8 +97,6 @@ impl<Data, ActionState, ErrorType> Action<MockTokenKind<Data>, ActionState, Erro
       head_matcher: self.head_matcher,
       kind_id: MockTokenKind::kind_id(),
     }
-    // since there is just on possible kinds in MockTokenKind
-    // we don't need to call `action.kinds().select()` here
   }
 }
 
