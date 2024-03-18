@@ -3,6 +3,7 @@ use std::{collections::HashSet, ops::RangeInclusive};
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Set [`Action::head_matcher`] to [`OneOf`](ActionInputRestHeadMatcher::OneOf).
+  /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -11,15 +12,16 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define(A, regex(r"^A").unwrap().head_in(['A']));
+  /// builder.define(A, regex(r"^A").unwrap().unchecked_head_in(['A']));
   /// ```
-  pub fn head_in(mut self, char_set: impl Into<HashSet<char>>) -> Self {
+  pub fn unchecked_head_in(mut self, char_set: impl Into<HashSet<char>>) -> Self {
     self.head_matcher = Some(ActionInputRestHeadMatcher::OneOf(char_set.into()));
     self
   }
 
   /// Set [`Action::head_matcher`] to [`OneOf`](ActionInputRestHeadMatcher::OneOf)
   /// with the given range.
+  /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -28,15 +30,16 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define(A, regex(r"^[A-Z]").unwrap().head_in_range('A'..='Z'));
-  pub fn head_in_range(
+  /// builder.define(A, regex(r"^[A-Z]").unwrap().unchecked_head_in_range('A'..='Z'));
+  pub fn unchecked_head_in_range(
     self,
     range: impl Into<RangeInclusive<char>>,
   ) -> Action<Kind, ActionState, ErrorType> {
-    self.head_in(range.into().into_iter().collect::<HashSet<_>>())
+    self.unchecked_head_in(range.into().into_iter().collect::<HashSet<_>>())
   }
 
   /// Set [`Action::head_matcher`] to [`Not`](ActionInputRestHeadMatcher::Not).
+  /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -45,14 +48,15 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define(MyKind::A, regex(r"^[^A]").unwrap().head_not(['A']));
+  /// builder.define(MyKind::A, regex(r"^[^A]").unwrap().unchecked_head_not(['A']));
   /// ```
-  pub fn head_not(mut self, char_set: impl Into<HashSet<char>>) -> Self {
+  pub fn unchecked_head_not(mut self, char_set: impl Into<HashSet<char>>) -> Self {
     self.head_matcher = Some(ActionInputRestHeadMatcher::Not(char_set.into()));
     self
   }
 
   /// Set [`Action::head_matcher`] to [`Unknown`](ActionInputRestHeadMatcher::Unknown).
+  /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -60,9 +64,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define(MyKind::A, regex(r"^.").unwrap().head_unknown());
+  /// builder.define(MyKind::A, regex(r"^.").unwrap().unchecked_head_unknown());
   /// ```
-  pub fn head_unknown(mut self) -> Self {
+  pub fn unchecked_head_unknown(mut self) -> Self {
     self.head_matcher = Some(ActionInputRestHeadMatcher::Unknown);
     self
   }
@@ -75,34 +79,34 @@ mod tests {
 
   #[test]
   fn action_head_in() {
-    let action: Action<()> = simple(|_| 1).head_in(['a']);
+    let action: Action<_> = simple(|_| 1).unchecked_head_in(['a']);
     assert!(matches!(
       action.head_matcher,
-      Some(ActionInputRestHeadMatcher::OneOf(set)) if set.contains(&'a') && set.len() == 1
+      Some(ActionInputRestHeadMatcher::OneOf(set)) if set == HashSet::from(['a'])
     ));
   }
 
   #[test]
   fn action_head_in_range() {
-    let action: Action<()> = simple(|_| 1).head_in_range('a'..='z');
+    let action: Action<_> = simple(|_| 1).unchecked_head_in_range('a'..='z');
     assert!(matches!(
       action.head_matcher,
-      Some(ActionInputRestHeadMatcher::OneOf(set)) if set.contains(&'a') && set.contains(&'z') && set.len() == 26
+      Some(ActionInputRestHeadMatcher::OneOf(set)) if set == ('a'..='z').into_iter().collect::<HashSet<_>>()
     ));
   }
 
   #[test]
   fn action_head_not() {
-    let action: Action<(), (), ()> = regex(r"^a").unwrap().head_not(['b']);
+    let action: Action<_> = regex(r"^a").unwrap().unchecked_head_not(['b']);
     assert!(matches!(
       action.head_matcher,
-      Some(ActionInputRestHeadMatcher::Not(set)) if set.contains(&'b') && set.len() == 1
+      Some(ActionInputRestHeadMatcher::Not(set)) if set == HashSet::from(['b'])
     ));
   }
 
   #[test]
   fn action_head_unknown() {
-    let action: Action<()> = simple(|_| 1).head_unknown();
+    let action: Action<_> = simple(|_| 1).unchecked_head_unknown();
     assert!(matches!(
       action.head_matcher,
       Some(ActionInputRestHeadMatcher::Unknown)
