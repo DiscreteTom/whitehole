@@ -7,7 +7,10 @@ use std::ops::{Add, BitOr};
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Execute another action if current action can't be accepted.
+  /// The other action's [`head_matcher`](Action::head_matcher) is ignored.
   /// Return a new action.
+  /// # Panics
+  /// Panics if the kind_id of the two actions are different.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{Action, LexerBuilder, action::exact};
@@ -26,16 +29,26 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
-    // TODO: assert kind_id is the same
+    // kind_id must be the same.
+    // don't use `assert!` here since it require `Kind: Debug`
+    if self.kind_id != another.kind_id {
+      panic!(
+        "kind_id must be the same, but got {:?} and {:?}",
+        self.kind_id.0, another.kind_id.0
+      );
+    }
+
     let exec = self.exec;
     let another_exec = another.exec;
     self.exec = Box::new(move |input| exec(input).or_else(|| another_exec(input)));
+    // kind_id and head_matcher are not changed
     self.maybe_muted = self.maybe_muted || another.maybe_muted;
+    self.may_mutate_state = self.may_mutate_state || another.may_mutate_state;
     self
   }
 
   /// Execute another action after the current action is accepted.
-  /// Current action's [`maybe_muted`](Self::maybe_muted), [`possible_kinds`](Self::possible_kinds)
+  /// Current action's [`maybe_muted`](Self::maybe_muted), [`kind_id`](Self::kind_id)
   /// and generated [`kind`](ActionOutput::kind), [`muted`](ActionOutput::muted),
   /// [`error`](ActionOutput::error) are ignored.
   /// Next action's [`head_matcher`](Self::head_matcher) is ignored.
@@ -86,17 +99,19 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
           })
         })
       }),
-      may_mutate_state: self.may_mutate_state || another.may_mutate_state,
+      // `self.kind_id` is ignored since only the `output.digested` is used
+      kind_id: another.kind_id,
+      // next action's head_matcher is ignored
       head_matcher: self.head_matcher,
       // `self.maybe_muted` is ignored since only the `output.digested` is used
       maybe_muted: another.maybe_muted,
-      // `self.possible_kinds` is ignored since only the `output.digested` is used
-      kind_id: another.kind_id,
+      // merge the two actions' `may_mutate_state`
+      may_mutate_state: self.may_mutate_state || another.may_mutate_state,
     }
   }
 
   /// Execute another action after the current action is accepted.
-  /// Current action's [`maybe_muted`](Self::maybe_muted) and [`possible_kinds`](Self::possible_kinds)
+  /// Current action's [`maybe_muted`](Self::maybe_muted), [`kind_id`](Self::kind_id)
   /// are ignored. Next action's [`head_matcher`](Self::head_matcher) is ignored.
   /// Return a new action with [`MockTokenKind`] as the kind.
   /// You can retrieve the output of both actions and store them in [`MockTokenKind::data`]
@@ -152,7 +167,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
                       kind: output_2.kind,
                       digested: output_2.digested,
                       muted: output_2.muted,
-                      error: &output_2.error,
+                      error: &output_2.error, // use ref to avoid consuming the error
                     },
                     text,
                     start: input_2.start(),
@@ -165,11 +180,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
           })
         })
       }),
-      may_mutate_state: self.may_mutate_state || another.may_mutate_state,
+      kind_id: MockTokenKind::kind_id(),
       head_matcher: self.head_matcher,
       // `self.maybe_muted` is ignored because we apply the output_2.muted
       maybe_muted: another.maybe_muted,
-      kind_id: MockTokenKind::kind_id(),
+      may_mutate_state: self.may_mutate_state || another.may_mutate_state,
     }
   }
 }
@@ -201,6 +216,7 @@ mod tests {
     action::{regex, simple, ActionInputRestHeadMatcher},
     token::TokenKindIdBinding,
   };
+  use simple::simple_option_with_data;
   use whitehole_macros::_TokenKind;
 
   #[derive(_TokenKind, Clone, Debug)]
@@ -211,12 +227,12 @@ mod tests {
 
   #[test]
   fn action_or() {
-    let action: Action<(), (), ()> = regex(r"^a").unwrap().or(regex(r"^b").unwrap());
+    let action: Action<_> = regex(r"^a").unwrap().or(regex(r"^b").unwrap());
 
     assert!(matches!(
       action.exec(&mut ActionInput::new("a", 0, &mut ())),
       Some(ActionOutput {
-        kind: (),
+        kind: _,
         digested: 1,
         muted: false,
         error: None
@@ -225,7 +241,7 @@ mod tests {
     assert!(matches!(
       action.exec(&mut ActionInput::new("b", 0, &mut ())),
       Some(ActionOutput {
-        kind: (),
+        kind: _,
         digested: 1,
         muted: false,
         error: None
@@ -233,12 +249,12 @@ mod tests {
     ));
 
     // use `|` to combine actions
-    let action: Action<(), (), ()> = regex(r"^a").unwrap() | regex(r"^b").unwrap();
+    let action: Action<_> = regex(r"^a").unwrap() | regex(r"^b").unwrap();
 
     assert!(matches!(
       action.exec(&mut ActionInput::new("a", 0, &mut ())),
       Some(ActionOutput {
-        kind: (),
+        kind: _,
         digested: 1,
         muted: false,
         error: None
@@ -247,7 +263,7 @@ mod tests {
     assert!(matches!(
       action.exec(&mut ActionInput::new("b", 0, &mut ())),
       Some(ActionOutput {
-        kind: (),
+        kind: _,
         digested: 1,
         muted: false,
         error: None
@@ -255,41 +271,40 @@ mod tests {
     ));
 
     // maybe_muted should be true if any of the actions is muted
-    let action: Action<(), (), ()> = regex(r"^a").unwrap().mute(true) | regex(r"^b").unwrap();
+    let action: Action<_> = regex(r"^a").unwrap().mute() | regex(r"^b").unwrap();
     assert!(action.maybe_muted);
-    let action: Action<(), (), ()> = regex(r"^a").unwrap() | regex(r"^b").unwrap().mute(true);
+    let action: Action<_> = regex(r"^a").unwrap() | regex(r"^b").unwrap().mute();
     assert!(action.maybe_muted);
-    let action: Action<(), (), ()> =
-      regex(r"^a").unwrap().mute(true) | regex(r"^b").unwrap().mute(true);
+    let action: Action<_> = regex(r"^a").unwrap().mute() | regex(r"^b").unwrap().mute();
     assert!(action.maybe_muted);
-    let action: Action<(), (), ()> = regex(r"^a").unwrap() | regex(r"^b").unwrap();
+    let action: Action<_> = regex(r"^a").unwrap() | regex(r"^b").unwrap();
     assert!(!action.maybe_muted);
 
     // possible kinds should be merged
     let action: Action<TokenKindIdBinding<MyKind>> =
       regex(r"^a").unwrap().bind(A) | regex(r"^b").unwrap().bind(B);
-    assert_eq!(action.kind_id, MyKind::kind_id());
+    assert_eq!(action.kind_id, A::kind_id());
   }
 
   #[test]
   fn action_and() {
     // reject if any action reject
-    let action: Action<(), (), ()> = simple(|_| 0) + simple(|_| 1);
+    let action: Action<_> = simple(|_| 0) + simple(|_| 1);
     assert!(matches!(
       action.exec(&mut ActionInput::new("a", 0, &mut ())),
       None
     ));
-    let action: Action<(), (), ()> = simple(|_| 1) + simple(|_| 0);
+    let action: Action<_> = simple(|_| 1) + simple(|_| 0);
     assert!(matches!(
       action.exec(&mut ActionInput::new("a", 0, &mut ())),
       None
     ));
 
-    let action: Action<(), (), ()> = regex(r"^a").unwrap().and(regex(r"^b").unwrap());
+    let action: Action<_> = regex(r"^a").unwrap().and(regex(r"^b").unwrap());
     assert!(matches!(
       action.exec(&mut ActionInput::new("ab", 0, &mut ())),
       Some(ActionOutput {
-        kind: (),
+        kind: _,
         digested: 2,
         muted: false,
         error: None
@@ -297,10 +312,10 @@ mod tests {
     ));
 
     // maybe_muted should be true if the next action is muted
-    let action: Action<(), (), ()> = regex(r"^a").unwrap().and(regex(r"^b").unwrap().mute(true));
+    let action: Action<_> = regex(r"^a").unwrap().and(regex(r"^b").unwrap().mute());
     assert!(action.maybe_muted);
     // maybe_muted for the first action is ignored
-    let action: Action<(), (), ()> = regex(r"^a").unwrap().mute(true).and(regex(r"^b").unwrap());
+    let action: Action<_> = regex(r"^a").unwrap().mute().and(regex(r"^b").unwrap());
     assert!(!action.maybe_muted);
 
     // first action's possible kinds should be ignored
@@ -311,14 +326,14 @@ mod tests {
     assert_eq!(action.kind_id, B::kind_id());
 
     // first action's error should be ignored
-    let action: Action<(), (), &'static str> = regex::<(), &'static str>(r"^a")
+    let action: Action<_, (), &'static str> = regex::<_, &'static str>(r"^a")
       .unwrap()
       .error("error")
       .and(regex(r"^b").unwrap());
     assert!(matches!(
       action.exec(&mut ActionInput::new("ab", 0, &mut ())),
       Some(ActionOutput {
-        kind: (),
+        kind: _,
         digested: 2,
         muted: false,
         error: None
@@ -326,21 +341,21 @@ mod tests {
     ));
 
     // first action's head matcher is applied
-    let action: Action<(), (), ()> = regex(r"^a")
+    let action: Action<_> = regex(r"^a")
       .unwrap()
-      .head_in(['a'])
-      .and(regex(r"^b").unwrap().head_in(['b']));
+      .unchecked_head_in(['a'])
+      .and(regex(r"^b").unwrap().unchecked_head_in(['b']));
     assert!(matches!(
       action.head_matcher.as_ref().unwrap(),
       ActionInputRestHeadMatcher::OneOf(set) if set.contains(&'a') && set.len() == 1
     ));
 
     // use '+' as a shortcut
-    let action: Action<(), (), ()> = regex(r"^a").unwrap() + regex(r"^b").unwrap();
+    let action: Action<_> = regex(r"^a").unwrap() + regex(r"^b").unwrap();
     assert!(matches!(
       action.exec(&mut ActionInput::new("ab", 0, &mut ())),
       Some(ActionOutput {
-        kind: (),
+        kind: _,
         digested: 2,
         muted: false,
         error: None
@@ -351,50 +366,35 @@ mod tests {
   #[test]
   fn action_and_then() {
     // reject if any action reject
-    let action: Action<_, (), ()> = simple(|_| 0).and_then(simple(|_| 1), |_, _| 1);
+    let action: Action<_> = simple(|_| 0).and_then(simple(|_| 1), |_, _| 1);
     assert!(matches!(
       action.exec(&mut ActionInput::new("a", 0, &mut ())),
       None
     ));
-    let action: Action<_, (), ()> = simple(|_| 1).and_then(simple(|_| 0), |_, _| 1);
+    let action: Action<_> = simple(|_| 1).and_then(simple(|_| 0), |_, _| 1);
     assert!(matches!(
       action.exec(&mut ActionInput::new("a", 0, &mut ())),
       None
     ));
 
     // ensure the first output can be consumed, and the second output's kind can be consumed
-    let action: Action<_, (), &str> = Action::with_data(|_| {
-      Some(ActionOutput {
-        kind: MockTokenKind {
-          data: Box::new(111),
-        },
-        digested: 1,
-        muted: true,
-        error: Some("err1"),
-      })
-    })
-    .and_then(
-      Action::with_data(|_| {
-        Some(ActionOutput {
-          kind: MockTokenKind {
-            data: Box::new(222),
+    let action: Action<_, (), &str> =
+      simple_option_with_data::<(), &str, _, _>(|_| Some((1, Box::new(111))))
+        .mute()
+        .error("err1")
+        .and_then(
+          simple_option_with_data::<(), &str, _, _>(|_| Some((2, Box::new(222)))).error("err2"),
+          |o1, o2| {
+            (
+              o1.base,
+              o1.start,
+              o2.base.kind,
+              o2.base.digested,
+              o2.base.muted,
+              o2.start,
+            )
           },
-          digested: 2,
-          muted: false,
-          error: Some("err2"),
-        })
-      }),
-      |o1, o2| {
-        (
-          o1.base,
-          o1.start,
-          o2.base.kind,
-          o2.base.digested,
-          o2.base.muted,
-          o2.start,
-        )
-      },
-    );
+        );
     assert!(matches!(
       action.exec(&mut ActionInput::new("ab", 0, &mut ())),
       Some(ActionOutput {
