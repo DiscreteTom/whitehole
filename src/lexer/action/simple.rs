@@ -3,6 +3,12 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 
 /// Provide a function that digests the rest of the input text and returns the number of digested characters.
 /// Return `0` if the action is rejected.
+/// # Examples
+/// ```
+/// use whitehole::lexer::action::{Action, simple};
+/// // accept all rest characters, reject if the rest is empty
+/// let a: Action<MockTokenKind<()>> = simple(|input| input.rest().len());
+/// ```
 pub fn simple<ActionState, ErrorType, F>(f: F) -> Action<MockTokenKind<()>, ActionState, ErrorType>
 where
   // ActionInput is immutable so we can set may_mutate_state to false.
@@ -17,6 +23,13 @@ where
 /// Provide a function that digests the rest of the input text and returns the number of digested characters.
 /// `0` is allowed as an accepted number of digested characters.
 /// Return `None` if the action is rejected.
+/// # Examples
+/// ```
+/// use whitehole::lexer::action::{Action, simple_option};
+/// // accept all rest characters, never reject.
+/// // be ware this may cause infinite loop
+/// let a: Action<MockTokenKind<()>> = simple_option(|input| Some(input.rest().len()));
+/// ```
 pub fn simple_option<ActionState, ErrorType, F>(
   f: F,
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType>
@@ -31,6 +44,13 @@ where
 /// returns the number of digested characters and the data.
 /// `0` is allowed as an accepted number of digested characters.
 /// Return `None` if the action is rejected.
+/// # Examples
+/// ```
+/// use whitehole::lexer::action::{Action, simple_option_with_data};
+/// // accept all rest characters, never reject.
+/// // be ware this may cause infinite loop
+/// let a: Action<MockTokenKind<i32>> = simple_option_with_data(|input| Some(input.rest().len(), input.rest().parse().unwrap()));
+/// ```
 pub fn simple_option_with_data<ActionState, ErrorType, T, F>(
   f: F,
 ) -> Action<MockTokenKind<T>, ActionState, ErrorType>
