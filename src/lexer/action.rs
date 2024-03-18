@@ -15,6 +15,7 @@ pub use utils::*;
 use super::token::TokenKindId;
 use std::collections::HashSet;
 
+/// See [`Action::head_matcher`].
 pub enum ActionInputRestHeadMatcher {
   OneOf(HashSet<char>),
   Not(HashSet<char>),
