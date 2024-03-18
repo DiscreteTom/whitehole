@@ -57,17 +57,12 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// use whitehole_macros::TokenKind;
   ///
   /// #[derive(TokenKind, Clone, Debug)]
-  /// enum MyKind { Odd, Even }
+  /// enum MyKind { Num(i32) }
   ///
   /// let action: Action<TokenKindIdBinding<MyKind>> = regex(r"^\d+")
   ///   .unwrap()
-  ///   .select(|ctx| {
-  ///     if ctx.output.digested % 2 == 0 {
-  ///       MyKind::Even
-  ///     } else {
-  ///       MyKind::Odd
-  ///     }
-  ///   });
+  ///   .select(|ctx| Num(ctx.output.content().parse().unwrap());
+  /// ```
   pub fn select<NewKind, ViaKind, F>(
     self,
     selector: F,
@@ -125,94 +120,47 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::{regex, simple};
+  use crate::lexer::{
+    action::{regex, simple},
+    token::TokenKindIdProvider,
+  };
   use whitehole_macros::_TokenKind;
-  use Num::*;
 
-  #[derive(_TokenKind, Clone)]
-  enum Num {
-    Even,
-    Odd,
-  }
-
-  fn test_runner<F>(f: F)
-  where
-    F: Fn(Action<()>) -> Action<Num>,
-  {
-    let action = f(regex(r"^\d+").unwrap().head_unknown().mute(true));
-
-    // ensure the possible kinds is set
-    assert_eq!(action.possible_kinds.len(), 2);
-    assert!(action.possible_kinds.contains(&Even.id()));
-    assert!(action.possible_kinds.contains(&Odd.id()));
-
-    // ensure other fields are not changed
-    assert!(action.maybe_muted);
-    assert!(matches!(
-      action.head_matcher,
-      Some(ActionInputRestHeadMatcher::Unknown)
-    ));
-
-    // ensure the result is correct
-    assert!(matches!(
-      action.exec(&mut ActionInput::new("123", 0, &mut ())),
-      Some(ActionOutput {
-        kind: Odd,
-        digested: 3,
-        muted: true,
-        error: None
-      })
-    ));
-    assert!(matches!(
-      action.exec(&mut ActionInput::new("124", 0, &mut ())),
-      Some(ActionOutput {
-        kind: Even,
-        digested: 3,
-        muted: true,
-        error: None
-      })
-    ));
-  }
-
-  #[test]
-  fn action_kind_ids() {
-    test_runner(|a| {
-      a.kind_ids([Even.id(), Odd.id()]).select(|ctx| {
-        if ctx.output.content().parse::<u32>().unwrap() % 2 == 0 {
-          Even
-        } else {
-          Odd
-        }
-      })
-    });
-  }
-
-  #[test]
-  fn action_kinds() {
-    test_runner(|a| {
-      a.kinds([Even, Odd]).select(|ctx| {
-        if ctx.output.content().parse::<u32>().unwrap() % 2 == 0 {
-          Even
-        } else {
-          Odd
-        }
-      })
-    });
+  #[derive(_TokenKind, Clone, Debug)]
+  enum MyKind {
+    A,
+    Value(i32),
   }
 
   #[test]
   fn action_bind() {
-    let action: Action<Num> = simple(|_| 1).bind(Even);
-    assert_eq!(action.possible_kinds.len(), 1);
-    assert!(action.possible_kinds.contains(&Even.id()));
+    let action: Action<TokenKindIdBinding<MyKind>> = simple(|_| 1).bind(A);
+    assert_eq!(action.kind_id, A::kind_id());
     assert!(matches!(
       action.exec(&mut ActionInput::new("A", 0, &mut ())),
       Some(ActionOutput {
-        kind: Even,
+        kind: binding,
         digested: 1,
         muted: false,
         error: None
-      })
+      }) if matches!(binding.value(), MyKind::A) && binding.id() == &A::kind_id()
+    ));
+  }
+
+  #[test]
+  fn action_select() {
+    let action: Action<TokenKindIdBinding<MyKind>> = regex(r"^\d+")
+      .unwrap()
+      .select(|ctx| Value(ctx.output.content().parse().unwrap()));
+    assert_eq!(action.kind_id, Value::kind_id());
+    assert!(matches!(
+      action.exec(&mut ActionInput::new("1", 0, &mut ())),
+      Some(ActionOutput {
+        kind: binding,
+        digested: 1,
+        muted: false,
+        error: None
+      }) if matches!(binding.value(), MyKind::Value(value) if value == &1) && binding.id() == &Value::kind_id()
     ));
   }
 }
