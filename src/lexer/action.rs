@@ -12,7 +12,7 @@ pub use regex::*;
 pub use simple::*;
 pub use utils::*;
 
-use super::token::{MockTokenKind, SubTokenKind, TokenKindId};
+use super::token::TokenKindId;
 use std::collections::HashSet;
 
 pub enum ActionInputRestHeadMatcher {
@@ -34,49 +34,6 @@ pub struct Action<Kind, ActionState = (), ErrorType = ()> {
   maybe_muted: bool,
   /// See [`Self::may_mutate_state`].
   may_mutate_state: bool,
-}
-
-impl<ActionState, ErrorType> Action<MockTokenKind<()>, ActionState, ErrorType> {
-  /// Create a new action with no kind.
-  /// To set the kind, use [`Self::bind`], [`Self::kinds`] or [`Self::kind_ids`].
-  // TODO: make this private or unsafe
-  pub fn new<F>(exec: F) -> Self
-  where
-    F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutputWithoutKind<Option<ErrorType>>>
-      + 'static,
-  {
-    Action {
-      exec: Box::new(move |input| {
-        // transform ActionOutputWithoutKind tp ActionOutput
-        exec(input).map(|output| output.into())
-      }),
-      kind_id: MockTokenKind::kind_id(),
-      head_matcher: None,
-      maybe_muted: false,
-      may_mutate_state: false,
-    }
-  }
-}
-
-impl<ActionState, ErrorType, T> Action<MockTokenKind<T>, ActionState, ErrorType> {
-  /// Create an action with the [`MockTokenKind`] as the kind.
-  /// This is usually used to pass data to downstream actions.
-  // TODO: update comments
-  pub fn with_data<F>(exec: F) -> Self
-  where
-    F: Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<MockTokenKind<T>, Option<ErrorType>>>
-      + 'static,
-  {
-    Action {
-      exec: Box::new(exec),
-      kind_id: MockTokenKind::kind_id(),
-      head_matcher: None,
-      maybe_muted: false,
-      may_mutate_state: false,
-    }
-    // since there is just on possible kinds in MockTokenKind
-    // we don't need to call `action.kinds().select()` here
-  }
 }
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
@@ -136,19 +93,38 @@ mod tests {
   use super::*;
 
   #[test]
-  fn action_new() {
-    let action: Action<MockTokenKind<()>> = Action::new(|_| None);
-    assert!(!action.maybe_muted);
+  fn action_getters_default() {
+    let action: Action<()> = Action {
+      exec: Box::new(|_| None),
+      kind_id: TokenKindId::new(0),
+      head_matcher: None,
+      maybe_muted: false,
+      may_mutate_state: false,
+    };
+    assert!(!action.maybe_muted());
+    assert!(action.never_muted());
+    assert!(!action.may_mutate_state());
+    assert!(action.never_mutate_state());
+    assert_eq!(action.kind_id().0, 0);
     assert!(action.head_matcher().is_none());
-    assert!(action.never_muted())
   }
 
   #[test]
-  fn action_with_data() {
-    let action: Action<MockTokenKind<()>> = Action::with_data(|_| None);
-    assert!(!action.maybe_muted);
-    assert_eq!(action.kind_id(), &TokenKindId::new(0));
-    assert!(action.head_matcher().is_none());
-    assert!(action.never_muted())
+  fn action_getters() {
+    let action: Action<()> = Action {
+      exec: Box::new(|_| None),
+      kind_id: TokenKindId::new(1),
+      head_matcher: Some(ActionInputRestHeadMatcher::OneOf(HashSet::from(['a']))),
+      maybe_muted: true,
+      may_mutate_state: true,
+    };
+    assert!(action.maybe_muted());
+    assert!(!action.never_muted());
+    assert!(action.may_mutate_state());
+    assert!(!action.never_mutate_state());
+    assert_eq!(action.kind_id().0, 1);
+    assert!(
+      matches!(action.head_matcher(), Some(ActionInputRestHeadMatcher::OneOf(set)) if set == &HashSet::from(['a']))
+    );
   }
 }
