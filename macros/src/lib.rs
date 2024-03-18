@@ -136,6 +136,9 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
     }
 
     // impl SubTokenKind for the generated struct
+    // we should impl SubTokenKind for `TokenKindIdBinding<MyKind>` instead of `MyKind`
+    // because for `Action<TokenKindIdBinding<MyKind>>` the `action.kind_id` should be
+    // `TokenKindId<TokenKindIdBinding<MyKind>>` instead of `TokenKindId<MyKind>`
     gen.push(quote! {
       impl #crate_name::lexer::token::SubTokenKind<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
         fn kind_id() -> 
