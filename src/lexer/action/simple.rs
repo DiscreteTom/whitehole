@@ -1,18 +1,15 @@
-use super::{input::ActionInput, output::ActionOutputWithoutKind, Action, ActionOutput};
-use crate::lexer::token::MockTokenKind;
+use super::{input::ActionInput, Action, ActionOutput};
+use crate::lexer::token::{MockTokenKind, SubTokenKind};
 
 /// Provide a function that digests the rest of the input text and returns the number of digested characters.
 /// Return `0` if the action is rejected.
 pub fn simple<ActionState, ErrorType, F>(f: F) -> Action<MockTokenKind<()>, ActionState, ErrorType>
 where
-  F: Fn(&mut ActionInput<ActionState>) -> usize + 'static,
+  // ActionInput is immutable so we can set may_mutate_state to false.
+  F: Fn(&ActionInput<ActionState>) -> usize + 'static,
 {
-  Action::new(move |input| match f(input) {
-    digested if digested > 0 => Some(ActionOutputWithoutKind {
-      digested,
-      muted: false,
-      error: None,
-    }),
+  simple_option(move |input| match f(input) {
+    digested if digested > 0 => Some(digested),
     _ => None,
   })
 }
@@ -24,15 +21,10 @@ pub fn simple_option<ActionState, ErrorType, F>(
   f: F,
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType>
 where
-  F: Fn(&mut ActionInput<ActionState>) -> Option<usize> + 'static,
+  // ActionInput is immutable so we can set may_mutate_state to false.
+  F: Fn(&ActionInput<ActionState>) -> Option<usize> + 'static,
 {
-  Action::new(move |input| {
-    f(input).map(|digested| ActionOutputWithoutKind {
-      digested,
-      muted: false,
-      error: None,
-    })
-  })
+  simple_option_with_data(move |input| f(input).map(|digested| (digested, ())))
 }
 
 /// Provide a function that digests the rest of the input text,
@@ -43,19 +35,26 @@ pub fn simple_option_with_data<ActionState, ErrorType, T, F>(
   f: F,
 ) -> Action<MockTokenKind<T>, ActionState, ErrorType>
 where
-  F: Fn(&mut ActionInput<ActionState>) -> Option<(usize, T)> + 'static,
+  // ActionInput is immutable so we can set `Action::may_mutate_state` to false.
+  F: Fn(&ActionInput<ActionState>) -> Option<(usize, T)> + 'static,
 {
-  Action::with_data(move |input| {
-    f(input).map(|(digested, data)| {
-      ActionOutput {
-        kind: MockTokenKind { data },
+  Action {
+    exec: Box::new(move |input| match f(input) {
+      Some((digested, data)) => Some(ActionOutput {
+        kind: MockTokenKind::new(data),
         digested,
+        // make sure the output is never muted
+        // so we can set `Action::maybe_muted` to false
         muted: false,
         error: None,
-      }
-      .into()
-    })
-  })
+      }),
+      _ => None,
+    }),
+    kind_id: MockTokenKind::kind_id(),
+    head_matcher: None,
+    maybe_muted: false,
+    may_mutate_state: false,
+  }
 }
 
 #[cfg(test)]
