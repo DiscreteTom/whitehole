@@ -15,21 +15,22 @@ use std::ops::Deref;
 ///
 /// let a: TokenKindIdBinding<MyKind> = A.into();
 /// let b: TokenKindIdBinding<MyKind> = B.into();
-/// assert_eq!(a.id(), &TokenKindId::new(0));
-/// assert_eq!(b.id(), &TokenKindId::new(1));
+/// assert_eq!(a.id(), &A::kind_id());
+/// assert_eq!(b.id(), &B::kind_id()));
 /// assert!(matches!(a.value(), MyKind::A));
 /// assert!(matches!(b.value(), MyKind::B));
 /// ```
 #[derive(Debug, Clone)]
 pub struct TokenKindIdBinding<TokenKindType> {
-  // be ware, this should NOT be `TokenKindId<TokenKindIdBinding<TokenKindType>>`
-  // because we want the id to be the TokenKindType's id
-  id: TokenKindId<TokenKindType>,
+  // this is `TokenKindId<TokenKindIdBinding<TokenKindType>>`
+  // instead of `TokenKindId<TokenKindType>`
+  // because the `kind_id` of generated structs are `TokenKindId<TokenKindIdBinding<TokenKindType>>`
+  id: TokenKindId<Self>,
   value: TokenKindType,
 }
 
-impl<TokenKindType> TokenKindIdProvider<TokenKindType> for TokenKindIdBinding<TokenKindType> {
-  fn id(&self) -> &TokenKindId<TokenKindType> {
+impl<TokenKindType> TokenKindIdProvider<Self> for TokenKindIdBinding<TokenKindType> {
+  fn id(&self) -> &TokenKindId<Self> {
     &self.id
   }
 }
