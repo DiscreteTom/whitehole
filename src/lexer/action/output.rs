@@ -1,5 +1,3 @@
-use crate::lexer::token::MockTokenKind;
-
 use super::input::ActionInput;
 use std::ops::{Deref, DerefMut};
 
@@ -17,27 +15,7 @@ pub struct ActionOutput<Kind, OptionErrorType> {
   pub error: OptionErrorType, // this will be `Option<ErrorType>` or `&Option<ErrorType>`
 }
 
-pub struct ActionOutputWithoutKind<OptionErrorType> {
-  /// See [`ActionOutput::digested`].
-  pub digested: usize,
-  /// See [`ActionOutput::muted`].
-  pub muted: bool,
-  /// See [`ActionOutput::error`].
-  pub error: OptionErrorType,
-}
-
-impl<OptionErrorType> Into<ActionOutput<MockTokenKind<()>, OptionErrorType>>
-  for ActionOutputWithoutKind<OptionErrorType>
-{
-  fn into(self) -> ActionOutput<MockTokenKind<()>, OptionErrorType> {
-    ActionOutput {
-      kind: MockTokenKind::new(()),
-      digested: self.digested,
-      muted: self.muted,
-      error: self.error,
-    }
-  }
-}
+// TODO: add ActionOutput.enhance
 
 /// Enhance the original [`ActionOutput`] with
 /// [`start`](Self::start), [`text`](Self::text), [`end`](Self::end),
@@ -78,14 +56,14 @@ impl<'text, 'action_state, Kind, OptionErrorType>
     }
   }
 
-  /// The [`Range::end`](crate::lexer::token::Range::end) of the token that this action will emit.
+  /// The [`Range::end`](crate::lexer::token::Range) of the token that this action will emit.
   pub fn end(&self) -> usize {
     self.start + self.digested
   }
 
   /// The [`content`](crate::lexer::token::Token::content) of the token that this action will emit.
   pub fn content(&self) -> &'text str {
-    // TODO: cache the slice?
+    // we don't cache this slice since it might not be used frequently
     &self.text[self.start..self.end()]
   }
 
@@ -114,35 +92,20 @@ impl<'text, Kind, OptionErrorType> Into<Option<ActionOutput<Kind, OptionErrorTyp
 
 #[cfg(test)]
 mod tests {
-  use crate::lexer::token::TokenKindIdProvider;
-
   use super::*;
-
-  #[test]
-  fn action_output_without_kind() {
-    let output = ActionOutputWithoutKind {
-      digested: 2,
-      muted: false,
-      error: None,
-    };
-    let output: ActionOutput<MockTokenKind<()>, Option<()>> = output.into();
-    assert_eq!(output.kind.id().0, 0);
-    assert!(matches!(output.kind.data, ()));
-    assert_eq!(output.digested, 2);
-    assert_eq!(output.muted, false);
-    assert_eq!(output.error, None);
-  }
+  use crate::lexer::token::{MockTokenKind, TokenKindIdProvider};
 
   #[test]
   fn enhanced_action_output() {
     let mut state = ();
     let input = ActionInput::new("123", 1, &mut state);
-    let output = ActionOutputWithoutKind {
+    let output = ActionOutput {
+      kind: MockTokenKind::new(()),
       digested: 2,
       muted: false,
       error: None,
     };
-    let output = EnhancedActionOutput::<MockTokenKind<()>, Option<()>>::new(&input, output.into());
+    let output = EnhancedActionOutput::<MockTokenKind<()>, Option<()>>::new(&input, output);
 
     // ensure we can deref and deref_mut
     assert_eq!(output.digested, 2);
