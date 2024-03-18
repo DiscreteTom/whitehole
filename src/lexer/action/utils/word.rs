@@ -6,7 +6,8 @@ use std::collections::HashSet;
 /// ***LOOKAHEAD*** one char to ensure there is a word boundary
 /// (alphanumeric or `_`) or end of input after the word.
 /// Stop at the first match.
-/// The head matcher will be set automatically.
+///
+/// The [`Action::head_matcher`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, word};
@@ -61,7 +62,7 @@ pub fn word<ActionState, ErrorType>(
         0
       }
     })
-    .head_in([head]);
+    .unchecked_head_in([head]);
   }
 
   let heads: HashSet<_> = ss.iter().map(|s| s.chars().next().unwrap()).collect();
@@ -81,10 +82,12 @@ pub fn word<ActionState, ErrorType>(
     }
     0 // no match
   })
-  .head_in(heads)
+  .unchecked_head_in(heads)
 }
 
 /// Similar to [`word`], but create an action for each string.
+///
+/// The [`Action::head_matcher`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, word_vec};
@@ -105,6 +108,8 @@ pub fn word_vec<ActionState, ErrorType>(
 
 /// Similar to [`word`], but accept one string
 /// and create an action for each char.
+///
+/// The [`Action::head_matcher`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, word_chars};

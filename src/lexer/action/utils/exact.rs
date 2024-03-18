@@ -4,7 +4,8 @@ use std::collections::HashSet;
 
 /// Match one of the provided strings exactly, in one action, ***NO LOOKAHEAD***.
 /// Stop at the first match.
-/// The head matcher will be set automatically.
+///
+/// The [`Action::head_matcher`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, exact};
@@ -30,8 +31,11 @@ use std::collections::HashSet;
 /// ```
 /// To avoid the above, try [`exact_vec`] or [`exact_chars`].
 pub fn exact<ActionState, ErrorType>(
-  ss: impl Into<StringList>,
+  ss: impl Into<StringList>, // TODO: only accept one string? if user want many, use Action::or
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+  // TODO: if a string's len is 1, the action exec can just accept 1 char without any check
+  // because the head matcher is set to the first char
+
   let ss: Vec<String> = ss.into().0;
 
   if ss.len() == 0 {
@@ -49,7 +53,7 @@ pub fn exact<ActionState, ErrorType>(
         0
       }
     })
-    .head_in([head]);
+    .unchecked_head_in([head]);
   }
 
   let heads: HashSet<_> = ss.iter().map(|s| s.chars().next().unwrap()).collect();
@@ -61,10 +65,12 @@ pub fn exact<ActionState, ErrorType>(
     }
     0 // no match
   })
-  .head_in(heads)
+  .unchecked_head_in(heads)
 }
 
 /// Similar to [`exact`], but create an action for each string.
+///
+/// The [`Action::head_matcher`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, exact_vec};
@@ -85,6 +91,8 @@ pub fn exact_vec<ActionState, ErrorType>(
 
 /// Similar to [`exact`], but accept one string
 /// and create an action for each char.
+///
+/// The [`Action::head_matcher`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, exact_chars};

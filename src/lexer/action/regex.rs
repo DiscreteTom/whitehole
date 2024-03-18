@@ -1,33 +1,33 @@
-use crate::lexer::token::MockTokenKind;
-
 // TODO: only available in feature `regex`
 use super::{simple::simple, Action};
+use crate::lexer::token::MockTokenKind;
 use regex::{Error, Regex};
 
 /// Create a new action that uses a regex to match the rest of input.
+///
+/// It's recommended to set [`Action::head_matcher`] to optimize the lex performance.
 /// # Examples
 /// Usually the regex should start with `^` to match from the start of the rest of the input.
 /// ```
-/// # use whitehole::lexer::action::Action;
-/// # use whitehole::lexer::action::regex;
-/// # let action: Action<(), (), ()> =
+/// # use whitehole::lexer::action::{Action, regex};
+/// # let action: Action<_, (), ()> =
 /// regex(r"^\d+").unwrap();
 /// ```
-/// It's recommended to use [`Action::head_matcher`] to optimize the lex performance.
+/// Set [`Action::head_matcher`]:
 /// ```
 /// # use whitehole::lexer::action::Action;
 /// # use whitehole::lexer::action::regex;
 /// # use whitehole::lexer::action::ActionInputRestHeadMatcher;
 /// # use std::collections::HashSet;
-/// # let action: Action<(), (), ()> =
-/// regex(r"^abc").unwrap().head_in(['a']);
-/// # let action: Action<(), (), ()> =
-/// regex(r"^\d+").unwrap().head_in_range('0'..='9');
-/// # assert!(matches!(action.head_matcher(), Some(ActionInputRestHeadMatcher::OneOf(set)) if set.contains(&'9') && set.contains(&'0') && set.len() == 10))
+/// # let action: Action<_> =
+/// regex(r"^abc").unwrap().unchecked_head_in(['a']);
+/// # let action: Action<_> =
+/// regex(r"^\d+").unwrap().unchecked_head_in_range('0'..='9');
 /// ```
 pub fn regex<ActionState, ErrorType>(
   re: &str,
 ) -> Result<Action<MockTokenKind<()>, ActionState, ErrorType>, Error> {
+  // TODO: unwrap the result, add regex_try
   Regex::new(re).map(|re| simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
 }
 

@@ -3,6 +3,8 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 
 /// Provide a function that digests the rest of the input text and returns the number of digested characters.
 /// Return `0` if the action is rejected.
+///
+/// It's recommended to set [`Action::head_matcher`] to optimize the lex performance.
 /// # Examples
 /// ```
 /// use whitehole::lexer::action::{Action, simple};
@@ -23,6 +25,8 @@ where
 /// Provide a function that digests the rest of the input text and returns the number of digested characters.
 /// `0` is allowed as an accepted number of digested characters.
 /// Return `None` if the action is rejected.
+///
+/// It's recommended to set [`Action::head_matcher`] to optimize the lex performance.
 /// # Examples
 /// ```
 /// use whitehole::lexer::action::{Action, simple_option};
@@ -44,6 +48,8 @@ where
 /// returns the number of digested characters and the data.
 /// `0` is allowed as an accepted number of digested characters.
 /// Return `None` if the action is rejected.
+///
+/// It's recommended to set [`Action::head_matcher`] to optimize the lex performance.
 /// # Examples
 /// ```
 /// use whitehole::lexer::action::{Action, simple_option_with_data};
