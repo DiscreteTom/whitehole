@@ -26,8 +26,9 @@ impl Default for ReLexContext {
 
 pub struct LexOptions<'expect_text, Kind> {
   pub expectation: Expectation<'expect_text, Kind>,
-  /// If `true`, the [`LexOutput::re_lex`](crate::lexer::output::LexOutput::re_lex) might be `Some`.
-  /// Provide this if the lex is a re-lex.
+  /// See [`LexOptions::fork()`].
+  pub fork: bool,
+  /// See [`LexOptions::re_lex()`].
   pub re_lex: Option<ReLexContext>,
 }
 
@@ -35,6 +36,7 @@ impl<'expect_text, Kind> Default for LexOptions<'expect_text, Kind> {
   fn default() -> Self {
     Self {
       expectation: Expectation::default(),
+      fork: false,
       re_lex: None,
     }
   }
@@ -57,7 +59,14 @@ impl<'expect_text, Kind> LexOptions<'expect_text, Kind> {
     self.expectation = expectation.into();
     self
   }
+  /// If set, the [`LexOutput::re_lex`](crate::lexer::output::LexOutput::re_lex) *might* be `Some`.
+  // TODO: example
+  pub fn fork(mut self) -> Self {
+    self.fork = true;
+    self
+  }
   /// Provide this if the lex is a re-lex.
+  // TODO: example
   pub fn re_lex(mut self, re_lex: ReLexContext) -> Self {
     self.re_lex = Some(re_lex);
     self

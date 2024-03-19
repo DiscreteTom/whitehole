@@ -1,10 +1,10 @@
-use super::{lex::StatelessReLexable, ActionHeadMap, StatelessLexer};
+use super::{ActionHeadMap, StatelessLexer};
 use crate::lexer::{
   action::{Action, ActionInput, ActionOutput},
   expectation::Expectation,
   options::ReLexContext,
   output::LexOutput,
-  token::{Range, Token, TokenKind},
+  token::{Range, Token, TokenKindIdProvider},
 };
 use std::rc::Rc;
 
@@ -13,15 +13,15 @@ use std::rc::Rc;
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
   pub(crate) fn execute_actions<'text, 'expect_text>(
     head_map: &ActionHeadMap<Kind, ActionState, ErrorType>,
-    fork: Option<ActionState>,
+    fork: bool,
     re_lex: &ReLexContext,
     text: &'text str,
     start: usize,
     state: &mut ActionState,
     expectation: &Expectation<'expect_text, Kind>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, StatelessReLexable<ActionState>>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
   where
-    Kind: TokenKind<Kind>,
+    Kind: TokenKindIdProvider<Kind>,
   {
     let mut res = LexOutput {
       digested: 0,        // might be updated during the loop
@@ -44,10 +44,10 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         .text
         .is_some_and(|text| !input.rest().starts_with(text));
       let actions = head_map
-        .known_map
+        .known_map()
         // TODO: maybe some day we can get a `&char` instead of a `char`
         .get(&(input.rest().chars().next().unwrap()))
-        .unwrap_or(&head_map.unknown_fallback);
+        .unwrap_or(head_map.unknown_fallback());
 
       match Self::traverse_actions(&mut input, actions, re_lex, text_mismatch, &expectation) {
         // all definition checked, no accepted action
@@ -79,7 +79,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             // else, not muted
             // don't push token to errors, set the res.token
             res.token = Some(token);
-            res.re_lex = Self::create_re_lexable(fork, &input, actions, action_index);
+            res.re_lex = Self::create_re_lex_context(fork, &input, actions, action_index);
 
             return res;
           }
@@ -93,7 +93,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
           // else, not muted
           res.token = Some(Self::create_token(&input, output));
-          res.re_lex = Self::create_re_lexable(fork, &input, actions, action_index);
+          res.re_lex = Self::create_re_lex_context(fork, &input, actions, action_index);
 
           return res;
         }
@@ -109,7 +109,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     expectation: &Expectation<Kind>,
   ) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize)>
   where
-    Kind: TokenKind<Kind>,
+    Kind: TokenKindIdProvider<Kind>,
   {
     for (i, action) in actions
       .iter()
@@ -135,7 +135,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     expectation: &Expectation<Kind>,
   ) -> Option<ActionOutput<Kind, Option<ErrorType>>>
   where
-    Kind: TokenKind<Kind>,
+    Kind: TokenKindIdProvider<Kind>,
   {
     // TODO: pre-calc and cache never muted actions
     if text_mismatch && action.never_muted() {
@@ -152,7 +152,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
           // ensure expectation match.
           // we still need to check the kind after exec
           // because maybe_muted actions may yield unexpected kinds and actually not muted
-          expectation.kind.map_or(true, |kind| output.kind.id() == kind)
+          expectation.kind.map_or(true, |kind| output.kind.id() == &kind)
           // same to the text, maybe_muted actions may accept unexpected text and actually not muted
             && expectation.text.map_or(true, |text| &input.rest()[..output.digested] == text)
         )
@@ -181,29 +181,24 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     }
   }
 
-  fn create_re_lexable(
-    fork: Option<ActionState>,
+  fn create_re_lex_context(
+    fork: bool,
     input: &ActionInput<ActionState>,
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
     action_index: usize,
-  ) -> Option<StatelessReLexable<ActionState>> {
-    fork.and_then(|action_state_bk| {
-      if action_index < actions.len() - 1 {
-        // current action is not the last one
-        // so the lex is re-lex-able
-        Some(StatelessReLexable {
-          context: ReLexContext {
-            skip: action_index + 1,
-            start: input.start(),
-          },
-          state: action_state_bk,
-        })
-      } else {
-        // fork is disabled or
-        // current action is the last one
-        // no next action to re-lex
-        None
-      }
-    })
+  ) -> Option<ReLexContext> {
+    if fork && action_index < actions.len() - 1 {
+      // current action is not the last one
+      // so the lex is re-lex-able
+      Some(ReLexContext {
+        skip: action_index + 1, // index + 1 is the count of actions to skip
+        start: input.start(),
+      })
+    } else {
+      // fork is disabled or
+      // current action is the last one
+      // no next action to re-lex
+      None
+    }
   }
 }
