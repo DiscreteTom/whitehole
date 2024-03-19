@@ -1,19 +1,14 @@
 mod common;
+mod head_map;
 mod lex;
 mod options;
 
+pub use head_map::*;
 pub use lex::*;
 pub use options::*;
 
 use super::{action::Action, token::TokenKindId};
 use std::{collections::HashMap, rc::Rc};
-
-pub struct ActionHeadMap<Kind, ActionState, ErrorType> {
-  /// Store actions for known chars.
-  pub known_map: HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
-  /// Store actions for unknown chars.
-  pub unknown_fallback: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
-}
 
 /// Stateless, immutable lexer.
 pub struct StatelessLexer<Kind, ActionState, ErrorType> {
