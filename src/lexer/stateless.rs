@@ -5,7 +5,7 @@ mod options;
 pub use lex::*;
 pub use options::*;
 
-use super::{action::Action, token::TokenKindId, Lexer};
+use super::{action::Action, token::TokenKindId};
 use std::{collections::HashMap, rc::Rc};
 
 pub struct ActionHeadMap<Kind, ActionState, ErrorType> {
@@ -55,16 +55,5 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   }
   pub fn maybe_muted_head_map(&self) -> &ActionHeadMap<Kind, ActionState, ErrorType> {
     &self.maybe_muted_head_map
-  }
-
-  /// Consume self, create a new lexer with the provided text.
-  pub fn into_lexer(self, text: &str) -> Lexer<Kind, ActionState, ErrorType>
-  where
-    Kind: 'static,
-    ActionState: 'static,
-    ErrorType: 'static,
-    ActionState: Default, // TODO: add a function that accept an action state instead of default
-  {
-    Lexer::with_default_action_state(Rc::new(self), text)
   }
 }
