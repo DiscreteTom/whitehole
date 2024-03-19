@@ -91,7 +91,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     }
   }
 
-  /// Peek the next token without updating the state.
+  /// Peek the next token with the default options, without updating the state.
   /// This will clone the [`Self::action_state`] and return it.
   pub fn peek(
     &self,
@@ -152,7 +152,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     (output, tmp_action_state)
   }
 
-  /// Try to yield the next token.
+  /// Try to yield the next token with the default options.
   /// [`Self::state`] and [`Self::action_state`] will be updated.
   pub fn lex(&mut self) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
   where
