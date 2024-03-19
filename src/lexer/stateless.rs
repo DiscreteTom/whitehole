@@ -4,7 +4,6 @@ mod lex;
 mod options;
 
 pub use head_map::*;
-pub use lex::*;
 pub use options::*;
 
 use super::{action::Action, token::TokenKindId};

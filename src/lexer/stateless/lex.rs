@@ -5,12 +5,6 @@ use crate::lexer::{
   token::{Token, TokenKindIdProvider},
 };
 
-// TODO: add comments and examples
-pub struct StatelessReLexable<ActionState> {
-  pub state: ActionState,
-  pub context: ReLexContext,
-}
-
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
   /// Lex with the default action state and the default [`StatelessLexOptions`].
   /// # Examples
