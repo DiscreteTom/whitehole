@@ -1,6 +1,6 @@
 use super::{
   options::{LexOptions, ReLexContext},
-  output::LexOutput,
+  output::{LexOutput, ReLexable},
   state::LexerState,
   stateless::{StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKindIdProvider},
@@ -195,6 +195,72 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     self.state.digest(output.digested);
 
     output
+  }
+
+  /// Try to yield the next token with the default options and fork enabled.
+  /// [`Self::state`] and [`Self::action_state`] will be updated.
+  pub fn fork_lex(&mut self) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>>
+  where
+    Kind: TokenKindIdProvider<Kind>,
+    ActionState: Clone,
+  {
+    self.fork_lex_with_options(LexOptions::default())
+  }
+
+  /// Try to yield the next token with custom options and fork enabled.
+  /// [`Self::state`] and [`Self::action_state`] will be updated.
+  pub fn fork_lex_with<'expect_text>(
+    &mut self,
+    options_builder: impl FnOnce(LexOptions<'expect_text, Kind>) -> LexOptions<'expect_text, Kind>,
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>>
+  where
+    Kind: TokenKindIdProvider<Kind>,
+    ActionState: Clone,
+  {
+    self.fork_lex_with_options(options_builder(LexOptions::default()))
+  }
+
+  /// Try to yield the next token with custom options and fork enabled.
+  /// [`Self::state`] and [`Self::action_state`] will be updated.
+  pub fn fork_lex_with_options<'expect_text>(
+    &mut self,
+    options: impl Into<LexOptions<'expect_text, Kind>>,
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexable<Self>>
+  where
+    Kind: TokenKindIdProvider<Kind>,
+    ActionState: Clone,
+  {
+    let options: LexOptions<_> = options.into().fork();
+
+    // backup action state before lexing to prevent mutation
+    let action_state_bk = self.action_state.clone();
+
+    let output = Self::lex_with_stateless(
+      &self.stateless,
+      &self.state,
+      &mut self.action_state,
+      options,
+    );
+
+    // construct re_lex before updating state
+    let re_lex = output.re_lex.map(|context| ReLexable {
+      lexer: Self {
+        stateless: self.stateless.clone(),
+        state: self.state.clone(),     // the state is not updated yet
+        action_state: action_state_bk, // use the backup action state
+      },
+      context,
+    });
+
+    // update state
+    self.state.digest(output.digested);
+
+    LexOutput {
+      digested: output.digested,
+      errors: output.errors,
+      token: output.token,
+      re_lex,
+    }
   }
 
   /// Digest the next (at most) n chars and set the [`Self::action_state`].
