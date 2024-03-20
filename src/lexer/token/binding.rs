@@ -29,6 +29,15 @@ pub struct TokenKindIdBinding<TokenKindType> {
   value: TokenKindType,
 }
 
+impl<TokenKindType: Default> Default for TokenKindIdBinding<TokenKindType> {
+  fn default() -> Self {
+    Self {
+      id: TokenKindId::new(0),         // [[@default token kind id is 0]]
+      value: TokenKindType::default(), // [[@use default token kind value]]
+    }
+  }
+}
+
 impl<TokenKindType> TokenKindIdProvider<Self> for TokenKindIdBinding<TokenKindType> {
   fn id(&self) -> &TokenKindId<Self> {
     &self.id

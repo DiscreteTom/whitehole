@@ -69,13 +69,13 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   {
     let exec = self.exec;
     Action {
-      kind_id: TokenKindId::new(0),
+      kind_id: TokenKindId::new(0), // [[default token kind id is 0]]
       head_matcher: self.head_matcher,
       maybe_muted: self.maybe_muted,
       may_mutate_state: self.may_mutate_state,
       exec: Box::new(move |input| {
         exec(input).map(|output| ActionOutput {
-          kind: NewKind::default(),
+          kind: NewKind::default(), // [[use default token kind value]]
           digested: output.digested,
           muted: output.muted,
           error: output.error,
