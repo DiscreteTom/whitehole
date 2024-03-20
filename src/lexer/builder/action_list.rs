@@ -32,21 +32,21 @@ mod tests {
 
   #[test]
   fn action_list_from_action() {
-    let action: Action<()> = word("A");
+    let action: Action<_> = word("A");
     let list: ActionList<_> = action.into();
     assert_eq!(list.0.len(), 1);
   }
 
   #[test]
   fn action_list_from_vec() {
-    let action: Action<()> = word("A");
+    let action: Action<_> = word("A");
     let list: ActionList<_> = vec![action].into();
     assert_eq!(list.0.len(), 1);
   }
 
   #[test]
   fn action_list_from_array() {
-    let action: Action<()> = word("A");
+    let action: Action<_> = word("A");
     let list: ActionList<_> = [action].into();
     assert_eq!(list.0.len(), 1);
   }
