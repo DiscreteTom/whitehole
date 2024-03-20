@@ -5,13 +5,8 @@ mod ignore;
 
 pub use action_list::*;
 
-use super::{
-  action::{Action, ActionInputRestHeadMatcher},
-  stateless::{ActionHeadMap, StatelessLexer},
-  token::TokenKind,
-  Lexer,
-};
-use std::{collections::HashMap, rc::Rc};
+use super::{action::Action, stateless::StatelessLexer, Lexer};
+use std::rc::Rc;
 
 pub struct LexerBuilder<Kind, ActionState = (), ErrorType = ()> {
   actions: Vec<Action<Kind, ActionState, ErrorType>>,
@@ -24,49 +19,14 @@ impl<Kind, ActionState, ErrorType> Default for LexerBuilder<Kind, ActionState, E
     }
   }
 }
-impl<Kind, ActionState, ErrorType> From<Vec<Action<Kind, ActionState, ErrorType>>>
-  for LexerBuilder<Kind, ActionState, ErrorType>
-{
-  fn from(actions: Vec<Action<Kind, ActionState, ErrorType>>) -> Self {
-    Self { actions }
-  }
-}
-impl<Kind, ActionState, ErrorType, const N: usize> From<[Action<Kind, ActionState, ErrorType>; N]>
-  for LexerBuilder<Kind, ActionState, ErrorType>
-{
-  fn from(actions: [Action<Kind, ActionState, ErrorType>; N]) -> Self {
-    Self {
-      actions: actions.into(),
-    }
-  }
-}
-impl<
-    Kind: TokenKind<Kind> + Clone + 'static,
-    ActionState: 'static,
-    ErrorType: 'static,
-    const N: usize,
-  > From<[(Kind, ActionList<Action<(), ActionState, ErrorType>>); N]>
-  for LexerBuilder<Kind, ActionState, ErrorType>
-{
-  fn from(actions: [(Kind, ActionList<Action<(), ActionState, ErrorType>>); N]) -> Self {
-    Self::default().define_from(actions)
-  }
-}
 
 impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
-  pub fn new() -> Self {
-    Self::default()
-  }
-
-  pub fn build_stateless_from(
-    actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
-  ) -> StatelessLexer<Kind, ActionState, ErrorType> {
-  }
-
   // TODO: move into `generate`?
   pub fn build_stateless(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
+    // TODO: warning if action has no head matcher
+
     // wrap actions with Rc, make them immutable and clone-able
-    Self::build_stateless_from(self.actions.into_iter().map(Rc::new).collect::<Vec<_>>())
+    StatelessLexer::new(self.actions.into_iter().map(Rc::new).collect())
   }
 
   pub fn build_with<'text>(
@@ -92,28 +52,6 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     F: Fn(Action<OldKind, ActionState, ErrorType>) -> Action<NewKind, ActionState, ErrorType>,
   {
     actions.into().0.into_iter().map(f).collect::<Vec<_>>()
-  }
-}
-
-impl<Kind, ActionState, ErrorType> Into<StatelessLexer<Kind, ActionState, ErrorType>>
-  for LexerBuilder<Kind, ActionState, ErrorType>
-{
-  fn into(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
-    self.build_stateless()
-  }
-}
-impl<Kind, ActionState, ErrorType> From<Vec<Action<Kind, ActionState, ErrorType>>>
-  for StatelessLexer<Kind, ActionState, ErrorType>
-{
-  fn from(actions: Vec<Action<Kind, ActionState, ErrorType>>) -> Self {
-    LexerBuilder::from(actions).into()
-  }
-}
-impl<Kind, ActionState, ErrorType> From<Vec<Rc<Action<Kind, ActionState, ErrorType>>>>
-  for StatelessLexer<Kind, ActionState, ErrorType>
-{
-  fn from(actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>) -> Self {
-    LexerBuilder::build_stateless_from(actions)
   }
 }
 
