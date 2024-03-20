@@ -1,7 +1,7 @@
 use super::AcceptedActionDecoratorContext;
 use crate::lexer::{
   action::{ActionInput, ActionOutput, EnhancedActionOutput},
-  token::{SubTokenKind, TokenKindIdBinding},
+  token::{SubTokenKind, TokenKindId, TokenKindIdBinding},
   Action,
 };
 
@@ -40,6 +40,42 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       exec: Box::new(move |input| {
         exec(input).map(|output| ActionOutput {
           kind: kind.clone(),
+          digested: output.digested,
+          muted: output.muted,
+          error: output.error,
+        })
+      }),
+    }
+  }
+
+  /// Set the kind to the default for this action.
+  /// The default kind must have `0` as its id.
+  /// # Examples
+  /// ```
+  /// use whitehole::lexer::action::{Action, simple};
+  /// use whitehole::lexer::token::TokenKindIdBinding;
+  /// use whitehole_macros::TokenKind;
+  ///
+  /// // the default sub kind MUST be the first one
+  /// // and annotated with `#[default]` provided by `Default` derive
+  /// #[derive(TokenKind, Clone, Debug, Default)]
+  /// enum MyKind { #[default] Anonymous, A }
+  ///
+  /// let action: Action<TokenKindIdBinding<MyKind>> = simple(|_| 1).bind_default();
+  /// ```
+  pub fn bind_default<NewKind>(self) -> Action<NewKind, ActionState, ErrorType>
+  where
+    NewKind: Default,
+  {
+    let exec = self.exec;
+    Action {
+      kind_id: TokenKindId::new(0),
+      head_matcher: self.head_matcher,
+      maybe_muted: self.maybe_muted,
+      may_mutate_state: self.may_mutate_state,
+      exec: Box::new(move |input| {
+        exec(input).map(|output| ActionOutput {
+          kind: NewKind::default(),
           digested: output.digested,
           muted: output.muted,
           error: output.error,
