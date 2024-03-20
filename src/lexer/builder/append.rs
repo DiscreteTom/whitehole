@@ -1,5 +1,8 @@
 use super::{ActionList, LexerBuilder};
-use crate::lexer::{token::TokenKind, Action};
+use crate::lexer::{
+  token::{MockTokenKind, SubTokenKind, TokenKindIdBinding},
+  Action,
+};
 
 impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// Append actions to the builder.
@@ -10,10 +13,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use MyKind::*;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A, B }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// # let mut builder = LexerBuilder::<_>::default();
   /// // append a single action
   /// builder.append(word("A").bind(A));
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// # let mut builder = LexerBuilder::<_>::default();
   /// // append multiple actions
   /// builder.append([word("A").bind(A), word("B").bind(B)]);
   /// ```
@@ -21,11 +24,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     mut self,
     actions: impl Into<ActionList<Action<Kind, ActionState, ErrorType>>>,
   ) -> Self {
-    actions
-      .into()
-      .0
-      .into_iter()
-      .for_each(|action| self.actions.push(action));
+    self.actions.extend(actions.into().0);
     self
   }
 
@@ -40,7 +39,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use MyKind::*;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
-  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
+  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
   /// builder.append(exact("A").bind(A).error(123));
   /// ```
   /// The following code will pass the compile.
@@ -50,10 +49,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use MyKind::*;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A, B }
-  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
+  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
   /// // append a single action
   /// builder.append_with(word("A").bind(A), |a| a.error(123));
-  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
+  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
   /// // append multiple actions
   /// builder.append_with([word("A").bind(A), word("B").bind(B)], |a| a.error(123));
   /// ```
@@ -80,23 +79,21 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// #   #[default]
   /// #   Anonymous,
   /// # }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// # let mut builder = LexerBuilder::<_>::default();
   /// // append a single action
   /// builder.append_default(whitespaces());
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// # let mut builder = LexerBuilder::<_>::default();
   /// // append multiple actions
   /// builder.append_default([whitespaces(), word("_")]);
   /// ```
   pub fn append_default(
     self,
-    actions: impl Into<ActionList<Action<(), ActionState, ErrorType>>>,
+    actions: impl Into<ActionList<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
   ) -> Self
   where
-    Kind: TokenKind<Kind> + Default + Clone + 'static,
-    ActionState: 'static,
-    ErrorType: 'static,
+    Kind: Default,
   {
-    self.append(Self::map_actions(actions, |a| a.bind(Kind::default())))
+    self.append(Self::map_actions(actions, |a| a.bind_default()))
   }
 
   /// Append actions with a decorator and bind them to the default kind.
@@ -109,7 +106,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone, Default)]
   /// # enum MyKind { #[default] A }
-  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
+  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
   /// builder.append_default(exact("A").error(123));
   /// ```
   /// The following code will pass the compile.
@@ -119,23 +116,23 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use MyKind::*;
   /// # #[derive(TokenKind, Clone, Default)]
   /// # enum MyKind { #[default] A }
-  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
+  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
   /// // append a single action
   /// builder.append_default_with(word("A"), |a| a.error(123));
-  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
+  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
   /// // append multiple actions
   /// builder.append_default_with([word("A"), word("B")], |a| a.error(123));
   /// ```
   pub fn append_default_with<F>(
     self,
-    actions: impl Into<ActionList<Action<(), ActionState, ErrorType>>>,
+    actions: impl Into<ActionList<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
     decorator: F,
   ) -> Self
   where
-    Kind: TokenKind<Kind> + Default + Clone + 'static,
-    ActionState: 'static,
-    ErrorType: 'static,
-    F: Fn(Action<(), ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
+    Kind: Default,
+    F: Fn(
+      Action<MockTokenKind<()>, ActionState, ErrorType>,
+    ) -> Action<MockTokenKind<()>, ActionState, ErrorType>,
   {
     self.append_default(Self::map_actions(actions, decorator))
   }
