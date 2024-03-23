@@ -141,7 +141,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::word;
+  use crate::lexer::{action::word, token::TokenKindIdBinding};
   use whitehole_macros::_TokenKind;
   use MyKind::*;
 
@@ -157,7 +157,7 @@ mod tests {
   fn lexer_builder_append() {
     // single
     assert_eq!(
-      LexerBuilder::<MyKind>::default()
+      LexerBuilder::<_>::default()
         .append(word("A").bind(A))
         .build_stateless()
         .actions()
@@ -167,7 +167,7 @@ mod tests {
 
     // many
     assert_eq!(
-      LexerBuilder::<MyKind>::default()
+      LexerBuilder::<_>::default()
         .append([word("A").bind(A), word("B").bind(B)])
         .build_stateless()
         .actions()
@@ -179,14 +179,14 @@ mod tests {
   #[test]
   fn lexer_builder_append_with() {
     // single
-    let stateless = LexerBuilder::<MyKind, (), &str>::default()
+    let stateless = LexerBuilder::<_, (), &str>::default()
       .append_with(word("A").bind(A), |a| a.error("123"))
       .build_stateless();
     assert_eq!(stateless.actions().len(), 1);
     assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), "123");
 
     // many
-    let stateless = LexerBuilder::<MyKind, (), &str>::default()
+    let stateless = LexerBuilder::<_, (), &str>::default()
       .append_with([word("A").bind(A), word("B").bind(B)], |a| a.error("123"))
       .build_stateless();
     assert_eq!(stateless.actions().len(), 2);
@@ -198,7 +198,7 @@ mod tests {
   #[test]
   fn lexer_builder_append_default() {
     // single
-    let stateless = LexerBuilder::<MyKind>::default()
+    let stateless = LexerBuilder::<TokenKindIdBinding<MyKind>>::default()
       .append_default(word("A"))
       .build_stateless();
     assert_eq!(stateless.actions().len(), 1);
@@ -208,7 +208,7 @@ mod tests {
       .contains(&Anonymous.id()),);
 
     // many
-    let stateless = LexerBuilder::<MyKind>::default()
+    let stateless = LexerBuilder::<TokenKindIdBinding<MyKind>>::default()
       .append_default([word("A"), word("B")])
       .build_stateless();
     assert_eq!(stateless.actions().len(), 2);
@@ -225,7 +225,7 @@ mod tests {
   #[test]
   fn lexer_builder_append_default_with() {
     // single
-    let stateless = LexerBuilder::<MyKind, (), &str>::default()
+    let stateless = LexerBuilder::<TokenKindIdBinding<MyKind>, (), &str>::default()
       .append_default_with(word("A"), |a| a.error("123"))
       .build_stateless();
     assert_eq!(stateless.actions().len(), 1);
@@ -236,7 +236,7 @@ mod tests {
     assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), "123");
 
     // many
-    let stateless = LexerBuilder::<MyKind, (), &str>::default()
+    let stateless = LexerBuilder::<TokenKindIdBinding<MyKind>, (), &str>::default()
       .append_default_with([word("A"), word("B")], |a| a.error("123"))
       .build_stateless();
     assert_eq!(stateless.actions().len(), 2);
