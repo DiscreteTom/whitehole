@@ -1,4 +1,4 @@
-use super::{TokenKindId, TokenKindIdProvider};
+use super::{SubTokenKind, TokenKindId, TokenKindIdProvider};
 use std::ops::Deref;
 
 /// Bind the token kind value with an [`TokenKindId`].
@@ -55,10 +55,12 @@ impl<TokenKindType> Deref for TokenKindIdBinding<TokenKindType> {
 // don't impl DerefMut because we want this to be readonly
 
 impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
-  pub fn new(id: usize, value: TokenKindType) -> Self {
+  pub fn new<ViaKind: SubTokenKind<TokenKindIdBinding<TokenKindType>> + Into<TokenKindType>>(
+    value: ViaKind,
+  ) -> Self {
     Self {
-      value,
-      id: TokenKindId::new(id),
+      value: value.into(),
+      id: ViaKind::kind_id(),
     }
   }
 
