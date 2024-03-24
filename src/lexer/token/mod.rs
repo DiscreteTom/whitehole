@@ -156,3 +156,67 @@ pub use sub_token_kind::*;
 pub use token::*;
 pub use token_kind_id::*;
 pub use whitehole_macros::token_kind;
+
+#[cfg(test)]
+mod tests {
+  use crate::lexer::token::{SubTokenKind, TokenKindId, TokenKindIdBinding, TokenKindIdProvider};
+  use whitehole_macros::_token_kind;
+
+  #[_token_kind]
+  #[derive(Debug, Clone, Default)]
+  pub enum MyKind {
+    #[default]
+    Unit,
+    Unnamed(i32),
+    Named {
+      name: i32,
+    },
+  }
+
+  #[test]
+  fn token_kind_macro() {
+    // generated structs
+    let _ = Unit;
+    Unnamed(42);
+    Named { name: 42 };
+
+    // unit variant is still unit variant instead of an unnamed variant
+    let _ = MyKind::Unit;
+
+    // other variants are transformed into unnamed variants
+    MyKind::Unnamed(Unnamed(42));
+    MyKind::Named(Named { name: 42 });
+
+    // sub token kinds into token kind
+    assert!(matches!(Unit.into(), MyKind::Unit));
+    assert!(matches!(Unnamed(42).into(), MyKind::Unnamed(Unnamed(42))));
+    assert!(matches!(
+      Named { name: 42 }.into(),
+      MyKind::Named(Named { name: 42 })
+    ));
+
+    // generated token kind id, as sub token kind
+    assert_eq!(Unit::kind_id(), TokenKindId::new(0));
+    assert_eq!(Unnamed::kind_id(), TokenKindId::new(1));
+    assert_eq!(Named::kind_id(), TokenKindId::new(2));
+
+    // into token kind id binding
+    let b: TokenKindIdBinding<MyKind> = Unit.into();
+    assert_eq!(b.id(), &Unit::kind_id());
+    assert!(matches!(b.value(), MyKind::Unit));
+    let b: TokenKindIdBinding<MyKind> = Unnamed(42).into();
+    assert_eq!(b.id(), &Unnamed::kind_id());
+    assert!(matches!(b.value(), MyKind::Unnamed(Unnamed(42))));
+    let b: TokenKindIdBinding<MyKind> = Named { name: 42 }.into();
+    assert_eq!(b.id(), &Named::kind_id());
+    assert!(matches!(b.value(), MyKind::Named(Named { name: 42 })));
+
+    // attributes are inherited by generated structs, e.g. Clone
+    let _ = Unit.clone();
+    let _ = Unnamed(42).clone();
+    let _ = Named { name: 42 }.clone();
+
+    // default is working
+    assert!(matches!(MyKind::default(), MyKind::Unit));
+  }
+}
