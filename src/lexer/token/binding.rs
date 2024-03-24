@@ -77,7 +77,9 @@ impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use whitehole_macros::_token_kind;
 
+  #[_token_kind]
   #[derive(Debug, PartialEq)]
   enum MyKind {
     A,
@@ -91,15 +93,15 @@ mod tests {
 
   #[test]
   fn token_kind_id_binding() {
-    let binding = TokenKindIdBinding::new(42, MyKind::A);
-    assert_eq!(binding.id(), &TokenKindId::new(42));
+    let binding = TokenKindIdBinding::new(A);
+    assert_eq!(binding.id(), &TokenKindId::new(0));
     assert_eq!(binding.value(), &MyKind::A);
     assert_eq!(binding.take(), MyKind::A);
   }
 
   #[test]
   fn token_kind_id_binding_deref() {
-    let binding = TokenKindIdBinding::new(42, MyKind::A);
+    let binding = TokenKindIdBinding::new(A);
     assert_eq!(binding.f(), 1);
   }
 }

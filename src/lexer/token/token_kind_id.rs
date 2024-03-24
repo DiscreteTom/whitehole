@@ -84,8 +84,6 @@ pub trait TokenKindIdProvider<TokenKindType> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::token::{SubTokenKind, TokenKindIdBinding};
-  use whitehole_macros::_TokenKind;
 
   #[test]
   fn token_kind_id_new() {
@@ -132,38 +130,5 @@ mod tests {
         assert_eq!(ids[i], ids[j]);
       }
     }
-  }
-
-  #[derive(_TokenKind, Debug)]
-  enum MyKind {
-    UnitField,
-    UnnamedField(i32),
-    NamedField { _a: i32 },
-  }
-
-  #[test]
-  fn token_kind_macro() {
-    // ensure structs are created and fields are public
-    let _ = UnitField;
-    let _ = UnnamedField(42);
-    let _ = NamedField { _a: 1 };
-
-    // into TokenKindIdBinding and get the id
-    assert_eq!(TokenKindIdBinding::from(UnitField.into()).id().0, 0);
-    assert_eq!(
-      (TokenKindIdBinding::from(UnnamedField(42).into())).id().0,
-      1
-    );
-    assert_eq!(
-      (TokenKindIdBinding::from(NamedField { _a: 1 }.into()))
-        .id()
-        .0,
-      2
-    );
-
-    // possible kinds for generated structs
-    assert_eq!(UnitField::kind_id(), TokenKindId::new(0));
-    assert_eq!(UnnamedField::kind_id(), TokenKindId::new(1));
-    assert_eq!(NamedField::kind_id(), TokenKindId::new(2));
   }
 }
