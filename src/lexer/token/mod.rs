@@ -77,45 +77,22 @@
 //! ```
 //! # use whitehole::lexer::token::{TokenKindId, TokenKindIdBinding};
 //! #
-//! # pub enum MyKind {
-//! #   Identifier(String),
-//! #   Number(i32),
-//! # }
-//! #
+//! // this is the "token kind"
+//! pub enum MyKind {
+//!   // instead of storing the value directly,
+//!   // we store sub token kinds in the enum variant
+//!   // to avoid destructing sub token kind value
+//!   // when build the token kind value
+//!   Identifier(Identifier),
+//!   Number(Number),
+//! }
+//!
+//! // these are "sub token kind"s, they store values
 //! pub struct Identifier(pub String);
 //! pub struct Number(pub i32);
 //!
-//! impl Into<TokenKindIdBinding<MyKind>> for Identifier {
-//!   fn into(self) -> TokenKindIdBinding<MyKind> {
-//!     TokenKindIdBinding::new(0, MyKind::Identifier(self.0))
-//!   }
-//! }
-//! impl Into<TokenKindIdBinding<MyKind>> for Number {
-//!   fn into(self) -> TokenKindIdBinding<MyKind> {
-//!     TokenKindIdBinding::new(1, MyKind::Number(self.0))
-//!   }
-//! }
-//! // TODO: remove `TokenKindIdBinding::new` to make the binding more strict
-//! // TODO: prevent destructing the generated structs in the `into` method for better performance?
-//! ```
-//!
-//! We should only use these structs to create [`TokenKindIdBinding`] to make sure the binding is correct.
-//!
-//! These created structs `Identifier` and `Number` are called [`SubTokenKind`]
-//! (since `MyKind` is the `TokenKind`). As a [`SubTokenKind`],
-//! we can get the [`TokenKindId`] from these types.
-//!
-//! ```
-//! # use whitehole::lexer::token::{SubTokenKind, TokenKindId, TokenKindIdBinding};
-//! #
-//! # pub enum MyKind {
-//! #   Identifier(String),
-//! #   Number(i32),
-//! # }
-//! #
-//! # pub struct Identifier(pub String);
-//! # pub struct Number(pub i32);
-//!
+//! // every sub token kind should have a unique id
+//! // bound with the type, not its value
 //! impl SubTokenKind<TokenKindIdBinding<MyKind>> for Identifier {
 //!   pub fn kind_id() -> TokenKindId<TokenKindIdBinding<MyKind>> {
 //!     TokenKindId::new(0)
@@ -126,13 +103,39 @@
 //!     TokenKindId::new(1)
 //!   }
 //! }
+//!
+//! // sub token kinds can be converted into the token kind
+//! impl Into<MyKind> for Identifier {
+//!   fn into(self) -> MyKind {
+//!     MyKind::Identifier(self)
+//!   }
+//! }
+//! impl Into<MyKind> for Number {
+//!   fn into(self) -> MyKind {
+//!     MyKind::Number(self)
+//!   }
+//! }
+//!
+//! // from sub token kinds we can create the token kind id bindings
+//! impl Into<TokenKindIdBinding<MyKind>> for Identifier {
+//!   fn into(self) -> TokenKindIdBinding<MyKind> {
+//!     TokenKindIdBinding::new(self)
+//!   }
+//! }
+//! impl Into<TokenKindIdBinding<MyKind>> for Number {
+//!   fn into(self) -> TokenKindIdBinding<MyKind> {
+//!     TokenKindIdBinding::new(self)
+//!   }
+//! }
 //! ```
 //!
-//! To simplify all above, we can use the derive macro [`TokenKind`] to generate the code.
+//! We should only use these structs to create [`TokenKindIdBinding`] to make sure the binding is correct.
+//!
+//! To simplify all above, we can use the macro [`token_kind`] to transform the enum.
 //!
 //! ```
-//! use whitehole::lexer::token::TokenKind;
-//! #[derive(TokenKind)]
+//! use whitehole::lexer::token::token_kind;
+//! #[token_kind]
 //! pub enum MyKind {
 //!   Identifier(String),
 //!   Number(i32),
