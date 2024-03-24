@@ -67,10 +67,10 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
   let mut gen = Vec::new();
 
   // override the original enum
-  // TODO: what about other derive macros?
   let generated_fields: Vec<_> = variants.iter().map(| variant| {
     let variant_name = &variant.ident;
-    quote! { #variant_name(#variant_name), }
+    let variant_attrs = &variant.attrs;
+    quote! { #(#variant_attrs)* #variant_name(#variant_name), }
   }).collect();
   let vis = &ast.vis;
   let attrs = &ast.attrs;
@@ -91,7 +91,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
           })
           .collect();
         gen.push(quote! {
-          pub struct #variant_name{ #(#generated_fields),* }
+          #(#attrs)* pub struct #variant_name{ #(#generated_fields),* }
         });
       }
       Fields::Unnamed(fields) => {
@@ -104,12 +104,12 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
           })
           .collect();
         gen.push(quote! {
-          pub struct #variant_name(#(#generated_fields),*);
+          #(#attrs)* pub struct #variant_name(#(#generated_fields),*);
         });
       }
       Fields::Unit => {
         gen.push(quote! {
-          pub struct #variant_name;
+          #(#attrs)* pub struct #variant_name;
         });
       }
     }
