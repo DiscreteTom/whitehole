@@ -16,7 +16,7 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// ```
 /// will be transformed into:
 /// ```no_run
-/// enum MyKind { A(A), B(B), C(C) }
+/// enum MyKind { A, B(B), C(C) }
 /// pub struct A;
 /// impl Into<MyKind> for A { ... }
 /// impl Into<TokenKindIdBinding<MyKind>> for A { ... }
@@ -70,7 +70,14 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
   let generated_fields: Vec<_> = variants.iter().map(| variant| {
     let variant_name = &variant.ident;
     let variant_attrs = &variant.attrs;
-    quote! { #(#variant_attrs)* #variant_name(#variant_name), }
+    if matches!(variant.fields, Fields::Unit) {
+      // for unit variants, we don't need to wrap them in unnamed fields.
+      // with this design, we can make `#[derive(Default)]` and `#[default]` working
+      // because `#[default]` only works for unit fields.
+      quote! { #(#variant_attrs)* #variant_name, }
+    } else {
+      quote! { #(#variant_attrs)* #variant_name(#variant_name), }
+    }
   }).collect();
   let vis = &ast.vis;
   let attrs = &ast.attrs;
@@ -92,6 +99,11 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
           .collect();
         gen.push(quote! {
           #(#attrs)* pub struct #variant_name{ #(#generated_fields),* }
+          impl Into<#enum_name> for #variant_name {
+            fn into(self) -> #enum_name {
+              #enum_name::#variant_name(self)
+            }
+          }
         });
       }
       Fields::Unnamed(fields) => {
@@ -105,21 +117,26 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
           .collect();
         gen.push(quote! {
           #(#attrs)* pub struct #variant_name(#(#generated_fields),*);
+          impl Into<#enum_name> for #variant_name {
+            fn into(self) -> #enum_name {
+              #enum_name::#variant_name(self)
+            }
+          }
         });
       }
       Fields::Unit => {
         gen.push(quote! {
           #(#attrs)* pub struct #variant_name;
+          impl Into<#enum_name> for #variant_name {
+            fn into(self) -> #enum_name {
+              #enum_name::#variant_name
+            }
+          }
         });
       }
     }
 
     gen.push(quote! {
-      impl Into<#enum_name> for #variant_name {
-        fn into(self) -> #enum_name {
-          #enum_name::#variant_name(self)
-        }
-      }
       impl Into<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
         fn into(self) -> #crate_name::lexer::token::TokenKindIdBinding<#enum_name> {
           #crate_name::lexer::token::TokenKindIdBinding::new(self)
