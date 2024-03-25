@@ -6,7 +6,7 @@ pub struct Token<'text, Kind, ErrorType> {
   pub kind: Kind,
   pub content: &'text str,
   /// The range of the token in the input string.
-  /// The range can be used to index the input string.
+  /// This can be used to index the input string.
   /// # Example
   /// ```
   /// # use whitehole::lexer::token::Token;
@@ -19,6 +19,8 @@ pub struct Token<'text, Kind, ErrorType> {
   /// // indexing some string with the range
   /// assert_eq!(&"0123456"[token.range], "01234");
   pub range: Range,
+  /// If `Some`, the token is an error token.
+  /// Error tokens will be collected during the lexing process.
   pub error: Option<ErrorType>,
 }
 
@@ -35,7 +37,7 @@ mod tests {
       error: None::<()>,
     };
 
-    // ensure the range is able to index a string
+    // ensure the range can be used to index a string
     assert_eq!(&"0123456"[token.range], "01234");
   }
 }
