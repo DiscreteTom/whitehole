@@ -32,6 +32,22 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// impl Into<TokenKindIdBinding<MyKind>> for C { ... }
 /// impl SubTokenKind<TokenKindIdBinding<MyKind>> for C { ... }
 /// ```
+/// Besides, if the token kind derive `Default`:
+/// ```
+/// use whitehole_macros::token_kind;
+/// #[token_kind]
+/// #[derive(Default)]
+/// enum MyKind {
+///   #[default]
+///   A,
+///   B(i32),
+///   C { c: i32 }
+/// }
+/// ```
+/// the macro will also generate:
+/// ```no_run
+/// impl DefaultTokenKindIdBinding<MyKind> for MyKind { ... }
+/// ```
 #[proc_macro_attribute]
 pub fn token_kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
   common(quote! { whitehole }, input).into()
@@ -68,7 +84,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
   let mut gen = Vec::new();
 
   // override the original enum
-  let generated_fields: Vec<_> = variants.iter().map(| variant| {
+  let generated_fields: Vec<_> = variants.iter().map(|variant| {
     let variant_name = &variant.ident;
     let variant_attrs = &variant.attrs;
     if matches!(variant.fields, Fields::Unit) {
@@ -85,6 +101,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
   // generate a struct for each variant
   variants.iter().enumerate().for_each(|(index, variant)| {
     let variant_name = &variant.ident;
+    let variant_attrs = &variant.attrs;
 
     // generate a struct for each variant
     match &variant.fields {
@@ -159,6 +176,19 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
         }
       }
     });
+
+    // if a variant is the default variant, we will impl DefaultTokenKindIdBinding for it
+    if variant_attrs.iter().any(|attr| attr.path.is_ident("default")) {
+      gen.push(quote! {
+        impl #crate_name::lexer::token::DefaultTokenKindIdBinding<#enum_name> for #enum_name {
+          fn default_binding_kind_id() -> #crate_name::lexer::token::TokenKindId<
+            #crate_name::lexer::token::TokenKindIdBinding<#enum_name>
+          > {
+            #variant_name::kind_id()
+          }
+        }
+      });
+    }
   });
 
   quote! {

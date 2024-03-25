@@ -28,15 +28,6 @@ pub struct TokenKindIdBinding<TokenKindType> {
   value: TokenKindType,
 }
 
-impl<TokenKindType: Default> Default for TokenKindIdBinding<TokenKindType> {
-  fn default() -> Self {
-    Self {
-      id: TokenKindId::new(0),         // [[@default token kind id is 0]]
-      value: TokenKindType::default(), // [[@use default token kind value]]
-    }
-  }
-}
-
 impl<TokenKindType> TokenKindIdProvider<Self> for TokenKindIdBinding<TokenKindType> {
   fn id(&self) -> &TokenKindId<Self> {
     &self.id
@@ -73,14 +64,47 @@ impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
   }
 }
 
+/// Implement this trait for the token kind enum to provide the default token kind id binding.
+/// This can be auto implemented by the [`token_kind`](crate::lexer::token::token_kind) macro.
+/// # Examples
+/// ```
+/// use whitehole::lexer::token::{token_kind, TokenKindId, TokenKindIdBinding};
+///
+/// #[token_kind]
+/// #[derive(Default)]
+/// enum MyKind { #[default] A }
+///
+/// assert_eq!(MyKind::default_binding_kind_id(), A::kind_id());
+/// assert!(matches!(MyKind::default(), MyKind::A));
+///
+/// // besides, `Default` will be implemented for `TokenKindIdBinding<MyKind>`
+/// assert!(matches!(TokenKindIdBinding::<MyKind>::default().value(), MyKind::A));
+/// assert!(matches!(TokenKindIdBinding::<MyKind>::default().id(), &A::kind_id()));
+/// ```
+pub trait DefaultTokenKindIdBinding<TokenKindType>: Default {
+  fn default_binding_kind_id() -> TokenKindId<TokenKindIdBinding<TokenKindType>>;
+}
+
+impl<TokenKindType: DefaultTokenKindIdBinding<TokenKindType>> Default
+  for TokenKindIdBinding<TokenKindType>
+{
+  fn default() -> Self {
+    Self {
+      id: TokenKindType::default_binding_kind_id(),
+      value: TokenKindType::default(),
+    }
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
   use whitehole_macros::_token_kind;
 
   #[_token_kind]
-  #[derive(Debug, PartialEq)]
+  #[derive(Debug, PartialEq, Default)]
   enum MyKind {
+    #[default]
     A,
   }
 
@@ -102,5 +126,15 @@ mod tests {
   fn token_kind_id_binding_deref() {
     let binding = TokenKindIdBinding::new(A);
     assert_eq!(binding.f(), 1);
+  }
+
+  #[test]
+  fn default_token_kind_id_binding() {
+    assert_eq!(MyKind::default_binding_kind_id(), A::kind_id());
+    assert_eq!(MyKind::default(), MyKind::A);
+
+    let binding = TokenKindIdBinding::<MyKind>::default();
+    assert_eq!(binding.id(), &TokenKindId::new(0));
+    assert_eq!(binding.value(), &MyKind::A);
   }
 }
