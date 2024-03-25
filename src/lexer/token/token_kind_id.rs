@@ -19,9 +19,12 @@ use std::{fmt::Debug, hash::Hash, marker::PhantomData};
 /// assert_eq!(a.id(), &TokenKindId::new(0));
 /// assert_eq!(b.id(), &TokenKindId::new(1));
 /// ```
-#[derive(Debug)] // `TokenKindType` should impl `Debug`
-pub struct TokenKindId<TokenKindType>(pub usize, PhantomData<TokenKindType>);
-// TODO: make the usize private
+// `TokenKindType` should impl `Debug`
+#[derive(Debug)]
+// the `usize`/`self.0` is not public because we don't need to expose the value.
+// if user want to inspect the value they can use `Debug` instead
+// or they can check the inner value by `==`
+pub struct TokenKindId<TokenKindType>(usize, PhantomData<TokenKindType>);
 
 impl<TokenKindType> TokenKindId<TokenKindType> {
   pub const fn new(id: usize) -> Self {
