@@ -62,6 +62,8 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
   }
   .variants;
   let enum_name = &ast.ident;
+  let vis = &ast.vis;
+  let attrs = &ast.attrs;
 
   let mut gen = Vec::new();
 
@@ -78,10 +80,9 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
       quote! { #(#variant_attrs)* #variant_name(#variant_name), }
     }
   }).collect();
-  let vis = &ast.vis;
-  let attrs = &ast.attrs;
   gen.push(quote! { #(#attrs)* #vis enum #enum_name { #(#generated_fields)* } });
 
+  // generate a struct for each variant
   variants.iter().enumerate().for_each(|(index, variant)| {
     let variant_name = &variant.ident;
 
