@@ -74,7 +74,7 @@ impl<TokenKindType> Hash for TokenKindId<TokenKindType> {
 pub trait TokenKindIdProvider<TokenKindType> {
   /// The token kind id of this token kind value.
   /// See [`TokenKindId`].
-  fn id(&self) -> &TokenKindId<TokenKindType>;
+  fn id(&self) -> &'static TokenKindId<TokenKindType>;
 }
 
 #[cfg(test)]

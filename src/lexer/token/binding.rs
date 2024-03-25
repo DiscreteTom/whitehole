@@ -14,22 +14,22 @@ use std::ops::Deref;
 ///
 /// let a: TokenKindIdBinding<MyKind> = A.into();
 /// let b: TokenKindIdBinding<MyKind> = B.into();
-/// assert_eq!(a.id(), &A::kind_id());
-/// assert_eq!(b.id(), &B::kind_id()));
+/// assert_eq!(a.id(), A::kind_id());
+/// assert_eq!(b.id(), B::kind_id()));
 /// assert!(matches!(a.value(), MyKind::A));
 /// assert!(matches!(b.value(), MyKind::B));
 /// ```
 #[derive(Debug, Clone)]
-pub struct TokenKindIdBinding<TokenKindType> {
+pub struct TokenKindIdBinding<TokenKindType: 'static> {
   // this is `TokenKindId<TokenKindIdBinding<TokenKindType>>`
   // instead of `TokenKindId<TokenKindType>`
   // because the `kind_id` of generated structs are `TokenKindId<TokenKindIdBinding<TokenKindType>>`
-  id: TokenKindId<Self>,
+  id: &'static TokenKindId<Self>,
   value: TokenKindType,
 }
 
 impl<TokenKindType> TokenKindIdProvider<Self> for TokenKindIdBinding<TokenKindType> {
-  fn id(&self) -> &TokenKindId<Self> {
+  fn id(&self) -> &'static TokenKindId<Self> {
     &self.id
   }
 }
@@ -74,7 +74,7 @@ impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
 /// #[derive(Default)]
 /// enum MyKind { #[default] A }
 ///
-/// assert_eq!(MyKind::default_binding_kind_id(), A::kind_id());
+/// assert_eq!(MyKind::default_binding_kind_id(), &A::kind_id());
 /// assert!(matches!(MyKind::default(), MyKind::A));
 ///
 /// // besides, `Default` will be implemented for `TokenKindIdBinding<MyKind>`
@@ -82,7 +82,7 @@ impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
 /// assert!(matches!(TokenKindIdBinding::<MyKind>::default().id(), &A::kind_id()));
 /// ```
 pub trait DefaultTokenKindIdBinding<TokenKindType>: Default {
-  fn default_binding_kind_id() -> TokenKindId<TokenKindIdBinding<TokenKindType>>;
+  fn default_binding_kind_id() -> &'static TokenKindId<TokenKindIdBinding<TokenKindType>>;
 }
 
 impl<TokenKindType: DefaultTokenKindIdBinding<TokenKindType>> Default

@@ -196,19 +196,19 @@ mod tests {
     ));
 
     // generated token kind id, as sub token kind
-    assert_eq!(Unit::kind_id(), TokenKindId::new(0));
-    assert_eq!(Unnamed::kind_id(), TokenKindId::new(1));
-    assert_eq!(Named::kind_id(), TokenKindId::new(2));
+    assert_eq!(Unit::kind_id(), &TokenKindId::new(0));
+    assert_eq!(Unnamed::kind_id(), &TokenKindId::new(1));
+    assert_eq!(Named::kind_id(), &TokenKindId::new(2));
 
     // into token kind id binding
     let b: TokenKindIdBinding<MyKind> = Unit.into();
-    assert_eq!(b.id(), &Unit::kind_id());
+    assert_eq!(b.id(), Unit::kind_id());
     assert!(matches!(b.value(), MyKind::Unit));
     let b: TokenKindIdBinding<MyKind> = Unnamed(42).into();
-    assert_eq!(b.id(), &Unnamed::kind_id());
+    assert_eq!(b.id(), Unnamed::kind_id());
     assert!(matches!(b.value(), MyKind::Unnamed(Unnamed(42))));
     let b: TokenKindIdBinding<MyKind> = Named { name: 42 }.into();
-    assert_eq!(b.id(), &Named::kind_id());
+    assert_eq!(b.id(), Named::kind_id());
     assert!(matches!(b.value(), MyKind::Named(Named { name: 42 })));
 
     // attributes are inherited by generated structs, e.g. Clone

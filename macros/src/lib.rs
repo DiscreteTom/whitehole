@@ -1,4 +1,5 @@
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use quote::{quote, ToTokens};
 use syn::{self, parse, Data, DeriveInput, Fields};
 
@@ -165,14 +166,20 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
     // we should impl SubTokenKind for `TokenKindIdBinding<MyKind>` instead of `MyKind`
     // because for `Action<TokenKindIdBinding<MyKind>>` the `action.kind_id` should be
     // `TokenKindId<TokenKindIdBinding<MyKind>>` instead of `TokenKindId<MyKind>`
+    let mod_name = syn::Ident::new(&format!("_impl_sub_token_kind_{}", index), Span::call_site());
+    let token_kind_id_const = syn::Ident::new(&format!("_TOKEN_KIND_ID_{}", index), Span::call_site());
     gen.push(quote! {
-      impl #crate_name::lexer::token::SubTokenKind<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
-        fn kind_id() -> 
-          #crate_name::lexer::token::TokenKindId<
-            #crate_name::lexer::token::TokenKindIdBinding<#enum_name>
-          >
-        {
-          #crate_name::lexer::token::TokenKindId::new(#index)
+      mod #mod_name {
+        use super::*;
+        const #token_kind_id_const: #crate_name::lexer::token::TokenKindId<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> = #crate_name::lexer::token::TokenKindId::new(#index);
+        impl #crate_name::lexer::token::SubTokenKind<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
+          fn kind_id() -> 
+            &'static #crate_name::lexer::token::TokenKindId<
+              #crate_name::lexer::token::TokenKindIdBinding<#enum_name>
+            >
+          {
+            &#token_kind_id_const
+          }
         }
       }
     });
@@ -181,7 +188,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
     if variant_attrs.iter().any(|attr| attr.path.is_ident("default")) {
       gen.push(quote! {
         impl #crate_name::lexer::token::DefaultTokenKindIdBinding<#enum_name> for #enum_name {
-          fn default_binding_kind_id() -> #crate_name::lexer::token::TokenKindId<
+          fn default_binding_kind_id() -> &'static #crate_name::lexer::token::TokenKindId<
             #crate_name::lexer::token::TokenKindIdBinding<#enum_name>
           > {
             #variant_name::kind_id()

@@ -8,7 +8,7 @@ use super::{SubTokenKind, TokenKindId, TokenKindIdProvider};
 /// use whitehole::lexer::token::{
 ///   MockTokenKind, TokenKindIdProvider, SubTokenKind, TokenKindId
 /// };
-/// assert_eq!(MockTokenKind::<()>::kind_id(), TokenKindId::new(0));
+/// assert_eq!(MockTokenKind::<()>::kind_id(), &TokenKindId::new(0));
 /// assert_eq!(MockTokenKind::new(42).id(), &TokenKindId::new(0));
 /// ```
 #[derive(Debug)] // `T` should impl `Debug`
@@ -24,7 +24,7 @@ const MOCK_TOKEN_KIND_ID: TokenKindId<MockTokenKind<()>> = TokenKindId::new(0);
 
 // we store `TokenKindType` only for type checking and the `PhantomData` is zero sized
 // so we can safely cast self to another type
-fn cast_mock_token_kind_id<'a, T>() -> &'a TokenKindId<T> {
+fn cast_mock_token_kind_id<T>() -> &'static TokenKindId<T> {
   unsafe { std::mem::transmute(&MOCK_TOKEN_KIND_ID) }
 }
 
@@ -35,15 +35,14 @@ impl<T> MockTokenKind<T> {
 }
 
 impl<T> TokenKindIdProvider<Self> for MockTokenKind<T> {
-  fn id(&self) -> &TokenKindId<Self> {
+  fn id(&self) -> &'static TokenKindId<Self> {
     cast_mock_token_kind_id()
   }
 }
 
 impl<T> SubTokenKind<Self> for MockTokenKind<T> {
-  // TODO: make the kind id static?
-  fn kind_id() -> TokenKindId<Self> {
-    TokenKindId::new(0)
+  fn kind_id() -> &'static TokenKindId<Self> {
+    cast_mock_token_kind_id()
   }
 }
 
@@ -61,7 +60,7 @@ mod tests {
   fn mock_token_kind_id() {
     let kind = MockTokenKind::new(());
     assert_eq!(kind.id(), &TokenKindId::new(0));
-    assert_eq!(MockTokenKind::<()>::kind_id(), TokenKindId::new(0));
+    assert_eq!(MockTokenKind::<()>::kind_id(), &TokenKindId::new(0));
   }
 
   #[test]
