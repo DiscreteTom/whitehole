@@ -1,8 +1,6 @@
-//! # Lexer
-//!
 //! ## For Developers
 //!
-//! Here is the recommended order of reading:
+//! Here is the recommended order of reading the source code:
 //!
 //! 1. [`self::token`]
 //! 2. [`self::action`]
