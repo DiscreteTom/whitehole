@@ -1,7 +1,7 @@
 use super::AcceptedActionDecoratorContext;
 use crate::lexer::{
   action::{ActionInput, ActionOutput, EnhancedActionOutput},
-  token::{SubTokenKind, TokenKindId, TokenKindIdBinding},
+  token::{DefaultTokenKindIdBinding, SubTokenKind, TokenKindIdBinding},
   Action,
 };
 
@@ -63,19 +63,19 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///
   /// let action: Action<TokenKindIdBinding<MyKind>> = simple(|_| 1).bind_default();
   /// ```
-  pub fn bind_default<NewKind>(self) -> Action<NewKind, ActionState, ErrorType>
+  pub fn bind_default<NewKind>(self) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
   where
-    NewKind: Default,
+    NewKind: Default + DefaultTokenKindIdBinding<NewKind>,
   {
     let exec = self.exec;
     Action {
-      kind_id: TokenKindId::new(0), // [[default token kind id is 0]]
+      kind_id: NewKind::default_binding_kind_id(),
       head_matcher: self.head_matcher,
       maybe_muted: self.maybe_muted,
       may_mutate_state: self.may_mutate_state,
       exec: Box::new(move |input| {
         exec(input).map(|output| ActionOutput {
-          kind: NewKind::default(), // [[use default token kind value]]
+          kind: TokenKindIdBinding::default(),
           digested: output.digested,
           muted: output.muted,
           error: output.error,
