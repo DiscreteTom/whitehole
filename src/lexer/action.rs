@@ -3,6 +3,7 @@ mod input;
 mod output;
 mod regex;
 mod simple;
+mod sub_action;
 mod utils;
 
 pub use decorator::*;
@@ -10,6 +11,7 @@ pub use input::*;
 pub use output::*;
 pub use regex::*;
 pub use simple::*;
+pub use sub_action::*;
 pub use utils::*;
 
 use super::token::TokenKindId;
