@@ -66,6 +66,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   pub fn bind_default<NewKind>(self) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
   where
     NewKind: Default + DefaultTokenKindIdBinding<NewKind>,
+    ActionState: 'static,
+    ErrorType: 'static,
   {
     let exec = self.exec;
     Action {

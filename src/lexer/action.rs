@@ -95,9 +95,10 @@ mod tests {
 
   #[test]
   fn action_getters_default() {
+    static KIND_ID: TokenKindId<()> = TokenKindId::new(1);
     let action: Action<()> = Action {
       exec: Box::new(|_| None),
-      kind_id: &TokenKindId::new(0),
+      kind_id: &KIND_ID,
       head_matcher: None,
       maybe_muted: false,
       may_mutate_state: false,
@@ -112,9 +113,10 @@ mod tests {
 
   #[test]
   fn action_getters() {
+    static KIND_ID: TokenKindId<()> = TokenKindId::new(1);
     let action: Action<()> = Action {
       exec: Box::new(|_| None),
-      kind_id: &TokenKindId::new(1),
+      kind_id: &KIND_ID,
       head_matcher: Some(HeadMatcher::OneOf(HashSet::from(['a']))),
       maybe_muted: true,
       may_mutate_state: true,
