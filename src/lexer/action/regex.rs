@@ -17,7 +17,7 @@ use regex::{Error, Regex};
 /// ```
 /// # use whitehole::lexer::action::Action;
 /// # use whitehole::lexer::action::regex;
-/// # use whitehole::lexer::action::ActionInputRestHeadMatcher;
+/// # use whitehole::lexer::action::HeadMatcher;
 /// # use std::collections::HashSet;
 /// # let action: Action<_> =
 /// regex(r"^abc").unwrap().unchecked_head_in(['a']);

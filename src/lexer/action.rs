@@ -20,7 +20,7 @@ pub enum HeadMatcher {
   OneOf(HashSet<char>),
   Not(HashSet<char>),
   /// Match any characters that are not known in
-  /// [`OneOf`](ActionInputRestHeadMatcher::OneOf) or [`Not`](ActionInputRestHeadMatcher::Not).
+  /// [`OneOf`](HeadMatcher::OneOf) or [`Not`](HeadMatcher::Not).
   Unknown,
 }
 

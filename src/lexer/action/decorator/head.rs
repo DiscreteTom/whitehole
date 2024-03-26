@@ -2,7 +2,7 @@ use crate::lexer::{action::HeadMatcher, Action};
 use std::{collections::HashSet, ops::RangeInclusive};
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
-  /// Set [`Action::head_matcher`] to [`OneOf`](ActionInputRestHeadMatcher::OneOf).
+  /// Set [`Action::head_matcher`] to [`OneOf`](HeadMatcher::OneOf).
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
@@ -19,7 +19,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self
   }
 
-  /// Set [`Action::head_matcher`] to [`OneOf`](ActionInputRestHeadMatcher::OneOf)
+  /// Set [`Action::head_matcher`] to [`OneOf`](HeadMatcher::OneOf)
   /// with the given range.
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
@@ -38,7 +38,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self.unchecked_head_in(range.into().into_iter().collect::<HashSet<_>>())
   }
 
-  /// Set [`Action::head_matcher`] to [`Not`](ActionInputRestHeadMatcher::Not).
+  /// Set [`Action::head_matcher`] to [`Not`](HeadMatcher::Not).
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
@@ -55,7 +55,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self
   }
 
-  /// Set [`Action::head_matcher`] to [`Unknown`](ActionInputRestHeadMatcher::Unknown).
+  /// Set [`Action::head_matcher`] to [`Unknown`](HeadMatcher::Unknown).
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```

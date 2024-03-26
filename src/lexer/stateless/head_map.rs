@@ -1,4 +1,4 @@
-use crate::lexer::{action::ActionInputRestHeadMatcher, Action};
+use crate::lexer::{action::HeadMatcher, Action};
 use std::{collections::HashMap, rc::Rc};
 
 pub struct ActionHeadMap<Kind, ActionState, ErrorType> {
@@ -20,9 +20,9 @@ impl<Kind, ActionState, ErrorType> ActionHeadMap<Kind, ActionState, ErrorType> {
     for a in actions {
       if let Some(head_matcher) = a.head_matcher() {
         for c in match head_matcher {
-          ActionInputRestHeadMatcher::OneOf(set) => set,
-          ActionInputRestHeadMatcher::Not(set) => set,
-          ActionInputRestHeadMatcher::Unknown => continue,
+          HeadMatcher::OneOf(set) => set,
+          HeadMatcher::Not(set) => set,
+          HeadMatcher::Unknown => continue,
         } {
           res.known_map.entry(*c).or_insert(Vec::new());
         }
@@ -32,12 +32,12 @@ impl<Kind, ActionState, ErrorType> ActionHeadMap<Kind, ActionState, ErrorType> {
     for a in actions {
       if let Some(head_matcher) = a.head_matcher() {
         match head_matcher {
-          ActionInputRestHeadMatcher::OneOf(set) => {
+          HeadMatcher::OneOf(set) => {
             for c in set {
               res.known_map.get_mut(c).unwrap().push(a.clone());
             }
           }
-          ActionInputRestHeadMatcher::Not(set) => {
+          HeadMatcher::Not(set) => {
             for (c, vec) in res.known_map.iter_mut() {
               if !set.contains(c) {
                 vec.push(a.clone());
@@ -45,7 +45,7 @@ impl<Kind, ActionState, ErrorType> ActionHeadMap<Kind, ActionState, ErrorType> {
             }
             res.unknown_fallback.push(a.clone());
           }
-          ActionInputRestHeadMatcher::Unknown => {
+          HeadMatcher::Unknown => {
             res.unknown_fallback.push(a.clone());
           }
         }
