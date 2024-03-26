@@ -26,6 +26,7 @@ pub enum HeadMatcher {
   Unknown,
 }
 
+/// To create this, use [`simple`], [`regex`], [`utils`] or [`SubAction::into`](SubAction).
 pub struct Action<Kind: 'static, ActionState = (), ErrorType = ()> {
   // input is mutable so the action can mutate the action state.
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
@@ -40,11 +41,28 @@ pub struct Action<Kind: 'static, ActionState = (), ErrorType = ()> {
 }
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
+  /// This is used to accelerate expectational lexing.
+  /// Every action must have this field set by [`Self::bind`],
+  /// [`Self::bind_default`] or [`Self::select`].
+  pub fn kind_id(&self) -> &TokenKindId<Kind> {
+    &self.kind_id
+  }
+
+  /// This is used to accelerate lexing by the first character
+  /// of the rest of the input. This is optional but highly recommended.
+  /// Some [`utils`] already set this field safely and you should use them as much as possible.
+  /// If you want to set this field manually,
+  /// this could be set by [`Self::unchecked_head_in`], [`Self::unchecked_head_in_range`],
+  /// [`Self::unchecked_head_not`] or [`Self::unchecked_head_unknown`].
+  pub fn head_matcher(&self) -> &Option<HeadMatcher> {
+    &self.head_matcher
+  }
+
   /// This flag is to indicate whether this action's output might be muted.
   /// The lexer will based on this flag to accelerate the lexing process.
   /// If `true`, this action's output may be muted.
   /// If `false`, this action's output will never be muted.
-  /// This field should only be set via [`Self::mute`] or [`Self::mute_if`].
+  /// This field could be set via [`Self::mute`] or [`Self::mute_if`].
   pub fn maybe_muted(&self) -> bool {
     self.maybe_muted
   }
@@ -67,20 +85,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// See [`Self::may_mutate_state`].
   pub fn never_mutate_state(&self) -> bool {
     !self.may_mutate_state
-  }
-
-  /// This is used to accelerate expectational lexing.
-  /// Every action should have this field set by [`Self::bind`] and [`Self::select`].
-  pub fn kind_id(&self) -> &TokenKindId<Kind> {
-    &self.kind_id
-  }
-
-  /// This is used to accelerate lexing by the first character
-  /// of the rest of the input. This is optional but highly recommended.
-  /// This should only be set by [`Self::head_in`], [`Self::head_in_range`],
-  /// [`Self::head_not`] and [`Self::head_unknown`].
-  pub fn head_matcher(&self) -> &Option<HeadMatcher> {
-    &self.head_matcher
   }
 
   pub fn exec(
