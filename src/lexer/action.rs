@@ -16,7 +16,7 @@ use super::token::TokenKindId;
 use std::collections::HashSet;
 
 /// See [`Action::head_matcher`].
-pub enum ActionInputRestHeadMatcher {
+pub enum HeadMatcher {
   OneOf(HashSet<char>),
   Not(HashSet<char>),
   /// Match any characters that are not known in
@@ -30,7 +30,7 @@ pub struct Action<Kind, ActionState = (), ErrorType = ()> {
   /// See [`Self::kind_id`].
   kind_id: TokenKindId<Kind>,
   /// See [`Self::head_matcher`].
-  head_matcher: Option<ActionInputRestHeadMatcher>,
+  head_matcher: Option<HeadMatcher>,
   /// See [`Self::maybe_muted`].
   maybe_muted: bool,
   /// See [`Self::may_mutate_state`].
@@ -77,7 +77,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// of the rest of the input. This is optional but highly recommended.
   /// This should only be set by [`Self::head_in`], [`Self::head_in_range`],
   /// [`Self::head_not`] and [`Self::head_unknown`].
-  pub fn head_matcher(&self) -> &Option<ActionInputRestHeadMatcher> {
+  pub fn head_matcher(&self) -> &Option<HeadMatcher> {
     &self.head_matcher
   }
 
@@ -115,7 +115,7 @@ mod tests {
     let action: Action<()> = Action {
       exec: Box::new(|_| None),
       kind_id: TokenKindId::new(1),
-      head_matcher: Some(ActionInputRestHeadMatcher::OneOf(HashSet::from(['a']))),
+      head_matcher: Some(HeadMatcher::OneOf(HashSet::from(['a']))),
       maybe_muted: true,
       may_mutate_state: true,
     };
@@ -125,7 +125,7 @@ mod tests {
     assert!(!action.never_mutate_state());
     assert_eq!(action.kind_id().0, 1);
     assert!(
-      matches!(action.head_matcher(), Some(ActionInputRestHeadMatcher::OneOf(set)) if set == &HashSet::from(['a']))
+      matches!(action.head_matcher(), Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['a']))
     );
   }
 }

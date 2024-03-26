@@ -1,4 +1,4 @@
-use crate::lexer::{action::ActionInputRestHeadMatcher, Action};
+use crate::lexer::{action::HeadMatcher, Action};
 use std::{collections::HashSet, ops::RangeInclusive};
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
@@ -15,7 +15,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// builder.define(A, regex(r"^A").unwrap().unchecked_head_in(['A']));
   /// ```
   pub fn unchecked_head_in(mut self, char_set: impl Into<HashSet<char>>) -> Self {
-    self.head_matcher = Some(ActionInputRestHeadMatcher::OneOf(char_set.into()));
+    self.head_matcher = Some(HeadMatcher::OneOf(char_set.into()));
     self
   }
 
@@ -51,7 +51,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// builder.define(MyKind::A, regex(r"^[^A]").unwrap().unchecked_head_not(['A']));
   /// ```
   pub fn unchecked_head_not(mut self, char_set: impl Into<HashSet<char>>) -> Self {
-    self.head_matcher = Some(ActionInputRestHeadMatcher::Not(char_set.into()));
+    self.head_matcher = Some(HeadMatcher::Not(char_set.into()));
     self
   }
 
@@ -67,7 +67,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// builder.define(MyKind::A, regex(r"^.").unwrap().unchecked_head_unknown());
   /// ```
   pub fn unchecked_head_unknown(mut self) -> Self {
-    self.head_matcher = Some(ActionInputRestHeadMatcher::Unknown);
+    self.head_matcher = Some(HeadMatcher::Unknown);
     self
   }
 }
@@ -82,7 +82,7 @@ mod tests {
     let action: Action<_> = simple(|_| 1).unchecked_head_in(['a']);
     assert!(matches!(
       action.head_matcher,
-      Some(ActionInputRestHeadMatcher::OneOf(set)) if set == HashSet::from(['a'])
+      Some(HeadMatcher::OneOf(set)) if set == HashSet::from(['a'])
     ));
   }
 
@@ -91,7 +91,7 @@ mod tests {
     let action: Action<_> = simple(|_| 1).unchecked_head_in_range('a'..='z');
     assert!(matches!(
       action.head_matcher,
-      Some(ActionInputRestHeadMatcher::OneOf(set)) if set == ('a'..='z').into_iter().collect::<HashSet<_>>()
+      Some(HeadMatcher::OneOf(set)) if set == ('a'..='z').into_iter().collect::<HashSet<_>>()
     ));
   }
 
@@ -100,16 +100,13 @@ mod tests {
     let action: Action<_> = regex(r"^a").unwrap().unchecked_head_not(['b']);
     assert!(matches!(
       action.head_matcher,
-      Some(ActionInputRestHeadMatcher::Not(set)) if set == HashSet::from(['b'])
+      Some(HeadMatcher::Not(set)) if set == HashSet::from(['b'])
     ));
   }
 
   #[test]
   fn action_head_unknown() {
     let action: Action<_> = simple(|_| 1).unchecked_head_unknown();
-    assert!(matches!(
-      action.head_matcher,
-      Some(ActionInputRestHeadMatcher::Unknown)
-    ));
+    assert!(matches!(action.head_matcher, Some(HeadMatcher::Unknown)));
   }
 }

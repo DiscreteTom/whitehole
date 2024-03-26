@@ -213,7 +213,7 @@ impl<NewKind: 'static, Kind: 'static, ActionState: 'static, ErrorType: 'static>
 mod tests {
   use super::*;
   use crate::lexer::{
-    action::{regex, simple, ActionInputRestHeadMatcher},
+    action::{regex, simple, HeadMatcher},
     token::TokenKindIdBinding,
   };
   use simple::simple_option_with_data;
@@ -347,7 +347,7 @@ mod tests {
       .and(regex(r"^b").unwrap().unchecked_head_in(['b']));
     assert!(matches!(
       action.head_matcher.as_ref().unwrap(),
-      ActionInputRestHeadMatcher::OneOf(set) if set.contains(&'a') && set.len() == 1
+      HeadMatcher::OneOf(set) if set.contains(&'a') && set.len() == 1
     ));
 
     // use '+' as a shortcut

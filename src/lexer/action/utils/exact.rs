@@ -114,7 +114,7 @@ pub fn exact_chars<ActionState, ErrorType>(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::{ActionInput, ActionInputRestHeadMatcher};
+  use crate::lexer::action::{ActionInput, HeadMatcher};
 
   #[test]
   #[should_panic]
@@ -148,7 +148,7 @@ mod tests {
     // head matcher
     assert!(matches!(
       action.head_matcher().as_ref().unwrap(),
-      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'a')
+      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'a')
     ));
 
     // multi strings
@@ -162,7 +162,7 @@ mod tests {
     // head matcher
     assert!(matches!(
       action.head_matcher().as_ref().unwrap(),
-      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 2 && set.contains(&'a') && set.contains(&'b')
+      HeadMatcher::OneOf(set) if set.len() == 2 && set.contains(&'a') && set.contains(&'b')
     ));
 
     // caveats
@@ -187,11 +187,11 @@ mod tests {
     // head matcher
     assert!(matches!(
       actions[0].head_matcher().as_ref().unwrap(),
-      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'+')
+      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'+')
     ));
     assert!(matches!(
       actions[1].head_matcher().as_ref().unwrap(),
-      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'-')
+      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'-')
     ));
   }
 
@@ -214,19 +214,19 @@ mod tests {
     // head matcher
     assert!(matches!(
       actions[0].head_matcher().as_ref().unwrap(),
-      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'+')
+      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'+')
     ));
     assert!(matches!(
       actions[1].head_matcher().as_ref().unwrap(),
-      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'-')
+      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'-')
     ));
     assert!(matches!(
       actions[2].head_matcher().as_ref().unwrap(),
-      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'*')
+      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'*')
     ));
     assert!(matches!(
       actions[3].head_matcher().as_ref().unwrap(),
-      ActionInputRestHeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'/')
+      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'/')
     ));
   }
 }

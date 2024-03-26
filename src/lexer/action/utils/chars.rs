@@ -105,7 +105,7 @@ pub fn whitespaces<ActionState, ErrorType>() -> Action<MockTokenKind<()>, Action
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::{ActionInput, ActionInputRestHeadMatcher};
+  use crate::lexer::action::{ActionInput, HeadMatcher};
 
   fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
@@ -169,7 +169,7 @@ mod tests {
     // head matcher
     assert!(matches!(
       action.head_matcher().as_ref().unwrap(),
-      ActionInputRestHeadMatcher::OneOf(set) if set.len() == text.chars().count() && set.iter().all(|c| text.contains(*c))
+      HeadMatcher::OneOf(set) if set.len() == text.chars().count() && set.iter().all(|c| text.contains(*c))
     ));
   }
 }
