@@ -24,11 +24,11 @@ pub enum HeadMatcher {
   Unknown,
 }
 
-pub struct Action<Kind, ActionState = (), ErrorType = ()> {
+pub struct Action<Kind: 'static, ActionState = (), ErrorType = ()> {
   // input is mutable so the action can mutate the action state.
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
   /// See [`Self::kind_id`].
-  kind_id: TokenKindId<Kind>,
+  kind_id: &'static TokenKindId<Kind>,
   /// See [`Self::head_matcher`].
   head_matcher: Option<HeadMatcher>,
   /// See [`Self::maybe_muted`].
@@ -97,7 +97,7 @@ mod tests {
   fn action_getters_default() {
     let action: Action<()> = Action {
       exec: Box::new(|_| None),
-      kind_id: TokenKindId::new(0),
+      kind_id: &TokenKindId::new(0),
       head_matcher: None,
       maybe_muted: false,
       may_mutate_state: false,
@@ -106,7 +106,7 @@ mod tests {
     assert!(action.never_muted());
     assert!(!action.may_mutate_state());
     assert!(action.never_mutate_state());
-    assert_eq!(action.kind_id().0, 0);
+    assert_eq!(action.kind_id(), &TokenKindId::new(0));
     assert!(action.head_matcher().is_none());
   }
 
@@ -114,7 +114,7 @@ mod tests {
   fn action_getters() {
     let action: Action<()> = Action {
       exec: Box::new(|_| None),
-      kind_id: TokenKindId::new(1),
+      kind_id: &TokenKindId::new(1),
       head_matcher: Some(HeadMatcher::OneOf(HashSet::from(['a']))),
       maybe_muted: true,
       may_mutate_state: true,
@@ -123,7 +123,7 @@ mod tests {
     assert!(!action.never_muted());
     assert!(action.may_mutate_state());
     assert!(!action.never_mutate_state());
-    assert_eq!(action.kind_id().0, 1);
+    assert_eq!(action.kind_id(), &TokenKindId::new(1));
     assert!(
       matches!(action.head_matcher(), Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['a']))
     );

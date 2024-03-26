@@ -93,7 +93,7 @@ impl<'text, Kind, OptionErrorType> Into<Option<ActionOutput<Kind, OptionErrorTyp
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::token::{MockTokenKind, TokenKindIdProvider};
+  use crate::lexer::token::{MockTokenKind, TokenKindId, TokenKindIdProvider};
 
   #[test]
   fn enhanced_action_output() {
@@ -112,7 +112,7 @@ mod tests {
     assert_eq!(output.muted, false);
     assert_eq!(output.error, None);
     assert!(matches!(output.kind.data, ()));
-    assert_eq!(output.kind.id().0, 0);
+    assert_eq!(output.kind.id(), &TokenKindId::new(0));
 
     // access fields from input
     assert_eq!(output.start, 1);

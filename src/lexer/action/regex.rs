@@ -53,7 +53,7 @@ mod tests {
   use super::*;
   use crate::lexer::{
     action::{input::ActionInput, output::ActionOutput},
-    token::TokenKindIdProvider,
+    token::{TokenKindId, TokenKindIdProvider},
   };
 
   #[test]
@@ -66,7 +66,7 @@ mod tests {
         digested: 3,
         muted: false,
         error: None,
-      }) if matches!(mock.data, ()) && mock.id().0 == 0
+      }) if matches!(mock.data, ()) && mock.id() == &TokenKindId::new(0)
     ));
   }
 
@@ -80,7 +80,7 @@ mod tests {
         digested: 3,
         muted: false,
         error: None,
-      }) if matches!(mock.data, ()) && mock.id().0 == 0
+      }) if matches!(mock.data, ()) && mock.id() == &TokenKindId::new(0)
     ));
   }
 }

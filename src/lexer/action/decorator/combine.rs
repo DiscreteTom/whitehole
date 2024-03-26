@@ -34,7 +34,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     if self.kind_id != another.kind_id {
       panic!(
         "kind_id must be the same, but got {:?} and {:?}",
-        self.kind_id.0, another.kind_id.0
+        self.kind_id, another.kind_id
       );
     }
 
@@ -217,9 +217,10 @@ mod tests {
     token::TokenKindIdBinding,
   };
   use simple::simple_option_with_data;
-  use whitehole_macros::_TokenKind;
+  use whitehole_macros::_token_kind;
 
-  #[derive(_TokenKind, Clone, Debug)]
+  #[_token_kind]
+  #[derive(Clone, Debug)]
   enum MyKind {
     A,
     B,

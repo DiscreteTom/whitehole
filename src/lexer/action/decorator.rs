@@ -425,9 +425,10 @@ mod tests {
     action::{input::ActionInput, output::ActionOutput, simple::simple},
     Action,
   };
-  use whitehole_macros::_TokenKind;
+  use whitehole_macros::_token_kind;
 
-  #[derive(_TokenKind, Clone)]
+  #[_token_kind]
+  #[derive(Clone)]
   enum MyKind {
     A,
   }

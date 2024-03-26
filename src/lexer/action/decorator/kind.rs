@@ -160,9 +160,10 @@ mod tests {
     action::{regex, simple},
     token::TokenKindIdProvider,
   };
-  use whitehole_macros::_TokenKind;
+  use whitehole_macros::_token_kind;
 
-  #[derive(_TokenKind, Clone, Debug)]
+  #[_token_kind]
+  #[derive(Clone, Debug)]
   enum MyKind {
     A,
     Value(i32),
@@ -179,7 +180,7 @@ mod tests {
         digested: 1,
         muted: false,
         error: None
-      }) if matches!(binding.value(), MyKind::A) && binding.id() == &A::kind_id()
+      }) if matches!(binding.value(), MyKind::A) && binding.id() == A::kind_id()
     ));
   }
 
@@ -196,7 +197,7 @@ mod tests {
         digested: 1,
         muted: false,
         error: None
-      }) if matches!(binding.value(), MyKind::Value(value) if value == &1) && binding.id() == &Value::kind_id()
+      }) if matches!(binding.value(), MyKind::Value(value) if value.0 == 1) && binding.id() == Value::kind_id()
     ));
   }
 }

@@ -86,7 +86,10 @@ where
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::{action::output::ActionOutput, token::TokenKindIdProvider};
+  use crate::lexer::{
+    action::output::ActionOutput,
+    token::{TokenKindId, TokenKindIdProvider},
+  };
 
   #[test]
   fn simple_accept_all() {
@@ -100,7 +103,7 @@ mod tests {
         digested: 3,
         muted: false,
         error: None
-      }) if matches!(mock.data, ()) && mock.id().0 == 0
+      }) if matches!(mock.data, ()) && mock.id() == &TokenKindId::new(0)
     ));
   }
 
@@ -115,7 +118,7 @@ mod tests {
         digested: 2,
         muted: false,
         error: None
-      }) if matches!(mock.data, ()) && mock.id().0 == 0
+      }) if matches!(mock.data, ()) && mock.id() == &TokenKindId::new(0)
     ));
   }
 
@@ -137,7 +140,7 @@ mod tests {
         digested: 3,
         muted: false,
         error: None
-      }) if matches!(mock.data, ()) && mock.id().0 == 0
+      }) if matches!(mock.data, ()) && mock.id() == &TokenKindId::new(0)
     ));
   }
 
@@ -152,7 +155,7 @@ mod tests {
         digested: 0,
         muted: false,
         error: None
-      }) if matches!(mock.data, ()) && mock.id().0 == 0
+      }) if matches!(mock.data, ()) && mock.id() == &TokenKindId::new(0)
     ));
   }
 
