@@ -55,6 +55,18 @@ impl<ActionState: 'static, ErrorType> Into<Action<MockTokenKind<()>, ActionState
   }
 }
 
+// TODO: is this needed? uncomment when a use case is found
+// impl<Kind, ActionState: 'static, ErrorType: 'static> From<Action<Kind, ActionState, ErrorType>>
+//   for SubAction<ActionState>
+// {
+//   fn from(value: Action<Kind, ActionState, ErrorType>) -> Self {
+//     let exec = value.exec;
+//     Self {
+//       exec: Box::new(move |input| exec(input).map(|output| output.digested)),
+//     }
+//   }
+// }
+
 #[cfg(test)]
 mod tests {
   use super::*;
