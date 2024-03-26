@@ -1,7 +1,6 @@
 use crate::lexer::{
-  action::{ActionInput, ActionOutput, EnhancedActionOutput},
+  action::{Action, ActionInput, ActionOutput, EnhancedActionOutput},
   token::{MockTokenKind, SubTokenKind},
-  Action,
 };
 use std::ops::{Add, BitOr};
 

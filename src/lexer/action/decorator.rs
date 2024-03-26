@@ -421,10 +421,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 
 #[cfg(test)]
 mod tests {
-  use crate::lexer::{
-    action::{input::ActionInput, output::ActionOutput, simple::simple},
-    Action,
-  };
+  use crate::lexer::action::{input::ActionInput, output::ActionOutput, simple::simple, Action};
   use whitehole_macros::_token_kind;
 
   #[_token_kind]

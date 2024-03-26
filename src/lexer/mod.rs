@@ -21,7 +21,6 @@ pub mod state;
 pub mod stateless;
 pub mod token;
 
-pub use action::Action;
 pub use builder::LexerBuilder;
 pub use lexer::Lexer;
 

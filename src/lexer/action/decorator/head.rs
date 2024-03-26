@@ -1,4 +1,4 @@
-use crate::lexer::{action::HeadMatcher, Action};
+use crate::lexer::action::{Action, HeadMatcher};
 use std::{collections::HashSet, ops::RangeInclusive};
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {

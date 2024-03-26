@@ -1,4 +1,7 @@
-use crate::lexer::{action::simple, token::MockTokenKind, Action};
+use crate::lexer::{
+  action::{simple, Action},
+  token::MockTokenKind,
+};
 use std::{collections::HashSet, ops::RangeInclusive};
 
 /// Match chars greedily by a condition.

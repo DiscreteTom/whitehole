@@ -1,8 +1,7 @@
 use super::AcceptedActionDecoratorContext;
 use crate::lexer::{
-  action::{ActionInput, ActionOutput, EnhancedActionOutput},
+  action::{Action, ActionInput, ActionOutput, EnhancedActionOutput},
   token::{DefaultTokenKindIdBinding, SubTokenKind, TokenKindIdBinding},
-  Action,
 };
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {

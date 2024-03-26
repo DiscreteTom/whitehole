@@ -1,5 +1,8 @@
 use super::StringList;
-use crate::lexer::{action::simple, token::MockTokenKind, Action};
+use crate::lexer::{
+  action::{simple, Action},
+  token::MockTokenKind,
+};
 use std::collections::HashSet;
 
 /// Match one of the provided words, in one action,
