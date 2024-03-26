@@ -4,6 +4,16 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 /// A light weight version of [`Action`].
 /// [`Self::exec`] only returns the number of characters digested if the action is accepted,
 /// and return [`None`] if the action is rejected.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{SubAction};
+/// // accept all rest characters, reject if the rest is empty
+/// # let a: SubAction<()> =
+/// SubAction::new(|input| match input.rest().len() {
+///   0 => None,
+///   digested => Some(digested),
+/// });
+/// ```
 pub struct SubAction<ActionState = ()> {
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<usize>>,
 }
