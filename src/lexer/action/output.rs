@@ -85,6 +85,7 @@ impl<'text, Kind, OptionErrorType> Into<ActionOutput<Kind, OptionErrorType>>
   }
 }
 
+// impl this so that we can just return `enhanced_output.into()` in action's exec
 impl<'text, Kind, OptionErrorType> Into<Option<ActionOutput<Kind, OptionErrorType>>>
   for EnhancedActionOutput<'text, Kind, OptionErrorType>
 {
