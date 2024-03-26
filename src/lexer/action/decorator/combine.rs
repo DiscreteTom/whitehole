@@ -32,10 +32,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     // kind_id must be the same.
     // don't use `assert!` here since it require `Kind: Debug`
     if self.kind_id != another.kind_id {
-      panic!(
-        "kind_id must be the same, but got {:?} and {:?}",
-        self.kind_id, another.kind_id
-      );
+      panic!("kind_id must be the same");
     }
 
     let exec = self.exec;
