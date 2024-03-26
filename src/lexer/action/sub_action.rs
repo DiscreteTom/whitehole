@@ -19,6 +19,7 @@ pub struct SubAction<ActionState = ()> {
 }
 
 impl<ActionState> SubAction<ActionState> {
+  /// See [`SubAction`].
   pub fn new(exec: impl Fn(&mut ActionInput<ActionState>) -> Option<usize> + 'static) -> Self {
     Self {
       exec: Box::new(exec),
