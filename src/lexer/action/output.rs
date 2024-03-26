@@ -9,13 +9,12 @@ pub struct ActionOutput<Kind, OptionErrorType> {
   /// If `true`, the action is accepted but no token is emitted,
   /// and the lexing process will continue.
   pub muted: bool,
-  /// If `Some`, the action is still accepted,
-  /// and error tokens will be collected in
+  /// If [`Some`], the action is still accepted,
+  /// and a token will be created even if the output is muted.
+  /// Muted error tokens will be collected in
   /// [`LexOutput::errors`](crate::lexer::output::LexOutput::errors).
   pub error: OptionErrorType, // this will be `Option<ErrorType>` or `&Option<ErrorType>`
 }
-
-// TODO: add ActionOutput.enhance
 
 /// Enhance the original [`ActionOutput`] with
 /// [`start`](Self::start), [`text`](Self::text), [`end`](Self::end),
@@ -45,6 +44,7 @@ impl<'text, Kind, OptionErrorType> DerefMut for EnhancedActionOutput<'text, Kind
 impl<'text, 'action_state, Kind, OptionErrorType>
   EnhancedActionOutput<'text, Kind, OptionErrorType>
 {
+  // TODO: add ActionOutput.enhance
   pub fn new<ActionState>(
     input: &ActionInput<'text, 'action_state, ActionState>,
     output: ActionOutput<Kind, OptionErrorType>,
