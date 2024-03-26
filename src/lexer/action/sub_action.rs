@@ -53,3 +53,50 @@ impl<ActionState: 'static, ErrorType> Into<Action<MockTokenKind<()>, ActionState
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn sub_action_exec() {
+    let a: SubAction<()> = SubAction::new(|input| match input.rest().len() {
+      0 => None,
+      digested => Some(digested),
+    });
+
+    // accept
+    assert_eq!(a.exec(&mut ActionInput::new("123", 0, &mut ())), Some(3));
+    assert_eq!(a.exec(&mut ActionInput::new("123", 1, &mut ())), Some(2));
+
+    // reject
+    assert_eq!(a.exec(&mut ActionInput::new("", 0, &mut ())), None);
+    assert_eq!(a.exec(&mut ActionInput::new("123", 3, &mut ())), None);
+  }
+
+  #[test]
+  fn sub_action_into_action() {
+    let action: Action<_> = SubAction::new(|input| match input.rest().len() {
+      0 => None,
+      digested => Some(digested),
+    })
+    .into();
+
+    // accept
+    assert!(matches!(
+      action.exec(&mut ActionInput::new("123", 0, &mut ())),
+      Some(ActionOutput {
+        kind: mock,
+        digested: 3,
+        muted: false,
+        error: None,
+      }) if matches!(mock.data, ())
+    ));
+
+    // reject
+    assert!(matches!(
+      action.exec(&mut ActionInput::new("", 0, &mut ())),
+      None
+    ));
+  }
+}
