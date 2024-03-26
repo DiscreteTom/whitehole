@@ -129,18 +129,16 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         exec(input).map(|output| {
           ActionOutput {
             kind: selector(AcceptedActionDecoratorContext {
-              output: EnhancedActionOutput::new(
-                input,
-                // construct a new ActionOutput
-                ActionOutput {
-                  // consume the original output.kind
-                  kind: output.kind,
-                  digested: output.digested,
-                  muted: output.muted,
-                  // but don't consume the error
-                  error: &output.error,
-                },
-              ),
+              // construct a new ActionOutput
+              output: ActionOutput {
+                // consume the original output.kind
+                kind: output.kind,
+                digested: output.digested,
+                muted: output.muted,
+                // but don't consume the error
+                error: &output.error,
+              }
+              .into_enhanced(input),
               input,
             })
             .into(),

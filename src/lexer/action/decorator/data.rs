@@ -34,16 +34,14 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         exec(input).map(|output| ActionOutput {
           kind: MockTokenKind {
             data: factory(AcceptedActionDecoratorContext {
-              output: EnhancedActionOutput::new(
-                input,
-                // don't consume the error
-                ActionOutput {
-                  kind: output.kind,
-                  digested: output.digested,
-                  muted: output.muted,
-                  error: &output.error,
-                },
-              ),
+              // don't consume the error
+              output: ActionOutput {
+                kind: output.kind,
+                digested: output.digested,
+                muted: output.muted,
+                error: &output.error,
+              }
+              .into_enhanced(input),
               input,
             }),
           },

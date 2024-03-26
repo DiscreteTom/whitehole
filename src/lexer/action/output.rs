@@ -16,9 +16,24 @@ pub struct ActionOutput<Kind, OptionErrorType> {
   pub error: OptionErrorType, // this will be `Option<ErrorType>` or `&Option<ErrorType>`
 }
 
-/// Enhance the original [`ActionOutput`] with
-/// [`start`](Self::start), [`text`](Self::text), [`end`](Self::end),
-/// [`content`](Self::content) and [`rest`](Self::rest).
+impl<Kind, OptionErrorType> ActionOutput<Kind, OptionErrorType> {
+  /// Enhance the original [`ActionOutput`] with
+  /// [`start`](EnhancedActionOutput::start), [`text`](EnhancedActionOutput::text),
+  /// [`end`](EnhancedActionOutput::end), [`content`](EnhancedActionOutput::content)
+  /// and [`rest`](EnhancedActionOutput::rest).
+  pub fn into_enhanced<'text, ActionState>(
+    self,
+    input: &ActionInput<'text, '_, ActionState>,
+  ) -> EnhancedActionOutput<'text, Kind, OptionErrorType> {
+    EnhancedActionOutput {
+      base: self,
+      start: input.start(),
+      text: input.text(),
+    }
+  }
+}
+
+/// See [`ActionOutput::into_enhanced`].
 pub struct EnhancedActionOutput<'text, Kind, OptionErrorType> {
   /// The original [`ActionOutput`].
   pub base: ActionOutput<Kind, OptionErrorType>,
@@ -44,18 +59,6 @@ impl<'text, Kind, OptionErrorType> DerefMut for EnhancedActionOutput<'text, Kind
 impl<'text, 'action_state, Kind, OptionErrorType>
   EnhancedActionOutput<'text, Kind, OptionErrorType>
 {
-  // TODO: add ActionOutput.enhance
-  pub fn new<ActionState>(
-    input: &ActionInput<'text, 'action_state, ActionState>,
-    output: ActionOutput<Kind, OptionErrorType>,
-  ) -> Self {
-    EnhancedActionOutput {
-      base: output,
-      start: input.start(),
-      text: input.text(),
-    }
-  }
-
   /// The [`Range::end`](crate::lexer::token::Range) of the token that this action will emit.
   pub fn end(&self) -> usize {
     self.start + self.digested
@@ -103,9 +106,9 @@ mod tests {
       kind: MockTokenKind::new(()),
       digested: 2,
       muted: false,
-      error: None,
+      error: None::<()>,
     };
-    let output = EnhancedActionOutput::<MockTokenKind<()>, Option<()>>::new(&input, output);
+    let output = output.into_enhanced(&input);
 
     // ensure we can deref and deref_mut
     assert_eq!(output.digested, 2);

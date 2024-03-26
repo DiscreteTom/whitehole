@@ -123,7 +123,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       exec: Box::new(move |input| {
         exec(input).and_then(|output| {
           decorator(AcceptedActionDecoratorContext {
-            output: EnhancedActionOutput::new(input, output),
+            output: output.into_enhanced(input),
             input,
           })
         })
@@ -406,7 +406,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     let exec = self.exec;
     self.exec = Box::new(move |input| {
       exec(input).and_then(|output| {
-        let output = EnhancedActionOutput::new(&input, output);
+        let output = output.into_enhanced(&input);
         cb(AcceptedActionDecoratorContext {
           output: &output,
           input,
