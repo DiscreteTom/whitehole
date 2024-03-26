@@ -1,3 +1,26 @@
+//! ## Design
+//!
+//! For a better engineering experience, the lexer is designed to be modular
+//! and consists of many [`Action`]s. Each action is a small piece of logic
+//! which will digest some of the rest of the text input, and yield a token or not.
+//! By doing so, users can easily compose their own lexer by combining existing actions,
+//! or create their own actions by modifying existing ones.
+//! Users can also share their actions with others by publishing them as a library,
+//! or build higher-level libraries to generate actions.
+//!
+//! ## For Developers
+//!
+//! Here is the recommended order of reading the source code:
+//!
+//! 1. [`self::input`]
+//! 2. [`self::output`]
+//! 3. [`self`]
+//! 4. [`self::sub_action`]
+//! 5. [`self::decorator`]
+//! 6. [`self::simple`]
+//! 7. [`self::regex`]
+//! 8. [`self::utils`]
+
 mod decorator;
 mod input;
 mod output;
