@@ -33,7 +33,7 @@ use std::collections::HashSet;
 /// exact(["ab", "a"]);
 /// ```
 /// To avoid the above, try [`exact_vec`] or [`exact_chars`].
-pub fn exact<ActionState, ErrorType>(
+pub fn exact<ActionState: 'static, ErrorType>(
   ss: impl Into<StringList>, // TODO: only accept one string? if user want many, use Action::or
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   // TODO: if a string's len is 1, the action exec can just accept 1 char without any check
@@ -49,25 +49,31 @@ pub fn exact<ActionState, ErrorType>(
   if ss.len() == 1 {
     let s = ss.into_iter().next().unwrap();
     let head = s.chars().next().unwrap();
-    return simple(move |input| {
-      if input.rest().starts_with(&s) {
-        s.len()
-      } else {
-        0
-      }
-    })
+    return Action::from(
+      simple(move |input| {
+        if input.rest().starts_with(&s) {
+          s.len()
+        } else {
+          0
+        }
+      })
+      .into(),
+    )
     .unchecked_head_in([head]);
   }
 
   let heads: HashSet<_> = ss.iter().map(|s| s.chars().next().unwrap()).collect();
-  simple(move |input| {
-    for s in &ss {
-      if input.rest().starts_with(s) {
-        return s.len();
+  Action::from(
+    simple(move |input| {
+      for s in &ss {
+        if input.rest().starts_with(s) {
+          return s.len();
+        }
       }
-    }
-    0 // no match
-  })
+      0 // no match
+    })
+    .into(),
+  )
   .unchecked_head_in(heads)
 }
 
@@ -80,7 +86,7 @@ pub fn exact<ActionState, ErrorType>(
 /// # let actions: Vec<Action<MockTokenKind<()>>> =
 /// exact_vec(["++", "--"]);
 /// ```
-pub fn exact_vec<ActionState, ErrorType>(
+pub fn exact_vec<ActionState: 'static, ErrorType>(
   ss: impl Into<StringList>,
 ) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>> {
   let ss: Vec<String> = ss.into().0;
@@ -102,7 +108,7 @@ pub fn exact_vec<ActionState, ErrorType>(
 /// # let actions: Vec<Action<MockTokenKind<()>>> =
 /// exact_chars("+-*/()");
 /// ```
-pub fn exact_chars<ActionState, ErrorType>(
+pub fn exact_chars<ActionState: 'static, ErrorType>(
   s: impl Into<String>,
 ) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>> {
   let s: String = s.into();

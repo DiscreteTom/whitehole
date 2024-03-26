@@ -1,6 +1,5 @@
 // TODO: only available in feature `regex`
-use super::{simple::simple, Action};
-use crate::lexer::token::MockTokenKind;
+use super::{simple::simple, SubAction};
 use regex::{Error, Regex};
 
 /// Create a new action that uses a regex to match the rest of input.
@@ -24,9 +23,7 @@ use regex::{Error, Regex};
 /// # let action: Action<_> =
 /// regex(r"^\d+").unwrap().unchecked_head_in_range('0'..='9');
 /// ```
-pub fn regex<ActionState, ErrorType>(
-  re: &str,
-) -> Result<Action<MockTokenKind<()>, ActionState, ErrorType>, Error> {
+pub fn regex<ActionState, ErrorType>(re: &str) -> Result<SubAction<ActionState>, Error> {
   // TODO: unwrap the result, add regex_try
   Regex::new(re).map(|re| simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
 }

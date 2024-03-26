@@ -1,47 +1,24 @@
-use super::{input::ActionInput, Action, ActionOutput};
+use super::{input::ActionInput, Action, ActionOutput, SubAction};
 use crate::lexer::token::{MockTokenKind, SubTokenKind};
 
-/// Provide a function that digests the rest of the input text and returns the number of digested characters.
+/// Accept a function that digests the rest of the input text and returns the number of digested characters.
 /// Return `0` if the action is rejected.
 ///
 /// It's recommended to set [`Action::head_matcher`] to optimize the lex performance.
 /// # Examples
 /// ```
-/// use whitehole::lexer::action::{Action, simple};
+/// use whitehole::lexer::action::{SubAction, simple};
 /// // accept all rest characters, reject if the rest is empty
-/// let a: Action<MockTokenKind<()>> = simple(|input| input.rest().len());
+/// let a: SubAction<()> = simple(|input| input.rest().len());
 /// ```
-pub fn simple<ActionState, ErrorType, F>(f: F) -> Action<MockTokenKind<()>, ActionState, ErrorType>
-where
+pub fn simple<ActionState>(
   // ActionInput is immutable so we can set may_mutate_state to false.
-  F: Fn(&ActionInput<ActionState>) -> usize + 'static,
-{
-  simple_option(move |input| match f(input) {
-    digested if digested > 0 => Some(digested),
-    _ => None,
+  f: impl Fn(&ActionInput<ActionState>) -> usize + 'static,
+) -> SubAction<ActionState> {
+  SubAction::new(move |input| match f(input) {
+    0 => None,
+    digested => Some(digested),
   })
-}
-
-/// Provide a function that digests the rest of the input text and returns the number of digested characters.
-/// `0` is allowed as an accepted number of digested characters.
-/// Return `None` if the action is rejected.
-///
-/// It's recommended to set [`Action::head_matcher`] to optimize the lex performance.
-/// # Examples
-/// ```
-/// use whitehole::lexer::action::{Action, simple_option};
-/// // accept all rest characters, never reject.
-/// // be ware this may cause infinite loop
-/// let a: Action<MockTokenKind<()>> = simple_option(|input| Some(input.rest().len()));
-/// ```
-pub fn simple_option<ActionState, ErrorType, F>(
-  f: F,
-) -> Action<MockTokenKind<()>, ActionState, ErrorType>
-where
-  // ActionInput is immutable so we can set may_mutate_state to false.
-  F: Fn(&ActionInput<ActionState>) -> Option<usize> + 'static,
-{
-  simple_option_with_data(move |input| f(input).map(|digested| (digested, ())))
 }
 
 /// Provide a function that digests the rest of the input text,
@@ -57,7 +34,7 @@ where
 /// // be ware this may cause infinite loop
 /// let a: Action<MockTokenKind<i32>> = simple_option_with_data(|input| Some(input.rest().len(), input.rest().parse().unwrap()));
 /// ```
-pub fn simple_option_with_data<ActionState, ErrorType, T, F>(
+pub fn simple_with_data<ActionState, ErrorType, T, F>(
   f: F,
 ) -> Action<MockTokenKind<T>, ActionState, ErrorType>
 where

@@ -29,7 +29,7 @@ use crate::lexer::token::MockTokenKind;
 /// # let action: Action<_> =
 /// comment("<!--", "-->");
 /// ```
-pub fn comment<ActionState, ErrorType>(
+pub fn comment<ActionState: 'static, ErrorType>(
   open: impl Into<String>,
   close: impl Into<String>,
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
@@ -37,20 +37,23 @@ pub fn comment<ActionState, ErrorType>(
   let close: String = close.into();
   let first = open.chars().next().unwrap();
 
-  simple(move |input| {
-    // open mismatch
-    if !input.rest().starts_with(&open) {
-      return 0;
-    }
+  Action::from(
+    simple(move |input| {
+      // open mismatch
+      if !input.rest().starts_with(&open) {
+        return 0;
+      }
 
-    input.rest()[open.len()..]
-      .find(&close)
-      // if match, return total length
-      .map(|i| i + open.len() + close.len())
-      // if the close is not found,
-      // accept all rest as the comment
-      .unwrap_or(input.rest().len())
-  })
+      input.rest()[open.len()..]
+        .find(&close)
+        // if match, return total length
+        .map(|i| i + open.len() + close.len())
+        // if the close is not found,
+        // accept all rest as the comment
+        .unwrap_or(input.rest().len())
+    })
+    .into(),
+  )
   .unchecked_head_in([first])
 }
 

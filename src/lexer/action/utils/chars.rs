@@ -1,5 +1,5 @@
 use crate::lexer::{
-  action::{simple, Action},
+  action::{simple, Action, SubAction},
   token::MockTokenKind,
 };
 use std::{collections::HashSet, ops::RangeInclusive};
@@ -14,12 +14,7 @@ use std::{collections::HashSet, ops::RangeInclusive};
 /// # let action: Action<()> =
 /// chars(|ch| ch.is_ascii_digit());
 /// ```
-pub fn chars<ActionState, ErrorType, F>(
-  condition: F,
-) -> Action<MockTokenKind<()>, ActionState, ErrorType>
-where
-  F: Fn(&char) -> bool + 'static,
-{
+pub fn chars<ActionState>(condition: impl Fn(&char) -> bool + 'static) -> SubAction<ActionState> {
   simple(move |input| {
     let mut i = 0;
     // TODO: maybe someday we can get a `&char` instead of a `char` here
@@ -43,12 +38,12 @@ where
 /// # let action: Action<()> =
 /// char_range('0'..='9');
 /// ```
-pub fn char_range<ActionState, ErrorType>(
+pub fn char_range<ActionState: 'static, ErrorType>(
   range: impl Into<RangeInclusive<char>>,
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   let range: RangeInclusive<_> = range.into();
   let head = *range.start();
-  chars(move |ch| range.contains(ch)).unchecked_head_in([head])
+  Action::from(chars(move |ch| range.contains(ch)).into()).unchecked_head_in([head])
 }
 
 /// Match chars greedily by a set.
@@ -61,12 +56,12 @@ pub fn char_range<ActionState, ErrorType>(
 /// # let action: Action<()> =
 /// charset(['a', 'b', 'c']);
 /// ```
-pub fn charset<ActionState, ErrorType>(
+pub fn charset<ActionState: 'static, ErrorType>(
   set: impl Into<HashSet<char>>,
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   let charset: HashSet<_> = set.into();
   let head = charset.clone();
-  chars(move |ch| charset.contains(ch)).unchecked_head_in(head)
+  Action::from(chars(move |ch| charset.contains(ch)).into()).unchecked_head_in(head)
 }
 
 /// Match unicode whitespaces greedy.
@@ -83,9 +78,10 @@ pub fn charset<ActionState, ErrorType>(
 /// # let builder = LexerBuilder::<MyKind>::new();
 /// builder.ignore_default(whitespaces());
 /// ```
-pub fn whitespaces<ActionState, ErrorType>() -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+pub fn whitespaces<ActionState: 'static, ErrorType>(
+) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   // TODO: benchmark this vs regex `^\s+`
-  chars(|ch| ch.is_whitespace())
+  Action::from(chars(|ch| ch.is_whitespace()).into())
     // 0009..000D    ; White_Space # Cc   [5] <control-0009>..<control-000D>
     // 0020          ; White_Space # Zs       SPACE
     // 0085          ; White_Space # Cc       <control-0085>

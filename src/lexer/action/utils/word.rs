@@ -32,7 +32,7 @@ use std::collections::HashSet;
 /// word(["ab", "a"]);
 /// ```
 /// To avoid the above, try [`word_vec`] or [`word_chars`].
-pub fn word<ActionState, ErrorType>(
+pub fn word<ActionState: 'static, ErrorType>(
   ss: impl Into<StringList>,
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   // don't use `exact(ss).reject_if(...)` here
@@ -50,41 +50,47 @@ pub fn word<ActionState, ErrorType>(
   if ss.len() == 1 {
     let s = ss.into_iter().next().unwrap();
     let head = s.chars().next().unwrap();
-    return simple(move |input| {
-      if input.rest().starts_with(&s)
-        && input.rest()[s.len()..]
-          .chars()
-          .next()
-          // if next char exists, it can't be alphanumeric or `_`
-          .map(|c| !c.is_alphanumeric() && c != '_')
-          // if no next char (EOF), it's ok
-          .unwrap_or(true)
-      {
-        s.len()
-      } else {
-        0
-      }
-    })
+    return Action::from(
+      simple(move |input| {
+        if input.rest().starts_with(&s)
+          && input.rest()[s.len()..]
+            .chars()
+            .next()
+            // if next char exists, it can't be alphanumeric or `_`
+            .map(|c| !c.is_alphanumeric() && c != '_')
+            // if no next char (EOF), it's ok
+            .unwrap_or(true)
+        {
+          s.len()
+        } else {
+          0
+        }
+      })
+      .into(),
+    )
     .unchecked_head_in([head]);
   }
 
   let heads: HashSet<_> = ss.iter().map(|s| s.chars().next().unwrap()).collect();
-  simple(move |input| {
-    for s in &ss {
-      if input.rest().starts_with(s)
-        && input.rest()[s.len()..]
-          .chars()
-          .next()
-          // if next char exists, it can't be alphanumeric or `_`
-          .map(|c| !c.is_alphanumeric() && c != '_')
-          // if no next char (EOF), it's ok
-          .unwrap_or(true)
-      {
-        return s.len();
+  Action::from(
+    simple(move |input| {
+      for s in &ss {
+        if input.rest().starts_with(s)
+          && input.rest()[s.len()..]
+            .chars()
+            .next()
+            // if next char exists, it can't be alphanumeric or `_`
+            .map(|c| !c.is_alphanumeric() && c != '_')
+            // if no next char (EOF), it's ok
+            .unwrap_or(true)
+        {
+          return s.len();
+        }
       }
-    }
-    0 // no match
-  })
+      0 // no match
+    })
+    .into(),
+  )
   .unchecked_head_in(heads)
 }
 
@@ -97,7 +103,7 @@ pub fn word<ActionState, ErrorType>(
 /// # let actions: Vec<Action<MockTokenKind<()>>> =
 /// word_vec(["int", "bool"]);
 /// ```
-pub fn word_vec<ActionState, ErrorType>(
+pub fn word_vec<ActionState: 'static, ErrorType>(
   ss: impl Into<StringList>,
 ) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>> {
   let ss: Vec<String> = ss.into().0;
@@ -119,7 +125,7 @@ pub fn word_vec<ActionState, ErrorType>(
 /// # let actions: Vec<Action<MockTokenKind<()>>> =
 /// word_chars("abc");
 /// ```
-pub fn word_chars<ActionState, ErrorType>(
+pub fn word_chars<ActionState: 'static, ErrorType>(
   s: impl Into<String>,
 ) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>> {
   let s: String = s.into();
