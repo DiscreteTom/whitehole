@@ -1,9 +1,17 @@
 use super::{Action, ActionInput, ActionOutput};
 use crate::lexer::token::{MockTokenKind, SubTokenKind};
+use std::ops::{Add, BitOr};
 
 /// A light weight version of [`Action`].
 /// [`Self::exec`] only returns the number of characters digested if the action is accepted,
 /// and return [`None`] if the action is rejected.
+///
+/// [`SubAction`]s can be combined with `|` (shorthand for [`Self::or`])
+/// and `+` (shorthand for [`Self::and_then`]) to create new `SubAction`s.
+///
+/// Low-level action utils like [`chars`](super::chars) will create [`SubAction`]
+/// instead of [`Action`] to avoid unnecessary overhead. These utils
+/// are usually used to be combined with other `SubAction`s to create more complex actions.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{SubAction};
@@ -28,6 +36,69 @@ impl<ActionState> SubAction<ActionState> {
 
   pub fn exec(&self, input: &mut ActionInput<ActionState>) -> Option<usize> {
     (self.exec)(input)
+  }
+
+  /// Execute another [`SubAction`] if current `SubAction` can't be accepted.
+  /// You can use `|` as a shorthand. Return a new `SubAction`.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::action::{chars, ActionInput, SubAction};
+  /// let ab: SubAction<()> = chars(|ch| ch == &'a') | chars(|ch| ch == &'b');
+  /// assert!(matches!(ab.exec(&mut ActionInput::new("b", 0, &mut ())), Some(1)));
+  /// ```
+  pub fn or(self, another: impl Into<Self>) -> Self
+  where
+    ActionState: 'static,
+  {
+    let exec = self.exec;
+    let another_exec = another.into().exec;
+    Self {
+      exec: Box::new(move |input| exec(input).or_else(|| another_exec(input))),
+    }
+  }
+
+  /// Execute another [`SubAction`] after the current `SubAction` is accepted.
+  /// You can use `+` as a shorthand. Return a new `SubAction`.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::action::{chars, ActionInput, SubAction};
+  /// let ab: SubAction<()> = chars(|ch| ch == &'a') + chars(|ch| ch == &'b');
+  /// assert!(matches!(ab.exec(&mut ActionInput::new("ab", 0, &mut ())), Some(2)));
+  /// ```
+  pub fn and_then(self, another: impl Into<Self>) -> Self
+  where
+    ActionState: 'static,
+  {
+    let exec = self.exec;
+    let another_exec = another.into().exec;
+    Self {
+      exec: Box::new(move |input| {
+        exec(input).and_then(|digested| {
+          another_exec(&mut ActionInput::new(
+            input.text(),
+            input.start() + digested,
+            input.state,
+          ))
+          .map(|another_digested| digested + another_digested)
+        })
+      }),
+    }
+  }
+}
+
+impl<ActionState: 'static> BitOr<Self> for SubAction<ActionState> {
+  type Output = Self;
+
+  fn bitor(self, rhs: Self) -> Self::Output {
+    self.or(rhs)
+  }
+}
+
+impl<ActionState: 'static> Add<Self> for SubAction<ActionState> {
+  type Output = Self;
+
+  fn add(self, rhs: Self) -> Self::Output {
+    self.and_then(rhs)
   }
 }
 
@@ -111,5 +182,107 @@ mod tests {
       action.exec(&mut ActionInput::new("", 0, &mut ())),
       None
     ));
+  }
+
+  #[test]
+  fn sub_action_or() {
+    // first sub action is accepted
+    assert!(matches!(
+      SubAction::new(|_| Some(1))
+        .or(SubAction::new(|_| Some(2)))
+        .exec(&mut ActionInput::new("123", 0, &mut ())),
+      Some(1)
+    ));
+    assert!(matches!(
+      (SubAction::new(|_| Some(1)) | SubAction::new(|_| Some(2))).exec(&mut ActionInput::new(
+        "123",
+        0,
+        &mut ()
+      )),
+      Some(1)
+    ));
+
+    // first sub action is rejected but the second is accepted
+    assert!(matches!(
+      SubAction::new(|_| None)
+        .or(SubAction::new(|_| Some(2)))
+        .exec(&mut ActionInput::new("123", 0, &mut ())),
+      Some(2)
+    ));
+    assert!(matches!(
+      (SubAction::new(|_| None) | SubAction::new(|_| Some(2))).exec(&mut ActionInput::new(
+        "123",
+        0,
+        &mut ()
+      )),
+      Some(2)
+    ));
+
+    // both sub actions are rejected
+    assert_eq!(
+      SubAction::new(|_| None)
+        .or(SubAction::new(|_| None))
+        .exec(&mut ActionInput::new("123", 0, &mut ())),
+      None
+    );
+    assert_eq!(
+      (SubAction::new(|_| None) | SubAction::new(|_| None)).exec(&mut ActionInput::new(
+        "123",
+        0,
+        &mut ()
+      )),
+      None
+    );
+  }
+
+  #[test]
+  fn sub_action_and_then() {
+    // both sub actions are accepted
+    assert!(matches!(
+      SubAction::new(|_| Some(1))
+        .and_then(SubAction::new(|_| Some(2)))
+        .exec(&mut ActionInput::new("123", 0, &mut ())),
+      Some(3)
+    ));
+    assert!(matches!(
+      (SubAction::new(|_| Some(1)) + SubAction::new(|_| Some(2))).exec(&mut ActionInput::new(
+        "123",
+        0,
+        &mut ()
+      )),
+      Some(3)
+    ));
+
+    // first sub action is accepted but the second is rejected
+    assert_eq!(
+      SubAction::new(|_| Some(1))
+        .and_then(SubAction::new(|_| None))
+        .exec(&mut ActionInput::new("123", 0, &mut ())),
+      None
+    );
+    assert_eq!(
+      (SubAction::new(|_| Some(1)) + SubAction::new(|_| None)).exec(&mut ActionInput::new(
+        "123",
+        0,
+        &mut ()
+      )),
+      None
+    );
+
+    // first sub action is rejected
+    assert_eq!(
+      SubAction::new(|_| None)
+        .and_then(SubAction::new(|_| Some(2)))
+        .exec(&mut ActionInput::new("123", 0, &mut ())),
+      None
+    );
+    assert_eq!(
+      (SubAction::new(|_| None) + SubAction::new(|_| Some(2))).exec(&mut ActionInput::new(
+        "123",
+        0,
+        &mut ()
+      )),
+      None
+    );
   }
 }
