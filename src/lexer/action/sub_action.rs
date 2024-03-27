@@ -3,7 +3,7 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 use std::ops::{Add, BitOr};
 
 /// A light weight version of [`Action`].
-/// [`Self::exec`] only returns the number of characters digested if the action is accepted,
+/// [`Self::exec`] only returns the number of bytes digested if the action is accepted,
 /// and returns [`None`] if the action is rejected.
 /// [`ActionInput::state`] is NOT mutable in [`Self::exec`].
 ///
