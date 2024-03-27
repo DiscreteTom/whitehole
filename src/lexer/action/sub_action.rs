@@ -5,6 +5,7 @@ use std::ops::{Add, BitOr};
 /// A light weight version of [`Action`].
 /// [`Self::exec`] only returns the number of characters digested if the action is accepted,
 /// and return [`None`] if the action is rejected.
+/// [`ActionInput::state`] is NOT mutable in [`Self::exec`].
 ///
 /// [`SubAction`]s can be combined with `|` (shorthand for [`Self::or`])
 /// and `+` (shorthand for [`Self::and_then`]) to create new `SubAction`s.
@@ -23,14 +24,21 @@ use std::ops::{Add, BitOr};
 /// });
 /// ```
 pub struct SubAction<ActionState = ()> {
+  // the `ActionInput` is `&mut` but actually the SubAction should NEVER mutate the action input.
+  // we type it `&mut` here just because we need to modify it in `Self::and_then`.
+  // currently we make sure the `exec` won't mutate the input by
+  // [[@restricting exec in SubAction::new]].
+  // TODO: make the `ActionInput` immutable.
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<usize>>,
 }
 
 impl<ActionState> SubAction<ActionState> {
   /// See [`SubAction`].
-  pub fn new(exec: impl Fn(&mut ActionInput<ActionState>) -> Option<usize> + 'static) -> Self {
+  // [[restricting exec in SubAction::new]]
+  pub fn new(exec: impl Fn(&ActionInput<ActionState>) -> Option<usize> + 'static) -> Self {
     Self {
-      exec: Box::new(exec),
+      // TODO: can we unwrap the closure here? just use `Box::new(exec)`?
+      exec: Box::new(move |input| exec(input)),
     }
   }
 
@@ -126,7 +134,8 @@ impl<ActionState: 'static, ErrorType> Into<Action<MockTokenKind<()>, ActionState
   }
 }
 
-// TODO: is this needed? uncomment when a use case is found
+// this should NEVER be implemented because the `Action::exec` may mutate the action state
+// and break the integrity of `Action::may_mutate_state`.
 // impl<Kind, ActionState: 'static, ErrorType: 'static> From<Action<Kind, ActionState, ErrorType>>
 //   for SubAction<ActionState>
 // {
