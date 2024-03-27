@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 
 pub struct ActionOutput<Kind, OptionErrorType> {
   pub kind: Kind,
-  /// How many characters are digested by this action.
+  /// How many bytes are digested by this action.
   /// `0` is allowed, but be careful with infinite loop.
   pub digested: usize,
   /// If `true`, the action is accepted but no token is emitted,

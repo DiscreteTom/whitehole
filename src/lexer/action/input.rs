@@ -30,7 +30,7 @@ impl<'text, ActionState> ActionInput<'text, ActionState> {
     self.text
   }
 
-  /// From where to lex.
+  /// From where to lex, in bytes.
   pub fn start(&self) -> usize {
     self.start
   }
