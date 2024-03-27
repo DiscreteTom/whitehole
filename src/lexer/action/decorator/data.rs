@@ -13,12 +13,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # let action: Action<_> =
   /// simple(|_| 1).data(|ctx| ctx.output.content().parse::<i32>());
   /// ```
-  pub fn data<T, F>(self, factory: F) -> Action<MockTokenKind<T>, ActionState, ErrorType>
-  where
-    Kind: 'static,
-    ActionState: 'static,
-    ErrorType: 'static,
-    F: Fn(
+  pub fn data<T>(
+    self,
+    factory: impl Fn(
         AcceptedActionDecoratorContext<
           // user can't mutate the input
           &ActionInput<ActionState>,
@@ -27,6 +24,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         >,
       ) -> T
       + 'static,
+  ) -> Action<MockTokenKind<T>, ActionState, ErrorType>
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
   {
     let exec = self.exec;
     Action {
@@ -67,33 +69,16 @@ impl<Data, ActionState, ErrorType> Action<MockTokenKind<Data>, ActionState, Erro
   /// # let action: Action<_> =
   /// simple_option_with_data(|_| Some((1, "data"))).map(|data| data.to_string());
   /// ```
-  pub fn map<NewData, F>(
+  pub fn map<NewData>(
     self,
-    transformer: F,
+    transformer: impl Fn(Data) -> NewData + 'static,
   ) -> Action<MockTokenKind<NewData>, ActionState, ErrorType>
   where
     Data: 'static,
     ActionState: 'static,
     ErrorType: 'static,
-    F: Fn(Data) -> NewData + 'static,
   {
-    let exec = self.exec;
-    Action {
-      exec: Box::new(move |input| {
-        exec(input).map(|output| ActionOutput {
-          kind: MockTokenKind {
-            data: transformer(output.kind.data),
-          },
-          digested: output.digested,
-          muted: output.muted,
-          error: output.error,
-        })
-      }),
-      may_mutate_state: self.may_mutate_state,
-      maybe_muted: self.maybe_muted,
-      head_matcher: self.head_matcher,
-      kind_id: MockTokenKind::kind_id(),
-    }
+    self.data(move |ctx| transformer(ctx.output.base.kind.data))
   }
 }
 

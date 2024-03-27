@@ -6,7 +6,7 @@ use crate::lexer::{
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Set the kind and the data binding for this action.
-  /// Use this if your action can only yield one kind.
+  /// Use this if your action can only yield a const token kind value.
   /// # Examples
   /// ```
   /// use whitehole::lexer::action::{Action, simple};
@@ -48,15 +48,12 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   }
 
   /// Set the kind to the default for this action.
-  /// The default kind must have `0` as its id.
   /// # Examples
   /// ```
   /// use whitehole::lexer::action::{Action, simple};
   /// use whitehole::lexer::token::TokenKindIdBinding;
   /// use whitehole_macros::TokenKind;
   ///
-  /// // the default sub kind MUST be the first one
-  /// // and annotated with `#[default]` provided by `Default` derive
   /// #[derive(TokenKind, Clone, Debug, Default)]
   /// enum MyKind { #[default] Anonymous, A }
   ///
@@ -100,16 +97,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   .unwrap()
   ///   .select(|ctx| Num(ctx.output.content().parse().unwrap());
   /// ```
-  pub fn select<NewKind, ViaKind, F>(
+  pub fn select<NewKind, ViaKind>(
     self,
-    selector: F,
-  ) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
-  where
-    ViaKind: Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKindIdBinding<NewKind>>,
-    Kind: 'static,
-    ActionState: 'static,
-    ErrorType: 'static,
-    F: Fn(
+    selector: impl Fn(
         AcceptedActionDecoratorContext<
           // user can't mutate the input
           &ActionInput<ActionState>,
@@ -118,6 +108,12 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         >,
       ) -> ViaKind
       + 'static,
+  ) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
+  where
+    ViaKind: Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKindIdBinding<NewKind>>,
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
   {
     let exec = self.exec;
     Action {

@@ -3,12 +3,6 @@ mod data;
 mod head;
 mod kind;
 
-// these modules have no exportable items for now
-// pub use combine::*;
-// pub use data::*;
-// pub use head::*;
-// pub use kind::*;
-
 use super::{
   input::ActionInput,
   output::{ActionOutput, EnhancedActionOutput},
@@ -23,7 +17,6 @@ pub struct AcceptedActionDecoratorContext<InputType, OutputType> {
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Check the [`ActionInput`] before the action is executed.
   /// Reject the action if the `condition` returns `true`.
-  /// Return a new action.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -41,12 +34,18 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   |a| a.prevent(|input| input.state.reject)
   /// );
   /// ```
-  pub fn prevent<F>(mut self, condition: F) -> Self
+  pub fn prevent(
+    mut self,
+    condition: impl Fn(
+        // action state is immutable
+        &ActionInput<ActionState>,
+      ) -> bool
+      + 'static,
+  ) -> Self
   where
     Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
-    F: Fn(&ActionInput<ActionState>) -> bool + 'static,
   {
     let exec = self.exec;
     self.exec = Box::new(
@@ -80,12 +79,17 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   |a| a.prepare(|input| input.state.value += 1)
   /// );
   /// ```
-  pub fn prepare<F>(mut self, modifier: F) -> Self
+  pub fn prepare(
+    mut self,
+    modifier: impl Fn(
+        // action state is mutable
+        &mut ActionInput<ActionState>,
+      ) + 'static,
+  ) -> Self
   where
     Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
-    F: Fn(&mut ActionInput<ActionState>) + 'static,
   {
     let exec = self.exec;
     self.exec = Box::new(move |input| {
@@ -99,24 +103,23 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Apply a decorator to this action's output.
   /// Users should NOT use this directly,
   /// because this might break the integrity of [`Action::maybe_muted`] or [`Action::may_mutate_state`].
-  /// Return a new action.
-  fn apply<NewErrorType, F>(self, decorator: F) -> Action<Kind, ActionState, NewErrorType>
-  where
-    Kind: 'static,
-    ActionState: 'static,
-    ErrorType: 'static,
-    F: Fn(
+  fn apply<NewErrorType>(
+    self,
+    decorator: impl Fn(
         AcceptedActionDecoratorContext<
-          // action state is immutable, we only want to modify the output
+          // action state is immutable
           &ActionInput<ActionState>,
+          // the output is mutable and consumable
           // TODO: don't build EnhancedActionOutput?
-          // e.g. add a new method `ActionOutput.enhance(input)`
-          // so that user can build the EnhancedActionOutput by themselves on demand?
-          // will this improve the performance?
           EnhancedActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> Option<ActionOutput<Kind, Option<NewErrorType>>>
       + 'static,
+  ) -> Action<Kind, ActionState, NewErrorType>
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
   {
     let exec = self.exec;
     Action {
@@ -137,7 +140,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 
   /// Set [`ActionOutput::muted`] if the action is accepted.
   /// This will set [`Self::maybe_muted`] to `true`.
-  /// Return a new action.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -152,19 +154,21 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///     .mute_if(|ctx| ctx.output.rest().len() > 0)
   /// );
   /// ```
-  pub fn mute_if<F>(self, condition: F) -> Self
-  where
-    Kind: 'static,
-    ActionState: 'static,
-    ErrorType: 'static,
-    F: Fn(
-        // user should NOT mutate the output directly
+  pub fn mute_if(
+    self,
+    condition: impl Fn(
+        // user should NOT mutate/consume the output
         &AcceptedActionDecoratorContext<
           &ActionInput<ActionState>,
           EnhancedActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> bool
       + 'static,
+  ) -> Self
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
   {
     let mut res = self.apply(move |mut ctx| {
       ctx.output.muted = condition(&ctx);
@@ -178,7 +182,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 
   /// Set [`ActionOutput::muted`] to `true` if the action is accepted.
   /// This will set [`Self::maybe_muted`] to `true`.
-  /// Return a new action.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -205,7 +208,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 
   /// Set [`ActionOutput::muted`] to `false` if the action is accepted.
   /// This will set [`Self::maybe_muted`] to `false`.
-  /// Return a new action.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -234,7 +236,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   }
 
   /// Set [`ActionOutput::error`] if the action is accepted.
-  /// Return a new action.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -254,12 +255,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   })
   /// );
   /// ```
-  pub fn check<NewError, F>(self, condition: F) -> Action<Kind, ActionState, NewError>
-  where
-    Kind: 'static,
-    ActionState: 'static,
-    ErrorType: 'static,
-    F: Fn(
+  pub fn check<NewError>(
+    self,
+    condition: impl Fn(
         // user should NOT mutate the output directly
         &AcceptedActionDecoratorContext<
           &ActionInput<ActionState>,
@@ -267,6 +265,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         >,
       ) -> Option<NewError>
       + 'static,
+  ) -> Action<Kind, ActionState, NewError>
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
   {
     self.apply(move |ctx| {
       Some(ActionOutput {
@@ -279,7 +282,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   }
 
   /// Set [`ActionOutput::error`] if the action is accepted.
-  /// Return a new action.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -304,7 +306,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   }
 
   /// Reject the action if the condition is met.
-  /// Return a new action.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -319,12 +320,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///     .reject_if(|ctx| ctx.output.rest().len() > 0)
   /// );
   /// ```
-  pub fn reject_if<F>(self, condition: F) -> Self
-  where
-    Kind: 'static,
-    ActionState: 'static,
-    ErrorType: 'static,
-    F: Fn(
+  pub fn reject_if(
+    self,
+    condition: impl Fn(
         // user should NOT mutate the output directly
         &AcceptedActionDecoratorContext<
           &ActionInput<ActionState>,
@@ -332,6 +330,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         >,
       ) -> bool
       + 'static,
+  ) -> Self
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
   {
     self.apply(move |ctx| {
       if condition(&ctx) {
@@ -343,7 +346,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   }
 
   /// Reject the action.
-  /// Return a new action.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -367,11 +369,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self.reject_if(move |_| true)
   }
   // `reject_if(move |_| false)` is meaningless
+  // so there is no method like `un_reject`
 
   /// Call the `cb` if the action is accepted.
   /// You can modify [`ActionInput::state`] in the `cb`.
   /// This will set [`Self::may_mutate_state`] to `true`.
-  /// Return a new action.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -389,12 +391,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   |a| a.callback(|ctx| ctx.input.state.value += 1)
   /// );
   /// ```
-  pub fn callback<F>(mut self, cb: F) -> Self
-  where
-    Kind: 'static,
-    ActionState: 'static,
-    ErrorType: 'static,
-    F: Fn(
+  pub fn callback(
+    mut self,
+    cb: impl Fn(
         AcceptedActionDecoratorContext<
           // user can mutate the input.state
           &mut ActionInput<ActionState>,
@@ -402,6 +401,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
           &EnhancedActionOutput<Kind, Option<ErrorType>>,
         >,
       ) + 'static,
+  ) -> Self
+  where
+    Kind: 'static,
+    ActionState: 'static,
+    ErrorType: 'static,
   {
     let exec = self.exec;
     self.exec = Box::new(move |input| {
