@@ -50,12 +50,12 @@ impl<ActionState> SubAction<ActionState> {
   /// let ab: SubAction<()> = chars(|ch| ch == &'a') | chars(|ch| ch == &'b');
   /// assert!(matches!(ab.exec(&ActionInput::new("b", 0, ())), Some(1)));
   /// ```
-  pub fn or(self, another: impl Into<Self>) -> Self
+  pub fn or(self, another: Self) -> Self
   where
     ActionState: 'static,
   {
     let exec = self.exec;
-    let another_exec = another.into().exec;
+    let another_exec = another.exec;
     Self {
       exec: Box::new(move |input| exec(input).or_else(|| another_exec(input))),
     }
@@ -69,13 +69,13 @@ impl<ActionState> SubAction<ActionState> {
   /// let ab: SubAction<()> = chars(|ch| ch == &'a') + chars(|ch| ch == &'b');
   /// assert!(matches!(ab.exec(&ActionInput::new("ab", 0, ())), Some(2)));
   /// ```
-  pub fn and_then(self, another: impl Into<Self>) -> Self
+  pub fn and_then(self, another: Self) -> Self
   where
     // in real cases the `ActionState` is a reference type so it is Copy
     ActionState: Copy + 'static,
   {
     let exec = self.exec;
-    let another_exec = another.into().exec;
+    let another_exec = another.exec;
     Self {
       exec: Box::new(move |input| {
         exec(input).and_then(|digested| {
