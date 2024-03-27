@@ -23,7 +23,7 @@ impl<Kind, OptionErrorType> ActionOutput<Kind, OptionErrorType> {
   /// and [`rest`](EnhancedActionOutput::rest).
   pub fn into_enhanced<'text, ActionState>(
     self,
-    input: &ActionInput<'text, '_, ActionState>,
+    input: &ActionInput<'text, ActionState>,
   ) -> EnhancedActionOutput<'text, Kind, OptionErrorType> {
     EnhancedActionOutput {
       base: self,

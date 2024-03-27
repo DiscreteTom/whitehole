@@ -74,7 +74,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   where
     NewKind: 'static,
     Kind: 'static,
-    ActionState: 'static,
+    // in real cases the `ActionState` is a reference type so it is Copy
+    ActionState: Copy + 'static,
     ErrorType: 'static,
   {
     let exec = self.exec;
@@ -126,7 +127,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   where
     AnotherKind: 'static,
     Kind: 'static,
-    ActionState: 'static,
+    // in real cases the `ActionState` is a reference type so it is Copy
+    ActionState: Copy + 'static,
     ErrorType: 'static,
     F: Fn(
         EnhancedActionOutput<Kind, Option<ErrorType>>,
@@ -195,7 +197,7 @@ impl<Kind: 'static, ActionState: 'static, ErrorType: 'static> BitOr<Self>
   }
 }
 
-impl<NewKind: 'static, Kind: 'static, ActionState: 'static, ErrorType: 'static>
+impl<NewKind: 'static, Kind: 'static, ActionState: Copy + 'static, ErrorType: 'static>
   Add<Action<NewKind, ActionState, ErrorType>> for Action<Kind, ActionState, ErrorType>
 {
   type Output = Action<NewKind, ActionState, ErrorType>;
