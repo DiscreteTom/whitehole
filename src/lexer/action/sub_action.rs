@@ -47,7 +47,7 @@ impl<ActionState: 'static> BitOr<Self> for SubAction<ActionState> {
   type Output = Self;
 
   /// Execute another [`SubAction`] if current `SubAction` can't be accepted.
-  /// Return a new `SubAction`.
+  /// Returns a new `SubAction`.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::{chars, ActionInput, SubAction};
@@ -68,7 +68,7 @@ impl<ActionState: Copy + 'static> Add<Self> for SubAction<ActionState> {
   type Output = Self;
 
   /// Execute another [`SubAction`] after the current `SubAction` is accepted.
-  /// Return a new `SubAction`.
+  /// Returns a new `SubAction`.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::{chars, ActionInput, SubAction};
