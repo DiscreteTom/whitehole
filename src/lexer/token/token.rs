@@ -5,7 +5,7 @@ pub struct Token<'text, Kind, ErrorType> {
   /// The kind and the binding data.
   pub kind: Kind,
   pub content: &'text str,
-  /// The range of the token in the input string.
+  /// The byte range of the token in the input string.
   /// This can be used to index the input string.
   /// # Example
   /// ```
