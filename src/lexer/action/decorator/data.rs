@@ -100,14 +100,13 @@ impl<Data, ActionState, ErrorType> Action<MockTokenKind<Data>, ActionState, Erro
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::simple_option_with_data;
+  use crate::lexer::action::simple_with_data;
 
   #[test]
   fn action_data() {
-    let action: Action<MockTokenKind<Box<usize>>> =
-      simple_option_with_data(|_| Some((1, Box::new(1))))
-        // ensure output.kind can be consumed
-        .data(|ctx| ctx.output.base.kind.data);
+    let action: Action<MockTokenKind<Box<usize>>> = simple_with_data(|_| Some((1, Box::new(1))))
+      // ensure output.kind can be consumed
+      .data(|ctx| ctx.output.base.kind.data);
     assert!(matches!(
       action.exec(&mut ActionInput::new("A", 0, ())),
       Some(ActionOutput {
@@ -122,7 +121,7 @@ mod tests {
   #[test]
   fn action_map() {
     let action: Action<MockTokenKind<Box<Box<usize>>>> =
-      simple_option_with_data(|_| Some((1, Box::new(1))))
+      simple_with_data(|_| Some((1, Box::new(1))))
         // ensure data can be consumed in the transformer
         .map(|data| Box::new(data));
     assert!(matches!(
