@@ -1,4 +1,4 @@
-use super::AcceptedActionDecoratorContext;
+use super::AcceptedActionOutputContext;
 use crate::lexer::{
   action::{Action, ActionInput, ActionOutput},
   token::{MockTokenKind, SubTokenKind},
@@ -16,7 +16,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   pub fn data<T>(
     self,
     factory: impl Fn(
-        AcceptedActionDecoratorContext<
+        AcceptedActionOutputContext<
           // user can't mutate the input
           &ActionInput<ActionState>,
           // output is consumed except the error
@@ -35,7 +35,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       exec: Box::new(move |input| {
         exec(input).map(|output| ActionOutput {
           kind: MockTokenKind {
-            data: factory(AcceptedActionDecoratorContext {
+            data: factory(AcceptedActionOutputContext {
               input,
               // don't consume the error
               output: ActionOutput {

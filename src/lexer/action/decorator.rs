@@ -100,7 +100,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   fn apply<NewErrorType>(
     self,
     decorator: impl Fn(
-        AcceptedActionDecoratorContext<
+        AcceptedActionOutputContext<
           // action state is immutable
           &ActionInput<ActionState>,
           // the output is mutable and consumable
@@ -117,7 +117,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     let exec = self.exec;
     Action {
       exec: Box::new(move |input| {
-        exec(input).and_then(|output| decorator(AcceptedActionDecoratorContext { input, output }))
+        exec(input).and_then(|output| decorator(AcceptedActionOutputContext { input, output }))
       }),
       maybe_muted: self.maybe_muted,
       kind_id: self.kind_id,
@@ -146,7 +146,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self,
     condition: impl Fn(
         // user should NOT mutate/consume the output
-        &AcceptedActionDecoratorContext<
+        &AcceptedActionOutputContext<
           &ActionInput<ActionState>,
           ActionOutput<Kind, Option<ErrorType>>,
         >,
@@ -247,7 +247,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self,
     condition: impl Fn(
         // user should NOT mutate the output directly
-        &AcceptedActionDecoratorContext<
+        &AcceptedActionOutputContext<
           &ActionInput<ActionState>,
           ActionOutput<Kind, Option<ErrorType>>,
         >,
@@ -312,7 +312,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self,
     condition: impl Fn(
         // user should NOT mutate the output directly
-        &AcceptedActionDecoratorContext<
+        &AcceptedActionOutputContext<
           &ActionInput<ActionState>,
           ActionOutput<Kind, Option<ErrorType>>,
         >,
@@ -382,7 +382,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   pub fn callback(
     mut self,
     cb: impl Fn(
-        AcceptedActionDecoratorContext<
+        AcceptedActionOutputContext<
           // user can mutate the input.state
           &mut ActionInput<ActionState>,
           // user should NOT mutate the output directly
@@ -398,7 +398,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     let exec = self.exec;
     self.exec = Box::new(move |input| {
       exec(input).and_then(|output| {
-        cb(AcceptedActionDecoratorContext {
+        cb(AcceptedActionOutputContext {
           output: &output,
           input,
         });

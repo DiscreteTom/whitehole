@@ -1,4 +1,4 @@
-use super::AcceptedActionDecoratorContext;
+use super::AcceptedActionOutputContext;
 use crate::lexer::{
   action::{Action, ActionInput, ActionOutput},
   token::{DefaultTokenKindIdBinding, SubTokenKind, TokenKindIdBinding},
@@ -100,7 +100,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   pub fn select<NewKind, ViaKind>(
     self,
     selector: impl Fn(
-        AcceptedActionDecoratorContext<
+        AcceptedActionOutputContext<
           // user can't mutate the input
           &ActionInput<ActionState>,
           // output is consumed except the error
@@ -124,7 +124,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       exec: Box::new(move |input| {
         exec(input).map(|output| {
           ActionOutput {
-            kind: selector(AcceptedActionDecoratorContext {
+            kind: selector(AcceptedActionOutputContext {
               input,
               // construct a new ActionOutput
               output: ActionOutput {

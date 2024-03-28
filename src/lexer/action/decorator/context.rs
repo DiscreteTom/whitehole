@@ -2,7 +2,7 @@ use crate::lexer::action::{ActionInput, ActionOutput};
 
 /// This struct provides the [`ActionInput`] and [`ActionOutput`]
 /// in action decorators when the action is accepted.
-pub struct AcceptedActionDecoratorContext<InputType, OutputType> {
+pub struct AcceptedActionOutputContext<InputType, OutputType> {
   /// The [`ActionInput`]. Might also be `&ActionInput` or `&mut ActionInput`,
   /// depends on the specific action decorator you are using.
   pub input: InputType,
@@ -66,7 +66,7 @@ impl<
     'text,
     InputType: AcceptedActionDecoratorContextInput<'text>,
     OutputType: AcceptedActionDecoratorContextOutput,
-  > AcceptedActionDecoratorContext<InputType, OutputType>
+  > AcceptedActionOutputContext<InputType, OutputType>
 {
   /// The [`Range::end`](crate::lexer::token::Range) of the token that this action will emit.
   pub fn end(&self) -> usize {
@@ -107,63 +107,63 @@ mod tests {
     // ensure the methods are working
 
     // input and output
-    AcceptedActionDecoratorContext {
+    AcceptedActionOutputContext {
       input: create_input(),
       output: create_output(),
     }
     .end();
 
     // &input and output
-    AcceptedActionDecoratorContext {
+    AcceptedActionOutputContext {
       input: &create_input(),
       output: create_output(),
     }
     .end();
 
     // &mut input and output
-    AcceptedActionDecoratorContext {
+    AcceptedActionOutputContext {
       input: &mut create_input(),
       output: create_output(),
     }
     .end();
 
     // input and &output
-    AcceptedActionDecoratorContext {
+    AcceptedActionOutputContext {
       input: create_input(),
       output: &create_output(),
     }
     .end();
 
     // &input and &output
-    AcceptedActionDecoratorContext {
+    AcceptedActionOutputContext {
       input: &create_input(),
       output: &create_output(),
     }
     .end();
 
     // &mut input and &output
-    AcceptedActionDecoratorContext {
+    AcceptedActionOutputContext {
       input: &mut create_input(),
       output: &create_output(),
     }
     .end();
 
     // input and &mut output
-    AcceptedActionDecoratorContext {
+    AcceptedActionOutputContext {
       input: create_input(),
       output: &mut create_output(),
     }
     .end();
 
     // &input and &mut output
-    AcceptedActionDecoratorContext {
+    AcceptedActionOutputContext {
       input: &create_input(),
       output: &mut create_output(),
     }
     .end();
 
     // &mut input and &mut output
-    AcceptedActionDecoratorContext {
+    AcceptedActionOutputContext {
       input: &mut create_input(),
       output: &mut create_output(),
     }
@@ -171,7 +171,7 @@ mod tests {
 
     // ensure the value is correct
     assert_eq!(
-      AcceptedActionDecoratorContext {
+      AcceptedActionOutputContext {
         input: create_input(),
         output: create_output(),
       }
@@ -179,7 +179,7 @@ mod tests {
       2
     );
     assert_eq!(
-      AcceptedActionDecoratorContext {
+      AcceptedActionOutputContext {
         input: create_input(),
         output: create_output(),
       }
@@ -187,7 +187,7 @@ mod tests {
       "2"
     );
     assert_eq!(
-      AcceptedActionDecoratorContext {
+      AcceptedActionOutputContext {
         input: create_input(),
         output: create_output(),
       }
