@@ -94,38 +94,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self
   }
 
-  /// Apply a decorator to this action's output.
-  /// Users should NOT use this directly,
-  /// because this might break the integrity of [`Action::maybe_muted`] or [`Action::may_mutate_state`].
-  fn apply<NewErrorType>(
-    self,
-    decorator: impl Fn(
-        AcceptedActionOutputContext<
-          // action state is immutable
-          &ActionInput<ActionState>,
-          // the output is mutable and consumable
-          ActionOutput<Kind, Option<ErrorType>>,
-        >,
-      ) -> Option<ActionOutput<Kind, Option<NewErrorType>>>
-      + 'static,
-  ) -> Action<Kind, ActionState, NewErrorType>
-  where
-    Kind: 'static,
-    ActionState: 'static,
-    ErrorType: 'static,
-  {
-    let exec = self.exec;
-    Action {
-      exec: Box::new(move |input| {
-        exec(input).and_then(|output| decorator(AcceptedActionOutputContext { input, output }))
-      }),
-      maybe_muted: self.maybe_muted,
-      kind_id: self.kind_id,
-      head_matcher: self.head_matcher,
-      may_mutate_state: self.may_mutate_state,
-    }
-  }
-
   /// Set [`ActionOutput::muted`] if the action is accepted.
   /// This will set [`Self::maybe_muted`] to `true`.
   /// # Examples
@@ -139,16 +107,16 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   MyKind::A,
   ///   regex(r"^\s+")
   ///     .unwrap()
-  ///     .mute_if(|ctx| ctx.output.rest().len() > 0)
+  ///     .mute_if(|ctx| ctx.rest().len() > 0)
   /// );
   /// ```
   pub fn mute_if(
-    self,
+    mut self,
     condition: impl Fn(
         // user should NOT mutate/consume the output
-        &AcceptedActionOutputContext<
+        AcceptedActionOutputContext<
           &ActionInput<ActionState>,
-          ActionOutput<Kind, Option<ErrorType>>,
+          &ActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> bool
       + 'static,
@@ -158,14 +126,20 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
-    let mut res = self.apply(move |mut ctx| {
-      ctx.output.muted = condition(&ctx);
-      ctx.output.into()
+    let exec = self.exec;
+    self.exec = Box::new(move |input| {
+      exec(input).map(|mut output| {
+        output.muted = condition(AcceptedActionOutputContext {
+          input,
+          output: &output,
+        });
+        output
+      })
     });
     // we can't know whether the output will be muted
     // so we set `maybe_muted` to true
-    res.maybe_muted = true;
-    res
+    self.maybe_muted = true;
+    self
   }
 
   /// Set [`ActionOutput::muted`] to `true` if the action is accepted.
@@ -184,14 +158,21 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///     .mute()
   /// );
   /// ```
-  pub fn mute(self) -> Self
+  pub fn mute(mut self) -> Self
   where
     Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
-    // `mute_if` will set `maybe_muted` to true
-    self.mute_if(move |_| true)
+    let exec = self.exec;
+    self.exec = Box::new(move |input| {
+      exec(input).map(|mut output| {
+        output.muted = true;
+        output
+      })
+    });
+    self.maybe_muted = true;
+    self
   }
 
   /// Set [`ActionOutput::muted`] to `false` if the action is accepted.
@@ -212,15 +193,21 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// ```
   // this function is needed because this is the only way to set `maybe_muted` to `false`
   // after the construction of Action
-  pub fn unmute(self) -> Self
+  pub fn unmute(mut self) -> Self
   where
     Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
-    let mut res = self.mute_if(move |_| false);
-    res.maybe_muted = false;
-    res
+    let exec = self.exec;
+    self.exec = Box::new(move |input| {
+      exec(input).map(|mut output| {
+        output.muted = false;
+        output
+      })
+    });
+    self.maybe_muted = false;
+    self
   }
 
   /// Set [`ActionOutput::error`] if the action is accepted.
@@ -246,10 +233,10 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   pub fn check<NewError>(
     self,
     condition: impl Fn(
-        // user should NOT mutate the output directly
-        &AcceptedActionOutputContext<
+        AcceptedActionOutputContext<
           &ActionInput<ActionState>,
-          ActionOutput<Kind, Option<ErrorType>>,
+          // user could consume the old error, but not able to consume the kind
+          ActionOutput<&Kind, Option<ErrorType>>,
         >,
       ) -> Option<NewError>
       + 'static,
@@ -259,14 +246,29 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
-    self.apply(move |ctx| {
-      Some(ActionOutput {
-        error: condition(&ctx),
-        kind: ctx.output.kind,
-        digested: ctx.output.digested,
-        muted: ctx.output.muted,
-      })
-    })
+    let exec = self.exec;
+    Action {
+      exec: Box::new(move |input| {
+        exec(input).map(|output| ActionOutput {
+          error: condition(AcceptedActionOutputContext {
+            input,
+            output: ActionOutput {
+              kind: &output.kind,  // don't consume the kind
+              error: output.error, // but the error is consumable
+              digested: output.digested,
+              muted: output.muted,
+            },
+          }),
+          kind: output.kind,
+          digested: output.digested,
+          muted: output.muted,
+        })
+      }),
+      may_mutate_state: self.may_mutate_state,
+      maybe_muted: self.maybe_muted,
+      head_matcher: self.head_matcher,
+      kind_id: self.kind_id,
+    }
   }
 
   /// Set [`ActionOutput::error`] if the action is accepted.
@@ -290,7 +292,21 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ErrorType: 'static,
     NewError: Clone + 'static,
   {
-    self.check(move |_| Some(error.clone()))
+    let exec = self.exec;
+    Action {
+      exec: Box::new(move |input| {
+        exec(input).map(|output| ActionOutput {
+          error: Some(error.clone()),
+          kind: output.kind,
+          digested: output.digested,
+          muted: output.muted,
+        })
+      }),
+      may_mutate_state: self.may_mutate_state,
+      maybe_muted: self.maybe_muted,
+      head_matcher: self.head_matcher,
+      kind_id: self.kind_id,
+    }
   }
 
   /// Reject the action if the condition is met.
@@ -305,16 +321,16 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///   MyKind::A,
   ///   regex(r"^\s+")
   ///     .unwrap()
-  ///     .reject_if(|ctx| ctx.output.rest().len() > 0)
+  ///     .reject_if(|ctx| ctx.rest().len() > 0)
   /// );
   /// ```
   pub fn reject_if(
-    self,
+    mut self,
     condition: impl Fn(
         // user should NOT mutate the output directly
-        &AcceptedActionOutputContext<
+        AcceptedActionOutputContext<
           &ActionInput<ActionState>,
-          ActionOutput<Kind, Option<ErrorType>>,
+          &ActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> bool
       + 'static,
@@ -324,16 +340,23 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
-    self.apply(move |ctx| {
-      if condition(&ctx) {
-        None
-      } else {
-        ctx.output.into()
-      }
-    })
+    let exec = self.exec;
+    self.exec = Box::new(move |input| {
+      exec(input).and_then(|output| {
+        if condition(AcceptedActionOutputContext {
+          input,
+          output: &output,
+        }) {
+          None
+        } else {
+          output.into()
+        }
+      })
+    });
+    self
   }
 
-  /// Reject the action.
+  /// Reject the action after execution.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -348,13 +371,18 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///     .reject()
   /// );
   /// ```
-  pub fn reject(self) -> Self
+  pub fn reject(mut self) -> Self
   where
     Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
-    self.reject_if(move |_| true)
+    let exec = self.exec;
+    self.exec = Box::new(move |input| {
+      exec(input);
+      None
+    });
+    self
   }
   // `reject_if(move |_| false)` is meaningless
   // so there is no method like `un_reject`
@@ -397,12 +425,12 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   {
     let exec = self.exec;
     self.exec = Box::new(move |input| {
-      exec(input).and_then(|output| {
+      exec(input).map(|output| {
         cb(AcceptedActionOutputContext {
           output: &output,
           input,
         });
-        output.into()
+        output
       })
     });
     self.may_mutate_state = true;
