@@ -95,7 +95,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///
   /// let action: Action<TokenKindIdBinding<MyKind>> = regex(r"^\d+")
   ///   .unwrap()
-  ///   .select(|ctx| Num(ctx.output.content().parse().unwrap());
+  ///   .select(|ctx| Num(ctx.content().parse().unwrap());
   /// ```
   pub fn select<NewKind, ViaKind>(
     self,
