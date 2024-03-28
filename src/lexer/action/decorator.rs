@@ -1,18 +1,12 @@
 mod combine;
+mod context;
 mod data;
 mod head;
 mod kind;
 
-use super::{
-  input::ActionInput,
-  output::{ActionOutput, EnhancedActionOutput},
-  Action,
-};
+pub use context::*;
 
-pub struct AcceptedActionDecoratorContext<InputType, OutputType> {
-  pub input: InputType,
-  pub output: OutputType,
-}
+use super::{input::ActionInput, output::ActionOutput, Action};
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Check the [`ActionInput`] before the action is executed.
@@ -110,8 +104,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
           // action state is immutable
           &ActionInput<ActionState>,
           // the output is mutable and consumable
-          // TODO: don't build EnhancedActionOutput?
-          EnhancedActionOutput<Kind, Option<ErrorType>>,
+          ActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> Option<ActionOutput<Kind, Option<NewErrorType>>>
       + 'static,
@@ -124,12 +117,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     let exec = self.exec;
     Action {
       exec: Box::new(move |input| {
-        exec(input).and_then(|output| {
-          decorator(AcceptedActionDecoratorContext {
-            output: output.into_enhanced(input),
-            input,
-          })
-        })
+        exec(input).and_then(|output| decorator(AcceptedActionDecoratorContext { input, output }))
       }),
       maybe_muted: self.maybe_muted,
       kind_id: self.kind_id,
@@ -160,7 +148,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         // user should NOT mutate/consume the output
         &AcceptedActionDecoratorContext<
           &ActionInput<ActionState>,
-          EnhancedActionOutput<Kind, Option<ErrorType>>,
+          ActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> bool
       + 'static,
@@ -261,7 +249,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         // user should NOT mutate the output directly
         &AcceptedActionDecoratorContext<
           &ActionInput<ActionState>,
-          EnhancedActionOutput<Kind, Option<ErrorType>>,
+          ActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> Option<NewError>
       + 'static,
@@ -274,9 +262,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self.apply(move |ctx| {
       Some(ActionOutput {
         error: condition(&ctx),
-        kind: ctx.output.base.kind,
-        digested: ctx.output.base.digested,
-        muted: ctx.output.base.muted,
+        kind: ctx.output.kind,
+        digested: ctx.output.digested,
+        muted: ctx.output.muted,
       })
     })
   }
@@ -326,7 +314,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         // user should NOT mutate the output directly
         &AcceptedActionDecoratorContext<
           &ActionInput<ActionState>,
-          EnhancedActionOutput<Kind, Option<ErrorType>>,
+          ActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> bool
       + 'static,
@@ -398,7 +386,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
           // user can mutate the input.state
           &mut ActionInput<ActionState>,
           // user should NOT mutate the output directly
-          &EnhancedActionOutput<Kind, Option<ErrorType>>,
+          &ActionOutput<Kind, Option<ErrorType>>,
         >,
       ) + 'static,
   ) -> Self
@@ -410,7 +398,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     let exec = self.exec;
     self.exec = Box::new(move |input| {
       exec(input).and_then(|output| {
-        let output = output.into_enhanced(&input);
         cb(AcceptedActionDecoratorContext {
           output: &output,
           input,

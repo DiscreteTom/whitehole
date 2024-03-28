@@ -1,6 +1,6 @@
 use super::AcceptedActionDecoratorContext;
 use crate::lexer::{
-  action::{Action, ActionInput, ActionOutput, EnhancedActionOutput},
+  action::{Action, ActionInput, ActionOutput},
   token::{MockTokenKind, SubTokenKind},
 };
 
@@ -20,7 +20,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
           // user can't mutate the input
           &ActionInput<ActionState>,
           // output is consumed except the error
-          EnhancedActionOutput<Kind, &Option<ErrorType>>,
+          ActionOutput<Kind, &Option<ErrorType>>,
         >,
       ) -> T
       + 'static,
@@ -36,15 +36,14 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         exec(input).map(|output| ActionOutput {
           kind: MockTokenKind {
             data: factory(AcceptedActionDecoratorContext {
+              input,
               // don't consume the error
               output: ActionOutput {
                 kind: output.kind,
                 digested: output.digested,
                 muted: output.muted,
                 error: &output.error,
-              }
-              .into_enhanced(input),
-              input,
+              },
             }),
           },
           digested: output.digested,
@@ -78,7 +77,7 @@ impl<Data, ActionState, ErrorType> Action<MockTokenKind<Data>, ActionState, Erro
     ActionState: 'static,
     ErrorType: 'static,
   {
-    self.data(move |ctx| transformer(ctx.output.base.kind.data))
+    self.data(move |ctx| transformer(ctx.output.kind.data))
   }
 }
 
@@ -91,7 +90,7 @@ mod tests {
   fn action_data() {
     let action: Action<MockTokenKind<Box<usize>>> = simple_with_data(|_| Some((1, Box::new(1))))
       // ensure output.kind can be consumed
-      .data(|ctx| ctx.output.base.kind.data);
+      .data(|ctx| ctx.output.kind.data);
     assert!(matches!(
       action.exec(&mut ActionInput::new("A", 0, ())),
       Some(ActionOutput {

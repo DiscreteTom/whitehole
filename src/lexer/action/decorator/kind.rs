@@ -1,6 +1,6 @@
 use super::AcceptedActionDecoratorContext;
 use crate::lexer::{
-  action::{Action, ActionInput, ActionOutput, EnhancedActionOutput},
+  action::{Action, ActionInput, ActionOutput},
   token::{DefaultTokenKindIdBinding, SubTokenKind, TokenKindIdBinding},
 };
 
@@ -104,7 +104,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
           // user can't mutate the input
           &ActionInput<ActionState>,
           // output is consumed except the error
-          EnhancedActionOutput<Kind, &Option<ErrorType>>,
+          ActionOutput<Kind, &Option<ErrorType>>,
         >,
       ) -> ViaKind
       + 'static,
@@ -125,6 +125,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
         exec(input).map(|output| {
           ActionOutput {
             kind: selector(AcceptedActionDecoratorContext {
+              input,
               // construct a new ActionOutput
               output: ActionOutput {
                 // consume the original output.kind
@@ -133,9 +134,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
                 muted: output.muted,
                 // but don't consume the error
                 error: &output.error,
-              }
-              .into_enhanced(input),
-              input,
+              },
             })
             .into(),
             digested: output.digested,
