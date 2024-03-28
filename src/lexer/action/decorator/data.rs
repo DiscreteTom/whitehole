@@ -11,7 +11,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// ```
   /// # use whitehole::lexer::action::{Action, simple};
   /// # let action: Action<_> =
-  /// simple(|_| 1).data(|ctx| ctx.output.content().parse::<i32>());
+  /// simple(|_| 1).data(|ctx| ctx.content().parse::<i32>());
   /// ```
   pub fn data<T>(
     self,
