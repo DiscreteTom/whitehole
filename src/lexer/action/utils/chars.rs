@@ -6,12 +6,10 @@ use std::{collections::HashSet, ops::RangeInclusive};
 
 /// Match chars greedily by a condition.
 /// If no chars are matched, reject.
-///
-/// It's recommended to set [`Action::head_matcher`] to optimize the lex performance.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::{Action, chars};
-/// # let action: Action<()> =
+/// # use whitehole::lexer::action::{SubAction, chars};
+/// # let action: SubAction<()> =
 /// chars(|ch| ch.is_ascii_digit());
 /// ```
 pub fn chars<ActionState>(condition: impl Fn(&char) -> bool + 'static) -> SubAction<ActionState> {
@@ -30,12 +28,27 @@ pub fn chars<ActionState>(condition: impl Fn(&char) -> bool + 'static) -> SubAct
 
 /// Match chars greedily by a range.
 /// If no chars are matched, reject.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{SubAction, char_range_sub};
+/// # let action: SubAction<()> =
+/// char_range_sub('0'..='9');
+/// ```
+pub fn char_range_sub<ActionState>(
+  range: impl Into<RangeInclusive<char>>,
+) -> SubAction<ActionState> {
+  let range: RangeInclusive<_> = range.into();
+  chars(move |ch| range.contains(ch))
+}
+
+/// Match chars greedily by a range.
+/// If no chars are matched, reject.
 ///
 /// The [`Action::head_matcher`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, char_range};
-/// # let action: Action<()> =
+/// # let action: Action<_> =
 /// char_range('0'..='9');
 /// ```
 pub fn char_range<ActionState: 'static, ErrorType>(
@@ -43,7 +56,20 @@ pub fn char_range<ActionState: 'static, ErrorType>(
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   let range: RangeInclusive<_> = range.into();
   let head = *range.start();
-  Action::from(chars(move |ch| range.contains(ch)).into()).unchecked_head_in([head])
+  Action::from(char_range_sub(range).into()).unchecked_head_in([head])
+}
+
+/// Match chars greedily by a set.
+/// If no chars are matched, reject.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{SubAction, charset_sub};
+/// # let action: SubAction<()> =
+/// charset_sub(['a', 'b', 'c']);
+/// ```
+pub fn charset_sub<ActionState>(set: impl Into<HashSet<char>>) -> SubAction<ActionState> {
+  let charset: HashSet<_> = set.into();
+  chars(move |ch| charset.contains(ch))
 }
 
 /// Match chars greedily by a set.
@@ -53,15 +79,15 @@ pub fn char_range<ActionState: 'static, ErrorType>(
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, charset};
-/// # let action: Action<()> =
+/// # let action: Action<_> =
 /// charset(['a', 'b', 'c']);
 /// ```
 pub fn charset<ActionState: 'static, ErrorType>(
   set: impl Into<HashSet<char>>,
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
-  let charset: HashSet<_> = set.into();
-  let head = charset.clone();
-  Action::from(chars(move |ch| charset.contains(ch)).into()).unchecked_head_in(head)
+  let set: HashSet<_> = set.into();
+  let head = set.clone();
+  Action::from(charset_sub(set).into()).unchecked_head_in(head)
 }
 
 /// Match unicode whitespaces greedy.
@@ -72,15 +98,15 @@ pub fn charset<ActionState: 'static, ErrorType>(
 /// ```
 /// # use whitehole::lexer::action::whitespaces;
 /// # use whitehole::lexer::LexerBuilder;
-/// # use whitehole_macros::TokenKind;
-/// # #[derive(TokenKind, Default, Clone)]
+/// # use whitehole::lexer::token::token_kind;
+/// # #[token_kind]
+/// # #[derive(Default, Clone)]
 /// # enum MyKind { #[default] Anonymous }
 /// # let builder = LexerBuilder::<MyKind>::new();
 /// builder.ignore_default(whitespaces());
 /// ```
 pub fn whitespaces<ActionState: 'static, ErrorType>(
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
-  // TODO: benchmark this vs regex `^\s+`
   Action::from(chars(|ch| ch.is_whitespace()).into())
     // 0009..000D    ; White_Space # Cc   [5] <control-0009>..<control-000D>
     // 0020          ; White_Space # Zs       SPACE
@@ -109,7 +135,7 @@ mod tests {
   fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
       action
-        .exec(&mut ActionInput::new(text, 0, &mut ()))
+        .exec(&mut ActionInput::new(text, 0, ()).unwrap())
         .unwrap()
         .digested,
       expected
@@ -117,13 +143,13 @@ mod tests {
   }
   fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
     assert!(action
-      .exec(&mut ActionInput::new(text, 0, &mut ()))
+      .exec(&mut ActionInput::new(text, 0, ()).unwrap())
       .is_none());
   }
 
   #[test]
   fn action_utils_chars() {
-    let action = chars(|ch| ch.is_ascii_digit());
+    let action = chars(|ch| ch.is_ascii_digit()).into();
     assert_reject(&action, "abc");
     assert_accept(&action, "123", 3);
     assert_accept(&action, "123abc", 3);
