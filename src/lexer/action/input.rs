@@ -17,6 +17,10 @@ pub struct ActionInput<'text, ActionState> {
 
 impl<'text, ActionState> ActionInput<'text, ActionState> {
   pub fn new(text: &'text str, start: usize, state: ActionState) -> Self {
+    if start >= text.len() {
+      panic!("Invalid start position. This should be a bug, please report it at https://github.com/DiscreteTom/whitehole/issues/new");
+    }
+
     ActionInput {
       text,
       start,
@@ -36,6 +40,7 @@ impl<'text, ActionState> ActionInput<'text, ActionState> {
   }
 
   /// The undigested part of the input text.
+  /// When lexing this is guaranteed to be not empty.
   pub fn rest(&self) -> &'text str {
     self.rest
   }
