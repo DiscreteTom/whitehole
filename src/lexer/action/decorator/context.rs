@@ -91,7 +91,7 @@ mod tests {
   use super::*;
 
   fn create_input() -> ActionInput<'static, ()> {
-    ActionInput::new("123", 1, ())
+    ActionInput::new("123", 1, ()).unwrap()
   }
   fn create_output() -> ActionOutput<(), Option<()>> {
     ActionOutput {

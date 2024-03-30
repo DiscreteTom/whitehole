@@ -16,16 +16,18 @@ pub struct ActionInput<'text, ActionState> {
 }
 
 impl<'text, ActionState> ActionInput<'text, ActionState> {
-  pub fn new(text: &'text str, start: usize, state: ActionState) -> Self {
+  /// Return [`None`] if the [`start`](Self::start) position is out of the input
+  /// [`text`](Self::text) or there is no [`rest`](Self::rest).
+  pub fn new(text: &'text str, start: usize, state: ActionState) -> Option<Self> {
     if start >= text.len() {
-      panic!("Invalid start position. This should be a bug, please report it at https://github.com/DiscreteTom/whitehole/issues/new");
-    }
-
-    ActionInput {
-      text,
-      start,
-      state,
-      rest: &text[start..],
+      None
+    } else {
+      Some(ActionInput {
+        text,
+        start,
+        state,
+        rest: &text[start..],
+      })
     }
   }
 
@@ -53,7 +55,7 @@ mod tests {
   #[test]
   fn action_input_at_start() {
     let mut state = ();
-    let input = ActionInput::new("123", 0, &mut state);
+    let input = ActionInput::new("123", 0, &mut state).unwrap();
     assert_eq!(input.text(), "123");
     assert_eq!(input.start(), 0);
     assert_eq!(input.rest(), "123");
@@ -62,7 +64,7 @@ mod tests {
   #[test]
   fn action_input_in_the_middle() {
     let mut state = ();
-    let input = ActionInput::new("123", 1, &mut state);
+    let input = ActionInput::new("123", 1, &mut state).unwrap();
     assert_eq!(input.text(), "123");
     assert_eq!(input.start(), 1);
     assert_eq!(input.rest(), "23");
@@ -71,7 +73,7 @@ mod tests {
   #[test]
   fn action_input_no_rest() {
     let mut state = ();
-    let input = ActionInput::new("123", 3, &mut state);
+    let input = ActionInput::new("123", 3, &mut state).unwrap();
     assert_eq!(input.rest(), "");
   }
 }

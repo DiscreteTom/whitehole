@@ -74,6 +74,9 @@ impl<ActionState: Copy + 'static> Add<Self> for SubAction<ActionState> {
 
   /// Execute another [`SubAction`] after the current `SubAction` is accepted.
   /// Returns a new `SubAction`.
+  /// # Caveats
+  /// If the current `SubAction` digest all the rest of the input text,
+  /// the next `SubAction` will NOT be executed and the whole action will be rejected.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::{chars, ActionInput, SubAction};
@@ -86,12 +89,9 @@ impl<ActionState: Copy + 'static> Add<Self> for SubAction<ActionState> {
     Self {
       exec: Box::new(move |input| {
         exec(input).and_then(|digested| {
-          another_exec(&ActionInput::new(
-            input.text(),
-            input.start() + digested,
-            input.state,
-          ))
-          .map(|another_digested| digested + another_digested)
+          ActionInput::new(input.text(), input.start() + digested, input.state).and_then(|input| {
+            another_exec(&input).map(|another_digested| digested + another_digested)
+          })
         })
       }),
     }
@@ -155,12 +155,12 @@ mod tests {
     });
 
     // accept
-    assert_eq!(a.exec(&ActionInput::new("123", 0, ())), Some(3));
-    assert_eq!(a.exec(&ActionInput::new("123", 1, ())), Some(2));
+    assert_eq!(a.exec(&ActionInput::new("123", 0, ()).unwrap()), Some(3));
+    assert_eq!(a.exec(&ActionInput::new("123", 1, ()).unwrap()), Some(2));
 
     // reject
-    assert_eq!(a.exec(&ActionInput::new("", 0, ())), None);
-    assert_eq!(a.exec(&ActionInput::new("123", 3, ())), None);
+    assert_eq!(a.exec(&ActionInput::new("", 0, ()).unwrap()), None);
+    assert_eq!(a.exec(&ActionInput::new("123", 3, ()).unwrap()), None);
   }
 
   #[test]
@@ -173,7 +173,7 @@ mod tests {
 
     // accept
     assert!(matches!(
-      action.exec(&mut ActionInput::new("123", 0, ())),
+      action.exec(&mut ActionInput::new("123", 0, ()).unwrap()),
       Some(ActionOutput {
         kind: mock,
         digested: 3,
@@ -184,7 +184,7 @@ mod tests {
 
     // reject
     assert!(matches!(
-      action.exec(&mut ActionInput::new("", 0, ())),
+      action.exec(&mut ActionInput::new("", 0, ()).unwrap()),
       None
     ));
   }
@@ -193,27 +193,22 @@ mod tests {
   fn sub_action_bit_or() {
     // first sub action is accepted
     assert!(matches!(
-      (SubAction::new(|_| Some(1)) | SubAction::new(|_| Some(2))).exec(&ActionInput::new(
-        "123",
-        0,
-        ()
-      )),
+      (SubAction::new(|_| Some(1)) | SubAction::new(|_| Some(2)))
+        .exec(&ActionInput::new("123", 0, ()).unwrap()),
       Some(1)
     ));
 
     // first sub action is rejected but the second is accepted
     assert!(matches!(
-      (SubAction::new(|_| None) | SubAction::new(|_| Some(2))).exec(&ActionInput::new(
-        "123",
-        0,
-        ()
-      )),
+      (SubAction::new(|_| None) | SubAction::new(|_| Some(2)))
+        .exec(&ActionInput::new("123", 0, ()).unwrap()),
       Some(2)
     ));
 
     // both sub actions are rejected
     assert_eq!(
-      (SubAction::new(|_| None) | SubAction::new(|_| None)).exec(&ActionInput::new("123", 0, ())),
+      (SubAction::new(|_| None) | SubAction::new(|_| None))
+        .exec(&ActionInput::new("123", 0, ()).unwrap()),
       None
     );
   }
@@ -222,31 +217,22 @@ mod tests {
   fn sub_action_add() {
     // both sub actions are accepted
     assert!(matches!(
-      (SubAction::new(|_| Some(1)) + SubAction::new(|_| Some(2))).exec(&ActionInput::new(
-        "123",
-        0,
-        ()
-      )),
+      (SubAction::new(|_| Some(1)) + SubAction::new(|_| Some(2)))
+        .exec(&ActionInput::new("123", 0, ()).unwrap()),
       Some(3)
     ));
 
     // first sub action is accepted but the second is rejected
     assert_eq!(
-      (SubAction::new(|_| Some(1)) + SubAction::new(|_| None)).exec(&ActionInput::new(
-        "123",
-        0,
-        ()
-      )),
+      (SubAction::new(|_| Some(1)) + SubAction::new(|_| None))
+        .exec(&ActionInput::new("123", 0, ()).unwrap()),
       None
     );
 
     // first sub action is rejected
     assert_eq!(
-      (SubAction::new(|_| None) + SubAction::new(|_| Some(2))).exec(&ActionInput::new(
-        "123",
-        0,
-        ()
-      )),
+      (SubAction::new(|_| None) + SubAction::new(|_| Some(2)))
+        .exec(&ActionInput::new("123", 0, ()).unwrap()),
       None
     );
   }
