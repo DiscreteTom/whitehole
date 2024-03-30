@@ -10,18 +10,23 @@ use std::ops::{Add, BitOr};
 /// [`SubAction`]s can be combined with [`|`](Self::bitor) and [`+`](Self::add)
 /// to create new `SubAction`s.
 ///
-/// Low-level action utils like [`chars`](super::chars) will create [`SubAction`]
+/// Low-level action utils like [`simple`](super::simple) will create [`SubAction`]
 /// instead of [`Action`] to avoid unnecessary overhead. These utils
 /// are usually used to be combined with other `SubAction`s to create more complex actions.
+///
+/// Use `SubAction::into` to transform `SubAction` into `Action`.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::{SubAction};
+/// # use whitehole::lexer::action::{SubAction, Action, sub};
+/// // use `sub` or `SubAction::new` to create a `SubAction`,
 /// // accept all rest characters, reject if the rest is empty
 /// # let a: SubAction<()> =
-/// SubAction::new(|input| match input.rest().len() {
+/// sub(|input| match input.rest().len() {
 ///   0 => None,
 ///   digested => Some(digested),
 /// });
+/// // transform `SubAction` into `Action`
+/// let a: Action<_> = a.into();
 /// ```
 pub struct SubAction<ActionState> {
   // make sure the `ActionInput` is not mutable
