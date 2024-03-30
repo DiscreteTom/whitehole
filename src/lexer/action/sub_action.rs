@@ -131,6 +131,13 @@ impl<ActionState: 'static, ErrorType> Into<Action<MockTokenKind<()>, ActionState
 //   }
 // }
 
+/// Shortcut for [`SubAction::new`].
+pub fn sub<ActionState>(
+  exec: impl Fn(&ActionInput<ActionState>) -> Option<usize> + 'static,
+) -> SubAction<ActionState> {
+  SubAction::new(exec)
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
