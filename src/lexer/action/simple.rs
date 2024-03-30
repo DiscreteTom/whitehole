@@ -1,10 +1,8 @@
-use super::{input::ActionInput, Action, ActionOutput, SubAction};
+use super::{input::ActionInput, sub, Action, ActionOutput, SubAction};
 use crate::lexer::token::{MockTokenKind, SubTokenKind};
 
 /// Accept a function that digests the rest of the input text and returns the number of digested characters.
 /// Return `0` if the action is rejected.
-///
-/// It's recommended to set [`Action::head_matcher`] to optimize the lex performance.
 /// # Examples
 /// ```
 /// use whitehole::lexer::action::{SubAction, simple};
@@ -12,10 +10,9 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 /// let a: SubAction<()> = simple(|input| input.rest().len());
 /// ```
 pub fn simple<ActionState>(
-  // ActionInput is immutable so we can set may_mutate_state to false.
   f: impl Fn(&ActionInput<ActionState>) -> usize + 'static,
 ) -> SubAction<ActionState> {
-  SubAction::new(move |input| match f(input) {
+  sub(move |input| match f(input) {
     0 => None,
     digested => Some(digested),
   })
