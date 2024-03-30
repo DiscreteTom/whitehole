@@ -18,8 +18,20 @@ impl From<Vec<String>> for StringList {
   }
 }
 
+impl From<Vec<&str>> for StringList {
+  fn from(ss: Vec<&str>) -> Self {
+    StringList(ss.iter().map(|s| s.to_string()).collect())
+  }
+}
+
 impl<const N: usize> From<[&str; N]> for StringList {
   fn from(ss: [&str; N]) -> Self {
     StringList(ss.iter().map(|s| s.to_string()).collect())
+  }
+}
+
+impl<const N: usize> From<[String; N]> for StringList {
+  fn from(ss: [String; N]) -> Self {
+    StringList(ss.into())
   }
 }
