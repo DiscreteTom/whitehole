@@ -235,5 +235,12 @@ mod tests {
         .exec(&ActionInput::new("123", 0, ()).unwrap()),
       None
     );
+
+    // caveats: the first sub action digests all the rest
+    assert_eq!(
+      (SubAction::new(|input| Some(input.rest().len())) + SubAction::new(|_| Some(2)))
+        .exec(&ActionInput::new("123", 0, ()).unwrap()),
+      None
+    );
   }
 }
