@@ -3,10 +3,10 @@ mod head_map;
 mod lex;
 mod options;
 
-pub use head_map::*;
 pub use options::*;
 
 use super::{action::Action, token::TokenKindId};
+use head_map::*;
 use std::{collections::HashMap, rc::Rc};
 
 /// Stateless, immutable lexer.
