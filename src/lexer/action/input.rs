@@ -77,7 +77,12 @@ mod tests {
   #[test]
   fn action_input_no_rest() {
     let mut state = ();
-    let input = ActionInput::new("123", 3, &mut state).unwrap();
-    assert_eq!(input.rest(), "");
+    assert!(ActionInput::new("123", 3, &mut state).is_none());
+  }
+
+  #[test]
+  fn action_input_out_of_text() {
+    let mut state = ();
+    assert!(ActionInput::new("123", 4, &mut state).is_none());
   }
 }
