@@ -31,15 +31,17 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     };
 
     loop {
-      // first, ensure rest is not empty
-      // since maybe some token is muted in the last iteration which cause the rest is empty
-      if start + res.digested >= text.len() {
-        return res;
-      }
-
       // all actions will reuse this action input
       // so we have to create it outside of the loop
-      let mut input = ActionInput::new(text, start + res.digested, state);
+      let mut input = match ActionInput::new(text, start + res.digested, state) {
+        None => {
+          // ensure rest is not empty
+          // since maybe some token is muted in the last iteration which cause the rest is empty
+          return res;
+        }
+        Some(input) => input,
+      };
+
       let text_mismatch = expectation
         .text
         .is_some_and(|text| !input.rest().starts_with(text));
@@ -152,7 +154,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
           // ensure expectation match.
           // we still need to check the kind after exec
           // because maybe_muted actions may yield unexpected kinds and actually not muted
-          expectation.kind.map_or(true, |kind| output.kind.id() == &kind)
+          expectation.kind.map_or(true, |kind_id| output.kind.id() == kind_id)
           // same to the text, maybe_muted actions may accept unexpected text and actually not muted
             && expectation.text.map_or(true, |text| &input.rest()[..output.digested] == text)
         )

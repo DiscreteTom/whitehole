@@ -24,7 +24,7 @@ impl Default for ReLexContext {
   }
 }
 
-pub struct LexOptions<'expect_text, Kind> {
+pub struct LexOptions<'expect_text, Kind: 'static> {
   pub expectation: Expectation<'expect_text, Kind>,
   /// See [`LexOptions::fork()`].
   pub fork: bool,

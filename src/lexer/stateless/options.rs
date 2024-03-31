@@ -4,7 +4,7 @@ use crate::lexer::{
 };
 use std::ops::{Deref, DerefMut};
 
-pub struct StatelessLexOptions<'expect_text, Kind> {
+pub struct StatelessLexOptions<'expect_text, Kind: 'static> {
   /// See [`StatelessLexOptions::start()`].
   pub start: usize,
   pub base: LexOptions<'expect_text, Kind>,
@@ -44,7 +44,7 @@ impl<'expect_text, Kind> From<LexOptions<'expect_text, Kind>>
   }
 }
 
-impl<'expect_text, Kind> Deref for StatelessLexOptions<'expect_text, Kind> {
+impl<'expect_text, Kind: 'static> Deref for StatelessLexOptions<'expect_text, Kind> {
   type Target = LexOptions<'expect_text, Kind>;
 
   fn deref(&self) -> &Self::Target {
@@ -52,7 +52,7 @@ impl<'expect_text, Kind> Deref for StatelessLexOptions<'expect_text, Kind> {
   }
 }
 
-impl<'expect_text, Kind> DerefMut for StatelessLexOptions<'expect_text, Kind> {
+impl<'expect_text, Kind: 'static> DerefMut for StatelessLexOptions<'expect_text, Kind> {
   fn deref_mut(&mut self) -> &mut Self::Target {
     &mut self.base
   }
@@ -66,7 +66,10 @@ impl<'expect_text, Kind> StatelessLexOptions<'expect_text, Kind> {
   }
 
   // re-export from `LexOptions` but with `self` return type
-  pub fn expect(mut self, expectation: impl Into<Expectation<'expect_text, Kind>>) -> Self {
+  pub fn expect(mut self, expectation: impl Into<Expectation<'expect_text, Kind>>) -> Self
+  where
+    Kind: 'static,
+  {
     self.expectation = expectation.into();
     self
   }

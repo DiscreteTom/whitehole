@@ -10,15 +10,13 @@ use super::{action::Action, token::TokenKindId};
 use std::{collections::HashMap, rc::Rc};
 
 /// Stateless, immutable lexer.
-pub struct StatelessLexer<Kind, ActionState, ErrorType> {
+pub struct StatelessLexer<Kind: 'static, ActionState, ErrorType> {
   /// All actions.
   actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
   /// This is used to accelerate lexing by the first character when no expected kind.
   head_map: ActionHeadMap<Kind, ActionState, ErrorType>,
   /// This is used to accelerate expected lexing by the expected kind and the first character.
   kind_head_map: HashMap<TokenKindId<Kind>, ActionHeadMap<Kind, ActionState, ErrorType>>,
-  /// This is used to accelerate trimming by the first character.
-  maybe_muted_head_map: ActionHeadMap<Kind, ActionState, ErrorType>, // TODO: remove this?
 }
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
@@ -50,39 +48,20 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
 
-    let maybe_muted_actions = actions
-      .iter()
-      .filter(|a| a.maybe_muted())
-      .map(|a| a.clone())
-      .collect();
-
     let kind_head_map = kinds_action_map
       .iter()
       .map(|(k, v)| (k.clone(), ActionHeadMap::new(&v)))
       .collect();
     let head_map = ActionHeadMap::new(&actions);
-    let maybe_muted_head_map = ActionHeadMap::new(&maybe_muted_actions);
 
     Self {
       actions,
       head_map,
       kind_head_map,
-      maybe_muted_head_map,
     }
   }
 
   pub fn actions(&self) -> &[Rc<Action<Kind, ActionState, ErrorType>>] {
     &self.actions
-  }
-  pub fn head_map(&self) -> &ActionHeadMap<Kind, ActionState, ErrorType> {
-    &self.head_map
-  }
-  pub fn kind_head_map(
-    &self,
-  ) -> &HashMap<TokenKindId<Kind>, ActionHeadMap<Kind, ActionState, ErrorType>> {
-    &self.kind_head_map
-  }
-  pub fn maybe_muted_head_map(&self) -> &ActionHeadMap<Kind, ActionState, ErrorType> {
-    &self.maybe_muted_head_map
   }
 }

@@ -1,7 +1,7 @@
 use super::token::{TokenKindId, TokenKindIdProvider};
 
-pub struct Expectation<'expect_text, Kind> {
-  pub kind: Option<TokenKindId<Kind>>,
+pub struct Expectation<'expect_text, Kind: 'static> {
+  pub kind: Option<&'static TokenKindId<Kind>>,
   pub text: Option<&'expect_text str>,
 }
 
@@ -14,25 +14,13 @@ impl<'expect_text, Kind> Default for Expectation<'expect_text, Kind> {
   }
 }
 
-impl<'expect_text, Kind> From<&Kind> for Expectation<'expect_text, Kind>
+impl<'expect_text, Kind> From<&'static TokenKindId<Kind>> for Expectation<'expect_text, Kind>
 where
   Kind: TokenKindIdProvider<Kind>,
 {
-  fn from(kind: &Kind) -> Self {
+  fn from(id: &'static TokenKindId<Kind>) -> Self {
     Expectation {
-      kind: Some(kind.id().clone()), // TODO: prevent clone
-      text: None,
-    }
-  }
-}
-
-impl<'expect_text, Kind> From<Kind> for Expectation<'expect_text, Kind>
-where
-  Kind: TokenKindIdProvider<Kind>,
-{
-  fn from(kind: Kind) -> Self {
-    Expectation {
-      kind: Some(kind.id().clone()), // TODO: prevent clone
+      kind: Some(id),
       text: None,
     }
   }
@@ -54,7 +42,7 @@ impl<'expect_text, Kind> Expectation<'expect_text, Kind> {
   where
     Kind: TokenKindIdProvider<Kind>,
   {
-    self.kind = Some(kind.into().id().clone()); // TODO: prevent clone
+    self.kind = Some(kind.into().id());
     self
   }
 }

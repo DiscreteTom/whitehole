@@ -1,7 +1,7 @@
-use crate::lexer::{action::HeadMatcher, Action};
+use crate::lexer::action::{Action, HeadMatcher};
 use std::{collections::HashMap, rc::Rc};
 
-pub struct ActionHeadMap<Kind, ActionState, ErrorType> {
+pub struct ActionHeadMap<Kind: 'static, ActionState, ErrorType> {
   /// Store actions for known chars.
   known_map: HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
   /// Store actions for unknown chars.
