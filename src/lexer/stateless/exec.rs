@@ -33,16 +33,19 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       // so we have to create it outside of the loop
       let mut input = match ActionInput::new(text, start + res.digested, state) {
         None => {
-          // ensure rest is not empty
-          // since maybe some token is muted in the last iteration which cause the rest is empty
+          // maybe some token is muted in the last iteration which cause the rest is empty
+          // but the `res.digested` might be updated by the last iteration
+          // so we have to return the result
           return res;
         }
         Some(input) => input,
       };
 
+      // calc the text_mismatch before the loop so we can reuse this value
       let text_mismatch = expectation
         .text
         .is_some_and(|text| !input.rest().starts_with(text));
+
       let actions = head_map
         .known_map()
         // TODO: maybe some day we can get a `&char` instead of a `char`
@@ -60,7 +63,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
           if output.error.is_some() {
             // error exists, we must create the token even muted
-            // so we can collect the token in res.errors or res.token
+            // so we can collect the token in `res.errors` or `res.token`
 
             // backup values before output is consumed
             let muted = output.muted;
@@ -160,6 +163,8 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         // muted, or match expectation
         Some(output)
       } else {
+        // discard the output
+        // TODO: but the ActionState may be mutated! remove maybe_muted, add Action::muted, may solve the problem
         None
       }
     })
