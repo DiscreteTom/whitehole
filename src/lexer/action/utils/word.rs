@@ -61,12 +61,9 @@ pub fn no_word_boundary_in_rest<ActionState, ErrorType>(
 /// # let action: Action<_> =
 /// word("import");
 /// ```
-pub fn word<ActionState: 'static, ErrorType>(
+pub fn word<ActionState: 'static, ErrorType: 'static>(
   s: impl Into<String>,
-) -> Action<MockTokenKind<()>, ActionState, ErrorType>
-where
-  ErrorType: 'static,
-{
+) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   exact(s).reject_if(no_word_boundary_in_rest)
 }
 
@@ -79,12 +76,9 @@ where
 /// # let actions: Vec<Action<MockTokenKind<()>>> =
 /// word_vec(["int", "bool"]);
 /// ```
-pub fn word_vec<ActionState: 'static, ErrorType>(
+pub fn word_vec<ActionState: 'static, ErrorType: 'static>(
   ss: impl Into<StringList>,
-) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>>
-where
-  ErrorType: 'static,
-{
+) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>> {
   ss.into().0.into_iter().map(|s| word(s)).collect()
 }
 
@@ -96,7 +90,7 @@ mod tests {
   fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
       action
-        .exec(&mut ActionInput::new(text, 0, ()).unwrap())
+        .exec(&mut ActionInput::new(text, 0, &mut ()).unwrap())
         .unwrap()
         .digested,
       expected
@@ -104,7 +98,7 @@ mod tests {
   }
   fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
     assert!(action
-      .exec(&mut ActionInput::new(text, 0, ()).unwrap())
+      .exec(&mut ActionInput::new(text, 0, &mut ()).unwrap())
       .is_none());
   }
 

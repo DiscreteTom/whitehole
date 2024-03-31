@@ -1,8 +1,8 @@
-pub struct ActionInput<'text, ActionState> {
+pub struct ActionInput<'text, 'action_state, ActionState> {
   // users can mutate the action state directly, so it's public.
   // with the action state, users can build stateful lexer,
   // while actions remain stateless and clone-able.
-  pub state: ActionState,
+  pub state: &'action_state mut ActionState,
   // users could access the whole input text instead of only the rest of text,
   // to check chars before the start position if needed
   /// See [`Self::text`].
@@ -15,10 +15,14 @@ pub struct ActionInput<'text, ActionState> {
   rest: &'text str,
 }
 
-impl<'text, ActionState> ActionInput<'text, ActionState> {
+impl<'text, 'action_state, ActionState> ActionInput<'text, 'action_state, ActionState> {
   /// Return [`None`] if the [`start`](Self::start) position is out of the input
   /// [`text`](Self::text) or there is no [`rest`](Self::rest).
-  pub fn new(text: &'text str, start: usize, state: ActionState) -> Option<Self> {
+  pub fn new(
+    text: &'text str,
+    start: usize,
+    state: &'action_state mut ActionState,
+  ) -> Option<Self> {
     if start >= text.len() {
       None
     } else {

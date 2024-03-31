@@ -92,7 +92,7 @@ mod tests {
       // ensure output.kind can be consumed
       .data(|ctx| ctx.output.kind.data);
     assert!(matches!(
-      action.exec(&mut ActionInput::new("A", 0, ()).unwrap()),
+      action.exec(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
       Some(ActionOutput {
         kind: MockTokenKind { data },
         digested: 1,
@@ -109,7 +109,7 @@ mod tests {
         // ensure data can be consumed in the transformer
         .map(|data| Box::new(data));
     assert!(matches!(
-      action.exec(&mut ActionInput::new("A", 0, ()).unwrap()),
+      action.exec(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
       Some(ActionOutput {
         kind: MockTokenKind { data },
         digested: 1,

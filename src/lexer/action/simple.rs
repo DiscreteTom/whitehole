@@ -69,7 +69,7 @@ mod tests {
   #[test]
   fn simple_accept_all() {
     assert!(matches!(
-      simple(|input| input.text().len()).exec(&mut ActionInput::new("123", 0, ()).unwrap()),
+      simple(|input| input.text().len()).exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
       Some(3)
     ));
   }
@@ -77,7 +77,7 @@ mod tests {
   #[test]
   fn simple_accept_rest() {
     assert!(matches!(
-      simple(|input| input.rest().len()).exec(&mut ActionInput::new("123", 1, ()).unwrap()),
+      simple(|input| input.rest().len()).exec(&mut ActionInput::new("123", 1, &mut ()).unwrap()),
       Some(2)
     ));
   }
@@ -85,7 +85,7 @@ mod tests {
   #[test]
   fn simple_reject_on_0() {
     assert!(matches!(
-      simple(|_| 0).exec(&mut ActionInput::new("123", 0, ()).unwrap()),
+      simple(|_| 0).exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
       None
     ));
   }
@@ -94,7 +94,7 @@ mod tests {
   fn simple_option_with_data_accept() {
     let action: Action<MockTokenKind<u32>> =
       simple_with_data(|input| Some((input.text().len(), 123)));
-    let output = action.exec(&mut ActionInput::new("123", 0, ()).unwrap());
+    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()).unwrap());
     assert!(matches!(
       output,
       Some(ActionOutput {
@@ -109,7 +109,7 @@ mod tests {
   #[test]
   fn simple_option_with_data_accept_0() {
     let action: Action<MockTokenKind<u32>> = simple_with_data(|_| Some((0, 123)));
-    let output = action.exec(&mut ActionInput::new("123", 0, ()).unwrap());
+    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()).unwrap());
     assert!(matches!(
       output,
       Some(ActionOutput {
@@ -124,7 +124,7 @@ mod tests {
   #[test]
   fn simple_option_with_data_reject() {
     let action: Action<MockTokenKind<u32>> = simple_with_data(|_| None);
-    let output = action.exec(&mut ActionInput::new("123", 0, ()).unwrap());
+    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()).unwrap());
     assert!(matches!(output, None));
   }
 }

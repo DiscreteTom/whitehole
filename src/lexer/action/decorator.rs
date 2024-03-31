@@ -37,20 +37,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       + 'static,
   ) -> Self
   where
-    Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
     let exec = self.exec;
-    self.exec = Box::new(
-      move |input| {
-        if condition(input) {
-          None
-        } else {
-          exec(input)
-        }
-      },
-    );
+    self.exec = Box::new(move |input| if condition(input) { None } else { exec(input) });
     self
   }
 
@@ -81,7 +72,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       ) + 'static,
   ) -> Self
   where
-    Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
@@ -122,7 +112,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       + 'static,
   ) -> Self
   where
-    Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
@@ -160,7 +149,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// ```
   pub fn mute(mut self) -> Self
   where
-    Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
@@ -195,7 +183,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   // after the construction of Action
   pub fn unmute(mut self) -> Self
   where
-    Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
@@ -242,7 +229,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       + 'static,
   ) -> Action<Kind, ActionState, NewError>
   where
-    Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
@@ -287,7 +273,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// ```
   pub fn error<NewError>(self, error: NewError) -> Action<Kind, ActionState, NewError>
   where
-    Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
     NewError: Clone + 'static,
@@ -336,7 +321,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       + 'static,
   ) -> Self
   where
-    Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
@@ -373,7 +357,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// ```
   pub fn reject(mut self) -> Self
   where
-    Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
@@ -419,7 +402,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       ) + 'static,
   ) -> Self
   where
-    Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
@@ -448,7 +430,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 
 #[cfg(test)]
 mod tests {
-  use crate::lexer::action::{input::ActionInput, output::ActionOutput, simple::simple, Action};
+  use crate::lexer::action::{
+    exact, input::ActionInput, output::ActionOutput, AcceptedActionOutputContext, Action,
+  };
   use whitehole_macros::_token_kind;
 
   #[_token_kind]
@@ -464,88 +448,90 @@ mod tests {
   #[test]
   fn action_prevent() {
     let mut state = MyState { value: 0 };
-    let action = simple::<MyState, (), _>(|input| input.rest().len())
+    let action: Action<_, _> = exact("a")
       // modify the state before the action is executed
-      .prepare(|input| input.state.value += 1)
+      .prepare(|input: &mut ActionInput<MyState>| input.state.value += 1)
       // prevent the action if the rest is empty
       .prevent(|input| input.rest().len() == 0);
 
     // the first exec, state will be changed, digest all chars
-    let output = action.exec(&mut ActionInput::new(" ", 0, &mut state));
+    let output = action.exec(&mut ActionInput::new("a", 0, &mut state).unwrap());
     assert!(matches!(output, Some(ActionOutput { digested: 1, .. })));
     assert_eq!(state.value, 1);
 
     // the second exec, the action is prevented, so the state is not updated
-    let output = action.exec(&mut ActionInput::new(" ", 1, &mut state));
+    let output = action.exec(&mut ActionInput::new("a", 1, &mut state).unwrap());
     assert!(matches!(output, None));
-    assert_eq!(state.value, 0); // the state is not updated
+    assert_eq!(state.value, 1); // the state is not updated
   }
 
   #[test]
   fn action_prepare() {
     let mut state = MyState { value: 0 };
-    let action = simple::<MyState, (), _>(|_| 0)
+    let action: Action<_, _> = exact("a")
       // modify the state before the action is executed
-      .prepare(|input| input.state.value += 1);
+      .prepare(|input: &mut ActionInput<MyState>| input.state.value += 1);
 
     // ensure may_mutate_state is set to true
     assert!(action.may_mutate_state);
 
     // the action is rejected, but the state is still updated
-    let output = action.exec(&mut ActionInput::new(" ", 0, &mut state));
+    let output = action.exec(&mut ActionInput::new("b", 0, &mut state).unwrap());
     assert!(matches!(output, None));
     assert_eq!(state.value, 1);
   }
 
   #[test]
   fn action_mute_if() {
-    let action: Action<_, (), ()> = simple(|_| 1).mute_if(|ctx| ctx.output.rest().len() > 0);
+    let action: Action<_> = exact("a").mute_if(|ctx| ctx.rest().len() > 0);
 
     // ensure `action.mute_if` will set `maybe_muted` to true
     assert!(action.maybe_muted);
 
     // `action.mute_if` can mute the output
     assert!(matches!(
-      action.exec(&mut ActionInput::new("AA", 0, &mut ())),
+      action.exec(&mut ActionInput::new("aa", 0, &mut ()).unwrap()),
       Some(ActionOutput { muted: true, .. })
     ));
   }
 
   #[test]
   fn action_mute_unmute() {
-    let muted_action: Action<_, (), ()> = simple(|_| 1).mute();
-    let not_muted_action: Action<_, (), ()> = simple(|_| 1).mute().unmute();
+    let muted_action: Action<_> = exact("a").mute();
+    let not_muted_action: Action<_> = exact("a").mute().unmute();
 
     // ensure `action.mute/unmute` will set `maybe_muted`
     assert!(muted_action.maybe_muted);
     assert!(!not_muted_action.maybe_muted);
 
     assert!(matches!(
-      muted_action.exec(&mut ActionInput::new("A", 0, &mut ())),
+      muted_action.exec(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
       Some(ActionOutput { muted: true, .. })
     ));
     assert!(matches!(
-      not_muted_action.exec(&mut ActionInput::new("A", 0, &mut ())),
+      not_muted_action.exec(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
       Some(ActionOutput { muted: false, .. })
     ));
   }
 
   #[test]
   fn action_check() {
-    let action = simple::<_, &'static str, _>(|_| 1).check(|ctx| {
-      if ctx.output.rest().len() > 0 {
-        Some("error")
-      } else {
-        None
-      }
-    });
+    let action = exact("a").check(
+      |ctx: AcceptedActionOutputContext<_, ActionOutput<_, Option<&str>>>| {
+        if ctx.rest().len() > 0 {
+          Some("error")
+        } else {
+          None
+        }
+      },
+    );
 
     assert!(matches!(
-      action.exec(&mut ActionInput::new("A", 0, &mut ())),
+      action.exec(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
       Some(ActionOutput { error: None, .. })
     ));
     assert!(matches!(
-      action.exec(&mut ActionInput::new("AA", 0, &mut ())),
+      action.exec(&mut ActionInput::new("aa", 0, &mut ()).unwrap()),
       Some(ActionOutput {
         error: Some("error"),
         ..
@@ -555,10 +541,10 @@ mod tests {
 
   #[test]
   fn action_error() {
-    let action: Action<_, (), &'static str> = simple::<_, &'static str, _>(|_| 1).error("error");
+    let action = exact::<_, &str>("a").error("error");
 
     assert!(matches!(
-      action.exec(&mut ActionInput::new("A", 0, &mut ())),
+      action.exec(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
       Some(ActionOutput {
         error: Some("error"),
         ..
@@ -568,24 +554,24 @@ mod tests {
 
   #[test]
   fn action_reject_if() {
-    let action: Action<_> = simple(|_| 1).reject_if(|ctx| ctx.output.rest().len() > 0);
+    let action: Action<_> = exact("a").reject_if(|ctx| ctx.rest().len() > 0);
 
     assert!(matches!(
-      action.exec(&mut ActionInput::new("A", 0, &mut ())),
+      action.exec(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
       Some(ActionOutput { error: None, .. })
     ));
     assert!(matches!(
-      action.exec(&mut ActionInput::new("AA", 0, &mut ())),
+      action.exec(&mut ActionInput::new("aa", 0, &mut ()).unwrap()),
       None
     ));
   }
 
   #[test]
   fn action_reject() {
-    let rejected_action: Action<_> = simple(|_| 1).reject();
+    let rejected_action: Action<_> = exact("a").reject();
 
     assert!(matches!(
-      rejected_action.exec(&mut ActionInput::new("A", 0, &mut ())),
+      rejected_action.exec(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
       None
     ));
   }
@@ -594,14 +580,15 @@ mod tests {
   fn action_callback() {
     // ensure callback can update the state
     let mut state = MyState { value: 0 };
-    let action: Action<_, MyState, ()> = simple(|input: &ActionInput<MyState>| input.rest().len())
-      .callback(|ctx| ctx.input.state.value += 1);
+    let action: Action<_, MyState, ()> = exact("a").callback(
+      |ctx: AcceptedActionOutputContext<&mut ActionInput<MyState>, _>| ctx.input.state.value += 1,
+    );
 
     // ensure may_mutate_state is set to true
     assert!(action.may_mutate_state);
 
     assert!(matches!(
-      action.exec(&mut ActionInput::new("A", 0, &mut state)),
+      action.exec(&mut ActionInput::new("a", 0, &mut state).unwrap()),
       Some(ActionOutput { .. })
     ));
     assert_eq!(state.value, 1);

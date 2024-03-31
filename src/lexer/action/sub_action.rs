@@ -29,21 +29,21 @@ use std::ops::{Add, BitOr};
 /// let a: Action<_> = a.into();
 /// ```
 pub struct SubAction<ActionState> {
-  // make sure the `ActionInput` is not mutable
-  // so we can set `Action::may_mutate_state` to `false`
-  // when transforming `SubAction` into `Action`.
-  exec: Box<dyn Fn(&ActionInput<ActionState>) -> Option<usize>>,
+  // though the `ActionInput` is `&mut` in `exec`, we have to make sure it is not mutable.
+  exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<usize>>,
 }
 
 impl<ActionState> SubAction<ActionState> {
   /// See [`SubAction`].
-  pub fn new(exec: impl Fn(&ActionInput<ActionState>) -> Option<usize> + 'static) -> Self {
+  // the `ActionInput` must be immutable!
+  pub fn new(exec: impl Fn(&mut ActionInput<ActionState>) -> Option<usize> + 'static) -> Self {
     Self {
-      exec: Box::new(exec),
+      // TODO: just use `Box::new(exec)`?
+      exec: Box::new(move |input| exec(input)),
     }
   }
 
-  pub fn exec(&self, input: &ActionInput<ActionState>) -> Option<usize> {
+  pub fn exec(&self, input: &mut ActionInput<ActionState>) -> Option<usize> {
     (self.exec)(input)
   }
 }
@@ -57,7 +57,7 @@ impl<ActionState: 'static> BitOr<Self> for SubAction<ActionState> {
   /// ```
   /// # use whitehole::lexer::action::{chars, ActionInput, SubAction};
   /// let ab: SubAction<()> = chars(|ch| ch == &'a') | chars(|ch| ch == &'b');
-  /// assert!(matches!(ab.exec(&ActionInput::new("b", 0, ())), Some(1)));
+  /// assert!(matches!(ab.exec(&mut ActionInput::new("b", 0, ())), Some(1)));
   /// ```
   fn bitor(self, rhs: Self) -> Self::Output {
     let exec = self.exec;
@@ -68,8 +68,7 @@ impl<ActionState: 'static> BitOr<Self> for SubAction<ActionState> {
   }
 }
 
-// in real cases the `ActionState` is a reference type so it is Copy
-impl<ActionState: Copy + 'static> Add<Self> for SubAction<ActionState> {
+impl<ActionState: 'static> Add<Self> for SubAction<ActionState> {
   type Output = Self;
 
   /// Execute another [`SubAction`] after the current `SubAction` is accepted.
@@ -81,7 +80,7 @@ impl<ActionState: Copy + 'static> Add<Self> for SubAction<ActionState> {
   /// ```
   /// # use whitehole::lexer::action::{chars, ActionInput, SubAction};
   /// let ab: SubAction<()> = chars(|ch| ch == &'a') + chars(|ch| ch == &'b');
-  /// assert!(matches!(ab.exec(&ActionInput::new("ab", 0, ())), Some(2)));
+  /// assert!(matches!(ab.exec(&mut ActionInput::new("ab", 0, ())), Some(2)));
   /// ```
   fn add(self, rhs: Self) -> Self::Output {
     let exec = self.exec;
@@ -89,9 +88,11 @@ impl<ActionState: Copy + 'static> Add<Self> for SubAction<ActionState> {
     Self {
       exec: Box::new(move |input| {
         exec(input).and_then(|digested| {
-          ActionInput::new(input.text(), input.start() + digested, input.state).and_then(|input| {
-            another_exec(&input).map(|another_digested| digested + another_digested)
-          })
+          ActionInput::new(input.text(), input.start() + digested, input.state).and_then(
+            |mut input| {
+              another_exec(&mut input).map(|another_digested| digested + another_digested)
+            },
+          )
         })
       }),
     }
@@ -138,7 +139,7 @@ impl<ActionState: 'static, ErrorType> Into<Action<MockTokenKind<()>, ActionState
 
 /// Shortcut for [`SubAction::new`].
 pub fn sub<ActionState>(
-  exec: impl Fn(&ActionInput<ActionState>) -> Option<usize> + 'static,
+  exec: impl Fn(&mut ActionInput<ActionState>) -> Option<usize> + 'static,
 ) -> SubAction<ActionState> {
   SubAction::new(exec)
 }
@@ -155,12 +156,21 @@ mod tests {
     });
 
     // accept
-    assert_eq!(a.exec(&ActionInput::new("123", 0, ()).unwrap()), Some(3));
-    assert_eq!(a.exec(&ActionInput::new("123", 1, ()).unwrap()), Some(2));
+    assert_eq!(
+      a.exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+      Some(3)
+    );
+    assert_eq!(
+      a.exec(&mut ActionInput::new("123", 1, &mut ()).unwrap()),
+      Some(2)
+    );
 
     // reject
-    assert_eq!(a.exec(&ActionInput::new("", 0, ()).unwrap()), None);
-    assert_eq!(a.exec(&ActionInput::new("123", 3, ()).unwrap()), None);
+    assert_eq!(a.exec(&mut ActionInput::new("", 0, &mut ()).unwrap()), None);
+    assert_eq!(
+      a.exec(&mut ActionInput::new("123", 3, &mut ()).unwrap()),
+      None
+    );
   }
 
   #[test]
@@ -173,7 +183,7 @@ mod tests {
 
     // accept
     assert!(matches!(
-      action.exec(&mut ActionInput::new("123", 0, ()).unwrap()),
+      action.exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
       Some(ActionOutput {
         kind: mock,
         digested: 3,
@@ -184,7 +194,7 @@ mod tests {
 
     // reject
     assert!(matches!(
-      action.exec(&mut ActionInput::new("", 0, ()).unwrap()),
+      action.exec(&mut ActionInput::new("", 0, &mut ()).unwrap()),
       None
     ));
   }
@@ -194,21 +204,21 @@ mod tests {
     // first sub action is accepted
     assert!(matches!(
       (SubAction::new(|_| Some(1)) | SubAction::new(|_| Some(2)))
-        .exec(&ActionInput::new("123", 0, ()).unwrap()),
+        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
       Some(1)
     ));
 
     // first sub action is rejected but the second is accepted
     assert!(matches!(
       (SubAction::new(|_| None) | SubAction::new(|_| Some(2)))
-        .exec(&ActionInput::new("123", 0, ()).unwrap()),
+        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
       Some(2)
     ));
 
     // both sub actions are rejected
     assert_eq!(
       (SubAction::new(|_| None) | SubAction::new(|_| None))
-        .exec(&ActionInput::new("123", 0, ()).unwrap()),
+        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
       None
     );
   }
@@ -218,28 +228,28 @@ mod tests {
     // both sub actions are accepted
     assert!(matches!(
       (SubAction::new(|_| Some(1)) + SubAction::new(|_| Some(2)))
-        .exec(&ActionInput::new("123", 0, ()).unwrap()),
+        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
       Some(3)
     ));
 
     // first sub action is accepted but the second is rejected
     assert_eq!(
       (SubAction::new(|_| Some(1)) + SubAction::new(|_| None))
-        .exec(&ActionInput::new("123", 0, ()).unwrap()),
+        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
       None
     );
 
     // first sub action is rejected
     assert_eq!(
       (SubAction::new(|_| None) + SubAction::new(|_| Some(2)))
-        .exec(&ActionInput::new("123", 0, ()).unwrap()),
+        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
       None
     );
 
     // caveats: the first sub action digests all the rest
     assert_eq!(
       (SubAction::new(|input| Some(input.rest().len())) + SubAction::new(|_| Some(2)))
-        .exec(&ActionInput::new("123", 0, ()).unwrap()),
+        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
       None
     );
   }

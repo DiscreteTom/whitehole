@@ -24,7 +24,7 @@ pub trait AcceptedActionDecoratorContextInput<'text> {
 }
 macro_rules! impl_ctx_input {
   ($t:ty) => {
-    impl<'text, ActionState> AcceptedActionDecoratorContextInput<'text> for $t {
+    impl<'text, 'action_state, ActionState> AcceptedActionDecoratorContextInput<'text> for $t {
       fn _text(&self) -> &'text str {
         self.text()
       }
@@ -34,9 +34,9 @@ macro_rules! impl_ctx_input {
     }
   };
 }
-impl_ctx_input!(ActionInput<'text, ActionState>);
-impl_ctx_input!(&ActionInput<'text, ActionState>);
-impl_ctx_input!(&mut ActionInput<'text, ActionState>);
+impl_ctx_input!(ActionInput<'text, 'action_state, ActionState>);
+impl_ctx_input!(&ActionInput<'text, 'action_state, ActionState>);
+impl_ctx_input!(&mut ActionInput<'text, 'action_state, ActionState>);
 
 /// This trait is used to unify [`ActionOutput`],
 /// `&ActionOutput` and `&mut ActionOutput` in
@@ -90,8 +90,8 @@ impl<
 mod tests {
   use super::*;
 
-  fn create_input() -> ActionInput<'static, ()> {
-    ActionInput::new("123", 1, ()).unwrap()
+  fn create_input<'state>(state: &'state mut ()) -> ActionInput<'static, 'state, ()> {
+    ActionInput::new("123", 1, state).unwrap()
   }
   fn create_output() -> ActionOutput<(), Option<()>> {
     ActionOutput {
@@ -108,63 +108,63 @@ mod tests {
 
     // input and output
     AcceptedActionOutputContext {
-      input: create_input(),
+      input: create_input(&mut ()),
       output: create_output(),
     }
     .end();
 
     // &input and output
     AcceptedActionOutputContext {
-      input: &create_input(),
+      input: &create_input(&mut ()),
       output: create_output(),
     }
     .end();
 
     // &mut input and output
     AcceptedActionOutputContext {
-      input: &mut create_input(),
+      input: &mut create_input(&mut ()),
       output: create_output(),
     }
     .end();
 
     // input and &output
     AcceptedActionOutputContext {
-      input: create_input(),
+      input: create_input(&mut ()),
       output: &create_output(),
     }
     .end();
 
     // &input and &output
     AcceptedActionOutputContext {
-      input: &create_input(),
+      input: &create_input(&mut ()),
       output: &create_output(),
     }
     .end();
 
     // &mut input and &output
     AcceptedActionOutputContext {
-      input: &mut create_input(),
+      input: &mut create_input(&mut ()),
       output: &create_output(),
     }
     .end();
 
     // input and &mut output
     AcceptedActionOutputContext {
-      input: create_input(),
+      input: create_input(&mut ()),
       output: &mut create_output(),
     }
     .end();
 
     // &input and &mut output
     AcceptedActionOutputContext {
-      input: &create_input(),
+      input: &create_input(&mut ()),
       output: &mut create_output(),
     }
     .end();
 
     // &mut input and &mut output
     AcceptedActionOutputContext {
-      input: &mut create_input(),
+      input: &mut create_input(&mut ()),
       output: &mut create_output(),
     }
     .end();
@@ -172,7 +172,7 @@ mod tests {
     // ensure the value is correct
     assert_eq!(
       AcceptedActionOutputContext {
-        input: create_input(),
+        input: create_input(&mut ()),
         output: create_output(),
       }
       .end(),
@@ -180,7 +180,7 @@ mod tests {
     );
     assert_eq!(
       AcceptedActionOutputContext {
-        input: create_input(),
+        input: create_input(&mut ()),
         output: create_output(),
       }
       .content(),
@@ -188,7 +188,7 @@ mod tests {
     );
     assert_eq!(
       AcceptedActionOutputContext {
-        input: create_input(),
+        input: create_input(&mut ()),
         output: create_output(),
       }
       .rest(),

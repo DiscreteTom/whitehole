@@ -88,7 +88,7 @@ mod tests {
   fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
       action
-        .exec(&mut ActionInput::new(text, 0, ()).unwrap())
+        .exec(&mut ActionInput::new(text, 0, &mut ()).unwrap())
         .unwrap()
         .digested,
       expected
@@ -96,7 +96,7 @@ mod tests {
   }
   fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
     assert!(action
-      .exec(&mut ActionInput::new(text, 0, ()).unwrap())
+      .exec(&mut ActionInput::new(text, 0, &mut ()).unwrap())
       .is_none());
   }
 

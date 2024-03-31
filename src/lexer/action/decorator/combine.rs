@@ -24,8 +24,7 @@ use std::ops::Add;
 // however, since `SubAction` has no head matcher and other fields,
 // there could be `Action::and_then(SubAction)`. we use `Add` to implement this.
 
-// in real cases the `ActionState` is a reference type so it is Copy
-impl<Kind, ActionState: Copy + 'static, ErrorType: 'static> Add<SubAction<ActionState>>
+impl<Kind, ActionState: 'static, ErrorType: 'static> Add<SubAction<ActionState>>
   for Action<Kind, ActionState, ErrorType>
 {
   type Output = Self;
@@ -52,8 +51,8 @@ impl<Kind, ActionState: Copy + 'static, ErrorType: 'static> Add<SubAction<Action
     self.exec = Box::new(move |input| {
       exec(input).and_then(|mut output| {
         ActionInput::new(input.text(), input.start() + output.digested, input.state).and_then(
-          |input| {
-            rhs.exec(&input).map(|another_digested| {
+          |mut input| {
+            rhs.exec(&mut input).map(|another_digested| {
               output.digested += another_digested;
               // other fields in `output` is not changed (e.g. `output.muted`),
               // so we don't need to change other fields of `self` (e.g. `self.maybe_muted`)
