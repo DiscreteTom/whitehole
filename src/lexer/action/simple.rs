@@ -1,4 +1,4 @@
-use super::{input::ActionInput, sub, Action, ActionOutput, SubAction};
+use super::{input::ActionInput, sub, Action, ActionOutput, SubAction, SubActionInput};
 use crate::lexer::token::{MockTokenKind, SubTokenKind};
 
 /// Accept a function that digests the rest of the input text and returns the number of digested characters.
@@ -10,7 +10,7 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 /// let a: SubAction<()> = simple(|input| input.rest().len());
 /// ```
 pub fn simple<ActionState>(
-  f: impl Fn(&ActionInput<ActionState>) -> usize + 'static,
+  f: impl Fn(&SubActionInput<ActionState>) -> usize + 'static,
 ) -> SubAction<ActionState> {
   sub(move |input| match f(input) {
     0 => None,
@@ -69,7 +69,7 @@ mod tests {
   #[test]
   fn simple_accept_all() {
     assert!(matches!(
-      simple(|input| input.text().len()).exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+      simple(|input| input.text().len()).exec(&SubActionInput::new("123", 0, &mut ()).unwrap()),
       Some(3)
     ));
   }
@@ -77,7 +77,7 @@ mod tests {
   #[test]
   fn simple_accept_rest() {
     assert!(matches!(
-      simple(|input| input.rest().len()).exec(&mut ActionInput::new("123", 1, &mut ()).unwrap()),
+      simple(|input| input.rest().len()).exec(&SubActionInput::new("123", 1, &mut ()).unwrap()),
       Some(2)
     ));
   }
@@ -85,7 +85,7 @@ mod tests {
   #[test]
   fn simple_reject_on_0() {
     assert!(matches!(
-      simple(|_| 0).exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+      simple(|_| 0).exec(&SubActionInput::new("123", 0, &mut ()).unwrap()),
       None
     ));
   }

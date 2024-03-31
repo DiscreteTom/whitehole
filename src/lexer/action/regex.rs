@@ -24,13 +24,13 @@ pub fn regex<ActionState>(re: &str) -> SubAction<ActionState> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::input::ActionInput;
+  use crate::lexer::action::SubActionInput;
 
   #[test]
   fn match_at_start() {
     let action: SubAction<()> = regex(r"^\d+");
     assert!(matches!(
-      action.exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+      action.exec(&SubActionInput::new("123", 0, &mut ()).unwrap()),
       Some(3)
     ));
   }
@@ -39,7 +39,7 @@ mod tests {
   fn match_at_middle() {
     let action: SubAction<()> = regex(r"^\d+");
     assert!(matches!(
-      action.exec(&mut ActionInput::new("abc123", 3, &mut ()).unwrap()),
+      action.exec(&SubActionInput::new("abc123", 3, &mut ()).unwrap()),
       Some(3)
     ));
   }

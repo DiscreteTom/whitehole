@@ -1,4 +1,4 @@
-use crate::lexer::action::{Action, ActionInput, SubAction};
+use crate::lexer::action::{Action, SubAction, SubActionInput};
 use std::ops::Add;
 
 // there should NOT be an `Action::or(Action)` to merge actions,
@@ -50,9 +50,9 @@ impl<Kind, ActionState: 'static, ErrorType: 'static> Add<SubAction<ActionState>>
     let exec = self.exec;
     self.exec = Box::new(move |input| {
       exec(input).and_then(|mut output| {
-        ActionInput::new(input.text(), input.start() + output.digested, input.state).and_then(
-          |mut input| {
-            rhs.exec(&mut input).map(|another_digested| {
+        SubActionInput::new(input.text(), input.start() + output.digested, input.state).and_then(
+          |input| {
+            rhs.exec(&input).map(|another_digested| {
               output.digested += another_digested;
               // other fields in `output` is not changed (e.g. `output.muted`),
               // so we don't need to change other fields of `self` (e.g. `self.maybe_muted`)

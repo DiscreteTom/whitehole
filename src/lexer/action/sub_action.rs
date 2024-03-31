@@ -2,6 +2,64 @@ use super::{Action, ActionInput, ActionOutput};
 use crate::lexer::token::{MockTokenKind, SubTokenKind};
 use std::ops::{Add, BitOr};
 
+/// This has the same interface with [`ActionInput`], but the [`state`](Self::state) is NOT mutable.
+pub struct SubActionInput<'text, 'action_state, ActionState> {
+  pub state: &'action_state ActionState,
+  /// See [`Self::text`].
+  text: &'text str,
+  /// See [`Self::start`].
+  start: usize,
+  // cache the rest of the text to prevent create the slice every time
+  // because `input.rest` might be used many times
+  // when we use `|` to combine sub actions using the same input
+  /// See [`Self::rest`].
+  rest: &'text str,
+}
+
+impl<'text, 'action_state, ActionState> SubActionInput<'text, 'action_state, ActionState> {
+  /// Return [`None`] if the [`start`](Self::start) position is out of the input
+  /// [`text`](Self::text) or there is no [`rest`](Self::rest).
+  pub fn new(text: &'text str, start: usize, state: &'action_state ActionState) -> Option<Self> {
+    if start >= text.len() {
+      None
+    } else {
+      Some(Self {
+        state,
+        text,
+        start,
+        rest: &text[start..],
+      })
+    }
+  }
+
+  /// Create a new [`SubActionInput`] from an [`ActionInput`].
+  pub fn from<'input: 'action_state>(
+    input: &'input ActionInput<'text, 'action_state, ActionState>,
+  ) -> Self {
+    // since `ActionInput` already checks the boundary, we don't need to check it again
+    Self {
+      state: input.state,
+      text: input.text(),
+      start: input.start(),
+      rest: input.rest(),
+    }
+  }
+
+  /// From where to lex, in bytes.
+  pub fn start(&self) -> usize {
+    self.start
+  }
+  /// The whole input text.
+  pub fn text(&self) -> &'text str {
+    self.text
+  }
+  /// The undigested part of the input text.
+  /// When lexing this is guaranteed to be not empty.
+  pub fn rest(&self) -> &'text str {
+    &self.rest
+  }
+}
+
 /// A light weight version of [`Action`].
 /// [`Self::exec`] only returns the number of bytes digested if the action is accepted,
 /// and returns [`None`] if the action is rejected.
@@ -29,21 +87,18 @@ use std::ops::{Add, BitOr};
 /// let a: Action<_> = a.into();
 /// ```
 pub struct SubAction<ActionState> {
-  // though the `ActionInput` is `&mut` in `exec`, we have to make sure it is not mutable.
-  exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<usize>>,
+  exec: Box<dyn Fn(&SubActionInput<ActionState>) -> Option<usize>>,
 }
 
 impl<ActionState> SubAction<ActionState> {
   /// See [`SubAction`].
-  // the `ActionInput` must be immutable!
-  pub fn new(exec: impl Fn(&mut ActionInput<ActionState>) -> Option<usize> + 'static) -> Self {
+  pub fn new(exec: impl Fn(&SubActionInput<ActionState>) -> Option<usize> + 'static) -> Self {
     Self {
-      // TODO: just use `Box::new(exec)`?
-      exec: Box::new(move |input| exec(input)),
+      exec: Box::new(exec),
     }
   }
 
-  pub fn exec(&self, input: &mut ActionInput<ActionState>) -> Option<usize> {
+  pub fn exec(&self, input: &SubActionInput<ActionState>) -> Option<usize> {
     (self.exec)(input)
   }
 }
@@ -57,7 +112,7 @@ impl<ActionState: 'static> BitOr<Self> for SubAction<ActionState> {
   /// ```
   /// # use whitehole::lexer::action::{chars, ActionInput, SubAction};
   /// let ab: SubAction<()> = chars(|ch| ch == &'a') | chars(|ch| ch == &'b');
-  /// assert!(matches!(ab.exec(&mut ActionInput::new("b", 0, ())), Some(1)));
+  /// assert!(matches!(ab.exec(&SubActionInput::new("b", 0, &mut ())), Some(1)));
   /// ```
   fn bitor(self, rhs: Self) -> Self::Output {
     let exec = self.exec;
@@ -80,7 +135,7 @@ impl<ActionState: 'static> Add<Self> for SubAction<ActionState> {
   /// ```
   /// # use whitehole::lexer::action::{chars, ActionInput, SubAction};
   /// let ab: SubAction<()> = chars(|ch| ch == &'a') + chars(|ch| ch == &'b');
-  /// assert!(matches!(ab.exec(&mut ActionInput::new("ab", 0, ())), Some(2)));
+  /// assert!(matches!(ab.exec(&SubActionInput::new("ab", 0, &mut ())), Some(2)));
   /// ```
   fn add(self, rhs: Self) -> Self::Output {
     let exec = self.exec;
@@ -88,10 +143,8 @@ impl<ActionState: 'static> Add<Self> for SubAction<ActionState> {
     Self {
       exec: Box::new(move |input| {
         exec(input).and_then(|digested| {
-          ActionInput::new(input.text(), input.start() + digested, input.state).and_then(
-            |mut input| {
-              another_exec(&mut input).map(|another_digested| digested + another_digested)
-            },
+          SubActionInput::new(input.text(), input.start() + digested, input.state).and_then(
+            |input| another_exec(&input).map(|another_digested| digested + another_digested),
           )
         })
       }),
@@ -106,7 +159,7 @@ impl<ActionState: 'static, ErrorType> Into<Action<MockTokenKind<()>, ActionState
     let exec = self.exec;
     Action {
       exec: Box::new(move |input| {
-        exec(input).map(|digested| ActionOutput {
+        exec(&SubActionInput::from(input)).map(|digested| ActionOutput {
           kind: MockTokenKind::new(()),
           digested,
           // make sure the output is never muted
@@ -139,7 +192,7 @@ impl<ActionState: 'static, ErrorType> Into<Action<MockTokenKind<()>, ActionState
 
 /// Shortcut for [`SubAction::new`].
 pub fn sub<ActionState>(
-  exec: impl Fn(&mut ActionInput<ActionState>) -> Option<usize> + 'static,
+  exec: impl Fn(&SubActionInput<ActionState>) -> Option<usize> + 'static,
 ) -> SubAction<ActionState> {
   SubAction::new(exec)
 }
@@ -157,18 +210,18 @@ mod tests {
 
     // accept
     assert_eq!(
-      a.exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+      a.exec(&SubActionInput::new("123", 0, &mut ()).unwrap()),
       Some(3)
     );
     assert_eq!(
-      a.exec(&mut ActionInput::new("123", 1, &mut ()).unwrap()),
+      a.exec(&SubActionInput::new("123", 1, &mut ()).unwrap()),
       Some(2)
     );
 
     // reject
-    assert_eq!(a.exec(&mut ActionInput::new("", 0, &mut ()).unwrap()), None);
+    assert_eq!(a.exec(&SubActionInput::new("", 0, &mut ()).unwrap()), None);
     assert_eq!(
-      a.exec(&mut ActionInput::new("123", 3, &mut ()).unwrap()),
+      a.exec(&SubActionInput::new("123", 3, &mut ()).unwrap()),
       None
     );
   }
@@ -204,21 +257,21 @@ mod tests {
     // first sub action is accepted
     assert!(matches!(
       (SubAction::new(|_| Some(1)) | SubAction::new(|_| Some(2)))
-        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+        .exec(&SubActionInput::new("123", 0, &mut ()).unwrap()),
       Some(1)
     ));
 
     // first sub action is rejected but the second is accepted
     assert!(matches!(
       (SubAction::new(|_| None) | SubAction::new(|_| Some(2)))
-        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+        .exec(&SubActionInput::new("123", 0, &mut ()).unwrap()),
       Some(2)
     ));
 
     // both sub actions are rejected
     assert_eq!(
       (SubAction::new(|_| None) | SubAction::new(|_| None))
-        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+        .exec(&SubActionInput::new("123", 0, &mut ()).unwrap()),
       None
     );
   }
@@ -228,28 +281,28 @@ mod tests {
     // both sub actions are accepted
     assert!(matches!(
       (SubAction::new(|_| Some(1)) + SubAction::new(|_| Some(2)))
-        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+        .exec(&SubActionInput::new("123", 0, &mut ()).unwrap()),
       Some(3)
     ));
 
     // first sub action is accepted but the second is rejected
     assert_eq!(
       (SubAction::new(|_| Some(1)) + SubAction::new(|_| None))
-        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+        .exec(&SubActionInput::new("123", 0, &mut ()).unwrap()),
       None
     );
 
     // first sub action is rejected
     assert_eq!(
       (SubAction::new(|_| None) + SubAction::new(|_| Some(2)))
-        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+        .exec(&SubActionInput::new("123", 0, &mut ()).unwrap()),
       None
     );
 
     // caveats: the first sub action digests all the rest
     assert_eq!(
       (SubAction::new(|input| Some(input.rest().len())) + SubAction::new(|_| Some(2)))
-        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+        .exec(&SubActionInput::new("123", 0, &mut ()).unwrap()),
       None
     );
   }
