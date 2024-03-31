@@ -31,10 +31,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # enum MyKind { A }
   /// # let mut builder = LexerBuilder::<MyKind>::default();
   /// builder.define(A, regex(r"^[A-Z]").unwrap().unchecked_head_in_range('A'..='Z'));
-  pub fn unchecked_head_in_range(
-    self,
-    range: impl Into<RangeInclusive<char>>,
-  ) -> Action<Kind, ActionState, ErrorType> {
+  pub fn unchecked_head_in_range(self, range: impl Into<RangeInclusive<char>>) -> Self {
     self.unchecked_head_in(range.into().into_iter().collect::<HashSet<_>>())
   }
 
