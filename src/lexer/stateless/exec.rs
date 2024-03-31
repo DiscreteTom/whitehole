@@ -141,9 +141,16 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     Kind: TokenKindIdProvider<Kind>,
   {
     // TODO: pre-calc and cache never muted actions
-    if text_mismatch && action.never_muted() {
-      // text mismatch, only muted actions should be executed
-      // so we skip never muted actions
+    if action.never_muted()
+      && (text_mismatch
+        || expectation
+          .kind
+          .map_or(false, |kind_id| action.kind_id() != kind_id))
+    {
+      // when expectation mismatch, only maybe-muted actions should be executed,
+      // so we skip never muted actions when expectation mismatch.
+      // we still need to check action's kind id here even we are using head map
+      // because maybe_muted actions may yield unexpected kinds
       return None;
     }
 
