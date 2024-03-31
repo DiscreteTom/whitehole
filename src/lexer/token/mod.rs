@@ -159,7 +159,7 @@ pub use whitehole_macros::token_kind;
 
 #[cfg(test)]
 mod tests {
-  use crate::lexer::token::{SubTokenKind, TokenKindId, TokenKindIdBinding, TokenKindIdProvider};
+  use super::*;
   use whitehole_macros::_token_kind;
 
   #[_token_kind]
@@ -218,5 +218,6 @@ mod tests {
 
     // default is working
     assert!(matches!(MyKind::default(), MyKind::Unit));
+    assert_eq!(MyKind::default_binding_kind_id(), Unit::kind_id());
   }
 }

@@ -151,24 +151,25 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 mod tests {
   use super::*;
   use crate::lexer::{
-    action::{regex, simple},
+    action::{exact, regex},
     token::TokenKindIdProvider,
   };
   use whitehole_macros::_token_kind;
 
   #[_token_kind]
-  #[derive(Clone, Debug)]
+  #[derive(Clone, Debug, Default)]
   enum MyKind {
+    #[default]
     A,
     Value(i32),
   }
 
   #[test]
   fn action_bind() {
-    let action: Action<TokenKindIdBinding<MyKind>> = simple(|_| 1).bind(A);
+    let action: Action<_> = exact("A").bind(A);
     assert_eq!(action.kind_id, A::kind_id());
     assert!(matches!(
-      action.exec(&mut ActionInput::new("A", 0, &mut ())),
+      action.exec(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
       Some(ActionOutput {
         kind: binding,
         digested: 1,
@@ -179,13 +180,27 @@ mod tests {
   }
 
   #[test]
+  fn action_bind_default() {
+    let action: Action<_> = exact("A").bind_default();
+    assert_eq!(action.kind_id, MyKind::default_binding_kind_id());
+    assert!(matches!(
+      action.exec(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
+      Some(ActionOutput {
+        kind: binding,
+        digested: 1,
+        muted: false,
+        error: None
+      }) if matches!(binding.value(), MyKind::A) && binding.id() == MyKind::default_binding_kind_id()
+    ));
+  }
+
+  #[test]
   fn action_select() {
-    let action: Action<TokenKindIdBinding<MyKind>> = regex(r"^\d+")
-      .unwrap()
-      .select(|ctx| Value(ctx.output.content().parse().unwrap()));
+    let action: Action<_> =
+      Action::from(regex(r"^\d+")).select(|ctx| Value(ctx.content().parse().unwrap()));
     assert_eq!(action.kind_id, Value::kind_id());
     assert!(matches!(
-      action.exec(&mut ActionInput::new("1", 0, &mut ())),
+      action.exec(&mut ActionInput::new("1", 0, &mut ()).unwrap()),
       Some(ActionOutput {
         kind: binding,
         digested: 1,
