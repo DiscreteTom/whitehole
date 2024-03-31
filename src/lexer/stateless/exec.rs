@@ -8,8 +8,6 @@ use crate::lexer::{
 };
 use std::rc::Rc;
 
-// TODO: rename module to `private` or `execute`
-
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
   pub(crate) fn execute_actions<'text, 'expect_text>(
     head_map: &ActionHeadMap<Kind, ActionState, ErrorType>,

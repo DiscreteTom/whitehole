@@ -1,4 +1,4 @@
-mod common;
+mod exec;
 mod head_map;
 mod lex;
 mod options;
