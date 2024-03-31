@@ -152,12 +152,12 @@ impl<ActionState: 'static> Add<Self> for SubAction<ActionState> {
   }
 }
 
-impl<ActionState: 'static, ErrorType> Into<Action<MockTokenKind<()>, ActionState, ErrorType>>
-  for SubAction<ActionState>
+impl<ActionState: 'static, ErrorType> From<SubAction<ActionState>>
+  for Action<MockTokenKind<()>, ActionState, ErrorType>
 {
-  fn into(self) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
-    let exec = self.exec;
-    Action {
+  fn from(sub: SubAction<ActionState>) -> Self {
+    let exec = sub.exec;
+    Self {
       exec: Box::new(move |input| {
         exec(&SubActionInput::from(input)).map(|digested| ActionOutput {
           kind: MockTokenKind::new(()),

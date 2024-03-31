@@ -56,7 +56,7 @@ pub fn char_range<ActionState: 'static, ErrorType>(
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   let range: RangeInclusive<_> = range.into();
   let head = *range.start();
-  Action::from(char_range_sub(range).into()).unchecked_head_in([head])
+  Action::from(char_range_sub(range)).unchecked_head_in([head])
 }
 
 /// Match chars greedily by a set.
@@ -87,7 +87,7 @@ pub fn charset<ActionState: 'static, ErrorType>(
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   let set: HashSet<_> = set.into();
   let head = set.clone();
-  Action::from(charset_sub(set).into()).unchecked_head_in(head)
+  Action::from(charset_sub(set)).unchecked_head_in(head)
 }
 
 /// Match unicode whitespaces greedy.
@@ -107,7 +107,7 @@ pub fn charset<ActionState: 'static, ErrorType>(
 /// ```
 pub fn whitespaces<ActionState: 'static, ErrorType>(
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
-  Action::from(chars(|ch| ch.is_whitespace()).into())
+  Action::from(chars(|ch| ch.is_whitespace()))
     // 0009..000D    ; White_Space # Cc   [5] <control-0009>..<control-000D>
     // 0020          ; White_Space # Zs       SPACE
     // 0085          ; White_Space # Cc       <control-0085>

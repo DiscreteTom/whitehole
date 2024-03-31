@@ -36,7 +36,7 @@ pub fn exact<ActionState: 'static, ErrorType>(
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   let s: String = s.into();
   let head = s.chars().next().unwrap();
-  return Action::from(exact_sub(s).into()).unchecked_head_in([head]);
+  return Action::from(exact_sub(s)).unchecked_head_in([head]);
 }
 
 /// Create an action for each string using [`exact`].

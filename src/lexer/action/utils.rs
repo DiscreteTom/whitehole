@@ -75,7 +75,7 @@ pub fn comment<ActionState: 'static, ErrorType>(
   let open: String = open.into();
   let first = open.chars().next().unwrap();
 
-  Action::from(comment_sub(open, close).into()).unchecked_head_in([first])
+  Action::from(comment_sub(open, close)).unchecked_head_in([first])
 }
 
 // TODO: add string & numeric utils
