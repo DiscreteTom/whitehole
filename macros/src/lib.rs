@@ -21,16 +21,19 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// pub struct A;
 /// impl Into<MyKind> for A { ... }
 /// impl Into<TokenKindIdBinding<MyKind>> for A { ... }
+/// impl Into<&'static TokenKindId<TokenKindIdBinding<MyKind>>> for A { ... }
 /// impl SubTokenKind<TokenKindIdBinding<MyKind>> for A { ... }
 ///
 /// pub struct B(pub i32);
 /// impl Into<MyKind> for B { ... }
 /// impl Into<TokenKindIdBinding<MyKind>> for B { ... }
+/// impl Into<&'static TokenKindId<TokenKindIdBinding<MyKind>>> for B { ... }
 /// impl SubTokenKind<TokenKindIdBinding<MyKind>> for B { ... }
 ///
 /// pub struct C { pub c: i32 }
 /// impl Into<MyKind> for C { ... }
 /// impl Into<TokenKindIdBinding<MyKind>> for C { ... }
+/// impl Into<&'static TokenKindId<TokenKindIdBinding<MyKind>>> for C { ... }
 /// impl SubTokenKind<TokenKindIdBinding<MyKind>> for C { ... }
 /// ```
 /// Besides, if the token kind derive `Default`:
@@ -171,13 +174,19 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
     gen.push(quote! {
       mod #mod_name {
         use super::*;
-        const #token_kind_id_const: #crate_name::lexer::token::TokenKindId<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> = #crate_name::lexer::token::TokenKindId::new(#index);
-        impl #crate_name::lexer::token::SubTokenKind<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
+        use #crate_name::lexer::token::{SubTokenKind, TokenKindId, TokenKindIdBinding};
+        const #token_kind_id_const: TokenKindId<TokenKindIdBinding<#enum_name>> = TokenKindId::new(#index);
+        impl SubTokenKind<TokenKindIdBinding<#enum_name>> for #variant_name {
           fn kind_id() -> 
-            &'static #crate_name::lexer::token::TokenKindId<
-              #crate_name::lexer::token::TokenKindIdBinding<#enum_name>
+            &'static TokenKindId<
+              TokenKindIdBinding<#enum_name>
             >
           {
+            &#token_kind_id_const
+          }
+        }
+        impl Into<&'static TokenKindId<TokenKindIdBinding<#enum_name>>> for #variant_name {
+          fn into(self) -> &'static TokenKindId<TokenKindIdBinding<#enum_name>> {
             &#token_kind_id_const
           }
         }
