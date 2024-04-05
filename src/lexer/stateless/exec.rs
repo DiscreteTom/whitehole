@@ -1,4 +1,4 @@
-use super::{ActionHeadMap, StatelessLexer};
+use super::{HeadMap, StatelessLexer};
 use crate::lexer::{
   action::{Action, ActionInput, ActionOutput},
   expectation::Expectation,
@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
   pub(crate) fn execute_actions<'text, 'expect_text>(
-    head_map: &ActionHeadMap<Kind, ActionState, ErrorType>,
+    head_map: &HeadMap<Kind, ActionState, ErrorType>,
     fork: bool,
     re_lex: &ReLexContext,
     text: &'text str,

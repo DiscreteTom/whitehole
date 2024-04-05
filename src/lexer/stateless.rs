@@ -6,7 +6,7 @@ mod options;
 pub use options::*;
 
 use super::{action::Action, token::TokenKindId};
-use head_map::*;
+use head_map::HeadMap;
 use std::{collections::HashMap, rc::Rc};
 
 /// Stateless, immutable lexer.
@@ -14,9 +14,9 @@ pub struct StatelessLexer<Kind: 'static, ActionState, ErrorType> {
   /// All actions.
   actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
   /// This is used to accelerate lexing by the first character when no expected kind.
-  head_map: ActionHeadMap<Kind, ActionState, ErrorType>,
+  head_map: HeadMap<Kind, ActionState, ErrorType>,
   /// This is used to accelerate expected lexing by the expected kind and the first character.
-  kind_head_map: HashMap<TokenKindId<Kind>, ActionHeadMap<Kind, ActionState, ErrorType>>,
+  kind_head_map: HashMap<TokenKindId<Kind>, HeadMap<Kind, ActionState, ErrorType>>,
 }
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
@@ -50,9 +50,9 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
     let kind_head_map = kinds_action_map
       .iter()
-      .map(|(k, v)| (k.clone(), ActionHeadMap::new(&v)))
+      .map(|(k, v)| (k.clone(), HeadMap::new(&v)))
       .collect();
-    let head_map = ActionHeadMap::new(&actions);
+    let head_map = HeadMap::new(&actions);
 
     Self {
       actions,
