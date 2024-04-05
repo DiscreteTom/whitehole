@@ -103,6 +103,8 @@ mod tests {
       action.head_matcher().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'a')
     ));
+    // literal
+    assert_eq!(action.literal(), &Some("a".into()));
   }
 
   #[test]

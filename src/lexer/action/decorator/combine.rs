@@ -65,3 +65,17 @@ impl<Kind, ActionState: 'static, ErrorType: 'static> Add<SubAction<ActionState>>
     self
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lexer::action::exact;
+
+  #[test]
+  fn action_add_will_clear_literal() {
+    let action: Action<_> = exact("a");
+    assert_eq!(action.literal(), &Some("a".into()));
+    let action = action + SubAction::new(|_| Some(1));
+    assert_eq!(action.literal(), &None);
+  }
+}
