@@ -107,7 +107,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   }
 
   /// This flag is to indicate whether this action might mutate the `ActionState`.
-  /// This is used to lazy-clone the `ActionState` when lexing with fork enabled.
   /// This will be `false` by default, and will be `true` if [`Self::prepare`]
   /// or [`Self::callback`] is called.
   pub fn may_mutate_state(&self) -> bool {
