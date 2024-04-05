@@ -43,7 +43,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
       // calc the text_mismatch before the loop so we can reuse this value
       let text_mismatch = expectation
-        .text
+        .literal
         .is_some_and(|text| !input.rest().starts_with(text));
 
       let actions = head_map
