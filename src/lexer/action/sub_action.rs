@@ -170,6 +170,7 @@ impl<ActionState: 'static, ErrorType> From<SubAction<ActionState>>
       muted: false,
       // SubAction never mutate the action state
       may_mutate_state: false,
+      literal: None,
     }
   }
 }

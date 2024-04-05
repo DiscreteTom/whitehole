@@ -36,6 +36,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       head_matcher: self.head_matcher,
       muted: self.muted,
       may_mutate_state: self.may_mutate_state,
+      literal: self.literal,
       exec: Box::new(move |input| {
         exec(input).map(|output| ActionOutput {
           kind: kind.clone(),
@@ -70,6 +71,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       head_matcher: self.head_matcher,
       muted: self.muted,
       may_mutate_state: self.may_mutate_state,
+      literal: self.literal,
       exec: Box::new(move |input| {
         exec(input).map(|output| ActionOutput {
           kind: TokenKindIdBinding::default(),
@@ -119,6 +121,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       head_matcher: self.head_matcher,
       muted: self.muted,
       may_mutate_state: self.may_mutate_state,
+      literal: self.literal,
       exec: Box::new(move |input| {
         exec(input).map(|output| {
           ActionOutput {

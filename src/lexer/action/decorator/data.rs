@@ -53,6 +53,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       muted: self.muted,
       head_matcher: self.head_matcher,
       kind_id: MockTokenKind::kind_id(),
+      literal: self.literal,
     }
   }
 }

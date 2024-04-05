@@ -55,6 +55,7 @@ where
     head_matcher: None,
     muted: false,
     may_mutate_state: false,
+    literal: None,
   }
 }
 

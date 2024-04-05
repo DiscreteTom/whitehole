@@ -24,7 +24,7 @@ pub fn exact_sub<ActionState>(s: impl Into<String>) -> SubAction<ActionState> {
 
 /// Match one string exactly, ***NO LOOKAHEAD***.
 ///
-/// The [`Action::head_matcher`] will be set automatically.
+/// The [`Action::head_matcher`] and [`Action::literal`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, exact};
@@ -36,7 +36,9 @@ pub fn exact<ActionState: 'static, ErrorType>(
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   let s: String = s.into();
   let head = s.chars().next().unwrap();
-  return Action::from(exact_sub(s)).unchecked_head_in([head]);
+  let mut a = Action::from(exact_sub(s.clone())).unchecked_head_in([head]);
+  a.literal = Some(s);
+  a
 }
 
 /// Create an action for each string using [`exact`].

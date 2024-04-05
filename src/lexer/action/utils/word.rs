@@ -54,7 +54,7 @@ pub fn no_word_boundary_in_rest<ActionState, ErrorType>(
 /// ***LOOKAHEAD*** one char to ensure there is a word boundary
 /// (non-alphanumeric and not `_`) or end of input after the word.
 ///
-/// The [`Action::head_matcher`] will be set automatically.
+/// The [`Action::head_matcher`] and [`Action::literal`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, word};

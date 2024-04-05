@@ -30,7 +30,8 @@ impl<Kind, ActionState: 'static, ErrorType: 'static> Add<SubAction<ActionState>>
   type Output = Self;
 
   /// Execute a [`SubAction`] after current [`Action`] is accepted.
-  /// Current action's attributes (e.g. [`head_matcher`](Self::head_matcher))
+  /// Current action's [`literal`](Self::literal) will be set to [`None`],
+  /// other attributes (e.g. [`head_matcher`](Self::head_matcher))
   /// and non-[`digested`](super::ActionOutput::digested) fields in the [`ActionOutput`](super::ActionOutput)
   /// (e.g. [`kind`](super::ActionOutput::kind)) will NOT be changed.
   ///
@@ -60,6 +61,7 @@ impl<Kind, ActionState: 'static, ErrorType: 'static> Add<SubAction<ActionState>>
         )
       })
     });
+    self.literal = None;
     self
   }
 }
