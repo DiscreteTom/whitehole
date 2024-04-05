@@ -34,13 +34,12 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     Action {
       kind_id: ViaKind::kind_id(),
       head_matcher: self.head_matcher,
-      maybe_muted: self.maybe_muted,
+      muted: self.muted,
       may_mutate_state: self.may_mutate_state,
       exec: Box::new(move |input| {
         exec(input).map(|output| ActionOutput {
           kind: kind.clone(),
           digested: output.digested,
-          muted: output.muted,
           error: output.error,
         })
       }),
@@ -69,13 +68,12 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     Action {
       kind_id: NewKind::default_binding_kind_id(),
       head_matcher: self.head_matcher,
-      maybe_muted: self.maybe_muted,
+      muted: self.muted,
       may_mutate_state: self.may_mutate_state,
       exec: Box::new(move |input| {
         exec(input).map(|output| ActionOutput {
           kind: TokenKindIdBinding::default(),
           digested: output.digested,
-          muted: output.muted,
           error: output.error,
         })
       }),
@@ -119,7 +117,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     Action {
       kind_id: ViaKind::kind_id(),
       head_matcher: self.head_matcher,
-      maybe_muted: self.maybe_muted,
+      muted: self.muted,
       may_mutate_state: self.may_mutate_state,
       exec: Box::new(move |input| {
         exec(input).map(|output| {
@@ -131,14 +129,12 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
                 // consume the original output.kind
                 kind: output.kind,
                 digested: output.digested,
-                muted: output.muted,
                 // but don't consume the error
                 error: &output.error,
               },
             })
             .into(),
             digested: output.digested,
-            muted: output.muted,
             error: output.error,
           }
         })
@@ -173,7 +169,6 @@ mod tests {
       Some(ActionOutput {
         kind: binding,
         digested: 1,
-        muted: false,
         error: None
       }) if matches!(binding.value(), MyKind::A) && binding.id() == A::kind_id()
     ));
@@ -188,7 +183,6 @@ mod tests {
       Some(ActionOutput {
         kind: binding,
         digested: 1,
-        muted: false,
         error: None
       }) if matches!(binding.value(), MyKind::A) && binding.id() == MyKind::default_binding_kind_id()
     ));
@@ -204,7 +198,6 @@ mod tests {
       Some(ActionOutput {
         kind: binding,
         digested: 1,
-        muted: false,
         error: None
       }) if matches!(binding.value(), MyKind::Value(value) if value.0 == 1) && binding.id() == Value::kind_id()
     ));

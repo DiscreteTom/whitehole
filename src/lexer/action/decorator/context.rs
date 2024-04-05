@@ -97,7 +97,6 @@ mod tests {
     ActionOutput {
       kind: (),
       digested: 1,
-      muted: false,
       error: None::<()>,
     }
   }

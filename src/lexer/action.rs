@@ -67,8 +67,8 @@ pub struct Action<Kind: 'static, ActionState = (), ErrorType = ()> {
   kind_id: &'static TokenKindId<Kind>,
   /// See [`Self::head_matcher`].
   head_matcher: Option<HeadMatcher>,
-  /// See [`Self::maybe_muted`].
-  maybe_muted: bool,
+  /// See [`Self::muted`].
+  muted: bool,
   /// See [`Self::may_mutate_state`].
   may_mutate_state: bool,
 }
@@ -91,19 +91,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     &self.head_matcher
   }
 
-  /// This flag is to indicate whether this action's output might be muted.
+  /// This flag is to indicate whether this action's output is muted.
   /// The lexer will based on this flag to accelerate the lexing process.
-  /// If `true`, this action's output may be muted.
-  /// If `false`, this action's output will never be muted.
-  /// This field could be set via [`Self::mute`] or [`Self::mute_if`].
-  pub fn maybe_muted(&self) -> bool {
-    self.maybe_muted
-  }
-
-  /// Equals to `!self.maybe_muted()`.
-  /// See [`Self::maybe_muted`].
-  pub fn never_muted(&self) -> bool {
-    !self.maybe_muted
+  /// This field could be set via [`Self::mute`] or [`Self::unmute`].
+  pub fn muted(&self) -> bool {
+    self.muted
   }
 
   /// This flag is to indicate whether this action might mutate the `ActionState`.
@@ -138,11 +130,10 @@ mod tests {
       exec: Box::new(|_| None),
       kind_id: &KIND_ID,
       head_matcher: None,
-      maybe_muted: false,
+      muted: false,
       may_mutate_state: false,
     };
-    assert!(!action.maybe_muted());
-    assert!(action.never_muted());
+    assert!(!action.muted());
     assert!(!action.may_mutate_state());
     assert!(action.never_mutate_state());
     assert_eq!(action.kind_id(), &TokenKindId::new(0));
@@ -156,11 +147,10 @@ mod tests {
       exec: Box::new(|_| None),
       kind_id: &KIND_ID,
       head_matcher: Some(HeadMatcher::OneOf(HashSet::from(['a']))),
-      maybe_muted: true,
+      muted: true,
       may_mutate_state: true,
     };
-    assert!(action.maybe_muted());
-    assert!(!action.never_muted());
+    assert!(action.muted());
     assert!(action.may_mutate_state());
     assert!(!action.never_mutate_state());
     assert_eq!(action.kind_id(), &TokenKindId::new(1));

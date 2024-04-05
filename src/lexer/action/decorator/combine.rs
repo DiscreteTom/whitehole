@@ -54,8 +54,6 @@ impl<Kind, ActionState: 'static, ErrorType: 'static> Add<SubAction<ActionState>>
           |input| {
             rhs.exec(&input).map(|another_digested| {
               output.digested += another_digested;
-              // other fields in `output` is not changed (e.g. `output.muted`),
-              // so we don't need to change other fields of `self` (e.g. `self.maybe_muted`)
               output
             })
           },

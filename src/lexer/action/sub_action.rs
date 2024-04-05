@@ -162,15 +162,12 @@ impl<ActionState: 'static, ErrorType> From<SubAction<ActionState>>
         exec(&SubActionInput::from(input)).map(|digested| ActionOutput {
           kind: MockTokenKind::new(()),
           digested,
-          // make sure the output is never muted
-          // so we can set `Action::maybe_muted` to false
-          muted: false,
           error: None,
         })
       }),
       kind_id: MockTokenKind::kind_id(),
       head_matcher: None,
-      maybe_muted: false,
+      muted: false,
       // SubAction never mutate the action state
       may_mutate_state: false,
     }
@@ -240,7 +237,6 @@ mod tests {
       Some(ActionOutput {
         kind: mock,
         digested: 3,
-        muted: false,
         error: None,
       }) if matches!(mock.data, ())
     ));

@@ -41,18 +41,16 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
               output: ActionOutput {
                 kind: output.kind,
                 digested: output.digested,
-                muted: output.muted,
                 error: &output.error,
               },
             }),
           },
           digested: output.digested,
-          muted: output.muted,
           error: output.error,
         })
       }),
       may_mutate_state: self.may_mutate_state,
-      maybe_muted: self.maybe_muted,
+      muted: self.muted,
       head_matcher: self.head_matcher,
       kind_id: MockTokenKind::kind_id(),
     }
@@ -96,7 +94,6 @@ mod tests {
       Some(ActionOutput {
         kind: MockTokenKind { data },
         digested: 1,
-        muted: false,
         error: None
       }) if *data == 1
     ));
@@ -113,7 +110,6 @@ mod tests {
       Some(ActionOutput {
         kind: MockTokenKind { data },
         digested: 1,
-        muted: false,
         error: None
       }) if **data == 1
     ));

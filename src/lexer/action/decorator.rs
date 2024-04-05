@@ -84,55 +84,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self
   }
 
-  /// Set [`ActionOutput::muted`] if the action is accepted.
-  /// This will set [`Self::maybe_muted`] to `true`.
-  /// # Examples
-  /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # #[derive(TokenKind, Clone)]
-  /// # enum MyKind { A }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define(
-  ///   MyKind::A,
-  ///   regex(r"^\s+")
-  ///     .unwrap()
-  ///     .mute_if(|ctx| ctx.rest().len() > 0)
-  /// );
-  /// ```
-  pub fn mute_if(
-    mut self,
-    condition: impl Fn(
-        // user should NOT mutate/consume the output
-        AcceptedActionOutputContext<
-          &ActionInput<ActionState>,
-          &ActionOutput<Kind, Option<ErrorType>>,
-        >,
-      ) -> bool
-      + 'static,
-  ) -> Self
-  where
-    ActionState: 'static,
-    ErrorType: 'static,
-  {
-    let exec = self.exec;
-    self.exec = Box::new(move |input| {
-      exec(input).map(|mut output| {
-        output.muted = condition(AcceptedActionOutputContext {
-          input,
-          output: &output,
-        });
-        output
-      })
-    });
-    // we can't know whether the output will be muted
-    // so we set `maybe_muted` to true
-    self.maybe_muted = true;
-    self
-  }
-
-  /// Set [`ActionOutput::muted`] to `true` if the action is accepted.
-  /// This will set [`Self::maybe_muted`] to `true`.
+  /// Set [`Self::muted`] to `true`.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -147,24 +99,12 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///     .mute()
   /// );
   /// ```
-  pub fn mute(mut self) -> Self
-  where
-    ActionState: 'static,
-    ErrorType: 'static,
-  {
-    let exec = self.exec;
-    self.exec = Box::new(move |input| {
-      exec(input).map(|mut output| {
-        output.muted = true;
-        output
-      })
-    });
-    self.maybe_muted = true;
+  pub fn mute(mut self) -> Self {
+    self.muted = true;
     self
   }
 
-  /// Set [`ActionOutput::muted`] to `false` if the action is accepted.
-  /// This will set [`Self::maybe_muted`] to `false`.
+  /// Set [`Self::muted`] to `false`.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
@@ -179,21 +119,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ///     .unmute()
   /// );
   /// ```
-  // this function is needed because this is the only way to set `maybe_muted` to `false`
-  // after the construction of Action
-  pub fn unmute(mut self) -> Self
-  where
-    ActionState: 'static,
-    ErrorType: 'static,
-  {
-    let exec = self.exec;
-    self.exec = Box::new(move |input| {
-      exec(input).map(|mut output| {
-        output.muted = false;
-        output
-      })
-    });
-    self.maybe_muted = false;
+  pub fn unmute(mut self) -> Self {
+    self.muted = false;
     self
   }
 
@@ -242,16 +169,14 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
               kind: &output.kind,  // don't consume the kind
               error: output.error, // but the error is consumable
               digested: output.digested,
-              muted: output.muted,
             },
           }),
           kind: output.kind,
           digested: output.digested,
-          muted: output.muted,
         })
       }),
       may_mutate_state: self.may_mutate_state,
-      maybe_muted: self.maybe_muted,
+      muted: self.muted,
       head_matcher: self.head_matcher,
       kind_id: self.kind_id,
     }
@@ -284,11 +209,10 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
           error: Some(error.clone()),
           kind: output.kind,
           digested: output.digested,
-          muted: output.muted,
         })
       }),
       may_mutate_state: self.may_mutate_state,
-      maybe_muted: self.maybe_muted,
+      muted: self.muted,
       head_matcher: self.head_matcher,
       kind_id: self.kind_id,
     }
@@ -486,36 +410,12 @@ mod tests {
   }
 
   #[test]
-  fn action_mute_if() {
-    let action: Action<_> = exact("a").mute_if(|ctx| ctx.rest().len() > 0);
-
-    // ensure `action.mute_if` will set `maybe_muted` to true
-    assert!(action.maybe_muted);
-
-    // `action.mute_if` can mute the output
-    assert!(matches!(
-      action.exec(&mut ActionInput::new("aa", 0, &mut ()).unwrap()),
-      Some(ActionOutput { muted: true, .. })
-    ));
-  }
-
-  #[test]
   fn action_mute_unmute() {
     let muted_action: Action<_> = exact("a").mute();
     let not_muted_action: Action<_> = exact("a").mute().unmute();
 
-    // ensure `action.mute/unmute` will set `maybe_muted`
-    assert!(muted_action.maybe_muted);
-    assert!(!not_muted_action.maybe_muted);
-
-    assert!(matches!(
-      muted_action.exec(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
-      Some(ActionOutput { muted: true, .. })
-    ));
-    assert!(matches!(
-      not_muted_action.exec(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
-      Some(ActionOutput { muted: false, .. })
-    ));
+    assert!(muted_action.muted);
+    assert!(!not_muted_action.muted);
   }
 
   #[test]

@@ -47,16 +47,13 @@ where
       Some((digested, data)) => Some(ActionOutput {
         kind: MockTokenKind::new(data),
         digested,
-        // make sure the output is never muted
-        // so we can set `Action::maybe_muted` to false
-        muted: false,
         error: None,
       }),
       _ => None,
     }),
     kind_id: MockTokenKind::kind_id(),
     head_matcher: None,
-    maybe_muted: false,
+    muted: false,
     may_mutate_state: false,
   }
 }
@@ -100,7 +97,6 @@ mod tests {
       Some(ActionOutput {
         kind: MockTokenKind { data: 123 },
         digested: 3,
-        muted: false,
         error: None
       })
     ));
@@ -115,7 +111,6 @@ mod tests {
       Some(ActionOutput {
         kind: MockTokenKind { data: 123 },
         digested: 0,
-        muted: false,
         error: None
       })
     ));
