@@ -1,15 +1,17 @@
 use super::token::{TokenKindId, TokenKindIdProvider};
 
 pub struct Expectation<'expect_text, Kind: 'static> {
+  /// See [`Self::kind`].
   pub kind: Option<&'static TokenKindId<Kind>>,
-  pub text: Option<&'expect_text str>,
+  /// See [`Self::literal`].
+  pub literal: Option<&'expect_text str>,
 }
 
 impl<'expect_text, Kind> Default for Expectation<'expect_text, Kind> {
   fn default() -> Self {
     Expectation {
       kind: None,
-      text: None,
+      literal: None,
     }
   }
 }
@@ -21,7 +23,7 @@ where
   fn from(id: &'static TokenKindId<Kind>) -> Self {
     Expectation {
       kind: Some(id),
-      text: None,
+      literal: None,
     }
   }
 }
@@ -30,13 +32,14 @@ impl<'expect_text, Kind> From<&'expect_text str> for Expectation<'expect_text, K
   fn from(text: &'expect_text str) -> Self {
     Expectation {
       kind: None,
-      text: Some(text),
+      literal: Some(text),
     }
   }
 }
 
 impl<'expect_text, Kind> Expectation<'expect_text, Kind> {
-  /// Set the expected kind id of the token.
+  /// If the [`kind`](Self::kind) is provided, the lexer will skip [`Action`](crate::lexer::action::Action)s
+  /// which are not [`muted`](crate::lexer::action::Action::muted) and have different [`kind_id`](crate::lexer::action::Action::kind_id).
   /// # Examples
   /// ```
   /// # use whitehole::lexer::token::{token_kind};
@@ -59,7 +62,11 @@ impl<'expect_text, Kind> Expectation<'expect_text, Kind> {
 }
 
 impl<'expect_text, Kind> Expectation<'expect_text, Kind> {
-  /// Set the expected text content of the token.
+  /// If the [`literal`](Self::literal) is provided, the lexer will skip [`Action`](crate::lexer::action::Action)s
+  /// which are not [`muted`](crate::lexer::action::Action::muted) and have different [`literal`](crate::lexer::action::Action::literal).
+  ///
+  /// Be ware, we are checking the [`Action::literal`](crate::lexer::action::Action::literal),
+  /// not the [`Token::content`](crate::lexer::token::Token::content).
   /// # Examples
   /// ```
   /// # use whitehole::lexer::token::{token_kind};
@@ -67,10 +74,10 @@ impl<'expect_text, Kind> Expectation<'expect_text, Kind> {
   /// # #[token_kind]
   /// # enum MyKind { A }
   /// # let mut expectation = Expectation::<MyKind>::default();
-  /// expectation.text("text");
+  /// expectation.literal("text");
   /// ```
-  pub fn text(mut self, text: impl Into<&'expect_text str>) -> Self {
-    self.text = Some(text.into());
+  pub fn literal(mut self, text: impl Into<&'expect_text str>) -> Self {
+    self.literal = Some(text.into());
     self
   }
 }
@@ -92,20 +99,20 @@ mod tests {
   fn expectation_default() {
     let expectation = Expectation::<MyKind>::default();
     assert_eq!(expectation.kind, None);
-    assert_eq!(expectation.text, None);
+    assert_eq!(expectation.literal, None);
   }
 
   #[test]
   fn expectation_from_kind_id() {
     let expectation = Expectation::from(A::kind_id());
     assert_eq!(expectation.kind, Some(A::kind_id()));
-    assert_eq!(expectation.text, None);
+    assert_eq!(expectation.literal, None);
   }
 
   #[test]
   fn expectation_from_text() {
     let expectation = Expectation::<MyKind>::from("text");
     assert_eq!(expectation.kind, None);
-    assert_eq!(expectation.text, Some("text"));
+    assert_eq!(expectation.literal, Some("text"));
   }
 }
