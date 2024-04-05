@@ -65,13 +65,10 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             // error exists, we must create the token even muted
             // so we can collect the token in `res.errors` or `res.token`
 
-            // backup values before output is consumed
-            let muted = output.muted;
-
             // create the error token
             let token = Self::create_token(&input, output);
 
-            if muted {
+            if actions[action_index].muted() {
               // don't emit token
               // collect errors and continue
               // [[muted error tokens are also collected]]
@@ -89,7 +86,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
           // else, no error, only create token if not muted
 
-          if output.muted {
+          if actions[action_index].muted() {
             // don't emit token
             continue;
           }
@@ -140,11 +137,15 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   where
     Kind: TokenKindIdProvider<Kind>,
   {
-    if action.never_muted() {
-      // the action is never muted, so we can check the expectation before exec
+    if action.muted() {
+      // the action is muted, we don't need to check the expectation
+      // because muted output is always accepted regardless of the expectation
+      action.exec(input)
+    } else {
+      // the action is not muted, we need to check the expectation before exec
       if text_mismatch {
         // we don't need to check if the action's kind id matches the expectation's kind id
-        // because when we build the kind head map in stateless lexer, we have already ensured never muted actions
+        // because when we build the kind head map in stateless lexer, we have already ensured non-muted actions
         // have the same kind id as the expectation's kind id
         // [[@when never muted, only actions with expected kind id will be append to the kind head map]]
         return None;
@@ -157,37 +158,6 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
           .text
           .map_or(true, |text| output.digested == text.len())
         {
-          Some(output)
-        } else {
-          // discard the output
-          // TODO: better error handling
-          if action.may_mutate_state() {
-            // the ActionState may be mutated but we discard the output
-            // this might cause the state to be in an inconsistent state
-            panic!()
-          }
-          None
-        }
-      })
-    } else {
-      // the action is maybe-muted,
-      // we don't need to check the expectation before exec
-      // because muted output is always accepted regardless of the expectation
-
-      action.exec(input).and_then(|output| {
-        if
-        // muted output is always accepted regardless of the expectation
-        output.muted
-          || (
-            // ensure expectation match.
-            // we still need to check the kind after exec
-            // because maybe_muted actions may yield unexpected kinds and actually not muted
-            expectation.kind.map_or(true, |kind_id| output.kind.id() == kind_id)
-            // same to the text, maybe_muted actions may accept unexpected text and actually not muted
-              && expectation.text.map_or(true, |text| &input.rest()[..output.digested] == text)
-          )
-        {
-          // muted, or match expectation
           Some(output)
         } else {
           // discard the output
