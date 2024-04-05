@@ -29,8 +29,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     };
 
     loop {
-      // all actions will reuse this action input
-      // so we have to create it outside of the loop
+      // all actions will reuse this action input in this iteration
       let mut input = match ActionInput::new(text, start + res.digested, state) {
         None => {
           // maybe some token is muted in the last iteration which cause the rest is empty
@@ -41,7 +40,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         Some(input) => input,
       };
 
-      // calc the text_mismatch before the loop so we can reuse this value
+      // calc the text_mismatch before traversing actions so we can reuse this value
       let text_mismatch = expectation
         .literal
         .is_some_and(|text| !input.rest().starts_with(text));
