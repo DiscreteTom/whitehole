@@ -33,13 +33,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     }
     // fill it
     for a in &actions {
-      if a.maybe_muted() {
-        // maybe muted, add to all kinds
+      if a.muted() {
+        // muted, add to all kinds
         for (_, vec) in kinds_action_map.iter_mut() {
           vec.push(a.clone());
         }
       } else {
-        // never muted, only add to possible kinds
+        // non-muted, only add to possible kinds
         kinds_action_map
           .get_mut(a.kind_id())
           .unwrap()
