@@ -69,3 +69,42 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
     &self.unknown_fallback
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lexer::{
+    action::{exact, regex},
+    token::MockTokenKind,
+  };
+
+  #[test]
+  fn test_head_map() {
+    let hm: HeadMap<MockTokenKind<()>, (), ()> = HeadMap::new(
+      &vec![
+        exact("a"),
+        exact("aa"),
+        exact("b"),
+        regex("[^c]").into_action().unchecked_head_not(['c']),
+        regex(".").into_action().unchecked_head_unknown(),
+        regex("muted").into_action().mute(),
+        regex("no_head_matcher").into_action(),
+      ]
+      .into_iter()
+      .map(Rc::new)
+      .collect(),
+    );
+
+    // collect unknown heads
+    assert!(hm.known_map.contains_key(&'a'));
+    assert!(hm.known_map.contains_key(&'b'));
+    assert!(hm.known_map.contains_key(&'c'));
+    assert_eq!(hm.known_map.len(), 3);
+
+    // check action count
+    assert_eq!(hm.known_map[&'a'].len(), 5); // "a", "aa", "[^c]", muted, no_head_matcher
+    assert_eq!(hm.known_map[&'b'].len(), 4); // "b", "[^c]", muted, no_head_matcher
+    assert_eq!(hm.known_map[&'c'].len(), 2); // muted, no_head_matcher
+    assert_eq!(hm.unknown_fallback().len(), 4); // "[^c]", ".", muted, no_head_matcher
+  }
+}

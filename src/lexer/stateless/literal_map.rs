@@ -42,3 +42,31 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
     &self.known_map
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lexer::{
+    action::{exact, whitespaces},
+    token::MockTokenKind,
+  };
+
+  #[test]
+  fn test_literal_map() {
+    let lm: LiteralMap<MockTokenKind<()>, (), ()> = LiteralMap::new(
+      &vec![exact("a"), exact("a"), exact("aa"), whitespaces().mute()]
+        .into_iter()
+        .map(Rc::new)
+        .collect(),
+    );
+
+    // collect all literals
+    assert!(lm.known_map.contains_key("a"));
+    assert!(lm.known_map.contains_key("aa"));
+    assert_eq!(lm.known_map.len(), 2);
+
+    // muted actions are added to all known literals
+    assert_eq!(lm.known_map.get("a").unwrap().len(), 3);
+    assert_eq!(lm.known_map.get("aa").unwrap().len(), 2);
+  }
+}
