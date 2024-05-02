@@ -4,6 +4,8 @@ pub type Range = std::ops::Range<usize>;
 pub struct Token<'text, Kind, ErrorType> {
   /// The kind and the binding data.
   pub kind: Kind,
+  // TODO: can we remove the `content` field?
+  // this may only be used less than once, and can be calculated from `self.range`
   pub content: &'text str,
   /// The byte range of the token in the input string.
   /// This can be used to index the input string.
