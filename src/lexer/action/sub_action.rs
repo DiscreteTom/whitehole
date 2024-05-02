@@ -102,6 +102,14 @@ impl<ActionState> SubAction<ActionState> {
   pub fn exec(&self, input: &SubActionInput<ActionState>) -> Option<usize> {
     (self.exec)(input)
   }
+
+  /// Same as [`SubAction::into`] but might be helpful in chaining calls to auto infer the type.
+  pub fn into_action<ErrorType>(self) -> Action<MockTokenKind<()>, ActionState, ErrorType>
+  where
+    ActionState: 'static,
+  {
+    self.into()
+  }
 }
 
 impl<ActionState: 'static> BitOr<Self> for SubAction<ActionState> {
