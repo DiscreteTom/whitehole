@@ -1,3 +1,50 @@
+//! ## Design
+//!
+//! [`StatelessLexer`] doesn't hold lexer states or action states.
+//! It is just a collection of immutable [`Action`]s, and it is immutable itself.
+//! We can wrap it
+//! with [`Rc`] to make it clone-able and re-use it across multiple lexers.
+//!
+//! The [`StatelessLexer`] implements all the core lexing features,
+//! including expectation, fork, etc. If we
+//! want a stateless experience, we can use the [`StatelessLexer`] directly,
+//! but we may need to manage the lexer states and action states manually.
+//!
+//! ## Lexing Process
+//!
+//! To optimize the runtime performance, the [`StatelessLexer`] will
+//! pre-calculate and cache some action lists based on [`Action`]'s attributes
+//! like [`Action::kind_id`] [`Action::head_matcher`], [`Action::literal`], etc.
+//! When lexing, maybe not all of the actions will be evaluated/executed.
+//! Here are the rules:
+//!
+//! ### Without Expectation
+//!
+//! If there is no expectation provided, the lexer will filter actions
+//! by the first character of the rest of input text, and action's head matcher.
+//!
+//! For example, if the first character of the rest of input text is `'a'`,
+//! only actions accepting `'a'` as the first character will be evaluated.
+//!
+//! ### With Expected Kind
+//!
+//! If there is an expected kind, the lexer will first ignore actions
+//! with different [`Action::kind_id`] (unless muted), then ignore actions by the head matcher
+//! just like the case without expectation.
+//!
+//! ### With Expected Literal
+//!
+//! If there is an expected literal, the lexer will ignore actions
+//! with no or mismatched [`Action::literal`] (unless muted).
+//! We don't need to check the head matcher in this case.
+//!
+//! ### With Both Expected Kind and Literal
+//!
+//! If there is both an expected kind and a literal, the lexer will first ignore actions
+//! with different [`Action::kind_id`] (unless muted), then ignore actions
+//! with no or mismatched [`Action::literal`] (unless muted).
+//! We don't need to check the head matcher in this case.
+
 mod exec;
 mod head_map;
 mod lex;
