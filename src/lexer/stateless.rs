@@ -59,7 +59,7 @@ use literal_map::LiteralMap;
 use std::{collections::HashMap, rc::Rc};
 
 /// Stateless, immutable lexer.
-pub struct StatelessLexer<Kind: 'static, ActionState, ErrorType> {
+pub struct StatelessLexer<Kind: 'static, ActionState = (), ErrorType = ()> {
   /// All actions.
   actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
   /// This is used to accelerate lexing by the first character when there is no expectation.
