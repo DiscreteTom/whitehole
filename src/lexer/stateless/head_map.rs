@@ -95,16 +95,16 @@ mod tests {
       .collect(),
     );
 
-    // collect unknown heads
-    assert!(hm.known_map.contains_key(&'a'));
-    assert!(hm.known_map.contains_key(&'b'));
-    assert!(hm.known_map.contains_key(&'c'));
-    assert_eq!(hm.known_map.len(), 3);
+    // collect all known heads
+    assert!(hm.known_map().contains_key(&'a'));
+    assert!(hm.known_map().contains_key(&'b'));
+    assert!(hm.known_map().contains_key(&'c'));
+    assert_eq!(hm.known_map().len(), 3);
 
     // check action count
-    assert_eq!(hm.known_map[&'a'].len(), 5); // "a", "aa", "[^c]", muted, no_head_matcher
-    assert_eq!(hm.known_map[&'b'].len(), 4); // "b", "[^c]", muted, no_head_matcher
-    assert_eq!(hm.known_map[&'c'].len(), 2); // muted, no_head_matcher
+    assert_eq!(hm.known_map()[&'a'].len(), 5); // "a", "aa", "[^c]", muted, no_head_matcher
+    assert_eq!(hm.known_map()[&'b'].len(), 4); // "b", "[^c]", muted, no_head_matcher
+    assert_eq!(hm.known_map()[&'c'].len(), 2); // muted, no_head_matcher
     assert_eq!(hm.unknown_fallback().len(), 4); // "[^c]", ".", muted, no_head_matcher
   }
 }
