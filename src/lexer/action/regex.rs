@@ -12,6 +12,7 @@ use regex::Regex;
 /// use whitehole::lexer::action::{SubAction, regex};
 /// let a: SubAction<()> = regex(r"^\d+");
 /// ```
+// TODO: to distinguish between `regex` crate and this function, rename to `re`.
 pub fn regex<ActionState>(re: &str) -> SubAction<ActionState> {
   Regex::new(re)
     .map(|re| simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
