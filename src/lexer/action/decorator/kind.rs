@@ -23,14 +23,15 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     kind: ViaKind,
   ) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
   where
-    ViaKind: SubTokenKind<TokenKindIdBinding<NewKind>> + Into<TokenKindIdBinding<NewKind>>,
-    NewKind: Clone + 'static, // TODO: ViaKind should be Clone instead of NewKind
+    ViaKind: SubTokenKind<TokenKindIdBinding<NewKind>>
+      + Into<TokenKindIdBinding<NewKind>>
+      + Clone
+      + 'static,
     Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
     let exec = self.exec;
-    let kind = kind.into();
     Action {
       kind_id: ViaKind::kind_id(),
       head_matcher: self.head_matcher,
@@ -39,7 +40,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       literal: self.literal,
       exec: Box::new(move |input| {
         exec(input).map(|output| ActionOutput {
-          kind: kind.clone(),
+          kind: kind.clone().into(),
           digested: output.digested,
           error: output.error,
         })
@@ -61,7 +62,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// ```
   pub fn bind_default<NewKind>(self) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
   where
-    NewKind: Default + DefaultTokenKindIdBinding<NewKind>,
+    NewKind: DefaultTokenKindIdBinding<NewKind>,
     ActionState: 'static,
     ErrorType: 'static,
   {
