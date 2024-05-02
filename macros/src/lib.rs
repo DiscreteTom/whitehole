@@ -200,7 +200,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
           fn default_binding_kind_id() -> &'static #crate_name::lexer::token::TokenKindId<
             #crate_name::lexer::token::TokenKindIdBinding<#enum_name>
           > {
-            #variant_name::kind_id()
+            <#variant_name as #crate_name::lexer::token::SubTokenKind<_>>::kind_id()
           }
         }
       });
