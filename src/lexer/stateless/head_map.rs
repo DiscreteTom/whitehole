@@ -6,7 +6,6 @@ pub(crate) struct HeadMap<Kind: 'static, ActionState, ErrorType> {
   known_map: HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
   /// Store actions for unknown chars.
   unknown_fallback: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
-  // TODO: add actions for may_mutate_state or not?
 }
 
 impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {

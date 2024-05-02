@@ -48,22 +48,28 @@
 mod exec;
 mod head_map;
 mod lex;
+mod literal_map;
 mod options;
 
 pub use options::*;
 
 use super::{action::Action, token::TokenKindId};
 use head_map::HeadMap;
+use literal_map::LiteralMap;
 use std::{collections::HashMap, rc::Rc};
 
 /// Stateless, immutable lexer.
 pub struct StatelessLexer<Kind: 'static, ActionState, ErrorType> {
   /// All actions.
   actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
-  /// This is used to accelerate lexing by the first character when no expected kind.
+  /// This is used to accelerate lexing by the first character when there is no expectation.
   head_map: HeadMap<Kind, ActionState, ErrorType>,
   /// This is used to accelerate expected lexing by the expected kind and the first character.
   kind_head_map: HashMap<TokenKindId<Kind>, HeadMap<Kind, ActionState, ErrorType>>,
+  /// This is used to accelerate expected lexing by the expected literal.
+  literal_map: LiteralMap<Kind, ActionState, ErrorType>,
+  /// This is used to accelerate expected lexing by the expected kind and literal.
+  kind_literal_map: HashMap<TokenKindId<Kind>, LiteralMap<Kind, ActionState, ErrorType>>,
 }
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
@@ -95,16 +101,18 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
 
-    let kind_head_map = kinds_action_map
-      .iter()
-      .map(|(k, v)| (k.clone(), HeadMap::new(&v)))
-      .collect();
-    let head_map = HeadMap::new(&actions);
-
     Self {
+      head_map: HeadMap::new(&actions),
+      kind_head_map: kinds_action_map
+        .iter()
+        .map(|(k, v)| (*k, HeadMap::new(v)))
+        .collect(),
+      literal_map: LiteralMap::new(&actions),
+      kind_literal_map: kinds_action_map
+        .iter()
+        .map(|(k, v)| (*k, LiteralMap::new(v)))
+        .collect(),
       actions,
-      head_map,
-      kind_head_map,
     }
   }
 
