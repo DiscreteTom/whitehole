@@ -2,15 +2,15 @@
 //!
 //! For a better engineering experience, the lexer is designed to be modular
 //! and consists of many [`Action`]s. Each action is a small piece of logic
-//! which will digest some bytes from the rest of the text input, and yield a token or not.
+//! which will digest some bytes from the rest of the text input, and optionally yield a token.
 //! By doing so, users can easily compose their own lexer by combining existing actions,
 //! or create their own actions by modifying existing ones.
 //! Users can also share their actions with others by publishing them as a library,
 //! or build higher-level libraries to generate actions.
 //!
-//! Besides, [`Action`]s may be considered heavy because the `Action` and
+//! Besides, [`Action`]s may be considered heavy because the
 //! [`ActionOutput`] has many fields and when we modify an `Action`
-//! with [`decorator`]s they may be destructed/created many times.
+//! with [`decorator`]s the `ActionOutput` may be destructed/created many times during the runtime.
 //! To solve this problem, we can use [`SubAction`]
 //! which is a light weight version of [`Action`]
 //! that only returns how many bytes are digested.
