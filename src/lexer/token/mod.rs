@@ -15,7 +15,7 @@
 //! The data may be generated during the lexing process and stored in the token
 //! so we don't need to parse the token content again after lexing.
 //! An example is that if we want to lex a string literal with escape sequences,
-//! when the lexing is done we should already know the evaluated value of the string literal,
+//! when the token is yielded we should already know the evaluated value of the string literal,
 //! we can store the value in the token, instead of parsing the literal content again.
 //! The data should be associated with the token kind,
 //! so we can use enum variants to represent them.
@@ -28,14 +28,32 @@
 //! ```
 //!
 //! However, in rust we treat `Number(0)` and `Number(1)` as different values,
-//! but they are the same kind of token.
+//! but their token kinds are the same.
 //! To solve this problem, we can use a [`TokenKindId`] to identify different token kinds.
 //! `Number(0)` and `Number(1)` are different values but they have the same [`TokenKindId`].
 //! We use the index of the enum variant as the id of the token kind, so in the example above,
 //! `Identifier` has id `0` and `Number` has id `1`.
+//! By doing this, `Number(0)` and `Number(1)` have the same token kind id `1`.
 //!
-//! But we need to store the id and the token kind value together,
-//! so we need [`TokenKindIdBinding`] to bind the id and the value.
+//! We also need a way to get the token kind id from a token kind value.
+//! An easy way is to use pattern matching like this:
+//!
+//! ```
+//! # pub enum MyKind {
+//! #   Identifier(String),
+//! #   Number(i32),
+//! # }
+//! fn get_id(kind: MyKind) -> usize {
+//!   match kind {
+//!     MyKind::Identifier(_) => 0,
+//!     MyKind::Number(_) => 1,
+//!   }
+//! }
+//! ```
+//!
+//! However we will access the token kind id frequently, so we store the id and the token kind value together
+//! to prevent unnecessary pattern matching (just like cache the result of the pattern matching).
+//! We use [`TokenKindIdBinding`] to bind the id and the value.
 //!
 //! ```
 //! # pub enum MyKind {
@@ -44,7 +62,7 @@
 //! # }
 //! #
 //! pub struct TokenKindIdBinding<TokenKindType> {
-//!   id: TokenKindId<Self>,
+//!   id: TokenKindId<TokenKindType>,
 //!   value: TokenKindType,
 //! }
 //!
@@ -53,22 +71,22 @@
 //!
 //! // correct
 //! TokenKindIdBinding {
-//!   id: TokenKindId::new(0),
+//!   id: TokenKindId::new(0), // the id of `Identifier`
 //!   value: MyKind::Identifier("hello".to_string())
 //! }
 //! TokenKindIdBinding {
-//!   id: TokenKindId::new(1),
+//!   id: TokenKindId::new(1), // the id of `Number`
 //!   value: MyKind::Number(0)
 //! }
 //!
 //! // wrong
 //! TokenKindIdBinding {
-//!   id: TokenKindId::new(0),
+//!   id: TokenKindId::new(0), // the id of `Identifier`
 //!   value: MyKind::Number(0)
 //! }
 //! ```
 //!
-//! As you can see, we want to get the id bound with `MyKind`, and we get the id from [`TokenKindIdBinding`].
+//! As you can see, we want to get the id bound with a value of `MyKind`, and we get the id from [`TokenKindIdBinding`].
 //! Thus the [`TokenKindIdBinding`] is a [`TokenKindIdProvider`], `MyKind` is not.
 //!
 //! To achieve the strict binding between the token kind id and the token kind value,
@@ -79,7 +97,7 @@
 //! #
 //! // this is the "token kind"
 //! pub enum MyKind {
-//!   // instead of storing the value directly,
+//!   // instead of storing the token value directly,
 //!   // we store sub token kinds in the enum variant
 //!   // to avoid destructing sub token kind value
 //!   // when build the token kind value
@@ -87,7 +105,7 @@
 //!   Number(Number),
 //! }
 //!
-//! // these are "sub token kind"s, they store values
+//! // these are "sub token kind"s, they store token values
 //! pub struct Identifier(pub String);
 //! pub struct Number(pub i32);
 //!
@@ -129,7 +147,7 @@
 //! }
 //! ```
 //!
-//! We should only use these structs to create [`TokenKindIdBinding`] to make sure the binding is correct.
+//! We should only use sub token kind structs to create [`TokenKindIdBinding`] to make sure the binding is correct.
 //!
 //! To simplify all above, we can use the macro [`token_kind`] to transform the enum.
 //!
