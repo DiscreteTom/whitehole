@@ -1,6 +1,8 @@
 use crate::lexer::action::{Action, HeadMatcher};
 use std::{collections::HashSet, ops::RangeInclusive};
 
+// TODO: make these unsafe
+
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Set [`Action::head_matcher`] to [`OneOf`](HeadMatcher::OneOf).
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.

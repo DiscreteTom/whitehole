@@ -2,6 +2,7 @@ use super::{Action, ActionInput, ActionOutput};
 use crate::lexer::token::{MockTokenKind, SubTokenKind};
 use std::ops::{Add, BitOr};
 
+// TODO: remove this when `ActionInput`'s state is not a reference
 /// This has the same interface with [`ActionInput`], but the [`state`](Self::state) is NOT mutable.
 pub struct SubActionInput<'text, 'action_state, ActionState> {
   pub state: &'action_state ActionState,
@@ -65,7 +66,7 @@ impl<'text, 'action_state, ActionState> SubActionInput<'text, 'action_state, Act
 /// and returns [`None`] if the action is rejected.
 /// [`ActionInput::state`] is NOT mutable in [`Self::exec`].
 ///
-/// [`SubAction`]s can be combined with [`|`](Self::bitor) and [`+`](Self::add)
+/// [`SubAction`]s can be combined with [`|`](BitOr) and [`+`](Add)
 /// to create new `SubAction`s.
 ///
 /// Low-level action utils like [`simple`](super::simple) will create [`SubAction`]
@@ -91,7 +92,7 @@ pub struct SubAction<ActionState> {
 }
 
 impl<ActionState> SubAction<ActionState> {
-  /// See [`SubAction`].
+  /// See [`SubAction`]. You can also use [`sub`] as a shortcut.
   pub fn new(exec: impl Fn(&SubActionInput<ActionState>) -> Option<usize> + 'static) -> Self {
     Self {
       exec: Box::new(exec),

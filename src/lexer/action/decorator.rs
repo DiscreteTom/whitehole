@@ -353,6 +353,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # let action: Action<_> =
   /// exact("a").apply(|a| a.mute().reject());
   /// ```
+  // TODO: use blanket impl for all struct
   pub fn apply<T>(self, f: impl FnOnce(Self) -> T) -> T {
     f(self)
   }

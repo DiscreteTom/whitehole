@@ -24,7 +24,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
   where
     ViaKind: SubTokenKind<TokenKindIdBinding<NewKind>> + Into<TokenKindIdBinding<NewKind>>,
-    NewKind: Clone + 'static,
+    NewKind: Clone + 'static, // TODO: ViaKind should be Clone instead of NewKind
     Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
