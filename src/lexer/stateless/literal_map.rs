@@ -38,15 +38,17 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
 
     // fill the action map
     for a in actions {
+      if a.muted() {
+        // muted, expectation.literal will be ignored, add to all known literals
+        for vec in res.known_map.values_mut() {
+          vec.push(a.clone());
+        }
+        // ignore self.literal, just continue
+        continue;
+      }
+
       if let Some(literal) = a.literal() {
         res.known_map.get_mut(literal).unwrap().push(a.clone());
-      } else {
-        // no literal. if muted, add to all known literals
-        if a.muted() {
-          for vec in res.known_map.values_mut() {
-            vec.push(a.clone());
-          }
-        }
       }
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
@@ -63,17 +65,22 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
 mod tests {
   use super::*;
   use crate::lexer::{
-    action::{exact, whitespaces},
+    action::{exact, regex},
     token::MockTokenKind,
   };
 
   #[test]
   fn test_literal_map() {
-    let actions: Vec<Rc<Action<MockTokenKind<()>>>> =
-      vec![exact("a"), exact("a"), exact("aa"), whitespaces().mute()]
-        .into_iter()
-        .map(Rc::new)
-        .collect();
+    let actions: Vec<Rc<Action<MockTokenKind<()>>>> = vec![
+      exact("a"),        // has literal, not muted
+      exact("a").mute(), // has literal, muted
+      exact("aa"),
+      regex("no_literal").into(),
+      regex("muted_no_literal").into_action().mute(),
+    ]
+    .into_iter()
+    .map(Rc::new)
+    .collect();
 
     let lm = LiteralMap::new(&actions, LiteralMap::collect_all_known(&actions));
 
@@ -83,7 +90,7 @@ mod tests {
     assert_eq!(lm.known_map().len(), 2);
 
     // muted actions are added to all known literals
-    assert_eq!(lm.known_map().get("a").unwrap().len(), 3);
-    assert_eq!(lm.known_map().get("aa").unwrap().len(), 2);
+    assert_eq!(lm.known_map().get("a").unwrap().len(), 3); // "a", muted "a", muted_no_literal
+    assert_eq!(lm.known_map().get("aa").unwrap().len(), 3); // muted "a", "aa", muted_no_literal
   }
 }
