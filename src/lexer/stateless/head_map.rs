@@ -104,8 +104,11 @@ mod tests {
       exact("b"),
       regex("[^c]").into_action().unchecked_head_not(['c']),
       regex(".").into_action().unchecked_head_unknown(),
-      regex("muted").into_action().mute(),
-      regex("no_head_matcher").into_action(),
+      regex("a_muted")
+        .into_action()
+        .unchecked_head_in(['a'])
+        .mute(),
+      regex("no_head_matcher").into(),
     ]
     .into_iter()
     .map(Rc::new)
@@ -120,9 +123,9 @@ mod tests {
     assert_eq!(hm.known_map().len(), 3);
 
     // check action count
-    assert_eq!(hm.known_map()[&'a'].len(), 5); // "a", "aa", "[^c]", muted, no_head_matcher
-    assert_eq!(hm.known_map()[&'b'].len(), 4); // "b", "[^c]", muted, no_head_matcher
-    assert_eq!(hm.known_map()[&'c'].len(), 2); // muted, no_head_matcher
-    assert_eq!(hm.unknown_fallback().len(), 4); // "[^c]", ".", muted, no_head_matcher
+    assert_eq!(hm.known_map()[&'a'].len(), 5); // "a", "aa", "[^c]", a_muted, no_head_matcher
+    assert_eq!(hm.known_map()[&'b'].len(), 3); // "b", "[^c]", no_head_matcher
+    assert_eq!(hm.known_map()[&'c'].len(), 1); // no_head_matcher
+    assert_eq!(hm.unknown_fallback().len(), 3); // "[^c]", ".", no_head_matcher
   }
 }
