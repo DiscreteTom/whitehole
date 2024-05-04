@@ -47,6 +47,10 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
 
     // fill the head map
     for a in actions {
+      // no matter the action is muted or not, we need to check the head matcher
+      // so we don't need to check if an action is muted or not here (like in literal map)
+      // see [[@check if the action is muted or not in literal map]]
+
       if let Some(head_matcher) = a.head_matcher() {
         match head_matcher {
           HeadMatcher::OneOf(set) => {

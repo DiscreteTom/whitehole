@@ -38,6 +38,7 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
 
     // fill the action map
     for a in actions {
+      // [[check if the action is muted or not in literal map]]
       if a.muted() {
         // muted, expectation.literal will be ignored, add to all known literals
         for vec in res.known_map.values_mut() {
