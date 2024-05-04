@@ -1,7 +1,7 @@
 use crate::lexer::action::{Action, HeadMatcher};
 use std::{collections::HashMap, rc::Rc};
 
-pub(crate) struct HeadMap<Kind: 'static, ActionState, ErrorType> {
+pub(super) struct HeadMap<Kind: 'static, ActionState, ErrorType> {
   /// Store actions for known chars.
   known_map: HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
   /// Store actions for unknown chars.
@@ -9,13 +9,17 @@ pub(crate) struct HeadMap<Kind: 'static, ActionState, ErrorType> {
 }
 
 impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
-  pub fn new(actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>) -> Self {
-    let mut res = Self {
-      known_map: HashMap::new(),
-      unknown_fallback: Vec::new(),
-    };
-    // collect all known chars, this must be done before filling the head map
-    // because we need to iter over all known chars when filling the head map
+  /// Collect all known head chars from all actions instead of a subset of actions to make sure
+  /// 'known' has a consistent meaning across all head maps in a stateless lexer
+  /// (otherwise maybe only a subset of chars are known for a subset of actions,
+  /// in this case the 'known' has an inconsistent meaning).
+  /// This must be done before creating a head map because we need to iter over all known chars when filling the head map
+  /// with [`HeadMatcher::Not`] and [`HeadMatcher::Unknown`].
+  pub fn collect_all_known(
+    actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
+  ) -> HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
+    let mut res = HashMap::new();
+
     for a in actions {
       if let Some(head_matcher) = a.head_matcher() {
         for c in match head_matcher {
@@ -23,10 +27,24 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
           HeadMatcher::Not(set) => set,
           HeadMatcher::Unknown => continue,
         } {
-          res.known_map.entry(*c).or_insert(Vec::new());
+          res.entry(*c).or_insert(Vec::new());
         }
       }
     }
+
+    res
+  }
+
+  /// Create a self with a subset of actions and a known char map created by [`Self::collect_all_known`].
+  pub fn new(
+    actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
+    known_map: HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
+  ) -> Self {
+    let mut res = Self {
+      known_map,
+      unknown_fallback: Vec::new(),
+    };
+
     // fill the head map
     for a in actions {
       if let Some(head_matcher) = a.head_matcher() {
@@ -80,20 +98,20 @@ mod tests {
 
   #[test]
   fn test_head_map() {
-    let hm: HeadMap<MockTokenKind<()>, (), ()> = HeadMap::new(
-      &vec![
-        exact("a"),
-        exact("aa"),
-        exact("b"),
-        regex("[^c]").into_action().unchecked_head_not(['c']),
-        regex(".").into_action().unchecked_head_unknown(),
-        regex("muted").into_action().mute(),
-        regex("no_head_matcher").into_action(),
-      ]
-      .into_iter()
-      .map(Rc::new)
-      .collect(),
-    );
+    let actions: Vec<Rc<Action<MockTokenKind<()>>>> = vec![
+      exact("a"),
+      exact("aa"),
+      exact("b"),
+      regex("[^c]").into_action().unchecked_head_not(['c']),
+      regex(".").into_action().unchecked_head_unknown(),
+      regex("muted").into_action().mute(),
+      regex("no_head_matcher").into_action(),
+    ]
+    .into_iter()
+    .map(Rc::new)
+    .collect();
+
+    let hm = HeadMap::new(&actions, HeadMap::collect_all_known(&actions));
 
     // collect all known heads
     assert!(hm.known_map().contains_key(&'a'));

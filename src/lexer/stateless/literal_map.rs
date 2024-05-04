@@ -1,25 +1,41 @@
 use crate::lexer::action::Action;
 use std::{collections::HashMap, rc::Rc};
 
-pub(crate) struct LiteralMap<Kind: 'static, ActionState, ErrorType> {
+pub(super) struct LiteralMap<Kind: 'static, ActionState, ErrorType> {
   /// Store actions for known literals.
   known_map: HashMap<String, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
   // for literal map there is no unknown_fallback because we don't check
-  // actions with mismatched literals
+  // actions with mismatched/unknown literals (should panic)
 }
 
 impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
-  pub fn new(actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>) -> Self {
-    let mut res = Self {
-      known_map: HashMap::new(),
-    };
-    // collect all known literals, this must be done before filling the action map
-    // because we need to iter over all known literals when filling the action map
+  /// Collect all known literals from all actions instead of a subset of actions to make sure
+  /// 'known' as a consistent meaning across all literal maps in a stateless lexer
+  /// (otherwise maybe only a subset of literals are known for a subset of actions,
+  /// in this case the 'known' has an inconsistent meaning).
+  /// This must be done before creating a literal map because we need to iter over all known literals
+  /// when filling the literal map with no-literal actions.
+  pub fn collect_all_known(
+    actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
+  ) -> HashMap<String, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
+    let mut res = HashMap::new();
+
     for a in actions {
       if let Some(literal) = a.literal() {
-        res.known_map.entry(literal.clone()).or_insert(Vec::new());
+        res.entry(literal.clone()).or_insert(Vec::new());
       }
     }
+
+    res
+  }
+
+  /// Create a self with a subset of actions and a known literal map created by [`Self::collect_all_known`].
+  pub fn new(
+    actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
+    known_map: HashMap<String, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
+  ) -> Self {
+    let mut res = Self { known_map };
+
     // fill the action map
     for a in actions {
       if let Some(literal) = a.literal() {
@@ -53,12 +69,13 @@ mod tests {
 
   #[test]
   fn test_literal_map() {
-    let lm: LiteralMap<MockTokenKind<()>, (), ()> = LiteralMap::new(
-      &vec![exact("a"), exact("a"), exact("aa"), whitespaces().mute()]
+    let actions: Vec<Rc<Action<MockTokenKind<()>>>> =
+      vec![exact("a"), exact("a"), exact("aa"), whitespaces().mute()]
         .into_iter()
         .map(Rc::new)
-        .collect(),
-    );
+        .collect();
+
+    let lm = LiteralMap::new(&actions, LiteralMap::collect_all_known(&actions));
 
     // collect all literals
     assert!(lm.known_map().contains_key("a"));

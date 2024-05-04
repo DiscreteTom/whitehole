@@ -101,17 +101,21 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
 
+    // collect known chars/literals using all actions so we can re-use this map for all head/literal maps
+    let known_char_map = HeadMap::collect_all_known(&actions);
+    let known_literal_map = LiteralMap::collect_all_known(&actions);
+
     Self {
-      head_map: HeadMap::new(&actions),
       kind_head_map: kinds_action_map
         .iter()
-        .map(|(k, v)| (*k, HeadMap::new(v)))
+        .map(|(k, v)| (*k, HeadMap::new(v, known_char_map.clone())))
         .collect(),
-      literal_map: LiteralMap::new(&actions),
       kind_literal_map: kinds_action_map
         .iter()
-        .map(|(k, v)| (*k, LiteralMap::new(v)))
+        .map(|(k, v)| (*k, LiteralMap::new(v, known_literal_map.clone())))
         .collect(),
+      head_map: HeadMap::new(&actions, known_char_map),
+      literal_map: LiteralMap::new(&actions, known_literal_map),
       actions,
     }
   }
