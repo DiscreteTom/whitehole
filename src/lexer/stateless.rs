@@ -124,3 +124,215 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     &self.actions
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lexer::{
+    action::{exact, regex},
+    token::{MockTokenKind, SubTokenKind, TokenKindIdBinding},
+  };
+  use whitehole_macros::_token_kind;
+
+  #[_token_kind]
+  #[derive(Debug, Clone)]
+  pub enum MyKind {
+    A,
+    B,
+  }
+
+  fn r<S: 'static, E>(s: &str) -> Action<MockTokenKind<()>, S, E> {
+    regex(s).into_action()
+  }
+
+  fn assert_action_eq(
+    actions: &Vec<Rc<Action<TokenKindIdBinding<MyKind>>>>,
+    expected: Vec<Action<TokenKindIdBinding<MyKind>>>,
+  ) {
+    assert_eq!(actions.len(), expected.len());
+    for i in 0..actions.len() {
+      assert_eq!(actions[i].kind_id(), expected[i].kind_id());
+      assert_eq!(actions[i].head_matcher(), expected[i].head_matcher());
+      assert_eq!(actions[i].literal(), expected[i].literal());
+      assert_eq!(actions[i].muted(), expected[i].muted());
+    }
+  }
+
+  #[test]
+  fn test_new_stateless_lexer() {
+    let lexer: StatelessLexer<_> = StatelessLexer::new(
+      vec![
+        exact("a").bind(A),                              // A, "a", not muted
+        exact("a").mute().bind(A),                       // A, "a", muted
+        r("a").unchecked_head_in(['a']).bind(A),         // A, OneOf('a'), not muted
+        r("a").unchecked_head_in(['a']).mute().bind(A),  // A, OneOf('a'), muted
+        r("a").unchecked_head_not(['c']).bind(A),        // A, Not('c'), not muted
+        r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
+        r("a").unchecked_head_unknown().bind(A),         // A, Unknown, not muted
+        r("a").unchecked_head_unknown().mute().bind(A),  // A, Unknown, muted
+        r("a").bind(A),                                  // A, no head, not muted
+        r("a").mute().bind(A),                           // A, no head, muted
+        exact("b").bind(B),                              // B, "b", not muted
+        exact("b").mute().bind(B),                       // B, "b", muted
+        r("b").unchecked_head_in(['b']).bind(B),         // B, OneOf('b'), not muted
+        r("b").unchecked_head_in(['b']).mute().bind(B),  // B, OneOf('b'), muted
+        r("b").unchecked_head_not(['c']).bind(B),        // B, Not('c'), not muted
+        r("b").unchecked_head_not(['c']).mute().bind(B), // B, Not('c'), muted
+        r("b").unchecked_head_unknown().bind(B),         // B, Unknown, not muted
+        r("b").unchecked_head_unknown().mute().bind(B),  // B, Unknown, muted
+        r("b").bind(B),                                  // B, no head, not muted
+        r("b").mute().bind(B),                           // B, no head, muted
+      ]
+      .into_iter()
+      .map(Rc::new)
+      .collect(),
+    );
+
+    // total actions
+    assert_eq!(lexer.actions().len(), 20);
+
+    // head_map
+    assert_eq!(lexer.head_map.known_map().len(), ['a', 'b', 'c'].len());
+    assert_action_eq(
+      &lexer.head_map.known_map()[&'a'],
+      vec![
+        exact("a").bind(A),                              // A, "a", not muted
+        exact("a").mute().bind(A),                       // A, "a", muted
+        r("a").unchecked_head_in(['a']).bind(A),         // A, OneOf('a'), not muted
+        r("a").unchecked_head_in(['a']).mute().bind(A),  // A, OneOf('a'), muted
+        r("a").unchecked_head_not(['c']).bind(A),        // A, Not('c'), not muted
+        r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
+        r("a").bind(A),                                  // A, no head, not muted
+        r("a").mute().bind(A),                           // A, no head, muted
+        r("b").unchecked_head_not(['c']).bind(B),        // B, Not('c'), not muted
+        r("b").unchecked_head_not(['c']).mute().bind(B), // B, Not('c'), muted
+        r("b").bind(B),                                  // B, no head, not muted
+        r("b").mute().bind(B),                           // B, no head, muted
+      ],
+    );
+    // `lexer.head_map.known_map()[&'b']` should be the similar to the above, skip.
+    assert_action_eq(
+      &lexer.head_map.known_map()[&'c'],
+      vec![
+        r("a").bind(A),        // A, no head, not muted
+        r("a").mute().bind(A), // A, no head, muted
+        r("b").bind(B),        // B, no head, not muted
+        r("b").mute().bind(B), // B, no head, muted
+      ],
+    );
+    assert_action_eq(
+      lexer.head_map.unknown_fallback(),
+      vec![
+        r("a").unchecked_head_not(['c']).bind(A), // A, Not('c'), not muted
+        r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
+        r("a").unchecked_head_unknown().bind(A),  // A, Unknown, not muted
+        r("a").unchecked_head_unknown().mute().bind(A), // A, Unknown, muted
+        r("a").bind(A),                           // A, no head, not muted
+        r("a").mute().bind(A),                    // A, no head, muted
+        r("b").unchecked_head_not(['c']).bind(B), // B, Not('c'), not muted
+        r("b").unchecked_head_not(['c']).mute().bind(B), // B, Not('c'), muted
+        r("b").unchecked_head_unknown().bind(B),  // B, Unknown, not muted
+        r("b").unchecked_head_unknown().mute().bind(B), // B, Unknown, muted
+        r("b").bind(B),                           // B, no head, not muted
+        r("b").mute().bind(B),                    // B, no head, muted
+      ],
+    );
+
+    // kind_head_map
+    assert_eq!(lexer.kind_head_map.len(), ['A', 'B'].len());
+    let kind_a_head_map = &lexer.kind_head_map[A::kind_id()];
+    assert_eq!(kind_a_head_map.known_map().len(), ['a', 'b', 'c'].len());
+    assert_action_eq(
+      &kind_a_head_map.known_map()[&'a'],
+      vec![
+        exact("a").bind(A),                              // A, "a", not muted
+        exact("a").mute().bind(A),                       // A, "a", muted
+        r("a").unchecked_head_in(['a']).bind(A),         // A, OneOf('a'), not muted
+        r("a").unchecked_head_in(['a']).mute().bind(A),  // A, OneOf('a'), muted
+        r("a").unchecked_head_not(['c']).bind(A),        // A, Not('c'), not muted
+        r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
+        r("a").bind(A),                                  // A, no head, not muted
+        r("a").mute().bind(A),                           // A, no head, muted
+        r("b").unchecked_head_not(['c']).mute().bind(B), // B, Not('c'), muted
+        r("b").mute().bind(B),                           // B, no head, muted
+      ],
+    );
+    assert_action_eq(
+      &kind_a_head_map.known_map()[&'b'],
+      vec![
+        r("a").unchecked_head_not(['c']).bind(A), // A, Not('c'), not muted
+        r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
+        r("a").bind(A),                           // A, no head, not muted
+        r("a").mute().bind(A),                    // A, no head, muted
+        exact("b").mute().bind(B),                // B, "b", muted
+        r("b").unchecked_head_in(['b']).mute().bind(B), // B, OneOf('b'), muted
+        r("b").unchecked_head_not(['c']).mute().bind(B), // B, Not('c'), muted
+        r("b").mute().bind(B),                    // B, no head, muted
+      ],
+    );
+    assert_action_eq(
+      &kind_a_head_map.known_map()[&'c'],
+      vec![
+        r("a").bind(A),        // A, no head, not muted
+        r("a").mute().bind(A), // A, no head, muted
+        r("b").mute().bind(B), // B, no head, muted
+      ],
+    );
+    assert_action_eq(
+      &kind_a_head_map.unknown_fallback(),
+      vec![
+        r("a").unchecked_head_not(['c']).bind(A), // A, Not('c'), not muted
+        r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
+        r("a").unchecked_head_unknown().bind(A),  // A, Unknown, not muted
+        r("a").unchecked_head_unknown().mute().bind(A), // A, Unknown, muted
+        r("a").bind(A),                           // A, no head, not muted
+        r("a").mute().bind(A),                    // A, no head, muted
+        r("b").unchecked_head_not(['c']).mute().bind(B), // B, Not('c'), muted
+        r("b").unchecked_head_unknown().mute().bind(B), // B, Unknown, muted
+        r("b").mute().bind(B),                    // B, no head, muted
+      ],
+    );
+    // `lexer.kind_head_map[B::kind_id()]` should be the similar to the above, skip.
+
+    // literal_map
+    assert_eq!(lexer.literal_map.known_map().len(), ["a", "b"].len());
+    assert_action_eq(
+      &lexer.literal_map.known_map()["a"],
+      vec![
+        exact("a").bind(A),                              // A, "a", not muted
+        exact("a").mute().bind(A),                       // A, "a", muted
+        r("a").unchecked_head_in(['a']).mute().bind(A),  // A, OneOf('a'), muted
+        r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
+        r("a").unchecked_head_unknown().mute().bind(A),  // A, Unknown, muted
+        r("a").mute().bind(A),                           // A, no head, muted
+        exact("b").mute().bind(B),                       // B, "b", muted
+        r("b").unchecked_head_in(['b']).mute().bind(B),  // B, OneOf('b'), muted
+        r("b").unchecked_head_not(['c']).mute().bind(B), // B, Not('c'), muted
+        r("b").unchecked_head_unknown().mute().bind(B),  // B, Unknown, muted
+        r("b").mute().bind(B),                           // B, no head, muted
+      ],
+    );
+    // `lexer.literal_map.known_map()["b"]` should be the similar to the above, skip.
+
+    // kind_literal_map
+    assert_eq!(lexer.kind_literal_map.len(), ["A", "B"].len());
+    let kind_a_literal_map = &lexer.kind_literal_map[A::kind_id()];
+    assert_eq!(kind_a_literal_map.known_map().len(), ["a", "b"].len());
+    assert_action_eq(
+      &kind_a_literal_map.known_map()["a"],
+      vec![
+        exact("a").bind(A),                              // A, "a", not muted
+        exact("a").mute().bind(A),                       // A, "a", muted
+        r("a").unchecked_head_in(['a']).mute().bind(A),  // A, OneOf('a'), muted
+        r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
+        r("a").unchecked_head_unknown().mute().bind(A),  // A, Unknown, muted
+        r("a").mute().bind(A),                           // A, no head, muted
+        exact("b").mute().bind(B),                       // B, "b", muted
+        r("b").unchecked_head_in(['b']).mute().bind(B),  // B, OneOf('b'), muted
+        r("b").unchecked_head_not(['c']).mute().bind(B), // B, Not('c'), muted
+        r("b").unchecked_head_unknown().mute().bind(B),  // B, Unknown, muted
+        r("b").mute().bind(B),                           // B, no head, muted
+      ],
+    );
+  }
+}
