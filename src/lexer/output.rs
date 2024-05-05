@@ -9,7 +9,7 @@ pub struct LexOutput<TokenType, ReLexType> {
   /// even if it's an error token.
   pub errors: Vec<TokenType>, // [[@muted error tokens are also collected]]
   /// If `Some`, the lex is re-lex-able.
-  pub re_lex: Option<ReLexType>,
+  pub re_lex: ReLexType, // TODO: example
 }
 
 pub struct ReLexable<LexerType> {

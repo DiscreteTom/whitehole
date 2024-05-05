@@ -1,7 +1,7 @@
 use super::{options::StatelessLexOptions, StatelessLexer};
 use crate::lexer::{
   action::ActionInput,
-  options::ReLexContext,
+  options::{ForkDisabled, LexOptionsFork, ReLexContext},
   output::LexOutput,
   token::{Token, TokenKindIdProvider},
 };
@@ -19,10 +19,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   pub fn lex<'text>(
     &self,
     text: &'text str,
-  ) -> (
-    LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>,
-    ActionState,
-  )
+  ) -> (LexOutput<Token<'text, Kind, ErrorType>, ()>, ActionState)
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: Default,
@@ -44,14 +41,14 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # let mut action_state = ();
   /// stateless.lex_with("123", &mut action_state, |o| o.start(1));
   /// ```
-  pub fn lex_with<'text, 'expect_text>(
+  pub fn lex_with<'text, 'expect_text, Fork: LexOptionsFork>(
     &self,
     text: &'text str,
     action_state: &mut ActionState,
     options_builder: impl FnOnce(
-      StatelessLexOptions<'expect_text, Kind>,
-    ) -> StatelessLexOptions<'expect_text, Kind>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
+      StatelessLexOptions<'expect_text, Kind, ForkDisabled>,
+    ) -> StatelessLexOptions<'expect_text, Kind, Fork>,
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexType>
   where
     Kind: TokenKindIdProvider<Kind>,
   {
@@ -73,16 +70,16 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # let options = StatelessLexOptions::default();
   /// stateless.lex_with_options("123", &mut action_state, options);
   /// ```
-  pub fn lex_with_options<'text, 'expect_text>(
+  pub fn lex_with_options<'text, 'expect_text, Fork: LexOptionsFork>(
     &self,
     text: &'text str,
     action_state: &mut ActionState,
-    options: impl Into<StatelessLexOptions<'expect_text, Kind>>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
+    options: impl Into<StatelessLexOptions<'expect_text, Kind, Fork>>,
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexType>
   where
     Kind: TokenKindIdProvider<Kind>,
   {
-    let options: StatelessLexOptions<_> = options.into();
+    let options: StatelessLexOptions<_, _> = options.into();
 
     // the default ReLexContext will set `skip` and `action_index` to 0
     // which means this is not a re-lex
@@ -107,7 +104,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         .get(literal)
         .expect("expected literal should exists in an action's literal");
 
-      Self::execute_actions(
+      Self::execute_actions::<Fork>(
         |input: &ActionInput<ActionState>| {
           let literal_mismatch = !input.rest().starts_with(literal);
           if literal_mismatch {
@@ -116,7 +113,6 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             &literal_map_item.head_map
           }
         },
-        options.base.fork,
         &re_lex,
         text,
         options.start,
@@ -134,14 +130,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         },
       );
 
-      Self::execute_actions(
-        |_| head_map,
-        options.base.fork,
-        &re_lex,
-        text,
-        options.start,
-        action_state,
-      )
+      Self::execute_actions::<Fork>(|_| head_map, &re_lex, text, options.start, action_state)
     }
   }
 }

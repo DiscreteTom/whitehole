@@ -1,33 +1,32 @@
 use super::{HeadMap, StatelessLexer};
 use crate::lexer::{
   action::{Action, ActionInput, ActionOutput},
-  options::ReLexContext,
+  options::{LexOptionsFork, ReLexContext},
   output::LexOutput,
   token::{Range, Token, TokenKindIdProvider},
 };
 use std::rc::Rc;
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
-  pub(super) fn execute_actions<'text, 'head_map>(
+  pub(super) fn execute_actions<'text, 'head_map, Fork: LexOptionsFork>(
     head_map_getter: impl Fn(
       &ActionInput<ActionState>,
     ) -> &'head_map HeadMap<Kind, ActionState, ErrorType>,
-    fork: bool,
     re_lex: &ReLexContext,
     text: &'text str,
     start: usize,
     state: &mut ActionState,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexType>
   where
     Kind: TokenKindIdProvider<Kind> + 'static,
     ActionState: 'head_map,
     ErrorType: 'head_map,
   {
     let mut res = LexOutput {
-      digested: 0,        // might be updated during the loop
-      errors: Vec::new(), // might be updated during the loop
-      token: None,        // should only be set before return
-      re_lex: None,       // should only be set before return
+      digested: 0,                        // might be updated during the loop
+      errors: Vec::new(),                 // might be updated during the loop
+      token: None,                        // should only be set before return
+      re_lex: Fork::ReLexType::default(), // should only be set before return
     };
 
     loop {
@@ -76,7 +75,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             // else, not muted
             // don't push token to errors, set the res.token
             res.token = Some(token);
-            res.re_lex = Self::create_re_lex_context(fork, &input, actions, action_index);
+            res.re_lex = Fork::create_re_lex_context(input.start(), actions.len(), action_index);
 
             return res;
           }
@@ -90,7 +89,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
           // else, not muted
           res.token = Some(Self::create_token(&input, output));
-          res.re_lex = Self::create_re_lex_context(fork, &input, actions, action_index);
+          res.re_lex = Fork::create_re_lex_context(input.start(), actions.len(), action_index);
 
           return res;
         }
@@ -141,58 +140,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       error: output.error,
     }
   }
-
-  fn create_re_lex_context(
-    fork: bool,
-    input: &ActionInput<ActionState>,
-    actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
-    action_index: usize,
-  ) -> Option<ReLexContext> {
-    if fork && action_index < actions.len() - 1 {
-      // current action is not the last one
-      // so the lex is re-lex-able
-      Some(ReLexContext {
-        skip: action_index + 1, // index + 1 is the count of actions to skip
-        start: input.start(),
-      })
-    } else {
-      // fork is disabled or
-      // current action is the last one
-      // no next action to re-lex
-      None
-    }
-  }
 }
 
 #[cfg(test)]
 mod tests {
-  use crate::lexer::{action::exact, token::MockTokenKind};
-
   use super::*;
-
-  #[test]
-  fn test_create_re_lex_context() {
-    let mut action_state = ();
-    let input = ActionInput::new("abc", 0, &mut action_state).unwrap();
-    let actions: Vec<Rc<Action<_>>> = vec![
-      Rc::new(exact("a")),
-      Rc::new(exact("a")),
-      Rc::new(exact("a")),
-    ];
-    let f = StatelessLexer::<MockTokenKind<()>>::create_re_lex_context;
-    assert_eq!(f(false, &input, &actions, 0), None);
-    assert_eq!(f(false, &input, &actions, 1), None);
-    assert_eq!(f(false, &input, &actions, 2), None);
-    assert_eq!(
-      f(true, &input, &actions, 0),
-      Some(ReLexContext { skip: 1, start: 0 })
-    );
-    assert_eq!(
-      f(true, &input, &actions, 1),
-      Some(ReLexContext { skip: 2, start: 0 })
-    );
-    assert_eq!(f(true, &input, &actions, 2), None);
-  }
+  use crate::lexer::{action::exact, token::MockTokenKind};
 
   #[test]
   fn test_create_token() {
