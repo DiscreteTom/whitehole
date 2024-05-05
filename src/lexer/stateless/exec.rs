@@ -98,6 +98,9 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     }
   }
 
+  /// Traverse all actions to find the first accepted action.
+  /// Return the output and the index of the accepted action.
+  /// If no accepted action, return `None`.
   fn traverse_actions(
     input: &mut ActionInput<ActionState>,
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
