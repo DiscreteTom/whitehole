@@ -51,6 +51,9 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
 
   /// Consume self, return a new lexer with the same actions and a new text.
   /// [`Self::state`] and [`Self::action_state`] will be reset to default.
+  // this is a helper method because this is a common operation.
+  // users can do this manually. users can also customize the new lexer (e.g. set a new action state)
+  // but that's not common so we don't provide a helper method for that.
   pub fn reload<'new_text>(
     self,
     text: &'new_text str,
