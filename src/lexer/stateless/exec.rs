@@ -163,3 +163,143 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use crate::lexer::{action::exact, token::MockTokenKind};
+
+  use super::*;
+
+  #[test]
+  fn test_create_re_lex_context() {
+    let mut action_state = ();
+    let input = ActionInput::new("abc", 0, &mut action_state).unwrap();
+    let actions: Vec<Rc<Action<_>>> = vec![
+      Rc::new(exact("a")),
+      Rc::new(exact("a")),
+      Rc::new(exact("a")),
+    ];
+    let f = StatelessLexer::<MockTokenKind<()>>::create_re_lex_context;
+    assert_eq!(f(false, &input, &actions, 0), None);
+    assert_eq!(f(false, &input, &actions, 1), None);
+    assert_eq!(f(false, &input, &actions, 2), None);
+    assert_eq!(
+      f(true, &input, &actions, 0),
+      Some(ReLexContext { skip: 1, start: 0 })
+    );
+    assert_eq!(
+      f(true, &input, &actions, 1),
+      Some(ReLexContext { skip: 2, start: 0 })
+    );
+    assert_eq!(f(true, &input, &actions, 2), None);
+  }
+
+  #[test]
+  fn test_create_token() {
+    let mut action_state = ();
+    let input = ActionInput::new("abc", 1, &mut action_state).unwrap();
+    let output = ActionOutput {
+      kind: MockTokenKind::new(123),
+      digested: 1,
+      error: Some("e"),
+    };
+    let token = StatelessLexer::create_token(&input, output);
+    assert_eq!(token.kind.data, 123);
+    assert_eq!(token.content, "b");
+    assert_eq!(token.range.start, 1);
+    assert_eq!(token.range.end, 2);
+    assert_eq!(token.error, Some("e"));
+  }
+
+  #[test]
+  fn test_traverse_actions() {
+    let mut action_state = ();
+    let mut input = ActionInput::new("abc", 1, &mut action_state).unwrap();
+    let f = StatelessLexer::<MockTokenKind<()>>::traverse_actions;
+
+    // all actions are checked, no accepted action
+    assert!(f(
+      &mut input,
+      &vec![Rc::new(exact("d")),],
+      &ReLexContext::default()
+    )
+    .is_none());
+
+    // accept without re-lex context
+    assert!(matches!(
+      f(
+        &mut input,
+        &vec![
+          Rc::new(exact("a")),
+          Rc::new(exact("b")),
+          Rc::new(exact("c")),
+        ],
+        &ReLexContext::default()
+      ),
+      Some((
+        ActionOutput {
+          kind: MockTokenKind { data: () },
+          digested: 1,
+          error: None
+        },
+        1
+      ))
+    ));
+
+    // accept with re-lex context
+    assert!(matches!(
+      f(
+        &mut input,
+        &vec![
+          Rc::new(exact("a")),
+          Rc::new(exact("b")),
+          Rc::new(exact("c")),
+        ],
+        &ReLexContext { start: 1, skip: 1 }
+      ),
+      Some((
+        ActionOutput {
+          kind: MockTokenKind { data: () },
+          digested: 1,
+          error: None
+        },
+        1
+      ))
+    ));
+
+    // accepted actions are skipped, no accepted action
+    assert!(matches!(
+      f(
+        &mut input,
+        &vec![
+          Rc::new(exact("a")),
+          Rc::new(exact("b")),
+          Rc::new(exact("c")),
+        ],
+        &ReLexContext { start: 1, skip: 2 }
+      ),
+      None
+    ));
+
+    // ignore re-lex context when start mismatch
+    assert!(matches!(
+      f(
+        &mut input,
+        &vec![
+          Rc::new(exact("a")),
+          Rc::new(exact("b")),
+          Rc::new(exact("c")),
+        ],
+        &ReLexContext { start: 0, skip: 3 }
+      ),
+      Some((
+        ActionOutput {
+          kind: MockTokenKind { data: () },
+          digested: 1,
+          error: None
+        },
+        1
+      ))
+    ));
+  }
+}
