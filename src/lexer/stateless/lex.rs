@@ -26,12 +26,15 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   {
     let mut action_state = ActionState::default();
     (
-      self.lex_with_options(text, &mut action_state, StatelessLexOptions::default()),
+      self.lex_with_options(
+        text,
+        StatelessLexOptions::default().action_state(&mut action_state),
+      ),
       action_state,
     )
   }
 
-  /// Lex with the given action state and the given [`StatelessLexOptions`].
+  /// Lex with the given  [`StatelessLexOptions`].
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
@@ -39,27 +42,28 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # #[derive(TokenKind, Clone)] enum MyKind { A }
   /// # let stateless = LexerBuilder::<MyKind>::new().define(MyKind::A, exact("2")).build_stateless();
   /// # let mut action_state = ();
-  /// stateless.lex_with("123", &mut action_state, |o| o.start(1));
+  /// stateless.lex_with("123", |o| o.action_state(&mut action_state));
   /// ```
-  pub fn lex_with<'text, 'expect_text, Fork: LexOptionsFork>(
+  pub fn lex_with<'text, 'expect_text, 'action_state, Fork: LexOptionsFork>(
     &self,
     text: &'text str,
-    action_state: &mut ActionState,
     options_builder: impl FnOnce(
-      StatelessLexOptions<'expect_text, Kind, ForkDisabled>,
-    ) -> StatelessLexOptions<'expect_text, Kind, Fork>,
+      StatelessLexOptions<'expect_text, Kind, (), ForkDisabled>,
+    ) -> StatelessLexOptions<
+      'expect_text,
+      Kind,
+      &'action_state mut ActionState,
+      Fork,
+    >,
   ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexType>
   where
     Kind: TokenKindIdProvider<Kind>,
+    ActionState: 'action_state,
   {
-    self.lex_with_options(
-      text,
-      action_state,
-      options_builder(StatelessLexOptions::default()),
-    )
+    self.lex_with_options(text, options_builder(StatelessLexOptions::default()))
   }
 
-  /// Lex with the given action state and the given [`StatelessLexOptions`].
+  /// Lex with the given [`StatelessLexOptions`].
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessLexOptions};
@@ -67,19 +71,19 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # #[derive(TokenKind, Clone)] enum MyKind { A }
   /// # let stateless = LexerBuilder::<MyKind>::new().define(MyKind::A, exact("2")).build_stateless();
   /// # let mut action_state = ();
-  /// # let options = StatelessLexOptions::default();
-  /// stateless.lex_with_options("123", &mut action_state, options);
+  /// let options = StatelessLexOptions::default().action_state(&mut action_state);
+  /// stateless.lex_with_options("123", options);
   /// ```
-  pub fn lex_with_options<'text, 'expect_text, Fork: LexOptionsFork>(
+  pub fn lex_with_options<'text, 'expect_text, 'action_state, Fork: LexOptionsFork>(
     &self,
     text: &'text str,
-    action_state: &mut ActionState,
-    options: impl Into<StatelessLexOptions<'expect_text, Kind, Fork>>,
+    options: impl Into<StatelessLexOptions<'expect_text, Kind, &'action_state mut ActionState, Fork>>,
   ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexType>
   where
     Kind: TokenKindIdProvider<Kind>,
+    ActionState: 'action_state,
   {
-    let options: StatelessLexOptions<_, _> = options.into();
+    let options: StatelessLexOptions<_, _, _> = options.into();
 
     // the default ReLexContext will set `skip` and `action_index` to 0
     // which means this is not a re-lex
@@ -116,7 +120,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         &re_lex,
         text,
         options.start,
-        action_state,
+        options.action_state,
       )
     } else {
       let head_map = options.base.expectation.kind.map_or(
@@ -130,7 +134,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         },
       );
 
-      Self::execute_actions::<Fork>(|_| head_map, &re_lex, text, options.start, action_state)
+      Self::execute_actions::<Fork>(
+        |_| head_map,
+        &re_lex,
+        text,
+        options.start,
+        options.action_state,
+      )
     }
   }
 }
