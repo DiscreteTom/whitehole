@@ -1,20 +1,19 @@
 use super::expectation::Expectation;
 
-// this should never be constructed by user
-// and the fields should never be accessed by user
-// because the `action_index` is an internal index.
-// so we make fields only public for crate.
+/// With this struct you can continue a finished lex.
+/// For most cases this will be constructed by [`ForkEnabled`]
+/// (when lexing with [`LexOptions::fork`] enabled).
+/// You can also construct this if you implement [`LexOptionsFork`],
+/// but make sure you know what you are doing.
 #[derive(PartialEq, Clone, Debug)]
 pub struct ReLexContext {
-  /// Re-lex is effective only if the
-  /// [`ActionInput::start`](crate::lexer::action::ActionInput::start)
-  /// equals to this.
-  pub(crate) start: usize,
+  /// See [`Self::skip`].
+  pub start: usize,
   /// How many actions are skipped.
   /// This is effective only if
   /// the [`ActionInput::start`](crate::lexer::action::ActionInput::start)
   /// equals to [`Self::start`].
-  pub(crate) skip: usize,
+  pub skip: usize,
 }
 
 impl Default for ReLexContext {
@@ -24,6 +23,7 @@ impl Default for ReLexContext {
   }
 }
 
+/// See [`LexOptions::fork`].
 pub trait LexOptionsFork: Default {
   type ReLexType: Default;
 
@@ -110,6 +110,7 @@ impl<'expect_text, Kind, Fork: LexOptionsFork> LexOptions<'expect_text, Kind, Fo
     self.expectation = expectation.into();
     self
   }
+
   /// If set, the [`LexOutput::re_lex`](crate::lexer::output::LexOutput::re_lex) *might* be `Some`.
   // TODO: example
   pub fn fork(self) -> LexOptions<'expect_text, Kind, ForkEnabled> {
@@ -119,6 +120,7 @@ impl<'expect_text, Kind, Fork: LexOptionsFork> LexOptions<'expect_text, Kind, Fo
       re_lex: self.re_lex,
     }
   }
+
   /// Provide this if the lex is a re-lex.
   // TODO: example
   pub fn re_lex(mut self, re_lex: ReLexContext) -> Self {
