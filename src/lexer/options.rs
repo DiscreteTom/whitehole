@@ -79,29 +79,37 @@ pub struct LexOptions<'expect_text, Kind: 'static, Fork: LexOptionsFork> {
   pub re_lex: Option<ReLexContext>,
 }
 
-impl<'expect_text, Kind, Fork: LexOptionsFork> Default for LexOptions<'expect_text, Kind, Fork> {
+impl<'expect_text, Kind> Default for LexOptions<'expect_text, Kind, ForkDisabled> {
   fn default() -> Self {
     Self {
       expectation: Expectation::default(),
-      fork: Fork::default(),
+      fork: ForkDisabled,
       re_lex: None,
     }
   }
 }
 
-impl<'expect_text, Kind, Fork: LexOptionsFork> From<Expectation<'expect_text, Kind>>
-  for LexOptions<'expect_text, Kind, Fork>
+impl<'expect_text, Kind> From<Expectation<'expect_text, Kind>>
+  for LexOptions<'expect_text, Kind, ForkDisabled>
 {
   fn from(expectation: Expectation<'expect_text, Kind>) -> Self {
     Self::default().expect(expectation)
   }
 }
 
-impl<'expect_text, Kind, Fork: LexOptionsFork> From<ReLexContext>
-  for LexOptions<'expect_text, Kind, Fork>
-{
+impl<'expect_text, Kind> From<ReLexContext> for LexOptions<'expect_text, Kind, ForkDisabled> {
   fn from(re_lex: ReLexContext) -> Self {
     Self::default().re_lex(re_lex)
+  }
+}
+
+impl<'expect_text, Kind, Fork: LexOptionsFork> From<Fork> for LexOptions<'expect_text, Kind, Fork> {
+  fn from(fork: Fork) -> Self {
+    Self {
+      expectation: Expectation::default(),
+      fork,
+      re_lex: None,
+    }
   }
 }
 
