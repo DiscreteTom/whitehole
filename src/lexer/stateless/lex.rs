@@ -1,5 +1,6 @@
 use super::{options::StatelessLexOptions, StatelessLexer};
 use crate::lexer::{
+  action::ActionInput,
   options::ReLexContext,
   output::LexOutput,
   token::{Token, TokenKindIdProvider},
@@ -83,8 +84,46 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   {
     let options: StatelessLexOptions<_> = options.into();
 
-    Self::execute_actions(
-      options.expectation.kind.map_or(
+    // the default ReLexContext will set `skip` and `action_index` to 0
+    // which means this is not a re-lex
+    let re_lex = options
+      .base
+      .re_lex
+      .unwrap_or_else(|| ReLexContext::default());
+
+    if let Some(literal) = options.base.expectation.literal {
+      let literal_map = options
+        .base
+        .expectation
+        .kind
+        .map_or(&self.literal_map, |kind| {
+          self
+            .kind_literal_map
+            .get(&kind)
+            .expect("expected kind should exists in an action's kind")
+        });
+      let literal_map_item = literal_map
+        .known_map()
+        .get(literal)
+        .expect("expected literal should exists in an action's literal");
+
+      Self::execute_actions(
+        |input: &ActionInput<ActionState>| {
+          let literal_mismatch = !input.rest().starts_with(literal);
+          if literal_mismatch {
+            &literal_map_item.muted_head_map
+          } else {
+            &literal_map_item.head_map
+          }
+        },
+        options.base.fork,
+        &re_lex,
+        text,
+        options.start,
+        action_state,
+      )
+    } else {
+      let head_map = options.base.expectation.kind.map_or(
         &self.head_map, // if no expected kind, use the head map with all actions
         |kind| {
           self
@@ -93,16 +132,17 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             // this must be `Some`, unless the user set the wrong possible kinds for actions
             .expect("expected kind should exists in some action's possible kinds")
         },
-      ),
-      options.fork,
-      // the default ReLexContext will set `skip` and `action_index` to 0
-      // which means this is not a re-lex
-      options.re_lex.as_ref().unwrap_or(&ReLexContext::default()),
-      text,
-      options.start,
-      action_state,
-      &options.expectation,
-    )
+      );
+
+      Self::execute_actions(
+        |_| head_map,
+        options.base.fork,
+        &re_lex,
+        text,
+        options.start,
+        action_state,
+      )
+    }
   }
 }
 

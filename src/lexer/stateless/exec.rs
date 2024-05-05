@@ -1,4 +1,4 @@
-use super::{literal_map::LiteralMapItem, HeadMap, StatelessLexer};
+use super::{HeadMap, StatelessLexer};
 use crate::lexer::{
   action::{Action, ActionInput, ActionOutput},
   options::ReLexContext,
@@ -8,52 +8,7 @@ use crate::lexer::{
 use std::rc::Rc;
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
-  /// This will be called for no-expectation lexing or expect-kind lexing.
-  pub(super) fn execute_actions_with_head_map<'text>(
-    head_map: &HeadMap<Kind, ActionState, ErrorType>,
-    fork: bool,
-    re_lex: &ReLexContext,
-    text: &'text str,
-    start: usize,
-    state: &mut ActionState,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
-  where
-    Kind: TokenKindIdProvider<Kind>,
-  {
-    Self::execute_actions(|_| head_map, fork, re_lex, text, start, state)
-  }
-
-  /// This will be called for expect-literal lexing or expect-kind-and-literal lexing.
-  pub(super) fn execute_actions_with_literal_map<'text, 'literal>(
-    literal_map_item: &LiteralMapItem<Kind, ActionState, ErrorType>,
-    literal: &'literal str,
-    fork: bool,
-    re_lex: &ReLexContext,
-    text: &'text str,
-    start: usize,
-    state: &mut ActionState,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
-  where
-    Kind: TokenKindIdProvider<Kind>,
-  {
-    Self::execute_actions(
-      |input| {
-        let literal_mismatch = !input.rest().starts_with(literal);
-        if literal_mismatch {
-          &literal_map_item.muted_head_map
-        } else {
-          &literal_map_item.head_map
-        }
-      },
-      fork,
-      re_lex,
-      text,
-      start,
-      state,
-    )
-  }
-
-  fn execute_actions<'text, 'head_map>(
+  pub(super) fn execute_actions<'text, 'head_map>(
     head_map_getter: impl Fn(
       &ActionInput<ActionState>,
     ) -> &'head_map HeadMap<Kind, ActionState, ErrorType>,
@@ -65,8 +20,8 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
   where
     Kind: TokenKindIdProvider<Kind> + 'static,
-    ErrorType: 'head_map,
     ActionState: 'head_map,
+    ErrorType: 'head_map,
   {
     let mut res = LexOutput {
       digested: 0,        // might be updated during the loop
