@@ -31,7 +31,8 @@ impl<'text> LexerState<'text> {
     &self.text[self.digested..]
   }
 
-  /// Digest the given number of bytes.
+  /// Digest `n` bytes.
+  /// The caller should ensure `n` is valid.
   pub fn digest(&mut self, n: usize) {
     self.digested += n;
   }
