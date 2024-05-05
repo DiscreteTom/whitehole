@@ -20,78 +20,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   where
     Kind: TokenKindIdProvider<Kind>,
   {
-    let mut res = LexOutput {
-      digested: 0,        // might be updated during the loop
-      errors: Vec::new(), // might be updated during the loop
-      token: None,        // should only be set before return
-      re_lex: None,       // should only be set before return
-    };
-
-    loop {
-      // all actions will reuse this action input in this iteration
-      let mut input = match ActionInput::new(text, start + res.digested, state) {
-        None => {
-          // maybe some token is muted in the last iteration which cause the rest is empty
-          // but the `res.digested` might be updated by the last iteration
-          // so we have to return the result
-          return res;
-        }
-        Some(input) => input,
-      };
-
-      let actions = head_map
-        .known_map()
-        // TODO: maybe some day we can get a `&char` instead of a `char`
-        .get(&(input.rest().chars().next().unwrap()))
-        .unwrap_or(head_map.unknown_fallback());
-
-      match Self::traverse_actions(&mut input, actions, re_lex) {
-        // all definition checked, no accepted action
-        // but the digested and errors might be updated by the last iteration
-        // so we have to return them
-        None => return res,
-        Some((output, action_index)) => {
-          // update digested, no matter the output is muted or not
-          res.digested += output.digested;
-
-          if output.error.is_some() {
-            // error exists, we must create the token even muted
-            // so we can collect the token in `res.errors` or `res.token`
-
-            // create the error token
-            let token = Self::create_token(&input, output);
-
-            if actions[action_index].muted() {
-              // don't emit token
-              // collect errors and continue
-              // [[muted error tokens are also collected]]
-              res.errors.push(token);
-              continue;
-            }
-
-            // else, not muted
-            // don't push token to errors, set the res.token
-            res.token = Some(token);
-            res.re_lex = Self::create_re_lex_context(fork, &input, actions, action_index);
-
-            return res;
-          }
-
-          // else, no error, only create token if not muted
-
-          if actions[action_index].muted() {
-            // don't emit token
-            continue;
-          }
-
-          // else, not muted
-          res.token = Some(Self::create_token(&input, output));
-          res.re_lex = Self::create_re_lex_context(fork, &input, actions, action_index);
-
-          return res;
-        }
-      }
-    }
+    Self::execute_actions(|_| head_map, fork, re_lex, text, start, state)
   }
 
   /// This will be called for expect-literal lexing or expect-kind-and-literal lexing.
@@ -106,6 +35,38 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
   where
     Kind: TokenKindIdProvider<Kind>,
+  {
+    Self::execute_actions(
+      |input| {
+        let literal_mismatch = !input.rest().starts_with(literal);
+        if literal_mismatch {
+          &literal_map_item.muted_head_map
+        } else {
+          &literal_map_item.head_map
+        }
+      },
+      fork,
+      re_lex,
+      text,
+      start,
+      state,
+    )
+  }
+
+  fn execute_actions<'text, 'head_map>(
+    head_map_getter: impl Fn(
+      &ActionInput<ActionState>,
+    ) -> &'head_map HeadMap<Kind, ActionState, ErrorType>,
+    fork: bool,
+    re_lex: &ReLexContext,
+    text: &'text str,
+    start: usize,
+    state: &mut ActionState,
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexContext>
+  where
+    Kind: TokenKindIdProvider<Kind> + 'static,
+    ErrorType: 'head_map,
+    ActionState: 'head_map,
   {
     let mut res = LexOutput {
       digested: 0,        // might be updated during the loop
@@ -126,12 +87,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         Some(input) => input,
       };
 
-      let literal_mismatch = !input.rest().starts_with(literal);
-      let head_map = if literal_mismatch {
-        &literal_map_item.muted_head_map
-      } else {
-        &literal_map_item.head_map
-      };
+      let head_map = head_map_getter(&input);
       let actions = head_map
         .known_map()
         // TODO: maybe some day we can get a `&char` instead of a `char`
