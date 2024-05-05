@@ -44,18 +44,19 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # let mut action_state = ();
   /// stateless.lex_with("123", |o| o.action_state(&mut action_state));
   /// ```
-  pub fn lex_with<'text, 'expect_text, 'action_state, Fork: LexOptionsFork>(
+  pub fn lex_with<'text, 'expect_text, 'action_state, Fork: LexOptionsFork<ActionState>>(
     &self,
     text: &'text str,
     options_builder: impl FnOnce(
-      StatelessLexOptions<'expect_text, Kind, (), ForkDisabled>,
+      StatelessLexOptions<'expect_text, Kind, ActionState, (), ForkDisabled>,
     ) -> StatelessLexOptions<
       'expect_text,
       Kind,
+      ActionState,
       &'action_state mut ActionState,
       Fork,
     >,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexType>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
@@ -74,16 +75,18 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// let options = StatelessLexOptions::default().action_state(&mut action_state);
   /// stateless.lex_with_options("123", options);
   /// ```
-  pub fn lex_with_options<'text, 'expect_text, 'action_state, Fork: LexOptionsFork>(
+  pub fn lex_with_options<'text, 'expect_text, 'action_state, Fork: LexOptionsFork<ActionState>>(
     &self,
     text: &'text str,
-    options: impl Into<StatelessLexOptions<'expect_text, Kind, &'action_state mut ActionState, Fork>>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexType>
+    options: impl Into<
+      StatelessLexOptions<'expect_text, Kind, ActionState, &'action_state mut ActionState, Fork>,
+    >,
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
   {
-    let options: StatelessLexOptions<_, _, _> = options.into();
+    let options: StatelessLexOptions<_, _, _, _> = options.into();
 
     // the default ReLexContext will set `skip` and `action_index` to 0
     // which means this is not a re-lex
@@ -108,7 +111,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         .get(literal)
         .expect("expected literal should exists in an action's literal");
 
-      Self::execute_actions::<Fork>(
+      Self::execute_actions(
         |input: &ActionInput<ActionState>| {
           let literal_mismatch = !input.rest().starts_with(literal);
           if literal_mismatch {
@@ -121,6 +124,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         text,
         options.start,
         options.action_state,
+        options.base.fork,
       )
     } else {
       let head_map = options.base.expectation.kind.map_or(
@@ -134,12 +138,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         },
       );
 
-      Self::execute_actions::<Fork>(
+      Self::execute_actions(
         |_| head_map,
         &re_lex,
         text,
         options.start,
         options.action_state,
+        options.base.fork,
       )
     }
   }

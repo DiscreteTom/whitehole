@@ -8,7 +8,7 @@ use crate::lexer::{
 use std::rc::Rc;
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
-  pub(super) fn execute_actions<'text, 'head_map, Fork: LexOptionsFork>(
+  pub(super) fn execute_actions<'text, 'head_map, Fork: LexOptionsFork<ActionState>>(
     head_map_getter: impl Fn(
       &ActionInput<ActionState>,
     ) -> &'head_map HeadMap<Kind, ActionState, ErrorType>,
@@ -16,17 +16,18 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     text: &'text str,
     start: usize,
     state: &mut ActionState,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexType>
+    mut fork: Fork,
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexableType>
   where
     Kind: TokenKindIdProvider<Kind> + 'static,
     ActionState: 'head_map,
     ErrorType: 'head_map,
   {
     let mut res = LexOutput {
-      digested: 0,                        // might be updated during the loop
-      errors: Vec::new(),                 // might be updated during the loop
-      token: None,                        // should only be set before return
-      re_lex: Fork::ReLexType::default(), // should only be set before return
+      digested: 0,                            // might be updated during the loop
+      errors: Vec::new(),                     // might be updated during the loop
+      token: None,                            // should only be set before return
+      re_lex: Fork::ReLexableType::default(), // should only be set before return
     };
 
     loop {
@@ -48,7 +49,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         .get(&(input.rest().chars().next().unwrap()))
         .unwrap_or(head_map.unknown_fallback());
 
-      match Self::traverse_actions(&mut input, actions, re_lex) {
+      match Self::traverse_actions(&mut input, actions, re_lex, &mut fork) {
         // all definition checked, no accepted action
         // but the digested and errors might be updated by the last iteration
         // so we have to return them
@@ -75,7 +76,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             // else, not muted
             // don't push token to errors, set the res.token
             res.token = Some(token);
-            res.re_lex = Fork::create_re_lex_context(input.start(), actions.len(), action_index);
+            res.re_lex = fork.into_re_lexable(input.start(), actions.len(), action_index);
 
             return res;
           }
@@ -89,7 +90,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
           // else, not muted
           res.token = Some(Self::create_token(&input, output));
-          res.re_lex = Fork::create_re_lex_context(input.start(), actions.len(), action_index);
+          res.re_lex = fork.into_re_lexable(input.start(), actions.len(), action_index);
 
           return res;
         }
@@ -100,10 +101,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// Traverse all actions to find the first accepted action.
   /// Return the output and the index of the accepted action.
   /// If no accepted action, return `None`.
-  fn traverse_actions(
+  fn traverse_actions<Fork: LexOptionsFork<ActionState>>(
     input: &mut ActionInput<ActionState>,
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
     re_lex: &ReLexContext,
+    fork: &mut Fork,
   ) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize)>
   where
     Kind: TokenKindIdProvider<Kind>,
@@ -117,10 +119,14 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         0
       })
     {
+      if action.may_mutate_state() {
+        fork.before_mutate_action_state(input.state);
+      }
       if let Some(output) = action.exec(input) {
         return Some((output, i));
       }
     }
+
     // all actions are checked, no accepted action
     None
   }
@@ -145,7 +151,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::{action::exact, token::MockTokenKind};
+  use crate::lexer::{
+    action::exact,
+    options::{ForkDisabled, ForkEnabled},
+    token::MockTokenKind,
+  };
 
   #[test]
   fn test_create_token() {
@@ -168,26 +178,27 @@ mod tests {
   fn test_traverse_actions() {
     let mut action_state = ();
     let mut input = ActionInput::new("abc", 1, &mut action_state).unwrap();
-    let f = StatelessLexer::<MockTokenKind<()>>::traverse_actions;
 
     // all actions are checked, no accepted action
-    assert!(f(
+    assert!(StatelessLexer::<_>::traverse_actions(
       &mut input,
       &vec![Rc::new(exact("d")),],
-      &ReLexContext::default()
+      &ReLexContext::default(),
+      &mut ForkDisabled
     )
     .is_none());
 
     // accept without re-lex context
     assert!(matches!(
-      f(
+      StatelessLexer::<_>::traverse_actions(
         &mut input,
         &vec![
           Rc::new(exact("a")),
           Rc::new(exact("b")),
           Rc::new(exact("c")),
         ],
-        &ReLexContext::default()
+        &ReLexContext::default(),
+        &mut ForkDisabled
       ),
       Some((
         ActionOutput {
@@ -201,14 +212,15 @@ mod tests {
 
     // accept with re-lex context
     assert!(matches!(
-      f(
+      StatelessLexer::<_>::traverse_actions(
         &mut input,
         &vec![
           Rc::new(exact("a")),
           Rc::new(exact("b")),
           Rc::new(exact("c")),
         ],
-        &ReLexContext { start: 1, skip: 1 }
+        &ReLexContext { start: 1, skip: 1 },
+        &mut ForkDisabled
       ),
       Some((
         ActionOutput {
@@ -222,28 +234,30 @@ mod tests {
 
     // accepted actions are skipped, no accepted action
     assert!(matches!(
-      f(
+      StatelessLexer::<_>::traverse_actions(
         &mut input,
         &vec![
           Rc::new(exact("a")),
           Rc::new(exact("b")),
           Rc::new(exact("c")),
         ],
-        &ReLexContext { start: 1, skip: 2 }
+        &ReLexContext { start: 1, skip: 2 },
+        &mut ForkDisabled
       ),
       None
     ));
 
     // ignore re-lex context when start mismatch
     assert!(matches!(
-      f(
+      StatelessLexer::<_>::traverse_actions(
         &mut input,
         &vec![
           Rc::new(exact("a")),
           Rc::new(exact("b")),
           Rc::new(exact("c")),
         ],
-        &ReLexContext { start: 0, skip: 3 }
+        &ReLexContext { start: 0, skip: 3 },
+        &mut ForkDisabled
       ),
       Some((
         ActionOutput {
@@ -254,5 +268,37 @@ mod tests {
         1
       ))
     ));
+
+    // backup action state if fork is enabled and action state is mutated
+    let mut fork = ForkEnabled::default();
+    StatelessLexer::<_>::traverse_actions(
+      &mut input,
+      &vec![
+        Rc::new(exact("a").prepare(|_| {})), // set may_mutate_state to true
+        Rc::new(exact("b")),
+        Rc::new(exact("c")),
+      ],
+      &ReLexContext { start: 0, skip: 0 },
+      &mut fork,
+    );
+    let re_lexable = fork.into_re_lexable(input.start(), 3, 0);
+    assert!(re_lexable.is_some());
+    assert!(re_lexable.unwrap().action_state.is_some());
+
+    // don't backup action state if fork is enabled but action state is not mutated
+    let mut fork = ForkEnabled::default();
+    StatelessLexer::<_>::traverse_actions(
+      &mut input,
+      &vec![
+        Rc::new(exact("a")),
+        Rc::new(exact("b")),
+        Rc::new(exact("c")),
+      ],
+      &ReLexContext { start: 0, skip: 0 },
+      &mut fork,
+    );
+    let re_lexable = fork.into_re_lexable(input.start(), 3, 0);
+    assert!(re_lexable.is_some());
+    assert!(re_lexable.unwrap().action_state.is_none());
   }
 }

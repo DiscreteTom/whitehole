@@ -1,5 +1,3 @@
-use super::options::ReLexContext;
-
 pub struct LexOutput<TokenType, ReLexType> {
   pub token: Option<TokenType>,
   /// How many bytes are digested during the whole lexing loop in current lexing.
@@ -16,12 +14,6 @@ pub struct LexOutput<TokenType, ReLexType> {
   /// to continue a lex. This *might* be [`Some`] only if the [`LexOptions::fork`](super::options::LexOptions::fork)
   /// is enabled.
   pub re_lex: ReLexType, // TODO: example
-}
-
-// TODO: add comments and examples
-pub struct ReLexable<LexerType> {
-  pub lexer: LexerType,
-  pub context: ReLexContext,
 }
 
 pub struct LexAllOutput<TokenType> {
