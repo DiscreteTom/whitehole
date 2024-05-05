@@ -4,7 +4,7 @@ use super::expectation::Expectation;
 // and the fields should never be accessed by user
 // because the `action_index` is an internal index.
 // so we make fields only public for crate.
-#[derive(Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct ReLexContext {
   /// Re-lex is effective only if the
   /// [`ActionInput::start`](crate::lexer::action::ActionInput::start)
