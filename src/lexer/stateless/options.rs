@@ -1,71 +1,57 @@
 use crate::lexer::{
   expectation::Expectation,
-  options::{ForkDisabled, ForkEnabled, LexOptions, LexOptionsFork, ReLexContext, ReLexable},
+  options::{ForkDisabled, ForkEnabled, LexOptions, ReLexContext},
 };
 use std::ops::{Deref, DerefMut};
 
-pub struct StatelessLexOptions<
-  'expect_text,
-  Kind: 'static,
-  ActionState,
-  ActionStateRef,
-  Fork: LexOptionsFork<ActionState>,
-> {
+pub struct StatelessLexOptions<'expect_text, Kind: 'static, ActionStateRef, Fork> {
   /// See [`StatelessLexOptions::start()`].
-  pub start: usize,
+  pub start: usize, // TODO: replace with LexerState?
   /// This is usually `&mut ActionState`.
   pub action_state: ActionStateRef,
-  pub base: LexOptions<'expect_text, Kind, ActionState, Fork>,
+  pub base: LexOptions<'expect_text, Kind, Fork>,
+  pub re_lex: ReLexContext,
 }
 
-impl<'expect_text, Kind, ActionState> Default
-  for StatelessLexOptions<'expect_text, Kind, ActionState, (), ForkDisabled>
-{
+impl<'expect_text, Kind> Default for StatelessLexOptions<'expect_text, Kind, (), ForkDisabled> {
   fn default() -> Self {
     Self {
       start: 0,
       action_state: (), // use `()` as a placeholder, user should use `self.action_state` to set this
       base: LexOptions::default(),
+      re_lex: ReLexContext::default(),
     }
   }
 }
 
-impl<'expect_text, Kind, ActionState> From<Expectation<'expect_text, Kind>>
-  for StatelessLexOptions<'expect_text, Kind, ActionState, (), ForkDisabled>
+impl<'expect_text, Kind> From<Expectation<'expect_text, Kind>>
+  for StatelessLexOptions<'expect_text, Kind, (), ForkDisabled>
 {
   fn from(expectation: Expectation<'expect_text, Kind>) -> Self {
     Self::default().expect(expectation)
   }
 }
 
-impl<'expect_text, Kind, ActionState> From<ReLexContext>
-  for StatelessLexOptions<'expect_text, Kind, ActionState, (), ForkDisabled>
+impl<'expect_text, Kind: 'static, ActionStateRef, Fork> Deref
+  for StatelessLexOptions<'expect_text, Kind, ActionStateRef, Fork>
 {
-  fn from(re_lex: ReLexContext) -> Self {
-    Self::default().re_lex(re_lex)
-  }
-}
-
-impl<'expect_text, Kind: 'static, ActionState, ActionStateRef, Fork: LexOptionsFork<ActionState>>
-  Deref for StatelessLexOptions<'expect_text, Kind, ActionState, ActionStateRef, Fork>
-{
-  type Target = LexOptions<'expect_text, Kind, ActionState, Fork>;
+  type Target = LexOptions<'expect_text, Kind, Fork>;
 
   fn deref(&self) -> &Self::Target {
     &self.base
   }
 }
 
-impl<'expect_text, Kind: 'static, ActionState, ActionStateRef, Fork: LexOptionsFork<ActionState>>
-  DerefMut for StatelessLexOptions<'expect_text, Kind, ActionState, ActionStateRef, Fork>
+impl<'expect_text, Kind: 'static, ActionStateRef, Fork> DerefMut
+  for StatelessLexOptions<'expect_text, Kind, ActionStateRef, Fork>
 {
   fn deref_mut(&mut self) -> &mut Self::Target {
     &mut self.base
   }
 }
 
-impl<'expect_text, Kind, ActionState, ActionStateRef, Fork: LexOptionsFork<ActionState>>
-  StatelessLexOptions<'expect_text, Kind, ActionState, ActionStateRef, Fork>
+impl<'expect_text, Kind, ActionStateRef, Fork>
+  StatelessLexOptions<'expect_text, Kind, ActionStateRef, Fork>
 {
   /// The start index of the text to lex.
   pub fn start(mut self, start: usize) -> Self {
@@ -77,11 +63,12 @@ impl<'expect_text, Kind, ActionState, ActionStateRef, Fork: LexOptionsFork<Actio
   pub fn action_state<NewActionStateRef>(
     self,
     action_state: NewActionStateRef,
-  ) -> StatelessLexOptions<'expect_text, Kind, ActionState, NewActionStateRef, Fork> {
+  ) -> StatelessLexOptions<'expect_text, Kind, NewActionStateRef, Fork> {
     StatelessLexOptions {
       start: self.start,
       action_state,
       base: self.base,
+      re_lex: self.re_lex,
     }
   }
 
@@ -104,10 +91,11 @@ impl<'expect_text, Kind, ActionState, ActionStateRef, Fork: LexOptionsFork<Actio
     self.expectation = expectation.into();
     self
   }
+
   /// See [`LexOptions::fork()`].
-  pub fn fork(
+  pub fn fork<ActionState>(
     self,
-  ) -> StatelessLexOptions<'expect_text, Kind, ActionState, ActionStateRef, ForkEnabled<ActionState>>
+  ) -> StatelessLexOptions<'expect_text, Kind, ActionStateRef, ForkEnabled<ActionState>>
   where
     ActionState: Clone,
   {
@@ -115,14 +103,7 @@ impl<'expect_text, Kind, ActionState, ActionStateRef, Fork: LexOptionsFork<Actio
       start: self.start,
       action_state: self.action_state,
       base: self.base.fork(),
+      re_lex: self.re_lex,
     }
-  }
-  /// See [`LexOptions::re_lex()`].
-  pub fn re_lex(mut self, re_lex: ReLexContext) -> Self {
-    self.re_lex = Some(ReLexable {
-      action_state: None,
-      ctx: re_lex,
-    });
-    self
   }
 }

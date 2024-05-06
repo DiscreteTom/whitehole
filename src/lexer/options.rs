@@ -1,4 +1,4 @@
-use super::expectation::Expectation;
+use super::{expectation::Expectation, state::LexerState};
 
 /// With this struct you can continue a finished lex.
 /// For most cases this will be constructed by [`ForkEnabled`]
@@ -23,28 +23,21 @@ impl Default for ReLexContext {
   }
 }
 
-/// Pass this to a [`LexOptions`] to enable re-lex.
-pub struct ReLexable<ActionState> {
+pub struct ReLexable<'text, 'expect_text, Kind: 'static, ActionState> {
+  /// The re-lexable lex's expectation.
+  pub expectation: Expectation<'expect_text, Kind>,
   /// If [`Some`], this will override [`Lexer::action_state`](crate::lexer::Lexer::action_state).
   /// This will be [`Some`] if the re-lexable lex mutated the action state.
   /// This will be ignored by [`StatelessLexer`](crate::lexer::stateless::StatelessLexer).
   pub action_state: Option<ActionState>,
+  pub lexer_state: LexerState<'text>, // TODO: should this use LexerState or digested+text?
   pub ctx: ReLexContext,
-}
-
-impl<ActionState> Default for ReLexable<ActionState> {
-  fn default() -> Self {
-    Self {
-      action_state: None,
-      ctx: ReLexContext::default(),
-    }
-  }
 }
 
 /// See [`LexOptions::fork`].
 // we use this trait and 2 structs instead of a `bool` to implement the `Fork` feature
 // so that we can return different types in `into_re_lexable` to avoid unnecessary allocations
-pub trait LexOptionsFork<ActionState>: Default {
+pub trait LexOptionsFork<'text, 'expect_text, Kind: 'static, ActionState>: Default {
   type ReLexableType: Default;
 
   fn before_mutate_action_state(&mut self, action_state: &ActionState);
@@ -53,6 +46,9 @@ pub trait LexOptionsFork<ActionState>: Default {
     start: usize,
     actions_len: usize,
     action_index: usize,
+    expectation: Expectation<'expect_text, Kind>,
+    lex_start: usize,
+    text: &'text str,
   ) -> Self::ReLexableType;
 }
 pub struct ForkEnabled<ActionState: Clone> {
@@ -66,8 +62,10 @@ impl<ActionState: Clone> Default for ForkEnabled<ActionState> {
     }
   }
 }
-impl<ActionState: Clone> LexOptionsFork<ActionState> for ForkEnabled<ActionState> {
-  type ReLexableType = Option<ReLexable<ActionState>>;
+impl<'text, 'expect_text, Kind: 'static, ActionState: Clone>
+  LexOptionsFork<'text, 'expect_text, Kind, ActionState> for ForkEnabled<ActionState>
+{
+  type ReLexableType = Option<ReLexable<'text, 'expect_text, Kind, ActionState>>;
 
   fn before_mutate_action_state(&mut self, action_state: &ActionState) {
     if self.action_state_bk.is_none() {
@@ -80,8 +78,14 @@ impl<ActionState: Clone> LexOptionsFork<ActionState> for ForkEnabled<ActionState
     start: usize,
     actions_len: usize,
     action_index: usize,
+    expectation: Expectation<'expect_text, Kind>,
+    lex_start: usize,
+    text: &'text str,
   ) -> Self::ReLexableType {
     if action_index < actions_len - 1 {
+      let mut lexer_state = LexerState::new(text);
+      lexer_state.digest(lex_start); // TODO: optimize this
+
       // current action is not the last one
       // so the lex is re-lex-able
       Some(ReLexable {
@@ -90,6 +94,8 @@ impl<ActionState: Clone> LexOptionsFork<ActionState> for ForkEnabled<ActionState
           start,
         },
         action_state: self.action_state_bk,
+        expectation,
+        lexer_state,
       })
     } else {
       // current action is the last one
@@ -100,7 +106,9 @@ impl<ActionState: Clone> LexOptionsFork<ActionState> for ForkEnabled<ActionState
 }
 #[derive(Default)]
 pub struct ForkDisabled;
-impl<ActionState> LexOptionsFork<ActionState> for ForkDisabled {
+impl<'text, 'expect_text, Kind: 'static, ActionState>
+  LexOptionsFork<'text, 'expect_text, Kind, ActionState> for ForkDisabled
+{
   type ReLexableType = ();
 
   fn before_mutate_action_state(&mut self, _action_state: &ActionState) {}
@@ -110,62 +118,38 @@ impl<ActionState> LexOptionsFork<ActionState> for ForkDisabled {
     _start: usize,
     _actions_len: usize,
     _action_index: usize,
+    _expectation: Expectation<'expect_text, Kind>,
+    _lex_start: usize,
+    _text: &'text str,
   ) -> Self::ReLexableType {
     ()
   }
 }
 
-pub struct LexOptions<'expect_text, Kind: 'static, ActionState, Fork: LexOptionsFork<ActionState>> {
+pub struct LexOptions<'expect_text, Kind: 'static, Fork> {
   pub expectation: Expectation<'expect_text, Kind>,
   /// See [`LexOptions::fork()`].
   pub fork: Fork,
-  /// See [`LexOptions::re_lex()`].
-  pub re_lex: Option<ReLexable<ActionState>>,
 }
 
-impl<'expect_text, Kind, ActionState> Default
-  for LexOptions<'expect_text, Kind, ActionState, ForkDisabled>
-{
+impl<'expect_text, Kind: 'static> Default for LexOptions<'expect_text, Kind, ForkDisabled> {
   fn default() -> Self {
     Self {
       expectation: Expectation::default(),
       fork: ForkDisabled,
-      re_lex: None,
     }
   }
 }
 
-impl<'expect_text, Kind, ActionState> From<Expectation<'expect_text, Kind>>
-  for LexOptions<'expect_text, Kind, ActionState, ForkDisabled>
+impl<'expect_text, Kind: 'static> From<Expectation<'expect_text, Kind>>
+  for LexOptions<'expect_text, Kind, ForkDisabled>
 {
   fn from(expectation: Expectation<'expect_text, Kind>) -> Self {
     Self::default().expect(expectation)
   }
 }
 
-impl<'expect_text, Kind, ActionState> From<ReLexable<ActionState>>
-  for LexOptions<'expect_text, Kind, ActionState, ForkDisabled>
-{
-  fn from(re_lex: ReLexable<ActionState>) -> Self {
-    Self::default().re_lex(re_lex)
-  }
-}
-
-impl<'expect_text, Kind, ActionState, Fork: LexOptionsFork<ActionState>> From<Fork>
-  for LexOptions<'expect_text, Kind, ActionState, Fork>
-{
-  fn from(fork: Fork) -> Self {
-    Self {
-      expectation: Expectation::default(),
-      fork,
-      re_lex: None,
-    }
-  }
-}
-
-impl<'expect_text, Kind, ActionState, Fork: LexOptionsFork<ActionState>>
-  LexOptions<'expect_text, Kind, ActionState, Fork>
-{
+impl<'expect_text, Kind: 'static, Fork> LexOptions<'expect_text, Kind, Fork> {
   pub fn expect(mut self, expectation: impl Into<Expectation<'expect_text, Kind>>) -> Self {
     self.expectation = expectation.into();
     self
@@ -173,21 +157,13 @@ impl<'expect_text, Kind, ActionState, Fork: LexOptionsFork<ActionState>>
 
   /// If set, the [`LexOutput::re_lex`](crate::lexer::output::LexOutput::re_lex) *might* be `Some`.
   // TODO: example
-  pub fn fork(self) -> LexOptions<'expect_text, Kind, ActionState, ForkEnabled<ActionState>>
+  pub fn fork<ActionState>(self) -> LexOptions<'expect_text, Kind, ForkEnabled<ActionState>>
   where
     ActionState: Clone,
   {
     LexOptions {
       expectation: self.expectation,
       fork: ForkEnabled::default(),
-      re_lex: self.re_lex,
     }
-  }
-
-  /// Provide this if the lex is a re-lex.
-  // TODO: example
-  pub fn re_lex(mut self, re_lex: ReLexable<ActionState>) -> Self {
-    self.re_lex = Some(re_lex);
-    self
   }
 }
