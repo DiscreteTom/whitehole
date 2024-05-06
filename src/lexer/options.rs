@@ -1,5 +1,4 @@
 use super::expectation::Expectation;
-use std::marker::PhantomData;
 
 /// With this struct you can continue a finished lex.
 /// For most cases this will be constructed by [`ForkEnabled`]
@@ -28,8 +27,18 @@ impl Default for ReLexContext {
 pub struct ReLexable<ActionState> {
   /// If [`Some`], this will override [`Lexer::action_state`](crate::lexer::Lexer::action_state).
   /// This will be [`Some`] if the re-lexable lex mutated the action state.
+  /// This will be ignored by [`StatelessLexer`](crate::lexer::stateless::StatelessLexer).
   pub action_state: Option<ActionState>,
   pub ctx: ReLexContext,
+}
+
+impl<ActionState> Default for ReLexable<ActionState> {
+  fn default() -> Self {
+    Self {
+      action_state: None,
+      ctx: ReLexContext::default(),
+    }
+  }
 }
 
 /// See [`LexOptions::fork`].
@@ -111,8 +120,7 @@ pub struct LexOptions<'expect_text, Kind: 'static, ActionState, Fork: LexOptions
   /// See [`LexOptions::fork()`].
   pub fork: Fork,
   /// See [`LexOptions::re_lex()`].
-  pub re_lex: Option<ReLexContext>,
-  _action_state: PhantomData<ActionState>,
+  pub re_lex: Option<ReLexable<ActionState>>,
 }
 
 impl<'expect_text, Kind, ActionState> Default
@@ -123,7 +131,6 @@ impl<'expect_text, Kind, ActionState> Default
       expectation: Expectation::default(),
       fork: ForkDisabled,
       re_lex: None,
-      _action_state: PhantomData,
     }
   }
 }
@@ -136,10 +143,10 @@ impl<'expect_text, Kind, ActionState> From<Expectation<'expect_text, Kind>>
   }
 }
 
-impl<'expect_text, Kind, ActionState> From<ReLexContext>
+impl<'expect_text, Kind, ActionState> From<ReLexable<ActionState>>
   for LexOptions<'expect_text, Kind, ActionState, ForkDisabled>
 {
-  fn from(re_lex: ReLexContext) -> Self {
+  fn from(re_lex: ReLexable<ActionState>) -> Self {
     Self::default().re_lex(re_lex)
   }
 }
@@ -152,7 +159,6 @@ impl<'expect_text, Kind, ActionState, Fork: LexOptionsFork<ActionState>> From<Fo
       expectation: Expectation::default(),
       fork,
       re_lex: None,
-      _action_state: PhantomData,
     }
   }
 }
@@ -175,13 +181,12 @@ impl<'expect_text, Kind, ActionState, Fork: LexOptionsFork<ActionState>>
       expectation: self.expectation,
       fork: ForkEnabled::default(),
       re_lex: self.re_lex,
-      _action_state: PhantomData,
     }
   }
 
   /// Provide this if the lex is a re-lex.
   // TODO: example
-  pub fn re_lex(mut self, re_lex: ReLexContext) -> Self {
+  pub fn re_lex(mut self, re_lex: ReLexable<ActionState>) -> Self {
     self.re_lex = Some(re_lex);
     self
   }

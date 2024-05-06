@@ -81,7 +81,9 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
 
   /// Peek the next token with custom options, without updating
   /// [`Self::state`] and [`Self::action_state`].
-  /// This will clone the [`Self::action_state`] and return it.
+  /// This will clone the [`Self::action_state`] by default and return it.
+  /// If this is a re-lex, [`ReLexable::action_state`](crate::lexer::options::ReLexable::action_state)
+  /// will be used instead of cloning [`Self::action_state`].
   pub fn peek_with<'expect_text, Fork: LexOptionsFork<ActionState>>(
     &self,
     options_builder: impl FnOnce(
@@ -100,7 +102,9 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
 
   /// Peek the next token with custom options, without updating
   /// [`Self::state`] and [`Self::action_state`].
-  /// This will clone the [`Self::action_state`] and return it.
+  /// This will clone the [`Self::action_state`] by default and return it.
+  /// If this is a re-lex, [`ReLexable::action_state`](crate::lexer::options::ReLexable::action_state)
+  /// will be used instead of cloning [`Self::action_state`].
   pub fn peek_with_options<'expect_text, Fork: LexOptionsFork<ActionState>>(
     &self,
     options: impl Into<LexOptions<'expect_text, Kind, ActionState, Fork>>,
@@ -112,14 +116,22 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     Kind: TokenKindIdProvider<Kind>,
     ActionState: Clone,
   {
-    // because of peek, clone the action state to prevent mutating the original one
-    let mut tmp_action_state = self.action_state.clone();
+    let mut options: LexOptions<_, _, _> = options.into();
+
+    // because of peek, we won't mutate lexer's action state.
+    // if this is a re-lex and user provides action state, use it,
+    // otherwise clone the action state to prevent mutating the original one
+    let mut tmp_action_state = options
+      .re_lex
+      .as_mut()
+      .and_then(|re_lex| re_lex.action_state.take())
+      .unwrap_or_else(|| self.action_state.clone());
 
     let output = Self::lex_with_stateless(
       &self.stateless,
       &self.state,
-      &mut tmp_action_state, // use the cloned action state
-      options.into(),
+      &mut tmp_action_state, // don't use self.action_state
+      options,
     );
 
     // don't update lexer state
@@ -159,11 +171,20 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   where
     Kind: TokenKindIdProvider<Kind>,
   {
+    let mut options: LexOptions<_, _, _> = options.into();
+
+    // if this is a re-lex and action state is provided, set it
+    options.re_lex.as_mut().map(|re_lex| {
+      re_lex.action_state.take().map(|action_state| {
+        self.action_state = action_state;
+      })
+    });
+
     let output = Self::lex_with_stateless(
       &self.stateless,
       &self.state,
       &mut self.action_state,
-      options.into(),
+      options,
     );
 
     // update state

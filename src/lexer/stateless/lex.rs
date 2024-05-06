@@ -1,7 +1,7 @@
 use super::{options::StatelessLexOptions, StatelessLexer};
 use crate::lexer::{
   action::ActionInput,
-  options::{ForkDisabled, LexOptionsFork, ReLexContext},
+  options::{ForkDisabled, LexOptionsFork, ReLexable},
   output::LexOutput,
   token::{Token, TokenKindIdProvider},
 };
@@ -90,10 +90,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
     // the default ReLexContext will set `skip` and `action_index` to 0
     // which means this is not a re-lex
-    let re_lex = options
-      .base
-      .re_lex
-      .unwrap_or_else(|| ReLexContext::default());
+    let re_lex = options.base.re_lex.unwrap_or_else(|| ReLexable::default());
 
     if let Some(literal) = options.base.expectation.literal {
       let literal_map = options
@@ -120,7 +117,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             &literal_map_item.head_map
           }
         },
-        &re_lex,
+        &re_lex.ctx,
         text,
         options.start,
         options.action_state,
@@ -140,7 +137,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
       Self::execute_actions(
         |_| head_map,
-        &re_lex,
+        &re_lex.ctx,
         text,
         options.start,
         options.action_state,

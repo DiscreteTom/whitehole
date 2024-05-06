@@ -1,6 +1,6 @@
 use crate::lexer::{
   expectation::Expectation,
-  options::{ForkDisabled, ForkEnabled, LexOptions, LexOptionsFork, ReLexContext},
+  options::{ForkDisabled, ForkEnabled, LexOptions, LexOptionsFork, ReLexContext, ReLexable},
 };
 use std::ops::{Deref, DerefMut};
 
@@ -43,19 +43,6 @@ impl<'expect_text, Kind, ActionState> From<ReLexContext>
 {
   fn from(re_lex: ReLexContext) -> Self {
     Self::default().re_lex(re_lex)
-  }
-}
-
-impl<'expect_text, Kind, ActionState, Fork: LexOptionsFork<ActionState>>
-  From<LexOptions<'expect_text, Kind, ActionState, Fork>>
-  for StatelessLexOptions<'expect_text, Kind, ActionState, (), Fork>
-{
-  fn from(options: LexOptions<'expect_text, Kind, ActionState, Fork>) -> Self {
-    Self {
-      start: 0,
-      action_state: (),
-      base: options,
-    }
   }
 }
 
@@ -132,7 +119,10 @@ impl<'expect_text, Kind, ActionState, ActionStateRef, Fork: LexOptionsFork<Actio
   }
   /// See [`LexOptions::re_lex()`].
   pub fn re_lex(mut self, re_lex: ReLexContext) -> Self {
-    self.re_lex = Some(re_lex);
+    self.re_lex = Some(ReLexable {
+      action_state: None,
+      ctx: re_lex,
+    });
     self
   }
 }
