@@ -1,7 +1,6 @@
 use super::{HeadMap, StatelessLexer};
 use crate::lexer::{
   action::{Action, ActionInput, ActionOutput},
-  expectation::Expectation,
   fork::LexOptionsFork,
   output::LexOutput,
   re_lex::ReLexContext,
@@ -24,7 +23,6 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     start: usize,
     state: &mut ActionState,
     mut fork: Fork,
-    expectation: Expectation<'expect_text, Kind>,
   ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexableType>
   where
     Kind: TokenKindIdProvider<Kind> + 'static,
@@ -84,14 +82,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             // else, not muted
             // don't push token to errors, set the res.token
             res.token = Some(token);
-            res.re_lex = fork.into_re_lexable(
-              input.start(),
-              actions.len(),
-              action_index,
-              expectation,
-              start,
-              text,
-            );
+            res.re_lex = fork.into_re_lexable(input.start(), actions.len(), action_index);
 
             return res;
           }
@@ -105,14 +96,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
           // else, not muted
           res.token = Some(Self::create_token(&input, output));
-          res.re_lex = fork.into_re_lexable(
-            input.start(),
-            actions.len(),
-            action_index,
-            expectation,
-            start,
-            text,
-          );
+          res.re_lex = fork.into_re_lexable(input.start(), actions.len(), action_index);
 
           return res;
         }

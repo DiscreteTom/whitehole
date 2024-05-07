@@ -95,10 +95,6 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   {
     let options: StatelessLexOptions<_, _, _> = options.into();
 
-    // the default ReLexContext will set `skip` and `action_index` to 0
-    // which means this is not a re-lex
-    let re_lex = options.re_lex;
-
     if let Some(literal) = options.base.expectation.literal {
       let literal_map = options
         .base
@@ -124,12 +120,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             &literal_map_item.head_map
           }
         },
-        &re_lex,
+        &options.base.re_lex,
         text,
         options.start,
         options.action_state,
         options.base.fork,
-        options.base.expectation,
       )
     } else {
       let head_map = options.base.expectation.kind.map_or(
@@ -145,12 +140,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
       Self::execute_actions(
         |_| head_map,
-        &re_lex,
+        &options.base.re_lex,
         text,
         options.start,
         options.action_state,
         options.base.fork,
-        options.base.expectation,
       )
     }
   }

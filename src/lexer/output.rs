@@ -15,9 +15,3 @@ pub struct LexOutput<TokenType, ReLexType> {
   /// is enabled.
   pub re_lex: ReLexType, // TODO: example
 }
-
-pub struct LexAllOutput<TokenType> {
-  pub tokens: Vec<TokenType>,
-  pub digested: usize,
-  pub errors: Vec<TokenType>,
-}

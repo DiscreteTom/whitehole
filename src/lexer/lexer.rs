@@ -2,7 +2,6 @@ use super::{
   fork::{ForkDisabled, LexOptionsFork},
   options::LexOptions,
   output::LexOutput,
-  re_lex::ReLexContext,
   state::LexerState,
   stateless::{StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKindIdProvider},
@@ -139,7 +138,6 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
       &self.state,
       &mut tmp_action_state, // don't use self.action_state
       options,
-      ReLexContext::default(),
     );
 
     // don't update lexer state
@@ -197,7 +195,6 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
       &self.state,
       &mut self.action_state,
       options,
-      ReLexContext::default(),
     );
 
     // update state
@@ -231,7 +228,6 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     state: &LexerState<'text>,
     action_state: &mut ActionState,
     options: LexOptions<'expect_text, Kind, Fork>,
-    re_lex: ReLexContext,
   ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
@@ -242,7 +238,6 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
         start: state.digested(),
         action_state,
         base: options,
-        re_lex,
       },
     )
   }
