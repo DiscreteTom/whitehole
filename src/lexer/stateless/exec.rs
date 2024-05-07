@@ -2,8 +2,9 @@ use super::{HeadMap, StatelessLexer};
 use crate::lexer::{
   action::{Action, ActionInput, ActionOutput},
   expectation::Expectation,
-  options::{LexOptionsFork, ReLexContext},
+  fork::LexOptionsFork,
   output::LexOutput,
+  re_lex::ReLexContext,
   token::{Range, Token, TokenKindIdProvider},
 };
 use std::rc::Rc;
@@ -176,7 +177,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::{action::exact, options::ForkDisabled, token::MockTokenKind};
+  use crate::lexer::{action::exact, fork::ForkDisabled, token::MockTokenKind};
 
   #[test]
   fn test_create_token() {

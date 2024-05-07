@@ -11,10 +11,12 @@
 pub mod action;
 pub mod builder;
 pub mod expectation;
+pub mod fork;
 pub mod lexer;
 pub mod options;
 pub mod output;
 pub mod position;
+pub mod re_lex;
 pub mod state;
 pub mod stateless;
 pub mod token;

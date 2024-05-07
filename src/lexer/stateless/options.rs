@@ -1,6 +1,8 @@
 use crate::lexer::{
   expectation::Expectation,
-  options::{ForkDisabled, ForkEnabled, LexOptions, ReLexContext},
+  fork::{ForkDisabled, ForkEnabled},
+  options::LexOptions,
+  re_lex::ReLexContext,
 };
 use std::ops::{Deref, DerefMut};
 

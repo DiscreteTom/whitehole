@@ -1,7 +1,7 @@
 use super::{options::StatelessLexOptions, StatelessLexer};
 use crate::lexer::{
   action::ActionInput,
-  options::{ForkDisabled, LexOptionsFork},
+  fork::{ForkDisabled, LexOptionsFork},
   output::LexOutput,
   token::{Token, TokenKindIdProvider},
 };

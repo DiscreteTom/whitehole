@@ -1,6 +1,8 @@
 use super::{
-  options::{ForkDisabled, LexOptions, LexOptionsFork, ReLexContext},
+  fork::{ForkDisabled, LexOptionsFork},
+  options::LexOptions,
   output::LexOutput,
+  re_lex::ReLexContext,
   state::LexerState,
   stateless::{StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKindIdProvider},
