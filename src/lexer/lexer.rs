@@ -50,11 +50,17 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     &self.state
   }
 
+  /// Clone self with a new action state.
+  pub fn clone_with(&self, action_state: ActionState) -> Self {
+    Self {
+      stateless: self.stateless.clone(),
+      state: self.state.clone(),
+      action_state,
+    }
+  }
+
   /// Consume self, return a new lexer with the same actions and a new text.
   /// [`Self::state`] and [`Self::action_state`] will be reset to default.
-  // this is a helper method because this is a common operation.
-  // users can do this manually. users can also customize the new lexer (e.g. set a new action state)
-  // but that's not common so we don't provide a helper method for that.
   pub fn reload<'new_text>(
     self,
     text: &'new_text str,
@@ -66,6 +72,20 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
       stateless: self.stateless,
       state: LexerState::new(text),
       action_state: ActionState::default(),
+    }
+  }
+
+  /// Consume self, return a new lexer with the same actions, a new text and the given action state.
+  /// [`Self::state`] will be reset to default.
+  pub fn reload_with<'new_text>(
+    self,
+    text: &'new_text str,
+    action_state: ActionState,
+  ) -> Lexer<'new_text, Kind, ActionState, ErrorType> {
+    Lexer {
+      stateless: self.stateless,
+      state: LexerState::new(text),
+      action_state,
     }
   }
 
