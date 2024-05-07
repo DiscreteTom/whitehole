@@ -106,10 +106,7 @@ impl<'expect_text, Kind, ActionStateRef, Fork>
   /// See [`LexOptions::fork()`].
   pub fn fork<ActionState>(
     self,
-  ) -> StatelessLexOptions<'expect_text, Kind, ActionStateRef, ForkEnabled<ActionState>>
-  where
-    ActionState: Clone,
-  {
+  ) -> StatelessLexOptions<'expect_text, Kind, ActionStateRef, ForkEnabled> {
     StatelessLexOptions {
       start: self.start,
       action_state: self.action_state,

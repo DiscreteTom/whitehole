@@ -1,9 +1,8 @@
 use super::{HeadMap, StatelessLexer};
 use crate::lexer::{
   action::{Action, ActionInput, ActionOutput},
-  fork::LexOptionsFork,
   output::LexOutput,
-  re_lex::ReLexContext,
+  re_lex::{ReLexContext, ReLexableFactory},
   token::{Range, Token, TokenKindIdProvider},
 };
 use std::rc::Rc;
@@ -13,7 +12,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'text,
     'expect_text,
     'head_map,
-    Fork: LexOptionsFork<'text, 'expect_text, Kind, ActionState>,
+    ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
   >(
     head_map_getter: impl Fn(
       &ActionInput<ActionState>,
@@ -22,18 +21,18 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     text: &'text str,
     start: usize,
     state: &mut ActionState,
-    mut fork: Fork,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexableType>
+    mut re_lexable_factory: ReLexableFactoryType,
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexableFactoryType::StatelessReLexableType>
   where
     Kind: TokenKindIdProvider<Kind> + 'static,
     ActionState: 'head_map,
     ErrorType: 'head_map,
   {
     let mut res = LexOutput {
-      digested: 0,                            // might be updated during the loop
-      errors: Vec::new(),                     // might be updated during the loop
-      token: None,                            // should only be set before return
-      re_lex: Fork::ReLexableType::default(), // should only be set before return
+      digested: 0,        // might be updated during the loop
+      errors: Vec::new(), // might be updated during the loop
+      token: None,        // should only be set before return
+      re_lex: ReLexableFactoryType::StatelessReLexableType::default(), // should only be set before return
     };
 
     loop {
@@ -55,7 +54,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         .get(&(input.rest().chars().next().unwrap()))
         .unwrap_or(head_map.unknown_fallback());
 
-      match Self::traverse_actions(&mut input, actions, re_lex, &mut fork) {
+      match Self::traverse_actions(&mut input, actions, re_lex, &mut re_lexable_factory) {
         // all definition checked, no accepted action
         // but the digested and errors might be updated by the last iteration
         // so we have to return them
@@ -82,7 +81,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
             // else, not muted
             // don't push token to errors, set the res.token
             res.token = Some(token);
-            res.re_lex = fork.into_re_lexable(input.start(), actions.len(), action_index);
+            res.re_lex = re_lexable_factory.into_stateless_re_lexable(
+              input.start(),
+              actions.len(),
+              action_index,
+            );
 
             return res;
           }
@@ -96,7 +99,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
           // else, not muted
           res.token = Some(Self::create_token(&input, output));
-          res.re_lex = fork.into_re_lexable(input.start(), actions.len(), action_index);
+          res.re_lex = re_lexable_factory.into_stateless_re_lexable(
+            input.start(),
+            actions.len(),
+            action_index,
+          );
 
           return res;
         }
@@ -110,12 +117,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   fn traverse_actions<
     'text,
     'expect_text,
-    Fork: LexOptionsFork<'text, 'expect_text, Kind, ActionState>,
+    ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
   >(
     input: &mut ActionInput<ActionState>,
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
     re_lex: &ReLexContext,
-    fork: &mut Fork,
+    re_lexable_factory: &mut ReLexableFactoryType,
   ) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize)>
   where
     Kind: TokenKindIdProvider<Kind>,
@@ -130,7 +137,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       })
     {
       if action.may_mutate_state() {
-        fork.before_mutate_action_state(input.state);
+        re_lexable_factory.before_mutate_action_state(input.state);
       }
       if let Some(output) = action.exec(input) {
         return Some((output, i));
@@ -161,7 +168,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::{action::exact, fork::ForkDisabled, token::MockTokenKind};
+  use crate::lexer::{action::exact, re_lex::MockReLexableFactory, token::MockTokenKind};
 
   #[test]
   fn test_create_token() {
@@ -190,7 +197,7 @@ mod tests {
       &mut input,
       &vec![Rc::new(exact("d")),],
       &ReLexContext::default(),
-      &mut ForkDisabled
+      &mut MockReLexableFactory
     )
     .is_none());
 
@@ -204,7 +211,7 @@ mod tests {
           Rc::new(exact("c")),
         ],
         &ReLexContext::default(),
-        &mut ForkDisabled
+        &mut MockReLexableFactory
       ),
       Some((
         ActionOutput {
@@ -226,7 +233,7 @@ mod tests {
           Rc::new(exact("c")),
         ],
         &ReLexContext { start: 1, skip: 1 },
-        &mut ForkDisabled
+        &mut MockReLexableFactory
       ),
       Some((
         ActionOutput {
@@ -248,7 +255,7 @@ mod tests {
           Rc::new(exact("c")),
         ],
         &ReLexContext { start: 1, skip: 2 },
-        &mut ForkDisabled
+        &mut MockReLexableFactory
       ),
       None
     ));
@@ -263,7 +270,7 @@ mod tests {
           Rc::new(exact("c")),
         ],
         &ReLexContext { start: 0, skip: 3 },
-        &mut ForkDisabled
+        &mut MockReLexableFactory
       ),
       Some((
         ActionOutput {

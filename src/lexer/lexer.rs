@@ -2,6 +2,7 @@ use super::{
   fork::{ForkDisabled, LexOptionsFork},
   options::LexOptions,
   output::LexOutput,
+  re_lex::ReLexableFactory,
   state::LexerState,
   stateless::{StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKindIdProvider},
@@ -105,13 +106,13 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   /// This will clone the [`Self::action_state`] by default and return it.
   /// If this is a re-lex, [`ReLexable::action_state`](crate::lexer::options::ReLexable::action_state)
   /// will be used instead of cloning [`Self::action_state`].
-  pub fn peek_with<'expect_text, Fork: LexOptionsFork<'text, 'expect_text, Kind, ActionState>>(
+  pub fn peek_with<'expect_text, Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>>(
     &self,
     options_builder: impl FnOnce(
       LexOptions<'expect_text, Kind, ForkDisabled>,
     ) -> LexOptions<'expect_text, Kind, Fork>,
   ) -> (
-    LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexableType>,
+    LexOutput<Token<'text, Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>,
     ActionState,
   )
   where
@@ -128,12 +129,12 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   /// will be used instead of cloning [`Self::action_state`].
   pub fn peek_with_options<
     'expect_text,
-    Fork: LexOptionsFork<'text, 'expect_text, Kind, ActionState>,
+    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>,
   >(
     &self,
     options: impl Into<LexOptions<'expect_text, Kind, Fork>>,
   ) -> (
-    LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexableType>,
+    LexOutput<Token<'text, Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>,
     ActionState,
   )
   where
@@ -162,6 +163,13 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
 
     // don't update lexer state
 
+    let output = LexOutput {
+      digested: output.digested,
+      errors: output.errors,
+      token: output.token,
+      re_lex: Fork::ReLexableFactoryType::into_re_lexable(output.re_lex, &self),
+    };
+
     (output, tmp_action_state)
   }
 
@@ -176,12 +184,12 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
 
   /// Try to yield the next token with custom options.
   /// [`Self::state`] and [`Self::action_state`] will be updated.
-  pub fn lex_with<'expect_text, Fork: LexOptionsFork<'text, 'expect_text, Kind, ActionState>>(
+  pub fn lex_with<'expect_text, Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>>(
     &mut self,
     options_builder: impl FnOnce(
       LexOptions<'expect_text, Kind, ForkDisabled>,
     ) -> LexOptions<'expect_text, Kind, Fork>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexableType>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
   {
@@ -190,13 +198,10 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
 
   /// Try to yield the next token with custom options.
   /// [`Self::state`] and [`Self::action_state`] will be updated.
-  pub fn lex_with_options<
-    'expect_text,
-    Fork: LexOptionsFork<'text, 'expect_text, Kind, ActionState>,
-  >(
+  pub fn lex_with_options<'expect_text, Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>>(
     &mut self,
     options: impl Into<LexOptions<'expect_text, Kind, Fork>>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexableType>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
   {
@@ -216,6 +221,13 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
       &mut self.action_state,
       options,
     );
+
+    let output = LexOutput {
+      digested: output.digested,
+      errors: output.errors,
+      token: output.token,
+      re_lex: Fork::ReLexableFactoryType::into_re_lexable(output.re_lex, &self),
+    };
 
     // update state
     self.state.digest(output.digested);
@@ -240,15 +252,12 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     self.digest_and_set_action_state(n, ActionState::default())
   }
 
-  fn lex_with_stateless<
-    'expect_text,
-    Fork: LexOptionsFork<'text, 'expect_text, Kind, ActionState>,
-  >(
+  fn lex_with_stateless<'expect_text, Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>>(
     stateless: &Rc<StatelessLexer<Kind, ActionState, ErrorType>>,
     state: &LexerState<'text>,
     action_state: &mut ActionState,
     options: LexOptions<'expect_text, Kind, Fork>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexableType>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
   {

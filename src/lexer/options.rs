@@ -45,13 +45,10 @@ impl<'expect_text, Kind: 'static, Fork> LexOptions<'expect_text, Kind, Fork> {
 
   /// If set, the [`LexOutput::re_lex`](crate::lexer::output::LexOutput::re_lex) *might* be `Some`.
   // TODO: example
-  pub fn fork<ActionState>(self) -> LexOptions<'expect_text, Kind, ForkEnabled<ActionState>>
-  where
-    ActionState: Clone,
-  {
+  pub fn fork(self) -> LexOptions<'expect_text, Kind, ForkEnabled> {
     LexOptions {
       expectation: self.expectation,
-      fork: ForkEnabled::default(),
+      fork: ForkEnabled,
       re_lex: self.re_lex,
     }
   }

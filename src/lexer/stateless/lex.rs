@@ -3,6 +3,7 @@ use crate::lexer::{
   action::ActionInput,
   fork::{ForkDisabled, LexOptionsFork},
   output::LexOutput,
+  re_lex::ReLexableFactory,
   token::{Token, TokenKindIdProvider},
 };
 
@@ -48,7 +49,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'text,
     'expect_text,
     'action_state,
-    Fork: LexOptionsFork<'text, 'expect_text, Kind, ActionState>,
+    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>,
   >(
     &self,
     text: &'text str,
@@ -60,7 +61,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       &'action_state mut ActionState,
       Fork,
     >,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexableType>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>,  <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
@@ -83,12 +84,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'text,
     'expect_text,
     'action_state,
-    Fork: LexOptionsFork<'text, 'expect_text, Kind, ActionState>,
+    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>,
   >(
     &self,
     text: &'text str,
     options: impl Into<StatelessLexOptions<'expect_text, Kind, &'action_state mut ActionState, Fork>>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, Fork::ReLexableType>
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
@@ -124,7 +125,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         text,
         options.start,
         options.action_state,
-        options.base.fork,
+        Fork::ReLexableFactoryType::default(),
       )
     } else {
       let head_map = options.base.expectation.kind.map_or(
@@ -144,7 +145,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         text,
         options.start,
         options.action_state,
-        options.base.fork,
+        Fork::ReLexableFactoryType::default(),
       )
     }
   }
