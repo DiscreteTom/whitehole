@@ -20,12 +20,14 @@ impl<Kind, ActionState, ErrorType> Default for LexerBuilder<Kind, ActionState, E
   }
 }
 
-impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
-  /// Equals to [`Self::default`].
+impl<Kind> LexerBuilder<Kind, (), ()> {
+  /// Create a new lexer builder with no `ActionState` and `ErrorType`.
   pub fn new() -> Self {
     Self::default()
   }
+}
 
+impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   // TODO: move into `generate`?
   pub fn build_stateless(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
     // TODO: warning if action has no head matcher
