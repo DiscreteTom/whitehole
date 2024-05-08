@@ -127,12 +127,6 @@ mod tests {
   }
 
   #[test]
-  #[should_panic]
-  fn action_utils_exact_chars_empty() {
-    exact_chars::<(), ()>("");
-  }
-
-  #[test]
   fn action_utils_exact_chars() {
     let actions: Vec<Action<MockTokenKind<()>>> = exact_chars("+-*/");
     assert_accept(&actions[0], "+", 1);

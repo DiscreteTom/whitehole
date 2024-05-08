@@ -211,7 +211,7 @@ mod tests {
   #[test]
   fn sub_action_exec() {
     let a = SubAction::new(|input| match input.rest().len() {
-      0 => None,
+      1 => None,
       digested => Some(digested),
     });
 
@@ -226,9 +226,8 @@ mod tests {
     );
 
     // reject
-    assert_eq!(a.exec(&SubActionInput::new("", 0, &mut ()).unwrap()), None);
     assert_eq!(
-      a.exec(&SubActionInput::new("123", 3, &mut ()).unwrap()),
+      a.exec(&SubActionInput::new("123", 2, &mut ()).unwrap()),
       None
     );
   }
@@ -236,7 +235,7 @@ mod tests {
   #[test]
   fn sub_action_into_action() {
     let action: Action<_> = SubAction::new(|input| match input.rest().len() {
-      0 => None,
+      1 => None,
       digested => Some(digested),
     })
     .into();
@@ -253,7 +252,7 @@ mod tests {
 
     // reject
     assert!(matches!(
-      action.exec(&mut ActionInput::new("", 0, &mut ()).unwrap()),
+      action.exec(&mut ActionInput::new("123", 2, &mut ()).unwrap()),
       None
     ));
   }

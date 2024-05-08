@@ -383,15 +383,15 @@ mod tests {
       // modify the state before the action is executed
       .prepare(|input: &mut ActionInput<MyState>| input.state.value += 1)
       // prevent the action if the rest is empty
-      .prevent(|input| input.rest().len() == 0);
+      .prevent(|input| input.rest().len() == 1);
 
     // the first exec, state will be changed, digest all chars
-    let output = action.exec(&mut ActionInput::new("a", 0, &mut state).unwrap());
+    let output = action.exec(&mut ActionInput::new("aa", 0, &mut state).unwrap());
     assert!(matches!(output, Some(ActionOutput { digested: 1, .. })));
     assert_eq!(state.value, 1);
 
     // the second exec, the action is prevented, so the state is not updated
-    let output = action.exec(&mut ActionInput::new("a", 1, &mut state).unwrap());
+    let output = action.exec(&mut ActionInput::new("aa", 1, &mut state).unwrap());
     assert!(matches!(output, None));
     assert_eq!(state.value, 1); // the state is not updated
   }

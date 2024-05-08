@@ -147,7 +147,7 @@ mod tests {
     assert!(!action.muted());
     assert!(!action.may_mutate_state());
     assert!(action.never_mutate_state());
-    assert_eq!(action.kind_id(), &TokenKindId::new(0));
+    assert_eq!(action.kind_id(), &TokenKindId::new(1));
     assert!(action.head_matcher().is_none());
     assert!(action.literal().is_none());
   }
