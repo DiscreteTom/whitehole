@@ -8,7 +8,7 @@ pub use action_list::*;
 use super::{action::Action, stateless::StatelessLexer, Lexer};
 use std::rc::Rc;
 
-pub struct LexerBuilder<Kind, ActionState = (), ErrorType = ()> {
+pub struct LexerBuilder<Kind: 'static, ActionState = (), ErrorType = ()> {
   actions: Vec<Action<Kind, ActionState, ErrorType>>,
 }
 
@@ -21,6 +21,11 @@ impl<Kind, ActionState, ErrorType> Default for LexerBuilder<Kind, ActionState, E
 }
 
 impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
+  /// Equals to [`Self::default`].
+  pub fn new() -> Self {
+    Self::default()
+  }
+
   // TODO: move into `generate`?
   pub fn build_stateless(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
     // TODO: warning if action has no head matcher
@@ -44,32 +49,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     self.build_with(ActionState::default(), text)
   }
 
-  fn map_actions<OldKind: 'static, NewKind, F>(
+  fn map_actions<OldKind: 'static, NewKind>(
     actions: impl Into<ActionList<Action<OldKind, ActionState, ErrorType>>>,
-    f: F,
-  ) -> Vec<Action<NewKind, ActionState, ErrorType>>
-  where
-    F: Fn(Action<OldKind, ActionState, ErrorType>) -> Action<NewKind, ActionState, ErrorType>,
-  {
-    actions.into().0.into_iter().map(f).collect::<Vec<_>>()
-  }
-}
-
-#[cfg(test)]
-mod tests {
-  use super::*;
-  use crate::lexer::action::regex;
-  use whitehole_macros::_TokenKind;
-
-  #[derive(_TokenKind, Clone)]
-  enum MyKind {
-    UnitField,
-    // UnnamedField(i32),
-    // NamedField { _a: i32 },
-  }
-
-  #[derive(Clone, Default)]
-  struct MyState {
-    pub reject: bool,
+    f: impl Fn(Action<OldKind, ActionState, ErrorType>) -> Action<NewKind, ActionState, ErrorType>,
+  ) -> Vec<Action<NewKind, ActionState, ErrorType>> {
+    actions.into().0.into_iter().map(f).collect()
   }
 }

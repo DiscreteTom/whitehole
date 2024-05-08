@@ -1,4 +1,4 @@
-use crate::lexer::Action;
+use crate::lexer::action::Action;
 
 /// A helper struct to accept one or more actions.
 pub struct ActionList<ActionType>(pub Vec<ActionType>);

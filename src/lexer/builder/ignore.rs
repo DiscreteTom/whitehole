@@ -1,8 +1,11 @@
 use super::{ActionList, LexerBuilder};
-use crate::lexer::{token::TokenKind, Action};
+use crate::lexer::{
+  action::Action,
+  token::{DefaultTokenKindIdBinding, MockTokenKind, TokenKindIdBinding},
+};
 
 impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
-  /// Define [`muted`](Action::maybe_muted) actions by calling [`Action::mute`].
+  /// Define [`muted`](Action::muted) actions by calling [`Action::mute`].
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
@@ -10,10 +13,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use MyKind::*;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A, B }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// # let mut builder = LexerBuilder::<_>::default();
   /// // append a single action
   /// builder.ignore(word("A").bind(A));
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// # let mut builder = LexerBuilder::<_>::default();
   /// // append multiple actions
   /// builder.ignore([word("A").bind(A), word("B").bind(B)]);
   /// ```
@@ -23,10 +26,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
-    self.append(Self::map_actions(actions, |a| a.mute(true)))
+    self.append(Self::map_actions(actions, |a| a.mute()))
   }
 
-  /// Define [`muted`](Action::maybe_muted) actions by calling [`Action::mute`] with a decorator.
+  /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] with a decorator.
   /// # Examples
   /// The following code won't pass the compile check
   /// because the compiler can't infer the generic parameter type of [`Action`]
@@ -37,7 +40,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use MyKind::*;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A }
-  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
+  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
   /// builder.ignore(exact("A").bind(A).error(123));
   /// ```
   /// The following code will pass the compile.
@@ -47,10 +50,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use MyKind::*;
   /// # #[derive(TokenKind, Clone)]
   /// # enum MyKind { A, B }
-  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
+  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
   /// // append a single action
   /// builder.ignore_with(word("A").bind(A), |a| a.error(123));
-  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
+  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
   /// // append multiple actions
   /// builder.ignore_with([word("A").bind(A), word("B").bind(B)], |a| a.error(123));
   /// ```
@@ -67,8 +70,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   {
     self.ignore(Self::map_actions(actions, decorator))
   }
+}
 
-  /// Define [`muted`](Action::maybe_muted) actions by calling [`Action::mute`] and bind them to the default kind.
+impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, ActionState, ErrorType> {
+  /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] and bind them to the default kind.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, whitespaces, word}, LexerBuilder};
@@ -79,26 +84,26 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// #   #[default]
   /// #   Anonymous,
   /// # }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// # let mut builder = LexerBuilder::<_>::default();
   /// // append a single action
   /// builder.ignore_default(whitespaces());
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
+  /// # let mut builder = LexerBuilder::<_>::default();
   /// // append multiple actions
   /// builder.ignore_default([whitespaces(), word("_")]);
   /// ```
   pub fn ignore_default(
     self,
-    actions: impl Into<ActionList<Action<(), ActionState, ErrorType>>>,
+    actions: impl Into<ActionList<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
   ) -> Self
   where
-    Kind: TokenKind<Kind> + Default + Clone + 'static,
+    Kind: DefaultTokenKindIdBinding<Kind>,
     ActionState: 'static,
     ErrorType: 'static,
   {
-    self.ignore(Self::map_actions(actions, |a| a.bind(Kind::default())))
+    self.ignore(Self::map_actions(actions, |a| a.bind_default()))
   }
 
-  /// Define [`muted`](Action::maybe_muted) actions by calling [`Action::mute`] with a decorator and bind them to the default kind.
+  /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] with a decorator and bind them to the default kind.
   /// # Examples
   /// The following code won't pass the compile check
   /// because the compiler can't infer the generic parameter type of [`Action`]
@@ -108,7 +113,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use whitehole_macros::TokenKind;
   /// # #[derive(TokenKind, Clone, Default)]
   /// # enum MyKind { #[default] A }
-  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
+  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
   /// builder.ignore_default(exact("A").error(123));
   /// ```
   /// The following code will pass the compile.
@@ -118,23 +123,25 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # use MyKind::*;
   /// # #[derive(TokenKind, Clone, Default)]
   /// # enum MyKind { #[default] A }
-  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
+  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
   /// // append a single action
   /// builder.ignore_default_with(word("A"), |a| a.error(123));
-  /// # let mut builder = LexerBuilder::<MyKind, (), i32>::default();
+  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
   /// // append multiple actions
   /// builder.ignore_default_with([word("A"), word("B")], |a| a.error(123));
   /// ```
   pub fn ignore_default_with<F>(
     self,
-    actions: impl Into<ActionList<Action<(), ActionState, ErrorType>>>,
+    actions: impl Into<ActionList<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
     decorator: F,
   ) -> Self
   where
-    Kind: TokenKind<Kind> + Default + Clone + 'static,
+    Kind: DefaultTokenKindIdBinding<Kind>,
     ActionState: 'static,
     ErrorType: 'static,
-    F: Fn(Action<(), ActionState, ErrorType>) -> Action<(), ActionState, ErrorType>,
+    F: Fn(
+      Action<MockTokenKind<()>, ActionState, ErrorType>,
+    ) -> Action<MockTokenKind<()>, ActionState, ErrorType>,
   {
     self.ignore_default(Self::map_actions(actions, decorator))
   }
@@ -143,11 +150,11 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::word;
-  use whitehole_macros::_TokenKind;
-  use MyKind::*;
+  use crate::lexer::{action::word, token::SubTokenKind};
+  use whitehole_macros::_token_kind;
 
-  #[derive(_TokenKind, Default, Clone)]
+  #[_token_kind]
+  #[derive(Default, Clone, Debug)]
   enum MyKind {
     #[default]
     Anonymous,
@@ -158,96 +165,66 @@ mod tests {
   #[test]
   fn lexer_builder_ignore() {
     // single
-    let stateless = LexerBuilder::<MyKind>::default()
-      .ignore(word("A").bind(A))
-      .build_stateless();
-    assert_eq!(stateless.actions().len(), 1);
-    assert!(stateless.actions()[0].maybe_muted());
+    let builder = LexerBuilder::<_>::default().ignore(word("A").bind(A));
+    assert_eq!(builder.actions.len(), 1);
+    assert!(builder.actions[0].muted());
 
     // many
-    let stateless = LexerBuilder::<MyKind>::default()
-      .ignore([word("A").bind(A), word("B").bind(B)])
-      .build_stateless();
-    assert_eq!(stateless.actions().len(), 2);
-    assert!(stateless.actions()[0].maybe_muted());
-    assert!(stateless.actions()[1].maybe_muted());
+    let builder = LexerBuilder::<_>::default().ignore([word("A").bind(A), word("B").bind(B)]);
+    assert_eq!(builder.actions.len(), 2);
+    assert!(builder.actions[0].muted());
+    assert!(builder.actions[1].muted());
   }
 
   #[test]
   fn lexer_builder_ignore_with() {
     // single
-    let stateless = LexerBuilder::<MyKind, (), i32>::default()
-      .ignore_with(word("A").bind(A), |a| a.error(123))
-      .build_stateless();
-    assert_eq!(stateless.actions().len(), 1);
-    assert!(stateless.actions()[0].maybe_muted());
+    let builder =
+      LexerBuilder::<_, (), i32>::default().ignore_with(word("A").bind(A), |a| a.error(123));
+    assert_eq!(builder.actions.len(), 1);
+    assert!(builder.actions[0].muted());
 
     // many
-    let stateless = LexerBuilder::<MyKind, (), i32>::default()
-      .ignore_with([word("A").bind(A), word("B").bind(B)], |a| a.error(123))
-      .build_stateless();
-    assert_eq!(stateless.actions().len(), 2);
-    assert!(stateless.actions()[0].maybe_muted());
-    assert!(stateless.actions()[1].maybe_muted());
+    let builder = LexerBuilder::<_, (), i32>::default()
+      .ignore_with([word("A").bind(A), word("B").bind(B)], |a| a.error(123));
+    assert_eq!(builder.actions.len(), 2);
+    assert!(builder.actions[0].muted());
+    assert!(builder.actions[1].muted());
   }
 
   #[test]
   fn lexer_builder_ignore_default() {
     // single
-    let stateless = LexerBuilder::<MyKind>::default()
-      .ignore_default(word("A"))
-      .build_stateless();
-    assert_eq!(stateless.actions().len(), 1);
-    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
-    assert!(stateless.actions()[0]
-      .possible_kinds()
-      .contains(&Anonymous.id()),);
-    assert!(stateless.actions()[0].maybe_muted());
+    let builder = LexerBuilder::<_>::default().ignore_default(word("A"));
+    assert_eq!(builder.actions.len(), 1);
+    assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id());
+    assert!(builder.actions[0].muted());
 
     // many
-    let stateless = LexerBuilder::<MyKind>::default()
-      .ignore_default([word("A"), word("B")])
-      .build_stateless();
-    assert_eq!(stateless.actions().len(), 2);
-    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
-    assert!(stateless.actions()[0]
-      .possible_kinds()
-      .contains(&Anonymous.id()),);
-    assert_eq!(stateless.actions()[1].possible_kinds().len(), 1);
-    assert!(stateless.actions()[1]
-      .possible_kinds()
-      .contains(&Anonymous.id()));
-    assert!(stateless.actions()[0].maybe_muted());
-    assert!(stateless.actions()[1].maybe_muted());
+    let builder = LexerBuilder::<_>::default().ignore_default([word("A"), word("B")]);
+    assert_eq!(builder.actions.len(), 2);
+    assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id());
+    assert_eq!(builder.actions[1].kind_id(), Anonymous::kind_id());
+    assert!(builder.actions[0].muted());
+    assert!(builder.actions[1].muted());
   }
 
   #[test]
   fn lexer_builder_ignore_default_with() {
     // single
-    let stateless = LexerBuilder::<MyKind, (), i32>::default()
-      .ignore_default_with(word("A"), |a| a.error(123))
-      .build_stateless();
-    assert_eq!(stateless.actions().len(), 1);
-    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
-    assert!(stateless.actions()[0]
-      .possible_kinds()
-      .contains(&Anonymous.id()),);
-    assert!(stateless.actions()[0].maybe_muted());
+    let builder =
+      LexerBuilder::<_, (), i32>::default().ignore_default_with(word("A"), |a| a.error(123));
+    assert_eq!(builder.actions.len(), 1);
+    assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id());
+    assert!(builder.actions[0].muted());
 
     // many
-    let stateless = LexerBuilder::<MyKind, (), i32>::default()
-      .ignore_default_with([word("A"), word("B")], |a| a.error(123))
-      .build_stateless();
-    assert_eq!(stateless.actions().len(), 2);
-    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
-    assert!(stateless.actions()[0]
-      .possible_kinds()
-      .contains(&Anonymous.id()),);
-    assert_eq!(stateless.actions()[1].possible_kinds().len(), 1);
-    assert!(stateless.actions()[1]
-      .possible_kinds()
-      .contains(&Anonymous.id()),);
-    assert!(stateless.actions()[0].maybe_muted());
-    assert!(stateless.actions()[1].maybe_muted());
+    let builder = LexerBuilder::<_, (), i32>::default()
+      .ignore_default_with([word("A"), word("B")], |a| a.error(123));
+    assert_eq!(builder.actions.len(), 2);
+    assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id());
+    assert_eq!(builder.actions[1].kind_id(), Anonymous::kind_id());
+    assert!(builder.actions[0].muted());
+    assert!(builder.actions[1].muted());
   }
 }

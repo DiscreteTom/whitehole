@@ -1,7 +1,7 @@
 use super::{ActionList, LexerBuilder};
 use crate::lexer::{
-  token::{MockTokenKind, SubTokenKind, TokenKindIdBinding},
-  Action,
+  action::Action,
+  token::{DefaultTokenKindIdBinding, MockTokenKind, TokenKindIdBinding},
 };
 
 impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
@@ -56,18 +56,16 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// // append multiple actions
   /// builder.append_with([word("A").bind(A), word("B").bind(B)], |a| a.error(123));
   /// ```
-  pub fn append_with<F>(
+  pub fn append_with(
     self,
     actions: impl Into<ActionList<Action<Kind, ActionState, ErrorType>>>,
-    decorator: F,
-  ) -> Self
-  where
-    Kind: 'static,
-    F: Fn(Action<Kind, ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
-  {
+    decorator: impl Fn(Action<Kind, ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
+  ) -> Self {
     self.append(Self::map_actions(actions, decorator))
   }
+}
 
+impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, ActionState, ErrorType> {
   /// Append actions and bind them to the default kind.
   /// # Examples
   /// ```
@@ -91,7 +89,9 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     actions: impl Into<ActionList<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
   ) -> Self
   where
-    Kind: Default,
+    Kind: DefaultTokenKindIdBinding<Kind>,
+    ActionState: 'static,
+    ErrorType: 'static,
   {
     self.append(Self::map_actions(actions, |a| a.bind_default()))
   }
@@ -123,16 +123,17 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// // append multiple actions
   /// builder.append_default_with([word("A"), word("B")], |a| a.error(123));
   /// ```
-  pub fn append_default_with<F>(
+  pub fn append_default_with(
     self,
     actions: impl Into<ActionList<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
-    decorator: F,
-  ) -> Self
-  where
-    Kind: Default,
-    F: Fn(
+    decorator: impl Fn(
       Action<MockTokenKind<()>, ActionState, ErrorType>,
     ) -> Action<MockTokenKind<()>, ActionState, ErrorType>,
+  ) -> Self
+  where
+    Kind: DefaultTokenKindIdBinding<Kind>,
+    ActionState: 'static,
+    ErrorType: 'static,
   {
     self.append_default(Self::map_actions(actions, decorator))
   }
@@ -141,11 +142,14 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::{action::word, token::TokenKindIdBinding};
-  use whitehole_macros::_TokenKind;
-  use MyKind::*;
+  use crate::lexer::{
+    action::word,
+    token::{SubTokenKind, TokenKindIdBinding},
+  };
+  use whitehole_macros::_token_kind;
 
-  #[derive(_TokenKind, Default, Clone)]
+  #[_token_kind]
+  #[derive(Default, Clone, Debug)]
   enum MyKind {
     #[default]
     Anonymous,
@@ -159,8 +163,7 @@ mod tests {
     assert_eq!(
       LexerBuilder::<_>::default()
         .append(word("A").bind(A))
-        .build_stateless()
-        .actions()
+        .actions
         .len(),
       1
     );
@@ -169,8 +172,7 @@ mod tests {
     assert_eq!(
       LexerBuilder::<_>::default()
         .append([word("A").bind(A), word("B").bind(B)])
-        .build_stateless()
-        .actions()
+        .actions
         .len(),
       2
     );
@@ -179,18 +181,18 @@ mod tests {
   #[test]
   fn lexer_builder_append_with() {
     // single
-    let stateless = LexerBuilder::<_, (), &str>::default()
-      .append_with(word("A").bind(A), |a| a.error("123"))
-      .build_stateless();
-    assert_eq!(stateless.actions().len(), 1);
+    let builder =
+      LexerBuilder::<_, (), _>::default().append_with(word("A").bind(A), |a| a.error("123"));
+    assert_eq!(builder.actions.len(), 1);
+    let stateless = builder.build_stateless();
     assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), "123");
 
     // many
-    let stateless = LexerBuilder::<_, (), &str>::default()
-      .append_with([word("A").bind(A), word("B").bind(B)], |a| a.error("123"))
-      .build_stateless();
-    assert_eq!(stateless.actions().len(), 2);
+    let builder = LexerBuilder::<_, (), &str>::default()
+      .append_with([word("A").bind(A), word("B").bind(B)], |a| a.error("123"));
+    assert_eq!(builder.actions.len(), 2);
     // ensure decorator is applied to all actions
+    let stateless = builder.build_stateless();
     assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), "123");
     assert_eq!(stateless.lex("B").0.token.unwrap().error.unwrap(), "123");
   }
@@ -198,57 +200,36 @@ mod tests {
   #[test]
   fn lexer_builder_append_default() {
     // single
-    let stateless = LexerBuilder::<TokenKindIdBinding<MyKind>>::default()
-      .append_default(word("A"))
-      .build_stateless();
-    assert_eq!(stateless.actions().len(), 1);
-    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
-    assert!(stateless.actions()[0]
-      .possible_kinds()
-      .contains(&Anonymous.id()),);
+    let builder = LexerBuilder::<TokenKindIdBinding<MyKind>>::default().append_default(word("A"));
+    assert_eq!(builder.actions.len(), 1);
+    assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id());
 
     // many
-    let stateless = LexerBuilder::<TokenKindIdBinding<MyKind>>::default()
-      .append_default([word("A"), word("B")])
-      .build_stateless();
-    assert_eq!(stateless.actions().len(), 2);
-    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
-    assert!(stateless.actions()[0]
-      .possible_kinds()
-      .contains(&Anonymous.id()),);
-    assert_eq!(stateless.actions()[1].possible_kinds().len(), 1);
-    assert!(stateless.actions()[1]
-      .possible_kinds()
-      .contains(&Anonymous.id()));
+    let builder =
+      LexerBuilder::<TokenKindIdBinding<MyKind>>::default().append_default([word("A"), word("B")]);
+    assert_eq!(builder.actions.len(), 2);
+    assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id());
+    assert_eq!(builder.actions[1].kind_id(), Anonymous::kind_id());
   }
 
   #[test]
   fn lexer_builder_append_default_with() {
     // single
-    let stateless = LexerBuilder::<TokenKindIdBinding<MyKind>, (), &str>::default()
-      .append_default_with(word("A"), |a| a.error("123"))
-      .build_stateless();
-    assert_eq!(stateless.actions().len(), 1);
-    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
-    assert!(stateless.actions()[0]
-      .possible_kinds()
-      .contains(&Anonymous.id()),);
+    let builder = LexerBuilder::<TokenKindIdBinding<MyKind>, (), &str>::default()
+      .append_default_with(word("A"), |a| a.error("123"));
+    assert_eq!(builder.actions.len(), 1);
+    assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id(),);
+    let stateless = builder.build_stateless();
     assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), "123");
 
     // many
-    let stateless = LexerBuilder::<TokenKindIdBinding<MyKind>, (), &str>::default()
-      .append_default_with([word("A"), word("B")], |a| a.error("123"))
-      .build_stateless();
-    assert_eq!(stateless.actions().len(), 2);
-    assert_eq!(stateless.actions()[0].possible_kinds().len(), 1);
-    assert!(stateless.actions()[0]
-      .possible_kinds()
-      .contains(&Anonymous.id()),);
-    assert_eq!(stateless.actions()[1].possible_kinds().len(), 1);
-    assert!(stateless.actions()[1]
-      .possible_kinds()
-      .contains(&Anonymous.id()),);
+    let builder = LexerBuilder::<TokenKindIdBinding<MyKind>, (), &str>::default()
+      .append_default_with([word("A"), word("B")], |a| a.error("123"));
+    assert_eq!(builder.actions.len(), 2);
+    assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id(),);
+    assert_eq!(builder.actions[1].kind_id(), Anonymous::kind_id(),);
     // ensure decorator is applied to all actions
+    let stateless = builder.build_stateless();
     assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), "123");
     assert_eq!(stateless.lex("B").0.token.unwrap().error.unwrap(), "123");
   }
