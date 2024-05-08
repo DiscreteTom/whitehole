@@ -80,8 +80,8 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   /// [`Self::state`] will be reset to default.
   pub fn reload_with<'new_text>(
     self,
-    text: &'new_text str,
     action_state: ActionState,
+    text: &'new_text str,
   ) -> Lexer<'new_text, Kind, ActionState, ErrorType> {
     Lexer {
       stateless: self.stateless,
