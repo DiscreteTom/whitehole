@@ -7,6 +7,7 @@
 //! 3. [`self::stateless`]
 //! 4. [`self::state`]
 //! 5. [`self::lexer`]
+//! 6. [`self::builder`]
 
 pub mod action;
 pub mod builder;
