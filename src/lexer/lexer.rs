@@ -7,7 +7,7 @@ use super::{
   stateless::{StatelessLexOptions, StatelessLexer},
   token::{Token, TokenKindIdProvider},
 };
-use std::{cmp::min, rc::Rc};
+use std::rc::Rc;
 
 pub struct Lexer<'text, Kind: 'static, ActionState, ErrorType> {
   // use Rc so that this is clone-able
@@ -235,16 +235,16 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     output
   }
 
-  /// Digest the next (at most) `n` chars and set [`Self::action_state`].
+  /// Digest the next `n` chars and set [`Self::action_state`].
+  /// The caller should make sure `n` is smaller than the rest text length.
   pub fn digest_and_set_action_state(&mut self, n: usize, action_state: ActionState) -> &mut Self {
-    self
-      .state
-      .digest(min(n, self.state.text().len() - self.state.digested()));
+    self.state.digest(n);
     self.action_state = action_state;
     self
   }
 
-  /// Digest the next (at most) `n` chars and set [`Self::action_state`] to default.
+  /// Digest the next `n` chars and set [`Self::action_state`] to default.
+  /// The caller should make sure `n` is smaller than the rest text length.
   pub fn digest(&mut self, n: usize) -> &mut Self
   where
     ActionState: Default,
