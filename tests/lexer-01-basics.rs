@@ -61,8 +61,6 @@ fn lexer_basics() {
     .build("a b c");
 
   // now let's try to lex the input string,
-  // actions will be evaluated in the order they are defined
-
   // the first token should be `a`
   let token = lexer.lex().token.unwrap();
   assert!(matches!(
