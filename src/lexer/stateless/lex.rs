@@ -1,9 +1,9 @@
-use super::{options::StatelessLexOptions, StatelessLexer};
+use super::{options::StatelessLexOptions, StatelessLexer, StatelessTrimOptions};
 use crate::lexer::{
   action::ActionInput,
   fork::{ForkDisabled, LexOptionsFork},
   output::LexOutput,
-  re_lex::ReLexableFactory,
+  re_lex::{MockReLexableFactory, ReLexContext, ReLexableFactory},
   token::{Token, TokenKindIdProvider},
 };
 
@@ -148,6 +148,59 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         Fork::ReLexableFactoryType::default(),
       )
     }
+  }
+
+  // TODO: comments
+  pub fn trim<'text>(
+    &self,
+    text: &'text str,
+  ) -> (LexOutput<Token<'text, Kind, ErrorType>, ()>, ActionState)
+  where
+    Kind: TokenKindIdProvider<Kind>,
+    ActionState: Default,
+  {
+    let mut action_state = ActionState::default();
+    (
+      self.trim_with_options(
+        text,
+        StatelessTrimOptions::default().action_state(&mut action_state),
+      ),
+      action_state,
+    )
+  }
+
+  pub fn trim_with<'text, 'action_state>(
+    &self,
+    text: &'text str,
+    options_builder: impl FnOnce(
+      StatelessTrimOptions<()>,
+    ) -> StatelessTrimOptions<&'action_state mut ActionState>,
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ()>
+  where
+    Kind: TokenKindIdProvider<Kind>,
+    ActionState: 'action_state,
+  {
+    self.trim_with_options(text, options_builder(StatelessTrimOptions::default()))
+  }
+
+  pub fn trim_with_options<'text, 'action_state>(
+    &self,
+    text: &'text str,
+    options: impl Into<StatelessTrimOptions<&'action_state mut ActionState>>,
+  ) -> LexOutput<Token<'text, Kind, ErrorType>, ()>
+  where
+    Kind: TokenKindIdProvider<Kind>,
+    ActionState: 'action_state,
+  {
+    let options: StatelessTrimOptions<_> = options.into();
+    Self::execute_actions(
+      |_| &self.muted_head_map,
+      &ReLexContext::default(),
+      text,
+      options.start,
+      options.action_state,
+      MockReLexableFactory,
+    )
   }
 }
 

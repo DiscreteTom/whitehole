@@ -77,7 +77,8 @@ pub struct StatelessLexer<Kind: 'static, ActionState = (), ErrorType = ()> {
   literal_map: LiteralMap<Kind, ActionState, ErrorType>,
   /// This is used to accelerate expected lexing by the expected kind and literal.
   kind_literal_map: HashMap<TokenKindId<Kind>, LiteralMap<Kind, ActionState, ErrorType>>,
-  // TODO: add muted_head_map to trim the lexer
+  /// This is used to trim the lexer with muted actions.
+  muted_head_map: HeadMap<Kind, ActionState, ErrorType>,
 }
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
@@ -128,7 +129,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         })
         .collect(),
       literal_map: LiteralMap::new(&actions, known_literal_map, &known_char_map),
-      head_map: HeadMap::new(&actions, known_char_map),
+      head_map: HeadMap::new(&actions, known_char_map.clone()),
+      muted_head_map: HeadMap::new(
+        &actions.into_iter().filter(|a| a.muted()).collect(),
+        known_char_map,
+      ),
     }
   }
 }

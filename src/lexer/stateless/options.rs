@@ -127,3 +127,38 @@ impl<'expect_text, Kind, ActionStateRef, Fork>
     self
   }
 }
+
+pub struct StatelessTrimOptions<ActionStateRef> {
+  /// See [`StatelessTrimOptions::start()`].
+  pub start: usize,
+  /// This is usually `&mut ActionState`.
+  pub action_state: ActionStateRef,
+}
+
+impl Default for StatelessTrimOptions<()> {
+  fn default() -> Self {
+    Self {
+      start: 0,
+      action_state: (), // use `()` as a placeholder, user should use `self.action_state` to set this
+    }
+  }
+}
+
+impl<ActionStateRef> StatelessTrimOptions<ActionStateRef> {
+  /// The start index of the text to trim.
+  pub fn start(mut self, start: usize) -> Self {
+    self.start = start;
+    self
+  }
+
+  /// Set the action state.
+  pub fn action_state<NewActionStateRef>(
+    self,
+    action_state: NewActionStateRef,
+  ) -> StatelessTrimOptions<NewActionStateRef> {
+    StatelessTrimOptions {
+      start: self.start,
+      action_state,
+    }
+  }
+}
