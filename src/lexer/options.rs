@@ -43,6 +43,14 @@ impl<'expect_text, Kind: 'static, Fork> LexOptions<'expect_text, Kind, Fork> {
     self
   }
 
+  pub fn expect_with(
+    mut self,
+    f: impl FnOnce(Expectation<'expect_text, Kind>) -> Expectation<'expect_text, Kind>,
+  ) -> Self {
+    self.expectation = f(Expectation::default());
+    self
+  }
+
   /// If set, the [`LexOutput::re_lex`](crate::lexer::output::LexOutput::re_lex) *might* be `Some`.
   // TODO: example
   pub fn fork(self) -> LexOptions<'expect_text, Kind, ForkEnabled> {

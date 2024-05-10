@@ -103,6 +103,14 @@ impl<'expect_text, Kind, ActionStateRef, Fork>
     self.expectation = expectation.into();
     self
   }
+  /// See [`LexOptions::expect_with()`].
+  pub fn expect_with(
+    mut self,
+    f: impl FnOnce(Expectation<'expect_text, Kind>) -> Expectation<'expect_text, Kind>,
+  ) -> Self {
+    self.expectation = f(Expectation::default());
+    self
+  }
   /// See [`LexOptions::fork()`].
   pub fn fork<ActionState>(
     self,
