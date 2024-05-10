@@ -237,7 +237,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
 
   /// Digest the next `n` chars and set [`Self::action_state`].
   /// The caller should make sure `n` is smaller than the rest text length.
-  pub fn digest_and_set_action_state(&mut self, n: usize, action_state: ActionState) -> &mut Self {
+  pub fn digest_with(&mut self, n: usize, action_state: ActionState) -> &mut Self {
     self.state.digest(n);
     self.action_state = action_state;
     self
@@ -249,7 +249,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   where
     ActionState: Default,
   {
-    self.digest_and_set_action_state(n, ActionState::default())
+    self.digest_with(n, ActionState::default())
   }
 
   fn lex_with_stateless<'expect_text, Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>>(
