@@ -1,16 +1,15 @@
-use whitehole::lexer::{action::regex, LexerBuilder};
-use whitehole_macros::TokenKind;
-use MyKind::*; // use the enum variants directly
+use whitehole::lexer::{action::regex, token::token_kind, LexerBuilder};
 
-// define token kinds
-// make sure it implements `TokenKind` and `Clone`.
-#[derive(TokenKind, Clone)]
+// define token kinds, make sure it is decorated by `#[token_kind]`
+#[token_kind]
+#[derive(Clone, Default)]
 enum MyKind {
+  #[default]
+  Anonymous,
   A,
 }
 
 // define your custom action state
-// make sure it implements `Default` and `Clone`
 #[derive(Default, Clone)]
 struct MyState {
   reject: bool,
@@ -18,10 +17,10 @@ struct MyState {
 
 #[test]
 fn stateful_lexer() {
-  let mut lexer = LexerBuilder::<MyKind, MyState>::default()
-    .append_with(regex("^123").unwrap().bind(A), |a| {
+  let mut lexer = LexerBuilder::<_, MyState>::default()
+    .define_with(A, regex("^123"), |a| {
       a
-        // access lexer's action state by `input.state()` or `input.state_mut()`.
+        // access lexer's action state by `input.state`.
         // in this example we reject the action if the state's `reject` field is `true`.
         .prevent(|input| input.state.reject)
         // if the action is accepted, set the state's `reject` field to `true`.
@@ -43,7 +42,7 @@ fn stateful_lexer() {
   // then the second lex should be rejected
   assert_eq!(lexer.lex().digested, 0);
 
-  // besides, you can set the action_state directly
+  // besides, you can mutate or set the action_state directly
   lexer.action_state.reject = false;
   assert_eq!(lexer.action_state.reject, false);
   lexer.action_state = MyState { reject: true };
