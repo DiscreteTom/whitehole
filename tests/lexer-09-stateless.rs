@@ -1,54 +1,50 @@
-use whitehole::lexer::{action::regex, Lexer, LexerBuilder};
-use whitehole_macros::TokenKind;
-use MyKind::*; // use the enum variants directly
+use std::rc::Rc;
+use whitehole::lexer::{
+  action::{regex, whitespaces},
+  token::token_kind,
+  Lexer, LexerBuilder,
+};
 
-// define token kinds
-// make sure it implements `TokenKind` and `Clone`.
-#[derive(TokenKind, Clone)]
+// define token kinds, make sure it is decorated by `#[token_kind]`
+#[token_kind]
+#[derive(Clone, Default)]
 enum MyKind {
+  #[default]
   Anonymous,
   A,
 }
 
 #[test]
 fn stateless_lexer() {
-  // `Lexer` is stateful, it keep tracks of the lexer state (digested, buffer, etc) and the action state.
+  // `Lexer` is stateful, it keep tracks of the lexer state (digested, text, etc) and the action state.
   // we can use `builder.build_stateless` to get a stateless lexer
   LexerBuilder::<MyKind>::default().build_stateless();
 
   // or use `lexer.stateless()` to get the stateless lexer from a stateful lexer
-  let lexer = LexerBuilder::<MyKind>::default()
-    .ignore(regex(r"^\s+").unwrap().bind(Anonymous))
-    .define(A, regex(r"^a").unwrap())
+  let lexer = LexerBuilder::new()
+    .ignore_default(whitespaces())
+    .define(A, regex(r"^a"))
     .build(" a");
-  // in this case the stateless lexer is wrapped in a `Rc`
-  // so we can clone it
+  // in this case the stateless lexer is wrapped in an `Rc`
+  // so you can clone it
   let stateless = lexer.stateless().clone();
 
-  // stateless lexer is useful if we only want to
-  // lex the head of a input buffer, with the default action state
+  // stateless lexer is useful if you only want to
+  // lex the head of an input text, with the default action state
   let output = stateless.lex("aaa");
-  assert!(matches!(output.0.token.unwrap().kind, A));
+  assert!(matches!(output.0.token.unwrap().kind.value(), MyKind::A));
 
-  // we can also manually provide the action state and other details
-  let output = stateless.lex_with("aaa", &mut (), |o| o.start(1));
-  assert!(matches!(output.token.unwrap().kind, A));
+  // you can also manually provide the action state and other details
+  let mut action_state = ();
+  let output = stateless.lex_with("aaa", |o| o.start(1).action_state(&mut action_state));
+  assert!(matches!(output.token.unwrap().kind.value(), MyKind::A));
 }
 
 #[test]
 fn stateless_to_lexer() {
-  // if we already have all actions, but we don't have a buffer
-  // we can build a stateless lexer first, and then build a stateful lexer from it
+  // if you already have all actions, but don't have an input text yet,
+  // you can build a stateless lexer first, and then build a stateful lexer from it
   let stateless = LexerBuilder::<MyKind>::default().build_stateless();
-
-  // this will consume the stateless lexer
-  let lexer = stateless.into_lexer("123");
-  assert_eq!(lexer.state().text(), "123");
-
-  // if we have a Rc<StatelessLexer> instead of a raw StatelessLexer
-  // e.g. we get it from a stateful lexer
-  let stateless = lexer.stateless().clone();
-  // we can just use the `Lexer::new` to create a stateful lexer
-  let lexer = Lexer::with_default_action_state(stateless, "123");
+  let lexer = Lexer::new(Rc::new(stateless), (), "123");
   assert_eq!(lexer.state().text(), "123");
 }
