@@ -3,9 +3,9 @@ use std::cmp::Ordering;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Position {
-  /// 1-based line number.
+  /// The line number starts from `1`.
   pub line: usize,
-  /// 1-based column number.
+  /// The column number starts from `1`.
   pub column: usize,
 }
 
@@ -22,16 +22,18 @@ impl Default for PositionTransformer {
 }
 
 impl PositionTransformer {
+  /// Create a new transformer and calculate the line ranges from the given string.
   pub fn new(string: &str) -> Self {
     let mut transformer = PositionTransformer::default();
     transformer.update(string);
     transformer
   }
 
-  pub fn line_ranges(&self) -> &[Range] {
+  pub fn line_ranges(&self) -> &Vec<Range> {
     &self.line_ranges
   }
 
+  /// Update [`Self::line_ranges`] with the given string.
   pub fn update(&mut self, append: &str) {
     let mut current_line_range = self.line_ranges.pop().unwrap();
     let start = current_line_range.end;
@@ -52,7 +54,8 @@ impl PositionTransformer {
     self.line_ranges.push(current_line_range);
   }
 
-  /// Transform 0-based index to 1-based line and column.
+  /// Transform `0`-based index to `1`-based line and column.
+  /// Return [`None`] if the index is out of range.
   pub fn transform(&self, index: usize) -> Option<Position> {
     if index >= self.line_ranges.last().unwrap().end {
       return None;
