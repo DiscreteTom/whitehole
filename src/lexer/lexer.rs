@@ -4,7 +4,7 @@ use super::{
   output::LexOutput,
   re_lex::ReLexableFactory,
   state::LexerState,
-  stateless::{StatelessLexOptions, StatelessLexer},
+  stateless::{StatelessLexOptions, StatelessLexer, StatelessTrimOptions},
   token::{Token, TokenKindIdProvider},
 };
 use std::rc::Rc;
@@ -250,6 +250,29 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     ActionState: Default,
   {
     self.digest_with(n, ActionState::default())
+  }
+
+  /// Lex with muted actions.
+  /// Returns [`None`] if the lexer is already trimmed.
+  pub fn trim(&mut self) -> Option<LexOutput<Token<'text, Kind, ErrorType>, ()>>
+  where
+    Kind: TokenKindIdProvider<Kind>,
+  {
+    if self.state.trimmed() {
+      return None;
+    }
+
+    let res = self.stateless.trim_with_options(
+      self.state.text(),
+      StatelessTrimOptions {
+        start: self.state.digested(),
+        action_state: &mut self.action_state,
+      },
+    );
+
+    self.state.trim(res.digested);
+
+    Some(res)
   }
 
   fn lex_with_stateless<'expect_text, Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>>(
