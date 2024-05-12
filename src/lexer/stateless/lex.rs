@@ -144,7 +144,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     }
   }
 
-  // TODO: comments
+  /// Lex with muted actions, the default action state and the default [`StatelessTrimOptions`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessLexOptions};
+  /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
+  /// stateless.trim("123");
+  /// ```
   pub fn trim<'text>(
     &self,
     text: &'text str,
@@ -163,6 +169,14 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     )
   }
 
+  /// Lex with muted actions and the given [`StatelessTrimOptions`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::exact, LexerBuilder};
+  /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
+  /// # let mut action_state = ();
+  /// stateless.trim_with("123", |o| o.action_state(&mut action_state));
+  /// ```
   pub fn trim_with<'text, 'action_state>(
     &self,
     text: &'text str,
@@ -177,6 +191,15 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     self.trim_with_options(text, options_builder(StatelessTrimOptions::default()))
   }
 
+  /// Lex with muted actions and the given [`StatelessLexOptions`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessTrimOptions};
+  /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
+  /// # let mut action_state = ();
+  /// let options = StatelessTrimOptions::default().action_state(&mut action_state);
+  /// stateless.trim_with_options("123", options);
+  /// ```
   pub fn trim_with_options<'text, 'action_state>(
     &self,
     text: &'text str,
