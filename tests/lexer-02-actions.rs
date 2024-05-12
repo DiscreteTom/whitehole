@@ -36,7 +36,7 @@ struct MyState {
 
 #[test]
 fn action_decorators() {
-  let mut lexer = LexerBuilder::<_, MyState, _>::default()
+  let mut lexer = LexerBuilder::stateful_with_error::<MyState>()
     // you can use `define_with` to apply a decorator to all the actions in the `define` call
     .define_with(
       Anonymous,

@@ -17,7 +17,7 @@ struct MyState {
 
 #[test]
 fn stateful_lexer() {
-  let mut lexer = LexerBuilder::<_, MyState>::default()
+  let mut lexer = LexerBuilder::stateful::<MyState>()
     .define_with(A, regex("^123"), |a| {
       a
         // access lexer's action state by `input.state`.
