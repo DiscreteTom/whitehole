@@ -44,6 +44,14 @@ impl<'text> LexerState<'text> {
   /// Digest `n` bytes.
   /// The caller should ensure `n` is smaller than the rest text length.
   pub fn digest(&mut self, n: usize) {
+    debug_assert!(
+      self.digested + n <= self.text.len(),
+      "digest overflow, digested = {}, n = {}, text.len() = {}",
+      self.digested,
+      n,
+      self.text.len()
+    );
+
     self.digested += n;
     self.trimmed = self.digested == self.text.len();
   }
@@ -51,6 +59,14 @@ impl<'text> LexerState<'text> {
   /// Digest `n` bytes and set [`Self::trimmed`] to `true`.
   /// The caller should ensure `n` is smaller than the rest text length.
   pub fn trim(&mut self, n: usize) {
+    debug_assert!(
+      self.digested + n <= self.text.len(),
+      "digest overflow, digested = {}, n = {}, text.len() = {}",
+      self.digested,
+      n,
+      self.text.len()
+    );
+
     self.digested += n;
     self.trimmed = true;
   }
