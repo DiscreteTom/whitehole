@@ -5,10 +5,10 @@ pub struct LexOutput<TokenType, ReLexableType> {
   /// because there might be many actions which are accepted during multiple iterations
   /// of the lexing loop, this value is the sum of them.
   pub digested: usize,
-  /// Muted error tokens during this lex.
+  /// ***Muted*** error tokens during this lex.
   /// # Caveat
-  /// [`Self::token`] will NOT be included in this
-  /// even if it's an error token.
+  /// [`Self::token`] will NOT be included in this vector
+  /// because it is not muted.
   pub errors: Vec<TokenType>, // [[@muted error tokens are also collected]]
   /// If [`Some`], the lex is re-lex-able and you can use this value
   /// to continue a lex. This *might* be [`Some`] only if the [`LexOptions::fork`](super::options::LexOptions::fork)
