@@ -167,7 +167,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
       digested: output.digested,
       errors: output.errors,
       token: output.token,
-      re_lex: Fork::ReLexableFactoryType::into_re_lexable(output.re_lex, &self),
+      re_lexable: Fork::ReLexableFactoryType::into_re_lexable(output.re_lexable, &self),
     };
 
     (output, tmp_action_state)
@@ -226,7 +226,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
       digested: output.digested,
       errors: output.errors,
       token: output.token,
-      re_lex: Fork::ReLexableFactoryType::into_re_lexable(output.re_lex, &self),
+      re_lexable: Fork::ReLexableFactoryType::into_re_lexable(output.re_lexable, &self),
     };
 
     // update state

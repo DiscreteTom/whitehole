@@ -45,15 +45,15 @@ fn re_lex() {
   // you may want to re-lex the lexer, continue lexing from the last evaluated action.
   // luckily, the output contains a lexer with the state before the last lex,
   // and a re-lex context to tell the lexer to skip the evaluated actions.
-  let (mut lexer, context) = output.re_lex.unwrap();
+  let (mut lexer, context) = output.re_lexable.unwrap();
 
   // provide the re-lex context to the new lexer when lex.
   // we also enable `fork` so that the lexer will check if this lex is re-lexable
   let output = lexer.lex_with(|o| o.re_lex(context).fork());
   // now the lexer will emit `>`
   assert!(matches!(output.token.unwrap().content, ">"));
-  // and there is no next action to re-lex, the re_lex should be None
-  assert!(output.re_lex.is_none());
+  // and there is no next action to re-lex, the re_lexable should be None
+  assert!(output.re_lexable.is_none());
 
   // besides, it is a best practice to trim the lexer before lex with fork enabled
   // so that muted actions won't be evaluated again

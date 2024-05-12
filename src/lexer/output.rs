@@ -10,10 +10,10 @@ pub struct LexOutput<TokenType, ReLexableType> {
   /// [`Self::token`] will NOT be included in this vector
   /// because it is not muted.
   pub errors: Vec<TokenType>, // [[@muted error tokens are also collected]]
-  /// If [`Some`], the lex is re-lex-able and you can use this value
+  /// If [`Some`], the lex is re-lexable and you can use this value
   /// to continue a lex. This *might* be [`Some`] only if the [`LexOptions::fork`](super::options::LexOptions::fork)
   /// is enabled.
-  pub re_lex: ReLexableType, // TODO: example, rename to re_lexable
+  pub re_lexable: ReLexableType, // TODO: example
 }
 
 impl<TokenType, ReLexType: Default> Default for LexOutput<TokenType, ReLexType> {
@@ -22,7 +22,7 @@ impl<TokenType, ReLexType: Default> Default for LexOutput<TokenType, ReLexType> 
       token: None,
       digested: 0,
       errors: Vec::new(),
-      re_lex: ReLexType::default(),
+      re_lexable: ReLexType::default(),
     }
   }
 }
