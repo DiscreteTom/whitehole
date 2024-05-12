@@ -10,6 +10,7 @@ pub struct Position {
 }
 
 pub struct PositionTransformer {
+  /// See [`Self::line_ranges`].
   line_ranges: Vec<Range>,
 }
 
@@ -29,6 +30,7 @@ impl PositionTransformer {
     transformer
   }
 
+  /// Return the byte ranges of each line.
   pub fn line_ranges(&self) -> &Vec<Range> {
     &self.line_ranges
   }
@@ -54,28 +56,47 @@ impl PositionTransformer {
     self.line_ranges.push(current_line_range);
   }
 
-  /// Transform `0`-based index to `1`-based line and column.
-  /// Return [`None`] if the index is out of range.
-  pub fn transform(&self, index: usize) -> Option<Position> {
+  /// Return the line index at the given `index` by byte.
+  /// Return [`None`] if the `index` is out of known line ranges.
+  pub fn line_index_at(&self, index: usize) -> Option<usize> {
+    self
+      .line_ranges
+      .binary_search_by(|Range { start, end }| {
+        if index < *start {
+          Ordering::Greater
+        } else if index >= *end {
+          Ordering::Less
+        } else {
+          Ordering::Equal
+        }
+      })
+      .ok()
+  }
+
+  /// Transform zero-based index to [`Position`].
+  /// Return [`None`] if the `index` is out of known line ranges.
+  /// This is ideal for single transformation, but not for batch transformation.
+  /// The caller should make sure the index is smaller than the text length.
+  pub fn transform(&self, index: usize, text: &str) -> Option<Position> {
     if index >= self.line_ranges.last().unwrap().end {
       return None;
     }
 
-    match self.line_ranges.binary_search_by(|Range { start, end }| {
-      if index < *start {
-        Ordering::Greater
-      } else if index >= *end {
-        Ordering::Less
-      } else {
-        Ordering::Equal
-      }
-    }) {
-      Err(_) => None,
-      Ok(line_index) => Some(Position {
+    debug_assert!(index < text.len());
+
+    self.line_index_at(index).map(|line_index| {
+      let line = &text[Range {
+        start: self.line_ranges[line_index].start,
+        end: index,
+      }];
+
+      Position {
         line: line_index,
-        character: index - self.line_ranges[line_index].start,
-      }),
-    }
+        // `line` contains all chars before the target char
+        // so we can use `line.chars().count()` to get the character index, without `-1`
+        character: line.chars().count(),
+      }
+    })
   }
 }
 
@@ -85,100 +106,152 @@ mod tests {
 
   #[test]
   fn default() {
+    let text = "";
     let transformer = PositionTransformer::default();
-    assert_eq!(transformer.transform(0), None);
+    assert_eq!(transformer.transform(0, text), None);
   }
 
   #[test]
   fn empty() {
+    let text = "";
     let mut transformer = PositionTransformer::default();
-    transformer.update("");
-    assert_eq!(transformer.transform(0), None);
+    transformer.update(text);
+    assert_eq!(transformer.transform(0, text), None);
   }
 
   #[test]
   fn new_line_only() {
+    let text = "\n\n\n";
     let mut transformer = PositionTransformer::default();
-    transformer.update("\n\n\n");
+    transformer.update(text);
     assert_eq!(
-      transformer.transform(0),
+      transformer.transform(0, text),
       Some(Position {
         line: 0,
         character: 0
       })
     );
     assert_eq!(
-      transformer.transform(1),
+      transformer.transform(1, text),
       Some(Position {
         line: 1,
         character: 0
       })
     );
     assert_eq!(
-      transformer.transform(2),
+      transformer.transform(2, text),
       Some(Position {
         line: 2,
         character: 0
       })
     );
-    assert_eq!(transformer.transform(3), None);
+    assert_eq!(transformer.transform(3, text), None);
   }
 
   #[test]
   fn complex() {
     let mut transformer = PositionTransformer::default();
-    let s = "abc\ndef\n123\n345";
-    transformer.update(s);
+    let text = "abc\ndef\n123\n345";
+    transformer.update(text);
     assert_eq!(
-      transformer.transform(s.find("a").unwrap()),
+      transformer.transform(text.find("a").unwrap(), text),
       Some(Position {
         line: 0,
         character: 0
       })
     );
     assert_eq!(
-      transformer.transform(s.find("c").unwrap()),
+      transformer.transform(text.find("c").unwrap(), text),
       Some(Position {
         line: 0,
         character: 2
       })
     );
     assert_eq!(
-      transformer.transform(s.find("\n").unwrap()),
+      transformer.transform(text.find("\n").unwrap(), text),
       Some(Position {
         line: 0,
         character: 3
       })
     );
     assert_eq!(
-      transformer.transform(s.find("d").unwrap()),
+      transformer.transform(text.find("d").unwrap(), text),
       Some(Position {
         line: 1,
         character: 0
       })
     );
     assert_eq!(
-      transformer.transform(s.find("f").unwrap()),
+      transformer.transform(text.find("f").unwrap(), text),
       Some(Position {
         line: 1,
         character: 2
       })
     );
     assert_eq!(
-      transformer.transform(s.find("1").unwrap()),
+      transformer.transform(text.find("1").unwrap(), text),
       Some(Position {
         line: 2,
         character: 0
       })
     );
     assert_eq!(
-      transformer.transform(s.find("5").unwrap()),
+      transformer.transform(text.find("5").unwrap(), text),
       Some(Position {
         line: 3,
         character: 2
       })
     );
 
-    assert_eq!(transformer.transform(s.len()), None);
+    assert_eq!(transformer.transform(text.len(), text), None);
+  }
+
+  #[test]
+  fn utf8() {
+    let mut transformer = PositionTransformer::default();
+    let text = "a\nb🦀c哈";
+    transformer.update(text);
+    assert_eq!(
+      transformer.transform(text.find("a").unwrap(), text),
+      Some(Position {
+        line: 0,
+        character: 0
+      })
+    );
+    assert_eq!(
+      transformer.transform(text.find("\n").unwrap(), text),
+      Some(Position {
+        line: 0,
+        character: 1
+      })
+    );
+    assert_eq!(
+      transformer.transform(text.find("b").unwrap(), text),
+      Some(Position {
+        line: 1,
+        character: 0
+      })
+    );
+    assert_eq!(
+      transformer.transform(text.find("🦀").unwrap(), text),
+      Some(Position {
+        line: 1,
+        character: 1
+      })
+    );
+    assert_eq!(
+      transformer.transform(text.find("c").unwrap(), text),
+      Some(Position {
+        line: 1,
+        character: 2
+      })
+    );
+    assert_eq!(
+      transformer.transform(text.find("哈").unwrap(), text),
+      Some(Position {
+        line: 1,
+        character: 3
+      })
+    );
   }
 }
