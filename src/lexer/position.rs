@@ -3,10 +3,10 @@ use std::cmp::Ordering;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Position {
-  /// The line number starts from `1`.
+  /// A zero-based line value.
   pub line: usize,
-  /// The column number starts from `1`.
-  pub column: usize,
+  /// A zero-based character value.
+  pub character: usize,
 }
 
 pub struct PositionTransformer {
@@ -72,8 +72,8 @@ impl PositionTransformer {
     }) {
       Err(_) => None,
       Ok(line_index) => Some(Position {
-        line: line_index + 1,
-        column: index - self.line_ranges[line_index].start + 1,
+        line: line_index,
+        character: index - self.line_ranges[line_index].start,
       }),
     }
   }
@@ -102,15 +102,24 @@ mod tests {
     transformer.update("\n\n\n");
     assert_eq!(
       transformer.transform(0),
-      Some(Position { line: 1, column: 1 })
+      Some(Position {
+        line: 0,
+        character: 0
+      })
     );
     assert_eq!(
       transformer.transform(1),
-      Some(Position { line: 2, column: 1 })
+      Some(Position {
+        line: 1,
+        character: 0
+      })
     );
     assert_eq!(
       transformer.transform(2),
-      Some(Position { line: 3, column: 1 })
+      Some(Position {
+        line: 2,
+        character: 0
+      })
     );
     assert_eq!(transformer.transform(3), None);
   }
@@ -122,31 +131,52 @@ mod tests {
     transformer.update(s);
     assert_eq!(
       transformer.transform(s.find("a").unwrap()),
-      Some(Position { line: 1, column: 1 })
+      Some(Position {
+        line: 0,
+        character: 0
+      })
     );
     assert_eq!(
       transformer.transform(s.find("c").unwrap()),
-      Some(Position { line: 1, column: 3 })
+      Some(Position {
+        line: 0,
+        character: 2
+      })
     );
     assert_eq!(
       transformer.transform(s.find("\n").unwrap()),
-      Some(Position { line: 1, column: 4 })
+      Some(Position {
+        line: 0,
+        character: 3
+      })
     );
     assert_eq!(
       transformer.transform(s.find("d").unwrap()),
-      Some(Position { line: 2, column: 1 })
+      Some(Position {
+        line: 1,
+        character: 0
+      })
     );
     assert_eq!(
       transformer.transform(s.find("f").unwrap()),
-      Some(Position { line: 2, column: 3 })
+      Some(Position {
+        line: 1,
+        character: 2
+      })
     );
     assert_eq!(
       transformer.transform(s.find("1").unwrap()),
-      Some(Position { line: 3, column: 1 })
+      Some(Position {
+        line: 2,
+        character: 0
+      })
     );
     assert_eq!(
       transformer.transform(s.find("5").unwrap()),
-      Some(Position { line: 4, column: 3 })
+      Some(Position {
+        line: 3,
+        character: 2
+      })
     );
 
     assert_eq!(transformer.transform(s.len()), None);
