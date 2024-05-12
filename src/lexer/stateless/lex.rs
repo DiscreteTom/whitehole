@@ -2,7 +2,7 @@ use super::{options::StatelessLexOptions, StatelessLexer, StatelessTrimOptions};
 use crate::lexer::{
   action::ActionInput,
   fork::{ForkDisabled, LexOptionsFork},
-  output::LexOutput,
+  output::{LexOutput, TrimOutput},
   re_lex::{MockReLexableFactory, ReLexContext, ReLexableFactory},
   token::{Token, TokenKindIdProvider},
 };
@@ -120,6 +120,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         options.start,
         options.action_state,
         Fork::ReLexableFactoryType::default(),
+        LexOutput::default(),
       )
     } else {
       let head_map = options.base.expectation.kind.map_or(
@@ -140,6 +141,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         options.start,
         options.action_state,
         Fork::ReLexableFactoryType::default(),
+        LexOutput::default(),
       )
     }
   }
@@ -154,7 +156,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   pub fn trim<'text>(
     &self,
     text: &'text str,
-  ) -> (LexOutput<Token<'text, Kind, ErrorType>, ()>, ActionState)
+  ) -> (TrimOutput<Token<'text, Kind, ErrorType>>, ActionState)
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: Default,
@@ -183,7 +185,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     options_builder: impl FnOnce(
       StatelessTrimOptions<()>,
     ) -> StatelessTrimOptions<&'action_state mut ActionState>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ()>
+  ) -> TrimOutput<Token<'text, Kind, ErrorType>>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
@@ -204,7 +206,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     &self,
     text: &'text str,
     options: impl Into<StatelessTrimOptions<&'action_state mut ActionState>>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ()>
+  ) -> TrimOutput<Token<'text, Kind, ErrorType>>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
@@ -217,6 +219,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       options.start,
       options.action_state,
       MockReLexableFactory,
+      TrimOutput::default(),
     )
   }
 }

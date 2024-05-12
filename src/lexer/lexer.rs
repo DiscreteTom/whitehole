@@ -1,7 +1,7 @@
 use super::{
   fork::{ForkDisabled, LexOptionsFork},
   options::LexOptions,
-  output::LexOutput,
+  output::{LexOutput, TrimOutput},
   re_lex::ReLexableFactory,
   state::LexerState,
   stateless::{StatelessLexOptions, StatelessLexer, StatelessTrimOptions},
@@ -254,7 +254,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
 
   /// Lex with muted actions.
   /// Returns [`None`] if the lexer is already trimmed.
-  pub fn trim(&mut self) -> Option<LexOutput<Token<'text, Kind, ErrorType>, ()>>
+  pub fn trim(&mut self) -> Option<TrimOutput<Token<'text, Kind, ErrorType>>>
   where
     Kind: TokenKindIdProvider<Kind>,
   {

@@ -59,6 +59,7 @@ mod head_map;
 mod lex;
 mod literal_map;
 mod options;
+mod output;
 
 pub use options::*;
 

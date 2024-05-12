@@ -1,7 +1,6 @@
-use super::{HeadMap, StatelessLexer};
+use super::{output::StatelessOutput, HeadMap, StatelessLexer};
 use crate::lexer::{
   action::{Action, ActionInput, ActionOutput},
-  output::LexOutput,
   re_lex::{ReLexContext, ReLexableFactory},
   token::{Range, Token, TokenKindIdProvider},
 };
@@ -13,6 +12,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'expect_text,
     'head_map,
     ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
+    StatelessOutputType: StatelessOutput<Token<'text, Kind, ErrorType>, ReLexableFactoryType::StatelessReLexableType>,
   >(
     head_map_getter: impl Fn(
       &ActionInput<ActionState>,
@@ -22,22 +22,16 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     start: usize,
     state: &mut ActionState,
     mut re_lexable_factory: ReLexableFactoryType,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, ReLexableFactoryType::StatelessReLexableType>
+    mut res: StatelessOutputType,
+  ) -> StatelessOutputType
   where
     Kind: TokenKindIdProvider<Kind> + 'static,
     ActionState: 'head_map,
     ErrorType: 'head_map,
   {
-    let mut res = LexOutput {
-      digested: 0,        // might be updated during the loop
-      errors: Vec::new(), // might be updated during the loop
-      token: None,        // should only be set before return
-      re_lex: ReLexableFactoryType::StatelessReLexableType::default(), // should only be set before return
-    };
-
     loop {
       // all actions will reuse this action input in this iteration
-      let mut input = match ActionInput::new(text, start + res.digested, state) {
+      let mut input = match ActionInput::new(text, start + res.digested(), state) {
         None => {
           // maybe some token is muted in the last iteration which cause the rest is empty
           // but the `res.digested` might be updated by the last iteration
@@ -61,7 +55,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         None => return res,
         Some((output, action_index)) => {
           // update digested, no matter the output is muted or not
-          res.digested += output.digested;
+          res.digest(output.digested);
 
           if output.error.is_some() {
             // error exists, we must create the token even muted
@@ -74,17 +68,19 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
               // don't emit token
               // collect errors and continue
               // [[muted error tokens are also collected]]
-              res.errors.push(token);
+              res.append_error_token(token);
               continue;
             }
 
             // else, not muted
             // don't push token to errors, set the res.token
-            res.token = Some(token);
-            res.re_lex = re_lexable_factory.into_stateless_re_lexable(
-              input.start(),
-              actions.len(),
-              action_index,
+            res.emit(
+              token,
+              re_lexable_factory.into_stateless_re_lexable(
+                input.start(),
+                actions.len(),
+                action_index,
+              ),
             );
 
             return res;
@@ -98,11 +94,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
           }
 
           // else, not muted
-          res.token = Some(Self::create_token(&input, output));
-          res.re_lex = re_lexable_factory.into_stateless_re_lexable(
-            input.start(),
-            actions.len(),
-            action_index,
+          res.emit(
+            Self::create_token(&input, output),
+            re_lexable_factory.into_stateless_re_lexable(
+              input.start(),
+              actions.len(),
+              action_index,
+            ),
           );
 
           return res;
