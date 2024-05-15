@@ -1,4 +1,8 @@
-use std::{fmt::Debug, hash::Hash, marker::PhantomData};
+use std::{
+  fmt::Debug,
+  hash::{Hash, Hasher},
+  marker::PhantomData,
+};
 
 /// The unique id of a sub token kind.
 /// Usually we use enum variants as sub token kinds, and the id is the variant's index,
@@ -47,7 +51,7 @@ impl<TokenKindType> PartialEq for TokenKindId<TokenKindType> {
 }
 
 impl<TokenKindType> Hash for TokenKindId<TokenKindType> {
-  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+  fn hash<H: Hasher>(&self, state: &mut H) {
     self.0.hash(state);
   }
 }
@@ -74,7 +78,7 @@ impl<TokenKindType> Hash for TokenKindId<TokenKindType> {
 pub trait TokenKindIdProvider<TokenKindType> {
   /// The token kind id of this token kind value.
   /// See [`TokenKindId`].
-  fn id(&self) -> &'static TokenKindId<TokenKindType>;
+  fn id(&self) -> &'static TokenKindId<TokenKindType>; // use a static reference to avoid creating a new one every time
 }
 
 #[cfg(test)]
