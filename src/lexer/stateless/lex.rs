@@ -15,10 +15,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # let stateless = LexerBuilder::new().append(exact("1")).build_stateless();
   /// stateless.lex("123");
   /// ```
-  pub fn lex<'text>(
-    &self,
-    text: &'text str,
-  ) -> (LexOutput<Token<'text, Kind, ErrorType>, ()>, ActionState)
+  pub fn lex<'text>(&self, text: &'text str) -> (LexOutput<Token<Kind, ErrorType>, ()>, ActionState)
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: Default,
@@ -57,7 +54,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       &'action_state mut ActionState,
       Fork,
     >,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>,  <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
+  ) -> LexOutput<Token< Kind, ErrorType>,  <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
@@ -83,7 +80,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     &self,
     text: &'text str,
     options: impl Into<StatelessLexOptions<'expect_text, Kind, &'action_state mut ActionState, Fork>>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
+  ) -> LexOutput<Token< Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
@@ -153,10 +150,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// stateless.trim("123");
   /// ```
-  pub fn trim<'text>(
-    &self,
-    text: &'text str,
-  ) -> (TrimOutput<Token<'text, Kind, ErrorType>>, ActionState)
+  pub fn trim<'text>(&self, text: &'text str) -> (TrimOutput<Token<Kind, ErrorType>>, ActionState)
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: Default,
@@ -185,7 +179,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     options_builder: impl FnOnce(
       StatelessTrimOptions<()>,
     ) -> StatelessTrimOptions<&'action_state mut ActionState>,
-  ) -> TrimOutput<Token<'text, Kind, ErrorType>>
+  ) -> TrimOutput<Token<Kind, ErrorType>>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
@@ -206,7 +200,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     &self,
     text: &'text str,
     options: impl Into<StatelessTrimOptions<&'action_state mut ActionState>>,
-  ) -> TrimOutput<Token<'text, Kind, ErrorType>>
+  ) -> TrimOutput<Token<Kind, ErrorType>>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
@@ -224,6 +218,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   }
 }
 
+// TODO: add tests
 // #[cfg(test)]
 // mod tests {
 //   use crate::lexer::{action::exact, LexerBuilder};

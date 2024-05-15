@@ -93,7 +93,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   /// Peek the next token with the default options, without updating
   /// [`Self::state`] and [`Self::action_state`].
   /// This will clone [`Self::action_state`] and return it.
-  pub fn peek(&self) -> (LexOutput<Token<'text, Kind, ErrorType>, ()>, ActionState)
+  pub fn peek(&self) -> (LexOutput<Token<Kind, ErrorType>, ()>, ActionState)
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: Clone,
@@ -112,7 +112,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
       LexOptions<'expect_text, Kind, ForkDisabled>,
     ) -> LexOptions<'expect_text, Kind, Fork>,
   ) -> (
-    LexOutput<Token<'text, Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>,
+    LexOutput<Token< Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>,
     ActionState,
   )
   where
@@ -134,7 +134,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     &self,
     options: impl Into<LexOptions<'expect_text, Kind, Fork>>,
   ) -> (
-    LexOutput<Token<'text, Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>,
+    LexOutput<Token< Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>,
     ActionState,
   )
   where
@@ -175,7 +175,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
 
   /// Try to yield the next token with the default options.
   /// [`Self::state`] and [`Self::action_state`] will be updated.
-  pub fn lex(&mut self) -> LexOutput<Token<'text, Kind, ErrorType>, ()>
+  pub fn lex(&mut self) -> LexOutput<Token<Kind, ErrorType>, ()>
   where
     Kind: TokenKindIdProvider<Kind>,
   {
@@ -189,7 +189,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     options_builder: impl FnOnce(
       LexOptions<'expect_text, Kind, ForkDisabled>,
     ) -> LexOptions<'expect_text, Kind, Fork>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>
+  ) -> LexOutput<Token< Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
   {
@@ -201,7 +201,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   pub fn lex_with_options<'expect_text, Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>>(
     &mut self,
     options: impl Into<LexOptions<'expect_text, Kind, Fork>>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>
+  ) -> LexOutput<Token< Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
   {
@@ -254,7 +254,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
 
   /// Lex with muted actions.
   /// Returns [`None`] if the lexer is already trimmed.
-  pub fn trim(&mut self) -> Option<TrimOutput<Token<'text, Kind, ErrorType>>>
+  pub fn trim(&mut self) -> Option<TrimOutput<Token<Kind, ErrorType>>>
   where
     Kind: TokenKindIdProvider<Kind>,
   {
@@ -280,7 +280,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     state: &LexerState<'text>,
     action_state: &mut ActionState,
     options: LexOptions<'expect_text, Kind, Fork>,
-  ) -> LexOutput<Token<'text, Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
+  ) -> LexOutput<Token< Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
   {

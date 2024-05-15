@@ -12,7 +12,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'expect_text,
     'head_map,
     ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
-    StatelessOutputType: StatelessOutput<Token<'text, Kind, ErrorType>, ReLexableFactoryType::StatelessReLexableType>,
+    StatelessOutputType: StatelessOutput<Token<Kind, ErrorType>, ReLexableFactoryType::StatelessReLexableType>,
   >(
     head_map_getter: impl Fn(
       &ActionInput<ActionState>,
@@ -149,14 +149,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   fn create_token<'text>(
     input: &ActionInput<'text, '_, ActionState>,
     output: ActionOutput<Kind, Option<ErrorType>>,
-  ) -> Token<'text, Kind, ErrorType> {
+  ) -> Token<Kind, ErrorType> {
     let range = Range {
       start: input.start(),
       end: input.start() + output.digested,
     };
     Token {
       kind: output.kind,
-      content: &input.text()[range.start..range.end],
       range,
       error: output.error,
     }
@@ -179,7 +178,6 @@ mod tests {
     };
     let token = StatelessLexer::create_token(&input, output);
     assert_eq!(token.kind.data, 123);
-    assert_eq!(token.content, "b");
     assert_eq!(token.range.start, 1);
     assert_eq!(token.range.end, 2);
     assert_eq!(token.error, Some("e"));
