@@ -1,16 +1,19 @@
 pub struct ActionInput<'text, 'action_state, ActionState> {
   // users can mutate the action state directly, so it's public.
-  // with the action state, users can build stateful lexer,
+  // with the action state, users can build stateful lexers,
   // while actions remain stateless and clone-able.
-  pub state: &'action_state mut ActionState, // TODO: consume the state, return a new state in output?
+  pub state: &'action_state mut ActionState,
+
+  // below fields are readonly
+
   // users could access the whole input text instead of only the rest of text,
   // to check chars before the start position if needed
   /// See [`Self::text`].
   text: &'text str,
   /// See [`Self::start`].
   start: usize,
-  // cache the rest of the text to prevent create the slice every time
-  // because `input.rest` is frequently used across all actions
+  // cache the rest of the text to prevent creating the slice every time
+  // because `input.rest` is frequently used across all actions during the lexing loop.
   /// See [`Self::rest`].
   rest: &'text str,
 }
