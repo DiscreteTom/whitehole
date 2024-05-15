@@ -343,19 +343,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self.may_mutate_state = true;
     self
   }
-
-  /// Apply a decorator to this action.
-  /// This is useful when you want to apply multiple decorators to multi actions.
-  /// # Examples
-  /// ```
-  /// # use whitehole::lexer::{action::{Action, exact}};
-  /// # let action: Action<_> =
-  /// exact("a").apply(|a| a.mute().reject());
-  /// ```
-  // TODO: use blanket impl for all struct
-  pub fn apply<T>(self, f: impl FnOnce(Self) -> T) -> T {
-    f(self)
-  }
 }
 
 #[cfg(test)]
