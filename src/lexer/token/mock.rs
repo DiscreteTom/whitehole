@@ -1,4 +1,5 @@
 use super::{SubTokenKind, TokenKindId, TokenKindIdProvider};
+use std::mem::transmute;
 
 /// This implements [`SubTokenKind`] and [`TokenKindIdProvider`],
 /// and only have one possible token kind id value(and the value is 0).
@@ -19,13 +20,13 @@ pub struct MockTokenKind<T> {
 /// The only possible kind id of [`MockTokenKind`].
 // make the only possible kind id a static const
 // so that we don't need to create it every time
-// and we don't need to store it in the struct
+// and **we don't need to store it in the struct**
 const MOCK_TOKEN_KIND_ID: TokenKindId<MockTokenKind<()>> = TokenKindId::new(0);
 
 // we store `TokenKindType` only for type checking and the `PhantomData` is zero sized
 // so we can safely cast self to another type
 fn cast_mock_token_kind_id<T>() -> &'static TokenKindId<T> {
-  unsafe { std::mem::transmute(&MOCK_TOKEN_KIND_ID) }
+  unsafe { transmute(&MOCK_TOKEN_KIND_ID) }
 }
 
 impl<T> MockTokenKind<T> {
