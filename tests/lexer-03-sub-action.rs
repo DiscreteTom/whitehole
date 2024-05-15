@@ -62,9 +62,9 @@ fn sub_action() {
         // hex integer literal
         exact("0x") + chars(|ch| ch.is_ascii_hexdigit()),
         // simple double quoted string literal
-        exact("\"")
-          + (chars(|ch| ch != &'\\' && ch != &'\"') | regex(r"\r|\n\t|"))
-          + exact_sub("\""),
+        exact('"')
+          + (chars(|ch| ch != &'\\' && ch != &'\"') | regex(r"\\r|\\n|\\t"))
+          + exact_sub('"'),
       ],
     );
 }
