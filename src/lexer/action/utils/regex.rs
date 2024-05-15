@@ -1,7 +1,9 @@
 // TODO: only available in feature `regex`
 
-use super::{simple::simple, Action};
-use crate::lexer::token::MockTokenKind;
+use crate::lexer::{
+  action::{simple, Action},
+  token::MockTokenKind,
+};
 use regex::Regex;
 
 /// Create a new action that uses a regex to match the rest of input.

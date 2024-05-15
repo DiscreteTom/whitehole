@@ -27,20 +27,17 @@
 //! 3. [`self`]
 //! 4. [`self::decorator`]
 //! 5. [`self::simple`]
-//! 6. [`self::regex`]
-//! 7. [`self::utils`]
+//! 6. [`self::utils`]
 
 mod decorator;
 mod input;
 mod output;
-mod regex;
 mod simple;
 mod utils;
 
 pub use decorator::*;
 pub use input::*;
 pub use output::*;
-pub use regex::*;
 pub use simple::*;
 pub use utils::*;
 

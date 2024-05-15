@@ -1,7 +1,9 @@
 mod exact;
+mod regex;
 mod word;
 
 pub use exact::*;
+pub use regex::*;
 pub use word::*;
 
 use super::{simple::simple, Action};
