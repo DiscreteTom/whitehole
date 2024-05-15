@@ -1,4 +1,3 @@
-mod combine;
 mod context;
 mod data;
 mod head;

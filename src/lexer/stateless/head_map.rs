@@ -106,12 +106,9 @@ mod tests {
       exact("a"),
       exact("aa"),
       exact("b"),
-      regex("[^c]").into_action().unchecked_head_not(['c']),
-      regex(".").into_action().unchecked_head_unknown(),
-      regex("a_muted")
-        .into_action()
-        .unchecked_head_in(['a'])
-        .mute(),
+      regex("[^c]").unchecked_head_not(['c']),
+      regex(".").unchecked_head_unknown(),
+      regex("a_muted").unchecked_head_in(['a']).mute(),
       regex("no_head_matcher").into(),
     ]
     .into_iter()

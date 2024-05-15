@@ -72,10 +72,13 @@ pub fn word<ActionState: 'static, ErrorType: 'static>(
 /// The [`Action::head_matcher`] will be set automatically.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::{Action, word_vec};
+/// # use whitehole::lexer::action::{Action, word_vec, word};
 /// # let actions: Vec<Action<MockTokenKind<()>>> =
 /// word_vec(["int", "bool"]);
+/// // equals to
+/// vec![word("int"), word("bool")];
 /// ```
+// TODO: make this a macro
 pub fn word_vec<ActionState: 'static, ErrorType: 'static>(
   ss: impl Into<StringList>,
 ) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>> {

@@ -1,43 +1,35 @@
 use super::StringList;
 use crate::lexer::{
-  action::{simple, Action, SubAction},
+  action::{simple, Action},
   token::MockTokenKind,
 };
 
 /// Match one string exactly, ***NO LOOKAHEAD***.
+///
+/// [`Action::head_matcher`] and [`Action::literal`] will be set automatically.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::{SubAction, exact_sub};
-/// # let action: SubAction<()> =
-/// exact_sub(";");
+/// # use whitehole::lexer::action::{Action, exact};
+/// # let action: Action<_> =
+/// exact("true"); // with a &str
+/// # let action: Action<_> =
+/// exact(';'); // with a char
 /// ```
-pub fn exact_sub<ActionState>(s: impl Into<String>) -> SubAction<ActionState> {
-  let s = s.into();
-  simple(move |input| {
+pub fn exact<ActionState, ErrorType>(
+  s: impl Into<String>,
+) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+  let s: String = s.into();
+  let head = s.chars().next().unwrap(); // TODO: add comment for the panic
+  let literal = Some(s.clone());
+  let mut a = simple(move |input| {
     if input.rest().starts_with(&s) {
       s.len()
     } else {
       0
     }
   })
-}
-
-/// Match one string exactly, ***NO LOOKAHEAD***.
-///
-/// The [`Action::head_matcher`] and [`Action::literal`] will be set automatically.
-/// # Examples
-/// ```
-/// # use whitehole::lexer::action::{Action, exact};
-/// # let action: Action<_> =
-/// exact(";");
-/// ```
-pub fn exact<ActionState: 'static, ErrorType>(
-  s: impl Into<String>,
-) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
-  let s: String = s.into();
-  let head = s.chars().next().unwrap();
-  let mut a = Action::from(exact_sub(s.clone())).unchecked_head_in([head]);
-  a.literal = Some(s);
+  .unchecked_head_in([head]);
+  a.literal = literal;
   a
 }
 
@@ -46,11 +38,14 @@ pub fn exact<ActionState: 'static, ErrorType>(
 /// The [`Action::head_matcher`] will be set automatically.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::{Action, exact_vec};
+/// # use whitehole::lexer::action::{Action, exact_vec, exact};
 /// # let actions: Vec<Action<_>> =
 /// exact_vec(["++", "--"]);
+/// // equals to
+/// vec![exact("++"), exact("--")];
 /// ```
-pub fn exact_vec<ActionState: 'static, ErrorType>(
+// TODO: make this a macro
+pub fn exact_vec<ActionState, ErrorType>(
   ss: impl Into<StringList>,
 ) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>> {
   ss.into().0.into_iter().map(|s| exact(s)).collect()
@@ -64,8 +59,10 @@ pub fn exact_vec<ActionState: 'static, ErrorType>(
 /// # use whitehole::lexer::action::{Action, exact_chars};
 /// # let actions: Vec<Action<_>> =
 /// exact_chars("+-*/()");
+/// // equals to
+/// vec![exact("+"), exact("-"), exact("*"), exact("/"), exact("("), exact(")")];
 /// ```
-pub fn exact_chars<ActionState: 'static, ErrorType>(
+pub fn exact_chars<ActionState, ErrorType>(
   s: impl Into<String>,
 ) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>> {
   s.into().chars().map(|c| exact(c.to_string())).collect()

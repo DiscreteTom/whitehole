@@ -25,18 +25,16 @@
 //! 1. [`self::input`]
 //! 2. [`self::output`]
 //! 3. [`self`]
-//! 4. [`self::sub_action`]
-//! 5. [`self::decorator`]
-//! 6. [`self::simple`]
-//! 7. [`self::regex`]
-//! 8. [`self::utils`]
+//! 4. [`self::decorator`]
+//! 5. [`self::simple`]
+//! 6. [`self::regex`]
+//! 7. [`self::utils`]
 
 mod decorator;
 mod input;
 mod output;
 mod regex;
 mod simple;
-mod sub_action;
 mod utils;
 
 pub use decorator::*;
@@ -44,7 +42,6 @@ pub use input::*;
 pub use output::*;
 pub use regex::*;
 pub use simple::*;
-pub use sub_action::*;
 pub use utils::*;
 
 use super::token::TokenKindId;

@@ -156,7 +156,7 @@ mod tests {
   }
 
   fn r<S: 'static, E>(s: &str) -> Action<MockTokenKind<()>, S, E> {
-    regex(s).into_action()
+    regex(s)
   }
 
   fn assert_actions_eq(
