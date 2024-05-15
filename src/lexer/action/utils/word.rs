@@ -55,6 +55,8 @@ pub fn no_word_boundary_in_rest<ActionState, ErrorType>(
 /// (non-alphanumeric and not `_`) or end of input after the word.
 ///
 /// The [`Action::head_matcher`] and [`Action::literal`] will be set automatically.
+/// # Panics
+/// Panics if the string is empty.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, word};
@@ -70,6 +72,8 @@ pub fn word<ActionState: 'static, ErrorType: 'static>(
 /// Create an action for each string using [`word`].
 ///
 /// The [`Action::head_matcher`] will be set automatically.
+/// # Panics
+/// Panics if any string is empty.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, word_vec, word};
@@ -103,6 +107,12 @@ mod tests {
     assert!(action
       .exec(&mut ActionInput::new(text, 0, &mut ()).unwrap())
       .is_none());
+  }
+
+  #[should_panic]
+  #[test]
+  fn action_utils_word_empty() {
+    word::<(), ()>("");
   }
 
   #[test]
@@ -152,5 +162,11 @@ mod tests {
       actions[1].head_matcher().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'b')
     ));
+  }
+
+  #[should_panic]
+  #[test]
+  fn action_utils_word_vec_empty() {
+    word_vec::<(), ()>([""]);
   }
 }

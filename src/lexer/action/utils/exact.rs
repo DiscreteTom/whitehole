@@ -7,6 +7,8 @@ use crate::lexer::{
 /// Match one string exactly, ***NO LOOKAHEAD***.
 ///
 /// [`Action::head_matcher`] and [`Action::literal`] will be set automatically.
+/// # Panics
+/// Panics if the string is empty.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, exact};
@@ -19,7 +21,7 @@ pub fn exact<ActionState, ErrorType>(
   s: impl Into<String>,
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   let s: String = s.into();
-  let head = s.chars().next().unwrap(); // TODO: add comment for the panic
+  let head = s.chars().next().unwrap();
   let literal = Some(s.clone());
   let mut a = simple(move |input| {
     if input.rest().starts_with(&s) {
@@ -36,6 +38,8 @@ pub fn exact<ActionState, ErrorType>(
 /// Create an action for each string using [`exact`].
 ///
 /// The [`Action::head_matcher`] will be set automatically.
+/// # Panics
+/// Panics if any string is empty.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, exact_vec, exact};
@@ -88,6 +92,12 @@ mod tests {
       .is_none());
   }
 
+  #[should_panic]
+  #[test]
+  fn action_utils_exact_empty() {
+    exact::<(), ()>("");
+  }
+
   #[test]
   fn action_utils_exact() {
     let action: Action<MockTokenKind<()>> = exact("a");
@@ -121,6 +131,12 @@ mod tests {
       actions[1].head_matcher().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'-')
     ));
+  }
+
+  #[should_panic]
+  #[test]
+  fn action_utils_exact_vec_empty() {
+    exact_vec::<(), ()>([""]);
   }
 
   #[test]
