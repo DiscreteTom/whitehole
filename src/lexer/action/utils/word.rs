@@ -1,8 +1,10 @@
-use super::{exact, StringList};
+use super::exact;
 use crate::lexer::{
   action::{AcceptedActionOutputContext, Action, ActionInput, ActionOutput},
   token::MockTokenKind,
 };
+
+pub use whitehole_helpers::word_vec;
 
 /// Return `true` if the first char of `rest` is a word boundary (non-alphanumeric and not `_`),
 /// or `rest` is empty.
@@ -69,30 +71,11 @@ pub fn word<ActionState: 'static, ErrorType: 'static>(
   exact(s).reject_if(no_word_boundary_in_rest)
 }
 
-/// Create an action for each string using [`word`].
-///
-/// The [`Action::head_matcher`] will be set automatically.
-/// # Panics
-/// Panics if any string is empty.
-/// # Examples
-/// ```
-/// # use whitehole::lexer::action::{Action, word_vec, word};
-/// # let actions: Vec<Action<MockTokenKind<()>>> =
-/// word_vec(["int", "bool"]);
-/// // equals to
-/// vec![word("int"), word("bool")];
-/// ```
-// TODO: make this a macro
-pub fn word_vec<ActionState: 'static, ErrorType: 'static>(
-  ss: impl Into<StringList>,
-) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>> {
-  ss.into().0.into_iter().map(|s| word(s)).collect()
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
   use crate::lexer::action::{ActionInput, HeadMatcher};
+  use whitehole_helpers::_word_vec;
 
   fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
@@ -143,7 +126,7 @@ mod tests {
 
   #[test]
   fn action_utils_word_vec() {
-    let actions: Vec<Action<MockTokenKind<()>>> = word_vec(["int", "bool"]);
+    let actions: Vec<Action<MockTokenKind<()>>> = _word_vec!["int", "bool"];
     assert_accept(&actions[0], "int", 3);
     assert_accept(&actions[1], "bool", 4);
     // lookahead
@@ -167,6 +150,6 @@ mod tests {
   #[should_panic]
   #[test]
   fn action_utils_word_vec_empty() {
-    word_vec::<(), ()>([""]);
+    let _: Vec<Action<_>> = _word_vec![""];
   }
 }

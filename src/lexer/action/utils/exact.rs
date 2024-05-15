@@ -1,8 +1,9 @@
-use super::StringList;
 use crate::lexer::{
   action::{simple, Action},
   token::MockTokenKind,
 };
+
+pub use whitehole_helpers::exact_vec;
 
 /// Match one string exactly, ***NO LOOKAHEAD***.
 ///
@@ -35,26 +36,6 @@ pub fn exact<ActionState, ErrorType>(
   a
 }
 
-/// Create an action for each string using [`exact`].
-///
-/// The [`Action::head_matcher`] will be set automatically.
-/// # Panics
-/// Panics if any string is empty.
-/// # Examples
-/// ```
-/// # use whitehole::lexer::action::{Action, exact_vec, exact};
-/// # let actions: Vec<Action<_>> =
-/// exact_vec(["++", "--"]);
-/// // equals to
-/// vec![exact("++"), exact("--")];
-/// ```
-// TODO: make this a macro
-pub fn exact_vec<ActionState, ErrorType>(
-  ss: impl Into<StringList>,
-) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>> {
-  ss.into().0.into_iter().map(|s| exact(s)).collect()
-}
-
 /// Create an action for each char using [`exact`].
 ///
 /// The [`Action::head_matcher`] will be set automatically.
@@ -76,6 +57,7 @@ pub fn exact_chars<ActionState, ErrorType>(
 mod tests {
   use super::*;
   use crate::lexer::action::{ActionInput, HeadMatcher};
+  use whitehole_helpers::_exact_vec;
 
   fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
@@ -116,7 +98,7 @@ mod tests {
 
   #[test]
   fn action_utils_exact_vec() {
-    let actions: Vec<Action<MockTokenKind<()>>> = exact_vec(["++", "--"]);
+    let actions: Vec<Action<_>> = _exact_vec!["++", "--"];
     assert_accept(&actions[0], "++", 2);
     assert_accept(&actions[1], "--", 2);
     // no lookahead
@@ -135,13 +117,13 @@ mod tests {
 
   #[should_panic]
   #[test]
-  fn action_utils_exact_vec_empty() {
-    exact_vec::<(), ()>([""]);
+  fn action_utils_exact_vec_macro_empty() {
+    let _: Vec<Action<_>> = _exact_vec![""];
   }
 
   #[test]
   fn action_utils_exact_chars() {
-    let actions: Vec<Action<MockTokenKind<()>>> = exact_chars("+-*/");
+    let actions: Vec<Action<_>> = exact_chars("+-*/");
     assert_accept(&actions[0], "+", 1);
     assert_accept(&actions[1], "-", 1);
     assert_accept(&actions[2], "*", 1);

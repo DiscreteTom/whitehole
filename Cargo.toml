@@ -13,3 +13,4 @@ repository = "https://github.com/DiscreteTom/whitehole"
 [dependencies]
 regex = { version = "1.9.4" }
 whitehole_macros = { path = "./macros" }
+whitehole_helpers = { path = "./helpers" }
