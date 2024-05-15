@@ -1,9 +1,7 @@
 mod exact;
-mod string_list;
 mod word;
 
 pub use exact::*;
-pub use string_list::*;
 pub use word::*;
 
 use super::{simple::simple, Action};
