@@ -73,7 +73,7 @@ impl<
     self.input._start() + self.output._digested()
   }
 
-  /// The [`content`](crate::lexer::token::Token::content) of the token that this action will emit.
+  /// The text content of the token that this action will emit.
   pub fn content(&self) -> &'text str {
     // we don't cache this slice since it might not be used frequently
     &self.input._text()[self.input._start()..self.end()]
