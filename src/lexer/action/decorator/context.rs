@@ -11,80 +11,40 @@ pub struct AcceptedActionOutputContext<InputType, OutputType> {
   pub output: OutputType,
 }
 
-// TODO: simplify these? or make _text/_start/_digested private?
-
-/// This trait is used to unify [`ActionInput`],
-/// `&ActionInput` and `&mut ActionInput` in
-/// [`AcceptedActionDecoratorContext`]
-pub trait AcceptedActionDecoratorContextInput<'text> {
-  /// Don't use this. This is only used internally.
-  fn _text(&self) -> &'text str;
-  /// Don't use this. This is only used internally.
-  fn _start(&self) -> usize;
-}
-macro_rules! impl_ctx_input {
-  ($t:ty) => {
-    impl<'text, 'action_state, ActionState> AcceptedActionDecoratorContextInput<'text> for $t {
-      fn _text(&self) -> &'text str {
-        self.text()
+macro_rules! impl_ctx {
+  ($input:ty, $output:ty) => {
+    impl<'text, 'action_state, Kind, ActionState, OptionErrorType>
+      AcceptedActionOutputContext<$input, $output>
+    {
+      /// The [`Range::end`](crate::lexer::token::Range) of the token that this action will emit.
+      pub fn end(&self) -> usize {
+        self.input.start() + self.output.digested
       }
-      fn _start(&self) -> usize {
-        self.start()
-      }
-    }
-  };
-}
-impl_ctx_input!(ActionInput<'text, 'action_state, ActionState>);
-impl_ctx_input!(&ActionInput<'text, 'action_state, ActionState>);
-impl_ctx_input!(&mut ActionInput<'text, 'action_state, ActionState>);
 
-/// This trait is used to unify [`ActionOutput`],
-/// `&ActionOutput` and `&mut ActionOutput` in
-/// [`AcceptedActionDecoratorContext`]
-pub trait AcceptedActionDecoratorContextOutput {
-  /// Don't use this. This is only used internally.
-  fn _digested(&self) -> usize;
-}
-macro_rules! impl_ctx_output {
-  ($t:ty) => {
-    impl<Kind, OptionErrorType> AcceptedActionDecoratorContextOutput for $t {
-      fn _digested(&self) -> usize {
-        self.digested
+      /// The text content of the token that this action will emit.
+      pub fn content(&self) -> &'text str {
+        // we don't cache this slice since it might not be used frequently
+        &self.input.text()[self.input.start()..self.end()]
+      }
+
+      /// The rest of the input text after this action is accepted.
+      pub fn rest(&self) -> &'text str {
+        // we don't cache this slice since it might not be used frequently
+        &self.input.text()[self.end()..]
       }
     }
   };
 }
-impl_ctx_output!(ActionOutput<Kind, OptionErrorType>);
-impl_ctx_output!(&ActionOutput<Kind, OptionErrorType>);
-impl_ctx_output!(&mut ActionOutput<Kind, OptionErrorType>);
 
-// these methods are available no matter if `InputType` is
-// `ActionInput`, `&ActionInput` or `&mut ActionInput`,
-// and no matter the `OutputType` is
-// `ActionOutput`, `&ActionOutput` or `&mut ActionOutput`
-impl<
-    'text,
-    InputType: AcceptedActionDecoratorContextInput<'text>,
-    OutputType: AcceptedActionDecoratorContextOutput,
-  > AcceptedActionOutputContext<InputType, OutputType>
-{
-  /// The [`Range::end`](crate::lexer::token::Range) of the token that this action will emit.
-  pub fn end(&self) -> usize {
-    self.input._start() + self.output._digested()
-  }
-
-  /// The text content of the token that this action will emit.
-  pub fn content(&self) -> &'text str {
-    // we don't cache this slice since it might not be used frequently
-    &self.input._text()[self.input._start()..self.end()]
-  }
-
-  /// The rest of the input text after this action is accepted.
-  pub fn rest(&self) -> &'text str {
-    // we don't cache this slice since it might not be used frequently
-    &self.input._text()[self.end()..]
-  }
-}
+impl_ctx!(ActionInput<'text, 'action_state, ActionState>, ActionOutput<Kind, OptionErrorType>);
+impl_ctx!(ActionInput<'text, 'action_state, ActionState>, &ActionOutput<Kind, OptionErrorType>);
+impl_ctx!(ActionInput<'text, 'action_state, ActionState>, &mut ActionOutput<Kind, OptionErrorType>);
+impl_ctx!(&ActionInput<'text, 'action_state, ActionState>, ActionOutput<Kind, OptionErrorType>);
+impl_ctx!(&ActionInput<'text, 'action_state, ActionState>, &ActionOutput<Kind, OptionErrorType>);
+impl_ctx!(&ActionInput<'text, 'action_state, ActionState>, &mut ActionOutput<Kind, OptionErrorType>);
+impl_ctx!(&mut ActionInput<'text, 'action_state, ActionState>, ActionOutput<Kind, OptionErrorType>);
+impl_ctx!(&mut ActionInput<'text, 'action_state, ActionState>, &ActionOutput<Kind, OptionErrorType>);
+impl_ctx!(&mut ActionInput<'text, 'action_state, ActionState>, &mut ActionOutput<Kind, OptionErrorType>);
 
 #[cfg(test)]
 mod tests {
