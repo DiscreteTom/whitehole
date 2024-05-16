@@ -1,4 +1,4 @@
-// TODO: only available in feature `regex`
+// TODO: only available in feature `regex`?
 
 use crate::lexer::{
   action::{simple, Action},
@@ -19,7 +19,6 @@ use regex::Regex;
 /// use whitehole::lexer::action::{Action, regex};
 /// let a: Action<_> = regex(r"^\d+");
 /// ```
-// TODO: to distinguish between `regex` crate and this function, rename to `re`.
 pub fn regex<ActionState, ErrorType>(
   re: &str,
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
