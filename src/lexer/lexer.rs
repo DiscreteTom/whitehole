@@ -141,28 +141,19 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     Kind: TokenKindIdProvider<Kind>,
     ActionState: Clone,
   {
-    let options: LexOptions<_, _> = options.into();
-
-    // TODO: replace with a method `re_lex`
-    // because of peek, we won't mutate lexer's action state.
-    // if this is a re-lex and user provides action state, use it,
-    // otherwise clone the action state to prevent mutating the original one
-    // let mut tmp_action_state = options
-    //   .re_lex
-    //   .as_mut()
-    //   .and_then(|re_lex| re_lex.action_state.take())
-    //   .unwrap_or_else(|| self.action_state.clone());
+    // clone action state to avoid modifying the original one
     let mut tmp_action_state = self.action_state.clone();
 
     let output = Self::lex_with_stateless(
       &self.stateless,
       &self.state,
       &mut tmp_action_state, // don't use self.action_state
-      options,
+      options.into(),
     );
 
     // don't update lexer state
 
+    // TODO: prevent re-constructing the output?
     let output = LexOutput {
       digested: output.digested,
       errors: output.errors,
@@ -205,23 +196,14 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   where
     Kind: TokenKindIdProvider<Kind>,
   {
-    let options: LexOptions<_, _> = options.into();
-
-    // TODO: replace with a method `re_lex`
-    // if this is a re-lex and action state is provided, set it
-    // options.re_lex.as_mut().map(|re_lex| {
-    //   re_lex.action_state.take().map(|action_state| {
-    //     self.action_state = action_state;
-    //   })
-    // });
-
     let output = Self::lex_with_stateless(
       &self.stateless,
       &self.state,
       &mut self.action_state,
-      options,
+      options.into(),
     );
 
+    // TODO: prevent re-constructing the output?
     let output = LexOutput {
       digested: output.digested,
       errors: output.errors,
