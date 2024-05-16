@@ -134,9 +134,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         0
       })
     {
+      // TODO: when fork is disabled, skip this check to optimize performance?
       if action.may_mutate_state() {
         re_lexable_factory.before_mutate_action_state(input.state);
       }
+
       if let Some(output) = action.exec(input) {
         return Some((output, i));
       }
