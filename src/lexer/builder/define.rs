@@ -8,17 +8,18 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   /// Define actions and bind them to the provided kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # use MyKind::*;
-  /// # #[derive(TokenKind, Clone)]
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder, token::token_kind};
+  /// # #[token_kind]
+  /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
-  /// # let mut builder = LexerBuilder::<_>::default();
+  /// # fn main() {
+  /// # let mut builder = LexerBuilder::new();
   /// // append a single action
   /// builder.define(A, word("A"));
-  /// # let mut builder = LexerBuilder::<_>::default();
+  /// # let mut builder = LexerBuilder::new();
   /// // append multiple actions
   /// builder.define(A, [word("A"), word("AA")]);
+  /// # }
   /// ```
   pub fn define<ViaKind>(
     self,
@@ -36,31 +37,19 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
 
   /// Define actions with a decorator and bind them to the provided kind.
   /// # Examples
-  /// The following code won't pass the compile check
-  /// because the compiler can't infer the generic parameter type of [`Action`]
-  /// when using [`error`](Action::error) to modify the generic parameter type.
-  /// ```compile_fail
-  /// # use whitehole::lexer::{Action, LexerBuilder, action::exact};
-  /// # use whitehole_macros::TokenKind;
-  /// # use MyKind::*;
-  /// # #[derive(TokenKind, Clone)]
-  /// # enum MyKind { A }
-  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
-  /// builder.define(A, exact("A").error(123));
   /// ```
-  /// The following code will pass the compile.
-  /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # use MyKind::*;
-  /// # #[derive(TokenKind, Clone)]
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder, token::token_kind};
+  /// # #[token_kind]
+  /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
-  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
+  /// # fn main() {
+  /// # let mut builder = LexerBuilder::with_error();
   /// // append a single action
   /// builder.define_with(A, word("A"), |a| a.error(123));
-  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
+  /// # let mut builder = LexerBuilder::with_error();
   /// // append multiple actions
   /// builder.define_with(A, [word("A"), word("B")], |a| a.error(123));
+  /// # }
   /// ```
   pub fn define_with<ViaKind>(
     self,

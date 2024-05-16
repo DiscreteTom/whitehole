@@ -42,15 +42,18 @@ impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
   /// with different [`kind_id`](crate::lexer::action::Action::kind_id) (unless [`muted`](crate::lexer::action::Action::muted)).
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::token::{token_kind};
+  /// # use whitehole::lexer::token::{token_kind, SubTokenKind};
   /// # use whitehole::lexer::expectation::Expectation;
   /// #[token_kind]
   /// enum MyKind { A }
   /// // use kind id
+  /// # fn main() {
   /// # let mut expectation = Expectation::default();
   /// expectation.kind(A::kind_id());
   /// // for unit enum variant, you can use the variant itself
+  /// # let mut expectation = Expectation::default();
   /// expectation.kind(A);
+  /// # }
   /// ```
   pub fn kind(mut self, kind: impl Into<&'static TokenKindId<Kind>>) -> Self
   where
@@ -75,8 +78,10 @@ impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
   /// # use whitehole::lexer::expectation::Expectation;
   /// # #[token_kind]
   /// # enum MyKind { A }
+  /// # fn main() {
   /// # let mut expectation = Expectation::<MyKind>::default();
   /// expectation.literal("import");
+  /// # }
   /// ```
   pub fn literal(mut self, text: impl Into<&'expect_literal str>) -> Self {
     self.literal = Some(text.into());

@@ -9,14 +9,18 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Use this if your action can only yield a const token kind value.
   /// # Examples
   /// ```
-  /// use whitehole::lexer::action::{Action, simple};
-  /// use whitehole::lexer::token::TokenKindIdBinding;
-  /// use whitehole_macros::TokenKind;
+  /// use whitehole::lexer::{
+  ///   action::{Action, exact},
+  ///   token::{TokenKindIdBinding, token_kind},
+  /// };
   ///
-  /// #[derive(TokenKind, Clone, Debug)]
+  /// #[token_kind]
+  /// #[derive(Clone, Debug)]
   /// enum MyKind { A }
   ///
-  /// let action: Action<TokenKindIdBinding<MyKind>> = simple(|_| 1).bind(A);
+  /// # fn main() {
+  /// let action: Action<TokenKindIdBinding<MyKind>> = exact("A").bind(A);
+  /// # }
   /// ```
   pub fn bind<NewKind, ViaKind>(
     self,
@@ -51,14 +55,18 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Set the kind to the default for this action.
   /// # Examples
   /// ```
-  /// use whitehole::lexer::action::{Action, simple};
-  /// use whitehole::lexer::token::TokenKindIdBinding;
-  /// use whitehole_macros::TokenKind;
+  /// use whitehole::lexer::{
+  ///   action::{Action, exact},
+  ///   token::{TokenKindIdBinding, token_kind},
+  /// };
   ///
-  /// #[derive(TokenKind, Clone, Debug, Default)]
+  /// #[token_kind]
+  /// #[derive(Clone, Debug, Default)]
   /// enum MyKind { #[default] Anonymous, A }
   ///
-  /// let action: Action<TokenKindIdBinding<MyKind>> = simple(|_| 1).bind_default();
+  /// # fn main() {
+  /// let action: Action<TokenKindIdBinding<MyKind>> = exact("A").bind_default();
+  /// # }
   /// ```
   pub fn bind_default<NewKind>(self) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
   where
@@ -87,16 +95,19 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Use this if you need to calculate the kind based on the [`ActionInput`] and [`ActionOutput`].
   /// # Examples
   /// ```
-  /// use whitehole::lexer::action::{Action, regex};
-  /// use whitehole::lexer::token::TokenKindIdBinding;
-  /// use whitehole_macros::TokenKind;
+  /// use whitehole::lexer::{
+  ///   action::{Action, regex},
+  ///   token::{TokenKindIdBinding, token_kind},
+  /// };
   ///
-  /// #[derive(TokenKind, Clone, Debug)]
+  /// #[token_kind]
+  /// #[derive(Clone, Debug)]
   /// enum MyKind { Num(i32) }
   ///
+  /// # fn main() {
   /// let action: Action<TokenKindIdBinding<MyKind>> = regex(r"^\d+")
-  ///   .unwrap()
-  ///   .select(|ctx| Num(ctx.content().parse().unwrap());
+  ///   .select(|ctx| Num(ctx.content().parse().unwrap()));
+  /// # }
   /// ```
   pub fn select<NewKind, ViaKind>(
     self,

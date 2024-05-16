@@ -48,7 +48,7 @@ pub fn simple<ActionState, ErrorType>(
 /// use whitehole::lexer::token::MockTokenKind;
 /// use whitehole::lexer::action::{Action, simple_with_data};
 /// // accept all rest characters and parse them into an integer
-/// let a: Action<MockTokenKind<i32>> = simple_with_data(|input| Some(input.rest().len(), input.rest().parse().unwrap()));
+/// let a: Action<MockTokenKind<i32>> = simple_with_data(|input| Some((input.rest().len(), input.rest().parse().unwrap())));
 /// ```
 pub fn simple_with_data<ActionState, ErrorType, T>(
   // ActionInput is immutable so we can set `Action::may_mutate_state` to false.

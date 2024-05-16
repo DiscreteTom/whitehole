@@ -56,6 +56,7 @@
 //! We use [`TokenKindIdBinding`] to bind the id and the value.
 //!
 //! ```
+//! # use whitehole::lexer::token::TokenKindId;
 //! # pub enum MyKind {
 //! #   Identifier(String),
 //! #   Number(i32),
@@ -64,7 +65,7 @@
 //! pub struct TokenKindIdBinding<TokenKindType> {
 //!   id: TokenKindId<TokenKindType>,
 //!   value: TokenKindType,
-//! }
+//! };
 //!
 //! // when creating `TokenKindIdBinding`, we have to make sure
 //! // the id and the value are bound correctly.
@@ -73,17 +74,17 @@
 //! TokenKindIdBinding {
 //!   id: TokenKindId::new(0), // the id of `Identifier`
 //!   value: MyKind::Identifier("hello".to_string())
-//! }
+//! };
 //! TokenKindIdBinding {
 //!   id: TokenKindId::new(1), // the id of `Number`
 //!   value: MyKind::Number(0)
-//! }
+//! };
 //!
 //! // wrong
 //! TokenKindIdBinding {
 //!   id: TokenKindId::new(0), // the id of `Identifier`
 //!   value: MyKind::Number(0)
-//! }
+//! };
 //! ```
 //!
 //! As you can see, we want to get the id bound with a value of `MyKind`, and we get the id from [`TokenKindIdBinding`].
@@ -93,7 +94,14 @@
 //! we will create structs for each enum variant and implement `Into<TokenKindIdBinding<MyKind>>` for them.
 //!
 //! ```
-//! # use whitehole::lexer::token::{TokenKindId, TokenKindIdBinding};
+//! # use whitehole::lexer::token::{TokenKindId};
+//! # pub struct TokenKindIdBinding<TokenKindType> {
+//! #   id: TokenKindId<TokenKindIdBinding<TokenKindType>>,
+//! #   value: TokenKindType,
+//! # };
+//! # pub trait SubTokenKind<Kind> {
+//! # fn kind_id() -> TokenKindId<Kind>;
+//! # }
 //! #
 //! // this is the "token kind"
 //! pub enum MyKind {
@@ -112,12 +120,12 @@
 //! // every sub token kind should have a unique id
 //! // bound with the type, not its value
 //! impl SubTokenKind<TokenKindIdBinding<MyKind>> for Identifier {
-//!   pub fn kind_id() -> TokenKindId<TokenKindIdBinding<MyKind>> {
+//!   fn kind_id() -> TokenKindId<TokenKindIdBinding<MyKind>> {
 //!     TokenKindId::new(0)
 //!   }
 //! }
 //! impl SubTokenKind<TokenKindIdBinding<MyKind>> for Number {
-//!   pub fn kind_id() -> TokenKindId<TokenKindIdBinding<MyKind>> {
+//!   fn kind_id() -> TokenKindId<TokenKindIdBinding<MyKind>> {
 //!     TokenKindId::new(1)
 //!   }
 //! }
@@ -137,12 +145,12 @@
 //! // from sub token kinds we can create the token kind id bindings
 //! impl Into<TokenKindIdBinding<MyKind>> for Identifier {
 //!   fn into(self) -> TokenKindIdBinding<MyKind> {
-//!     TokenKindIdBinding::new(self)
+//!     TokenKindIdBinding { id: Identifier::kind_id(), value: MyKind::Identifier(self) }
 //!   }
 //! }
 //! impl Into<TokenKindIdBinding<MyKind>> for Number {
 //!   fn into(self) -> TokenKindIdBinding<MyKind> {
-//!     TokenKindIdBinding::new(self)
+//!     TokenKindIdBinding { id: Number::kind_id(), value: MyKind::Number(self) }
 //!   }
 //! }
 //! ```
@@ -158,6 +166,7 @@
 //!   Identifier(String),
 //!   Number(i32),
 //! }
+//! # fn main() {}
 //! ```
 //!
 //! Thats all we need to do, neat!

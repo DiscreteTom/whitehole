@@ -63,9 +63,9 @@ impl<Data, ActionState, ErrorType> Action<MockTokenKind<Data>, ActionState, Erro
   /// Return a new action.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::action::{Action, simple_option_with_data};
+  /// # use whitehole::lexer::action::{Action, simple_with_data};
   /// # let action: Action<_> =
-  /// simple_option_with_data(|_| Some((1, "data"))).map(|data| data.to_string());
+  /// simple_with_data(|_| Some((1, "data"))).map(|data| data.to_string());
   /// ```
   pub fn map<NewData>(
     self,

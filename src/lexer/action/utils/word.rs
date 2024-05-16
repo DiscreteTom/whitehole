@@ -10,7 +10,7 @@ pub use whitehole_helpers::word_vec;
 /// or `rest` is empty.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::utils::word::starts_with_word_boundary;
+/// # use whitehole::lexer::action::starts_with_word_boundary;
 /// assert!(starts_with_word_boundary(""));
 /// assert!(starts_with_word_boundary(" "));
 /// assert!(starts_with_word_boundary("\n"));
@@ -38,8 +38,7 @@ pub fn starts_with_word_boundary(rest: &str) -> bool {
 /// [`ctx.rest`](AcceptedActionOutputContext::rest).
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::utils::word::no_word_boundary_in_rest;
-/// # use whitehole::lexer::action::exact;
+/// # use whitehole::lexer::action::{Action, exact, no_word_boundary_in_rest};
 /// # let _: Action<_> =
 /// exact("hello").reject_if(no_word_boundary_in_rest);
 /// ```

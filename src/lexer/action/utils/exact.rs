@@ -41,10 +41,11 @@ pub fn exact<ActionState, ErrorType>(
 /// The [`Action::head_matcher`] will be set automatically.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::{Action, exact_chars};
+/// # use whitehole::lexer::action::{Action, exact_chars, exact};
 /// # let actions: Vec<Action<_>> =
 /// exact_chars("+-*/()");
 /// // equals to
+/// # let actions: Vec<Action<_>> =
 /// vec![exact("+"), exact("-"), exact("*"), exact("/"), exact("("), exact(")")];
 /// ```
 pub fn exact_chars<ActionState, ErrorType>(

@@ -15,14 +15,15 @@ use crate::lexer::token::MockTokenKind;
 /// The [`Action::head_matcher`] will be set automatically.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::whitespaces;
+/// # use whitehole::lexer::{action::whitespaces, token::{TokenKindIdBinding, token_kind}};
 /// # use whitehole::lexer::LexerBuilder;
-/// # use whitehole::lexer::token::token_kind;
 /// # #[token_kind]
 /// # #[derive(Default, Clone)]
 /// # enum MyKind { #[default] Anonymous }
-/// # let builder = LexerBuilder::<MyKind>::new();
+/// # fn main() {
+/// # let builder = LexerBuilder::<TokenKindIdBinding<MyKind>>::new();
 /// builder.ignore_default(whitespaces());
+/// # }
 /// ```
 pub fn whitespaces<ActionState, ErrorType>() -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   simple(|input| {

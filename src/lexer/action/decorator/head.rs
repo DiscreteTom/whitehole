@@ -6,13 +6,14 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # use MyKind::*;
-  /// # #[derive(TokenKind, Clone)]
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # #[token_kind]
+  /// # #[derive(Clone)]
   /// # enum MyKind { A }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define(A, regex(r"^A").unwrap().unchecked_head_in(['A']));
+  /// # fn main() {
+  /// # let mut builder = LexerBuilder::new();
+  /// builder.define(A, regex(r"^A").unchecked_head_in(['A']));
+  /// # }
   /// ```
   pub fn unchecked_head_in(mut self, char_set: impl Into<HashSet<char>>) -> Self {
     self.head_matcher = Some(HeadMatcher::OneOf(char_set.into()));
@@ -24,13 +25,14 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # use MyKind::*;
-  /// # #[derive(TokenKind, Clone)]
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # #[token_kind]
+  /// # #[derive(Clone)]
   /// # enum MyKind { A }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define(A, regex(r"^[A-Z]").unwrap().unchecked_head_in_range('A'..='Z'));
+  /// # fn main() {
+  /// # let mut builder = LexerBuilder::new();
+  /// builder.define(A, regex(r"^[A-Z]").unchecked_head_in_range('A'..='Z'));
+  /// # }
   pub fn unchecked_head_in_range(self, range: impl Into<RangeInclusive<char>>) -> Self {
     self.unchecked_head_in(range.into().into_iter().collect::<HashSet<_>>())
   }
@@ -39,13 +41,14 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # use MyKind::*;
-  /// # #[derive(TokenKind, Clone)]
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # #[token_kind]
+  /// # #[derive(Clone)]
   /// # enum MyKind { A }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define(MyKind::A, regex(r"^[^A]").unwrap().unchecked_head_not(['A']));
+  /// # fn main() {
+  /// # let mut builder = LexerBuilder::new();
+  /// builder.define(A, regex(r"^[^A]").unchecked_head_not(['A']));
+  /// # }
   /// ```
   pub fn unchecked_head_not(mut self, char_set: impl Into<HashSet<char>>) -> Self {
     self.head_matcher = Some(HeadMatcher::Not(char_set.into()));
@@ -56,12 +59,14 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # #[derive(TokenKind, Clone)]
+  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # #[token_kind]
+  /// # #[derive(Clone)]
   /// # enum MyKind { A }
-  /// # let mut builder = LexerBuilder::<MyKind>::default();
-  /// builder.define(MyKind::A, regex(r"^.").unwrap().unchecked_head_unknown());
+  /// # fn main() {
+  /// # let mut builder = LexerBuilder::new();
+  /// builder.define(A, regex(r"^.").unchecked_head_unknown());
+  /// # }
   /// ```
   pub fn unchecked_head_unknown(mut self) -> Self {
     self.head_matcher = Some(HeadMatcher::Unknown);

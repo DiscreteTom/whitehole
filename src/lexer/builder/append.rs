@@ -8,17 +8,18 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// Append actions to the builder.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # use MyKind::*;
-  /// # #[derive(TokenKind, Clone)]
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder, token::token_kind};
+  /// # #[token_kind]
+  /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
-  /// # let mut builder = LexerBuilder::<_>::default();
+  /// # fn main() {
+  /// # let mut builder = LexerBuilder::new();
   /// // append a single action
   /// builder.append(word("A").bind(A));
-  /// # let mut builder = LexerBuilder::<_>::default();
+  /// # let mut builder = LexerBuilder::new();
   /// // append multiple actions
   /// builder.append([word("A").bind(A), word("B").bind(B)]);
+  /// # }
   /// ```
   pub fn append(
     mut self,
@@ -30,31 +31,19 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
 
   /// Append actions with a decorator.
   /// # Examples
-  /// The following code won't pass the compile check
-  /// because the compiler can't infer the generic parameter type of [`Action`]
-  /// when using [`error`](Action::error) to modify the generic parameter type.
-  /// ```compile_fail
-  /// # use whitehole::lexer::{Action, LexerBuilder, action::exact};
-  /// # use whitehole_macros::TokenKind;
-  /// # use MyKind::*;
-  /// # #[derive(TokenKind, Clone)]
-  /// # enum MyKind { A }
-  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
-  /// builder.append(exact("A").bind(A).error(123));
   /// ```
-  /// The following code will pass the compile.
-  /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # use MyKind::*;
-  /// # #[derive(TokenKind, Clone)]
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder, token::token_kind};
+  /// # #[token_kind]
+  /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
-  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
+  /// # fn main() {
+  /// # let mut builder = LexerBuilder::with_error();
   /// // append a single action
   /// builder.append_with(word("A").bind(A), |a| a.error(123));
-  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
+  /// # let mut builder = LexerBuilder::with_error();
   /// // append multiple actions
   /// builder.append_with([word("A").bind(A), word("B").bind(B)], |a| a.error(123));
+  /// # }
   /// ```
   pub fn append_with(
     self,
@@ -69,20 +58,21 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   /// Append actions and bind them to the default kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # use MyKind::*;
-  /// # #[derive(TokenKind, Default, Clone)]
+  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, LexerBuilder, token::{token_kind, TokenKindIdBinding}};
+  /// # #[token_kind]
+  /// # #[derive(Default, Clone)]
   /// # enum MyKind {
   /// #   #[default]
   /// #   Anonymous,
   /// # }
-  /// # let mut builder = LexerBuilder::<_>::default();
+  /// # fn main() {
+  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>>::new();
   /// // append a single action
   /// builder.append_default(whitespaces());
-  /// # let mut builder = LexerBuilder::<_>::default();
+  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>>::new();
   /// // append multiple actions
   /// builder.append_default([whitespaces(), word("_")]);
+  /// # }
   /// ```
   pub fn append_default(
     self,
@@ -98,30 +88,19 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
 
   /// Append actions with a decorator and bind them to the default kind.
   /// # Examples
-  /// The following code won't pass the compile check
-  /// because the compiler can't infer the generic parameter type of [`Action`]
-  /// when using [`error`](Action::error) to modify the generic parameter type.
-  /// ```compile_fail
-  /// # use whitehole::lexer::{Action, LexerBuilder, action::exact};
-  /// # use whitehole_macros::TokenKind;
-  /// # #[derive(TokenKind, Clone, Default)]
-  /// # enum MyKind { #[default] A }
-  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
-  /// builder.append_default(exact("A").error(123));
   /// ```
-  /// The following code will pass the compile.
-  /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder};
-  /// # use whitehole_macros::TokenKind;
-  /// # use MyKind::*;
-  /// # #[derive(TokenKind, Clone, Default)]
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder, token::{token_kind, TokenKindIdBinding}};
+  /// # #[token_kind]
+  /// # #[derive(Clone, Default)]
   /// # enum MyKind { #[default] A }
-  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
+  /// # fn main() {
+  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>, (), _>::with_error();
   /// // append a single action
   /// builder.append_default_with(word("A"), |a| a.error(123));
-  /// # let mut builder = LexerBuilder::<_, (), i32>::default();
+  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>, (), _>::with_error();
   /// // append multiple actions
   /// builder.append_default_with([word("A"), word("B")], |a| a.error(123));
+  /// # }
   /// ```
   pub fn append_default_with(
     self,
