@@ -1,13 +1,13 @@
 use super::token::{TokenKindId, TokenKindIdProvider};
 
-pub struct Expectation<'expect_text, Kind: 'static> {
+pub struct Expectation<'expect_literal, Kind: 'static> {
   /// See [`Self::kind`].
   pub kind: Option<&'static TokenKindId<Kind>>,
   /// See [`Self::literal`].
-  pub literal: Option<&'expect_text str>,
+  pub literal: Option<&'expect_literal str>,
 }
 
-impl<'expect_text, Kind> Default for Expectation<'expect_text, Kind> {
+impl<'expect_literal, Kind> Default for Expectation<'expect_literal, Kind> {
   fn default() -> Self {
     Expectation {
       kind: None,
@@ -16,7 +16,7 @@ impl<'expect_text, Kind> Default for Expectation<'expect_text, Kind> {
   }
 }
 
-impl<'expect_text, Kind> From<&'static TokenKindId<Kind>> for Expectation<'expect_text, Kind>
+impl<'expect_literal, Kind> From<&'static TokenKindId<Kind>> for Expectation<'expect_literal, Kind>
 where
   Kind: TokenKindIdProvider<Kind>,
 {
@@ -28,8 +28,8 @@ where
   }
 }
 
-impl<'expect_text, Kind> From<&'expect_text str> for Expectation<'expect_text, Kind> {
-  fn from(text: &'expect_text str) -> Self {
+impl<'expect_literal, Kind> From<&'expect_literal str> for Expectation<'expect_literal, Kind> {
+  fn from(text: &'expect_literal str) -> Self {
     Expectation {
       kind: None,
       literal: Some(text),
@@ -37,7 +37,7 @@ impl<'expect_text, Kind> From<&'expect_text str> for Expectation<'expect_text, K
   }
 }
 
-impl<'expect_text, Kind> Expectation<'expect_text, Kind> {
+impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
   /// If the [`kind`](Self::kind) is provided, the lexer will skip [`Action`](crate::lexer::action::Action)s
   /// with different [`kind_id`](crate::lexer::action::Action::kind_id) (unless [`muted`](crate::lexer::action::Action::muted)).
   /// # Examples
@@ -61,7 +61,7 @@ impl<'expect_text, Kind> Expectation<'expect_text, Kind> {
   }
 }
 
-impl<'expect_text, Kind> Expectation<'expect_text, Kind> {
+impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
   /// If the [`literal`](Self::literal) is provided, the lexer will skip [`Action`](crate::lexer::action::Action)s
   /// with different [`literal`](crate::lexer::action::Action::literal) (unless [`muted`](crate::lexer::action::Action::muted)).
   /// # Caveats
@@ -78,7 +78,7 @@ impl<'expect_text, Kind> Expectation<'expect_text, Kind> {
   /// # let mut expectation = Expectation::<MyKind>::default();
   /// expectation.literal("import");
   /// ```
-  pub fn literal(mut self, text: impl Into<&'expect_text str>) -> Self {
+  pub fn literal(mut self, text: impl Into<&'expect_literal str>) -> Self {
     self.literal = Some(text.into());
     self
   }

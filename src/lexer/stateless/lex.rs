@@ -40,16 +40,16 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// ```
   pub fn lex_with<
     'text,
-    'expect_text,
+    'expect_literal,
     'action_state,
     Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>,
   >(
     &self,
     text: &'text str,
     options_builder: impl FnOnce(
-      StatelessLexOptions<'expect_text, Kind, (), ForkDisabled>,
+      StatelessLexOptions<'expect_literal, Kind, (), ForkDisabled>,
     ) -> StatelessLexOptions<
-      'expect_text,
+      'expect_literal,
       Kind,
       &'action_state mut ActionState,
       Fork,
@@ -73,13 +73,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// ```
   pub fn lex_with_options<
     'text,
-    'expect_text,
+    'expect_literal,
     'action_state,
     Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>,
   >(
     &self,
     text: &'text str,
-    options: impl Into<StatelessLexOptions<'expect_text, Kind, &'action_state mut ActionState, Fork>>,
+    options: impl Into<StatelessLexOptions<'expect_literal, Kind, &'action_state mut ActionState, Fork>>,
   ) -> LexOutput<Token< Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,

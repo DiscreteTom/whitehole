@@ -4,15 +4,15 @@ use super::{
   re_lex::ReLexContext,
 };
 
-pub struct LexOptions<'expect_text, Kind: 'static, Fork> {
-  pub expectation: Expectation<'expect_text, Kind>,
+pub struct LexOptions<'expect_literal, Kind: 'static, Fork> {
+  pub expectation: Expectation<'expect_literal, Kind>,
   /// See [`LexOptions::fork()`].
   pub fork: Fork,
   /// See [`LexOptions::re_lex()`].
   pub re_lex: ReLexContext,
 }
 
-impl<'expect_text, Kind: 'static> Default for LexOptions<'expect_text, Kind, ForkDisabled> {
+impl<'expect_literal, Kind: 'static> Default for LexOptions<'expect_literal, Kind, ForkDisabled> {
   fn default() -> Self {
     Self {
       expectation: Expectation::default(),
@@ -22,30 +22,30 @@ impl<'expect_text, Kind: 'static> Default for LexOptions<'expect_text, Kind, For
   }
 }
 
-impl<'expect_text, Kind: 'static> From<Expectation<'expect_text, Kind>>
-  for LexOptions<'expect_text, Kind, ForkDisabled>
+impl<'expect_literal, Kind: 'static> From<Expectation<'expect_literal, Kind>>
+  for LexOptions<'expect_literal, Kind, ForkDisabled>
 {
-  fn from(expectation: Expectation<'expect_text, Kind>) -> Self {
+  fn from(expectation: Expectation<'expect_literal, Kind>) -> Self {
     Self::default().expect(expectation)
   }
 }
-impl<'expect_text, Kind: 'static> From<ReLexContext>
-  for LexOptions<'expect_text, Kind, ForkDisabled>
+impl<'expect_literal, Kind: 'static> From<ReLexContext>
+  for LexOptions<'expect_literal, Kind, ForkDisabled>
 {
   fn from(re_lex: ReLexContext) -> Self {
     Self::default().re_lex(re_lex)
   }
 }
 
-impl<'expect_text, Kind: 'static, Fork> LexOptions<'expect_text, Kind, Fork> {
-  pub fn expect(mut self, expectation: impl Into<Expectation<'expect_text, Kind>>) -> Self {
+impl<'expect_literal, Kind: 'static, Fork> LexOptions<'expect_literal, Kind, Fork> {
+  pub fn expect(mut self, expectation: impl Into<Expectation<'expect_literal, Kind>>) -> Self {
     self.expectation = expectation.into();
     self
   }
 
   pub fn expect_with(
     mut self,
-    f: impl FnOnce(Expectation<'expect_text, Kind>) -> Expectation<'expect_text, Kind>,
+    f: impl FnOnce(Expectation<'expect_literal, Kind>) -> Expectation<'expect_literal, Kind>,
   ) -> Self {
     self.expectation = f(Expectation::default());
     self
@@ -53,7 +53,7 @@ impl<'expect_text, Kind: 'static, Fork> LexOptions<'expect_text, Kind, Fork> {
 
   /// If set, the [`LexOutput::re_lex`](crate::lexer::output::LexOutput::re_lex) *might* be `Some`.
   // TODO: example
-  pub fn fork(self) -> LexOptions<'expect_text, Kind, ForkEnabled> {
+  pub fn fork(self) -> LexOptions<'expect_literal, Kind, ForkEnabled> {
     LexOptions {
       expectation: self.expectation,
       fork: ForkEnabled,

@@ -9,7 +9,7 @@ use std::rc::Rc;
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
   pub(super) fn execute_actions<
     'text,
-    'expect_text,
+    'expect_literal,
     'head_map,
     ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
     StatelessOutputType: StatelessOutput<Token<Kind, ErrorType>, ReLexableFactoryType::StatelessReLexableType>,
@@ -114,7 +114,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// If no accepted action, return `None`.
   fn traverse_actions<
     'text,
-    'expect_text,
+    'expect_literal,
     ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
   >(
     input: &mut ActionInput<ActionState>,
