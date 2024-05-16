@@ -57,6 +57,7 @@ pub fn token_kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
   common(quote! { whitehole }, input).into()
 }
 
+/// Same as [`token_kind`].
 /// This is only used internally in whitehole.
 #[proc_macro_attribute]
 pub fn _token_kind(_attr: TokenStream,input: TokenStream) -> TokenStream {
