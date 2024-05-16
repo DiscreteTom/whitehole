@@ -19,6 +19,7 @@ fn peek_lexer() {
   let mut lexer = LexerBuilder::new()
     .ignore_default(whitespaces())
     .define(A, regex(r"a"))
+    .define(B, regex(r"b"))
     .build(" a");
 
   // we can peek the next token without updating the lexer's state,
