@@ -53,4 +53,5 @@ fn token_position() {
   assert!(matches!(line_ranges[2], Range { start: 8, end: 8 }));
 
   // you can also do this in parallel or using multiple threads to improve the performance
+  // TODO: more examples
 }

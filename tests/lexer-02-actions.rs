@@ -1,4 +1,8 @@
-use whitehole::lexer::{action::regex, token::token_kind, LexerBuilder};
+use whitehole::lexer::{
+  action::{comment, exact_chars, exact_vec, regex, simple, whitespaces, word_vec},
+  token::token_kind,
+  LexerBuilder,
+};
 
 // define token kinds, make sure it is decorated by `#[token_kind]`
 #[token_kind]
@@ -111,4 +115,29 @@ fn action_decorators() {
   // the third lex should be rejected
   let res = lexer.lex();
   assert!(matches!(res.token, None));
+}
+
+#[test]
+fn action_utils() {
+  // as a best practice, you should use action utils as much as possible,
+  // especially for tokens with fixed content (like keywords, operators, etc.),
+  // and use `simple` or `regex` for dynamic tokens (like numbers, identifiers, strings, etc.).
+  // here are the most common action utils:
+  LexerBuilder::new()
+    // usually whitespaces and comments won't emit any token, so you can use `ignore_default`
+    .ignore_default(whitespaces())
+    .ignore_default([comment("//", "\n"), comment("/*", "*/")])
+    // for keywords and operators, they are literal and don't need a kind,
+    // so you can use `append_default` to bind them with the default token kind.
+    // for keywords, there should be a word boundary after the keyword,
+    // you can use `word` and `word_vec` to ensure the word boundary.
+    .append_default(word_vec!["true", "false"])
+    // for multi-char operators, you can use `exact_vec` to match them exactly, no lookahead needed.
+    .append_default(exact_vec!["++", "--"])
+    // for single-char operators, you can use `exact_chars` to match them exactly, no lookahead needed.
+    .append_default(exact_chars("+-*/()?:;"))
+    // for dynamic tokens, you can use `simple` or `regex` to write your own action,
+    .define(A, regex(r"^\s+"))
+    .define(A, simple(|input| input.rest().len()))
+    .build("a b c");
 }

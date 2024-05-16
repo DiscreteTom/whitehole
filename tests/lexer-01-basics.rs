@@ -16,6 +16,9 @@ enum MyKind {
 
 #[test]
 fn lexer_basics() {
+  // the text to be lexed
+  let text = "a b c";
+
   // create a lexer via the lexer builder
   let mut lexer = LexerBuilder::new()
     // a lexer consists of many actions which will digest some bytes from the input string.
@@ -58,7 +61,7 @@ fn lexer_basics() {
       ],
     )
     // load the input string
-    .build("a b c");
+    .build(text);
 
   // now let's try to lex the input string,
   // the first token should be `a`
@@ -67,11 +70,13 @@ fn lexer_basics() {
       token,
       Token {
         range: Range { start: 0, end: 1 },
-        content: "a",
         error: None,
         kind
       } if matches!(kind.value(), MyKind::A)
   ));
+  // we don't store the token's content in the token itself,
+  // you can get the content by using the token's range
+  assert_eq!(&text[token.range], "a");
 
   // because whitespaces are muted and ignored,
   // no token will be emitted for it.
@@ -81,11 +86,11 @@ fn lexer_basics() {
       token,
       Token {
         range: Range { start: 2, end: 3 },
-        content: "b",
         error: None,
         kind
       } if matches!(kind.value(), MyKind::BC)
   ));
+  assert_eq!(&text[token.range], "b");
 
   // the third token should be `c`
   let token = lexer.lex().token.unwrap();
@@ -93,9 +98,9 @@ fn lexer_basics() {
       token,
       Token {
         range: Range { start: 4, end: 5 },
-        content: "c",
         error: None,
         kind
       } if matches!(kind.value(), MyKind::BC)
   ));
+  assert_eq!(&text[token.range], "c");
 }

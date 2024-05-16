@@ -24,6 +24,7 @@ fn re_lex() {
   // with grammar rules defined.
   // this can also be solved by re-lexing the lexer.
 
+  let text = "Option<Option<()>>";
   let mut lexer = LexerBuilder::new()
     .ignore_default([whitespaces(), exact("Option"), exact("()"), exact("<")])
     .append([
@@ -33,13 +34,13 @@ fn re_lex() {
       exact(">>").bind(ShiftRight),
       exact(">").bind(RightAngle),
     ])
-    .build("Option<Option<()>>");
+    .build(text);
 
   // lex, but with `fork` enabled, so that the lexer will
   // check if this lex is re-lexable
   let output = lexer.lex_with(|o| o.fork());
   // the first lex will emit `>>`, which is not what we expected
-  assert!(matches!(output.token.unwrap().content, ">>"));
+  assert_eq!(&text[output.token.unwrap().range], ">>");
 
   // when you figure out that `>>` shouldn't be here (e.g. by a parser grammar rule)
   // you may want to re-lex the lexer, continue lexing from the last evaluated action.
@@ -51,7 +52,7 @@ fn re_lex() {
   // we also enable `fork` so that the lexer will check if this lex is re-lexable
   let output = lexer.lex_with(|o| o.re_lex(context).fork());
   // now the lexer will emit `>`
-  assert!(matches!(output.token.unwrap().content, ">"));
+  assert_eq!(&text[output.token.unwrap().range], ">");
   // and there is no next action to re-lex, the re_lexable should be None
   assert!(output.re_lexable.is_none());
 

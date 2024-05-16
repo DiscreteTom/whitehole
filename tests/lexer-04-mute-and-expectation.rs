@@ -17,7 +17,7 @@ enum MyKind {
 #[test]
 fn muted_actions() {
   // there is a field `muted` in `Action`
-  let action: Action<_> = regex(r"^a").into_action();
+  let action: Action<_> = regex(r"^a");
   // by default `muted` is `false`
   assert!(!action.muted());
   // with `mute`, the `muted` field will be set to `true`
