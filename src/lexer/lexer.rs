@@ -103,9 +103,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
 
   /// Peek the next token with custom options, without updating
   /// [`Self::state`] and [`Self::action_state`].
-  /// This will clone the [`Self::action_state`] by default and return it.
-  /// If this is a re-lex, [`ReLexable::action_state`](crate::lexer::options::ReLexable::action_state)
-  /// will be used instead of cloning [`Self::action_state`].
+  /// This will clone the [`Self::action_state`] and return it.
   pub fn peek_with<'expect_literal, Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>>(
     &self,
     options_builder: impl FnOnce(
@@ -124,9 +122,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
 
   /// Peek the next token with custom options, without updating
   /// [`Self::state`] and [`Self::action_state`].
-  /// This will clone the [`Self::action_state`] by default and return it.
-  /// If this is a re-lex, [`ReLexable::action_state`](crate::lexer::options::ReLexable::action_state)
-  /// will be used instead of cloning [`Self::action_state`].
+  /// This will clone the [`Self::action_state`] and return it.
   pub fn peek_with_options<
     'expect_literal,
     Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>,
