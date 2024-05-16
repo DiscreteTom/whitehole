@@ -70,7 +70,7 @@ impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
   /// # Caveats
   /// Be ware, we are checking the [`Action::literal`](crate::lexer::action::Action::literal)
   /// before executing an action,
-  /// not the [`Token::content`](crate::lexer::token::Token::content)
+  /// not the token's text content
   /// after executing an action.
   /// # Examples
   /// ```
