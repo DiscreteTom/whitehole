@@ -45,6 +45,6 @@ impl<TokenType, ReLexableType> StatelessOutput<TokenType, ReLexableType> for Tri
   fn emit(&mut self, _token: TokenType, _re_lexable: ReLexableType) {
     // this will never be called
     // because when trim, all actions are muted
-    panic!("TrimOutput::done should never be called");
+    unreachable!("TrimOutput::done should never be called")
   }
 }
