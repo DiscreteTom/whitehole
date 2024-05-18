@@ -121,7 +121,7 @@ macro_rules! generate_integer_literal_functions {
     /// with the default [`IntegerLiteralBodyOptions`].
     /// Return how many bytes are digested and the integer literal data.
     pub fn $body_fn_name(rest: &str) -> (usize, IntegerLiteralData<()>) {
-      $body_fn_name_with_options(rest, &mut IntegerLiteralBodyOptions::default())
+      $body_fn_name_with_options(rest, &IntegerLiteralBodyOptions::default())
     }
 
     /// Try to match the integer literal body in the rest of the input text
@@ -133,10 +133,7 @@ macro_rules! generate_integer_literal_functions {
         IntegerLiteralBodyOptions<MockIntegerLiteralBodyAccumulator>,
       ) -> IntegerLiteralBodyOptions<Acc>,
     ) -> (usize, IntegerLiteralData<Acc::Target>) {
-      $body_fn_name_with_options(
-        rest,
-        &mut options_builder(IntegerLiteralBodyOptions::default()),
-      )
+      $body_fn_name_with_options(rest, &options_builder(IntegerLiteralBodyOptions::default()))
     }
 
     /// Try to match the integer literal body in the rest of the input text
