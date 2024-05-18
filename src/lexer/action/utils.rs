@@ -141,4 +141,31 @@ mod tests {
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'/')
     ));
   }
+
+  #[test]
+  fn action_utils_whitespaces() {
+    let action: Action<MockTokenKind<()>> = whitespaces();
+
+    // common cases
+    assert_reject(&action, "123");
+    assert_reject(&action, "abc");
+    assert_accept(&action, " \n\t", 3);
+
+    // full cases
+    let text: String = [
+      '\u{0009}', '\u{000A}', '\u{000B}', '\u{000C}', '\u{000D}', '\u{0020}', '\u{0085}',
+      '\u{00A0}', '\u{1680}', '\u{2000}', '\u{2001}', '\u{2002}', '\u{2003}', '\u{2004}',
+      '\u{2005}', '\u{2006}', '\u{2007}', '\u{2008}', '\u{2009}', '\u{200A}', '\u{2028}',
+      '\u{2029}', '\u{202F}', '\u{205F}', '\u{3000}',
+    ]
+    .into_iter()
+    .collect();
+    assert_accept(&action, &text, text.len());
+
+    // head matcher
+    assert!(matches!(
+      action.head_matcher().as_ref().unwrap(),
+      HeadMatcher::OneOf(set) if set.len() == text.chars().count() && set.iter().all(|c| text.contains(*c))
+    ));
+  }
 }
