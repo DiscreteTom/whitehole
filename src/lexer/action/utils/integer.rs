@@ -50,53 +50,62 @@ pub fn integer_literal_body_with_options<Acc: IntegerLiteralBodyAccumulator>(
   let mut separators = vec![];
   let mut digested = 0;
 
+  macro_rules! check_sep {
+    ($c:expr, $sep:expr) => {
+      if $c == *$sep {
+        separators.push(digested);
+        digested += $c.len_utf8();
+        continue;
+      }
+    };
+  }
+  macro_rules! proc_body {
+    ($c:expr) => {
+      if is_body(&$c) {
+        digested += $c.len_utf8();
+        continue;
+      }
+    };
+  }
+  macro_rules! proc_body_acc {
+    ($c:expr, $acc:expr) => {
+      if is_body(&$c) {
+        $acc.update(&$c);
+        digested += $c.len_utf8();
+        continue;
+      }
+    };
+  }
+
   // TODO: simplify code with macro?
   let body = match (&options.sep, options.acc.clone()) {
     (Some(sep), Some(mut acc)) => {
       for c in rest.chars() {
-        if is_body(&c) {
-          acc.update(&c);
-          digested += c.len_utf8();
-        } else if c == *sep {
-          separators.push(digested);
-          digested += c.len_utf8();
-        } else {
-          break;
-        }
+        check_sep!(c, sep);
+        proc_body_acc!(c, acc);
+        break;
       }
       acc.emit()
     }
-    (Some(separator), None) => {
+    (Some(sep), None) => {
       for c in rest.chars() {
-        if is_body(&c) {
-          digested += c.len_utf8();
-        } else if c == *separator {
-          separators.push(digested);
-          digested += c.len_utf8();
-        } else {
-          break;
-        }
+        check_sep!(c, sep);
+        proc_body!(c);
+        break;
       }
       Acc::Target::default()
     }
     (None, Some(mut acc)) => {
       for c in rest.chars() {
-        if is_body(&c) {
-          acc.update(&c);
-          digested += c.len_utf8();
-        } else {
-          break;
-        }
+        proc_body_acc!(c, acc);
+        break;
       }
       acc.emit()
     }
     (None, None) => {
       for c in rest.chars() {
-        if is_body(&c) {
-          digested += c.len_utf8();
-        } else {
-          break;
-        }
+        proc_body!(c);
+        break;
       }
       Acc::Target::default()
     }
