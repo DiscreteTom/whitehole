@@ -1,8 +1,9 @@
-/// Accumulate chars from an integer literal body and emit the value of the body.
+/// Accumulate non-numeric-separator chars from an integer literal body
+/// and emit the value of the body. See [`IntegerLiteralBodyStringAccumulator`].
 pub trait IntegerLiteralBodyAccumulator: Clone {
   type Target: Default;
 
-  /// Update the accumulator with a [`char`].
+  /// Update the accumulator with a non-numeric-separator [`char`].
   fn update(&mut self, c: &char); // TODO: batch update with a String instead of one char?
   /// Consume the accumulator and emit the value of the body.
   fn emit(self) -> Self::Target;
@@ -24,7 +25,9 @@ impl IntegerLiteralBodyAccumulator for MockIntegerLiteralBodyAccumulator {
   }
 }
 
-/// Accumulate chars from an integer literal body and emit the value of the body as a [`String`].
+/// Accumulate non-numeric-separator from an integer literal body
+/// and emit the value of the body as a [`String`].
+/// E.g. the value of `"123_456"` is `"123456"`.
 #[derive(Clone, Debug, Default)]
 pub struct IntegerLiteralBodyStringAccumulator(String);
 impl IntegerLiteralBodyAccumulator for IntegerLiteralBodyStringAccumulator {
@@ -36,5 +39,3 @@ impl IntegerLiteralBodyAccumulator for IntegerLiteralBodyStringAccumulator {
     self.0
   }
 }
-
-// TODO: add an accumulator to emit integers like u32?
