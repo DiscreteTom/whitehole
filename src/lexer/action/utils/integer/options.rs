@@ -21,8 +21,8 @@ impl<Acc> IntegerLiteralBodyOptions<Acc> {
   /// Default is [`None`].
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::action::IntegerLiteralOptions;
-  /// let options = IntegerLiteralOptions::default().sep('_');
+  /// # use whitehole::lexer::action::IntegerLiteralBodyOptions;
+  /// let options = IntegerLiteralBodyOptions::default().sep('_');
   /// ```
   pub fn sep(mut self, separator: char) -> Self {
     self.sep = Some(separator);
@@ -35,11 +35,8 @@ impl<Acc> IntegerLiteralBodyOptions<Acc> {
   /// Default is [`None`].
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::action::IntegerLiteralOptions;
-  /// let options = IntegerLiteralOptions::default().acc(|c| {
-  /// # // TODO: update this example, calculate a value here
-  ///   println!("{}", c);
-  /// });
+  /// # use whitehole::lexer::action::{IntegerLiteralBodyOptions, IntegerLiteralBodyStringAccumulator};
+  /// let options = IntegerLiteralBodyOptions::default().acc(IntegerLiteralBodyStringAccumulator::default());
   /// ```
   pub fn acc<NewAcc>(self, acc: NewAcc) -> IntegerLiteralBodyOptions<NewAcc> {
     IntegerLiteralBodyOptions {
