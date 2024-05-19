@@ -39,3 +39,31 @@ impl IntegerLiteralBodyAccumulator for IntegerLiteralBodyStringAccumulator {
     self.0
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[should_panic]
+  #[test]
+  fn mock_integer_literal_body_accumulator_update() {
+    let mut acc = MockIntegerLiteralBodyAccumulator;
+    acc.update(&'a');
+  }
+
+  #[should_panic]
+  #[test]
+  fn mock_integer_literal_body_accumulator_emit() {
+    let acc = MockIntegerLiteralBodyAccumulator;
+    acc.emit();
+  }
+
+  #[test]
+  fn integer_literal_body_string_accumulator() {
+    let mut acc = IntegerLiteralBodyStringAccumulator::default();
+    acc.update(&'1');
+    acc.update(&'2');
+    acc.update(&'3');
+    assert_eq!(acc.emit(), "123");
+  }
+}
