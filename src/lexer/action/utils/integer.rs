@@ -19,7 +19,7 @@ pub fn integer_literal_body(
   rest: &str,
   is_body: impl Fn(&char) -> bool,
 ) -> (usize, IntegerLiteralData<()>) {
-  integer_literal_body_with_options(rest, is_body, &mut IntegerLiteralBodyOptions::default())
+  integer_literal_body_with_options(rest, is_body, &IntegerLiteralBodyOptions::default())
 }
 
 /// Try to match an integer literal body in the rest of the input text
@@ -35,7 +35,7 @@ pub fn integer_literal_body_with<Acc: IntegerLiteralBodyAccumulator>(
   integer_literal_body_with_options(
     rest,
     is_body,
-    &mut options_builder(IntegerLiteralBodyOptions::default()),
+    &options_builder(IntegerLiteralBodyOptions::default()),
   )
 }
 
