@@ -1,13 +1,13 @@
-use super::MockAccumulator;
+use super::{IntegerLiteralBodySeparatorAccumulator, MockAccumulator};
 
-pub struct IntegerLiteralBodyOptions<ValueAcc> {
+pub struct IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// See [`Self::separator`].
-  pub separator: Option<char>,
+  pub separator: Option<(char, SepAcc)>,
   /// See [`Self::value`].
   pub value: Option<ValueAcc>,
 }
 
-impl Default for IntegerLiteralBodyOptions<MockAccumulator> {
+impl Default for IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator> {
   fn default() -> Self {
     Self {
       separator: None,
@@ -16,7 +16,7 @@ impl Default for IntegerLiteralBodyOptions<MockAccumulator> {
   }
 }
 
-impl<ValueAcc> IntegerLiteralBodyOptions<ValueAcc> {
+impl<SepAcc, ValueAcc> IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// Numeric separator for the integer literal.
   /// Default is [`None`].
   /// # Examples
@@ -24,9 +24,14 @@ impl<ValueAcc> IntegerLiteralBodyOptions<ValueAcc> {
   /// # use whitehole::lexer::action::IntegerLiteralBodyOptions;
   /// let options = IntegerLiteralBodyOptions::default().separator('_');
   /// ```
-  pub fn separator(mut self, separator: char) -> Self {
-    self.separator = Some(separator);
-    self
+  pub fn separator(
+    self,
+    separator: char,
+  ) -> IntegerLiteralBodyOptions<IntegerLiteralBodySeparatorAccumulator, ValueAcc> {
+    IntegerLiteralBodyOptions {
+      separator: Some((separator, IntegerLiteralBodySeparatorAccumulator::default())),
+      value: self.value,
+    }
   }
 
   /// An accumulator to accumulate the integer literal body's value.
@@ -36,7 +41,7 @@ impl<ValueAcc> IntegerLiteralBodyOptions<ValueAcc> {
   /// # use whitehole::lexer::action::{IntegerLiteralBodyOptions, IntegerLiteralBodyStringAccumulator};
   /// let options = IntegerLiteralBodyOptions::default().value(IntegerLiteralBodyStringAccumulator::default());
   /// ```
-  pub fn value<NewAcc>(self, acc: NewAcc) -> IntegerLiteralBodyOptions<NewAcc> {
+  pub fn value<NewAcc>(self, acc: NewAcc) -> IntegerLiteralBodyOptions<SepAcc, NewAcc> {
     IntegerLiteralBodyOptions {
       separator: self.separator,
       value: Some(acc),

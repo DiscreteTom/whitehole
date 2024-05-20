@@ -20,20 +20,20 @@ use std::collections::HashSet;
 pub fn integer_literal_body(
   rest: &str,
   is_body: impl Fn(&char) -> bool,
-) -> (usize, IntegerLiteralData<()>) {
+) -> (usize, IntegerLiteralData<(), ()>) {
   integer_literal_body_with_options(rest, is_body, &IntegerLiteralBodyOptions::default())
 }
 
 /// Try to match an integer literal body in the rest of the input text
 /// with the given [`IntegerLiteralBodyOptions`].
 /// Return how many bytes are digested and the integer literal data.
-pub fn integer_literal_body_with<ValueAcc: Accumulator<char>>(
+pub fn integer_literal_body_with<SepAcc: Accumulator<usize>, ValueAcc: Accumulator<char>>(
   rest: &str,
   is_body: impl Fn(&char) -> bool,
   options_builder: impl FnOnce(
-    IntegerLiteralBodyOptions<MockAccumulator>,
-  ) -> IntegerLiteralBodyOptions<ValueAcc>,
-) -> (usize, IntegerLiteralData<ValueAcc::Target>) {
+    IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>,
+  ) -> IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
+) -> (usize, IntegerLiteralData<SepAcc::Target, ValueAcc::Target>) {
   integer_literal_body_with_options(
     rest,
     is_body,
@@ -44,18 +44,20 @@ pub fn integer_literal_body_with<ValueAcc: Accumulator<char>>(
 /// Try to match an integer literal body in the rest of the input text
 /// with the given [`IntegerLiteralBodyOptions`].
 /// Return how many bytes are digested and the integer literal data.
-pub fn integer_literal_body_with_options<ValueAcc: Accumulator<char>>(
+pub fn integer_literal_body_with_options<
+  SepAcc: Accumulator<usize>,
+  ValueAcc: Accumulator<char>,
+>(
   rest: &str,
   is_body: impl Fn(&char) -> bool,
-  options: &IntegerLiteralBodyOptions<ValueAcc>,
-) -> (usize, IntegerLiteralData<ValueAcc::Target>) {
-  let mut separators = vec![];
+  options: &IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
+) -> (usize, IntegerLiteralData<SepAcc::Target, ValueAcc::Target>) {
   let mut digested = 0;
 
   macro_rules! check_sep {
     ($c:expr, $sep:expr) => {
-      if $c == *$sep {
-        separators.push(digested);
+      if $c == $sep.0 {
+        $sep.1.update(&digested);
         digested += $c.len_utf8();
         continue;
       }
@@ -81,40 +83,52 @@ pub fn integer_literal_body_with_options<ValueAcc: Accumulator<char>>(
 
   // TODO: simplify code with macro?
   // check `None` outside the loop to optimize the performance
-  let body = match (&options.separator, options.value.clone()) {
-    (Some(sep), Some(mut acc)) => {
+  let data = match (options.separator.clone(), options.value.clone()) {
+    (Some(mut sep), Some(mut acc)) => {
       for c in rest.chars() {
         check_sep!(c, sep);
         proc_body_acc!(c, acc);
         break;
       }
-      acc.emit()
+      IntegerLiteralData {
+        separators: sep.1.emit(),
+        value: acc.emit(),
+      }
     }
-    (Some(sep), None) => {
+    (Some(mut sep), None) => {
       for c in rest.chars() {
         check_sep!(c, sep);
         proc_body!(c);
         break;
       }
-      ValueAcc::Target::default()
+      IntegerLiteralData {
+        separators: sep.1.emit(),
+        value: ValueAcc::Target::default(),
+      }
     }
     (None, Some(mut acc)) => {
       for c in rest.chars() {
         proc_body_acc!(c, acc);
         break;
       }
-      acc.emit()
+      IntegerLiteralData {
+        separators: SepAcc::Target::default(),
+        value: acc.emit(),
+      }
     }
     (None, None) => {
       for c in rest.chars() {
         proc_body!(c);
         break;
       }
-      ValueAcc::Target::default()
+      IntegerLiteralData {
+        separators: SepAcc::Target::default(),
+        value: ValueAcc::Target::default(),
+      }
     }
   };
 
-  (digested, IntegerLiteralData { separators, body })
+  (digested, data)
 }
 
 macro_rules! generate_integer_literal_functions {
@@ -132,29 +146,29 @@ macro_rules! generate_integer_literal_functions {
     /// Try to match the integer literal body in the rest of the input text
     /// with the default [`IntegerLiteralBodyOptions`].
     /// Return how many bytes are digested and the integer literal data.
-    pub fn $body_fn_name(rest: &str) -> (usize, IntegerLiteralData<()>) {
+    pub fn $body_fn_name(rest: &str) -> (usize, IntegerLiteralData<(), ()>) {
       $body_fn_name_with_options(rest, &IntegerLiteralBodyOptions::default())
     }
 
     /// Try to match the integer literal body in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
     /// Return how many bytes are digested and the integer literal data.
-    pub fn $body_fn_name_with<ValueAcc: Accumulator<char>>(
+    pub fn $body_fn_name_with<SepAcc: Accumulator<usize>, ValueAcc: Accumulator<char>>(
       rest: &str,
       options_builder: impl FnOnce(
-        IntegerLiteralBodyOptions<MockAccumulator>,
-      ) -> IntegerLiteralBodyOptions<ValueAcc>,
-    ) -> (usize, IntegerLiteralData<ValueAcc::Target>) {
+        IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>,
+      ) -> IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
+    ) -> (usize, IntegerLiteralData<SepAcc::Target, ValueAcc::Target>) {
       $body_fn_name_with_options(rest, &options_builder(IntegerLiteralBodyOptions::default()))
     }
 
     /// Try to match the integer literal body in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
     /// Return how many bytes are digested and the integer literal data.
-    pub fn $body_fn_name_with_options<ValueAcc: Accumulator<char>>(
+    pub fn $body_fn_name_with_options<SepAcc: Accumulator<usize>, ValueAcc: Accumulator<char>>(
       rest: &str,
-      options: &IntegerLiteralBodyOptions<ValueAcc>,
-    ) -> (usize, IntegerLiteralData<ValueAcc::Target>) {
+      options: &IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
+    ) -> (usize, IntegerLiteralData<SepAcc::Target, ValueAcc::Target>) {
       integer_literal_body_with_options(rest, $is_body, options)
     }
 
@@ -162,18 +176,27 @@ macro_rules! generate_integer_literal_functions {
     /// in the rest of the input text
     /// with the default [`IntegerLiteralBodyOptions`].
     pub fn $action_fn_name<ActionState, ErrorType>(
-    ) -> Action<MockTokenKind<IntegerLiteralData<()>>, ActionState, ErrorType> {
+    ) -> Action<MockTokenKind<IntegerLiteralData<(), ()>>, ActionState, ErrorType> {
       $action_fn_name_with_options(IntegerLiteralBodyOptions::default())
     }
 
     /// Create an [`Action`] that tries to match the integer literal body
     /// in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
-    pub fn $action_fn_name_with<ActionState, ErrorType, ValueAcc: Accumulator<char> + 'static>(
+    pub fn $action_fn_name_with<
+      ActionState,
+      ErrorType,
+      SepAcc: Accumulator<usize> + 'static,
+      ValueAcc: Accumulator<char> + 'static,
+    >(
       options_builder: impl FnOnce(
-        IntegerLiteralBodyOptions<MockAccumulator>,
-      ) -> IntegerLiteralBodyOptions<ValueAcc>,
-    ) -> Action<MockTokenKind<IntegerLiteralData<ValueAcc::Target>>, ActionState, ErrorType> {
+        IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>,
+      ) -> IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
+    ) -> Action<
+      MockTokenKind<IntegerLiteralData<SepAcc::Target, ValueAcc::Target>>,
+      ActionState,
+      ErrorType,
+    > {
       $action_fn_name_with_options(options_builder(IntegerLiteralBodyOptions::default()))
     }
 
@@ -183,10 +206,15 @@ macro_rules! generate_integer_literal_functions {
     pub fn $action_fn_name_with_options<
       ActionState,
       ErrorType,
-      Acc: Accumulator<char> + 'static,
+      SepAcc: Accumulator<usize> + 'static,
+      ValueAcc: Accumulator<char> + 'static,
     >(
-      options: IntegerLiteralBodyOptions<Acc>,
-    ) -> Action<MockTokenKind<IntegerLiteralData<Acc::Target>>, ActionState, ErrorType> {
+      options: IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
+    ) -> Action<
+      MockTokenKind<IntegerLiteralData<SepAcc::Target, ValueAcc::Target>>,
+      ActionState,
+      ErrorType,
+    > {
       let mut a = simple_with_data(move |input| {
         let prefix = $prefix;
         if input.rest().starts_with(prefix) {
