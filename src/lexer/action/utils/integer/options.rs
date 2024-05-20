@@ -1,47 +1,45 @@
 use super::MockAccumulator;
 
-pub struct IntegerLiteralBodyOptions<Acc> {
-  /// See [`Self::sep`].
-  pub sep: Option<char>,
-  /// See [`Self::acc`].
-  pub acc: Option<Acc>,
+pub struct IntegerLiteralBodyOptions<ValueAcc> {
+  /// See [`Self::separator`].
+  pub separator: Option<char>,
+  /// See [`Self::value`].
+  pub value: Option<ValueAcc>,
 }
 
 impl Default for IntegerLiteralBodyOptions<MockAccumulator> {
   fn default() -> Self {
     Self {
-      sep: None,
-      acc: None,
+      separator: None,
+      value: None,
     }
   }
 }
 
-impl<Acc> IntegerLiteralBodyOptions<Acc> {
+impl<ValueAcc> IntegerLiteralBodyOptions<ValueAcc> {
   /// Numeric separator for the integer literal.
   /// Default is [`None`].
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::IntegerLiteralBodyOptions;
-  /// let options = IntegerLiteralBodyOptions::default().sep('_');
+  /// let options = IntegerLiteralBodyOptions::default().separator('_');
   /// ```
-  pub fn sep(mut self, separator: char) -> Self {
-    self.sep = Some(separator);
+  pub fn separator(mut self, separator: char) -> Self {
+    self.separator = Some(separator);
     self
   }
 
-  /// Accumulator when lexing the integer literal.
-  /// You can use this to calculate the integer literal's value
-  /// while lexing the integer literal.
+  /// An accumulator to accumulate the integer literal body's value.
   /// Default is [`None`].
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::{IntegerLiteralBodyOptions, IntegerLiteralBodyStringAccumulator};
-  /// let options = IntegerLiteralBodyOptions::default().acc(IntegerLiteralBodyStringAccumulator::default());
+  /// let options = IntegerLiteralBodyOptions::default().value(IntegerLiteralBodyStringAccumulator::default());
   /// ```
-  pub fn acc<NewAcc>(self, acc: NewAcc) -> IntegerLiteralBodyOptions<NewAcc> {
+  pub fn value<NewAcc>(self, acc: NewAcc) -> IntegerLiteralBodyOptions<NewAcc> {
     IntegerLiteralBodyOptions {
-      sep: self.sep,
-      acc: Some(acc),
+      separator: self.separator,
+      value: Some(acc),
     }
   }
 }

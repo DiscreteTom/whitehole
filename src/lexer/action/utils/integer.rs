@@ -27,13 +27,13 @@ pub fn integer_literal_body(
 /// Try to match an integer literal body in the rest of the input text
 /// with the given [`IntegerLiteralBodyOptions`].
 /// Return how many bytes are digested and the integer literal data.
-pub fn integer_literal_body_with<Acc: Accumulator<char>>(
+pub fn integer_literal_body_with<ValueAcc: Accumulator<char>>(
   rest: &str,
   is_body: impl Fn(&char) -> bool,
   options_builder: impl FnOnce(
     IntegerLiteralBodyOptions<MockAccumulator>,
-  ) -> IntegerLiteralBodyOptions<Acc>,
-) -> (usize, IntegerLiteralData<Acc::Target>) {
+  ) -> IntegerLiteralBodyOptions<ValueAcc>,
+) -> (usize, IntegerLiteralData<ValueAcc::Target>) {
   integer_literal_body_with_options(
     rest,
     is_body,
@@ -44,11 +44,11 @@ pub fn integer_literal_body_with<Acc: Accumulator<char>>(
 /// Try to match an integer literal body in the rest of the input text
 /// with the given [`IntegerLiteralBodyOptions`].
 /// Return how many bytes are digested and the integer literal data.
-pub fn integer_literal_body_with_options<Acc: Accumulator<char>>(
+pub fn integer_literal_body_with_options<ValueAcc: Accumulator<char>>(
   rest: &str,
   is_body: impl Fn(&char) -> bool,
-  options: &IntegerLiteralBodyOptions<Acc>,
-) -> (usize, IntegerLiteralData<Acc::Target>) {
+  options: &IntegerLiteralBodyOptions<ValueAcc>,
+) -> (usize, IntegerLiteralData<ValueAcc::Target>) {
   let mut separators = vec![];
   let mut digested = 0;
 
@@ -81,7 +81,7 @@ pub fn integer_literal_body_with_options<Acc: Accumulator<char>>(
 
   // TODO: simplify code with macro?
   // check `None` outside the loop to optimize the performance
-  let body = match (&options.sep, options.acc.clone()) {
+  let body = match (&options.separator, options.value.clone()) {
     (Some(sep), Some(mut acc)) => {
       for c in rest.chars() {
         check_sep!(c, sep);
@@ -96,7 +96,7 @@ pub fn integer_literal_body_with_options<Acc: Accumulator<char>>(
         proc_body!(c);
         break;
       }
-      Acc::Target::default()
+      ValueAcc::Target::default()
     }
     (None, Some(mut acc)) => {
       for c in rest.chars() {
@@ -110,7 +110,7 @@ pub fn integer_literal_body_with_options<Acc: Accumulator<char>>(
         proc_body!(c);
         break;
       }
-      Acc::Target::default()
+      ValueAcc::Target::default()
     }
   };
 
@@ -139,22 +139,22 @@ macro_rules! generate_integer_literal_functions {
     /// Try to match the integer literal body in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
     /// Return how many bytes are digested and the integer literal data.
-    pub fn $body_fn_name_with<Acc: Accumulator<char>>(
+    pub fn $body_fn_name_with<ValueAcc: Accumulator<char>>(
       rest: &str,
       options_builder: impl FnOnce(
         IntegerLiteralBodyOptions<MockAccumulator>,
-      ) -> IntegerLiteralBodyOptions<Acc>,
-    ) -> (usize, IntegerLiteralData<Acc::Target>) {
+      ) -> IntegerLiteralBodyOptions<ValueAcc>,
+    ) -> (usize, IntegerLiteralData<ValueAcc::Target>) {
       $body_fn_name_with_options(rest, &options_builder(IntegerLiteralBodyOptions::default()))
     }
 
     /// Try to match the integer literal body in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
     /// Return how many bytes are digested and the integer literal data.
-    pub fn $body_fn_name_with_options<Acc: Accumulator<char>>(
+    pub fn $body_fn_name_with_options<ValueAcc: Accumulator<char>>(
       rest: &str,
-      options: &IntegerLiteralBodyOptions<Acc>,
-    ) -> (usize, IntegerLiteralData<Acc::Target>) {
+      options: &IntegerLiteralBodyOptions<ValueAcc>,
+    ) -> (usize, IntegerLiteralData<ValueAcc::Target>) {
       integer_literal_body_with_options(rest, $is_body, options)
     }
 
@@ -169,11 +169,11 @@ macro_rules! generate_integer_literal_functions {
     /// Create an [`Action`] that tries to match the integer literal body
     /// in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
-    pub fn $action_fn_name_with<ActionState, ErrorType, Acc: Accumulator<char> + 'static>(
+    pub fn $action_fn_name_with<ActionState, ErrorType, ValueAcc: Accumulator<char> + 'static>(
       options_builder: impl FnOnce(
         IntegerLiteralBodyOptions<MockAccumulator>,
-      ) -> IntegerLiteralBodyOptions<Acc>,
-    ) -> Action<MockTokenKind<IntegerLiteralData<Acc::Target>>, ActionState, ErrorType> {
+      ) -> IntegerLiteralBodyOptions<ValueAcc>,
+    ) -> Action<MockTokenKind<IntegerLiteralData<ValueAcc::Target>>, ActionState, ErrorType> {
       $action_fn_name_with_options(options_builder(IntegerLiteralBodyOptions::default()))
     }
 
