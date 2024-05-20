@@ -16,6 +16,19 @@ impl Accumulator<char> for IntegerLiteralBodyStringAccumulator {
   }
 }
 
+/// Accumulate the byte index of numeric separators from an integer literal body.
+#[derive(Clone, Debug, Default)]
+pub struct IntegerLiteralBodySeparatorAccumulator(Vec<usize>);
+impl Accumulator<usize> for IntegerLiteralBodySeparatorAccumulator {
+  type Target = Vec<usize>;
+  fn update(&mut self, c: &usize) {
+    self.0.push(*c);
+  }
+  fn emit(self) -> Self::Target {
+    self.0
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -27,5 +40,14 @@ mod tests {
     acc.update(&'2');
     acc.update(&'3');
     assert_eq!(acc.emit(), "123");
+  }
+
+  #[test]
+  fn integer_literal_body_separator_accumulator() {
+    let mut acc = IntegerLiteralBodySeparatorAccumulator::default();
+    acc.update(&1);
+    acc.update(&2);
+    acc.update(&3);
+    assert_eq!(acc.emit(), vec![1, 2, 3]);
   }
 }
