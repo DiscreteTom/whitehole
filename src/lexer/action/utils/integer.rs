@@ -78,6 +78,7 @@ pub fn integer_literal_body_with_options<Acc: IntegerLiteralBodyAccumulator>(
   }
 
   // TODO: simplify code with macro?
+  // check `None` outside the loop to optimize the performance
   let body = match (&options.sep, options.acc.clone()) {
     (Some(sep), Some(mut acc)) => {
       for c in rest.chars() {
