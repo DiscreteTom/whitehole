@@ -38,8 +38,8 @@ impl<SepAcc, ValueAcc> IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// Default is [`None`].
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::action::{IntegerLiteralBodyOptions, IntegerLiteralBodyStringAccumulator};
-  /// let options = IntegerLiteralBodyOptions::default().value(IntegerLiteralBodyStringAccumulator::default());
+  /// # use whitehole::lexer::action::{IntegerLiteralBodyOptions, IntegerLiteralBodyStringValueAccumulator};
+  /// let options = IntegerLiteralBodyOptions::default().value(IntegerLiteralBodyStringValueAccumulator::default());
   /// ```
   pub fn value<NewAcc>(self, acc: NewAcc) -> IntegerLiteralBodyOptions<SepAcc, NewAcc> {
     IntegerLiteralBodyOptions {
