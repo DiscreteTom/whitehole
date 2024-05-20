@@ -1,8 +1,10 @@
+mod accumulator;
 mod exact;
 mod integer;
 mod regex;
 mod word;
 
+pub use accumulator::*;
 pub use exact::*;
 pub use integer::*;
 pub use regex::*;

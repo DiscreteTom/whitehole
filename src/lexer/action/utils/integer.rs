@@ -1,16 +1,18 @@
-mod accumulator;
+mod accumulators;
 mod data;
 mod options;
 
+// TODO: organize export
+pub use accumulators::*;
+pub use data::*;
+pub use options::*;
+
+use super::{Accumulator, MockAccumulator};
 use crate::lexer::{
   action::{simple_with_data, Action, HeadMatcher},
   token::MockTokenKind,
 };
 use std::collections::HashSet;
-
-pub use accumulator::*;
-pub use data::*;
-pub use options::*;
 
 /// Try to match an integer literal body in the rest of the input text
 /// with the default [`IntegerLiteralBodyOptions`].
