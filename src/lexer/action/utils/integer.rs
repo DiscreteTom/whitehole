@@ -25,11 +25,11 @@ pub fn integer_literal_body(
 /// Try to match an integer literal body in the rest of the input text
 /// with the given [`IntegerLiteralBodyOptions`].
 /// Return how many bytes are digested and the integer literal data.
-pub fn integer_literal_body_with<Acc: IntegerLiteralBodyAccumulator>(
+pub fn integer_literal_body_with<Acc: Accumulator<char>>(
   rest: &str,
   is_body: impl Fn(&char) -> bool,
   options_builder: impl FnOnce(
-    IntegerLiteralBodyOptions<MockIntegerLiteralBodyAccumulator>,
+    IntegerLiteralBodyOptions<MockAccumulator>,
   ) -> IntegerLiteralBodyOptions<Acc>,
 ) -> (usize, IntegerLiteralData<Acc::Target>) {
   integer_literal_body_with_options(
@@ -42,7 +42,7 @@ pub fn integer_literal_body_with<Acc: IntegerLiteralBodyAccumulator>(
 /// Try to match an integer literal body in the rest of the input text
 /// with the given [`IntegerLiteralBodyOptions`].
 /// Return how many bytes are digested and the integer literal data.
-pub fn integer_literal_body_with_options<Acc: IntegerLiteralBodyAccumulator>(
+pub fn integer_literal_body_with_options<Acc: Accumulator<char>>(
   rest: &str,
   is_body: impl Fn(&char) -> bool,
   options: &IntegerLiteralBodyOptions<Acc>,
@@ -137,10 +137,10 @@ macro_rules! generate_integer_literal_functions {
     /// Try to match the integer literal body in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
     /// Return how many bytes are digested and the integer literal data.
-    pub fn $body_fn_name_with<Acc: IntegerLiteralBodyAccumulator>(
+    pub fn $body_fn_name_with<Acc: Accumulator<char>>(
       rest: &str,
       options_builder: impl FnOnce(
-        IntegerLiteralBodyOptions<MockIntegerLiteralBodyAccumulator>,
+        IntegerLiteralBodyOptions<MockAccumulator>,
       ) -> IntegerLiteralBodyOptions<Acc>,
     ) -> (usize, IntegerLiteralData<Acc::Target>) {
       $body_fn_name_with_options(rest, &options_builder(IntegerLiteralBodyOptions::default()))
@@ -149,7 +149,7 @@ macro_rules! generate_integer_literal_functions {
     /// Try to match the integer literal body in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
     /// Return how many bytes are digested and the integer literal data.
-    pub fn $body_fn_name_with_options<Acc: IntegerLiteralBodyAccumulator>(
+    pub fn $body_fn_name_with_options<Acc: Accumulator<char>>(
       rest: &str,
       options: &IntegerLiteralBodyOptions<Acc>,
     ) -> (usize, IntegerLiteralData<Acc::Target>) {
@@ -167,13 +167,9 @@ macro_rules! generate_integer_literal_functions {
     /// Create an [`Action`] that tries to match the integer literal body
     /// in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
-    pub fn $action_fn_name_with<
-      ActionState,
-      ErrorType,
-      Acc: IntegerLiteralBodyAccumulator + 'static,
-    >(
+    pub fn $action_fn_name_with<ActionState, ErrorType, Acc: Accumulator<char> + 'static>(
       options_builder: impl FnOnce(
-        IntegerLiteralBodyOptions<MockIntegerLiteralBodyAccumulator>,
+        IntegerLiteralBodyOptions<MockAccumulator>,
       ) -> IntegerLiteralBodyOptions<Acc>,
     ) -> Action<MockTokenKind<IntegerLiteralData<Acc::Target>>, ActionState, ErrorType> {
       $action_fn_name_with_options(options_builder(IntegerLiteralBodyOptions::default()))
@@ -185,7 +181,7 @@ macro_rules! generate_integer_literal_functions {
     pub fn $action_fn_name_with_options<
       ActionState,
       ErrorType,
-      Acc: IntegerLiteralBodyAccumulator + 'static,
+      Acc: Accumulator<char> + 'static,
     >(
       options: IntegerLiteralBodyOptions<Acc>,
     ) -> Action<MockTokenKind<IntegerLiteralData<Acc::Target>>, ActionState, ErrorType> {

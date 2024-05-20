@@ -1,27 +1,26 @@
-/// Accumulate non-numeric-separator chars from an integer literal body
-/// and emit the value of the body. See [`IntegerLiteralBodyStringAccumulator`].
-pub trait IntegerLiteralBodyAccumulator: Clone {
+/// Accumulate values and emit a result.
+pub trait Accumulator<T>: Clone {
   type Target: Default;
 
-  /// Update the accumulator with a non-numeric-separator [`char`].
-  fn update(&mut self, c: &char); // TODO: batch update with a String instead of one char?
-  /// Consume the accumulator and emit the value of the body.
+  /// Update the accumulator with a value.
+  fn update(&mut self, t: &T);
+  /// Consume the accumulator and emit the result.
   fn emit(self) -> Self::Target;
 }
 
-/// A mock [`IntegerLiteralBodyAccumulator`] that does nothing.
-/// This should only be used when
-/// [`IntegerLiteralBodyOptions::acc`](super::IntegerLiteralBodyOptions::acc)
-/// is [`None`].
+/// A mock [`Accumulator`] that does nothing.
+/// This should only be used in `Option<Accumulator>` to represent [`None`].
+/// # Panics
+/// Panics if any [`Accumulator`] method is called.
 #[derive(Clone, Debug)]
-pub struct MockIntegerLiteralBodyAccumulator;
-impl IntegerLiteralBodyAccumulator for MockIntegerLiteralBodyAccumulator {
+pub struct MockAccumulator;
+impl<T> Accumulator<T> for MockAccumulator {
   type Target = ();
-  fn update(&mut self, _c: &char) {
-    unreachable!("MockIntegerLiteralBodyAccumulator::update should never be called")
+  fn update(&mut self, _: &T) {
+    unreachable!("MockAccumulator::update should never be called")
   }
   fn emit(self) -> Self::Target {
-    unreachable!("MockIntegerLiteralBodyAccumulator::emit should never be called")
+    unreachable!("MockAccumulator::emit should never be called")
   }
 }
 
@@ -30,8 +29,9 @@ impl IntegerLiteralBodyAccumulator for MockIntegerLiteralBodyAccumulator {
 /// E.g. the value of `"123_456"` is `"123456"`.
 #[derive(Clone, Debug, Default)]
 pub struct IntegerLiteralBodyStringAccumulator(String);
-impl IntegerLiteralBodyAccumulator for IntegerLiteralBodyStringAccumulator {
+impl Accumulator<char> for IntegerLiteralBodyStringAccumulator {
   type Target = String;
+  // TODO: batch update with a String instead of one char?
   fn update(&mut self, c: &char) {
     self.0.push(*c);
   }
@@ -46,16 +46,16 @@ mod tests {
 
   #[should_panic]
   #[test]
-  fn mock_integer_literal_body_accumulator_update() {
-    let mut acc = MockIntegerLiteralBodyAccumulator;
+  fn mock_accumulator_update() {
+    let mut acc = MockAccumulator;
     acc.update(&'a');
   }
 
   #[should_panic]
   #[test]
-  fn mock_integer_literal_body_accumulator_emit() {
-    let acc = MockIntegerLiteralBodyAccumulator;
-    acc.emit();
+  fn mock_accumulator_emit() {
+    let acc = MockAccumulator;
+    Accumulator::<()>::emit(acc);
   }
 
   #[test]

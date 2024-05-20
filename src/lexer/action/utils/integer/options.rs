@@ -1,4 +1,4 @@
-use super::MockIntegerLiteralBodyAccumulator;
+use super::MockAccumulator;
 
 pub struct IntegerLiteralBodyOptions<Acc> {
   /// See [`Self::sep`].
@@ -7,7 +7,7 @@ pub struct IntegerLiteralBodyOptions<Acc> {
   pub acc: Option<Acc>,
 }
 
-impl Default for IntegerLiteralBodyOptions<MockIntegerLiteralBodyAccumulator> {
+impl Default for IntegerLiteralBodyOptions<MockAccumulator> {
   fn default() -> Self {
     Self {
       sep: None,
