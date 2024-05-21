@@ -203,7 +203,7 @@ macro_rules! generate_integer_literal_functions {
       integer_literal_body_with_options(rest, $is_body, options)
     }
 
-    /// Create an [`Action`] that tries to match the integer literal body
+    /// Create an [`Action`] that tries to match the integer literal
     /// in the rest of the input text
     /// with the default [`IntegerLiteralBodyOptions`].
     pub fn $action_fn_name<ActionState, ErrorType>(
@@ -211,7 +211,7 @@ macro_rules! generate_integer_literal_functions {
       $action_fn_name_with_options(IntegerLiteralBodyOptions::default())
     }
 
-    /// Create an [`Action`] that tries to match the integer literal body
+    /// Create an [`Action`] that tries to match the integer literal
     /// in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
     pub fn $action_fn_name_with<
@@ -231,7 +231,7 @@ macro_rules! generate_integer_literal_functions {
       $action_fn_name_with_options(options_builder(IntegerLiteralBodyOptions::default()))
     }
 
-    /// Create an [`Action`] that tries to match the integer literal body
+    /// Create an [`Action`] that tries to match the integer literal
     /// in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
     pub fn $action_fn_name_with_options<
