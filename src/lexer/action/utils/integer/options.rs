@@ -1,4 +1,5 @@
-use super::{IntegerLiteralBodySeparatorAccumulator, MockAccumulator};
+use super::MockAccumulator;
+use crate::lexer::action::VecAccumulator;
 
 pub struct IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// See [`Self::separator`].
@@ -24,22 +25,19 @@ impl<SepAcc, ValueAcc> IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// # use whitehole::lexer::action::IntegerLiteralBodyOptions;
   /// let options = IntegerLiteralBodyOptions::default().separator('_');
   /// ```
-  pub fn separator(
-    self,
-    separator: char,
-  ) -> IntegerLiteralBodyOptions<IntegerLiteralBodySeparatorAccumulator, ValueAcc> {
+  pub fn separator(self, separator: char) -> IntegerLiteralBodyOptions<VecAccumulator, ValueAcc> {
     IntegerLiteralBodyOptions {
-      separator: Some((separator, IntegerLiteralBodySeparatorAccumulator::default())),
+      separator: Some((separator, VecAccumulator::default())),
       value: self.value,
     }
   }
 
-  /// An accumulator to accumulate the integer literal body's value.
+  /// Set an accumulator to accumulate the integer literal body's value.
   /// Default is [`None`].
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::action::{IntegerLiteralBodyOptions, IntegerLiteralBodyStringValueAccumulator};
-  /// let options = IntegerLiteralBodyOptions::default().value(IntegerLiteralBodyStringValueAccumulator::default());
+  /// # use whitehole::lexer::action::{IntegerLiteralBodyOptions, StringAccumulator};
+  /// let options = IntegerLiteralBodyOptions::default().value(StringAccumulator::default());
   /// ```
   pub fn value<NewAcc>(self, acc: NewAcc) -> IntegerLiteralBodyOptions<SepAcc, NewAcc> {
     IntegerLiteralBodyOptions {

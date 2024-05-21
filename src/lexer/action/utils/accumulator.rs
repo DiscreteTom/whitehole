@@ -24,6 +24,33 @@ impl<T> Accumulator<T> for MockAccumulator {
   }
 }
 
+/// Accumulate values into a [`Vec`] and emit the [`Vec`].
+#[derive(Clone, Debug, Default)]
+pub struct VecAccumulator(Vec<usize>);
+impl Accumulator<usize> for VecAccumulator {
+  type Target = Vec<usize>;
+  fn update(&mut self, c: &usize) {
+    self.0.push(*c);
+  }
+  fn emit(self) -> Self::Target {
+    self.0
+  }
+}
+
+/// Accumulate values into a [`String`] and emit the [`String`].
+#[derive(Clone, Debug, Default)]
+pub struct StringAccumulator(String);
+impl Accumulator<char> for StringAccumulator {
+  type Target = String;
+  // TODO: batch update with a String instead of one char?
+  fn update(&mut self, c: &char) {
+    self.0.push(*c);
+  }
+  fn emit(self) -> Self::Target {
+    self.0
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -40,5 +67,23 @@ mod tests {
   fn mock_accumulator_emit() {
     let acc = MockAccumulator;
     Accumulator::<()>::emit(acc);
+  }
+
+  #[test]
+  fn vec_accumulator() {
+    let mut acc = VecAccumulator::default();
+    acc.update(&1);
+    acc.update(&2);
+    acc.update(&3);
+    assert_eq!(acc.emit(), vec![1, 2, 3]);
+  }
+
+  #[test]
+  fn string_accumulator() {
+    let mut acc = StringAccumulator::default();
+    acc.update(&'1');
+    acc.update(&'2');
+    acc.update(&'3');
+    assert_eq!(acc.emit(), "123");
   }
 }
