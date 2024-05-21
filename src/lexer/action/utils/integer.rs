@@ -309,3 +309,191 @@ generate_integer_literal_functions!(
   |c| c.is_ascii_hexdigit(),
   ['0']
 );
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lexer::action::{ActionInput, StringAccumulator};
+
+  fn assert_default_integer_literal_body(
+    (digested, data): (usize, IntegerLiteralData<(), ()>),
+    expect_digested: usize,
+  ) {
+    assert_eq!(digested, expect_digested);
+    assert_eq!(data.separators, ());
+    assert_eq!(data.value, ());
+  }
+
+  #[test]
+  fn test_default_integer_literal_body() {
+    assert_default_integer_literal_body(binary_integer_literal_body("zzz"), 0);
+    assert_default_integer_literal_body(binary_integer_literal_body("101"), 3);
+    assert_default_integer_literal_body(binary_integer_literal_body("123"), 1);
+    assert_default_integer_literal_body(octal_integer_literal_body("zzz"), 0);
+    assert_default_integer_literal_body(octal_integer_literal_body("707"), 3);
+    assert_default_integer_literal_body(octal_integer_literal_body("789"), 1);
+    assert_default_integer_literal_body(decimal_integer_literal_body("zzz"), 0);
+    assert_default_integer_literal_body(decimal_integer_literal_body("909"), 3);
+    assert_default_integer_literal_body(decimal_integer_literal_body("9ab"), 1);
+    assert_default_integer_literal_body(hexadecimal_integer_literal_body("zzz"), 0);
+    assert_default_integer_literal_body(hexadecimal_integer_literal_body("f0f"), 3);
+    assert_default_integer_literal_body(hexadecimal_integer_literal_body("F0F"), 3);
+    assert_default_integer_literal_body(hexadecimal_integer_literal_body("fgh"), 1);
+  }
+
+  fn assert_integer_literal_body(
+    (digested, data): (usize, IntegerLiteralData<Vec<usize>, String>),
+    expect_value: &str,
+  ) {
+    assert_eq!(digested, 4);
+    assert_eq!(data.separators, vec![1]);
+    assert_eq!(data.value, expect_value.to_string());
+  }
+
+  #[test]
+  fn test_integer_literal_body_with_options() {
+    let option_builder = |o: IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>| {
+      o.separator('_').value(StringAccumulator::default())
+    };
+    let option = IntegerLiteralBodyOptions::default()
+      .separator('_')
+      .value(StringAccumulator::default());
+    assert_integer_literal_body(
+      binary_integer_literal_body_with("1_01", &option_builder),
+      "101",
+    );
+    assert_integer_literal_body(
+      binary_integer_literal_body_with_options("1_01", &option),
+      "101",
+    );
+    assert_integer_literal_body(
+      octal_integer_literal_body_with("7_07", &option_builder),
+      "707",
+    );
+    assert_integer_literal_body(
+      octal_integer_literal_body_with_options("7_07", &option),
+      "707",
+    );
+    assert_integer_literal_body(
+      decimal_integer_literal_body_with("9_09", &option_builder),
+      "909",
+    );
+    assert_integer_literal_body(
+      decimal_integer_literal_body_with_options("9_09", &option),
+      "909",
+    );
+    assert_integer_literal_body(
+      hexadecimal_integer_literal_body_with("f_0f", &option_builder),
+      "f0f",
+    );
+    assert_integer_literal_body(
+      hexadecimal_integer_literal_body_with_options("f_0f", &option),
+      "f0f",
+    );
+  }
+
+  fn assert_default_integer_literal_action(
+    action: Action<MockTokenKind<IntegerLiteralData<(), ()>>>,
+    s: &str,
+    expect_digested: usize,
+  ) {
+    let res = action
+      .exec(&mut ActionInput::new(s, 0, &mut ()).unwrap())
+      .unwrap();
+    assert_eq!(res.digested, expect_digested);
+  }
+
+  fn assert_reject(action: Action<MockTokenKind<IntegerLiteralData<(), ()>>>, s: &str) {
+    assert!(action
+      .exec(&mut ActionInput::new(s, 0, &mut ()).unwrap())
+      .is_none());
+  }
+
+  #[test]
+  fn test_default_integer_literal_actions() {
+    // wrong prefix
+    assert_reject(binary_integer_literal(), "000");
+    assert_reject(octal_integer_literal(), "000");
+    assert_reject(hexadecimal_integer_literal(), "000");
+
+    // prefix only
+    assert_default_integer_literal_action(binary_integer_literal(), "0b", 2);
+    assert_default_integer_literal_action(octal_integer_literal(), "0o", 2);
+    assert_default_integer_literal_action(hexadecimal_integer_literal(), "0x", 2);
+
+    // prefix + invalid char
+    assert_default_integer_literal_action(binary_integer_literal(), "0bz", 2);
+    assert_default_integer_literal_action(octal_integer_literal(), "0oz", 2);
+    assert_default_integer_literal_action(hexadecimal_integer_literal(), "0xz", 2);
+
+    // valid content
+    assert_default_integer_literal_action(binary_integer_literal(), "0b101z", 5);
+    assert_default_integer_literal_action(octal_integer_literal(), "0o707z", 5);
+    assert_default_integer_literal_action(decimal_integer_literal(), "909z", 3);
+    assert_default_integer_literal_action(hexadecimal_integer_literal(), "0xf0fz", 5);
+  }
+
+  fn assert_integer_literal_action(
+    action: Action<MockTokenKind<IntegerLiteralData<Vec<usize>, String>>>,
+    s: &str,
+    expect_value: &str,
+  ) {
+    let res = action
+      .exec(&mut ActionInput::new(s, 0, &mut ()).unwrap())
+      .unwrap();
+    assert_eq!(res.digested, 6);
+    assert_eq!(res.kind.data.separators, vec![1]);
+    assert_eq!(res.kind.data.value, expect_value);
+  }
+
+  #[test]
+  fn test_integer_literal_actions() {
+    let option_builder = |o: IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>| {
+      o.separator('_').value(StringAccumulator::default())
+    };
+    let option = IntegerLiteralBodyOptions::default()
+      .separator('_')
+      .value(StringAccumulator::default());
+
+    assert_integer_literal_action(
+      binary_integer_literal_with(&option_builder),
+      "0b1_01z",
+      "101",
+    );
+    assert_integer_literal_action(
+      binary_integer_literal_with_options(option.clone()),
+      "0b1_01z",
+      "101",
+    );
+    assert_integer_literal_action(
+      octal_integer_literal_with(&option_builder),
+      "0o7_07z",
+      "707",
+    );
+    assert_integer_literal_action(
+      octal_integer_literal_with_options(option.clone()),
+      "0o7_07z",
+      "707",
+    );
+    assert_integer_literal_action(
+      decimal_integer_literal_with(&option_builder),
+      "9_0909z",
+      "90909",
+    );
+    assert_integer_literal_action(
+      decimal_integer_literal_with_options(option.clone()),
+      "9_0909z",
+      "90909",
+    );
+    assert_integer_literal_action(
+      hexadecimal_integer_literal_with(&option_builder),
+      "0xf_0fz",
+      "f0f",
+    );
+    assert_integer_literal_action(
+      hexadecimal_integer_literal_with_options(option.clone()),
+      "0xf_0fz",
+      "f0f",
+    );
+  }
+}
