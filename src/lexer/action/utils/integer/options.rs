@@ -1,6 +1,7 @@
 use super::MockAccumulator;
 use crate::lexer::action::VecAccumulator;
 
+#[derive(Clone)]
 pub struct IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// See [`Self::separator`].
   pub separator: Option<(char, SepAcc)>,
