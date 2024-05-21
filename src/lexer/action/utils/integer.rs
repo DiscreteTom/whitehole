@@ -14,7 +14,14 @@ use std::collections::HashSet;
 
 /// Try to match an integer literal body in the rest of the input text
 /// with the default [`IntegerLiteralBodyOptions`].
+/// E.g. in `0x123`, the body is `123`.
 /// Return how many bytes are digested and the integer literal data.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::integer_literal_body;
+/// let (digested, _) = integer_literal_body("123", |c| c.is_ascii_digit());
+/// assert_eq!(digested, 3);
+/// ```
 pub fn integer_literal_body(
   rest: &str,
   is_body: impl Fn(&char) -> bool,
@@ -24,7 +31,20 @@ pub fn integer_literal_body(
 
 /// Try to match an integer literal body in the rest of the input text
 /// with the given [`IntegerLiteralBodyOptions`].
+/// E.g. in `0x123`, the body is `123`.
 /// Return how many bytes are digested and the integer literal data.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{integer_literal_body_with, StringAccumulator};
+/// let (digested, data) = integer_literal_body_with(
+///   "1_234",
+///   |c| c.is_ascii_digit(),
+///   |o| o.separator('_').value(StringAccumulator::default())
+/// );
+/// assert_eq!(digested, 5);
+/// assert_eq!(data.separators, vec![1]);
+/// assert_eq!(data.value, "1234".to_string());
+/// ```
 pub fn integer_literal_body_with<SepAcc: Accumulator<usize>, ValueAcc: Accumulator<char>>(
   rest: &str,
   is_body: impl Fn(&char) -> bool,
@@ -41,7 +61,20 @@ pub fn integer_literal_body_with<SepAcc: Accumulator<usize>, ValueAcc: Accumulat
 
 /// Try to match an integer literal body in the rest of the input text
 /// with the given [`IntegerLiteralBodyOptions`].
+/// E.g. in `0x123`, the body is `123`.
 /// Return how many bytes are digested and the integer literal data.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{integer_literal_body_with_options, IntegerLiteralBodyOptions, StringAccumulator};
+/// let (digested, data) = integer_literal_body_with_options(
+///   "1_234",
+///   |c| c.is_ascii_digit(),
+///   &IntegerLiteralBodyOptions::default().separator('_').value(StringAccumulator::default())
+/// );
+/// assert_eq!(digested, 5);
+/// assert_eq!(data.separators, vec![1]);
+/// assert_eq!(data.value, "1234".to_string());
+/// ```
 pub fn integer_literal_body_with_options<
   SepAcc: Accumulator<usize>,
   ValueAcc: Accumulator<char>,
