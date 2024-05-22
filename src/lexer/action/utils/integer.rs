@@ -352,42 +352,42 @@ mod tests {
 
   #[test]
   fn test_integer_literal_body_with_options() {
-    let option_builder = |o: IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>| {
+    let options_builder = |o: IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>| {
       o.separator('_').value(StringAccumulator::default())
     };
-    let option = IntegerLiteralBodyOptions::default()
+    let options = IntegerLiteralBodyOptions::default()
       .separator('_')
       .value(StringAccumulator::default());
     assert_integer_literal_body(
-      binary_integer_literal_body_with("1_01", &option_builder),
+      binary_integer_literal_body_with("1_01", &options_builder),
       "101",
     );
     assert_integer_literal_body(
-      binary_integer_literal_body_with_options("1_01", &option),
+      binary_integer_literal_body_with_options("1_01", &options),
       "101",
     );
     assert_integer_literal_body(
-      octal_integer_literal_body_with("7_07", &option_builder),
+      octal_integer_literal_body_with("7_07", &options_builder),
       "707",
     );
     assert_integer_literal_body(
-      octal_integer_literal_body_with_options("7_07", &option),
+      octal_integer_literal_body_with_options("7_07", &options),
       "707",
     );
     assert_integer_literal_body(
-      decimal_integer_literal_body_with("9_09", &option_builder),
+      decimal_integer_literal_body_with("9_09", &options_builder),
       "909",
     );
     assert_integer_literal_body(
-      decimal_integer_literal_body_with_options("9_09", &option),
+      decimal_integer_literal_body_with_options("9_09", &options),
       "909",
     );
     assert_integer_literal_body(
-      hexadecimal_integer_literal_body_with("f_0f", &option_builder),
+      hexadecimal_integer_literal_body_with("f_0f", &options_builder),
       "f0f",
     );
     assert_integer_literal_body(
-      hexadecimal_integer_literal_body_with_options("f_0f", &option),
+      hexadecimal_integer_literal_body_with_options("f_0f", &options),
       "f0f",
     );
   }
@@ -448,50 +448,50 @@ mod tests {
 
   #[test]
   fn test_integer_literal_actions() {
-    let option_builder = |o: IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>| {
+    let options_builder = |o: IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>| {
       o.separator('_').value(StringAccumulator::default())
     };
-    let option = IntegerLiteralBodyOptions::default()
+    let options = IntegerLiteralBodyOptions::default()
       .separator('_')
       .value(StringAccumulator::default());
 
     assert_integer_literal_action(
-      binary_integer_literal_with(&option_builder),
+      binary_integer_literal_with(&options_builder),
       "0b1_01z",
       "101",
     );
     assert_integer_literal_action(
-      binary_integer_literal_with_options(option.clone()),
+      binary_integer_literal_with_options(options.clone()),
       "0b1_01z",
       "101",
     );
     assert_integer_literal_action(
-      octal_integer_literal_with(&option_builder),
+      octal_integer_literal_with(&options_builder),
       "0o7_07z",
       "707",
     );
     assert_integer_literal_action(
-      octal_integer_literal_with_options(option.clone()),
+      octal_integer_literal_with_options(options.clone()),
       "0o7_07z",
       "707",
     );
     assert_integer_literal_action(
-      decimal_integer_literal_with(&option_builder),
+      decimal_integer_literal_with(&options_builder),
       "9_0909z",
       "90909",
     );
     assert_integer_literal_action(
-      decimal_integer_literal_with_options(option.clone()),
+      decimal_integer_literal_with_options(options.clone()),
       "9_0909z",
       "90909",
     );
     assert_integer_literal_action(
-      hexadecimal_integer_literal_with(&option_builder),
+      hexadecimal_integer_literal_with(&options_builder),
       "0xf_0fz",
       "f0f",
     );
     assert_integer_literal_action(
-      hexadecimal_integer_literal_with_options(option.clone()),
+      hexadecimal_integer_literal_with_options(options.clone()),
       "0xf_0fz",
       "f0f",
     );
