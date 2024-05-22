@@ -496,4 +496,36 @@ mod tests {
       "f0f",
     );
   }
+
+  #[test]
+  fn with_suffix() {
+    // this is an example of customize an action with literal body utils
+    let action_factory = || {
+      let mut a = simple_with_data(|input| {
+        let prefix = "0B";
+        let suffix = "n"; // just like the big int literal in js/ts
+
+        // check prefix
+        if input.rest().starts_with(prefix) {
+          // eat body
+          let (digested, data) = binary_integer_literal_body(&input.rest()[prefix.len()..]);
+          // check suffix
+          if input.rest()[prefix.len() + digested..].starts_with(suffix) {
+            Some((prefix.len() + digested + suffix.len(), data))
+          } else {
+            None
+          }
+        } else {
+          None
+        }
+      });
+      a.head_matcher = Some(HeadMatcher::OneOf(HashSet::from(['0'])));
+      a
+    };
+    assert_default_integer_literal_action(action_factory(), "0B101n", 6);
+    // missing suffix
+    assert_reject(action_factory(), "0B101");
+    // wrong prefix
+    assert_reject(action_factory(), "0b101n");
+  }
 }
