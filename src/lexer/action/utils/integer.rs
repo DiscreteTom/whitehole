@@ -353,10 +353,11 @@ mod tests {
   #[test]
   fn test_integer_literal_body_with_options() {
     let options_builder = |o: IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>| {
-      o.separator('_').value(StringAccumulator::default())
+      o.separator_with(|s| s.acc_to_vec())
+        .value(StringAccumulator::default())
     };
     let options = IntegerLiteralBodyOptions::default()
-      .separator('_')
+      .separator_with(|s| s.acc_to_vec())
       .value(StringAccumulator::default());
     assert_integer_literal_body(
       binary_integer_literal_body_with("1_01", &options_builder),
@@ -449,10 +450,11 @@ mod tests {
   #[test]
   fn test_integer_literal_actions() {
     let options_builder = |o: IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>| {
-      o.separator('_').value(StringAccumulator::default())
+      o.separator_with(|s| s.acc_to_vec())
+        .value(StringAccumulator::default())
     };
     let options = IntegerLiteralBodyOptions::default()
-      .separator('_')
+      .separator_with(|s| s.acc_to_vec())
       .value(StringAccumulator::default());
 
     assert_integer_literal_action(
