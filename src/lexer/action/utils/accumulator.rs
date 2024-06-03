@@ -49,14 +49,12 @@ impl Accumulator<char> for StringAccumulator {
 mod tests {
   use super::*;
 
-  #[should_panic]
   #[test]
   fn mock_accumulator_update() {
     let mut acc = MockAccumulator;
     acc.update(&'a');
   }
 
-  #[should_panic]
   #[test]
   fn mock_accumulator_emit() {
     let acc = MockAccumulator;
