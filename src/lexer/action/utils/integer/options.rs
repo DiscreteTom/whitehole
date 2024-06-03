@@ -1,5 +1,5 @@
 use super::MockAccumulator;
-use crate::lexer::action::VecAccumulator;
+use crate::lexer::action::{StringAccumulator, VecAccumulator};
 
 #[derive(Clone, Debug)]
 pub struct NumericSeparatorOptions<Acc> {
@@ -117,5 +117,10 @@ impl<SepAcc, ValueAcc> IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
       separator: self.separator,
       value: Some(acc),
     }
+  }
+
+  /// Set [`Self::value`] to [`StringAccumulator`].
+  pub fn value_to_string(self) -> IntegerLiteralBodyOptions<SepAcc, StringAccumulator> {
+    self.value(StringAccumulator::default())
   }
 }
