@@ -9,19 +9,13 @@ pub trait Accumulator<T>: Clone {
 }
 
 /// A mock [`Accumulator`] that does nothing.
-/// This should only be used in `Option<Accumulator>` to represent [`None`].
-/// # Panics
-/// Panics if any [`Accumulator`] method is called.
-#[derive(Clone, Debug)]
+/// Useful if you don't need to accumulate anything.
+#[derive(Clone, Debug, Default)]
 pub struct MockAccumulator;
 impl<T> Accumulator<T> for MockAccumulator {
   type Target = ();
-  fn update(&mut self, _: &T) {
-    unreachable!("MockAccumulator::update should never be called")
-  }
-  fn emit(self) -> Self::Target {
-    unreachable!("MockAccumulator::emit should never be called")
-  }
+  fn update(&mut self, _: &T) {}
+  fn emit(self) -> Self::Target {}
 }
 
 /// Accumulate values into a [`Vec`] and emit the [`Vec`].
