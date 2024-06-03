@@ -35,11 +35,11 @@ pub fn integer_literal_body(
 /// Return how many bytes are digested and the integer literal data.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::{integer_literal_body_with, StringAccumulator};
+/// # use whitehole::lexer::action::{integer_literal_body_with};
 /// let (digested, data) = integer_literal_body_with(
 ///   "1_234",
 ///   |c| c.is_ascii_digit(),
-///   |o| o.separator('_').value(StringAccumulator::default())
+///   |o| o.separator_with(|s| s.acc_to_vec()).value_to_string()
 /// );
 /// assert_eq!(digested, 5);
 /// assert_eq!(data.separators, vec![1]);
@@ -65,11 +65,13 @@ pub fn integer_literal_body_with<SepAcc: Accumulator<usize>, ValueAcc: Accumulat
 /// Return how many bytes are digested and the integer literal data.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::{integer_literal_body_with_options, IntegerLiteralBodyOptions, StringAccumulator};
+/// # use whitehole::lexer::action::{integer_literal_body_with_options, IntegerLiteralBodyOptions};
 /// let (digested, data) = integer_literal_body_with_options(
 ///   "1_234",
 ///   |c| c.is_ascii_digit(),
-///   &IntegerLiteralBodyOptions::default().separator('_').value(StringAccumulator::default())
+///   &IntegerLiteralBodyOptions::default()
+///     .separator_with(|s| s.acc_to_vec())
+///     .value_to_string()
 /// );
 /// assert_eq!(digested, 5);
 /// assert_eq!(data.separators, vec![1]);
@@ -313,7 +315,7 @@ generate_integer_literal_functions!(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::{ActionInput, StringAccumulator};
+  use crate::lexer::action::ActionInput;
 
   fn assert_default_integer_literal_body(
     (digested, data): (usize, IntegerLiteralData<(), ()>),
@@ -353,12 +355,11 @@ mod tests {
   #[test]
   fn test_integer_literal_body_with_options() {
     let options_builder = |o: IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>| {
-      o.separator_with(|s| s.acc_to_vec())
-        .value(StringAccumulator::default())
+      o.separator_with(|s| s.acc_to_vec()).value_to_string()
     };
     let options = IntegerLiteralBodyOptions::default()
       .separator_with(|s| s.acc_to_vec())
-      .value(StringAccumulator::default());
+      .value_to_string();
     assert_integer_literal_body(
       binary_integer_literal_body_with("1_01", &options_builder),
       "101",
@@ -450,12 +451,11 @@ mod tests {
   #[test]
   fn test_integer_literal_actions() {
     let options_builder = |o: IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>| {
-      o.separator_with(|s| s.acc_to_vec())
-        .value(StringAccumulator::default())
+      o.separator_with(|s| s.acc_to_vec()).value_to_string()
     };
     let options = IntegerLiteralBodyOptions::default()
       .separator_with(|s| s.acc_to_vec())
-      .value(StringAccumulator::default());
+      .value_to_string();
 
     assert_integer_literal_action(
       binary_integer_literal_with(&options_builder),
