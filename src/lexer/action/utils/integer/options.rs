@@ -2,9 +2,15 @@ use super::MockAccumulator;
 use crate::lexer::action::VecAccumulator;
 
 #[derive(Clone)]
+pub struct NumericSeparatorOptions<Acc> {
+  pub ch: char,
+  pub acc: Acc,
+}
+
+#[derive(Clone)]
 pub struct IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// See [`Self::separator`].
-  pub separator: Option<(char, SepAcc)>,
+  pub separator: Option<NumericSeparatorOptions<SepAcc>>,
   /// See [`Self::value`].
   pub value: Option<ValueAcc>,
 }
@@ -28,7 +34,10 @@ impl<SepAcc, ValueAcc> IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// ```
   pub fn separator(self, separator: char) -> IntegerLiteralBodyOptions<VecAccumulator, ValueAcc> {
     IntegerLiteralBodyOptions {
-      separator: Some((separator, VecAccumulator::default())),
+      separator: Some(NumericSeparatorOptions {
+        ch: separator,
+        acc: VecAccumulator::default(),
+      }),
       value: self.value,
     }
   }

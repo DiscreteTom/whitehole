@@ -87,8 +87,8 @@ pub fn integer_literal_body_with_options<
 
   macro_rules! check_sep {
     ($c:expr, $sep:expr) => {
-      if $c == $sep.0 {
-        $sep.1.update(&digested);
+      if $c == $sep.ch {
+        $sep.acc.update(&digested);
         digested += $c.len_utf8();
         continue;
       }
@@ -122,7 +122,7 @@ pub fn integer_literal_body_with_options<
         break;
       }
       IntegerLiteralData {
-        separators: sep.1.emit(),
+        separators: sep.acc.emit(),
         value: acc.emit(),
       }
     }
@@ -133,7 +133,7 @@ pub fn integer_literal_body_with_options<
         break;
       }
       IntegerLiteralData {
-        separators: sep.1.emit(),
+        separators: sep.acc.emit(),
         value: ValueAcc::Target::default(),
       }
     }
