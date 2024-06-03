@@ -1,13 +1,15 @@
 use super::MockAccumulator;
 use crate::lexer::action::VecAccumulator;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NumericSeparatorOptions<Acc> {
+  /// The character used as a separator.
   pub ch: char,
+  /// The accumulator to accumulate the index of numeric separators.
   pub acc: Acc,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// See [`Self::separator`].
   pub separator: Option<NumericSeparatorOptions<SepAcc>>,
