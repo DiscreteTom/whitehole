@@ -66,7 +66,7 @@ pub fn integer_literal_body_default(rest: &str, is_body: impl Fn(&char) -> bool)
 /// Return how many bytes are digested and the integer literal data.
 /// # Caveat
 /// If the matched content is separators only, no bytes will be digested
-/// (`return.0` will be set to `0`), but the data (`return.1`) will not be cleared.
+/// (`return.0` will be set to `0`).
 /// E.g. if the separator char is `'_'`, then
 /// `___` won't be treated as a valid integer literal body.
 ///
@@ -122,7 +122,7 @@ pub fn integer_literal_body_with<
 /// E.g. in `0x1_23`, the body is `1_23`, the value is `123`, 4 bytes will be digested.
 /// # Caveat
 /// If the matched content is separators only, no bytes will be digested
-/// (`return.0` will be set to `0`), but the data (`return.1`) will not be cleared.
+/// (`return.0` will be set to `0`).
 /// E.g. if the separator char is `'_'`, then
 /// `___` won't be treated as a valid integer literal body.
 ///
