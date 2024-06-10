@@ -167,7 +167,7 @@ impl<Sep, IntAcc, FracAcc, ExpAcc> FloatLiteralOptions<Sep, IntAcc, FracAcc, Exp
     integer: NewIntAcc,
   ) -> FloatLiteralOptions<Sep, NewIntAcc, FracAcc, ExpAcc> {
     FloatLiteralOptions {
-      integer: integer,
+      integer,
       fraction: self.fraction,
       exponent: self.exponent,
       separator: self.separator,
