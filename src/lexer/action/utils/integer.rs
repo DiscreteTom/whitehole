@@ -13,25 +13,41 @@ use crate::lexer::{
 use std::collections::HashSet;
 
 /// Try to match an integer literal body in the rest of the input text
-/// with the default [`IntegerLiteralBodyOptions`].
-/// E.g. in `0x123`, the body is `123`.
-/// Return how many bytes are digested and the integer literal data.
+/// with the default separator (`'_'`) and no accumulator.
+/// Return how many bytes are digested.
+/// E.g. in `0x1_23`, the body is `1_23`, 4 bytes will be digested.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::integer_literal_body;
-/// let (digested, _) = integer_literal_body("123", |c| c.is_ascii_digit());
+/// let digested = integer_literal_body("1_23", |c| c.is_ascii_digit());
+/// assert_eq!(digested, 4);
+/// ```
+pub fn integer_literal_body(rest: &str, is_body: impl Fn(&char) -> bool) -> usize {
+  integer_literal_body_with_options(
+    rest,
+    is_body,
+    IntegerLiteralBodyOptions::default().default_separator(),
+  )
+  .0
+}
+
+/// Try to match an integer literal body in the rest of the input text
+/// with the default [`IntegerLiteralBodyOptions`] (no separator, no accumulator).
+/// Return how many bytes are digested.
+/// E.g. in `0x123`, the body is `123`, 3 bytes will be digested.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::integer_literal_body_default;
+/// let digested = integer_literal_body_default("123", |c| c.is_ascii_digit());
 /// assert_eq!(digested, 3);
 /// ```
-pub fn integer_literal_body(
-  rest: &str,
-  is_body: impl Fn(&char) -> bool,
-) -> (usize, IntegerLiteralData<(), ()>) {
-  integer_literal_body_with_options(rest, is_body, &IntegerLiteralBodyOptions::default())
+pub fn integer_literal_body_default(rest: &str, is_body: impl Fn(&char) -> bool) -> usize {
+  integer_literal_body_with_options(rest, is_body, IntegerLiteralBodyOptions::default()).0
 }
 
 /// Try to match an integer literal body in the rest of the input text
 /// with the given [`IntegerLiteralBodyOptions`].
-/// E.g. in `0x123`, the body is `123`.
+/// E.g. in `0x1_23`, the body is `1_23`, the value is `123`, 4 bytes will be digested.
 /// Return how many bytes are digested and the integer literal data.
 /// # Examples
 /// ```
@@ -39,29 +55,32 @@ pub fn integer_literal_body(
 /// let (digested, data) = integer_literal_body_with(
 ///   "1_234",
 ///   |c| c.is_ascii_digit(),
-///   |o| o.separator_with(|s| s.acc_to_vec()).value_to_string()
+///   |o| o.separator_with(|s| s.ch('_').acc_to_vec()).value_to_string()
 /// );
 /// assert_eq!(digested, 5);
 /// assert_eq!(data.separators, vec![1]);
 /// assert_eq!(data.value, "1234".to_string());
 /// ```
-pub fn integer_literal_body_with<SepAcc: Accumulator<usize>, ValueAcc: Accumulator<char>>(
+pub fn integer_literal_body_with<
+  SepAcc: NumericSeparatorAccumulator,
+  ValueAcc: Accumulator<char>,
+>(
   rest: &str,
   is_body: impl Fn(&char) -> bool,
   options_builder: impl FnOnce(
-    IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>,
+    IntegerLiteralBodyOptions<MockNumericSeparatorAccumulator, MockAccumulator>,
   ) -> IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
 ) -> (usize, IntegerLiteralData<SepAcc::Target, ValueAcc::Target>) {
   integer_literal_body_with_options(
     rest,
     is_body,
-    &options_builder(IntegerLiteralBodyOptions::default()),
+    options_builder(IntegerLiteralBodyOptions::default()),
   )
 }
 
 /// Try to match an integer literal body in the rest of the input text
 /// with the given [`IntegerLiteralBodyOptions`].
-/// E.g. in `0x123`, the body is `123`.
+/// E.g. in `0x1_23`, the body is `1_23`, the value is `123`, 4 bytes will be digested.
 /// Return how many bytes are digested and the integer literal data.
 /// # Examples
 /// ```
@@ -69,8 +88,8 @@ pub fn integer_literal_body_with<SepAcc: Accumulator<usize>, ValueAcc: Accumulat
 /// let (digested, data) = integer_literal_body_with_options(
 ///   "1_234",
 ///   |c| c.is_ascii_digit(),
-///   &IntegerLiteralBodyOptions::default()
-///     .separator_with(|s| s.acc_to_vec())
+///   IntegerLiteralBodyOptions::default()
+///     .separator_with(|s| s.ch('_').acc_to_vec())
 ///     .value_to_string()
 /// );
 /// assert_eq!(digested, 5);
@@ -78,98 +97,50 @@ pub fn integer_literal_body_with<SepAcc: Accumulator<usize>, ValueAcc: Accumulat
 /// assert_eq!(data.value, "1234".to_string());
 /// ```
 pub fn integer_literal_body_with_options<
-  SepAcc: Accumulator<usize>,
+  SepAcc: NumericSeparatorAccumulator,
   ValueAcc: Accumulator<char>,
 >(
   rest: &str,
   is_body: impl Fn(&char) -> bool,
-  options: &IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
+  mut options: IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
 ) -> (usize, IntegerLiteralData<SepAcc::Target, ValueAcc::Target>) {
   let mut digested = 0;
 
-  macro_rules! check_sep {
-    ($c:expr, $sep:expr) => {
-      if $c == $sep.ch {
-        $sep.acc.update(&digested);
-        digested += $c.len_utf8();
-        continue;
-      }
-    };
-  }
-  macro_rules! proc_body {
-    ($c:expr) => {
-      if is_body(&$c) {
-        digested += $c.len_utf8();
-        continue;
-      }
-    };
-  }
-  macro_rules! proc_body_acc {
-    ($c:expr, $acc:expr) => {
-      if is_body(&$c) {
-        $acc.update(&$c);
-        digested += $c.len_utf8();
-        continue;
-      }
-    };
+  for c in rest.chars() {
+    if options.separator.validate(&c) {
+      options.separator.update(&digested);
+      digested += c.len_utf8();
+      continue;
+    }
+
+    if is_body(&c) {
+      options.value.update(&c);
+      digested += c.len_utf8();
+      continue;
+    }
+
+    // not a separator or body char
+    break;
   }
 
-  // TODO: simplify code with macro?
-  // check `None` outside the loop to optimize the performance
-  let data = match (options.separator.clone(), options.value.clone()) {
-    (Some(mut sep), Some(mut acc)) => {
-      for c in rest.chars() {
-        check_sep!(c, sep);
-        proc_body_acc!(c, acc);
-        break;
-      }
-      IntegerLiteralData {
-        separators: sep.acc.emit(),
-        value: acc.emit(),
-      }
-    }
-    (Some(mut sep), None) => {
-      for c in rest.chars() {
-        check_sep!(c, sep);
-        proc_body!(c);
-        break;
-      }
-      IntegerLiteralData {
-        separators: sep.acc.emit(),
-        value: ValueAcc::Target::default(),
-      }
-    }
-    (None, Some(mut acc)) => {
-      for c in rest.chars() {
-        proc_body_acc!(c, acc);
-        break;
-      }
-      IntegerLiteralData {
-        separators: SepAcc::Target::default(),
-        value: acc.emit(),
-      }
-    }
-    (None, None) => {
-      for c in rest.chars() {
-        proc_body!(c);
-        break;
-      }
-      IntegerLiteralData {
-        separators: SepAcc::Target::default(),
-        value: ValueAcc::Target::default(),
-      }
-    }
-  };
-
-  (digested, data)
+  (
+    digested,
+    IntegerLiteralData {
+      // TODO: add a field `no_body`? maybe the digested bytes are separators only
+      separators: options.separator.emit(),
+      value: options.value.emit(),
+    },
+  )
 }
 
 macro_rules! generate_integer_literal_functions {
   (
     $body_fn_name:ident,
+    $body_fn_name_default:ident,
     $body_fn_name_with:ident,
     $body_fn_name_with_options:ident,
     $action_fn_name:ident,
+    $action_fn_name_default:ident,
     $action_fn_name_with:ident,
     $action_fn_name_with_options:ident,
     $prefix:literal,
@@ -177,38 +148,60 @@ macro_rules! generate_integer_literal_functions {
     $head_matcher: expr
   ) => {
     /// Try to match the integer literal body in the rest of the input text
-    /// with the default [`IntegerLiteralBodyOptions`].
-    /// Return how many bytes are digested and the integer literal data.
-    pub fn $body_fn_name(rest: &str) -> (usize, IntegerLiteralData<(), ()>) {
-      $body_fn_name_with_options(rest, &IntegerLiteralBodyOptions::default())
+    /// with the default separator (`'_'`) and no accumulator.
+    /// Return how many bytes are digested.
+    pub fn $body_fn_name(rest: &str) -> usize {
+      $body_fn_name_with_options(
+        rest,
+        IntegerLiteralBodyOptions::default().default_separator(),
+      )
+      .0
+    }
+
+    /// Try to match the integer literal body in the rest of the input text
+    /// with the default [`IntegerLiteralBodyOptions`] (no separator, no accumulator).
+    /// Return how many bytes are digested.
+    pub fn $body_fn_name_default(rest: &str) -> usize {
+      $body_fn_name_with_options(rest, IntegerLiteralBodyOptions::default()).0
     }
 
     /// Try to match the integer literal body in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
     /// Return how many bytes are digested and the integer literal data.
-    pub fn $body_fn_name_with<SepAcc: Accumulator<usize>, ValueAcc: Accumulator<char>>(
+    pub fn $body_fn_name_with<SepAcc: NumericSeparatorAccumulator, ValueAcc: Accumulator<char>>(
       rest: &str,
       options_builder: impl FnOnce(
-        IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>,
+        IntegerLiteralBodyOptions<MockNumericSeparatorAccumulator, MockAccumulator>,
       ) -> IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
     ) -> (usize, IntegerLiteralData<SepAcc::Target, ValueAcc::Target>) {
-      $body_fn_name_with_options(rest, &options_builder(IntegerLiteralBodyOptions::default()))
+      $body_fn_name_with_options(rest, options_builder(IntegerLiteralBodyOptions::default()))
     }
 
     /// Try to match the integer literal body in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
     /// Return how many bytes are digested and the integer literal data.
-    pub fn $body_fn_name_with_options<SepAcc: Accumulator<usize>, ValueAcc: Accumulator<char>>(
+    pub fn $body_fn_name_with_options<
+      SepAcc: NumericSeparatorAccumulator,
+      ValueAcc: Accumulator<char>,
+    >(
       rest: &str,
-      options: &IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
+      options: IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
     ) -> (usize, IntegerLiteralData<SepAcc::Target, ValueAcc::Target>) {
       integer_literal_body_with_options(rest, $is_body, options)
     }
 
     /// Create an [`Action`] that tries to match the integer literal
     /// in the rest of the input text
-    /// with the default [`IntegerLiteralBodyOptions`].
+    /// with the default separator (`'_'`) and no accumulator.
     pub fn $action_fn_name<ActionState, ErrorType>(
+    ) -> Action<MockTokenKind<IntegerLiteralData<(), ()>>, ActionState, ErrorType> {
+      $action_fn_name_with_options(IntegerLiteralBodyOptions::default().default_separator())
+    }
+
+    /// Create an [`Action`] that tries to match the integer literal
+    /// in the rest of the input text
+    /// with the default [`IntegerLiteralBodyOptions`] (no separator, no accumulator).
+    pub fn $action_fn_name_default<ActionState, ErrorType>(
     ) -> Action<MockTokenKind<IntegerLiteralData<(), ()>>, ActionState, ErrorType> {
       $action_fn_name_with_options(IntegerLiteralBodyOptions::default())
     }
@@ -219,11 +212,11 @@ macro_rules! generate_integer_literal_functions {
     pub fn $action_fn_name_with<
       ActionState,
       ErrorType,
-      SepAcc: Accumulator<usize> + 'static,
+      SepAcc: NumericSeparatorAccumulator + 'static,
       ValueAcc: Accumulator<char> + 'static,
     >(
       options_builder: impl FnOnce(
-        IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>,
+        IntegerLiteralBodyOptions<MockNumericSeparatorAccumulator, MockAccumulator>,
       ) -> IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
     ) -> Action<
       MockTokenKind<IntegerLiteralData<SepAcc::Target, ValueAcc::Target>>,
@@ -239,7 +232,7 @@ macro_rules! generate_integer_literal_functions {
     pub fn $action_fn_name_with_options<
       ActionState,
       ErrorType,
-      SepAcc: Accumulator<usize> + 'static,
+      SepAcc: NumericSeparatorAccumulator + 'static,
       ValueAcc: Accumulator<char> + 'static,
     >(
       options: IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
@@ -248,16 +241,22 @@ macro_rules! generate_integer_literal_functions {
       ActionState,
       ErrorType,
     > {
-      let mut a = simple_with_data(move |input| {
-        let prefix = $prefix;
-        if input.rest().starts_with(prefix) {
-          let (digested, data) =
-            $body_fn_name_with_options(&input.rest()[prefix.len()..], &options);
-          Some((digested + prefix.len(), data))
-        } else {
-          None
-        }
-      });
+      let mut a = if $prefix.len() == 0 {
+        simple_with_data(move |input| {
+          Some($body_fn_name_with_options(&input.rest(), options.clone()))
+        })
+      } else {
+        simple_with_data(move |input| {
+          let prefix = $prefix;
+          if input.rest().starts_with(prefix) {
+            let (digested, data) =
+              $body_fn_name_with_options(&input.rest()[prefix.len()..], options.clone());
+            Some((digested + prefix.len(), data))
+          } else {
+            None
+          }
+        })
+      };
       a.head_matcher = Some(HeadMatcher::OneOf(HashSet::from($head_matcher)));
       a
     }
@@ -266,9 +265,11 @@ macro_rules! generate_integer_literal_functions {
 
 generate_integer_literal_functions!(
   binary_integer_literal_body,
+  binary_integer_literal_body_default,
   binary_integer_literal_body_with,
   binary_integer_literal_body_with_options,
   binary_integer_literal,
+  binary_integer_literal_default,
   binary_integer_literal_with,
   binary_integer_literal_with_options,
   "0b",
@@ -278,9 +279,11 @@ generate_integer_literal_functions!(
 
 generate_integer_literal_functions!(
   octal_integer_literal_body,
+  octal_integer_literal_body_default,
   octal_integer_literal_body_with,
   octal_integer_literal_body_with_options,
   octal_integer_literal,
+  octal_integer_literal_default,
   octal_integer_literal_with,
   octal_integer_literal_with_options,
   "0o",
@@ -290,9 +293,11 @@ generate_integer_literal_functions!(
 
 generate_integer_literal_functions!(
   decimal_integer_literal_body,
+  decimal_integer_literal_body_default,
   decimal_integer_literal_body_with,
   decimal_integer_literal_body_with_options,
   decimal_integer_literal,
+  decimal_integer_literal_default,
   decimal_integer_literal_with,
   decimal_integer_literal_with_options,
   "",
@@ -302,9 +307,11 @@ generate_integer_literal_functions!(
 
 generate_integer_literal_functions!(
   hexadecimal_integer_literal_body,
+  hexadecimal_integer_literal_body_default,
   hexadecimal_integer_literal_body_with,
   hexadecimal_integer_literal_body_with_options,
   hexadecimal_integer_literal,
+  hexadecimal_integer_literal_default,
   hexadecimal_integer_literal_with,
   hexadecimal_integer_literal_with_options,
   "0x",
@@ -317,31 +324,26 @@ mod tests {
   use super::*;
   use crate::lexer::action::ActionInput;
 
-  fn assert_default_integer_literal_body(
-    (digested, data): (usize, IntegerLiteralData<(), ()>),
-    expect_digested: usize,
-  ) {
-    assert_eq!(digested, expect_digested);
-    assert_eq!(data.separators, ());
-    assert_eq!(data.value, ());
-  }
-
   #[test]
   fn test_default_integer_literal_body() {
-    assert_default_integer_literal_body(binary_integer_literal_body("zzz"), 0);
-    assert_default_integer_literal_body(binary_integer_literal_body("101"), 3);
-    assert_default_integer_literal_body(binary_integer_literal_body("123"), 1);
-    assert_default_integer_literal_body(octal_integer_literal_body("zzz"), 0);
-    assert_default_integer_literal_body(octal_integer_literal_body("707"), 3);
-    assert_default_integer_literal_body(octal_integer_literal_body("789"), 1);
-    assert_default_integer_literal_body(decimal_integer_literal_body("zzz"), 0);
-    assert_default_integer_literal_body(decimal_integer_literal_body("909"), 3);
-    assert_default_integer_literal_body(decimal_integer_literal_body("9ab"), 1);
-    assert_default_integer_literal_body(hexadecimal_integer_literal_body("zzz"), 0);
-    assert_default_integer_literal_body(hexadecimal_integer_literal_body("f0f"), 3);
-    assert_default_integer_literal_body(hexadecimal_integer_literal_body("F0F"), 3);
-    assert_default_integer_literal_body(hexadecimal_integer_literal_body("fgh"), 1);
+    assert_eq!(binary_integer_literal_body("zzz"), 0);
+    assert_eq!(binary_integer_literal_body("101"), 3);
+    assert_eq!(binary_integer_literal_body("123"), 1);
+    assert_eq!(octal_integer_literal_body("zzz"), 0);
+    assert_eq!(octal_integer_literal_body("707"), 3);
+    assert_eq!(octal_integer_literal_body("789"), 1);
+    assert_eq!(decimal_integer_literal_body("zzz"), 0);
+    assert_eq!(decimal_integer_literal_body("909"), 3);
+    assert_eq!(decimal_integer_literal_body("9ab"), 1);
+    assert_eq!(hexadecimal_integer_literal_body("zzz"), 0);
+    assert_eq!(hexadecimal_integer_literal_body("f0f"), 3);
+    assert_eq!(hexadecimal_integer_literal_body("F0F"), 3);
+    assert_eq!(hexadecimal_integer_literal_body("fgh"), 1);
+
+    // TODO: with separator
   }
+
+  // TODO: test xxx_body_default
 
   fn assert_integer_literal_body(
     (digested, data): (usize, IntegerLiteralData<Vec<usize>, String>),
@@ -354,42 +356,43 @@ mod tests {
 
   #[test]
   fn test_integer_literal_body_with_options() {
-    let options_builder = |o: IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>| {
-      o.separator_with(|s| s.acc_to_vec()).value_to_string()
-    };
+    let options_builder = |o: IntegerLiteralBodyOptions<
+      MockNumericSeparatorAccumulator,
+      MockAccumulator,
+    >| { o.separator_with(|s| s.acc_to_vec()).value_to_string() };
     let options = IntegerLiteralBodyOptions::default()
       .separator_with(|s| s.acc_to_vec())
       .value_to_string();
     assert_integer_literal_body(
-      binary_integer_literal_body_with("1_01", &options_builder),
+      binary_integer_literal_body_with("1_01", options_builder),
       "101",
     );
     assert_integer_literal_body(
-      binary_integer_literal_body_with_options("1_01", &options),
+      binary_integer_literal_body_with_options("1_01", options.clone()),
       "101",
     );
     assert_integer_literal_body(
-      octal_integer_literal_body_with("7_07", &options_builder),
+      octal_integer_literal_body_with("7_07", options_builder),
       "707",
     );
     assert_integer_literal_body(
-      octal_integer_literal_body_with_options("7_07", &options),
+      octal_integer_literal_body_with_options("7_07", options.clone()),
       "707",
     );
     assert_integer_literal_body(
-      decimal_integer_literal_body_with("9_09", &options_builder),
+      decimal_integer_literal_body_with("9_09", options_builder),
       "909",
     );
     assert_integer_literal_body(
-      decimal_integer_literal_body_with_options("9_09", &options),
+      decimal_integer_literal_body_with_options("9_09", options.clone()),
       "909",
     );
     assert_integer_literal_body(
-      hexadecimal_integer_literal_body_with("f_0f", &options_builder),
+      hexadecimal_integer_literal_body_with("f_0f", options_builder),
       "f0f",
     );
     assert_integer_literal_body(
-      hexadecimal_integer_literal_body_with_options("f_0f", &options),
+      hexadecimal_integer_literal_body_with_options("f_0f", options.clone()),
       "f0f",
     );
   }
@@ -435,6 +438,8 @@ mod tests {
     assert_default_integer_literal_action(hexadecimal_integer_literal(), "0xf0fz", 5);
   }
 
+  // TODO: test xxx_default
+
   fn assert_integer_literal_action(
     action: Action<MockTokenKind<IntegerLiteralData<Vec<usize>, String>>>,
     s: &str,
@@ -450,15 +455,16 @@ mod tests {
 
   #[test]
   fn test_integer_literal_actions() {
-    let options_builder = |o: IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator>| {
-      o.separator_with(|s| s.acc_to_vec()).value_to_string()
-    };
+    let options_builder = |o: IntegerLiteralBodyOptions<
+      MockNumericSeparatorAccumulator,
+      MockAccumulator,
+    >| { o.separator_with(|s| s.acc_to_vec()).value_to_string() };
     let options = IntegerLiteralBodyOptions::default()
       .separator_with(|s| s.acc_to_vec())
       .value_to_string();
 
     assert_integer_literal_action(
-      binary_integer_literal_with(&options_builder),
+      binary_integer_literal_with(options_builder),
       "0b1_01z",
       "101",
     );
@@ -468,7 +474,7 @@ mod tests {
       "101",
     );
     assert_integer_literal_action(
-      octal_integer_literal_with(&options_builder),
+      octal_integer_literal_with(options_builder),
       "0o7_07z",
       "707",
     );
@@ -478,7 +484,7 @@ mod tests {
       "707",
     );
     assert_integer_literal_action(
-      decimal_integer_literal_with(&options_builder),
+      decimal_integer_literal_with(options_builder),
       "9_0909z",
       "90909",
     );
@@ -488,7 +494,7 @@ mod tests {
       "90909",
     );
     assert_integer_literal_action(
-      hexadecimal_integer_literal_with(&options_builder),
+      hexadecimal_integer_literal_with(options_builder),
       "0xf_0fz",
       "f0f",
     );
@@ -510,7 +516,8 @@ mod tests {
         // check prefix
         if input.rest().starts_with(prefix) {
           // eat body
-          let (digested, data) = binary_integer_literal_body(&input.rest()[prefix.len()..]);
+          let (digested, data) =
+            binary_integer_literal_body_with(&input.rest()[prefix.len()..], |o| o);
           // check suffix
           if input.rest()[prefix.len() + digested..].starts_with(suffix) {
             Some((prefix.len() + digested + suffix.len(), data))

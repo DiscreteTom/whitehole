@@ -1,5 +1,29 @@
 use super::MockAccumulator;
-use crate::lexer::action::{StringAccumulator, VecAccumulator};
+use crate::lexer::action::{Accumulator, StringAccumulator, VecAccumulator};
+
+pub trait NumericSeparatorAccumulator: Clone {
+  type Target;
+
+  /// Return whether the character is a valid numeric separator.
+  fn validate(&self, c: &char) -> bool;
+  /// Accumulate the index of the numeric separator.
+  fn update(&mut self, c: &usize);
+  /// Emit the accumulated indexes.
+  fn emit(self) -> Self::Target;
+}
+
+/// This struct is to indicate that no numeric separator is allowed.
+#[derive(Clone, Debug, Default)]
+pub struct MockNumericSeparatorAccumulator;
+
+impl NumericSeparatorAccumulator for MockNumericSeparatorAccumulator {
+  type Target = ();
+  fn validate(&self, _: &char) -> bool {
+    false
+  }
+  fn update(&mut self, _: &usize) {}
+  fn emit(self) {}
+}
 
 #[derive(Clone, Debug)]
 pub struct NumericSeparatorOptions<Acc> {
@@ -48,43 +72,53 @@ impl<Acc> NumericSeparatorOptions<Acc> {
   }
 }
 
+impl<Acc: Accumulator<usize>> NumericSeparatorAccumulator for NumericSeparatorOptions<Acc> {
+  type Target = Acc::Target;
+  fn validate(&self, c: &char) -> bool {
+    *c == self.ch
+  }
+  fn update(&mut self, c: &usize) {
+    self.acc.update(c);
+  }
+  fn emit(self) -> Self::Target {
+    self.acc.emit()
+  }
+}
+
 #[derive(Clone, Debug)]
 pub struct IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// See [`Self::separator`].
-  pub separator: Option<NumericSeparatorOptions<SepAcc>>,
+  pub separator: SepAcc,
   /// See [`Self::value`].
-  pub value: Option<ValueAcc>,
+  pub value: ValueAcc,
 }
 
-impl Default for IntegerLiteralBodyOptions<MockAccumulator, MockAccumulator> {
+impl Default for IntegerLiteralBodyOptions<MockNumericSeparatorAccumulator, MockAccumulator> {
   fn default() -> Self {
     Self {
-      separator: None,
-      value: None,
+      separator: MockNumericSeparatorAccumulator,
+      value: MockAccumulator,
     }
   }
 }
 
 impl<SepAcc, ValueAcc> IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// Set the numeric separator for the integer literal.
-  /// Default is [`None`] (no separator allowed).
+  /// Default is [`MockNumericSeparatorAccumulator`] (no separator allowed).
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::{IntegerLiteralBodyOptions, NumericSeparatorOptions};
-  /// let options = IntegerLiteralBodyOptions::default().separator(NumericSeparatorOptions::default());
+  /// let options = IntegerLiteralBodyOptions::default()
+  ///   .separator(NumericSeparatorOptions::default());
   /// ```
-  pub fn separator<Acc>(
-    self,
-    options: NumericSeparatorOptions<Acc>,
-  ) -> IntegerLiteralBodyOptions<Acc, ValueAcc> {
+  pub fn separator<Acc>(self, options: Acc) -> IntegerLiteralBodyOptions<Acc, ValueAcc> {
     IntegerLiteralBodyOptions {
-      separator: Some(options),
+      separator: options,
       value: self.value,
     }
   }
 
-  /// Set the numeric separator for the integer literal.
-  /// Default is [`None`] (no separator allowed).
+  /// Set [`Self::separator`] to [`NumericSeparatorOptions`] using the given options builder.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::{IntegerLiteralBodyOptions};
@@ -93,20 +127,21 @@ impl<SepAcc, ValueAcc> IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// ```
   pub fn separator_with<Acc>(
     self,
-    options_builder: impl FnOnce(
-      NumericSeparatorOptions<MockAccumulator>,
-    ) -> NumericSeparatorOptions<Acc>,
+    options_builder: impl FnOnce(NumericSeparatorOptions<MockAccumulator>) -> Acc,
   ) -> IntegerLiteralBodyOptions<Acc, ValueAcc> {
     self.separator(options_builder(NumericSeparatorOptions::default()))
   }
 
-  /// Set the numeric separator for the integer literal to the default.
-  pub fn default_separator(self) -> IntegerLiteralBodyOptions<MockAccumulator, ValueAcc> {
+  /// Set the numeric separator for the integer literal to the default value of
+  /// [`NumericSeparatorOptions`] (use `'_'` as the separator, no accumulator).
+  pub fn default_separator(
+    self,
+  ) -> IntegerLiteralBodyOptions<NumericSeparatorOptions<MockAccumulator>, ValueAcc> {
     self.separator(NumericSeparatorOptions::default())
   }
 
   /// Set an accumulator to accumulate the integer literal body's value.
-  /// Default is [`None`].
+  /// Default is [`MockAccumulator`].
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::{IntegerLiteralBodyOptions, StringAccumulator};
@@ -115,7 +150,7 @@ impl<SepAcc, ValueAcc> IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   pub fn value<NewAcc>(self, acc: NewAcc) -> IntegerLiteralBodyOptions<SepAcc, NewAcc> {
     IntegerLiteralBodyOptions {
       separator: self.separator,
-      value: Some(acc),
+      value: acc,
     }
   }
 
