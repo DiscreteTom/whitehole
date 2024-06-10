@@ -363,3 +363,224 @@ pub fn float_literal_with_options<
   })
   .unchecked_head_in(heads)
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lexer::action::{ActionInput, HeadMatcher};
+
+  fn assert_float_literal_body(
+    (digested, data): (usize, FloatLiteralData<Vec<usize>, String, String, String>),
+    integer: (usize, &str, Vec<usize>),
+    fraction: Option<(usize, &str, Vec<usize>)>,
+    exponent: Option<(usize, &str, usize, Vec<usize>)>,
+  ) {
+    if integer.0 == 0 && fraction.is_none() {
+      assert_eq!(digested, 0);
+    } else {
+      assert_eq!(
+        digested,
+        integer.0
+          + fraction.as_ref().map(|f| f.0).unwrap_or_default()
+          + exponent.as_ref().map(|f| f.0).unwrap_or_default()
+      );
+    }
+    assert_eq!(data.integer.0, integer.0);
+    assert_eq!(data.integer.1.value, integer.1);
+    assert_eq!(data.integer.1.separators, integer.2);
+
+    if let Some(fraction) = fraction {
+      assert_eq!(data.fraction.as_ref().unwrap().0, fraction.0);
+      assert_eq!(data.fraction.as_ref().unwrap().1.value, fraction.1);
+      assert_eq!(data.fraction.as_ref().unwrap().1.separators, fraction.2);
+    }
+
+    if let Some(exponent) = exponent {
+      assert_eq!(data.exponent.as_ref().unwrap().0, exponent.0);
+      assert_eq!(data.exponent.as_ref().unwrap().1.base.value, exponent.1);
+      assert_eq!(data.exponent.as_ref().unwrap().1.indicator_len, exponent.2);
+      assert_eq!(
+        data.exponent.as_ref().unwrap().1.base.separators,
+        exponent.3
+      );
+    }
+  }
+
+  #[test]
+  fn test_float_literal_body_with_options() {
+    let options = FloatLiteralOptions::default()
+      .separator_with(|s| s.acc_to_vec())
+      .integer_to_string()
+      .fraction_with(|o| o.acc_to_string())
+      .exponent_with(|o| o.acc_to_string());
+
+    // invalid start
+    assert_float_literal_body(
+      float_literal_body_with_options("z", options.clone()),
+      (0, "", vec![]),
+      None,
+      None,
+    );
+
+    // integer only
+    assert_float_literal_body(
+      float_literal_body_with_options("12_3z", options.clone()),
+      (4, "123", vec![2]),
+      None,
+      None,
+    );
+
+    // integer and fraction
+    assert_float_literal_body(
+      float_literal_body_with_options("12_3.4_5z", options.clone()),
+      (4, "123", vec![2]),
+      Some((4, "45", vec![1])),
+      None,
+    );
+
+    // integer and exponent
+    assert_float_literal_body(
+      float_literal_body_with_options("12_3e4_5z", options.clone()),
+      (4, "123", vec![2]),
+      None,
+      Some((4, "45", 1, vec![1])),
+    );
+
+    // fraction only
+    assert_float_literal_body(
+      float_literal_body_with_options(".12_3z", options.clone()),
+      (0, "", vec![]),
+      Some((5, "123", vec![2])),
+      None,
+    );
+
+    // fraction and exponent
+    assert_float_literal_body(
+      float_literal_body_with_options(".12_3e4_5z", options.clone()),
+      (0, "", vec![]),
+      Some((5, "123", vec![2])),
+      Some((4, "45", 1, vec![1])),
+    );
+
+    // exponent only
+    assert_float_literal_body(
+      float_literal_body_with_options("e1_0z", options.clone()),
+      (0, "", vec![]),
+      None,
+      Some((4, "10", 1, vec![1])),
+    );
+    assert_float_literal_body(
+      float_literal_body_with_options("e-1_0z", options.clone()),
+      (0, "", vec![]),
+      None,
+      Some((5, "10", 2, vec![1])),
+    );
+    assert_float_literal_body(
+      float_literal_body_with_options("e+1_0z", options.clone()),
+      (0, "", vec![]),
+      None,
+      Some((5, "10", 2, vec![1])),
+    );
+    assert_float_literal_body(
+      float_literal_body_with_options("E1_0z", options.clone()),
+      (0, "", vec![]),
+      None,
+      Some((4, "10", 1, vec![1])),
+    );
+    assert_float_literal_body(
+      float_literal_body_with_options("E-1_0z", options.clone()),
+      (0, "", vec![]),
+      None,
+      Some((5, "10", 2, vec![1])),
+    );
+    assert_float_literal_body(
+      float_literal_body_with_options("E+1_0z", options.clone()),
+      (0, "", vec![]),
+      None,
+      Some((5, "10", 2, vec![1])),
+    );
+
+    // full
+    assert_float_literal_body(
+      float_literal_body_with_options("1_23.4_56e-7_8z", options.clone()),
+      (4, "123", vec![1]),
+      Some((5, "456", vec![1])),
+      Some((5, "78", 2, vec![1])),
+    );
+  }
+
+  #[test]
+  fn test_float_literal_action_head_matcher() {
+    // default
+    let action: Action<_> = float_literal_with(|o| o);
+    assert!(
+      matches!(action.head_matcher(), Some(HeadMatcher::OneOf(set)) if set.len() == 10 && set.contains(&'0') && set.contains(&'9'))
+    );
+
+    // enable fraction
+    let action: Action<_> = float_literal_with(|o| o.default_fraction());
+    assert!(
+      matches!(action.head_matcher(), Some(HeadMatcher::OneOf(set)) if set.len() == 11&& set.contains(&'0') && set.contains(&'9') && set.contains(&'.'))
+    );
+
+    // enable exponent
+    let action: Action<_> = float_literal_with(|o| o.default_exponent());
+    assert!(
+      matches!(action.head_matcher(), Some(HeadMatcher::OneOf(set)) if set.len() == 10&& set.contains(&'0') && set.contains(&'9'))
+    );
+
+    // enable fraction and exponent
+    let action: Action<_> = float_literal_with(|o| o.default_fraction().default_exponent());
+    assert!(
+      matches!(action.head_matcher(), Some(HeadMatcher::OneOf(set)) if set.len() == 11&& set.contains(&'0') && set.contains(&'9') && set.contains(&'.'))
+    );
+  }
+
+  fn assert_reject<T>(action: &Action<T>, s: &str) {
+    assert!(action
+      .exec(&mut ActionInput::new(s, 0, &mut ()).unwrap())
+      .is_none())
+  }
+
+  fn assert_accept(
+    action: &Action<MockTokenKind<FloatLiteralData<Vec<usize>, String, String, String>>>,
+    s: &str,
+    integer: (usize, &str, Vec<usize>),
+    fraction: Option<(usize, &str, Vec<usize>)>,
+    exponent: Option<(usize, &str, usize, Vec<usize>)>,
+  ) {
+    let output = action
+      .exec(&mut ActionInput::new(s, 0, &mut ()).unwrap())
+      .unwrap();
+    assert_float_literal_body(
+      (output.digested, output.kind.data),
+      integer,
+      fraction,
+      exponent,
+    );
+  }
+
+  #[test]
+  fn test_float_literal_action_with_options() {
+    let options = FloatLiteralOptions::default()
+      .separator_with(|s| s.acc_to_vec())
+      .integer_to_string()
+      .fraction_with(|o| o.acc_to_string())
+      .exponent_with(|o| o.acc_to_string());
+    let action: Action<_> = float_literal_with_options(options);
+
+    // reject invalid start
+    assert_reject(&action, "z");
+    // reject exponent only
+    assert_reject(&action, "e10");
+
+    // full
+    assert_accept(
+      &action,
+      "1_23.4_56e-7_8z",
+      (4, "123", vec![1]),
+      Some((5, "456", vec![1])),
+      Some((5, "78", 2, vec![1])),
+    );
+  }
+}
