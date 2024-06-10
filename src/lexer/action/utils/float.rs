@@ -6,13 +6,13 @@ pub use options::*;
 
 use super::{
   decimal_integer_literal_body_with_options, Accumulator, IntegerLiteralBodyOptions,
-  IntegerLiteralData, MockAccumulator, MockNumericSeparatorAccumulator,
-  NumericSeparatorAccumulator,
+  MockAccumulator, MockNumericSeparatorAccumulator, NumericSeparatorAccumulator,
 };
 use crate::lexer::{
   action::{simple_with_data, Action},
   token::MockTokenKind,
 };
+use std::collections::HashSet;
 
 /// Try to match a float point literal in the rest of the input text
 /// with the default separator (`'_'`), default decimal point (`'.'`),
@@ -258,25 +258,108 @@ pub fn float_literal_body_with_options<
   )
 }
 
-// pub fn float_literal_with_options<
-//   ActionState,
-//   ErrorType,
-//   SepAcc: Accumulator<usize> + 'static,
-//   IntAcc: Accumulator<char> + 'static,
-//   FracAcc: Accumulator<char> + 'static,
-//   ExpAcc: Accumulator<char> + 'static,
-// >(
-//   options: FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
-// ) -> Action<
-//   MockTokenKind<FloatLiteralData<SepAcc::Target, IntAcc::Target, FracAcc::Target, ExpAcc::Target>>,
-//   ActionState,
-//   ErrorType,
-// > {
-//   simple_with_data(move |input| {
-//     let options = options.clone();
-//     Some(float_literal_body_with_options(&input.rest(), options))
-//   })
-//   .unchecked_head_in([
-//     '.', 'e', 'E', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-//   ])
-// }
+/// Create an [`Action`] that tries to match the float literal
+/// in the rest of the input text
+/// with the default separator (`'_'`), default decimal point (`'.'`),
+/// the default exponent indicators (`"e-", "e+", "e", "E-", "E+", "E"`)
+/// and no accumulators.
+///
+/// The [`Action::head_matcher`] will be set automatically.
+/// # Caveat
+/// If the matched content is exponent only, the action will reject it.
+///
+/// Besides, each part (the integer part, the fraction part and the exponent part)
+/// will be matched using [`decimal_integer_literal_body_with_options`]
+/// so its caveat also applies here.
+pub fn float_literal<ActionState, ErrorType>(
+) -> Action<MockTokenKind<FloatLiteralData<(), (), (), ()>>, ActionState, ErrorType> {
+  float_literal_with_options(
+    FloatLiteralOptions::default()
+      .default_separator()
+      .default_fraction()
+      .default_exponent(),
+  )
+}
+
+/// Create an [`Action`] that tries to match the float literal
+/// in the rest of the input text
+/// with the given [`FloatLiteralOptions`].
+///
+/// The [`Action::head_matcher`] will be set automatically.
+/// # Caveat
+/// If the matched content is exponent only, the action will reject it.
+///
+/// Besides, each part (the integer part, the fraction part and the exponent part)
+/// will be matched using [`decimal_integer_literal_body_with_options`]
+/// so its caveat also applies here.
+pub fn float_literal_with<
+  ActionState,
+  ErrorType,
+  SepAcc: NumericSeparatorAccumulator + 'static,
+  IntAcc: Accumulator<char> + 'static,
+  FracAcc: Accumulator<char> + 'static,
+  ExpAcc: Accumulator<char> + 'static,
+>(
+  options_builder: impl FnOnce(
+    FloatLiteralOptions<
+      MockNumericSeparatorAccumulator,
+      MockAccumulator,
+      MockAccumulator,
+      MockAccumulator,
+    >,
+  ) -> FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
+) -> Action<
+  MockTokenKind<FloatLiteralData<SepAcc::Target, IntAcc::Target, FracAcc::Target, ExpAcc::Target>>,
+  ActionState,
+  ErrorType,
+> {
+  float_literal_with_options(options_builder(FloatLiteralOptions::default()))
+}
+
+/// Create an [`Action`] that tries to match the float literal
+/// in the rest of the input text
+/// with the given [`FloatLiteralOptions`].
+///
+/// The [`Action::head_matcher`] will be set automatically.
+/// # Caveat
+/// If the matched content is exponent only, the action will reject it.
+///
+/// Besides, each part (the integer part, the fraction part and the exponent part)
+/// will be matched using [`decimal_integer_literal_body_with_options`]
+/// so its caveat also applies here.
+pub fn float_literal_with_options<
+  ActionState,
+  ErrorType,
+  SepAcc: NumericSeparatorAccumulator + 'static,
+  IntAcc: Accumulator<char> + 'static,
+  FracAcc: Accumulator<char> + 'static,
+  ExpAcc: Accumulator<char> + 'static,
+>(
+  options: FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
+) -> Action<
+  MockTokenKind<FloatLiteralData<SepAcc::Target, IntAcc::Target, FracAcc::Target, ExpAcc::Target>>,
+  ActionState,
+  ErrorType,
+> {
+  // head for integer part
+  let mut heads = HashSet::from(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
+
+  // if fraction part is enabled, add the decimal point to the head
+  if let Some(fraction) = options.fraction.as_ref() {
+    heads.insert(fraction.point);
+  }
+
+  // don't add exponent indicators to the head
+  // because we don't allow exponent part to be the only part
+
+  simple_with_data(move |input| {
+    let res = float_literal_body_with_options(&input.rest(), options.clone());
+
+    if res.0 == 0 {
+      return None;
+    }
+
+    Some(res)
+  })
+  .unchecked_head_in(heads)
+}
