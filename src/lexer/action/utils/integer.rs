@@ -296,6 +296,8 @@ macro_rules! generate_integer_literal_functions {
     /// Create an [`Action`] that tries to match the integer literal
     /// in the rest of the input text
     /// with the default separator (`'_'`) and no accumulator.
+    ///
+    /// The [`Action::head_matcher`] will be set automatically.
     /// # Caveat
     /// If the integer literal's body is separators only, the action will be rejected.
     /// E.g. if the separator char is `'_'`, then
@@ -316,6 +318,8 @@ macro_rules! generate_integer_literal_functions {
     /// Create an [`Action`] that tries to match the integer literal
     /// in the rest of the input text
     /// with the default [`IntegerLiteralBodyOptions`] (no separator, no accumulator).
+    ///
+    /// The [`Action::head_matcher`] will be set automatically.
     pub fn $action_fn_name_default<ActionState, ErrorType>(
     ) -> Action<MockTokenKind<IntegerLiteralData<(), ()>>, ActionState, ErrorType> {
       $action_fn_name_with_options(IntegerLiteralBodyOptions::default())
@@ -324,6 +328,8 @@ macro_rules! generate_integer_literal_functions {
     /// Create an [`Action`] that tries to match the integer literal
     /// in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
+    ///
+    /// The [`Action::head_matcher`] will be set automatically.
     /// # Caveat
     /// If the integer literal's body is separators only, the action will be rejected.
     /// E.g. if the separator char is `'_'`, then
@@ -356,6 +362,8 @@ macro_rules! generate_integer_literal_functions {
     /// Create an [`Action`] that tries to match the integer literal
     /// in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
+    ///
+    /// The [`Action::head_matcher`] will be set automatically.
     /// # Caveat
     /// If the integer literal's body is separators only, the action will be rejected.
     /// E.g. if the separator char is `'_'`, then
