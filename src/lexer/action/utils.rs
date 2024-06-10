@@ -1,13 +1,17 @@
 mod accumulator;
 mod exact;
+mod float;
 mod integer;
 mod regex;
+mod string_list;
 mod word;
 
 pub use accumulator::*;
 pub use exact::*;
+pub use float::*;
 pub use integer::*;
 pub use regex::*;
+pub use string_list::*;
 pub use word::*;
 
 use super::{simple::simple, Action};
