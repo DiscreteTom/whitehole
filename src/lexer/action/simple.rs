@@ -35,7 +35,7 @@ pub fn simple<ActionState, ErrorType>(
 
 /// Provide a function that digests the rest of the input text and
 /// returns the number of digested bytes and the data.
-/// `0` is allowed as an accepted number of digested bytes.
+/// `0` is ***allowed*** as an accepted number of digested bytes.
 /// Return `None` if the action is rejected.
 ///
 /// This is useful if you can directly yield the data in the function,
