@@ -136,13 +136,19 @@ pub struct FloatLiteralOptions<Sep, IntAcc, FracAcc, ExpAcc> {
   pub exponent: Option<FloatExponentOptions<ExpAcc>>,
 }
 
-impl<FracAcc, ExpAcc> Default
-  for FloatLiteralOptions<MockNumericSeparatorAccumulator, MockAccumulator, FracAcc, ExpAcc>
+impl Default
+  for FloatLiteralOptions<
+    MockNumericSeparatorAccumulator,
+    MockAccumulator,
+    MockAccumulator,
+    MockAccumulator,
+  >
 {
   fn default() -> Self {
     Self {
       separator: MockNumericSeparatorAccumulator,
       integer: MockAccumulator,
+      // use `None` to disable the optional parts
       fraction: None,
       exponent: None,
     }
