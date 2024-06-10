@@ -51,7 +51,8 @@ impl<'expect_literal, Kind: 'static, Fork> LexOptions<'expect_literal, Kind, For
     self
   }
 
-  /// If set, the [`LexOutput::re_lex`](crate::lexer::output::LexOutput::re_lex) *might* be `Some`.
+  /// If set, and the lexing is re-lexable (the accepted action is not the last candidate action),
+  /// the [`LexOutput::re_lex`](crate::lexer::output::LexOutput::re_lexable) will be `Some`.
   // TODO: example
   pub fn fork(self) -> LexOptions<'expect_literal, Kind, ForkEnabled> {
     LexOptions {
