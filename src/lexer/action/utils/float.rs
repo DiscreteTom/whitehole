@@ -89,6 +89,11 @@ pub fn float_literal_body_with_options<
     })
   });
 
+  // if only exponent part is present, set total digested to 0
+  if integer_digested == 0 && fraction_part.is_none() {
+    total_digested = 0;
+  }
+
   (
     total_digested,
     FloatLiteralData {
