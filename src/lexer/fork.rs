@@ -6,6 +6,10 @@ use super::re_lex::{MockReLexableFactory, ReLexableBuilder, ReLexableFactory};
 pub trait LexOptionsFork<'text, Kind: 'static, ActionState, ErrorType> {
   type ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType> + Default;
 }
+
+/// This struct is used to indicate that the fork feature is enabled.
+/// This struct implements [`LexOptionsFork`].
+/// See [`LexOptions::fork`](crate::lexer::options::LexOptions::fork).
 pub struct ForkEnabled;
 
 impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
@@ -14,6 +18,9 @@ impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
   type ReLexableFactoryType = ReLexableBuilder<ActionState>;
 }
 
+/// This struct is used to indicate that the fork feature is disabled.
+/// This struct implements [`LexOptionsFork`].
+/// See [`LexOptions::fork`](crate::lexer::options::LexOptions::fork).
 pub struct ForkDisabled;
 
 impl<'text, Kind: 'static, ActionState, ErrorType>
