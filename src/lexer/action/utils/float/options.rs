@@ -168,6 +168,11 @@ impl<Sep, IntAcc, FracAcc, ExpAcc> FloatLiteralOptions<Sep, IntAcc, FracAcc, Exp
     }
   }
 
+  /// Set [`Self::integer`] to [`StringAccumulator`].
+  pub fn integer_to_string(self) -> FloatLiteralOptions<Sep, StringAccumulator, FracAcc, ExpAcc> {
+    self.integer(StringAccumulator::default())
+  }
+
   /// Set the accumulator for the fractional part.
   /// # Examples
   /// ```rust
