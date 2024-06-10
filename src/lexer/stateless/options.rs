@@ -4,7 +4,6 @@ use crate::lexer::{
   options::LexOptions,
   re_lex::ReLexContext,
 };
-use std::ops::{Deref, DerefMut};
 
 pub struct StatelessLexOptions<'expect_literal, Kind: 'static, ActionStateRef, Fork> {
   /// See [`StatelessLexOptions::start()`].
@@ -52,23 +51,6 @@ impl<'expect_literal, Kind, Fork> From<LexOptions<'expect_literal, Kind, Fork>>
   }
 }
 
-impl<'expect_literal, Kind: 'static, ActionStateRef, Fork> Deref
-  for StatelessLexOptions<'expect_literal, Kind, ActionStateRef, Fork>
-{
-  type Target = LexOptions<'expect_literal, Kind, Fork>;
-
-  fn deref(&self) -> &Self::Target {
-    &self.base
-  }
-}
-impl<'expect_literal, Kind: 'static, ActionStateRef, Fork> DerefMut
-  for StatelessLexOptions<'expect_literal, Kind, ActionStateRef, Fork>
-{
-  fn deref_mut(&mut self) -> &mut Self::Target {
-    &mut self.base
-  }
-}
-
 impl<'expect_literal, Kind, ActionStateRef, Fork>
   StatelessLexOptions<'expect_literal, Kind, ActionStateRef, Fork>
 {
@@ -102,7 +84,7 @@ impl<'expect_literal, Kind, ActionStateRef, Fork>
   where
     Kind: 'static,
   {
-    self.expectation = expectation.into();
+    self.base.expectation = expectation.into();
     self
   }
   /// See [`LexOptions::expect_with()`].
@@ -110,7 +92,7 @@ impl<'expect_literal, Kind, ActionStateRef, Fork>
     mut self,
     f: impl FnOnce(Expectation<'expect_literal, Kind>) -> Expectation<'expect_literal, Kind>,
   ) -> Self {
-    self.expectation = f(Expectation::default());
+    self.base.expectation = f(Expectation::default());
     self
   }
   /// See [`LexOptions::fork()`].
@@ -125,7 +107,7 @@ impl<'expect_literal, Kind, ActionStateRef, Fork>
   }
   /// See [`LexOptions::re_lex()`].
   pub fn re_lex(mut self, re_lex: ReLexContext) -> Self {
-    self.re_lex = re_lex;
+    self.base.re_lex = re_lex;
     self
   }
 }
