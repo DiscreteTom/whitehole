@@ -16,11 +16,26 @@ use std::collections::HashSet;
 /// with the default separator (`'_'`) and no accumulator.
 /// Return how many bytes are digested.
 /// E.g. in `0x1_23`, the body is `1_23`, 4 bytes will be digested.
+/// # Caveat
+/// If the matched content is separators only, no bytes will be digested
+/// (the return value will be set to `0`).
+/// E.g. if the separator char is `'_'`, then
+/// `___` won't be treated as a valid integer literal body.
+///
+/// However, the matched content may starts/ends with separators.
+/// E.g. if the separator char is `'_'`, then
+/// `_123`/`123_` will be treated as a valid integer literal body.
+/// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
+/// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+/// So it's up to the caller to decide whether to accept the leading/trailing separators.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::integer_literal_body;
-/// let digested = integer_literal_body("1_23", |c| c.is_ascii_digit());
+/// let digested = integer_literal_body("1_23z", |c| c.is_ascii_digit());
 /// assert_eq!(digested, 4);
+/// // separators only
+/// let digested = integer_literal_body("___z", |c| c.is_ascii_digit());
+/// assert_eq!(digested, 0);
 /// ```
 pub fn integer_literal_body(rest: &str, is_body: impl Fn(&char) -> bool) -> usize {
   integer_literal_body_with_options(
@@ -38,7 +53,7 @@ pub fn integer_literal_body(rest: &str, is_body: impl Fn(&char) -> bool) -> usiz
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::integer_literal_body_default;
-/// let digested = integer_literal_body_default("123", |c| c.is_ascii_digit());
+/// let digested = integer_literal_body_default("123z", |c| c.is_ascii_digit());
 /// assert_eq!(digested, 3);
 /// ```
 pub fn integer_literal_body_default(rest: &str, is_body: impl Fn(&char) -> bool) -> usize {
@@ -49,17 +64,39 @@ pub fn integer_literal_body_default(rest: &str, is_body: impl Fn(&char) -> bool)
 /// with the given [`IntegerLiteralBodyOptions`].
 /// E.g. in `0x1_23`, the body is `1_23`, the value is `123`, 4 bytes will be digested.
 /// Return how many bytes are digested and the integer literal data.
+/// # Caveat
+/// If the matched content is separators only, no bytes will be digested
+/// (`return.0` will be set to `0`), but the data (`return.1`) will not be cleared.
+/// E.g. if the separator char is `'_'`, then
+/// `___` won't be treated as a valid integer literal body.
+///
+/// However, the matched content may starts/ends with separators.
+/// E.g. if the separator char is `'_'`, then
+/// `_123`/`123_` will be treated as a valid integer literal body.
+/// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
+/// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+/// So it's up to the caller to decide whether to accept the leading/trailing separators.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{integer_literal_body_with};
 /// let (digested, data) = integer_literal_body_with(
-///   "1_234",
+///   "1_234z",
 ///   |c| c.is_ascii_digit(),
 ///   |o| o.separator_with(|s| s.ch('_').acc_to_vec()).value_to_string()
 /// );
 /// assert_eq!(digested, 5);
 /// assert_eq!(data.separators, vec![1]);
 /// assert_eq!(data.value, "1234".to_string());
+///
+/// // separators only
+/// let (digested, data) = integer_literal_body_with(
+///   "____z",
+///   |c| c.is_ascii_digit(),
+///   |o| o.separator_with(|s| s.ch('_').acc_to_vec()).value_to_string()
+/// );
+/// assert_eq!(digested, 0); // digested will be set to 0
+/// assert_eq!(data.separators, vec![0, 1, 2, 3]); // separators will still be collected
+/// assert_eq!(data.value, "".to_string()); // no value
 /// ```
 pub fn integer_literal_body_with<
   SepAcc: NumericSeparatorAccumulator,
@@ -80,13 +117,26 @@ pub fn integer_literal_body_with<
 
 /// Try to match an integer literal body in the rest of the input text
 /// with the given [`IntegerLiteralBodyOptions`].
-/// E.g. in `0x1_23`, the body is `1_23`, the value is `123`, 4 bytes will be digested.
 /// Return how many bytes are digested and the integer literal data.
+///
+/// E.g. in `0x1_23`, the body is `1_23`, the value is `123`, 4 bytes will be digested.
+/// # Caveat
+/// If the matched content is separators only, no bytes will be digested
+/// (`return.0` will be set to `0`), but the data (`return.1`) will not be cleared.
+/// E.g. if the separator char is `'_'`, then
+/// `___` won't be treated as a valid integer literal body.
+///
+/// However, the matched content may starts/ends with separators.
+/// E.g. if the separator char is `'_'`, then
+/// `_123`/`123_` will be treated as a valid integer literal body.
+/// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
+/// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+/// So it's up to the caller to decide whether to accept the leading/trailing separators.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{integer_literal_body_with_options, IntegerLiteralBodyOptions};
 /// let (digested, data) = integer_literal_body_with_options(
-///   "1_234",
+///   "1_234z",
 ///   |c| c.is_ascii_digit(),
 ///   IntegerLiteralBodyOptions::default()
 ///     .separator_with(|s| s.ch('_').acc_to_vec())
@@ -95,6 +145,18 @@ pub fn integer_literal_body_with<
 /// assert_eq!(digested, 5);
 /// assert_eq!(data.separators, vec![1]);
 /// assert_eq!(data.value, "1234".to_string());
+///
+/// // separators only
+/// let (digested, data) = integer_literal_body_with_options(
+///   "____z",
+///   |c| c.is_ascii_digit(),
+///   IntegerLiteralBodyOptions::default()
+///     .separator_with(|s| s.ch('_').acc_to_vec())
+///     .value_to_string()
+/// );
+/// assert_eq!(digested, 0); // digested will be set to 0
+/// assert_eq!(data.separators, vec![0, 1, 2, 3]); // separators will still be collected
+/// assert_eq!(data.value, "".to_string()); // no value
 /// ```
 pub fn integer_literal_body_with_options<
   SepAcc: NumericSeparatorAccumulator,
@@ -105,6 +167,7 @@ pub fn integer_literal_body_with_options<
   mut options: IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
 ) -> (usize, IntegerLiteralData<SepAcc::Target, ValueAcc::Target>) {
   let mut digested = 0;
+  let mut sep_only = true;
 
   for c in rest.chars() {
     if options.separator.validate(&c) {
@@ -114,6 +177,7 @@ pub fn integer_literal_body_with_options<
     }
 
     if is_body(&c) {
+      sep_only = false;
       options.value.update(&c);
       digested += c.len_utf8();
       continue;
@@ -123,10 +187,13 @@ pub fn integer_literal_body_with_options<
     break;
   }
 
+  if sep_only {
+    digested = 0;
+  }
+
   (
     digested,
     IntegerLiteralData {
-      // TODO: add a field `no_body`? maybe the digested bytes are separators only
       separators: options.separator.emit(),
       value: options.value.emit(),
     },
@@ -150,6 +217,18 @@ macro_rules! generate_integer_literal_functions {
     /// Try to match the integer literal body in the rest of the input text
     /// with the default separator (`'_'`) and no accumulator.
     /// Return how many bytes are digested.
+    /// # Caveat
+    /// If the matched content is separators only, no bytes will be digested
+    /// (the return value will be set to `0`).
+    /// E.g. if the separator char is `'_'`, then
+    /// `___` won't be treated as a valid integer literal body.
+    ///
+    /// However, the matched content may starts/ends with separators.
+    /// E.g. if the separator char is `'_'`, then
+    /// `_123`/`123_` will be treated as a valid integer literal body.
+    /// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
+    /// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+    /// So it's up to the caller to decide whether to accept the leading/trailing separators.
     pub fn $body_fn_name(rest: &str) -> usize {
       $body_fn_name_with_options(
         rest,
@@ -168,6 +247,18 @@ macro_rules! generate_integer_literal_functions {
     /// Try to match the integer literal body in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
     /// Return how many bytes are digested and the integer literal data.
+    /// # Caveat
+    /// If the matched content is separators only, no bytes will be digested
+    /// (the return value will be set to `0`).
+    /// E.g. if the separator char is `'_'`, then
+    /// `___` won't be treated as a valid integer literal body.
+    ///
+    /// However, the matched content may starts/ends with separators.
+    /// E.g. if the separator char is `'_'`, then
+    /// `_123`/`123_` will be treated as a valid integer literal body.
+    /// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
+    /// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+    /// So it's up to the caller to decide whether to accept the leading/trailing separators.
     pub fn $body_fn_name_with<SepAcc: NumericSeparatorAccumulator, ValueAcc: Accumulator<char>>(
       rest: &str,
       options_builder: impl FnOnce(
@@ -180,6 +271,18 @@ macro_rules! generate_integer_literal_functions {
     /// Try to match the integer literal body in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
     /// Return how many bytes are digested and the integer literal data.
+    /// # Caveat
+    /// If the matched content is separators only, no bytes will be digested
+    /// (the return value will be set to `0`).
+    /// E.g. if the separator char is `'_'`, then
+    /// `___` won't be treated as a valid integer literal body.
+    ///
+    /// However, the matched content may starts/ends with separators.
+    /// E.g. if the separator char is `'_'`, then
+    /// `_123`/`123_` will be treated as a valid integer literal body.
+    /// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
+    /// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+    /// So it's up to the caller to decide whether to accept the leading/trailing separators.
     pub fn $body_fn_name_with_options<
       SepAcc: NumericSeparatorAccumulator,
       ValueAcc: Accumulator<char>,
@@ -193,6 +296,18 @@ macro_rules! generate_integer_literal_functions {
     /// Create an [`Action`] that tries to match the integer literal
     /// in the rest of the input text
     /// with the default separator (`'_'`) and no accumulator.
+    /// # Caveat
+    /// If the integer literal's body is separators only, the action will be rejected.
+    /// E.g. if the separator char is `'_'`, then
+    /// `___` won't be treated as a valid integer literal body.
+    ///
+    /// However, the integer literal's body may starts/ends with separators
+    /// (decimal integer literal actions will reject if the body starts with a separator).
+    /// E.g. if the separator char is `'_'`, then
+    /// `_123`/`123_` will be treated as a valid integer literal body.
+    /// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
+    /// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+    /// So it's up to the caller to decide whether to accept the leading/trailing separators.
     pub fn $action_fn_name<ActionState, ErrorType>(
     ) -> Action<MockTokenKind<IntegerLiteralData<(), ()>>, ActionState, ErrorType> {
       $action_fn_name_with_options(IntegerLiteralBodyOptions::default().default_separator())
@@ -209,6 +324,18 @@ macro_rules! generate_integer_literal_functions {
     /// Create an [`Action`] that tries to match the integer literal
     /// in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
+    /// # Caveat
+    /// If the integer literal's body is separators only, the action will be rejected.
+    /// E.g. if the separator char is `'_'`, then
+    /// `___` won't be treated as a valid integer literal body.
+    ///
+    /// However, the integer literal's body may starts/ends with separators
+    /// (decimal integer literal actions will reject if the body starts with a separator).
+    /// E.g. if the separator char is `'_'`, then
+    /// `_123`/`123_` will be treated as a valid integer literal body.
+    /// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
+    /// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+    /// So it's up to the caller to decide whether to accept the leading/trailing separators.
     pub fn $action_fn_name_with<
       ActionState,
       ErrorType,
@@ -229,6 +356,18 @@ macro_rules! generate_integer_literal_functions {
     /// Create an [`Action`] that tries to match the integer literal
     /// in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
+    /// # Caveat
+    /// If the integer literal's body is separators only, the action will be rejected.
+    /// E.g. if the separator char is `'_'`, then
+    /// `___` won't be treated as a valid integer literal body.
+    ///
+    /// However, the integer literal's body may starts/ends with separators
+    /// (decimal integer literal actions will reject if the body starts with a separator).
+    /// E.g. if the separator char is `'_'`, then
+    /// `_123`/`123_` will be treated as a valid integer literal body.
+    /// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
+    /// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+    /// So it's up to the caller to decide whether to accept the leading/trailing separators.
     pub fn $action_fn_name_with_options<
       ActionState,
       ErrorType,
@@ -241,20 +380,38 @@ macro_rules! generate_integer_literal_functions {
       ActionState,
       ErrorType,
     > {
-      let mut a = if $prefix.len() == 0 {
+      let prefix = $prefix;
+
+      let mut a = if prefix.len() == 0 {
+        // no prefix, decimal integer literal
         simple_with_data(move |input| {
-          Some($body_fn_name_with_options(&input.rest(), options.clone()))
+          let (digested, data) = $body_fn_name_with_options(&input.rest(), options.clone());
+
+          if digested == 0 {
+            return None;
+          }
+
+          // reject if the first char is a separator
+          if options
+            .separator
+            .validate(&input.rest().chars().next().unwrap())
+          {
+            return None;
+          }
+
+          Some((digested, data))
         })
       } else {
         simple_with_data(move |input| {
-          let prefix = $prefix;
-          if input.rest().starts_with(prefix) {
-            let (digested, data) =
-              $body_fn_name_with_options(&input.rest()[prefix.len()..], options.clone());
-            Some((digested + prefix.len(), data))
-          } else {
-            None
+          if !input.rest().starts_with(prefix) {
+            return None;
           }
+          let (digested, data) =
+            $body_fn_name_with_options(&input.rest()[prefix.len()..], options.clone());
+          if digested == 0 {
+            return None;
+          }
+          Some((digested + prefix.len(), data))
         })
       };
       a.head_matcher = Some(HeadMatcher::OneOf(HashSet::from($head_matcher)));
@@ -340,10 +497,51 @@ mod tests {
     assert_eq!(hexadecimal_integer_literal_body("F0F"), 3);
     assert_eq!(hexadecimal_integer_literal_body("fgh"), 1);
 
-    // TODO: with separator
+    // with separator
+    assert_eq!(binary_integer_literal_body("1_01"), 4);
+    assert_eq!(binary_integer_literal_body("1_23"), 2);
+    assert_eq!(octal_integer_literal_body("7_07"), 4);
+    assert_eq!(octal_integer_literal_body("7_89"), 2);
+    assert_eq!(decimal_integer_literal_body("9_09"), 4);
+    assert_eq!(decimal_integer_literal_body("9_ab"), 2);
+    assert_eq!(hexadecimal_integer_literal_body("f_0f"), 4);
+    assert_eq!(hexadecimal_integer_literal_body("F_0F"), 4);
+    assert_eq!(hexadecimal_integer_literal_body("f_gh"), 2);
+
+    // separators only
+    assert_eq!(binary_integer_literal_body("_"), 0);
+    assert_eq!(octal_integer_literal_body("_"), 0);
+    assert_eq!(decimal_integer_literal_body("_"), 0);
+    assert_eq!(hexadecimal_integer_literal_body("_"), 0);
   }
 
-  // TODO: test xxx_body_default
+  #[test]
+  fn test_default_integer_literal_body_default() {
+    assert_eq!(binary_integer_literal_body_default("zzz"), 0);
+    assert_eq!(binary_integer_literal_body_default("101"), 3);
+    assert_eq!(binary_integer_literal_body_default("123"), 1);
+    assert_eq!(octal_integer_literal_body_default("zzz"), 0);
+    assert_eq!(octal_integer_literal_body_default("707"), 3);
+    assert_eq!(octal_integer_literal_body_default("789"), 1);
+    assert_eq!(decimal_integer_literal_body_default("zzz"), 0);
+    assert_eq!(decimal_integer_literal_body_default("909"), 3);
+    assert_eq!(decimal_integer_literal_body_default("9ab"), 1);
+    assert_eq!(hexadecimal_integer_literal_body_default("zzz"), 0);
+    assert_eq!(hexadecimal_integer_literal_body_default("f0f"), 3);
+    assert_eq!(hexadecimal_integer_literal_body_default("F0F"), 3);
+    assert_eq!(hexadecimal_integer_literal_body_default("fgh"), 1);
+
+    // with separator
+    assert_eq!(binary_integer_literal_body_default("1_01"), 1);
+    assert_eq!(binary_integer_literal_body_default("1_23"), 1);
+    assert_eq!(octal_integer_literal_body_default("7_07"), 1);
+    assert_eq!(octal_integer_literal_body_default("7_89"), 1);
+    assert_eq!(decimal_integer_literal_body_default("9_09"), 1);
+    assert_eq!(decimal_integer_literal_body_default("9_ab"), 1);
+    assert_eq!(hexadecimal_integer_literal_body_default("f_0f"), 1);
+    assert_eq!(hexadecimal_integer_literal_body_default("F_0F"), 1);
+    assert_eq!(hexadecimal_integer_literal_body_default("f_gh"), 1);
+  }
 
   fn assert_integer_literal_body(
     (digested, data): (usize, IntegerLiteralData<Vec<usize>, String>),
@@ -422,23 +620,44 @@ mod tests {
     assert_reject(hexadecimal_integer_literal(), "000");
 
     // prefix only
-    assert_default_integer_literal_action(binary_integer_literal(), "0b", 2);
-    assert_default_integer_literal_action(octal_integer_literal(), "0o", 2);
-    assert_default_integer_literal_action(hexadecimal_integer_literal(), "0x", 2);
+    assert_reject(binary_integer_literal(), "0b");
+    assert_reject(octal_integer_literal(), "0o");
+    assert_reject(hexadecimal_integer_literal(), "0x");
 
     // prefix + invalid char
-    assert_default_integer_literal_action(binary_integer_literal(), "0bz", 2);
-    assert_default_integer_literal_action(octal_integer_literal(), "0oz", 2);
-    assert_default_integer_literal_action(hexadecimal_integer_literal(), "0xz", 2);
+    assert_reject(binary_integer_literal(), "0bz");
+    assert_reject(octal_integer_literal(), "0oz");
+    assert_reject(hexadecimal_integer_literal(), "0xz");
+
+    // prefix + separators only
+    assert_reject(binary_integer_literal(), "0b_z");
+    assert_reject(octal_integer_literal(), "0o_z");
+    assert_reject(hexadecimal_integer_literal(), "0x_z");
 
     // valid content
     assert_default_integer_literal_action(binary_integer_literal(), "0b101z", 5);
     assert_default_integer_literal_action(octal_integer_literal(), "0o707z", 5);
     assert_default_integer_literal_action(decimal_integer_literal(), "909z", 3);
     assert_default_integer_literal_action(hexadecimal_integer_literal(), "0xf0fz", 5);
+
+    // decimal integer literal will reject if starts with separators
+    assert_reject(decimal_integer_literal(), "_123");
+
+    // correct separators
+    assert_default_integer_literal_action(binary_integer_literal(), "0b_101_z", 7);
+    assert_default_integer_literal_action(octal_integer_literal(), "0o_707_z", 7);
+    assert_default_integer_literal_action(decimal_integer_literal(), "909_z", 4);
+    assert_default_integer_literal_action(hexadecimal_integer_literal(), "0x_f0f_z", 7);
   }
 
-  // TODO: test xxx_default
+  #[test]
+  fn test_default_integer_literal_actions_default() {
+    // correct separators
+    assert_default_integer_literal_action(binary_integer_literal_default(), "0b101_z", 5);
+    assert_default_integer_literal_action(octal_integer_literal_default(), "0o707_z", 5);
+    assert_default_integer_literal_action(decimal_integer_literal_default(), "909_z", 3);
+    assert_default_integer_literal_action(hexadecimal_integer_literal_default(), "0xf0f_z", 5);
+  }
 
   fn assert_integer_literal_action(
     action: Action<MockTokenKind<IntegerLiteralData<Vec<usize>, String>>>,
