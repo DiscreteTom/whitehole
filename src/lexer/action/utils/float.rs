@@ -216,6 +216,9 @@ pub fn float_literal_body_with_options<
     let rest = &rest[total_digested..];
     rest.chars().next().and_then(|c| {
       exponent.indicator_heads().contains(&c).then(|| {
+        // find the first matched indicator
+        // TODO: will regex be faster? since the regex will be compiled into a state machine
+        // and match all the candidates at the same time
         let indicator = exponent
           .indicators
           .iter()
