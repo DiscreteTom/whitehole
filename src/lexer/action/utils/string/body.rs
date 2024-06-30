@@ -17,6 +17,8 @@ pub struct StringBodyMatcherInput<'text> {
 }
 
 impl<'text> StringBodyMatcherInput<'text> {
+  /// Return [`None`] if the [`start`](Self::start) position is out of the input
+  /// [`text`](Self::text) or there is no [`rest`](Self::rest).
   pub fn new(text: &'text str, start: usize) -> Option<Self> {
     if start < text.len() {
       Some(Self {
