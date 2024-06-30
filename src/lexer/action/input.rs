@@ -44,6 +44,7 @@ impl<'text, 'action_state, ActionState> ActionInput<'text, 'action_state, Action
   }
 
   /// From where to lex, in bytes.
+  /// This is guaranteed to be smaller than the length of [`Self::text`].
   pub fn start(&self) -> usize {
     self.start
   }
