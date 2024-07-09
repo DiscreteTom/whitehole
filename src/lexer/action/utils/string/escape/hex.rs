@@ -2,7 +2,10 @@ use super::{Escape, EscapeHandler};
 use crate::lexer::action::StringLiteralError;
 
 pub enum HexEscapeError {
+  /// The hex sequence is shorter than [`HexEscapeOptions::length`].
+  /// E.g. `"\x1"`.
   TooShort,
+  /// The hex sequence does not represent a valid unicode character.
   InvalidUnicode,
 }
 
@@ -117,10 +120,17 @@ pub fn unicode_with(
 }
 
 pub enum CodePointEscapeError {
+  /// E.g. `"\u{}"`
   Empty,
+  /// The hex sequence does not represent a valid unicode character.
   InvalidUnicode,
+  /// The hex sequence contains non-hex digit characters.
+  /// E.g. `"\u{z}"`
   InvalidChar,
+  /// The hex sequence is longer than [`CodePointEscapeOptions::max_length`].
   Overlong,
+  /// The hex sequence is not terminated.
+  /// E.g. `"\u{1`
   Unterminated,
 }
 
