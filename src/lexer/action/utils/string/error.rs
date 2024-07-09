@@ -1,5 +1,6 @@
 /// Errors when lexing a string.
-pub enum Error<CustomError> {
+#[derive(Clone, Debug)]
+pub enum StringLiteralError<CustomError> {
   Unterminated,
   UnhandledEscape,
   Custom(CustomError),

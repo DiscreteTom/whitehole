@@ -1,4 +1,4 @@
-use super::Error;
+use super::StringLiteralError;
 
 pub struct StringBodyMatcherInput<'text> {
   /// The whole input text.
@@ -42,7 +42,7 @@ pub struct PartialStringBody<Value, CustomError> {
   /// If `true`, the lexer will stop lexing the string.
   pub close: bool,
   /// The error that occurred during lexing the partial string body.
-  pub error: Option<Error<CustomError>>,
+  pub error: Option<StringLiteralError<CustomError>>,
 }
 
 pub type StringBodyMatcher<Value, CustomError> =
