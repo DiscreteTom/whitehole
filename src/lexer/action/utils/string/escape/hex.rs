@@ -61,63 +61,46 @@ pub fn hex_with(
 
 // TODO: comments
 pub fn hex_with_options(options: HexEscapeOptions) -> EscapeHandler<HexEscapeError> {
-  Box::new(move |input| match input.rest.chars().next() {
-    // `input.rest` is guaranteed to be non-empty
-    // so `next` is always `Some`
-    None => unreachable!(),
-    Some(next) => {
-      // check prefix
-      if next != options.prefix {
-        return None;
-      }
+  Box::new(move |input| {
+    // check prefix
+    if !input.rest.starts_with(options.prefix) {
+      return None;
+    }
 
-      let mut value = 0;
-      let mut i = 0;
-      let mut digested = options.prefix.len_utf8();
-      for c in input.rest.chars().skip(1) {
-        match c.to_digit(16) {
-          // not enough digits
-          None => {
-            return Some(Escape {
-              digested: options.prefix.len_utf8(), // only digest the prefix
-              value: '\0'.into(),                  // treat as '\0'
-              error: Some(StringLiteralError::Custom(HexEscapeError::TooShort)),
-            });
-          }
-          Some(digit) => {
-            value = value * 16 + digit;
-            i += 1;
-            digested += c.len_utf8();
-            if i == options.length {
-              match char::from_u32(value) {
-                // invalid unicode
-                None => {
-                  return Some(Escape {
-                    digested: options.prefix.len_utf8(), // only digest the prefix
-                    value: '\0'.into(),                  // treat as '\0'
-                    error: Some(StringLiteralError::Custom(HexEscapeError::InvalidUnicode)),
-                  });
-                }
-                Some(res) => {
-                  return Some(Escape {
-                    digested,
-                    value: res.into(),
-                    error: None,
-                  });
-                }
-              }
-            }
+    let mut value = 0;
+    let mut i = 0;
+    let mut digested = options.prefix.len_utf8();
+    for c in input.rest.chars().skip(1) {
+      match c.to_digit(16) {
+        // not enough digits
+        None => {
+          return escape_error(options.prefix.len_utf8(), '\0', HexEscapeError::TooShort);
+        }
+        Some(digit) => {
+          value = value * 16 + digit;
+          i += 1;
+          digested += c.len_utf8();
+          if i == options.length {
+            return match char::from_u32(value) {
+              // invalid unicode
+              None => escape_error(
+                options.prefix.len_utf8(),
+                '\0',
+                HexEscapeError::InvalidUnicode,
+              ),
+              Some(res) => Some(Escape {
+                digested,
+                value: res.into(),
+                error: None,
+              }),
+            };
           }
         }
       }
-
-      // reach to the end of the string
-      Some(Escape {
-        digested: options.prefix.len_utf8(), // only digest the prefix
-        value: '\0'.into(),                  // treat as '\0'
-        error: Some(StringLiteralError::Custom(HexEscapeError::TooShort)),
-      })
     }
+
+    // reach to the end of the string
+    escape_error(options.prefix.len_utf8(), '\0', HexEscapeError::TooShort)
   })
 }
 
@@ -160,6 +143,7 @@ pub fn code_point_with_options(
 ) -> EscapeHandler<CodePointEscapeError> {
   let mut prefix = options.prefix.to_string();
   prefix.push(options.open);
+
   Box::new(move |input| {
     // check prefix
     if !input.rest.starts_with(&prefix) {
@@ -173,24 +157,16 @@ pub fn code_point_with_options(
       if c == options.close {
         if i == 0 {
           // no body
-          return Some(Escape {
-            digested: options.prefix.len_utf8(),
-            value: '\0'.into(),
-            error: Some(StringLiteralError::Custom(CodePointEscapeError::Empty)),
-          });
+          return escape_error(options.prefix.len_utf8(), '\0', CodePointEscapeError::Empty);
         }
         digested += c.len_utf8();
         return match char::from_u32(value) {
           // invalid unicode
-          None => {
-            return Some(Escape {
-              digested: options.prefix.len_utf8(),
-              value: '\0'.into(),
-              error: Some(StringLiteralError::Custom(
-                CodePointEscapeError::InvalidUnicode,
-              )),
-            })
-          }
+          None => escape_error(
+            options.prefix.len_utf8(),
+            '\0',
+            CodePointEscapeError::InvalidUnicode,
+          ),
           Some(res) => Some(Escape {
             digested,
             value: res.into(),
@@ -201,23 +177,21 @@ pub fn code_point_with_options(
 
       if i == options.max_length {
         // reach the maximum length but not closed
-        return Some(Escape {
-          digested: options.prefix.len_utf8(),
-          value: '\0'.into(),
-          error: Some(StringLiteralError::Custom(CodePointEscapeError::Overlong)),
-        });
+        return escape_error(
+          options.prefix.len_utf8(),
+          '\0',
+          CodePointEscapeError::Overlong,
+        );
       }
 
       match c.to_digit(16) {
         // bad hex digit
         None => {
-          return Some(Escape {
-            digested: options.prefix.len_utf8(),
-            value: '\0'.into(),
-            error: Some(StringLiteralError::Custom(
-              CodePointEscapeError::InvalidChar,
-            )),
-          })
+          return escape_error(
+            options.prefix.len_utf8(),
+            '\0',
+            CodePointEscapeError::InvalidChar,
+          )
         }
         Some(digit) => {
           value = value * 16 + digit;
@@ -228,12 +202,22 @@ pub fn code_point_with_options(
     }
 
     // reach to the end of the string
-    Some(Escape {
-      digested: options.prefix.len_utf8(),
-      value: '\0'.into(),
-      error: Some(StringLiteralError::Custom(
-        CodePointEscapeError::Unterminated,
-      )),
-    })
+    escape_error(
+      options.prefix.len_utf8(),
+      '\0',
+      CodePointEscapeError::Unterminated,
+    )
+  })
+}
+
+fn escape_error<CustomError>(
+  digested: usize,
+  value: impl Into<String>,
+  e: CustomError,
+) -> Option<Escape<CustomError>> {
+  Some(Escape {
+    digested,
+    value: value.into(),
+    error: Some(StringLiteralError::Custom(e)),
   })
 }
