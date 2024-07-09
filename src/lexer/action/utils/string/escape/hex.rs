@@ -9,34 +9,40 @@ pub enum HexEscapeError {
   InvalidUnicode,
 }
 
-pub struct HexEscapeOptions {
+pub struct HexEscapeOptions<CustomError> {
   /// The prefix of the hex escape.
   /// Defaults to `'x'`.
   pub prefix: char,
   /// The number of hex digit chars to match.
   /// Defaults to `2`.
   pub length: usize,
+  /// Map [`HexEscapeError`] to a custom error.
+  pub error_mapper: Box<dyn Fn(HexEscapeError) -> CustomError>,
 }
 
-impl Default for HexEscapeOptions {
+impl Default for HexEscapeOptions<HexEscapeError> {
   fn default() -> Self {
     Self {
       prefix: 'x',
       length: 2,
+      error_mapper: Box::new(|e| e),
     }
   }
 }
 
-impl HexEscapeOptions {
+impl HexEscapeOptions<HexEscapeError> {
   /// Create a new `HexEscapeOptions` with the default settings for unicode escapes.
   /// Set the prefix to `'u'` and the length to `4`.
   pub fn unicode() -> Self {
     Self {
       prefix: 'u',
       length: 4,
+      error_mapper: Box::new(|e| e),
     }
   }
+}
 
+impl<CustomError> HexEscapeOptions<CustomError> {
   /// Set the prefix of the hex escape.
   pub fn prefix(mut self, prefix: char) -> Self {
     self.prefix = prefix;
@@ -48,6 +54,18 @@ impl HexEscapeOptions {
     self.length = length;
     self
   }
+
+  /// Set [`Self::error_mapper`].
+  pub fn error<NewError: 'static>(
+    self,
+    error_mapper: impl Fn(HexEscapeError) -> NewError + 'static,
+  ) -> HexEscapeOptions<NewError> {
+    HexEscapeOptions {
+      prefix: self.prefix,
+      length: self.length,
+      error_mapper: Box::new(error_mapper),
+    }
+  }
 }
 
 // TODO: comments
@@ -56,14 +74,16 @@ pub fn hex() -> EscapeHandler<HexEscapeError> {
 }
 
 // TODO: comments
-pub fn hex_with(
-  options_builder: impl FnOnce(HexEscapeOptions) -> HexEscapeOptions,
-) -> EscapeHandler<HexEscapeError> {
+pub fn hex_with<CustomError: 'static>(
+  options_builder: impl FnOnce(HexEscapeOptions<HexEscapeError>) -> HexEscapeOptions<CustomError>,
+) -> EscapeHandler<CustomError> {
   hex_with_options(options_builder(HexEscapeOptions::default()))
 }
 
 // TODO: comments
-pub fn hex_with_options(options: HexEscapeOptions) -> EscapeHandler<HexEscapeError> {
+pub fn hex_with_options<CustomError: 'static>(
+  options: HexEscapeOptions<CustomError>,
+) -> EscapeHandler<CustomError> {
   Box::new(move |input| {
     // check prefix
     if !input.rest.starts_with(options.prefix) {
@@ -77,7 +97,12 @@ pub fn hex_with_options(options: HexEscapeOptions) -> EscapeHandler<HexEscapeErr
       match c.to_digit(16) {
         // not enough digits
         None => {
-          return escape_error(options.prefix.len_utf8(), '\0', HexEscapeError::TooShort);
+          return escape_error(
+            options.prefix.len_utf8(),
+            '\0',
+            HexEscapeError::TooShort,
+            &options.error_mapper,
+          );
         }
         Some(digit) => {
           value = value * 16 + digit;
@@ -90,6 +115,7 @@ pub fn hex_with_options(options: HexEscapeOptions) -> EscapeHandler<HexEscapeErr
                 options.prefix.len_utf8(),
                 '\0',
                 HexEscapeError::InvalidUnicode,
+                &options.error_mapper,
               ),
               Some(res) => Some(Escape {
                 digested,
@@ -103,7 +129,12 @@ pub fn hex_with_options(options: HexEscapeOptions) -> EscapeHandler<HexEscapeErr
     }
 
     // reach to the end of the string
-    escape_error(options.prefix.len_utf8(), '\0', HexEscapeError::TooShort)
+    escape_error(
+      options.prefix.len_utf8(),
+      '\0',
+      HexEscapeError::TooShort,
+      &options.error_mapper,
+    )
   })
 }
 
@@ -113,9 +144,9 @@ pub fn unicode() -> EscapeHandler<HexEscapeError> {
 }
 
 // TODO: comments
-pub fn unicode_with(
-  options_builder: impl FnOnce(HexEscapeOptions) -> HexEscapeOptions,
-) -> EscapeHandler<HexEscapeError> {
+pub fn unicode_with<CustomError: 'static>(
+  options_builder: impl FnOnce(HexEscapeOptions<HexEscapeError>) -> HexEscapeOptions<CustomError>,
+) -> EscapeHandler<CustomError> {
   hex_with_options(options_builder(HexEscapeOptions::unicode()))
 }
 
@@ -134,7 +165,7 @@ pub enum CodePointEscapeError {
   Unterminated,
 }
 
-pub struct CodePointEscapeOptions {
+pub struct CodePointEscapeOptions<CustomError> {
   /// The prefix of the code point escape.
   /// Defaults to `'u'`.
   pub prefix: char,
@@ -146,11 +177,13 @@ pub struct CodePointEscapeOptions {
   pub close: char,
   /// The maximum number of hex digit chars to match.
   pub max_length: usize,
+  /// Map [`CodePointEscapeError`] to a custom error.
+  pub error_mapper: Box<dyn Fn(CodePointEscapeError) -> CustomError>,
 }
 
-pub fn code_point_with_options(
-  options: CodePointEscapeOptions,
-) -> EscapeHandler<CodePointEscapeError> {
+pub fn code_point_with_options<CustomError: 'static>(
+  options: CodePointEscapeOptions<CustomError>,
+) -> EscapeHandler<CustomError> {
   let mut prefix = options.prefix.to_string();
   prefix.push(options.open);
 
@@ -167,7 +200,12 @@ pub fn code_point_with_options(
       if c == options.close {
         if i == 0 {
           // no body
-          return escape_error(options.prefix.len_utf8(), '\0', CodePointEscapeError::Empty);
+          return escape_error(
+            options.prefix.len_utf8(),
+            '\0',
+            CodePointEscapeError::Empty,
+            &options.error_mapper,
+          );
         }
         digested += c.len_utf8();
         return match char::from_u32(value) {
@@ -176,6 +214,7 @@ pub fn code_point_with_options(
             options.prefix.len_utf8(),
             '\0',
             CodePointEscapeError::InvalidUnicode,
+            &options.error_mapper,
           ),
           Some(res) => Some(Escape {
             digested,
@@ -191,6 +230,7 @@ pub fn code_point_with_options(
           options.prefix.len_utf8(),
           '\0',
           CodePointEscapeError::Overlong,
+          &options.error_mapper,
         );
       }
 
@@ -201,6 +241,7 @@ pub fn code_point_with_options(
             options.prefix.len_utf8(),
             '\0',
             CodePointEscapeError::InvalidChar,
+            &options.error_mapper,
           )
         }
         Some(digit) => {
@@ -216,18 +257,20 @@ pub fn code_point_with_options(
       options.prefix.len_utf8(),
       '\0',
       CodePointEscapeError::Unterminated,
+      &options.error_mapper,
     )
   })
 }
 
-fn escape_error<CustomError>(
+fn escape_error<FromError, ToError>(
   digested: usize,
   value: impl Into<String>,
-  e: CustomError,
-) -> Option<Escape<CustomError>> {
+  e: FromError,
+  error_mapper: &Box<dyn Fn(FromError) -> ToError>,
+) -> Option<Escape<ToError>> {
   Some(Escape {
     digested,
     value: value.into(),
-    error: Some(StringLiteralError::Custom(e)),
+    error: Some(StringLiteralError::Custom(error_mapper(e))),
   })
 }
