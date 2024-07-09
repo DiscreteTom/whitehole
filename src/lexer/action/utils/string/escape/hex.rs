@@ -132,3 +132,108 @@ pub fn unicode_with(
 ) -> EscapeHandler<HexEscapeError> {
   hex_with_options(options_builder(HexEscapeOptions::unicode()))
 }
+
+pub enum CodePointEscapeError {
+  Empty,
+  InvalidUnicode,
+  InvalidChar,
+  Overlong,
+  Unterminated,
+}
+
+pub struct CodePointEscapeOptions {
+  /// The prefix of the code point escape.
+  /// Defaults to `'u'`.
+  pub prefix: char,
+  /// The open char of the code point escape body.
+  /// Defaults to `'{'`.
+  pub open: char,
+  /// The close char of the code point escape body.
+  /// Defaults to `'}'`.
+  pub close: char,
+  /// The maximum number of hex digit chars to match.
+  pub max_length: usize,
+}
+
+pub fn code_point_with_options(
+  options: CodePointEscapeOptions,
+) -> EscapeHandler<CodePointEscapeError> {
+  let mut prefix = options.prefix.to_string();
+  prefix.push(options.open);
+  Box::new(move |input| {
+    // check prefix
+    if !input.rest.starts_with(&prefix) {
+      return None;
+    }
+
+    let mut value = 0;
+    let mut i = 0;
+    let mut digested = prefix.len();
+    for c in input.rest.chars().skip(2) {
+      if c == options.close {
+        if i == 0 {
+          // no body
+          return Some(Escape {
+            digested: options.prefix.len_utf8(),
+            value: '\0'.into(),
+            error: Some(StringLiteralError::Custom(CodePointEscapeError::Empty)),
+          });
+        }
+        digested += c.len_utf8();
+        return match char::from_u32(value) {
+          // invalid unicode
+          None => {
+            return Some(Escape {
+              digested: options.prefix.len_utf8(),
+              value: '\0'.into(),
+              error: Some(StringLiteralError::Custom(
+                CodePointEscapeError::InvalidUnicode,
+              )),
+            })
+          }
+          Some(res) => Some(Escape {
+            digested,
+            value: res.into(),
+            error: None,
+          }),
+        };
+      }
+
+      if i == options.max_length {
+        // reach the maximum length but not closed
+        return Some(Escape {
+          digested: options.prefix.len_utf8(),
+          value: '\0'.into(),
+          error: Some(StringLiteralError::Custom(CodePointEscapeError::Overlong)),
+        });
+      }
+
+      match c.to_digit(16) {
+        // bad hex digit
+        None => {
+          return Some(Escape {
+            digested: options.prefix.len_utf8(),
+            value: '\0'.into(),
+            error: Some(StringLiteralError::Custom(
+              CodePointEscapeError::InvalidChar,
+            )),
+          })
+        }
+        Some(digit) => {
+          value = value * 16 + digit;
+          i += 1;
+          digested += c.len_utf8();
+        }
+      }
+    }
+
+    // reach to the end of the string
+    Some(Escape {
+      digested: options.prefix.len_utf8(),
+      value: '\0'.into(),
+      error: Some(StringLiteralError::Custom(
+        CodePointEscapeError::Unterminated,
+      )),
+    })
+  })
+}
