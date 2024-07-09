@@ -1,36 +1,36 @@
 use super::{Escape, EscapeHandler};
 use crate::lexer::action::StringLiteralError;
 
-pub struct HexEscapeOptions<CustomError> {
+pub enum HexEscapeError {
+  TooShort,
+  InvalidUnicode,
+}
+
+pub struct HexEscapeOptions {
   /// The prefix of the hex escape.
   /// Defaults to `'x'`.
   pub prefix: char,
   /// The number of hex digit chars to match.
   /// Defaults to `2`.
   pub length: usize,
-  /// If [`Some`], invalid hex escapes will be marked with this error
-  /// and be accepted. If [`None`], invalid hex escapes will be rejected.
-  pub error: Option<CustomError>,
 }
 
-impl<CustomError> Default for HexEscapeOptions<CustomError> {
+impl Default for HexEscapeOptions {
   fn default() -> Self {
     Self {
       prefix: 'x',
       length: 2,
-      error: None,
     }
   }
 }
 
-impl<CustomError> HexEscapeOptions<CustomError> {
+impl HexEscapeOptions {
   /// Create a new `HexEscapeOptions` with the default settings for unicode escapes.
   /// Set the prefix to `'u'` and the length to `4`.
   pub fn unicode() -> Self {
     Self {
       prefix: 'u',
       length: 4,
-      error: None,
     }
   }
 
@@ -45,31 +45,22 @@ impl<CustomError> HexEscapeOptions<CustomError> {
     self.length = length;
     self
   }
-
-  /// Set the error to be used for invalid hex escapes.
-  pub fn error(mut self, error: CustomError) -> Self {
-    self.error = Some(error);
-    self
-  }
 }
 
 // TODO: comments
-pub fn hex<CustomError: Clone + 'static>() -> EscapeHandler<CustomError> {
+pub fn hex() -> EscapeHandler<HexEscapeError> {
   hex_with_options(HexEscapeOptions::default())
 }
 
 // TODO: comments
-pub fn hex_with<CustomError: Clone + 'static>(
-  options_builder: impl FnOnce(HexEscapeOptions<CustomError>) -> HexEscapeOptions<CustomError>,
-) -> EscapeHandler<CustomError> {
+pub fn hex_with(
+  options_builder: impl FnOnce(HexEscapeOptions) -> HexEscapeOptions,
+) -> EscapeHandler<HexEscapeError> {
   hex_with_options(options_builder(HexEscapeOptions::default()))
 }
 
 // TODO: comments
-pub fn hex_with_options<CustomError: Clone + 'static>(
-  options: HexEscapeOptions<CustomError>,
-) -> EscapeHandler<CustomError> {
-  let error = options.error.map(|e| StringLiteralError::Custom(e));
+pub fn hex_with_options(options: HexEscapeOptions) -> EscapeHandler<HexEscapeError> {
   Box::new(move |input| match input.rest.chars().next() {
     // `input.rest` is guaranteed to be non-empty
     // so `next` is always `Some`
@@ -86,7 +77,13 @@ pub fn hex_with_options<CustomError: Clone + 'static>(
       for c in input.rest.chars().skip(1) {
         match c.to_digit(16) {
           // not enough digits
-          None => break,
+          None => {
+            return Some(Escape {
+              digested: options.prefix.len_utf8(), // only digest the prefix
+              value: '\0'.into(),                  // treat as '\0'
+              error: Some(StringLiteralError::Custom(HexEscapeError::TooShort)),
+            });
+          }
           Some(digit) => {
             value = value * 16 + digit;
             i += 1;
@@ -94,7 +91,13 @@ pub fn hex_with_options<CustomError: Clone + 'static>(
             if i == options.length {
               match char::from_u32(value) {
                 // invalid unicode
-                None => break,
+                None => {
+                  return Some(Escape {
+                    digested: options.prefix.len_utf8(), // only digest the prefix
+                    value: '\0'.into(),                  // treat as '\0'
+                    error: Some(StringLiteralError::Custom(HexEscapeError::InvalidUnicode)),
+                  });
+                }
                 Some(res) => {
                   return Some(Escape {
                     digested,
@@ -108,27 +111,24 @@ pub fn hex_with_options<CustomError: Clone + 'static>(
         }
       }
 
-      // reach to the end of the string or encounter a non-hex char
-      // or the value is not a valid unicode,
-      // set error if provided
-      // otherwise, return None to reject the escape
-      error.clone().map(|error| Escape {
-        digested: options.prefix.len_utf8(),
-        value: '\0'.into(),
-        error: Some(error),
+      // reach to the end of the string
+      Some(Escape {
+        digested: options.prefix.len_utf8(), // only digest the prefix
+        value: '\0'.into(),                  // treat as '\0'
+        error: Some(StringLiteralError::Custom(HexEscapeError::TooShort)),
       })
     }
   })
 }
 
 // TODO: comments
-pub fn unicode<CustomError: Clone + 'static>() -> EscapeHandler<CustomError> {
+pub fn unicode() -> EscapeHandler<HexEscapeError> {
   hex_with_options(HexEscapeOptions::unicode())
 }
 
 // TODO: comments
-pub fn unicode_with<CustomError: Clone + 'static>(
-  options_builder: impl FnOnce(HexEscapeOptions<CustomError>) -> HexEscapeOptions<CustomError>,
-) -> EscapeHandler<CustomError> {
+pub fn unicode_with(
+  options_builder: impl FnOnce(HexEscapeOptions) -> HexEscapeOptions,
+) -> EscapeHandler<HexEscapeError> {
   hex_with_options(options_builder(HexEscapeOptions::unicode()))
 }
