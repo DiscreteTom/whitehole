@@ -3,7 +3,7 @@ pub trait Accumulator<T>: Clone {
   type Target: Default;
 
   /// Update the accumulator with a value.
-  fn update(&mut self, t: &T);
+  fn update(&mut self, t: T);
   /// Consume the accumulator and emit the result.
   fn emit(self) -> Self::Target;
 }
@@ -14,7 +14,7 @@ pub trait Accumulator<T>: Clone {
 pub struct MockAccumulator;
 impl<T> Accumulator<T> for MockAccumulator {
   type Target = ();
-  fn update(&mut self, _: &T) {}
+  fn update(&mut self, _: T) {}
   fn emit(self) -> Self::Target {}
 }
 
@@ -23,8 +23,8 @@ impl<T> Accumulator<T> for MockAccumulator {
 pub struct VecAccumulator(Vec<usize>);
 impl Accumulator<usize> for VecAccumulator {
   type Target = Vec<usize>;
-  fn update(&mut self, c: &usize) {
-    self.0.push(*c);
+  fn update(&mut self, c: usize) {
+    self.0.push(c);
   }
   fn emit(self) -> Self::Target {
     self.0
@@ -37,8 +37,8 @@ pub struct StringAccumulator(String);
 impl Accumulator<char> for StringAccumulator {
   type Target = String;
   // TODO: batch update with a String instead of one char?
-  fn update(&mut self, c: &char) {
-    self.0.push(*c);
+  fn update(&mut self, c: char) {
+    self.0.push(c);
   }
   fn emit(self) -> Self::Target {
     self.0
@@ -64,18 +64,18 @@ mod tests {
   #[test]
   fn vec_accumulator() {
     let mut acc = VecAccumulator::default();
-    acc.update(&1);
-    acc.update(&2);
-    acc.update(&3);
+    acc.update(1);
+    acc.update(2);
+    acc.update(3);
     assert_eq!(acc.emit(), vec![1, 2, 3]);
   }
 
   #[test]
   fn string_accumulator() {
     let mut acc = StringAccumulator::default();
-    acc.update(&'1');
-    acc.update(&'2');
-    acc.update(&'3');
+    acc.update('1');
+    acc.update('2');
+    acc.update('3');
     assert_eq!(acc.emit(), "123");
   }
 }

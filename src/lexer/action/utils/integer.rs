@@ -37,7 +37,7 @@ use std::collections::HashSet;
 /// let digested = integer_literal_body("___z", |c| c.is_ascii_digit());
 /// assert_eq!(digested, 0);
 /// ```
-pub fn integer_literal_body(rest: &str, is_body: impl Fn(&char) -> bool) -> usize {
+pub fn integer_literal_body(rest: &str, is_body: impl Fn(char) -> bool) -> usize {
   integer_literal_body_with_options(
     rest,
     is_body,
@@ -56,7 +56,7 @@ pub fn integer_literal_body(rest: &str, is_body: impl Fn(&char) -> bool) -> usiz
 /// let digested = integer_literal_body_default("123z", |c| c.is_ascii_digit());
 /// assert_eq!(digested, 3);
 /// ```
-pub fn integer_literal_body_default(rest: &str, is_body: impl Fn(&char) -> bool) -> usize {
+pub fn integer_literal_body_default(rest: &str, is_body: impl Fn(char) -> bool) -> usize {
   integer_literal_body_with_options(rest, is_body, IntegerLiteralBodyOptions::default()).0
 }
 
@@ -103,7 +103,7 @@ pub fn integer_literal_body_with<
   ValueAcc: Accumulator<char>,
 >(
   rest: &str,
-  is_body: impl Fn(&char) -> bool,
+  is_body: impl Fn(char) -> bool,
   options_builder: impl FnOnce(
     IntegerLiteralBodyOptions<MockNumericSeparatorAccumulator, MockAccumulator>,
   ) -> IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
@@ -163,22 +163,22 @@ pub fn integer_literal_body_with_options<
   ValueAcc: Accumulator<char>,
 >(
   rest: &str,
-  is_body: impl Fn(&char) -> bool,
+  is_body: impl Fn(char) -> bool,
   mut options: IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
 ) -> (usize, IntegerLiteralData<SepAcc::Target, ValueAcc::Target>) {
   let mut digested = 0;
   let mut sep_only = true;
 
   for c in rest.chars() {
-    if options.separator.validate(&c) {
-      options.separator.update(&digested);
+    if options.separator.validate(c) {
+      options.separator.update(digested);
       digested += c.len_utf8();
       continue;
     }
 
-    if is_body(&c) {
+    if is_body(c) {
       sep_only = false;
-      options.value.update(&c);
+      options.value.update(c);
       digested += c.len_utf8();
       continue;
     }
@@ -400,10 +400,7 @@ macro_rules! generate_integer_literal_functions {
           }
 
           // reject if the first char is a separator
-          if options
-            .separator
-            .validate(&input.rest().chars().next().unwrap())
-          {
+          if options.separator.validate(input.next()) {
             return None;
           }
 

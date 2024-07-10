@@ -60,12 +60,12 @@ impl<Value: PartialStringBodyValue, CustomError> StringBodyOptions<Value, Custom
   /// // accept all the alphabetic characters as the string body
   /// StringBodyOptions::new().chars(|c| c.is_alphabetic());
   /// ```
-  pub fn chars(self, matcher: impl Fn(&char) -> bool + 'static) -> Self {
+  pub fn chars(self, matcher: impl Fn(char) -> bool + 'static) -> Self {
     self.body(move |input| {
       input
         .rest
         .chars()
-        .take_while(|c| matcher(c))
+        .take_while(|c| matcher(*c))
         .map(|c| c.len_utf8())
         .sum()
     })
@@ -94,11 +94,11 @@ impl<Value: PartialStringBodyValue, CustomError> StringBodyOptions<Value, Custom
   /// # use whitehole::lexer::action::{StringBodyOptions};
   /// # let options =
   /// // accept `"` or `'` as the close quote of the string
-  /// StringBodyOptions::new().close_if(|c| *c == '"' || *c == '\'');
+  /// StringBodyOptions::new().close_if(|c| c == '"' || c == '\'');
   /// ```
-  pub fn close_if(self, matcher: impl Fn(&char) -> bool + 'static) -> Self {
+  pub fn close_if(self, matcher: impl Fn(char) -> bool + 'static) -> Self {
     self.close_match(move |input| {
-      if matcher(&input.next) {
+      if matcher(input.next) {
         input.next.len_utf8()
       } else {
         0
@@ -116,6 +116,6 @@ impl<Value: PartialStringBodyValue, CustomError> StringBodyOptions<Value, Custom
   /// StringBodyOptions::new().close('"');
   /// ```
   pub fn close(self, quote: char) -> Self {
-    self.close_if(move |c| *c == quote)
+    self.close_if(move |c| c == quote)
   }
 }

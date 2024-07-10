@@ -5,9 +5,9 @@ pub trait NumericSeparatorAccumulator: Clone {
   type Target;
 
   /// Return whether the character is a valid numeric separator.
-  fn validate(&self, c: &char) -> bool;
+  fn validate(&self, c: char) -> bool;
   /// Accumulate the index of the numeric separator.
-  fn update(&mut self, c: &usize);
+  fn update(&mut self, c: usize);
   /// Emit the accumulated indexes.
   fn emit(self) -> Self::Target;
 }
@@ -18,10 +18,10 @@ pub struct MockNumericSeparatorAccumulator;
 
 impl NumericSeparatorAccumulator for MockNumericSeparatorAccumulator {
   type Target = ();
-  fn validate(&self, _: &char) -> bool {
+  fn validate(&self, _: char) -> bool {
     false
   }
-  fn update(&mut self, _: &usize) {}
+  fn update(&mut self, _: usize) {}
   fn emit(self) {}
 }
 
@@ -74,10 +74,10 @@ impl<Acc> NumericSeparatorOptions<Acc> {
 
 impl<Acc: Accumulator<usize>> NumericSeparatorAccumulator for NumericSeparatorOptions<Acc> {
   type Target = Acc::Target;
-  fn validate(&self, c: &char) -> bool {
-    *c == self.ch
+  fn validate(&self, c: char) -> bool {
+    c == self.ch
   }
-  fn update(&mut self, c: &usize) {
+  fn update(&mut self, c: usize) {
     self.acc.update(c);
   }
   fn emit(self) -> Self::Target {

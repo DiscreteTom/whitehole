@@ -45,7 +45,7 @@ impl<Value: PartialStringBodyValue, CustomError: 'static> StringBodyOptions<Valu
           // treat the escape starter as a normal char
           Some(PartialStringBody {
             digested: starter.len_utf8(),
-            value: Value::from_char(&starter),
+            value: Value::from_char(starter),
             close: true,
             error: Some(StringLiteralError::Unterminated),
           })
@@ -65,7 +65,7 @@ impl<Value: PartialStringBodyValue, CustomError: 'static> StringBodyOptions<Valu
           // treat the escape starter as a normal char
           Some(PartialStringBody {
             digested: starter.len_utf8(),
-            value: Value::from_char(&starter),
+            value: Value::from_char(starter),
             close: false,
             error: Some(StringLiteralError::UnhandledEscape),
           })
