@@ -67,7 +67,7 @@ impl<Acc> NumericSeparatorOptions<Acc> {
   }
 
   /// Set [`Self::acc`] to [`VecAccumulator`].
-  pub fn acc_to_vec(self) -> NumericSeparatorOptions<VecAccumulator> {
+  pub fn acc_to_vec(self) -> NumericSeparatorOptions<VecAccumulator<usize>> {
     self.acc(VecAccumulator::default())
   }
 }

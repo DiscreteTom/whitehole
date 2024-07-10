@@ -20,10 +20,10 @@ impl<T> Accumulator<T> for MockAccumulator {
 
 /// Accumulate values into a [`Vec`] and emit the [`Vec`].
 #[derive(Clone, Debug, Default)]
-pub struct VecAccumulator(Vec<usize>);
-impl Accumulator<usize> for VecAccumulator {
-  type Target = Vec<usize>;
-  fn update(&mut self, c: usize) {
+pub struct VecAccumulator<T>(Vec<T>);
+impl<T: Clone> Accumulator<T> for VecAccumulator<T> {
+  type Target = Vec<T>;
+  fn update(&mut self, c: T) {
     self.0.push(c);
   }
   fn emit(self) -> Self::Target {
