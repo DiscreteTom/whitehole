@@ -94,9 +94,9 @@ impl<Value: PartialStringBodyValue, CustomError> StringBodyOptions<Value, Custom
   /// # use whitehole::lexer::action::{StringBodyOptions};
   /// # let options =
   /// // accept `"` or `'` as the close quote of the string
-  /// StringBodyOptions::new().close_char(|c| *c == '"' || *c == '\'');
+  /// StringBodyOptions::new().close_if(|c| *c == '"' || *c == '\'');
   /// ```
-  pub fn close_char(self, matcher: impl Fn(&char) -> bool + 'static) -> Self {
+  pub fn close_if(self, matcher: impl Fn(&char) -> bool + 'static) -> Self {
     self.close_match(move |input| {
       match input.rest.chars().next() {
         Some(c) => {
@@ -123,6 +123,6 @@ impl<Value: PartialStringBodyValue, CustomError> StringBodyOptions<Value, Custom
   /// StringBodyOptions::new().close('"');
   /// ```
   pub fn close(self, quote: char) -> Self {
-    self.close_char(move |c| *c == quote)
+    self.close_if(move |c| *c == quote)
   }
 }
