@@ -16,26 +16,32 @@ pub struct ActionInput<'text, 'action_state, ActionState> {
   // because `input.rest` is frequently used across all actions during the lexing loop.
   /// See [`Self::rest`].
   rest: &'text str,
+  // this is precalculated and cached because this might be used for at least once
+  // when traversing string body matchers
+  /// See [`Self::next`].
+  next: char,
 }
 
 impl<'text, 'action_state, ActionState> ActionInput<'text, 'action_state, ActionState> {
-  /// Return [`None`] if the [`start`](Self::start) position is out of the input
-  /// [`text`](Self::text) or there is no [`rest`](Self::rest).
+  /// Return [`None`] if [`start`](Self::start) is equal to the length of
+  /// [`text`](Self::text).
+  /// # Panics
+  /// This method panics if [`start`](Self::start) is out of bounds of
+  /// [`text`](Self::text).
   pub fn new(
     text: &'text str,
     start: usize,
     state: &'action_state mut ActionState,
   ) -> Option<Self> {
-    if start >= text.len() {
-      None
-    } else {
-      Some(ActionInput {
-        text,
-        start,
-        state,
-        rest: &text[start..],
-      })
-    }
+    let rest = &text[start..];
+
+    rest.chars().next().map(|next| Self {
+      text,
+      start,
+      rest,
+      next,
+      state,
+    })
   }
 
   /// The whole input text.
@@ -54,6 +60,11 @@ impl<'text, 'action_state, ActionState> ActionInput<'text, 'action_state, Action
   pub fn rest(&self) -> &'text str {
     self.rest
   }
+
+  /// The next char in the rest of the input text.
+  pub fn next(&self) -> char {
+    self.next
+  }
 }
 
 #[cfg(test)]
@@ -67,6 +78,7 @@ mod tests {
     assert_eq!(input.text(), "123");
     assert_eq!(input.start(), 0);
     assert_eq!(input.rest(), "123");
+    assert_eq!(input.next(), '1');
   }
 
   #[test]
@@ -76,6 +88,7 @@ mod tests {
     assert_eq!(input.text(), "123");
     assert_eq!(input.start(), 1);
     assert_eq!(input.rest(), "23");
+    assert_eq!(input.next(), '2');
   }
 
   #[test]
