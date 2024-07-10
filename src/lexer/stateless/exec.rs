@@ -44,8 +44,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       let head_map = head_map_getter(&input);
       let actions = head_map
         .known_map()
-        // TODO: maybe some day we can get a `&char` instead of a `char`
-        .get(&(input.rest().chars().next().unwrap()))
+        .get(&input.next())
         .unwrap_or(head_map.unknown_fallback());
 
       match Self::traverse_actions(&mut input, actions, re_lex, &mut re_lexable_factory) {
