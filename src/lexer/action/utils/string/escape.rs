@@ -39,7 +39,7 @@ impl<Value: PartialStringBodyValue, CustomError: 'static> StringBodyOptions<Valu
         return None;
       }
 
-      match StringBodyMatcherInput::new(input.text, input.start + starter.len_utf8()) {
+      match StringBodyMatcherInput::new(&input.rest[starter.len_utf8()..]) {
         None => {
           // unterminated string
           // treat the escape starter as a normal char

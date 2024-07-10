@@ -1,11 +1,6 @@
-use super::StringLiteralError;
+use super::{StringBodyOptions, StringLiteralError};
 
 pub struct StringBodyMatcherInput<'text> {
-  /// The whole input text.
-  pub text: &'text str,
-  /// The start index in bytes.
-  /// This is guaranteed to be smaller than the length of [`Self::text`].
-  pub start: usize,
   /// The rest of the input text.
   /// This is guaranteed to be non-empty.
   // this is precalculated and cached because this might be used for at least once
@@ -21,21 +16,9 @@ pub struct StringBodyMatcherInput<'text> {
 }
 
 impl<'text> StringBodyMatcherInput<'text> {
-  /// Return [`None`] if [`start`](Self::start) is equal to the length of
-  /// [`text`](Self::text).
-  /// # Panics
-  /// This method panics if [`start`](Self::start) is out of bounds of
-  /// [`text`](Self::text).
-  pub fn new(text: &'text str, start: usize) -> Option<Self> {
-    let rest = &text[start..];
-
-    rest.chars().next().map(|next| Self {
-      text,
-      start,
-      rest,
-      next,
-      __: (),
-    })
+  /// Return [`None`] if [`rest`](Self::rest) is empty.
+  pub fn new(rest: &'text str) -> Option<Self> {
+    rest.chars().next().map(|next| Self { rest, next, __: () })
   }
 }
 
