@@ -11,25 +11,31 @@ pub struct StringBodyMatcherInput<'text> {
   // this is precalculated and cached because this might be used for at least once
   // when traversing string body matchers
   pub rest: &'text str,
+  /// The next char in the rest of the input text.
+  // this is precalculated and cached because this might be used for at least once
+  // when traversing string body matchers
+  pub next: char,
 
   // private field to prevent users from constructing this struct
   __: (),
 }
 
 impl<'text> StringBodyMatcherInput<'text> {
-  /// Return [`None`] if the [`start`](Self::start) position is out of the input
-  /// [`text`](Self::text) or there is no [`rest`](Self::rest).
+  /// Return [`None`] if [`start`](Self::start) is equal to the length of
+  /// [`text`](Self::text).
+  /// # Panics
+  /// This method panics if [`start`](Self::start) is out of bounds of
+  /// [`text`](Self::text).
   pub fn new(text: &'text str, start: usize) -> Option<Self> {
-    if start < text.len() {
-      Some(Self {
-        text,
-        start,
-        rest: &text[start..],
-        __: (),
-      })
-    } else {
-      None
-    }
+    let rest = &text[start..];
+
+    rest.chars().next().map(|next| Self {
+      text,
+      start,
+      rest,
+      next,
+      __: (),
+    })
   }
 }
 
