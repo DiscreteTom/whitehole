@@ -98,17 +98,10 @@ impl<Value: PartialStringBodyValue, CustomError> StringBodyOptions<Value, Custom
   /// ```
   pub fn close_if(self, matcher: impl Fn(&char) -> bool + 'static) -> Self {
     self.close_match(move |input| {
-      match input.rest.chars().next() {
-        Some(c) => {
-          if matcher(&c) {
-            c.len_utf8()
-          } else {
-            0
-          }
-        }
-        // `input.rest` is guaranteed to be non-empty
-        // so `next` is always `Some`
-        None => unreachable!(),
+      if matcher(&input.next) {
+        input.next.len_utf8()
+      } else {
+        0
       }
     })
   }

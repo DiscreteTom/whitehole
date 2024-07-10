@@ -1,4 +1,4 @@
-use crate::lexer::action::{StringLiteralError, StringList};
+use crate::lexer::action::{StringList, StringLiteralError};
 use std::collections::HashMap;
 
 use super::{Escape, EscapeHandler};
@@ -17,15 +17,12 @@ use super::{Escape, EscapeHandler};
 /// ```
 pub fn map<CustomError>(m: impl Into<HashMap<char, char>>) -> EscapeHandler<CustomError> {
   let m = m.into();
-  Box::new(move |input| match input.rest.chars().next() {
-    // `input.rest` is guaranteed to be non-empty
-    // so `next` is always `Some`
-    None => unreachable!(),
-    Some(next) => m.get(&next).map(|&value| Escape {
-      digested: next.len_utf8(),
+  Box::new(move |input| {
+    m.get(&input.next).map(|&value| Escape {
+      digested: input.next.len_utf8(),
       value: value.into(),
       error: None,
-    }),
+    })
   })
 }
 
@@ -64,14 +61,11 @@ pub fn line_continuation<CustomError>(ss: impl Into<StringList>) -> EscapeHandle
 /// fallback(MyError::UnnecessaryEscape);
 /// ```
 pub fn fallback<CustomError: Clone + 'static>(error: CustomError) -> EscapeHandler<CustomError> {
-  Box::new(move |input| match input.rest.chars().next() {
-    // `input.rest` is guaranteed to be non-empty
-    // so `next` is always `Some`
-    None => unreachable!(),
-    Some(next) => Some(Escape {
-      digested: next.len_utf8(),
-      value: next.into(),
+  Box::new(move |input| {
+    Some(Escape {
+      digested: input.next.len_utf8(),
+      value: input.next.into(),
       error: Some(StringLiteralError::Custom(error.clone())),
-    }),
+    })
   })
 }

@@ -34,48 +34,41 @@ impl<Value: PartialStringBodyValue, CustomError: 'static> StringBodyOptions<Valu
   /// ```
   pub fn escape(mut self, starter: char, handlers: Vec<EscapeHandler<CustomError>>) -> Self {
     self.matchers.push(Box::new(move |input| {
-      match input.rest.chars().next() {
-        // `input.rest` is guaranteed to be non-empty
-        // so `next` is always `Some`
-        None => unreachable!(),
-        Some(next) => {
-          if next != starter {
-            // not an escape starter
-            return None;
-          }
+      if input.next != starter {
+        // not an escape starter
+        return None;
+      }
 
-          match StringBodyMatcherInput::new(input.text, input.start + starter.len_utf8()) {
-            None => {
-              // unterminated string
-              // treat the escape starter as a normal char
-              Some(PartialStringBody {
-                digested: starter.len_utf8(),
-                value: Value::from_char(&starter),
-                close: true,
-                error: Some(StringLiteralError::Unterminated),
-              })
-            }
-            Some(input) => {
-              for handler in handlers.iter() {
-                if let Some(escape) = handler(&input) {
-                  return Some(PartialStringBody {
-                    digested: starter.len_utf8() + escape.digested,
-                    value: Value::from_str(&escape.value),
-                    close: false,
-                    error: escape.error,
-                  });
-                }
-              }
-              // else, no escape handler accepted,
-              // treat the escape starter as a normal char
-              Some(PartialStringBody {
-                digested: starter.len_utf8(),
-                value: Value::from_char(&starter),
+      match StringBodyMatcherInput::new(input.text, input.start + starter.len_utf8()) {
+        None => {
+          // unterminated string
+          // treat the escape starter as a normal char
+          Some(PartialStringBody {
+            digested: starter.len_utf8(),
+            value: Value::from_char(&starter),
+            close: true,
+            error: Some(StringLiteralError::Unterminated),
+          })
+        }
+        Some(input) => {
+          for handler in handlers.iter() {
+            if let Some(escape) = handler(&input) {
+              return Some(PartialStringBody {
+                digested: starter.len_utf8() + escape.digested,
+                value: Value::from_str(&escape.value),
                 close: false,
-                error: Some(StringLiteralError::UnhandledEscape),
-              })
+                error: escape.error,
+              });
             }
           }
+          // else, no escape handler accepted,
+          // treat the escape starter as a normal char
+          Some(PartialStringBody {
+            digested: starter.len_utf8(),
+            value: Value::from_char(&starter),
+            close: false,
+            error: Some(StringLiteralError::UnhandledEscape),
+          })
         }
       }
     }));
