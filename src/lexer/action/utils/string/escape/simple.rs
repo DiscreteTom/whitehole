@@ -1,7 +1,6 @@
+use super::{Escape, EscapeHandler};
 use crate::lexer::action::{StringList, StringLiteralError};
 use std::collections::HashMap;
-
-use super::{Escape, EscapeHandler};
 
 /// Returns an escape handler that
 /// map escape sequences to their corresponding values.
@@ -68,4 +67,60 @@ pub fn fallback<CustomError: Clone + 'static>(error: CustomError) -> EscapeHandl
       error: Some(StringLiteralError::Custom(error.clone())),
     })
   })
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lexer::action::StringBodyMatcherInput;
+
+  fn escape_checker_factory(h: EscapeHandler<()>, err: bool) -> impl Fn(&str, Option<&str>) {
+    move |src, value| match h(&StringBodyMatcherInput::new(src).unwrap()) {
+      Some(escape) => {
+        assert_eq!(escape.value, value.unwrap());
+        if err {
+          assert!(matches!(escape.error, Some(StringLiteralError::Custom(()))));
+        } else {
+          assert!(escape.error.is_none());
+        }
+      }
+      None => {
+        assert!(value.is_none());
+      }
+    }
+  }
+
+  #[test]
+  fn test_map() {
+    let check = escape_checker_factory(
+      map([
+        ('n', '\n'),
+        ('r', '\r'),
+        ('t', '\t'),
+        ('0', '\0'),
+        ('\\', '\\'),
+      ]),
+      false,
+    );
+    check(r"n", "\n".into());
+    check(r"r", "\r".into());
+    check(r"t", "\t".into());
+    check(r"0", "\0".into());
+    check(r"\", "\\".into());
+    check(r"a", None);
+  }
+
+  #[test]
+  fn test_line_continuation() {
+    let check = escape_checker_factory(line_continuation(["\r\n", "\n"]), false);
+    check("\r\n", "".into());
+    check("\n", "".into());
+    check(r"a", None);
+  }
+
+  #[test]
+  fn test_fallback() {
+    let check = escape_checker_factory(fallback(()), true);
+    check(r"a", "a".into());
+  }
 }
