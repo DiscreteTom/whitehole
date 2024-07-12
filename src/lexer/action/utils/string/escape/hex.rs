@@ -236,6 +236,21 @@ impl<CustomError> CodePointEscapeOptions<CustomError> {
   }
 }
 
+// TODO: comments
+pub fn code_point() -> EscapeHandler<CodePointEscapeError> {
+  code_point_with_options(CodePointEscapeOptions::default())
+}
+
+// TODO: comments
+pub fn code_point_with<CustomError: 'static>(
+  options_builder: impl FnOnce(
+    CodePointEscapeOptions<CodePointEscapeError>,
+  ) -> CodePointEscapeOptions<CustomError>,
+) -> EscapeHandler<CustomError> {
+  code_point_with_options(options_builder(CodePointEscapeOptions::default()))
+}
+
+// TODO: comments
 pub fn code_point_with_options<CustomError: 'static>(
   options: CodePointEscapeOptions<CustomError>,
 ) -> EscapeHandler<CustomError> {
