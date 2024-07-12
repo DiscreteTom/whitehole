@@ -1,7 +1,6 @@
 use super::{PartialStringBody, PartialStringBodyValue, StringBodyMatcher, StringBodyMatcherInput};
-use crate::lexer::action::{MockAccumulator, StringAccumulator, VecAccumulator};
 
-pub struct StringBodyOptions<Value = (), CustomError = (), ValueAcc = MockAccumulator> {
+pub struct StringBodyOptions<Value = (), CustomError = (), ValueAcc = ()> {
   pub matchers: Vec<StringBodyMatcher<Value, CustomError>>,
   pub acc: ValueAcc,
   // TODO pub error_acc: ErrAcc,
@@ -18,21 +17,21 @@ impl<Value, CustomError, ValueAcc: Default> Default
   }
 }
 
-impl StringBodyOptions<(), (), MockAccumulator> {
+impl StringBodyOptions<(), (), ()> {
   // TODO: comments
   pub fn new() -> Self {
     Self::default()
   }
 }
 
-impl StringBodyOptions<String, (), MockAccumulator> {
+impl StringBodyOptions<String, (), ()> {
   // TODO: comments
   pub fn with_value() -> Self {
     Self::default()
   }
 }
 
-impl<CustomError> StringBodyOptions<(), CustomError, MockAccumulator> {
+impl<CustomError> StringBodyOptions<(), CustomError, ()> {
   // TODO: comments
   pub fn with_error() -> Self {
     Self::default()
@@ -151,15 +150,12 @@ impl<Value: PartialStringBodyValue, CustomError, ValueAcc>
   }
 
   // TODO: comments
-  pub fn acc_to_string(self) -> StringBodyOptions<Value, CustomError, StringAccumulator> {
-    self.acc(StringAccumulator::default())
+  pub fn acc_to_string(self) -> StringBodyOptions<Value, CustomError, String> {
+    self.acc(String::new())
   }
 
   // TODO: comments
-  pub fn acc_to_vec(self) -> StringBodyOptions<Value, CustomError, VecAccumulator<Value>>
-  where
-    Value: Default,
-  {
-    self.acc(VecAccumulator::default())
+  pub fn acc_to_vec(self) -> StringBodyOptions<Value, CustomError, Vec<Value>> {
+    self.acc(Vec::new())
   }
 }

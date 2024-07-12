@@ -5,7 +5,7 @@ mod options;
 pub use data::*;
 pub use options::*;
 
-use super::{Accumulator, MockAccumulator};
+use super::Accumulator;
 use crate::lexer::{
   action::{simple_with_data, Action, HeadMatcher},
   token::MockTokenKind,
@@ -82,7 +82,7 @@ pub fn integer_literal_body_default(rest: &str, is_body: impl Fn(char) -> bool) 
 /// let (digested, data) = integer_literal_body_with(
 ///   "1_234z",
 ///   |c| c.is_ascii_digit(),
-///   |o| o.separator_with(|s| s.ch('_').acc_to_vec()).value_to_string()
+///   |o| o.separator_with(|s| s.ch('_').acc(vec![])).value(String::new())
 /// );
 /// assert_eq!(digested, 5);
 /// assert_eq!(data.separators, vec![1]);
@@ -92,7 +92,7 @@ pub fn integer_literal_body_default(rest: &str, is_body: impl Fn(char) -> bool) 
 /// let (digested, data) = integer_literal_body_with(
 ///   "____z",
 ///   |c| c.is_ascii_digit(),
-///   |o| o.separator_with(|s| s.ch('_').acc_to_vec()).value_to_string()
+///   |o| o.separator_with(|s| s.ch('_').acc(vec![])).value(String::new())
 /// );
 /// assert_eq!(digested, 0); // digested will be set to 0
 /// assert_eq!(data.separators, vec![0, 1, 2, 3]); // separators will still be collected
@@ -105,9 +105,9 @@ pub fn integer_literal_body_with<
   rest: &str,
   is_body: impl Fn(char) -> bool,
   options_builder: impl FnOnce(
-    IntegerLiteralBodyOptions<MockNumericSeparatorAccumulator, MockAccumulator>,
+    IntegerLiteralBodyOptions<(), ()>,
   ) -> IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
-) -> (usize, IntegerLiteralData<SepAcc::Target, ValueAcc::Target>) {
+) -> (usize, IntegerLiteralData<SepAcc::Acc, ValueAcc>) {
   integer_literal_body_with_options(
     rest,
     is_body,
@@ -139,8 +139,8 @@ pub fn integer_literal_body_with<
 ///   "1_234z",
 ///   |c| c.is_ascii_digit(),
 ///   IntegerLiteralBodyOptions::default()
-///     .separator_with(|s| s.ch('_').acc_to_vec())
-///     .value_to_string()
+///     .separator_with(|s| s.ch('_').acc(vec![]))
+///     .value(String::new())
 /// );
 /// assert_eq!(digested, 5);
 /// assert_eq!(data.separators, vec![1]);
@@ -151,8 +151,8 @@ pub fn integer_literal_body_with<
 ///   "____z",
 ///   |c| c.is_ascii_digit(),
 ///   IntegerLiteralBodyOptions::default()
-///     .separator_with(|s| s.ch('_').acc_to_vec())
-///     .value_to_string()
+///     .separator_with(|s| s.ch('_').acc(vec![]))
+///     .value(String::new())
 /// );
 /// assert_eq!(digested, 0); // digested will be set to 0
 /// assert_eq!(data.separators, vec![0, 1, 2, 3]); // separators will still be collected
@@ -165,7 +165,7 @@ pub fn integer_literal_body_with_options<
   rest: &str,
   is_body: impl Fn(char) -> bool,
   mut options: IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
-) -> (usize, IntegerLiteralData<SepAcc::Target, ValueAcc::Target>) {
+) -> (usize, IntegerLiteralData<SepAcc::Acc, ValueAcc>) {
   let mut digested = 0;
   let mut sep_only = true;
 
@@ -195,7 +195,7 @@ pub fn integer_literal_body_with_options<
     digested,
     IntegerLiteralData {
       separators: options.separator.emit(),
-      value: options.value.emit(),
+      value: options.value,
     },
   )
 }
@@ -262,9 +262,9 @@ macro_rules! generate_integer_literal_functions {
     pub fn $body_fn_name_with<SepAcc: NumericSeparatorAccumulator, ValueAcc: Accumulator<char>>(
       rest: &str,
       options_builder: impl FnOnce(
-        IntegerLiteralBodyOptions<MockNumericSeparatorAccumulator, MockAccumulator>,
+        IntegerLiteralBodyOptions<(), ()>,
       ) -> IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
-    ) -> (usize, IntegerLiteralData<SepAcc::Target, ValueAcc::Target>) {
+    ) -> (usize, IntegerLiteralData<SepAcc::Acc, ValueAcc>) {
       $body_fn_name_with_options(rest, options_builder(IntegerLiteralBodyOptions::default()))
     }
 
@@ -289,7 +289,7 @@ macro_rules! generate_integer_literal_functions {
     >(
       rest: &str,
       options: IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
-    ) -> (usize, IntegerLiteralData<SepAcc::Target, ValueAcc::Target>) {
+    ) -> (usize, IntegerLiteralData<SepAcc::Acc, ValueAcc>) {
       integer_literal_body_with_options(rest, $is_body, options)
     }
 
@@ -310,8 +310,11 @@ macro_rules! generate_integer_literal_functions {
     /// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
     /// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
     /// So it's up to the caller to decide whether to accept the leading/trailing separators.
-    pub fn $action_fn_name<ActionState, ErrorType>(
-    ) -> Action<MockTokenKind<IntegerLiteralData<(), ()>>, ActionState, ErrorType> {
+    pub fn $action_fn_name<ActionState, ErrorType>() -> Action<
+      MockTokenKind<IntegerLiteralData<(), ()>>, // TODO: don't show options in the output
+      ActionState,
+      ErrorType,
+    > {
       $action_fn_name_with_options(IntegerLiteralBodyOptions::default().default_separator())
     }
 
@@ -345,17 +348,13 @@ macro_rules! generate_integer_literal_functions {
     pub fn $action_fn_name_with<
       ActionState,
       ErrorType,
-      SepAcc: NumericSeparatorAccumulator + 'static,
-      ValueAcc: Accumulator<char> + 'static,
+      SepAcc: NumericSeparatorAccumulator + Clone + 'static,
+      ValueAcc: Accumulator<char> + Clone + 'static,
     >(
       options_builder: impl FnOnce(
-        IntegerLiteralBodyOptions<MockNumericSeparatorAccumulator, MockAccumulator>,
+        IntegerLiteralBodyOptions<(), ()>,
       ) -> IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
-    ) -> Action<
-      MockTokenKind<IntegerLiteralData<SepAcc::Target, ValueAcc::Target>>,
-      ActionState,
-      ErrorType,
-    > {
+    ) -> Action<MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, ActionState, ErrorType> {
       $action_fn_name_with_options(options_builder(IntegerLiteralBodyOptions::default()))
     }
 
@@ -379,15 +378,11 @@ macro_rules! generate_integer_literal_functions {
     pub fn $action_fn_name_with_options<
       ActionState,
       ErrorType,
-      SepAcc: NumericSeparatorAccumulator + 'static,
-      ValueAcc: Accumulator<char> + 'static,
+      SepAcc: NumericSeparatorAccumulator + Clone + 'static,
+      ValueAcc: Accumulator<char> + Clone + 'static,
     >(
       options: IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
-    ) -> Action<
-      MockTokenKind<IntegerLiteralData<SepAcc::Target, ValueAcc::Target>>,
-      ActionState,
-      ErrorType,
-    > {
+    ) -> Action<MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, ActionState, ErrorType> {
       let prefix = $prefix;
 
       let mut a = if prefix.len() == 0 {
@@ -559,10 +554,8 @@ mod tests {
 
   #[test]
   fn test_integer_literal_body_with_options() {
-    let options_builder = |o: IntegerLiteralBodyOptions<
-      MockNumericSeparatorAccumulator,
-      MockAccumulator,
-    >| { o.separator_with(|s| s.acc_to_vec()).value_to_string() };
+    let options_builder =
+      |o: IntegerLiteralBodyOptions<(), ()>| o.separator_with(|s| s.acc_to_vec()).value_to_string();
     let options = IntegerLiteralBodyOptions::default()
       .separator_with(|s| s.acc_to_vec())
       .value_to_string();
@@ -679,10 +672,8 @@ mod tests {
 
   #[test]
   fn test_integer_literal_actions() {
-    let options_builder = |o: IntegerLiteralBodyOptions<
-      MockNumericSeparatorAccumulator,
-      MockAccumulator,
-    >| { o.separator_with(|s| s.acc_to_vec()).value_to_string() };
+    let options_builder =
+      |o: IntegerLiteralBodyOptions<(), ()>| o.separator_with(|s| s.acc_to_vec()).value_to_string();
     let options = IntegerLiteralBodyOptions::default()
       .separator_with(|s| s.acc_to_vec())
       .value_to_string();

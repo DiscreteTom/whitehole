@@ -6,7 +6,7 @@ pub use options::*;
 
 use super::{
   decimal_integer_literal_body_with_options, Accumulator, IntegerLiteralBodyOptions,
-  MockAccumulator, MockNumericSeparatorAccumulator, NumericSeparatorAccumulator,
+  NumericSeparatorAccumulator,
 };
 use crate::lexer::{
   action::{simple_with_data, Action},
@@ -100,23 +100,18 @@ pub fn float_literal_body(rest: &str) -> (usize, FloatLiteralData<(), (), (), ()
 /// assert_eq!(exponent_data.base.separators, vec![1]); // index in the exponent body
 /// ```
 pub fn float_literal_body_with<
-  SepAcc: NumericSeparatorAccumulator,
+  SepAcc: NumericSeparatorAccumulator + Clone,
   IntAcc: Accumulator<char>,
   FracAcc: Accumulator<char>,
   ExpAcc: Accumulator<char>,
 >(
   rest: &str,
   options_builder: impl FnOnce(
-    FloatLiteralOptions<
-      MockNumericSeparatorAccumulator,
-      MockAccumulator,
-      MockAccumulator,
-      MockAccumulator,
-    >,
+    FloatLiteralOptions<(), (), (), ()>,
   ) -> FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
 ) -> (
   usize,
-  FloatLiteralData<SepAcc::Target, IntAcc::Target, FracAcc::Target, ExpAcc::Target>,
+  FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>,
 ) {
   float_literal_body_with_options(rest, options_builder(FloatLiteralOptions::default()))
 }
@@ -168,7 +163,7 @@ pub fn float_literal_body_with<
 /// assert_eq!(exponent_data.base.separators, vec![1]); // index in the exponent body
 /// ```
 pub fn float_literal_body_with_options<
-  SepAcc: NumericSeparatorAccumulator,
+  SepAcc: NumericSeparatorAccumulator + Clone,
   IntAcc: Accumulator<char>,
   FracAcc: Accumulator<char>,
   ExpAcc: Accumulator<char>,
@@ -177,7 +172,7 @@ pub fn float_literal_body_with_options<
   options: FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
 ) -> (
   usize,
-  FloatLiteralData<SepAcc::Target, IntAcc::Target, FracAcc::Target, ExpAcc::Target>,
+  FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>,
 ) {
   let mut total_digested = 0;
 
@@ -298,21 +293,16 @@ pub fn float_literal<ActionState, ErrorType>(
 pub fn float_literal_with<
   ActionState,
   ErrorType,
-  SepAcc: NumericSeparatorAccumulator + 'static,
-  IntAcc: Accumulator<char> + 'static,
-  FracAcc: Accumulator<char> + 'static,
-  ExpAcc: Accumulator<char> + 'static,
+  SepAcc: NumericSeparatorAccumulator + Clone + 'static,
+  IntAcc: Accumulator<char> + Clone + 'static,
+  FracAcc: Accumulator<char> + Clone + 'static,
+  ExpAcc: Accumulator<char> + Clone + 'static,
 >(
   options_builder: impl FnOnce(
-    FloatLiteralOptions<
-      MockNumericSeparatorAccumulator,
-      MockAccumulator,
-      MockAccumulator,
-      MockAccumulator,
-    >,
+    FloatLiteralOptions<(), (), (), ()>,
   ) -> FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
 ) -> Action<
-  MockTokenKind<FloatLiteralData<SepAcc::Target, IntAcc::Target, FracAcc::Target, ExpAcc::Target>>,
+  MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>,
   ActionState,
   ErrorType,
 > {
@@ -333,14 +323,14 @@ pub fn float_literal_with<
 pub fn float_literal_with_options<
   ActionState,
   ErrorType,
-  SepAcc: NumericSeparatorAccumulator + 'static,
-  IntAcc: Accumulator<char> + 'static,
-  FracAcc: Accumulator<char> + 'static,
-  ExpAcc: Accumulator<char> + 'static,
+  SepAcc: NumericSeparatorAccumulator + Clone + 'static,
+  IntAcc: Accumulator<char> + Clone + 'static,
+  FracAcc: Accumulator<char> + Clone + 'static,
+  ExpAcc: Accumulator<char> + Clone + 'static,
 >(
   options: FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
 ) -> Action<
-  MockTokenKind<FloatLiteralData<SepAcc::Target, IntAcc::Target, FracAcc::Target, ExpAcc::Target>>,
+  MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>,
   ActionState,
   ErrorType,
 > {

@@ -1,9 +1,6 @@
 use std::collections::HashSet;
 
-use crate::lexer::action::{
-  MockAccumulator, MockNumericSeparatorAccumulator, NumericSeparatorOptions, StringAccumulator,
-  StringList,
-};
+use crate::lexer::action::{NumericSeparatorOptions, StringList};
 
 #[derive(Clone, Debug)]
 pub struct FloatFractionOptions<Acc> {
@@ -13,11 +10,11 @@ pub struct FloatFractionOptions<Acc> {
   pub acc: Acc,
 }
 
-impl Default for FloatFractionOptions<MockAccumulator> {
+impl Default for FloatFractionOptions<()> {
   fn default() -> Self {
     Self {
       point: '.',
-      acc: MockAccumulator,
+      acc: (),
     }
   }
 }
@@ -36,11 +33,11 @@ impl<Acc> FloatFractionOptions<Acc> {
   }
 
   /// Set an accumulator to accumulate the fractional part.
-  /// Default is [`MockAccumulator`].
+  /// Default is [`()`].
   /// # Examples
   /// ```rust
-  /// # use whitehole::lexer::action::{FloatFractionOptions, StringAccumulator};
-  /// let options = FloatFractionOptions::default().acc(StringAccumulator::default());
+  /// # use whitehole::lexer::action::{FloatFractionOptions};
+  /// let options = FloatFractionOptions::default().acc(String::new());
   /// ```
   pub fn acc<NewAcc>(self, acc: NewAcc) -> FloatFractionOptions<NewAcc> {
     FloatFractionOptions {
@@ -50,9 +47,9 @@ impl<Acc> FloatFractionOptions<Acc> {
   }
 
   // TODO: abstract a trait for `acc` and impl this in trait.
-  /// Set [`Self::acc`] to [`StringAccumulator`].
-  pub fn acc_to_string(self) -> FloatFractionOptions<StringAccumulator> {
-    self.acc(StringAccumulator::default())
+  /// Set [`Self::acc`] to [`String`].
+  pub fn acc_to_string(self) -> FloatFractionOptions<String> {
+    self.acc(String::new())
   }
 }
 
@@ -65,14 +62,14 @@ pub struct FloatExponentOptions<Acc> {
   pub acc: Acc,
 }
 
-impl Default for FloatExponentOptions<MockAccumulator> {
+impl Default for FloatExponentOptions<()> {
   fn default() -> Self {
     Self {
       indicators: vec!["e-", "e+", "e", "E-", "E+", "E"]
         .iter()
         .map(|s| s.to_string())
         .collect(),
-      acc: MockAccumulator,
+      acc: (),
       indicator_heads: vec!['e', 'E'].into_iter().collect(),
     }
   }
@@ -104,11 +101,11 @@ impl<Acc> FloatExponentOptions<Acc> {
   }
 
   /// Set an accumulator to accumulate the exponent part.
-  /// Default is [`MockAccumulator`].
+  /// Default is [`()`].
   /// # Examples
   /// ```rust
-  /// # use whitehole::lexer::action::{FloatExponentOptions, StringAccumulator};
-  /// let options = FloatExponentOptions::default().acc(StringAccumulator::default());
+  /// # use whitehole::lexer::action::{FloatExponentOptions, String};
+  /// let options = FloatExponentOptions::default().acc(String::default());
   /// ```
   pub fn acc<NewAcc>(self, acc: NewAcc) -> FloatExponentOptions<NewAcc> {
     FloatExponentOptions {
@@ -118,9 +115,9 @@ impl<Acc> FloatExponentOptions<Acc> {
     }
   }
 
-  /// Set [`Self::acc`] to [`StringAccumulator`].
-  pub fn acc_to_string(self) -> FloatExponentOptions<StringAccumulator> {
-    self.acc(StringAccumulator::default())
+  /// Set [`Self::acc`] to [`String`].
+  pub fn acc_to_string(self) -> FloatExponentOptions<String> {
+    self.acc(String::default())
   }
 }
 
@@ -136,18 +133,11 @@ pub struct FloatLiteralOptions<Sep, IntAcc, FracAcc, ExpAcc> {
   pub exponent: Option<FloatExponentOptions<ExpAcc>>,
 }
 
-impl Default
-  for FloatLiteralOptions<
-    MockNumericSeparatorAccumulator,
-    MockAccumulator,
-    MockAccumulator,
-    MockAccumulator,
-  >
-{
+impl Default for FloatLiteralOptions<(), (), (), ()> {
   fn default() -> Self {
     Self {
-      separator: MockNumericSeparatorAccumulator,
-      integer: MockAccumulator,
+      separator: (),
+      integer: (),
       // use `None` to disable the optional parts
       fraction: None,
       exponent: None,
@@ -159,8 +149,8 @@ impl<Sep, IntAcc, FracAcc, ExpAcc> FloatLiteralOptions<Sep, IntAcc, FracAcc, Exp
   /// Set the accumulator for the integer part.
   /// # Examples
   /// ```rust
-  /// # use whitehole::lexer::action::{FloatLiteralOptions, StringAccumulator};
-  /// let options = FloatLiteralOptions::default().integer(StringAccumulator::default());
+  /// # use whitehole::lexer::action::{FloatLiteralOptions, String};
+  /// let options = FloatLiteralOptions::default().integer(String::default());
   /// ```
   pub fn integer<NewIntAcc>(
     self,
@@ -174,9 +164,9 @@ impl<Sep, IntAcc, FracAcc, ExpAcc> FloatLiteralOptions<Sep, IntAcc, FracAcc, Exp
     }
   }
 
-  /// Set [`Self::integer`] to [`StringAccumulator`].
-  pub fn integer_to_string(self) -> FloatLiteralOptions<Sep, StringAccumulator, FracAcc, ExpAcc> {
-    self.integer(StringAccumulator::default())
+  /// Set [`Self::integer`] to [`String`].
+  pub fn integer_to_string(self) -> FloatLiteralOptions<Sep, String, FracAcc, ExpAcc> {
+    self.integer(String::default())
   }
 
   /// Set the accumulator for the fractional part.
@@ -200,15 +190,13 @@ impl<Sep, IntAcc, FracAcc, ExpAcc> FloatLiteralOptions<Sep, IntAcc, FracAcc, Exp
   /// Set [`Self::fraction`] to [`FloatFractionOptions`] using the given options builder.
   pub fn fraction_with<NewFracAcc>(
     self,
-    options_builder: impl FnOnce(
-      FloatFractionOptions<MockAccumulator>,
-    ) -> FloatFractionOptions<NewFracAcc>,
+    options_builder: impl FnOnce(FloatFractionOptions<()>) -> FloatFractionOptions<NewFracAcc>,
   ) -> FloatLiteralOptions<Sep, IntAcc, NewFracAcc, ExpAcc> {
     self.fraction(options_builder(FloatFractionOptions::default()))
   }
 
   /// Set [`Self::fraction`] to the default value of [`FloatFractionOptions`].
-  pub fn default_fraction(self) -> FloatLiteralOptions<Sep, IntAcc, MockAccumulator, ExpAcc> {
+  pub fn default_fraction(self) -> FloatLiteralOptions<Sep, IntAcc, (), ExpAcc> {
     self.fraction(FloatFractionOptions::default())
   }
 
@@ -238,20 +226,18 @@ impl<Sep, IntAcc, FracAcc, ExpAcc> FloatLiteralOptions<Sep, IntAcc, FracAcc, Exp
   /// ```
   pub fn exponent_with<NewExpAcc>(
     self,
-    options_builder: impl FnOnce(
-      FloatExponentOptions<MockAccumulator>,
-    ) -> FloatExponentOptions<NewExpAcc>,
+    options_builder: impl FnOnce(FloatExponentOptions<()>) -> FloatExponentOptions<NewExpAcc>,
   ) -> FloatLiteralOptions<Sep, IntAcc, FracAcc, NewExpAcc> {
     self.exponent(options_builder(FloatExponentOptions::default()))
   }
 
   /// Set [`Self::exponent`] to the default value of [`FloatExponentOptions`].
-  pub fn default_exponent(self) -> FloatLiteralOptions<Sep, IntAcc, FracAcc, MockAccumulator> {
+  pub fn default_exponent(self) -> FloatLiteralOptions<Sep, IntAcc, FracAcc, ()> {
     self.exponent(FloatExponentOptions::default())
   }
 
   /// Set the numeric separator for the float literal.
-  /// Default is [`MockNumericSeparatorAccumulator`] (no separator allowed).
+  /// Default is [`()`] (no separator allowed).
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::{FloatLiteralOptions, NumericSeparatorOptions};
@@ -279,7 +265,7 @@ impl<Sep, IntAcc, FracAcc, ExpAcc> FloatLiteralOptions<Sep, IntAcc, FracAcc, Exp
   /// ```
   pub fn separator_with<NewSep>(
     self,
-    options_builder: impl FnOnce(NumericSeparatorOptions<MockAccumulator>) -> NewSep,
+    options_builder: impl FnOnce(NumericSeparatorOptions<()>) -> NewSep,
   ) -> FloatLiteralOptions<NewSep, IntAcc, FracAcc, ExpAcc> {
     self.separator(options_builder(NumericSeparatorOptions::default()))
   }
@@ -288,7 +274,7 @@ impl<Sep, IntAcc, FracAcc, ExpAcc> FloatLiteralOptions<Sep, IntAcc, FracAcc, Exp
   /// [`NumericSeparatorOptions`] (use `'_'` as the separator, no accumulator).
   pub fn default_separator(
     self,
-  ) -> FloatLiteralOptions<NumericSeparatorOptions<MockAccumulator>, IntAcc, FracAcc, ExpAcc> {
+  ) -> FloatLiteralOptions<NumericSeparatorOptions<()>, IntAcc, FracAcc, ExpAcc> {
     self.separator(NumericSeparatorOptions::default())
   }
 }

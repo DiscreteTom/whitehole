@@ -1,47 +1,30 @@
-/// Accumulate values and emit a result.
-pub trait Accumulator<T>: Clone {
-  type Target: Default;
-
+/// Accumulate values.
+pub trait Accumulator<T> {
   /// Update the accumulator with a value.
   fn update(&mut self, t: T);
-  /// Consume the accumulator and emit the result.
-  fn emit(self) -> Self::Target;
 }
 
-/// A mock [`Accumulator`] that does nothing.
-/// Useful if you don't need to accumulate anything.
-#[derive(Clone, Debug, Default)]
-pub struct MockAccumulator;
-impl<T> Accumulator<T> for MockAccumulator {
-  type Target = ();
+// mock accumulator
+impl<T> Accumulator<T> for () {
   fn update(&mut self, _: T) {}
-  fn emit(self) -> Self::Target {}
 }
 
-/// Accumulate values into a [`Vec`] and emit the [`Vec`].
-#[derive(Clone, Debug, Default)]
-pub struct VecAccumulator<T>(Vec<T>);
-impl<T: Clone> Accumulator<T> for VecAccumulator<T> {
-  type Target = Vec<T>;
+// vector accumulator
+impl<T> Accumulator<T> for Vec<T> {
   fn update(&mut self, c: T) {
-    self.0.push(c);
-  }
-  fn emit(self) -> Self::Target {
-    self.0
+    self.push(c);
   }
 }
 
-/// Accumulate values into a [`String`] and emit the [`String`].
-#[derive(Clone, Debug, Default)]
-pub struct StringAccumulator(String);
-impl Accumulator<char> for StringAccumulator {
-  type Target = String;
-  // TODO: batch update with a String instead of one char?
+// string accumulator
+impl Accumulator<char> for String {
   fn update(&mut self, c: char) {
-    self.0.push(c);
+    self.push(c);
   }
-  fn emit(self) -> Self::Target {
-    self.0
+}
+impl Accumulator<String> for String {
+  fn update(&mut self, c: String) {
+    self.push_str(&c);
   }
 }
 
@@ -50,32 +33,28 @@ mod tests {
   use super::*;
 
   #[test]
-  fn mock_accumulator_update() {
-    let mut acc = MockAccumulator;
-    acc.update(&'a');
-  }
-
-  #[test]
-  fn mock_accumulator_emit() {
-    let acc = MockAccumulator;
-    Accumulator::<()>::emit(acc);
+  fn mock_accumulator() {
+    let mut acc = ();
+    acc.update(123);
+    assert_eq!(acc, ());
   }
 
   #[test]
   fn vec_accumulator() {
-    let mut acc = VecAccumulator::default();
+    let mut acc = vec![];
     acc.update(1);
     acc.update(2);
     acc.update(3);
-    assert_eq!(acc.emit(), vec![1, 2, 3]);
+    assert_eq!(acc, vec![1, 2, 3]);
   }
 
   #[test]
   fn string_accumulator() {
-    let mut acc = StringAccumulator::default();
+    let mut acc = String::new();
     acc.update('1');
     acc.update('2');
     acc.update('3');
-    assert_eq!(acc.emit(), "123");
+    acc.update("456".to_string());
+    assert_eq!(acc, "123456");
   }
 }
