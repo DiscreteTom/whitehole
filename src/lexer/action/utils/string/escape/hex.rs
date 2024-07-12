@@ -406,4 +406,85 @@ mod tests {
     // normal
     check("u1fff", "\u{1fff}".into(), None);
   }
+
+  #[test]
+  fn test_code_point_with_options() {
+    let check = escape_checker_factory(code_point_with_options(CodePointEscapeOptions::default()));
+    // wrong prefix
+    check("uu", None, None);
+    // no body
+    check("u{}", "\0".into(), CodePointEscapeError::Empty.into());
+    // invalid unicode
+    check(
+      "u{110000}",
+      "\0".into(),
+      CodePointEscapeError::InvalidUnicode.into(),
+    );
+    // overlong
+    check(
+      "u{11111111111111111111",
+      "\0".into(),
+      CodePointEscapeError::Overlong.into(),
+    );
+    // bad hex digit
+    check(
+      "u{z}",
+      "\0".into(),
+      CodePointEscapeError::InvalidChar.into(),
+    );
+    // not terminated
+    check(
+      "u{1",
+      "\0".into(),
+      CodePointEscapeError::Unterminated.into(),
+    );
+    // normal
+    check("u{1f}", "\u{1f}".into(), None);
+
+    #[derive(PartialEq, Debug)]
+    struct MyError(CodePointEscapeError);
+
+    let check = escape_checker_factory(code_point_with_options(
+      CodePointEscapeOptions::default()
+        .prefix(':')
+        .open('[')
+        .close(']')
+        .max(8)
+        .error(MyError),
+    ));
+    // wrong prefix
+    check("uu", None, None);
+    // no body
+    check(
+      ":[]",
+      "\0".into(),
+      MyError(CodePointEscapeError::Empty).into(),
+    );
+    // invalid unicode
+    check(
+      ":[110000]",
+      "\0".into(),
+      MyError(CodePointEscapeError::InvalidUnicode).into(),
+    );
+    // overlong
+    check(
+      ":[11111111111111111111",
+      "\0".into(),
+      MyError(CodePointEscapeError::Overlong).into(),
+    );
+    // bad hex digit
+    check(
+      ":[z]",
+      "\0".into(),
+      MyError(CodePointEscapeError::InvalidChar).into(),
+    );
+    // not terminated
+    check(
+      ":[1",
+      "\0".into(),
+      MyError(CodePointEscapeError::Unterminated).into(),
+    );
+    // normal
+    check(":[1f]", "\u{1f}".into(), None);
+  }
 }
