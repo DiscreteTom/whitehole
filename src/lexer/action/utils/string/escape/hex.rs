@@ -276,3 +276,81 @@ fn escape_error<FromError, ToError>(
     error: Some(StringLiteralError::Custom(error_mapper(e))),
   })
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lexer::action::StringBodyMatcherInput;
+  use std::fmt::Debug;
+
+  fn escape_checker_factory<E: PartialEq + Debug>(
+    h: EscapeHandler<E>,
+  ) -> impl Fn(&str, Option<&str>, Option<E>) {
+    move |src, value, err| match h(&StringBodyMatcherInput::new(src).unwrap()) {
+      Some(escape) => {
+        assert_eq!(escape.value, value.unwrap());
+        match err {
+          Some(e) => {
+            assert_eq!(escape.error, Some(StringLiteralError::Custom(e)));
+          }
+          None => {
+            assert!(escape.error.is_none());
+          }
+        }
+      }
+      None => {
+        assert!(value.is_none());
+      }
+    }
+  }
+
+  #[test]
+  fn test_hex_with_options() {
+    let check = escape_checker_factory(hex_with_options(HexEscapeOptions::default()));
+    // wrong prefix
+    check("a", None, None);
+    // not enough digits
+    check("xz", "\0".into(), HexEscapeError::TooShort.into());
+    // reach to the end of the string
+    check("x1", "\0".into(), HexEscapeError::TooShort.into());
+    // normal
+    check("x1f", "\x1f".into(), None);
+
+    #[derive(PartialEq, Debug)]
+    struct MyError(HexEscapeError);
+
+    let check = escape_checker_factory(hex_with_options(
+      HexEscapeOptions::default()
+        .prefix(':')
+        .length(6)
+        .error(MyError),
+    ));
+    // wrong prefix
+    check("a", None, None);
+    // not enough digits
+    check(":z", "\0".into(), MyError(HexEscapeError::TooShort).into());
+    // invalid unicode
+    check(
+      ":110000",
+      "\0".into(),
+      MyError(HexEscapeError::InvalidUnicode).into(),
+    );
+    // reach to the end of the string
+    check(":1", "\0".into(), MyError(HexEscapeError::TooShort).into());
+    // normal
+    check(":01111f", "\u{01111f}".into(), None);
+  }
+
+  #[test]
+  fn test_unicode() {
+    let check = escape_checker_factory(unicode());
+    // wrong prefix
+    check("a", None, None);
+    // not enough digits
+    check("uz", "\0".into(), HexEscapeError::TooShort.into());
+    // reach to the end of the string
+    check("u1", "\0".into(), HexEscapeError::TooShort.into());
+    // normal
+    check("u1fff", "\u{1fff}".into(), None);
+  }
+}
