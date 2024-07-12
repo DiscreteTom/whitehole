@@ -1,24 +1,47 @@
 use super::{PartialStringBody, PartialStringBodyValue, StringBodyMatcher, StringBodyMatcherInput};
+use crate::lexer::action::{MockAccumulator, StringAccumulator, VecAccumulator};
 
-pub struct StringBodyOptions<Value, CustomError> {
+pub struct StringBodyOptions<Value = (), CustomError = (), ValueAcc = MockAccumulator> {
   pub matchers: Vec<StringBodyMatcher<Value, CustomError>>,
+  pub acc: ValueAcc,
+  // TODO pub error_acc: ErrAcc,
 }
 
-impl<Value, CustomError> Default for StringBodyOptions<Value, CustomError> {
+impl<Value, CustomError, ValueAcc: Default> Default
+  for StringBodyOptions<Value, CustomError, ValueAcc>
+{
   fn default() -> Self {
     Self {
       matchers: Vec::new(),
+      acc: ValueAcc::default(),
     }
   }
 }
 
-impl StringBodyOptions<(), ()> {
+impl StringBodyOptions<(), (), MockAccumulator> {
+  // TODO: comments
   pub fn new() -> Self {
     Self::default()
   }
 }
 
-impl<Value: PartialStringBodyValue, CustomError> StringBodyOptions<Value, CustomError> {
+impl StringBodyOptions<String, (), MockAccumulator> {
+  // TODO: comments
+  pub fn with_value() -> Self {
+    Self::default()
+  }
+}
+
+impl<CustomError> StringBodyOptions<(), CustomError, MockAccumulator> {
+  // TODO: comments
+  pub fn with_error() -> Self {
+    Self::default()
+  }
+}
+
+impl<Value: PartialStringBodyValue, CustomError, ValueAcc>
+  StringBodyOptions<Value, CustomError, ValueAcc>
+{
   fn append_body_matcher(
     mut self,
     close: bool,
@@ -117,5 +140,26 @@ impl<Value: PartialStringBodyValue, CustomError> StringBodyOptions<Value, Custom
   /// ```
   pub fn close(self, quote: char) -> Self {
     self.close_if(move |c| c == quote)
+  }
+
+  // TODO: comments
+  pub fn acc<NewAcc>(self, acc: NewAcc) -> StringBodyOptions<Value, CustomError, NewAcc> {
+    StringBodyOptions {
+      matchers: self.matchers,
+      acc,
+    }
+  }
+
+  // TODO: comments
+  pub fn acc_to_string(self) -> StringBodyOptions<Value, CustomError, StringAccumulator> {
+    self.acc(StringAccumulator::default())
+  }
+
+  // TODO: comments
+  pub fn acc_to_vec(self) -> StringBodyOptions<Value, CustomError, VecAccumulator<Value>>
+  where
+    Value: Default,
+  {
+    self.acc(VecAccumulator::default())
   }
 }

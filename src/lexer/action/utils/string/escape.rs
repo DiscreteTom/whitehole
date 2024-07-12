@@ -21,7 +21,9 @@ pub struct Escape<CustomError> {
 pub type EscapeHandler<CustomError> =
   Box<dyn Fn(&StringBodyMatcherInput) -> Option<Escape<CustomError>>>;
 
-impl<Value: PartialStringBodyValue, CustomError: 'static> StringBodyOptions<Value, CustomError> {
+impl<Value: PartialStringBodyValue, CustomError: 'static, ValueAcc>
+  StringBodyOptions<Value, CustomError, ValueAcc>
+{
   /// Append a string body matcher to match escape sequences.
   /// # Examples
   /// ```
