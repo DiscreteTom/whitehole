@@ -44,10 +44,8 @@ pub trait ReLexableFactory<'text, Kind: 'static, ActionState, ErrorType> {
   ) -> Self::ReLexableType;
 }
 
-#[derive(Default)]
-pub struct MockReLexableFactory;
 impl<'text, Kind: 'static, ActionState, ErrorType>
-  ReLexableFactory<'text, Kind, ActionState, ErrorType> for MockReLexableFactory
+  ReLexableFactory<'text, Kind, ActionState, ErrorType> for ()
 {
   type StatelessReLexableType = ();
   type ReLexableType = ();

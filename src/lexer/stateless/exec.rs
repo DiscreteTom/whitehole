@@ -166,7 +166,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::{action::exact, re_lex::MockReLexableFactory, token::MockTokenKind};
+  use crate::lexer::{action::exact, token::MockTokenKind};
 
   #[test]
   fn test_create_token() {
@@ -194,7 +194,7 @@ mod tests {
       &mut input,
       &vec![Rc::new(exact("d")),],
       &ReLexContext::default(),
-      &mut MockReLexableFactory
+      &mut ()
     )
     .is_none());
 
@@ -208,7 +208,7 @@ mod tests {
           Rc::new(exact("c")),
         ],
         &ReLexContext::default(),
-        &mut MockReLexableFactory
+        &mut ()
       ),
       Some((
         ActionOutput {
@@ -230,7 +230,7 @@ mod tests {
           Rc::new(exact("c")),
         ],
         &ReLexContext { start: 1, skip: 1 },
-        &mut MockReLexableFactory
+        &mut ()
       ),
       Some((
         ActionOutput {
@@ -252,7 +252,7 @@ mod tests {
           Rc::new(exact("c")),
         ],
         &ReLexContext { start: 1, skip: 2 },
-        &mut MockReLexableFactory
+        &mut ()
       ),
       None
     ));
@@ -267,7 +267,7 @@ mod tests {
           Rc::new(exact("c")),
         ],
         &ReLexContext { start: 0, skip: 3 },
-        &mut MockReLexableFactory
+        &mut ()
       ),
       Some((
         ActionOutput {

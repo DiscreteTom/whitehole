@@ -3,7 +3,7 @@ use crate::lexer::{
   action::ActionInput,
   fork::{ForkDisabled, LexOptionsFork},
   output::{LexOutput, TrimOutput},
-  re_lex::{MockReLexableFactory, ReLexContext, ReLexableFactory},
+  re_lex::{ReLexContext, ReLexableFactory},
   token::{Token, TokenKindIdProvider},
 };
 
@@ -212,7 +212,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       text,
       options.start,
       options.action_state,
-      MockReLexableFactory,
+      (),
       TrimOutput::default(),
     )
   }

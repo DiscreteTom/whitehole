@@ -1,4 +1,4 @@
-use super::re_lex::{MockReLexableFactory, ReLexableBuilder, ReLexableFactory};
+use super::re_lex::{ReLexableBuilder, ReLexableFactory};
 
 /// See [`LexOptions::fork`](crate::lexer::options::LexOptions::fork).
 // we use this trait and 2 structs instead of a `bool` to implement the `Fork` feature
@@ -26,5 +26,5 @@ pub struct ForkDisabled;
 impl<'text, Kind: 'static, ActionState, ErrorType>
   LexOptionsFork<'text, Kind, ActionState, ErrorType> for ForkDisabled
 {
-  type ReLexableFactoryType = MockReLexableFactory;
+  type ReLexableFactoryType = ();
 }
