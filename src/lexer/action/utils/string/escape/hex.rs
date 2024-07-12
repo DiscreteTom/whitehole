@@ -196,6 +196,46 @@ impl Default for CodePointEscapeOptions<CodePointEscapeError> {
   }
 }
 
+impl<CustomError> CodePointEscapeOptions<CustomError> {
+  /// Set the prefix of the code point escape.
+  pub fn prefix(mut self, prefix: char) -> Self {
+    self.prefix = prefix;
+    self
+  }
+
+  /// Set the open char of the code point escape body.
+  pub fn open(mut self, open: char) -> Self {
+    self.open = open;
+    self
+  }
+
+  /// Set the close char of the code point escape body.
+  pub fn close(mut self, close: char) -> Self {
+    self.close = close;
+    self
+  }
+
+  /// Set the maximum number of hex digit chars to match.
+  pub fn max(mut self, max_length: usize) -> Self {
+    self.max_length = max_length;
+    self
+  }
+
+  /// Set [`Self::error_mapper`].
+  pub fn error<NewError: 'static>(
+    self,
+    error_mapper: impl Fn(CodePointEscapeError) -> NewError + 'static,
+  ) -> CodePointEscapeOptions<NewError> {
+    CodePointEscapeOptions {
+      prefix: self.prefix,
+      open: self.open,
+      close: self.close,
+      max_length: self.max_length,
+      error_mapper: Box::new(error_mapper),
+    }
+  }
+}
+
 pub fn code_point_with_options<CustomError: 'static>(
   options: CodePointEscapeOptions<CustomError>,
 ) -> EscapeHandler<CustomError> {
