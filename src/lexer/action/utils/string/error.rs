@@ -1,5 +1,5 @@
 /// Errors when lexing a string.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum StringLiteralError<CustomError> {
   Unterminated,
   UnhandledEscape,
