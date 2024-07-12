@@ -1,5 +1,5 @@
 use super::{Escape, EscapeHandler};
-use crate::lexer::action::{StringList, StringLiteralError};
+use crate::lexer::action::{PartialStringBodyValue, StringList, StringLiteralError};
 use std::collections::HashMap;
 
 /// Returns an escape handler that
@@ -14,12 +14,14 @@ use std::collections::HashMap;
 ///  ('t', '\t'),
 /// ]);
 /// ```
-pub fn map<CustomError>(m: impl Into<HashMap<char, char>>) -> EscapeHandler<CustomError> {
+pub fn map<Value: PartialStringBodyValue, CustomError>(
+  m: impl Into<HashMap<char, char>>,
+) -> EscapeHandler<Value, CustomError> {
   let m = m.into();
   Box::new(move |input| {
     m.get(&input.next).map(|&value| Escape {
       digested: input.next.len_utf8(),
-      value: value.into(),
+      value: Value::from_char(value),
       error: None,
     })
   })
@@ -34,14 +36,16 @@ pub fn map<CustomError>(m: impl Into<HashMap<char, char>>) -> EscapeHandler<Cust
 /// // treat `"\\\r\n"` and `"\\\n"` to `''`
 /// # let escape_handler: EscapeHandler<MyError> =
 /// line_continuation(["\r\n", "\n"]);
-pub fn line_continuation<CustomError>(ss: impl Into<StringList>) -> EscapeHandler<CustomError> {
+pub fn line_continuation<Value: PartialStringBodyValue, CustomError>(
+  ss: impl Into<StringList>,
+) -> EscapeHandler<Value, CustomError> {
   let ss: Vec<String> = ss.into().0;
   Box::new(move |input| {
     for s in ss.iter() {
       if input.rest.starts_with(s) {
         return Some(Escape {
           digested: s.len(),
-          value: "".into(),
+          value: Value::from_str(""),
           error: None,
         });
       }
@@ -59,11 +63,13 @@ pub fn line_continuation<CustomError>(ss: impl Into<StringList>) -> EscapeHandle
 /// # enum MyError { UnnecessaryEscape }
 /// fallback(MyError::UnnecessaryEscape);
 /// ```
-pub fn fallback<CustomError: Clone + 'static>(error: CustomError) -> EscapeHandler<CustomError> {
+pub fn fallback<Value: PartialStringBodyValue, CustomError: Clone + 'static>(
+  error: CustomError,
+) -> EscapeHandler<Value, CustomError> {
   Box::new(move |input| {
     Some(Escape {
       digested: input.next.len_utf8(),
-      value: input.next.into(),
+      value: Value::from_char(input.next),
       error: Some(StringLiteralError::Custom(error.clone())),
     })
   })
@@ -74,7 +80,10 @@ mod tests {
   use super::*;
   use crate::lexer::action::StringBodyMatcherInput;
 
-  fn escape_checker_factory(h: EscapeHandler<()>, err: bool) -> impl Fn(&str, Option<&str>) {
+  fn escape_checker_factory(
+    h: EscapeHandler<String, ()>,
+    err: bool,
+  ) -> impl Fn(&str, Option<&str>) {
     move |src, value| match h(&StringBodyMatcherInput::new(src).unwrap()) {
       Some(escape) => {
         assert_eq!(escape.value, value.unwrap());

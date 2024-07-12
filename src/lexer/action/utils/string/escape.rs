@@ -9,19 +9,19 @@ use super::{
   StringLiteralError,
 };
 
-pub struct Escape<CustomError> {
+pub struct Escape<Value, CustomError> {
   /// The number of bytes that have been digested as the escape body
   /// (not include the escape starter).
   pub digested: usize,
   /// The value of the partial string body.
-  pub value: String,
+  pub value: Value,
   pub error: Option<StringLiteralError<CustomError>>,
 }
 
-pub type EscapeHandler<CustomError> =
-  Box<dyn Fn(&StringBodyMatcherInput) -> Option<Escape<CustomError>>>;
+pub type EscapeHandler<Value, CustomError> =
+  Box<dyn Fn(&StringBodyMatcherInput) -> Option<Escape<Value, CustomError>>>;
 
-impl<Value: PartialStringBodyValue, CustomError: 'static, ValueAcc>
+impl<Value: PartialStringBodyValue + 'static, CustomError: 'static, ValueAcc>
   StringBodyOptions<Value, CustomError, ValueAcc>
 {
   /// Append a string body matcher to match escape sequences.
@@ -34,7 +34,7 @@ impl<Value: PartialStringBodyValue, CustomError: 'static, ValueAcc>
   ///   fallback(MyError::UnnecessaryEscape)
   /// ]);
   /// ```
-  pub fn escape(mut self, starter: char, handlers: Vec<EscapeHandler<CustomError>>) -> Self {
+  pub fn escape(mut self, starter: char, handlers: Vec<EscapeHandler<Value, CustomError>>) -> Self {
     self.matchers.push(Box::new(move |input| {
       if input.next != starter {
         // not an escape starter
@@ -57,7 +57,7 @@ impl<Value: PartialStringBodyValue, CustomError: 'static, ValueAcc>
             if let Some(escape) = handler(&input) {
               return Some(PartialStringBody {
                 digested: starter.len_utf8() + escape.digested,
-                value: Value::from_str(&escape.value),
+                value: escape.value,
                 close: false,
                 error: escape.error,
               });

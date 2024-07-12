@@ -1,5 +1,5 @@
 use super::{Escape, EscapeHandler};
-use crate::lexer::action::StringLiteralError;
+use crate::lexer::action::{PartialStringBodyValue, StringLiteralError};
 
 #[derive(PartialEq, Debug)]
 pub enum HexEscapeError {
@@ -70,21 +70,21 @@ impl<CustomError> HexEscapeOptions<CustomError> {
 }
 
 // TODO: comments
-pub fn hex() -> EscapeHandler<HexEscapeError> {
+pub fn hex<Value: PartialStringBodyValue>() -> EscapeHandler<Value, HexEscapeError> {
   hex_with_options(HexEscapeOptions::default())
 }
 
 // TODO: comments
-pub fn hex_with<CustomError: 'static>(
+pub fn hex_with<Value: PartialStringBodyValue, CustomError: 'static>(
   options_builder: impl FnOnce(HexEscapeOptions<HexEscapeError>) -> HexEscapeOptions<CustomError>,
-) -> EscapeHandler<CustomError> {
+) -> EscapeHandler<Value, CustomError> {
   hex_with_options(options_builder(HexEscapeOptions::default()))
 }
 
 // TODO: comments
-pub fn hex_with_options<CustomError: 'static>(
+pub fn hex_with_options<Value: PartialStringBodyValue, CustomError: 'static>(
   options: HexEscapeOptions<CustomError>,
-) -> EscapeHandler<CustomError> {
+) -> EscapeHandler<Value, CustomError> {
   Box::new(move |input| {
     // check prefix
     if !input.rest.starts_with(options.prefix) {
@@ -100,7 +100,7 @@ pub fn hex_with_options<CustomError: 'static>(
         None => {
           return escape_error(
             options.prefix.len_utf8(),
-            '\0',
+            Value::from_char('\0'),
             HexEscapeError::TooShort,
             &options.error_mapper,
           );
@@ -114,13 +114,13 @@ pub fn hex_with_options<CustomError: 'static>(
               // invalid unicode
               None => escape_error(
                 options.prefix.len_utf8(),
-                '\0',
+                Value::from_char('\0'),
                 HexEscapeError::InvalidUnicode,
                 &options.error_mapper,
               ),
               Some(res) => Some(Escape {
                 digested,
-                value: res.into(),
+                value: Value::from_char(res),
                 error: None,
               }),
             };
@@ -132,7 +132,7 @@ pub fn hex_with_options<CustomError: 'static>(
     // reach to the end of the string
     escape_error(
       options.prefix.len_utf8(),
-      '\0',
+      Value::from_char('\0'),
       HexEscapeError::TooShort,
       &options.error_mapper,
     )
@@ -140,14 +140,14 @@ pub fn hex_with_options<CustomError: 'static>(
 }
 
 // TODO: comments
-pub fn unicode() -> EscapeHandler<HexEscapeError> {
+pub fn unicode<Value: PartialStringBodyValue>() -> EscapeHandler<Value, HexEscapeError> {
   hex_with_options(HexEscapeOptions::unicode())
 }
 
 // TODO: comments
-pub fn unicode_with<CustomError: 'static>(
+pub fn unicode_with<Value: PartialStringBodyValue, CustomError: 'static>(
   options_builder: impl FnOnce(HexEscapeOptions<HexEscapeError>) -> HexEscapeOptions<CustomError>,
-) -> EscapeHandler<CustomError> {
+) -> EscapeHandler<Value, CustomError> {
   hex_with_options(options_builder(HexEscapeOptions::unicode()))
 }
 
@@ -237,23 +237,23 @@ impl<CustomError> CodePointEscapeOptions<CustomError> {
 }
 
 // TODO: comments
-pub fn code_point() -> EscapeHandler<CodePointEscapeError> {
+pub fn code_point<Value: PartialStringBodyValue>() -> EscapeHandler<Value, CodePointEscapeError> {
   code_point_with_options(CodePointEscapeOptions::default())
 }
 
 // TODO: comments
-pub fn code_point_with<CustomError: 'static>(
+pub fn code_point_with<Value: PartialStringBodyValue, CustomError: 'static>(
   options_builder: impl FnOnce(
     CodePointEscapeOptions<CodePointEscapeError>,
   ) -> CodePointEscapeOptions<CustomError>,
-) -> EscapeHandler<CustomError> {
+) -> EscapeHandler<Value, CustomError> {
   code_point_with_options(options_builder(CodePointEscapeOptions::default()))
 }
 
 // TODO: comments
-pub fn code_point_with_options<CustomError: 'static>(
+pub fn code_point_with_options<Value: PartialStringBodyValue, CustomError: 'static>(
   options: CodePointEscapeOptions<CustomError>,
-) -> EscapeHandler<CustomError> {
+) -> EscapeHandler<Value, CustomError> {
   let mut prefix = options.prefix.to_string();
   prefix.push(options.open);
 
@@ -272,7 +272,7 @@ pub fn code_point_with_options<CustomError: 'static>(
           // no body
           return escape_error(
             options.prefix.len_utf8(),
-            '\0',
+            Value::from_char('\0'),
             CodePointEscapeError::Empty,
             &options.error_mapper,
           );
@@ -282,13 +282,13 @@ pub fn code_point_with_options<CustomError: 'static>(
           // invalid unicode
           None => escape_error(
             options.prefix.len_utf8(),
-            '\0',
+            Value::from_char('\0'),
             CodePointEscapeError::InvalidUnicode,
             &options.error_mapper,
           ),
           Some(res) => Some(Escape {
             digested,
-            value: res.into(),
+            value: Value::from_char(res),
             error: None,
           }),
         };
@@ -298,7 +298,7 @@ pub fn code_point_with_options<CustomError: 'static>(
         // reach the maximum length but not closed
         return escape_error(
           options.prefix.len_utf8(),
-          '\0',
+          Value::from_char('\0'),
           CodePointEscapeError::Overlong,
           &options.error_mapper,
         );
@@ -309,7 +309,7 @@ pub fn code_point_with_options<CustomError: 'static>(
         None => {
           return escape_error(
             options.prefix.len_utf8(),
-            '\0',
+            Value::from_char('\0'),
             CodePointEscapeError::InvalidChar,
             &options.error_mapper,
           )
@@ -325,22 +325,22 @@ pub fn code_point_with_options<CustomError: 'static>(
     // reach to the end of the string
     escape_error(
       options.prefix.len_utf8(),
-      '\0',
+      Value::from_char('\0'),
       CodePointEscapeError::Unterminated,
       &options.error_mapper,
     )
   })
 }
 
-fn escape_error<FromError, ToError>(
+fn escape_error<Value, FromError, ToError>(
   digested: usize,
-  value: impl Into<String>,
+  value: Value,
   e: FromError,
   error_mapper: &Box<dyn Fn(FromError) -> ToError>,
-) -> Option<Escape<ToError>> {
+) -> Option<Escape<Value, ToError>> {
   Some(Escape {
     digested,
-    value: value.into(),
+    value,
     error: Some(StringLiteralError::Custom(error_mapper(e))),
   })
 }
@@ -352,7 +352,7 @@ mod tests {
   use std::fmt::Debug;
 
   fn escape_checker_factory<E: PartialEq + Debug>(
-    h: EscapeHandler<E>,
+    h: EscapeHandler<String, E>,
   ) -> impl Fn(&str, Option<&str>, Option<E>) {
     move |src, value, err| match h(&StringBodyMatcherInput::new(src).unwrap()) {
       Some(escape) => {
@@ -411,7 +411,7 @@ mod tests {
 
   #[test]
   fn test_unicode() {
-    let check = escape_checker_factory(unicode());
+    let check = escape_checker_factory(unicode_with(|o| o));
     // wrong prefix
     check("a", None, None);
     // not enough digits
