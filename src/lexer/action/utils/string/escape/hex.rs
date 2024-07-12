@@ -178,9 +178,22 @@ pub struct CodePointEscapeOptions<CustomError> {
   /// Defaults to `'}'`.
   pub close: char,
   /// The maximum number of hex digit chars to match.
+  /// Defaults to `6`.
   pub max_length: usize,
   /// Map [`CodePointEscapeError`] to a custom error.
   pub error_mapper: Box<dyn Fn(CodePointEscapeError) -> CustomError>,
+}
+
+impl Default for CodePointEscapeOptions<CodePointEscapeError> {
+  fn default() -> Self {
+    Self {
+      prefix: 'u',
+      open: '{',
+      close: '}',
+      max_length: 6,
+      error_mapper: Box::new(|e| e),
+    }
+  }
 }
 
 pub fn code_point_with_options<CustomError: 'static>(
