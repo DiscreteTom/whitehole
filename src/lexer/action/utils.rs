@@ -3,6 +3,7 @@ mod exact;
 mod float;
 mod integer;
 mod regex;
+mod string;
 mod string_list;
 mod word;
 
@@ -11,6 +12,7 @@ pub use exact::*;
 pub use float::*;
 pub use integer::*;
 pub use regex::*;
+pub use string::*;
 pub use string_list::*;
 pub use word::*;
 
