@@ -52,7 +52,12 @@ impl<Value: PartialStringBodyValue, CustomError, ValueAcc>
         0 => None,
         digested => Some(PartialStringBody {
           digested,
-          value: Value::from_str(&input.rest[..digested]),
+          value: if close {
+            // the close quote doesn't count as the body
+            Value::from_str("")
+          } else {
+            Value::from_str(&input.rest[..digested])
+          },
           close,
           error: None,
         }),
