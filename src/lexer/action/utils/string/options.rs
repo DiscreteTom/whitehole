@@ -89,6 +89,9 @@ impl<Value: PartialStringBodyValue, CustomError, BodyAcc>
   }
 
   /// Append a string body matcher that consumes characters while the matcher function returns `true`.
+  /// # Caveats
+  /// This matcher is greedy, it will try to match as many characters as possible as one partial string body
+  /// to optimize the performance. If you use `chars(|_| true)`, it will consume the whole input text.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::{StringBodyOptions};
