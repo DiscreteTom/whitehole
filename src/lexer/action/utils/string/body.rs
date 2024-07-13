@@ -23,6 +23,7 @@ impl<'text> StringBodyMatcherInput<'text> {
   }
 }
 
+#[derive(Clone, Debug)]
 pub struct PartialStringBody<Value, CustomError> {
   /// The number of bytes that have been digested as the partial string body.
   pub digested: usize,
