@@ -1,7 +1,7 @@
 use super::{Escape, EscapeHandler};
 use crate::lexer::action::{PartialStringBodyValue, StringLiteralError};
 
-#[derive(PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum HexEscapeError {
   /// The hex sequence is shorter than [`HexEscapeOptions::length`].
   /// E.g. `"\x1"`.
@@ -151,7 +151,7 @@ pub fn unicode_with<Value: PartialStringBodyValue, CustomError: 'static>(
   hex_with_options(options_builder(HexEscapeOptions::unicode()))
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum CodePointEscapeError {
   /// E.g. `"\u{}"`
   Empty,
