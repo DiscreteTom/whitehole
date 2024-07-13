@@ -1,18 +1,15 @@
 use super::{PartialStringBody, PartialStringBodyValue, StringBodyMatcher, StringBodyMatcherInput};
 
-pub struct StringBodyOptions<Value = (), CustomError = (), ValueAcc = ()> {
+pub struct StringBodyOptions<Value = (), CustomError = (), BodyAcc = ()> {
   pub matchers: Vec<StringBodyMatcher<Value, CustomError>>,
-  pub acc: ValueAcc,
-  // TODO pub error_acc: ErrAcc,
+  pub acc: BodyAcc,
 }
 
-impl<Value, CustomError, ValueAcc: Default> Default
-  for StringBodyOptions<Value, CustomError, ValueAcc>
-{
+impl<Value, CustomError> Default for StringBodyOptions<Value, CustomError, ()> {
   fn default() -> Self {
     Self {
       matchers: Vec::new(),
-      acc: ValueAcc::default(),
+      acc: (),
     }
   }
 }
@@ -38,8 +35,8 @@ impl<CustomError> StringBodyOptions<(), CustomError, ()> {
   }
 }
 
-impl<Value: PartialStringBodyValue, CustomError, ValueAcc>
-  StringBodyOptions<Value, CustomError, ValueAcc>
+impl<Value: PartialStringBodyValue, CustomError, BodyAcc>
+  StringBodyOptions<Value, CustomError, BodyAcc>
 {
   fn append_body_matcher(
     mut self,
@@ -155,12 +152,16 @@ impl<Value: PartialStringBodyValue, CustomError, ValueAcc>
   }
 
   // TODO: comments
-  pub fn acc_to_string(self) -> StringBodyOptions<Value, CustomError, String> {
-    self.acc(String::new())
-  }
-
-  // TODO: comments
-  pub fn acc_to_vec(self) -> StringBodyOptions<Value, CustomError, Vec<Value>> {
+  pub fn acc_to_vec(
+    self,
+  ) -> StringBodyOptions<Value, CustomError, Vec<PartialStringBody<Value, CustomError>>> {
     self.acc(Vec::new())
+  }
+}
+
+impl<CustomError, BodyAcc> StringBodyOptions<String, CustomError, BodyAcc> {
+  // TODO: comments
+  pub fn acc_to_string(self) -> StringBodyOptions<String, CustomError, String> {
+    self.acc(String::new())
   }
 }
