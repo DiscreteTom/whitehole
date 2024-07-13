@@ -70,7 +70,7 @@ pub fn string_body<
         }
 
         // break the for-loop, construct new input and continue
-        break;
+        continue 'outer;
       };
       // else, continue to the next matcher
     }
