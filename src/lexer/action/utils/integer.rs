@@ -7,10 +7,9 @@ pub use options::*;
 
 use super::Accumulator;
 use crate::lexer::{
-  action::{simple_with_data, Action, HeadMatcher},
+  action::{simple_with_data, Action},
   token::MockTokenKind,
 };
-use std::collections::HashSet;
 
 /// Try to match an integer literal body in the rest of the input text
 /// with the default separator (`'_'`) and no accumulator.
@@ -385,7 +384,7 @@ macro_rules! generate_integer_literal_functions {
     ) -> Action<MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, ActionState, ErrorType> {
       let prefix = $prefix;
 
-      let mut a = if prefix.len() == 0 {
+      if prefix.len() == 0 {
         // no prefix, decimal integer literal
         simple_with_data(move |input| {
           let (digested, data) = $body_fn_name_with_options(&input.rest(), options.clone());
@@ -413,9 +412,8 @@ macro_rules! generate_integer_literal_functions {
           }
           Some((digested + prefix.len(), data))
         })
-      };
-      a.head_matcher = Some(HeadMatcher::OneOf(HashSet::from($head_matcher)));
-      a
+      }
+      .unchecked_head_in($head_matcher)
     }
   };
 }
@@ -724,7 +722,7 @@ mod tests {
   fn with_suffix() {
     // this is an example of customize an action with literal body utils
     let action_factory = || {
-      let mut a = simple_with_data(|input| {
+      simple_with_data(|input| {
         let prefix = "0B";
         let suffix = "n"; // just like the big int literal in js/ts
 
@@ -742,9 +740,8 @@ mod tests {
         } else {
           None
         }
-      });
-      a.head_matcher = Some(HeadMatcher::OneOf(HashSet::from(['0'])));
-      a
+      })
+      .unchecked_head_in(['0'])
     };
     assert_default_integer_literal_action(action_factory(), "0B101n", 6);
     // missing suffix
