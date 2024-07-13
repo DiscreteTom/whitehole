@@ -1,4 +1,7 @@
-use super::{PartialStringBody, PartialStringBodyValue, StringBodyMatcher, StringBodyMatcherInput};
+use super::{
+  PartialStringBody, PartialStringBodyValue, StringBodyMatcher, StringBodyMatcherInput,
+  StringLiteralError,
+};
 
 pub struct StringBodyOptions<Value = (), CustomError = (), BodyAcc = ()> {
   pub matchers: Vec<StringBodyMatcher<Value, CustomError>>,
@@ -40,9 +43,14 @@ impl<Value: PartialStringBodyValue, CustomError, BodyAcc>
 {
   fn append_body_matcher(
     mut self,
-    close: bool,
     matcher: impl Fn(&StringBodyMatcherInput) -> usize + 'static,
+    kind: MatcherKind,
   ) -> Self {
+    let (close, unterminated) = match kind {
+      MatcherKind::Body => (false, false),
+      MatcherKind::Close => (true, false),
+      MatcherKind::UnterminatedClose => (true, true),
+    };
     self
       .matchers
       .push(Box::new(move |input| match matcher(input) {
@@ -56,7 +64,11 @@ impl<Value: PartialStringBodyValue, CustomError, BodyAcc>
             Value::from_str(&input.rest[..digested])
           },
           close,
-          error: None,
+          error: if unterminated {
+            Some(StringLiteralError::Unterminated)
+          } else {
+            None
+          },
         }),
       }));
     self
@@ -73,7 +85,7 @@ impl<Value: PartialStringBodyValue, CustomError, BodyAcc>
   /// StringBodyOptions::new().body(|input| input.rest.len());
   /// ```
   pub fn body(self, matcher: impl Fn(&StringBodyMatcherInput) -> usize + 'static) -> Self {
-    self.append_body_matcher(false, matcher)
+    self.append_body_matcher(matcher, MatcherKind::Body)
   }
 
   /// Append a string body matcher that consumes characters while the matcher function returns `true`.
@@ -108,7 +120,7 @@ impl<Value: PartialStringBodyValue, CustomError, BodyAcc>
   ///   .close_match(|input| if input.rest.starts_with("${") { 2 } else { 0 });
   /// ```
   pub fn close_match(self, matcher: impl Fn(&StringBodyMatcherInput) -> usize + 'static) -> Self {
-    self.append_body_matcher(true, matcher)
+    self.append_body_matcher(matcher, MatcherKind::Close)
   }
 
   /// Append a string body matcher that
@@ -121,13 +133,7 @@ impl<Value: PartialStringBodyValue, CustomError, BodyAcc>
   /// StringBodyOptions::new().close_if(|c| c == '"' || c == '\'');
   /// ```
   pub fn close_if(self, matcher: impl Fn(char) -> bool + 'static) -> Self {
-    self.close_match(move |input| {
-      if matcher(input.next) {
-        input.next.len_utf8()
-      } else {
-        0
-      }
-    })
+    self.close_match(char_matcher_to_body_matcher(matcher))
   }
 
   /// Append a string body matcher that
@@ -141,6 +147,29 @@ impl<Value: PartialStringBodyValue, CustomError, BodyAcc>
   /// ```
   pub fn close(self, quote: char) -> Self {
     self.close_if(move |c| c == quote)
+  }
+
+  // TODO: comments
+  pub fn unterminated_match(
+    self,
+    matcher: impl Fn(&StringBodyMatcherInput) -> usize + 'static,
+  ) -> Self {
+    self.append_body_matcher(matcher, MatcherKind::UnterminatedClose)
+  }
+
+  // TODO: comments
+  pub fn unterminated_if(self, matcher: impl Fn(char) -> bool + 'static) -> Self {
+    self.unterminated_match(char_matcher_to_body_matcher(matcher))
+  }
+
+  // TODO: comments
+  pub fn unterminated(self, boundary: char) -> Self {
+    self.unterminated_if(move |c| c == boundary)
+  }
+
+  // TODO: comments
+  pub fn singleline(self) -> Self {
+    self.unterminated('\n')
   }
 
   // TODO: comments
@@ -163,5 +192,23 @@ impl<CustomError, BodyAcc> StringBodyOptions<String, CustomError, BodyAcc> {
   // TODO: comments
   pub fn acc_to_string(self) -> StringBodyOptions<String, CustomError, String> {
     self.acc(String::new())
+  }
+}
+
+enum MatcherKind {
+  Body,
+  Close,
+  UnterminatedClose,
+}
+
+fn char_matcher_to_body_matcher(
+  matcher: impl Fn(char) -> bool + 'static,
+) -> impl Fn(&StringBodyMatcherInput) -> usize + 'static {
+  move |input| {
+    if matcher(input.next) {
+      input.next.len_utf8()
+    } else {
+      0
+    }
   }
 }
