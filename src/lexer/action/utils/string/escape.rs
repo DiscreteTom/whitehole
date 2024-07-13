@@ -27,14 +27,20 @@ impl<Value: PartialStringBodyValue + 'static, CustomError: 'static, BodyAcc>
   /// Append a string body matcher to match escape sequences.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::action::{StringBodyOptions, fallback};
+  /// # use whitehole::lexer::action::{StringBodyOptions, fallback, line_continuation};
   /// # enum MyError { UnnecessaryEscape }
   /// # let options =
-  /// StringBodyOptions::new().escape('\\', vec![
+  /// StringBodyOptions::new().escape('\\', [
+  ///   line_continuation(["\r\n", "\n"]),
   ///   fallback(MyError::UnnecessaryEscape)
   /// ]);
   /// ```
-  pub fn escape(mut self, starter: char, handlers: Vec<EscapeHandler<Value, CustomError>>) -> Self {
+  pub fn escape(
+    mut self,
+    starter: char,
+    handlers: impl Into<Vec<EscapeHandler<Value, CustomError>>>,
+  ) -> Self {
+    let handlers = handlers.into();
     self.matchers.push(Box::new(move |input| {
       if input.next != starter {
         // not an escape starter
