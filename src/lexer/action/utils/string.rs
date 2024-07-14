@@ -28,7 +28,7 @@ use crate::lexer::{
 };
 
 // TODO: comments
-pub fn string_literal<
+pub fn string<
   ActionState,
   ErrorType,
   Value: PartialStringBodyValue + 'static,
@@ -113,7 +113,7 @@ mod tests {
 
   #[test]
   fn test_string_literal() {
-    let a = string_literal(
+    let a = string(
       [
         "\"",  // normal double quote string
         "c\"", // c string
