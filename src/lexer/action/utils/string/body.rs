@@ -60,6 +60,7 @@ pub fn string_body<
 ) -> (usize, BodyAcc) {
   let mut digested = 0;
   let mut acc = options.acc.clone();
+  let mut close_by_matchers = false;
 
   'outer: while let Some(input) = StringBodyMatcherInput::new(&rest[digested..]) {
     for m in &options.matchers {
@@ -70,6 +71,8 @@ pub fn string_body<
         acc.update(partial);
 
         if close {
+          close_by_matchers = true;
+          // stop checking matchers
           break 'outer;
         }
 
@@ -80,14 +83,24 @@ pub fn string_body<
     }
 
     // no matcher matches, mark as unterminated and stop lexing
-    acc.update(PartialStringBody {
-      digested: 0,
-      value: Value::from_str(""),
-      close: false,
-      error: Some(StringLiteralError::Unterminated),
-    });
+    acc.update(close_with_unterminated_err());
+    close_by_matchers = true;
     break;
   }
 
+  if !close_by_matchers {
+    acc.update(close_with_unterminated_err());
+  }
+
   (digested, acc)
+}
+
+fn close_with_unterminated_err<Value: PartialStringBodyValue, CustomError>(
+) -> PartialStringBody<Value, CustomError> {
+  PartialStringBody {
+    digested: 0,
+    value: Value::from_str(""),
+    close: true,
+    error: Some(StringLiteralError::Unterminated),
+  }
 }
