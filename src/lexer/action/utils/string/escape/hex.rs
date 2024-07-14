@@ -98,12 +98,7 @@ pub fn hex_with_options<Value: PartialStringBodyValue, CustomError: 'static>(
       match c.to_digit(16) {
         // not enough digits
         None => {
-          return escape_error(
-            options.prefix.len_utf8(),
-            Value::from_char('\0'),
-            HexEscapeError::TooShort,
-            &options.error_mapper,
-          );
+          return escape_error(HexEscapeError::TooShort, &options.error_mapper);
         }
         Some(digit) => {
           value = value * 16 + digit;
@@ -112,12 +107,7 @@ pub fn hex_with_options<Value: PartialStringBodyValue, CustomError: 'static>(
           if i == options.length {
             return match char::from_u32(value) {
               // invalid unicode
-              None => escape_error(
-                options.prefix.len_utf8(),
-                Value::from_char('\0'),
-                HexEscapeError::InvalidUnicode,
-                &options.error_mapper,
-              ),
+              None => escape_error(HexEscapeError::InvalidUnicode, &options.error_mapper),
               Some(res) => Some(Escape {
                 digested,
                 value: Value::from_char(res),
@@ -130,12 +120,7 @@ pub fn hex_with_options<Value: PartialStringBodyValue, CustomError: 'static>(
     }
 
     // reach to the end of the string
-    escape_error(
-      options.prefix.len_utf8(),
-      Value::from_char('\0'),
-      HexEscapeError::TooShort,
-      &options.error_mapper,
-    )
+    escape_error(HexEscapeError::TooShort, &options.error_mapper)
   })
 }
 
@@ -270,22 +255,12 @@ pub fn code_point_with_options<Value: PartialStringBodyValue, CustomError: 'stat
       if c == options.close {
         if i == 0 {
           // no body
-          return escape_error(
-            options.prefix.len_utf8(),
-            Value::from_char('\0'),
-            CodePointEscapeError::Empty,
-            &options.error_mapper,
-          );
+          return escape_error(CodePointEscapeError::Empty, &options.error_mapper);
         }
         digested += c.len_utf8();
         return match char::from_u32(value) {
           // invalid unicode
-          None => escape_error(
-            options.prefix.len_utf8(),
-            Value::from_char('\0'),
-            CodePointEscapeError::InvalidUnicode,
-            &options.error_mapper,
-          ),
+          None => escape_error(CodePointEscapeError::InvalidUnicode, &options.error_mapper),
           Some(res) => Some(Escape {
             digested,
             value: Value::from_char(res),
@@ -296,24 +271,12 @@ pub fn code_point_with_options<Value: PartialStringBodyValue, CustomError: 'stat
 
       if i == options.max_length {
         // reach the maximum length but not closed
-        return escape_error(
-          options.prefix.len_utf8(),
-          Value::from_char('\0'),
-          CodePointEscapeError::Overlong,
-          &options.error_mapper,
-        );
+        return escape_error(CodePointEscapeError::Overlong, &options.error_mapper);
       }
 
       match c.to_digit(16) {
         // bad hex digit
-        None => {
-          return escape_error(
-            options.prefix.len_utf8(),
-            Value::from_char('\0'),
-            CodePointEscapeError::InvalidChar,
-            &options.error_mapper,
-          )
-        }
+        None => return escape_error(CodePointEscapeError::InvalidChar, &options.error_mapper),
         Some(digit) => {
           value = value * 16 + digit;
           i += 1;
@@ -323,24 +286,17 @@ pub fn code_point_with_options<Value: PartialStringBodyValue, CustomError: 'stat
     }
 
     // reach to the end of the string
-    escape_error(
-      options.prefix.len_utf8(),
-      Value::from_char('\0'),
-      CodePointEscapeError::Unterminated,
-      &options.error_mapper,
-    )
+    escape_error(CodePointEscapeError::Unterminated, &options.error_mapper)
   })
 }
 
-fn escape_error<Value, FromError, ToError>(
-  digested: usize,
-  value: Value,
+fn escape_error<Value: PartialStringBodyValue, FromError, ToError>(
   e: FromError,
   error_mapper: &Box<dyn Fn(FromError) -> ToError>,
 ) -> Option<Escape<Value, ToError>> {
   Some(Escape {
-    digested,
-    value,
+    digested: 0,             // don't digest body, only the prefix will be digested
+    value: Value::default(), // empty value
     error: Some(StringLiteralError::Custom(error_mapper(e))),
   })
 }
@@ -378,9 +334,9 @@ mod tests {
     // wrong prefix
     check("a", None, None);
     // not enough digits
-    check("xz", "\0".into(), HexEscapeError::TooShort.into());
+    check("xz", "".into(), HexEscapeError::TooShort.into());
     // reach to the end of the string
-    check("x1", "\0".into(), HexEscapeError::TooShort.into());
+    check("x1", "".into(), HexEscapeError::TooShort.into());
     // normal
     check("x1f", "\x1f".into(), None);
 
@@ -396,15 +352,15 @@ mod tests {
     // wrong prefix
     check("a", None, None);
     // not enough digits
-    check(":z", "\0".into(), MyError(HexEscapeError::TooShort).into());
+    check(":z", "".into(), MyError(HexEscapeError::TooShort).into());
     // invalid unicode
     check(
       ":110000",
-      "\0".into(),
+      "".into(),
       MyError(HexEscapeError::InvalidUnicode).into(),
     );
     // reach to the end of the string
-    check(":1", "\0".into(), MyError(HexEscapeError::TooShort).into());
+    check(":1", "".into(), MyError(HexEscapeError::TooShort).into());
     // normal
     check(":01111f", "\u{01111f}".into(), None);
   }
@@ -415,9 +371,9 @@ mod tests {
     // wrong prefix
     check("a", None, None);
     // not enough digits
-    check("uz", "\0".into(), HexEscapeError::TooShort.into());
+    check("uz", "".into(), HexEscapeError::TooShort.into());
     // reach to the end of the string
-    check("u1", "\0".into(), HexEscapeError::TooShort.into());
+    check("u1", "".into(), HexEscapeError::TooShort.into());
     // normal
     check("u1fff", "\u{1fff}".into(), None);
   }
@@ -428,31 +384,23 @@ mod tests {
     // wrong prefix
     check("uu", None, None);
     // no body
-    check("u{}", "\0".into(), CodePointEscapeError::Empty.into());
+    check("u{}", "".into(), CodePointEscapeError::Empty.into());
     // invalid unicode
     check(
       "u{110000}",
-      "\0".into(),
+      "".into(),
       CodePointEscapeError::InvalidUnicode.into(),
     );
     // overlong
     check(
       "u{11111111111111111111",
-      "\0".into(),
+      "".into(),
       CodePointEscapeError::Overlong.into(),
     );
     // bad hex digit
-    check(
-      "u{z}",
-      "\0".into(),
-      CodePointEscapeError::InvalidChar.into(),
-    );
+    check("u{z}", "".into(), CodePointEscapeError::InvalidChar.into());
     // not terminated
-    check(
-      "u{1",
-      "\0".into(),
-      CodePointEscapeError::Unterminated.into(),
-    );
+    check("u{1", "".into(), CodePointEscapeError::Unterminated.into());
     // normal
     check("u{1f}", "\u{1f}".into(), None);
 
@@ -472,31 +420,31 @@ mod tests {
     // no body
     check(
       ":[]",
-      "\0".into(),
+      "".into(),
       MyError(CodePointEscapeError::Empty).into(),
     );
     // invalid unicode
     check(
       ":[110000]",
-      "\0".into(),
+      "".into(),
       MyError(CodePointEscapeError::InvalidUnicode).into(),
     );
     // overlong
     check(
       ":[11111111111111111111",
-      "\0".into(),
+      "".into(),
       MyError(CodePointEscapeError::Overlong).into(),
     );
     // bad hex digit
     check(
       ":[z]",
-      "\0".into(),
+      "".into(),
       MyError(CodePointEscapeError::InvalidChar).into(),
     );
     // not terminated
     check(
       ":[1",
-      "\0".into(),
+      "".into(),
       MyError(CodePointEscapeError::Unterminated).into(),
     );
     // normal
