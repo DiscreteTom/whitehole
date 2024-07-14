@@ -1,5 +1,5 @@
 use super::{Escape, EscapeHandler};
-use crate::lexer::action::{PartialStringBodyValue, StringList, StringLiteralError};
+use crate::lexer::action::{PartialStringBodyValue, StringList};
 use std::collections::HashMap;
 
 /// Returns an escape handler that
@@ -54,31 +54,10 @@ pub fn line_continuation<Value: PartialStringBodyValue, CustomError>(
   })
 }
 
-/// Returns an escape handler that
-/// accept one character as the escaped value and mark the escape as a customized error.
-/// E.g. treat `'\\z'` as `'z'`.
-/// # Examples
-/// ```
-/// # use whitehole::lexer::action::{fallback, Escape};
-/// # enum MyError { UnnecessaryEscape }
-/// fallback(MyError::UnnecessaryEscape);
-/// ```
-pub fn fallback<Value: PartialStringBodyValue, CustomError: Clone + 'static>(
-  error: CustomError,
-) -> EscapeHandler<Value, CustomError> {
-  Box::new(move |input| {
-    Some(Escape {
-      digested: input.next.len_utf8(),
-      value: Value::from_char(input.next),
-      error: Some(StringLiteralError::Custom(error.clone())),
-    })
-  })
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::StringBodyMatcherInput;
+  use crate::lexer::action::{StringBodyMatcherInput, StringLiteralError};
 
   fn escape_checker_factory(
     h: EscapeHandler<String, ()>,
@@ -125,11 +104,5 @@ mod tests {
     check("\r\n", "".into());
     check("\n", "".into());
     check(r"a", None);
-  }
-
-  #[test]
-  fn test_fallback() {
-    let check = escape_checker_factory(fallback(()), true);
-    check(r"a", "a".into());
   }
 }
