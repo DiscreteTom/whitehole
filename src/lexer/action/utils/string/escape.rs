@@ -25,6 +25,7 @@ impl<Value: PartialStringBodyValue + 'static, CustomError: 'static, BodyAcc>
   StringBodyOptions<Value, CustomError, BodyAcc>
 {
   /// Append a string body matcher to match escape sequences.
+  /// If an escape is not handled, the escape starter will be treated as a normal char.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::{StringBodyOptions, fallback, line_continuation};
