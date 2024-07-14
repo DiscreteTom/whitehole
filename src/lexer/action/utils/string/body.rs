@@ -23,14 +23,18 @@ impl<'text> StringBodyMatcherInput<'text> {
   }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug)] // TODO: don't derive Clone?
 pub struct PartialStringBody<Value, CustomError> {
   /// The number of bytes that have been digested as the partial string body.
+  /// # Caveats
+  /// This might be `0` if the partial string body is only used to mark an error.
   pub digested: usize,
   /// The value of the partial string body.
   pub value: Value,
-  /// Whether the partial string body contains a close quote.
   /// If `true`, the lexer will stop lexing the string.
+  /// Only the last partial string body should have this field set to `true`.
+  /// # Caveats
+  /// This may NOT always be the close quote (e.g. in an unterminated string literal).
   pub close: bool,
   /// The error that occurred during lexing the partial string body.
   pub error: Option<StringLiteralError<CustomError>>,
