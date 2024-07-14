@@ -10,10 +10,14 @@ use crate::lexer::{
   token::MockTokenKind,
 };
 
+/// Create an action that matches any JSON whitespace characters greedily.
+/// The characters are: `'\x20'` (space), `'\x0a'` (line feed), `'\x0d'` (carriage return), `'\x09'` (tab).
 pub fn whitespaces<ActionState, ErrorType>() -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   chars_in_str("\x20\x0a\x0d\x09")
 }
 
+/// Create an action that matches one JSON boundary character exactly.
+/// The characters are: `'{'`, `'}'`, `','`, `':'`, `'['`, `']'`.
 pub fn boundaries<ActionState, ErrorType>() -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>>
 {
   exact_chars("{},:[]")
@@ -56,7 +60,8 @@ impl<BodyAcc, CustomError> StringOptions<BodyAcc, CustomError> {
   }
 }
 
-// TODO: comments
+/// Create an action that matches a JSON string literal
+/// with the given options.
 pub fn string<
   ActionState,
   ErrorType,
@@ -96,6 +101,8 @@ pub fn string<
   )
 }
 
+/// Create an action that matches a JSON string literal
+/// with the given options.
 pub fn string_with<
   ActionState,
   ErrorType,
@@ -186,6 +193,8 @@ impl<SepAcc, IntAcc, FracAcc, ExpAcc> NumberOptions<SepAcc, IntAcc, FracAcc, Exp
   }
 }
 
+/// Create an action that matches a JSON number literal
+/// with the given options.
 pub fn number<
   ActionState,
   ErrorType,
@@ -223,6 +232,8 @@ pub fn number<
   .unchecked_head_in(['-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
 }
 
+/// Create an action that matches a JSON number literal
+/// with the given options.
 pub fn number_with<
   ActionState,
   ErrorType,
