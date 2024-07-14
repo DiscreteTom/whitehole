@@ -173,7 +173,7 @@ impl<Value: PartialStringBodyValue, CustomError, BodyAcc>
 
   // TODO: comments
   pub fn singleline(self) -> Self {
-    self.unterminated('\n', false)
+    self.unterminated('\n', false).unterminated('\r', false)
   }
 
   // TODO: comments
