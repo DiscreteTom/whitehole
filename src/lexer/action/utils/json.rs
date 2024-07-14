@@ -19,6 +19,43 @@ pub fn boundaries<ActionState, ErrorType>() -> Vec<Action<MockTokenKind<()>, Act
   exact_chars("{},:[]")
 }
 
+pub struct StringOptions<BodyAcc, CustomError> {
+  /// The accumulator for the string body.
+  pub acc: BodyAcc,
+  /// The error mapper for hex escape errors.
+  pub error_mapper: Box<dyn Fn(HexEscapeError) -> CustomError>,
+}
+
+impl StringOptions<(), HexEscapeError> {
+  pub fn new() -> Self {
+    Self {
+      acc: (),
+      error_mapper: Box::new(|e| e),
+    }
+  }
+}
+
+impl<BodyAcc, CustomError> StringOptions<BodyAcc, CustomError> {
+  /// Set the accumulator for the string body.
+  pub fn acc<NewAcc>(self, acc: NewAcc) -> StringOptions<NewAcc, CustomError> {
+    StringOptions {
+      acc,
+      error_mapper: self.error_mapper,
+    }
+  }
+
+  /// Set the error mapper for hex escape errors.
+  pub fn error<NewError>(
+    self,
+    error_mapper: impl Fn(HexEscapeError) -> NewError + 'static,
+  ) -> StringOptions<BodyAcc, NewError> {
+    StringOptions {
+      acc: self.acc,
+      error_mapper: Box::new(error_mapper),
+    }
+  }
+}
+
 // TODO: comments
 pub fn string<
   ActionState,
@@ -27,8 +64,7 @@ pub fn string<
   CustomError: 'static,
   BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone,
 >(
-  acc: BodyAcc,
-  error_mapper: impl Fn(HexEscapeError) -> CustomError + 'static,
+  options: StringOptions<BodyAcc, CustomError>,
 ) -> Action<MockTokenKind<BodyAcc>, ActionState, ErrorType> {
   super::string(
     "\"",
@@ -51,12 +87,12 @@ pub fn string<
             ('t', '\t'),
             ('0', '\0'),
           ]),
-          unicode_with(|o| o.error(error_mapper)),
+          unicode_with(|o| o.error(options.error_mapper)),
         ],
       )
       .close('"')
       .singleline()
-      .acc(acc),
+      .acc(options.acc),
   )
 }
 
