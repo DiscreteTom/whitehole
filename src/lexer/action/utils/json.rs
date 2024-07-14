@@ -60,11 +60,82 @@ pub fn string<
   )
 }
 
-pub struct NumberLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc> {
-  pub sep: SepAcc,
-  pub int: IntAcc,
-  pub frac: FracAcc,
-  pub exp: ExpAcc,
+#[derive(Default, Debug, Clone)]
+pub struct NumberOptions<SepAcc, IntAcc, FracAcc, ExpAcc> {
+  /// See [`Self::separator`].
+  pub separator: SepAcc,
+  /// See [`Self::integer`].
+  pub integer: IntAcc,
+  /// See [`Self::fraction`].
+  pub fraction: FracAcc,
+  /// See [`Self::exponent`].
+  pub exponent: ExpAcc,
+}
+
+impl NumberOptions<(), (), (), ()> {
+  /// Create a new [`Self`] with no accumulators.
+  pub fn new() -> Self {
+    NumberOptions {
+      separator: (),
+      integer: (),
+      fraction: (),
+      exponent: (),
+    }
+  }
+}
+
+impl<SepAcc, IntAcc, FracAcc, ExpAcc> NumberOptions<SepAcc, IntAcc, FracAcc, ExpAcc> {
+  /// Set the accumulator for the separator part.
+  pub fn separator<NewSepAcc>(
+    self,
+    acc: NewSepAcc,
+  ) -> NumberOptions<NewSepAcc, IntAcc, FracAcc, ExpAcc> {
+    NumberOptions {
+      separator: acc,
+      integer: self.integer,
+      fraction: self.fraction,
+      exponent: self.exponent,
+    }
+  }
+
+  /// Set the accumulator for the integer part.
+  pub fn integer<NewIntAcc>(
+    self,
+    acc: NewIntAcc,
+  ) -> NumberOptions<SepAcc, NewIntAcc, FracAcc, ExpAcc> {
+    NumberOptions {
+      separator: self.separator,
+      integer: acc,
+      fraction: self.fraction,
+      exponent: self.exponent,
+    }
+  }
+
+  /// Set the accumulator for the fractional part.
+  pub fn fraction<NewFracAcc>(
+    self,
+    acc: NewFracAcc,
+  ) -> NumberOptions<SepAcc, IntAcc, NewFracAcc, ExpAcc> {
+    NumberOptions {
+      separator: self.separator,
+      integer: self.integer,
+      fraction: acc,
+      exponent: self.exponent,
+    }
+  }
+
+  /// Set the accumulator for the exponent part.
+  pub fn exponent<NewExpAcc>(
+    self,
+    acc: NewExpAcc,
+  ) -> NumberOptions<SepAcc, IntAcc, FracAcc, NewExpAcc> {
+    NumberOptions {
+      separator: self.separator,
+      integer: self.integer,
+      fraction: self.fraction,
+      exponent: acc,
+    }
+  }
 }
 
 pub fn number<
@@ -75,14 +146,14 @@ pub fn number<
   FracAcc: Accumulator<char> + Clone,
   ExpAcc: Accumulator<char> + Clone,
 >(
-  options: NumberLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
+  options: NumberOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
 ) -> Action<MockTokenKind<FloatLiteralData<SepAcc, IntAcc, FracAcc, ExpAcc>>, ActionState, ErrorType>
 {
   let options = FloatLiteralOptions::default()
-    .separator_with(|o| o.acc(options.sep))
-    .integer(options.int)
-    .fraction_with(|o| o.acc(options.frac))
-    .exponent_with(|o| o.acc(options.exp));
+    .separator_with(|o| o.acc(options.separator))
+    .integer(options.integer)
+    .fraction_with(|o| o.acc(options.fraction))
+    .exponent_with(|o| o.acc(options.exponent));
 
   simple_with_data(
     move |input: &crate::lexer::action::ActionInput<ActionState>| {
