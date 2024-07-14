@@ -18,8 +18,90 @@ pub use word::*;
 
 use super::{simple::simple, Action};
 use crate::lexer::token::MockTokenKind;
+use std::{collections::HashSet, ops::RangeInclusive};
 
-/// Match unicode whitespaces greedy.
+/// Match chars by the condition greedily.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{Action, chars};
+/// // match all ascii digits greedily
+/// # let action: Action<_> =
+/// chars(|ch| ch.is_ascii_digit());
+/// ```
+pub fn chars<ActionState, ErrorType>(
+  condition: impl Fn(char) -> bool + 'static,
+) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+  simple(move |input| {
+    let mut digested = 0;
+    for ch in input.rest().chars() {
+      if !condition(ch) {
+        break;
+      }
+      digested += ch.len_utf8();
+    }
+    digested
+  })
+}
+
+/// Match chars in the range greedily.
+///
+/// The [`Action::head_matcher`] will be set automatically.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{Action, chars_in_range};
+/// // match all ascii digits greedily
+/// # let action: Action<_> =
+/// chars_in_range('0'..='9');
+/// ```
+pub fn chars_in_range<ActionState, ErrorType>(
+  range: impl Into<RangeInclusive<char>>,
+) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+  let range = range.into();
+  {
+    let range = range.clone();
+    chars(move |ch| range.contains(&ch))
+  }
+  .unchecked_head_in_range(range)
+}
+
+/// Match chars in the set greedily.
+///
+/// The [`Action::head_matcher`] will be set automatically.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{Action, charset};
+/// // match '0' or '9' greedily
+/// # let action: Action<_> =
+/// charset(['0', '9']);
+/// ```
+pub fn charset<ActionState, ErrorType>(
+  set: impl Into<HashSet<char>>,
+) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+  let set = set.into();
+  {
+    let set = set.clone();
+    chars(move |ch| set.contains(&ch))
+  }
+  .unchecked_head_in(set)
+}
+
+/// Match chars in the string greedily.
+///
+/// The [`Action::head_matcher`] will be set automatically.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{Action, chars_in_str};
+/// // match '0' or '9' greedily
+/// # let action: Action<_> =
+/// chars_in_str("09");
+/// ```
+pub fn chars_in_str<ActionState, ErrorType>(
+  s: impl Into<String>,
+) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+  charset(s.into().chars().collect::<HashSet<_>>())
+}
+
+/// Match unicode whitespaces greedily.
 /// For the list of whitespaces, see https://www.unicode.org/Public/UCD/latest/ucd/PropList.txt.
 ///
 /// The [`Action::head_matcher`] will be set automatically.
@@ -36,33 +118,24 @@ use crate::lexer::token::MockTokenKind;
 /// # }
 /// ```
 pub fn whitespaces<ActionState, ErrorType>() -> Action<MockTokenKind<()>, ActionState, ErrorType> {
-  simple(|input| {
-    let mut i = 0;
-    for ch in input.rest().chars() {
-      if !ch.is_whitespace() {
-        break;
-      }
-      i += ch.len_utf8();
-    }
-    i
-  })
-  // 0009..000D    ; White_Space # Cc   [5] <control-0009>..<control-000D>
-  // 0020          ; White_Space # Zs       SPACE
-  // 0085          ; White_Space # Cc       <control-0085>
-  // 00A0          ; White_Space # Zs       NO-BREAK SPACE
-  // 1680          ; White_Space # Zs       OGHAM SPACE MARK
-  // 2000..200A    ; White_Space # Zs  [11] EN QUAD..HAIR SPACE
-  // 2028          ; White_Space # Zl       LINE SEPARATOR
-  // 2029          ; White_Space # Zp       PARAGRAPH SEPARATOR
-  // 202F          ; White_Space # Zs       NARROW NO-BREAK SPACE
-  // 205F          ; White_Space # Zs       MEDIUM MATHEMATICAL SPACE
-  // 3000          ; White_Space # Zs       IDEOGRAPHIC SPACE
-  .unchecked_head_in([
-    '\u{0009}', '\u{000A}', '\u{000B}', '\u{000C}', '\u{000D}', '\u{0020}', '\u{0085}', '\u{00A0}',
-    '\u{1680}', '\u{2000}', '\u{2001}', '\u{2002}', '\u{2003}', '\u{2004}', '\u{2005}', '\u{2006}',
-    '\u{2007}', '\u{2008}', '\u{2009}', '\u{200A}', '\u{2028}', '\u{2029}', '\u{202F}', '\u{205F}',
-    '\u{3000}',
-  ])
+  chars(|ch| ch.is_whitespace())
+    // 0009..000D    ; White_Space # Cc   [5] <control-0009>..<control-000D>
+    // 0020          ; White_Space # Zs       SPACE
+    // 0085          ; White_Space # Cc       <control-0085>
+    // 00A0          ; White_Space # Zs       NO-BREAK SPACE
+    // 1680          ; White_Space # Zs       OGHAM SPACE MARK
+    // 2000..200A    ; White_Space # Zs  [11] EN QUAD..HAIR SPACE
+    // 2028          ; White_Space # Zl       LINE SEPARATOR
+    // 2029          ; White_Space # Zp       PARAGRAPH SEPARATOR
+    // 202F          ; White_Space # Zs       NARROW NO-BREAK SPACE
+    // 205F          ; White_Space # Zs       MEDIUM MATHEMATICAL SPACE
+    // 3000          ; White_Space # Zs       IDEOGRAPHIC SPACE
+    .unchecked_head_in([
+      '\u{0009}', '\u{000A}', '\u{000B}', '\u{000C}', '\u{000D}', '\u{0020}', '\u{0085}',
+      '\u{00A0}', '\u{1680}', '\u{2000}', '\u{2001}', '\u{2002}', '\u{2003}', '\u{2004}',
+      '\u{2005}', '\u{2006}', '\u{2007}', '\u{2008}', '\u{2009}', '\u{200A}', '\u{2028}',
+      '\u{2029}', '\u{202F}', '\u{205F}', '\u{3000}',
+    ])
 }
 
 /// Match from the `open` to the `close`, including the `open` and `close`.
