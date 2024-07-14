@@ -2,6 +2,7 @@ mod accumulator;
 mod exact;
 mod float;
 mod integer;
+pub mod json;
 mod regex;
 mod string;
 mod string_list;
