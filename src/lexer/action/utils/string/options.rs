@@ -111,7 +111,7 @@ impl<Value: PartialStringBodyValue, CustomError, BodyAcc>
   pub fn close_match(self, matcher: impl Fn(&StringBodyMatcherInput) -> usize + 'static) -> Self {
     self.append_body_matcher(matcher, |digested, _input| PartialStringBody {
       digested,
-      value: Value::from_str(""),
+      value: Value::default(),
       close: true,
       error: None,
     })
@@ -154,7 +154,7 @@ impl<Value: PartialStringBodyValue, CustomError, BodyAcc>
       value: if inclusive {
         Value::from_str(&input.rest[..digested])
       } else {
-        Value::from_str("")
+        Value::default()
       },
       close: true,
       error: Some(StringLiteralError::Unterminated),

@@ -45,7 +45,7 @@ pub fn line_continuation<Value: PartialStringBodyValue, CustomError>(
       if input.rest.starts_with(s) {
         return Some(Escape {
           digested: s.len(),
-          value: Value::from_str(""),
+          value: Value::default(),
           error: None,
         });
       }

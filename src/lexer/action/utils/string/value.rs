@@ -1,4 +1,4 @@
-pub trait PartialStringBodyValue {
+pub trait PartialStringBodyValue: Default {
   fn from_str(s: &str) -> Self;
   fn from_char(c: char) -> Self;
 }

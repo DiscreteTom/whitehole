@@ -99,7 +99,7 @@ fn close_with_unterminated_err<Value: PartialStringBodyValue, CustomError>(
 ) -> PartialStringBody<Value, CustomError> {
   PartialStringBody {
     digested: 0,
-    value: Value::from_str(""),
+    value: Value::default(),
     close: true,
     error: Some(StringLiteralError::Unterminated),
   }
