@@ -125,11 +125,17 @@ pub fn hex_with_options<Value: PartialStringBodyValue, CustomError: 'static>(
 }
 
 // TODO: comments
+/// # Caveat
+/// This should be placed after [`code_point`] to match the `u` prefix
+/// after [`code_point`] matches the `u{` prefix.
 pub fn unicode<Value: PartialStringBodyValue>() -> EscapeHandler<Value, HexEscapeError> {
   hex_with_options(HexEscapeOptions::unicode())
 }
 
 // TODO: comments
+/// # Caveat
+/// This should be placed after [`code_point`] to match the `u` prefix
+/// after [`code_point`] matches the `u{` prefix.
 pub fn unicode_with<Value: PartialStringBodyValue, CustomError: 'static>(
   options_builder: impl FnOnce(HexEscapeOptions<HexEscapeError>) -> HexEscapeOptions<CustomError>,
 ) -> EscapeHandler<Value, CustomError> {
@@ -222,11 +228,17 @@ impl<CustomError> CodePointEscapeOptions<CustomError> {
 }
 
 // TODO: comments
+/// # Caveat
+/// This should be placed before [`unicode`] to match the `u{` prefix
+/// before [`unicode`] matches the `u` prefix.
 pub fn code_point<Value: PartialStringBodyValue>() -> EscapeHandler<Value, CodePointEscapeError> {
   code_point_with_options(CodePointEscapeOptions::default())
 }
 
 // TODO: comments
+/// # Caveat
+/// This should be placed before [`unicode`] to match the `u{` prefix
+/// before [`unicode`] matches the `u` prefix.
 pub fn code_point_with<Value: PartialStringBodyValue, CustomError: 'static>(
   options_builder: impl FnOnce(
     CodePointEscapeOptions<CodePointEscapeError>,
@@ -236,6 +248,8 @@ pub fn code_point_with<Value: PartialStringBodyValue, CustomError: 'static>(
 }
 
 // TODO: comments
+/// # Caveat
+/// This should be placed before [`unicode`] to match the `u{` prefix.
 pub fn code_point_with_options<Value: PartialStringBodyValue, CustomError: 'static>(
   options: CodePointEscapeOptions<CustomError>,
 ) -> EscapeHandler<Value, CustomError> {
