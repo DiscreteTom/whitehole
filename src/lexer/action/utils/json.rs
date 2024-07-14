@@ -96,6 +96,18 @@ pub fn string<
   )
 }
 
+pub fn string_with<
+  ActionState,
+  ErrorType,
+  Value: PartialStringBodyValue + 'static,
+  CustomError: 'static,
+  BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone,
+>(
+  options_builder: impl FnOnce(StringOptions<(), HexEscapeError>) -> StringOptions<BodyAcc, CustomError>,
+) -> Action<MockTokenKind<BodyAcc>, ActionState, ErrorType> {
+  string(options_builder(StringOptions::new()))
+}
+
 #[derive(Default, Debug, Clone)]
 pub struct NumberOptions<SepAcc, IntAcc, FracAcc, ExpAcc> {
   /// See [`Self::separator`].
@@ -210,3 +222,20 @@ pub fn number<
   )
   .unchecked_head_in(['-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
 }
+
+pub fn number_with<
+  ActionState,
+  ErrorType,
+  SepAcc: Accumulator<usize> + Clone,
+  IntAcc: Accumulator<char> + Clone,
+  FracAcc: Accumulator<char> + Clone,
+  ExpAcc: Accumulator<char> + Clone,
+>(
+  options_builder: impl FnOnce(
+    NumberOptions<(), (), (), ()>,
+  ) -> NumberOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
+) -> Action<MockTokenKind<FloatLiteralData<SepAcc, IntAcc, FracAcc, ExpAcc>>, ActionState, ErrorType>
+{
+  number(options_builder(NumberOptions::new()))
+}
+
