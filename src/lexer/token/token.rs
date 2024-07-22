@@ -19,7 +19,7 @@ pub struct Token<Kind, ErrorType> {
   pub range: Range,
   /// If `Some`, the token is an error token.
   /// Error tokens will be collected during the lexing process.
-  /// See [`crate::lexer::output::LexOutput::errors`].
+  /// See [`LexOutput::errors`](crate::lexer::output::LexOutput::errors).
   pub error: Option<ErrorType>,
   // we don't store `token.content` here (as a `&str`).
   // when lexing users can get the content in the lexing context,
