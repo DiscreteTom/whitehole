@@ -28,12 +28,12 @@ impl<Value: PartialStringBodyValue + 'static, CustomError: 'static, BodyAcc>
   /// If an escape is not handled, the escape starter will be treated as a normal char.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::action::{StringBodyOptions, fallback, line_continuation};
+  /// # use whitehole::lexer::action::{StringBodyOptions, line_continuation, map};
   /// # enum MyError { UnnecessaryEscape }
   /// # let options =
   /// StringBodyOptions::new().escape('\\', [
   ///   line_continuation(["\r\n", "\n"]),
-  ///   fallback(MyError::UnnecessaryEscape)
+  ///   map([('n', '\n'), ('r', '\r'), ('t', '\t')]),
   /// ]);
   /// ```
   pub fn escape(

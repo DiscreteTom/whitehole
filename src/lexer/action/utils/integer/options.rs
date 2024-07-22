@@ -50,7 +50,8 @@ impl<Acc> NumericSeparatorOptions<Acc> {
   /// # Examples
   /// ```rust
   /// # use whitehole::lexer::action::{NumericSeparatorOptions};
-  /// let options = NumericSeparatorOptions::default().acc(vec![]);
+  /// # let options: NumericSeparatorOptions<Vec<usize>> =
+  /// NumericSeparatorOptions::default().acc(vec![]);
   /// ```
   pub fn acc<NewAcc>(self, acc: NewAcc) -> NumericSeparatorOptions<NewAcc> {
     NumericSeparatorOptions { ch: self.ch, acc }

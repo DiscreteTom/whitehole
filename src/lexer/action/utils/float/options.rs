@@ -104,7 +104,7 @@ impl<Acc> FloatExponentOptions<Acc> {
   /// Default is [`()`].
   /// # Examples
   /// ```rust
-  /// # use whitehole::lexer::action::{FloatExponentOptions, String};
+  /// # use whitehole::lexer::action::{FloatExponentOptions};
   /// let options = FloatExponentOptions::default().acc(String::default());
   /// ```
   pub fn acc<NewAcc>(self, acc: NewAcc) -> FloatExponentOptions<NewAcc> {
@@ -149,7 +149,7 @@ impl<Sep, IntAcc, FracAcc, ExpAcc> FloatLiteralOptions<Sep, IntAcc, FracAcc, Exp
   /// Set the accumulator for the integer part.
   /// # Examples
   /// ```rust
-  /// # use whitehole::lexer::action::{FloatLiteralOptions, String};
+  /// # use whitehole::lexer::action::{FloatLiteralOptions};
   /// let options = FloatLiteralOptions::default().integer(String::default());
   /// ```
   pub fn integer<NewIntAcc>(

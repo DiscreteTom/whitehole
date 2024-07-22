@@ -6,9 +6,9 @@ use std::collections::HashMap;
 /// map escape sequences to their corresponding values.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::{map, Escape};
+/// # use whitehole::lexer::action::{map, Escape, EscapeHandler};
 /// # enum MyError { UnnecessaryEscape }
-/// # let escape_handler: EscapeHandler<MyError> =
+/// # let escape_handler: EscapeHandler<(), MyError> =
 /// map([
 ///  ('n', '\n'),
 ///  ('t', '\t'),
@@ -31,10 +31,10 @@ pub fn map<Value: PartialStringBodyValue, CustomError>(
 /// accept a list of strings as line continuations.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::{line_continuation, Escape};
+/// # use whitehole::lexer::action::{line_continuation, Escape, EscapeHandler};
 /// # enum MyError { UnnecessaryEscape }
 /// // treat `"\\\r\n"` and `"\\\n"` to `''`
-/// # let escape_handler: EscapeHandler<MyError> =
+/// # let escape_handler: EscapeHandler<(), MyError> =
 /// line_continuation(["\r\n", "\n"]);
 pub fn line_continuation<Value: PartialStringBodyValue, CustomError>(
   ss: impl Into<StringList>,
