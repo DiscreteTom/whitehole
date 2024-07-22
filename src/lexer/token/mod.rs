@@ -34,6 +34,7 @@
 //! We use the index of the enum variant as the id of the token kind, so in the example above,
 //! `Identifier` has id `0` and `Number` has id `1`.
 //! By doing this, `Number(0)` and `Number(1)` have the same token kind id `1`.
+//! (Why not just use [`std::mem::Discriminant`]? See [`TokenKindId`] for more details.)
 //!
 //! We also need a way to get the token kind id from a token kind value.
 //! An easy way is to use pattern matching like this:
@@ -63,7 +64,7 @@
 //! # }
 //! #
 //! pub struct TokenKindIdBinding<TokenKindType> {
-//!   id: TokenKindId<TokenKindType>,
+//!   id: TokenKindId<TokenKindIdBinding<TokenKindType>>,
 //!   value: TokenKindType,
 //! };
 //!
@@ -80,7 +81,7 @@
 //!   value: MyKind::Number(0)
 //! };
 //!
-//! // wrong
+//! // wrong!
 //! TokenKindIdBinding {
 //!   id: TokenKindId::new(0), // the id of `Identifier`
 //!   value: MyKind::Number(0)
@@ -99,23 +100,35 @@
 //! #   id: TokenKindId<TokenKindIdBinding<TokenKindType>>,
 //! #   value: TokenKindType,
 //! # };
-//! # pub trait SubTokenKind<Kind> {
-//! # fn kind_id() -> TokenKindId<Kind>;
-//! # }
-//! #
 //! // this is the "token kind"
 //! pub enum MyKind {
 //!   // instead of storing the token value directly,
-//!   // we store sub token kinds in the enum variant
-//!   // to avoid destructing sub token kind value
-//!   // when build the token kind value
+//!   // we store "sub token kind" values in the enum variant
+//!   // to avoid destructing sub token kind values
+//!   // when constructing token kind values
 //!   Identifier(Identifier),
 //!   Number(Number),
 //! }
 //!
-//! // these are "sub token kind"s, they store token values
+//! // these are "sub token kind"s, they store token's data
 //! pub struct Identifier(pub String);
 //! pub struct Number(pub i32);
+//!
+//! // sub token kinds can be converted into the token kind
+//! impl Into<MyKind> for Identifier {
+//!   fn into(self) -> MyKind {
+//!     MyKind::Identifier(self)
+//!   }
+//! }
+//! impl Into<MyKind> for Number {
+//!   fn into(self) -> MyKind {
+//!     MyKind::Number(self)
+//!   }
+//! }
+//!
+//! pub trait SubTokenKind<Kind> {
+//!   fn kind_id() -> TokenKindId<Kind>;
+//! }
 //!
 //! // every sub token kind should have a unique id
 //! // bound with the type, not its value
@@ -127,18 +140,6 @@
 //! impl SubTokenKind<TokenKindIdBinding<MyKind>> for Number {
 //!   fn kind_id() -> TokenKindId<TokenKindIdBinding<MyKind>> {
 //!     TokenKindId::new(1)
-//!   }
-//! }
-//!
-//! // sub token kinds can be converted into the token kind
-//! impl Into<MyKind> for Identifier {
-//!   fn into(self) -> MyKind {
-//!     MyKind::Identifier(self)
-//!   }
-//! }
-//! impl Into<MyKind> for Number {
-//!   fn into(self) -> MyKind {
-//!     MyKind::Number(self)
 //!   }
 //! }
 //!
@@ -155,9 +156,15 @@
 //! }
 //! ```
 //!
-//! We should only use sub token kind structs to create [`TokenKindIdBinding`] to make sure the binding is correct.
+//! You should only use sub token kind structs to create [`TokenKindIdBinding`] to make sure the binding is correct.
 //!
-//! To simplify all above, we can use the macro [`token_kind`] to transform the enum.
+//! Besides, creating sub token kind structs is also helpful for the lexer implementation:
+//! - In [`crate::lexer::action::Action::select`] we will use the sub token kind to ensure the action can only yield
+//! one kind of token. And we can get the token kind id without executing the action.
+//! - In expectational lexing, we can use the sub token kind type to get the expected token kind id,
+//! without constructing a token kind value.
+//!
+//! To simplify all above, you can use the macro [`token_kind`] to transform the enum.
 //!
 //! ```
 //! use whitehole::lexer::token::token_kind;
@@ -169,7 +176,7 @@
 //! # fn main() {}
 //! ```
 //!
-//! Thats all we need to do, neat!
+//! Thats all you need to do, neat!
 
 mod binding;
 mod mock;
