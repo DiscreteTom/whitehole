@@ -134,6 +134,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       })
     {
       // TODO: when fork is disabled, skip this check to optimize performance?
+      // TODO: pre-calculate whether a whole head_map won't mutate state.
       if action.may_mutate_state() {
         re_lexable_factory.before_mutate_action_state(input.state);
       }
