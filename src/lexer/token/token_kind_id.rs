@@ -128,6 +128,14 @@ mod tests {
   }
 
   #[test]
+  fn token_kind_id_copy() {
+    // ensure we don't need to impl Copy for MyKind but the copy is still working
+    let id = TokenKindId::new(42) as TokenKindId<MyKind>;
+    let id_copy = id;
+    assert_eq!(id, id_copy);
+  }
+
+  #[test]
   fn token_kind_id_eq() {
     // ensure we don't need to impl PartialEq for MyKind but the eq is still working
     let id1 = TokenKindId::new(42) as TokenKindId<MyKind>;
