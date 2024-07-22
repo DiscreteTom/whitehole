@@ -123,7 +123,7 @@ mod tests {
 
   #[test]
   fn action_getters_default() {
-    static KIND_ID: TokenKindId<()> = TokenKindId::new(1);
+    static KIND_ID: TokenKindId<()> = TokenKindId::new(1, "");
     let action: Action<()> = Action {
       exec: Box::new(|_| None),
       kind_id: &KIND_ID,
@@ -135,14 +135,14 @@ mod tests {
     assert!(!action.muted());
     assert!(!action.may_mutate_state());
     assert!(action.never_mutate_state());
-    assert_eq!(action.kind_id(), &TokenKindId::new(1));
+    assert_eq!(action.kind_id(), &TokenKindId::new(1, ""));
     assert!(action.head_matcher().is_none());
     assert!(action.literal().is_none());
   }
 
   #[test]
   fn action_getters() {
-    static KIND_ID: TokenKindId<()> = TokenKindId::new(1);
+    static KIND_ID: TokenKindId<()> = TokenKindId::new(1, "");
     let action: Action<()> = Action {
       exec: Box::new(|_| None),
       kind_id: &KIND_ID,
@@ -154,7 +154,7 @@ mod tests {
     assert!(action.muted());
     assert!(action.may_mutate_state());
     assert!(!action.never_mutate_state());
-    assert_eq!(action.kind_id(), &TokenKindId::new(1));
+    assert_eq!(action.kind_id(), &TokenKindId::new(1, ""));
     assert!(
       matches!(action.head_matcher(), Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['a']))
     );

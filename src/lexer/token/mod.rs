@@ -242,9 +242,9 @@ mod tests {
     ));
 
     // generated token kind id, as sub token kind
-    assert_eq!(Unit::kind_id(), &TokenKindId::new(0));
-    assert_eq!(Unnamed::kind_id(), &TokenKindId::new(1));
-    assert_eq!(Named::kind_id(), &TokenKindId::new(2));
+    assert_eq!(Unit::kind_id(), &TokenKindId::new(0, ""));
+    assert_eq!(Unnamed::kind_id(), &TokenKindId::new(1, ""));
+    assert_eq!(Named::kind_id(), &TokenKindId::new(2, ""));
 
     // into token kind id binding
     let b: TokenKindIdBinding<MyKind> = Unit.into();

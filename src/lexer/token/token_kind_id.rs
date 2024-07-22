@@ -1,5 +1,4 @@
 use std::{
-  fmt::Debug,
   hash::{Hash, Hasher},
   marker::PhantomData,
 };
@@ -12,7 +11,7 @@ use std::{
 /// to the token kind enum.
 /// # Examples
 /// ```
-/// use whitehole::lexer::token::{token_kind, TokenKindId, TokenKindIdBinding, TokenKindIdProvider};
+/// use whitehole::lexer::token::{token_kind, TokenKindIdBinding, TokenKindIdProvider};
 ///
 /// #[token_kind]
 /// #[derive(Debug)]
@@ -44,12 +43,25 @@ use std::{
 /// `TypeId` is not.
 /// - Currently `TypeId` use 128 bits to represent the type, which is too large for our purpose.
 #[derive(Debug)]
-pub struct TokenKindId<TokenKindType>(usize, PhantomData<TokenKindType>);
+pub struct TokenKindId<TokenKindType> {
+  value: usize,
+  /// The name of the sub token kind.
+  /// This is only used for display when debugging.
+  /// The value won't be used in logic.
+  name: &'static str,
+  __: PhantomData<TokenKindType>,
+}
 
 impl<TokenKindType> TokenKindId<TokenKindType> {
+  /// You should not call this function directly.
+  /// This function should only be used in [`token_kind`](super::token_kind) macro.
   #[inline]
-  pub const fn new(id: usize) -> Self {
-    Self(id, PhantomData)
+  pub const fn new(value: usize, name: &'static str) -> Self {
+    Self {
+      value,
+      name,
+      __: PhantomData,
+    }
   }
 }
 
@@ -58,21 +70,23 @@ impl<TokenKindType> TokenKindId<TokenKindType> {
 impl<TokenKindType> Clone for TokenKindId<TokenKindType> {
   #[inline]
   fn clone(&self) -> Self {
-    Self(self.0, PhantomData)
+    Self::new(self.value, self.name)
   }
 }
 impl<TokenKindType> Copy for TokenKindId<TokenKindType> {}
 impl<TokenKindType> PartialEq for TokenKindId<TokenKindType> {
   #[inline]
   fn eq(&self, other: &Self) -> bool {
-    self.0 == other.0
+    // we only need to compare the value
+    self.value == other.value
   }
 }
 impl<TokenKindType> Eq for TokenKindId<TokenKindType> {}
 impl<TokenKindType> Hash for TokenKindId<TokenKindType> {
   #[inline]
   fn hash<H: Hasher>(&self, state: &mut H) {
-    self.0.hash(state);
+    // we only need to hash the value
+    self.value.hash(state);
   }
 }
 
@@ -83,7 +97,7 @@ impl<TokenKindType> Hash for TokenKindId<TokenKindType> {
 /// to the token kind enum.
 /// # Examples
 /// ```
-/// use whitehole::lexer::token::{token_kind, TokenKindId, TokenKindIdBinding, TokenKindIdProvider};
+/// use whitehole::lexer::token::{token_kind, TokenKindIdBinding, TokenKindIdProvider};
 ///
 /// #[token_kind]
 /// #[derive(Debug)]
@@ -93,8 +107,6 @@ impl<TokenKindType> Hash for TokenKindId<TokenKindType> {
 ///
 /// # fn main() {
 /// let a: TokenKindIdBinding<MyKind> = A.into();
-/// let b1: TokenKindIdBinding<MyKind> = B(1).into();
-/// let b2: TokenKindIdBinding<MyKind> = B(2).into();
 /// assert_eq!(a.id(), a.id());
 /// # }
 /// ```
@@ -106,6 +118,8 @@ pub trait TokenKindIdProvider<TokenKindType> {
 
 #[cfg(test)]
 mod tests {
+  use crate::lexer::token::SubTokenKind;
+
   use super::*;
   use std::collections::HashSet;
   use whitehole_macros::_token_kind;
@@ -118,39 +132,55 @@ mod tests {
 
   #[test]
   fn token_kind_id_new() {
-    let id = TokenKindId::new(42) as TokenKindId<MyKind>;
-    assert_eq!(id.0, 42);
+    let id = TokenKindId::new(42, "Sub") as TokenKindId<MyKind>;
+    assert_eq!(id.value, 42);
+    assert_eq!(id.name, "Sub");
   }
 
   #[test]
   fn token_kind_id_clone() {
     // ensure we don't need to impl Clone for MyKind but the clone is still working
-    let id = TokenKindId::new(42) as TokenKindId<MyKind>;
+    let id = TokenKindId::new(42, "Sub") as TokenKindId<MyKind>;
     let id_clone = id.clone();
-    assert_eq!(id, id_clone);
+    assert_eq!(id.value, id_clone.value);
+    assert_eq!(id.name, id_clone.name);
   }
 
   #[test]
   fn token_kind_id_copy() {
     // ensure we don't need to impl Copy for MyKind but the copy is still working
-    let id = TokenKindId::new(42) as TokenKindId<MyKind>;
+    let id = TokenKindId::new(42, "Sub") as TokenKindId<MyKind>;
     let id_copy = id;
-    assert_eq!(id, id_copy);
+    assert_eq!(id.value, id_copy.value);
+    assert_eq!(id.name, id_copy.name);
   }
 
   #[test]
   fn token_kind_id_eq() {
     // ensure we don't need to impl PartialEq for MyKind but the eq is still working
-    let id1 = TokenKindId::new(42) as TokenKindId<MyKind>;
-    let id2 = TokenKindId::new(42) as TokenKindId<MyKind>;
+    // ensure we don't compare the name
+    let id1 = TokenKindId::new(42, "") as TokenKindId<MyKind>;
+    let id2 = TokenKindId::new(42, "Sub") as TokenKindId<MyKind>;
     assert_eq!(id1, id2);
   }
 
   #[test]
   fn token_kind_id_hash() {
     // ensure we don't need to impl Hash for MyKind but the hash is still working
-    let id = TokenKindId::new(42) as TokenKindId<MyKind>;
-    let set = HashSet::from([id]);
-    assert!(set.contains(&id));
+    // ensure we don't hash the name
+    let id1 = TokenKindId::new(42, "") as TokenKindId<MyKind>;
+    let id2 = TokenKindId::new(42, "Sub") as TokenKindId<MyKind>;
+    let set = HashSet::from([id1]);
+    assert!(set.contains(&id1));
+    assert!(set.contains(&id2));
+  }
+
+  #[test]
+  fn token_kind_id_debug() {
+    // ensure the string representation contains the sub token kind name
+    assert_eq!(
+      format!("{:?}", A::kind_id()),
+      "TokenKindId { value: 0, name: \"A\", __: PhantomData<whitehole::lexer::token::binding::TokenKindIdBinding<whitehole::lexer::token::token_kind_id::tests::MyKind>> }"
+    );
   }
 }

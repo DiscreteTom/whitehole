@@ -52,6 +52,8 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// ```no_run
 /// impl DefaultTokenKindIdBinding<MyKind> for MyKind { ... }
 /// ```
+/// # Limitations
+/// Generics are not supported yet.
 #[proc_macro_attribute]
 pub fn token_kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
   common(quote! { whitehole }, input).into()
@@ -172,11 +174,12 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
     // `TokenKindId<TokenKindIdBinding<MyKind>>` instead of `TokenKindId<MyKind>`
     let mod_name = syn::Ident::new(&format!("_impl_sub_token_kind_{}", index), Span::call_site());
     let token_kind_id_const = syn::Ident::new(&format!("_TOKEN_KIND_ID_{}", index), Span::call_site());
+    let sub_token_kind_name = syn::LitStr::new(&variant_name.to_string(), Span::call_site());
     gen.push(quote! {
       mod #mod_name {
         use super::*;
         use #crate_name::lexer::token::{SubTokenKind, TokenKindId, TokenKindIdBinding};
-        const #token_kind_id_const: TokenKindId<TokenKindIdBinding<#enum_name>> = TokenKindId::new(#index);
+        const #token_kind_id_const: TokenKindId<TokenKindIdBinding<#enum_name>> = TokenKindId::new(#index, #sub_token_kind_name);
         impl SubTokenKind<TokenKindIdBinding<#enum_name>> for #variant_name {
           fn kind_id() -> 
             &'static TokenKindId<

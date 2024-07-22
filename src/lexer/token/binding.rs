@@ -111,7 +111,7 @@ mod tests {
   #[test]
   fn token_kind_id_binding() {
     let binding = TokenKindIdBinding::new(A);
-    assert_eq!(binding.id(), &TokenKindId::new(0));
+    assert_eq!(binding.id(), &TokenKindId::new(0, ""));
     assert_eq!(binding.value(), &MyKind::A);
     assert_eq!(binding.take(), MyKind::A);
   }
@@ -122,7 +122,7 @@ mod tests {
     assert_eq!(MyKind::default(), MyKind::A);
 
     let binding = TokenKindIdBinding::<MyKind>::default();
-    assert_eq!(binding.id(), &TokenKindId::new(0));
+    assert_eq!(binding.id(), &TokenKindId::new(0, ""));
     assert_eq!(binding.value(), &MyKind::A);
   }
 }

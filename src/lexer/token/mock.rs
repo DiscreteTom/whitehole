@@ -9,8 +9,8 @@ use std::mem::transmute;
 /// use whitehole::lexer::token::{
 ///   MockTokenKind, TokenKindIdProvider, SubTokenKind, TokenKindId
 /// };
-/// assert_eq!(MockTokenKind::<()>::kind_id(), &TokenKindId::new(0));
-/// assert_eq!(MockTokenKind::new(42).id(), &TokenKindId::new(0));
+/// assert_eq!(MockTokenKind::<()>::kind_id(), &TokenKindId::new(0, ""));
+/// assert_eq!(MockTokenKind::new(42).id(), &TokenKindId::new(0, ""));
 /// ```
 #[derive(Debug)] // `T` should impl `Debug`
 pub struct MockTokenKind<T> {
@@ -21,7 +21,7 @@ pub struct MockTokenKind<T> {
 // make the only possible kind id a static const
 // so that we don't need to create it every time
 // and **we don't need to store it in the struct**
-const MOCK_TOKEN_KIND_ID: TokenKindId<MockTokenKind<()>> = TokenKindId::new(0);
+const MOCK_TOKEN_KIND_ID: TokenKindId<MockTokenKind<()>> = TokenKindId::new(0, "");
 
 // we store `TokenKindType` only for type checking and the `PhantomData` is zero sized
 // so we can safely cast self to another type
@@ -60,8 +60,8 @@ mod tests {
   #[test]
   fn mock_token_kind_id() {
     let kind = MockTokenKind::new(());
-    assert_eq!(kind.id(), &TokenKindId::new(0));
-    assert_eq!(MockTokenKind::<()>::kind_id(), &TokenKindId::new(0));
+    assert_eq!(kind.id(), &TokenKindId::new(0, ""));
+    assert_eq!(MockTokenKind::<()>::kind_id(), &TokenKindId::new(0, ""));
   }
 
   #[test]
@@ -69,11 +69,11 @@ mod tests {
     fn cast_to_unit<T>(id: &TokenKindId<T>) -> &TokenKindId<()> {
       unsafe { std::mem::transmute(id) }
     }
-    let id0 = TokenKindId::new(0) as TokenKindId<()>;
-    let id1 = TokenKindId::new(0) as TokenKindId<i32>;
-    let id2 = TokenKindId::new(0) as TokenKindId<Box<i32>>;
-    let id3 = TokenKindId::new(0) as TokenKindId<Option<i32>>;
-    let id4 = TokenKindId::new(0) as TokenKindId<Result<i32, i32>>;
+    let id0 = TokenKindId::new(0, "") as TokenKindId<()>;
+    let id1 = TokenKindId::new(0, "") as TokenKindId<i32>;
+    let id2 = TokenKindId::new(0, "") as TokenKindId<Box<i32>>;
+    let id3 = TokenKindId::new(0, "") as TokenKindId<Option<i32>>;
+    let id4 = TokenKindId::new(0, "") as TokenKindId<Result<i32, i32>>;
 
     let ids = [
       cast_to_unit(&id0),
