@@ -44,26 +44,30 @@ use std::{
 pub struct TokenKindId<TokenKindType>(usize, PhantomData<TokenKindType>);
 
 impl<TokenKindType> TokenKindId<TokenKindType> {
+  #[inline]
   pub const fn new(id: usize) -> Self {
-    TokenKindId(id, PhantomData)
+    Self(id, PhantomData)
   }
 }
 
 // manually implement these traits to avoid `TokenKindType`
 // being `Clone`, `Copy`, `Eq`, `PartialEq`, `Hash
 impl<TokenKindType> Clone for TokenKindId<TokenKindType> {
+  #[inline]
   fn clone(&self) -> Self {
-    TokenKindId(self.0, PhantomData)
+    Self(self.0, PhantomData)
   }
 }
 impl<TokenKindType> Copy for TokenKindId<TokenKindType> {}
 impl<TokenKindType> PartialEq for TokenKindId<TokenKindType> {
+  #[inline]
   fn eq(&self, other: &Self) -> bool {
     self.0 == other.0
   }
 }
 impl<TokenKindType> Eq for TokenKindId<TokenKindType> {}
 impl<TokenKindType> Hash for TokenKindId<TokenKindType> {
+  #[inline]
   fn hash<H: Hasher>(&self, state: &mut H) {
     self.0.hash(state);
   }
