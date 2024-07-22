@@ -1,5 +1,6 @@
 pub type Range = std::ops::Range<usize>;
 
+#[derive(Debug)]
 pub struct Token<Kind, ErrorType> {
   /// The kind and the binding data.
   pub kind: Kind,

@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct LexOutput<TokenType, ReLexableType> {
   pub token: Option<TokenType>,
   /// How many bytes are digested during the whole lexing loop in current lexing.
