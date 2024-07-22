@@ -31,10 +31,10 @@
 //! but their token kinds are the same.
 //! To solve this problem, we can use a [`TokenKindId`] to identify different token kinds.
 //! `Number(0)` and `Number(1)` are different values but they have the same [`TokenKindId`].
-//! We use the index of the enum variant as the id of the token kind, so in the example above,
-//! `Identifier` has id `0` and `Number` has id `1`.
-//! By doing this, `Number(0)` and `Number(1)` have the same token kind id `1`.
-//! (Why not just use [`std::mem::Discriminant`]? See [`TokenKindId`] for more details.)
+//! You can consider [`TokenKindId`] just like [`std::mem::Discriminant`],
+//! but the internal implementation shouldn't be relied upon by your application.
+//! In this documentation we assume the value of the [`TokenKindId`]
+//! is the index of the enum variant, so the [`TokenKindId`] is unique for each variant.
 //!
 //! We also need a way to get the token kind id from a token kind value.
 //! An easy way is to use pattern matching like this:
@@ -57,7 +57,13 @@
 //! We use [`TokenKindIdBinding`] to bind the id and the value.
 //!
 //! ```
-//! # use whitehole::lexer::token::TokenKindId;
+//! # use std::marker::PhantomData;
+//! # pub struct TokenKindId<T>(usize, PhantomData<T>);
+//! # impl<T> TokenKindId<T> {
+//! #   pub fn new(id: usize) -> Self {
+//! #     Self(id, PhantomData)
+//! #   }
+//! # }
 //! # pub enum MyKind {
 //! #   Identifier(String),
 //! #   Number(i32),
@@ -95,7 +101,13 @@
 //! we will create structs for each enum variant and implement `Into<TokenKindIdBinding<MyKind>>` for them.
 //!
 //! ```
-//! # use whitehole::lexer::token::{TokenKindId};
+//! # use std::marker::PhantomData;
+//! # pub struct TokenKindId<T>(usize, PhantomData<T>);
+//! # impl<T> TokenKindId<T> {
+//! #   pub fn new(id: usize) -> Self {
+//! #     Self(id, PhantomData)
+//! #   }
+//! # }
 //! # pub struct TokenKindIdBinding<TokenKindType> {
 //! #   id: TokenKindId<TokenKindIdBinding<TokenKindType>>,
 //! #   value: TokenKindType,
