@@ -1,6 +1,6 @@
 pub type Range = std::ops::Range<usize>;
 
-#[derive(Clone, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Token<Kind, ErrorType> {
   /// The kind and the binding data.
   pub kind: Kind,
