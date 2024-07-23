@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActionOutput<Kind, OptionErrorType> {
   pub kind: Kind,
   /// How many bytes are digested by this action.
