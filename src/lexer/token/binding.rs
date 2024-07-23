@@ -73,7 +73,7 @@ impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
 /// enum MyKind { #[default] A }
 ///
 /// # fn main() {
-/// assert_eq!(MyKind::default_binding_kind_id(), A::kind_id());
+/// assert_eq!(MyKind::default_kind_id(), A::kind_id());
 /// assert!(matches!(MyKind::default(), MyKind::A));
 ///
 /// // besides, `Default` will be implemented for `TokenKindIdBinding<MyKind>`
