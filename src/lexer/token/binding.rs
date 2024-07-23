@@ -21,7 +21,7 @@ use super::{SubTokenKind, TokenKindId, TokenKindIdProvider};
 /// assert!(matches!(b.value(), MyKind::B));
 /// # }
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TokenKindIdBinding<TokenKindType: 'static> {
   // this is `TokenKindId<TokenKindIdBinding<TokenKindType>>`
   // instead of `TokenKindId<TokenKindType>`
