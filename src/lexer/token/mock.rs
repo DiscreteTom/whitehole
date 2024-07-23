@@ -2,15 +2,13 @@ use super::{SubTokenKind, TokenKindId, TokenKindIdProvider};
 use std::mem::transmute;
 
 /// This implements [`SubTokenKind`] and [`TokenKindIdProvider`],
-/// and only have one possible token kind id value(and the value is 0).
+/// and only has one possible token kind id value.
 /// This is useful as a placeholder or data carrier.
 /// # Examples
 /// ```
-/// use whitehole::lexer::token::{
-///   MockTokenKind, TokenKindIdProvider, SubTokenKind, TokenKindId
-/// };
-/// assert_eq!(MockTokenKind::<()>::kind_id(), &TokenKindId::new(0, ""));
-/// assert_eq!(MockTokenKind::new(42).id(), &TokenKindId::new(0, ""));
+/// use whitehole::lexer::token::{MockTokenKind, SubTokenKind, TokenKindIdProvider};
+/// assert_eq!(MockTokenKind::new(42).id(), MockTokenKind::kind_id());
+/// assert_eq!(MockTokenKind::new(()).id(), MockTokenKind::kind_id());
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct MockTokenKind<T> {
@@ -18,30 +16,32 @@ pub struct MockTokenKind<T> {
 }
 
 /// The only possible kind id of [`MockTokenKind`].
-// make the only possible kind id a static const
-// so that we don't need to create it every time
-// and **we don't need to store it in the struct**
 const MOCK_TOKEN_KIND_ID: TokenKindId<MockTokenKind<()>> = TokenKindId::new(0, "");
 
-// we store `TokenKindType` only for type checking and the `PhantomData` is zero sized
-// so we can safely cast self to another type
-fn cast_mock_token_kind_id<T>() -> &'static TokenKindId<T> {
+/// Since all `TokenKindId<MockTokenKind<T>>` have the same memory layout,
+/// it should be safe to cast it to any `TokenKindId<MockTokenKind<T>>`.
+#[inline]
+const fn cast_mock_token_kind_id<T>() -> &'static TokenKindId<MockTokenKind<T>> {
   unsafe { transmute(&MOCK_TOKEN_KIND_ID) }
 }
 
 impl<T> MockTokenKind<T> {
-  pub fn new(data: T) -> Self {
+  /// Create a new `MockTokenKind` with the given data.
+  #[inline]
+  pub const fn new(data: T) -> Self {
     Self { data }
   }
 }
 
 impl<T> TokenKindIdProvider<Self> for MockTokenKind<T> {
+  #[inline]
   fn id(&self) -> &'static TokenKindId<Self> {
     cast_mock_token_kind_id()
   }
 }
 
 impl<T> SubTokenKind<Self> for MockTokenKind<T> {
+  #[inline]
   fn kind_id() -> &'static TokenKindId<Self> {
     cast_mock_token_kind_id()
   }
@@ -53,15 +53,14 @@ mod tests {
 
   #[test]
   fn mock_token_kind_new() {
-    let kind = MockTokenKind::new(42);
-    assert_eq!(kind.data, 42);
+    assert_eq!(MockTokenKind::new(42).data, 42);
+    assert_eq!(MockTokenKind::new(()).data, ());
   }
 
   #[test]
   fn mock_token_kind_id() {
-    let kind = MockTokenKind::new(());
-    assert_eq!(kind.id(), &TokenKindId::new(0, ""));
-    assert_eq!(MockTokenKind::<()>::kind_id(), &TokenKindId::new(0, ""));
+    assert_eq!(MockTokenKind::new(42).id(), MockTokenKind::kind_id());
+    assert_eq!(MockTokenKind::new(()).id(), MockTokenKind::kind_id());
   }
 
   #[test]
@@ -69,6 +68,7 @@ mod tests {
     fn cast_to_unit<T>(id: &TokenKindId<T>) -> &TokenKindId<()> {
       unsafe { std::mem::transmute(id) }
     }
+
     let id0 = TokenKindId::new(0, "") as TokenKindId<()>;
     let id1 = TokenKindId::new(0, "") as TokenKindId<i32>;
     let id2 = TokenKindId::new(0, "") as TokenKindId<Box<i32>>;
@@ -81,6 +81,10 @@ mod tests {
       cast_to_unit(&id2),
       cast_to_unit(&id3),
       cast_to_unit(&id4),
+      cast_to_unit(MockTokenKind::new(()).id()),
+      cast_to_unit(MockTokenKind::new(123).id()),
+      cast_to_unit(MockTokenKind::new(Box::new(123)).id()),
+      cast_to_unit(MockTokenKind::new(Some(123)).id()),
     ];
 
     // ensure their memory layout is the same
