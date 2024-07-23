@@ -191,7 +191,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
     gen.push(quote! {
       // use a private mod to hide the constants
       mod #mod_name {
-        use super::*; // TODO: replace with the actual name instead of '*' to avoid potential conflicts
+        use super::{#enum_name, #variant_name};
         use #crate_name::lexer::token::{SubTokenKind, TokenKindId, TokenKindIdBinding};
         const #token_kind_id_const: TokenKindId<TokenKindIdBinding<#enum_name>> = TokenKindId::new(#index, #sub_token_kind_name);
         // impl SubTokenKind so users can get the kind id from the type instead of the value
