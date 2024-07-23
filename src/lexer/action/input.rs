@@ -18,7 +18,7 @@ pub struct ActionInput<'text, 'action_state, ActionState> {
   /// See [`Self::rest`].
   rest: &'text str,
   // this is precalculated and cached because this might be used for at least once
-  // when traversing string body matchers
+  // when traversing actions in the lexing loop.
   /// See [`Self::next`].
   next: char,
 }
@@ -106,6 +106,6 @@ mod tests {
   #[should_panic]
   fn action_input_out_of_text() {
     let mut state = ();
-    assert!(ActionInput::new("123", 4, &mut state).is_none());
+    ActionInput::new("123", 4, &mut state);
   }
 }
