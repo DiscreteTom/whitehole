@@ -216,7 +216,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
       }
     });
 
-    // if a variant is the default variant, we will impl DefaultTokenKindIdBinding for it
+    // if a variant is the default variant, we will impl DefaultTokenKindIdBinding for the enum
     if variant_attrs.iter().any(|attr| attr.path.is_ident("default")) {
       gen.push(quote! {
         impl #crate_name::lexer::token::DefaultTokenKindIdBinding<#enum_name> for #enum_name {
