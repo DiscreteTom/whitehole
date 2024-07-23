@@ -209,7 +209,7 @@ mod tests {
   use whitehole_macros::_token_kind;
 
   #[_token_kind]
-  #[derive(Debug, Clone, Default)]
+  #[derive(Debug, Clone, Default, PartialEq, Eq)]
   pub enum MyKind {
     #[default]
     Unit,
@@ -241,26 +241,52 @@ mod tests {
       MyKind::Named(Named { name: 42 })
     ));
 
-    // generated token kind id, as sub token kind
-    assert_eq!(Unit::kind_id(), &TokenKindId::new(0, ""));
-    assert_eq!(Unnamed::kind_id(), &TokenKindId::new(1, ""));
-    assert_eq!(Named::kind_id(), &TokenKindId::new(2, ""));
-
     // into token kind id binding
     let b: TokenKindIdBinding<MyKind> = Unit.into();
     assert_eq!(b.id(), Unit::kind_id());
-    assert!(matches!(b.value(), MyKind::Unit));
+    assert_eq!(b.take(), MyKind::Unit);
     let b: TokenKindIdBinding<MyKind> = Unnamed(42).into();
     assert_eq!(b.id(), Unnamed::kind_id());
-    assert!(matches!(b.value(), MyKind::Unnamed(Unnamed(42))));
+    assert_eq!(b.take(), MyKind::Unnamed(Unnamed(42)));
     let b: TokenKindIdBinding<MyKind> = Named { name: 42 }.into();
     assert_eq!(b.id(), Named::kind_id());
-    assert!(matches!(b.value(), MyKind::Named(Named { name: 42 })));
+    assert_eq!(b.take(), MyKind::Named(Named { name: 42 }));
+
+    // generated token kind id, as sub token kind.
+    // make sure the id is for `TokenKindIdBinding` instead of `MyKind`
+    let v: Vec<&TokenKindId<TokenKindIdBinding<MyKind>>> =
+      vec![Unit::kind_id(), Unnamed::kind_id(), Named::kind_id()];
+    for (i, id) in v.iter().enumerate() {
+      for (j, id2) in v.iter().enumerate() {
+        if i == j {
+          assert_eq!(id, id2);
+        } else {
+          assert_ne!(id, id2);
+        }
+      }
+    }
+
+    // sub token kind into token kind id
+    assert_eq!(
+      <Unit as Into<&TokenKindId<TokenKindIdBinding<MyKind>>>>::into(Unit),
+      Unit::kind_id()
+    );
+    assert_eq!(
+      <Unnamed as Into<&TokenKindId<TokenKindIdBinding<MyKind>>>>::into(Unnamed(42)),
+      Unnamed::kind_id()
+    );
+    assert_eq!(
+      <Named as Into<&TokenKindId<TokenKindIdBinding<MyKind>>>>::into(Named { name: 42 }),
+      Named::kind_id()
+    );
 
     // attributes are inherited by generated structs, e.g. Clone
     let _ = Unit.clone();
     let _ = Unnamed(42).clone();
     let _ = Named { name: 42 }.clone();
+    let _ = MyKind::Unit.clone();
+    let _ = MyKind::Unnamed(Unnamed(42)).clone();
+    let _ = MyKind::Named(Named { name: 42 }).clone();
 
     // default is working
     assert!(matches!(MyKind::default(), MyKind::Unit));
