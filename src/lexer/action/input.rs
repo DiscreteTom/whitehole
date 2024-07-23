@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct ActionInput<'text, 'action_state, ActionState> {
   // users can mutate the action state directly, so it's public.
   // with the action state, users can build stateful lexers,
