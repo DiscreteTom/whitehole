@@ -31,6 +31,7 @@ pub struct TokenKindIdBinding<TokenKindType: 'static> {
 }
 
 impl<TokenKindType> TokenKindIdProvider<Self> for TokenKindIdBinding<TokenKindType> {
+  #[inline]
   fn id(&self) -> &'static TokenKindId<Self> {
     &self.id
   }
@@ -41,6 +42,7 @@ impl<TokenKindType> TokenKindIdProvider<Self> for TokenKindIdBinding<TokenKindTy
 // e.g. `binding.method()` instead of `binding.value().method()`
 
 impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
+  #[inline]
   pub fn new<ViaKind: SubTokenKind<TokenKindIdBinding<TokenKindType>> + Into<TokenKindType>>(
     value: ViaKind,
   ) -> Self {
@@ -50,11 +52,13 @@ impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
     }
   }
 
+  #[inline]
   pub fn value(&self) -> &TokenKindType {
     &self.value
   }
 
   /// Consume self and take the value out.
+  #[inline]
   pub fn take(self) -> TokenKindType {
     self.value
   }
@@ -88,6 +92,7 @@ pub trait DefaultTokenKindIdBinding<TokenKindType>: Default {
 impl<TokenKindType: DefaultTokenKindIdBinding<TokenKindType>> Default
   for TokenKindIdBinding<TokenKindType>
 {
+  #[inline]
   fn default() -> Self {
     Self {
       id: TokenKindType::default_kind_id(),
