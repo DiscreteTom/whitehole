@@ -59,7 +59,7 @@ impl<'text, 'action_state, ActionState> ActionInput<'text, 'action_state, Action
   }
 
   /// The undigested part of the input text.
-  /// When lexing this is guaranteed to be not empty.
+  /// This is guaranteed to be not empty.
   #[inline]
   pub const fn rest(&self) -> &'text str {
     self.rest
