@@ -4,7 +4,7 @@ use super::{SubTokenKind, TokenKindId, TokenKindIdProvider};
 /// This is readonly to make sure the binding is not broken.
 /// # Examples
 /// ```
-/// use whitehole::lexer::token::{token_kind, TokenKindId, TokenKindIdBinding, TokenKindIdProvider, SubTokenKind};
+/// use whitehole::lexer::token::{token_kind, TokenKindIdBinding, TokenKindIdProvider, SubTokenKind};
 ///
 /// #[token_kind]
 /// #[derive(Debug)]
@@ -23,9 +23,12 @@ use super::{SubTokenKind, TokenKindId, TokenKindIdProvider};
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TokenKindIdBinding<TokenKindType: 'static> {
-  // this is `TokenKindId<TokenKindIdBinding<TokenKindType>>`
-  // instead of `TokenKindId<TokenKindType>`
-  // because the `kind_id` of generated structs are `TokenKindId<TokenKindIdBinding<TokenKindType>>`
+  /// This is `TokenKindId<TokenKindIdBinding<TokenKindType>>`
+  /// instead of `TokenKindId<TokenKindType>`
+  /// because when using [`TokenKindIdBinding`] as the token kind
+  /// of an [`Action`](crate::lexer::action::Action),
+  /// the [`Action::kind_id`](crate::lexer::action::Action::kind_id)
+  /// should be `TokenKindId<TokenKindIdBinding<TokenKindType>>`
   id: &'static TokenKindId<Self>,
   value: TokenKindType,
 }
@@ -37,11 +40,8 @@ impl<TokenKindType> TokenKindIdProvider<Self> for TokenKindIdBinding<TokenKindTy
   }
 }
 
-// TODO: when rust support proxy pattern (not `Deref`), apply it here so that
-// users can call methods with immutable ref on the value directly.
-// e.g. `binding.method()` instead of `binding.value().method()`
-
 impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
+  /// Create a new binding from a value of a sub token kind.
   #[inline]
   pub fn new<ViaKind: SubTokenKind<TokenKindIdBinding<TokenKindType>> + Into<TokenKindType>>(
     value: ViaKind,
@@ -52,6 +52,7 @@ impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
     }
   }
 
+  /// Get the value of the token kind.
   #[inline]
   pub const fn value(&self) -> &TokenKindType {
     &self.value
