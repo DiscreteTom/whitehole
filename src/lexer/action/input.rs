@@ -46,24 +46,28 @@ impl<'text, 'action_state, ActionState> ActionInput<'text, 'action_state, Action
   }
 
   /// The whole input text.
-  pub fn text(&self) -> &'text str {
+  #[inline]
+  pub const fn text(&self) -> &'text str {
     self.text
   }
 
   /// From where to lex, in bytes.
   /// This is guaranteed to be smaller than the length of [`Self::text`].
-  pub fn start(&self) -> usize {
+  #[inline]
+  pub const fn start(&self) -> usize {
     self.start
   }
 
   /// The undigested part of the input text.
   /// When lexing this is guaranteed to be not empty.
-  pub fn rest(&self) -> &'text str {
+  #[inline]
+  pub const fn rest(&self) -> &'text str {
     self.rest
   }
 
   /// The next char in the rest of the input text.
-  pub fn next(&self) -> char {
+  #[inline]
+  pub const fn next(&self) -> char {
     self.next
   }
 }
