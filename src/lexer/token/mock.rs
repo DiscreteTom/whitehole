@@ -12,7 +12,7 @@ use std::mem::transmute;
 /// assert_eq!(MockTokenKind::<()>::kind_id(), &TokenKindId::new(0, ""));
 /// assert_eq!(MockTokenKind::new(42).id(), &TokenKindId::new(0, ""));
 /// ```
-#[derive(Debug)] // `T` should impl `Debug`
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct MockTokenKind<T> {
   pub data: T,
 }
