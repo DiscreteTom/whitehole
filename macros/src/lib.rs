@@ -215,7 +215,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
     if variant_attrs.iter().any(|attr| attr.path.is_ident("default")) {
       gen.push(quote! {
         impl #crate_name::lexer::token::DefaultTokenKindIdBinding<#enum_name> for #enum_name {
-          fn default_binding_kind_id() -> &'static #crate_name::lexer::token::TokenKindId<
+          fn default_kind_id() -> &'static #crate_name::lexer::token::TokenKindId<
             #crate_name::lexer::token::TokenKindIdBinding<#enum_name>
           > {
             <#variant_name as #crate_name::lexer::token::SubTokenKind<_>>::kind_id()

@@ -264,6 +264,6 @@ mod tests {
 
     // default is working
     assert!(matches!(MyKind::default(), MyKind::Unit));
-    assert_eq!(MyKind::default_binding_kind_id(), Unit::kind_id());
+    assert_eq!(MyKind::default_kind_id(), Unit::kind_id());
   }
 }

@@ -76,7 +76,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   {
     let exec = self.exec;
     Action {
-      kind_id: NewKind::default_binding_kind_id(),
+      kind_id: NewKind::default_kind_id(),
       head_matcher: self.head_matcher,
       muted: self.muted,
       may_mutate_state: self.may_mutate_state,
@@ -192,14 +192,14 @@ mod tests {
   #[test]
   fn action_bind_default() {
     let action: Action<_> = exact("A").bind_default();
-    assert_eq!(action.kind_id, MyKind::default_binding_kind_id());
+    assert_eq!(action.kind_id, MyKind::default_kind_id());
     assert!(matches!(
       action.exec(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
       Some(ActionOutput {
         kind: binding,
         digested: 1,
         error: None
-      }) if matches!(binding.value(), MyKind::A) && binding.id() == MyKind::default_binding_kind_id()
+      }) if matches!(binding.value(), MyKind::A) && binding.id() == MyKind::default_kind_id()
     ));
   }
 

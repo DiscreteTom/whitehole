@@ -82,7 +82,7 @@ impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
 /// # }
 /// ```
 pub trait DefaultTokenKindIdBinding<TokenKindType>: Default {
-  fn default_binding_kind_id() -> &'static TokenKindId<TokenKindIdBinding<TokenKindType>>;
+  fn default_kind_id() -> &'static TokenKindId<TokenKindIdBinding<TokenKindType>>;
 }
 
 impl<TokenKindType: DefaultTokenKindIdBinding<TokenKindType>> Default
@@ -90,7 +90,7 @@ impl<TokenKindType: DefaultTokenKindIdBinding<TokenKindType>> Default
 {
   fn default() -> Self {
     Self {
-      id: TokenKindType::default_binding_kind_id(),
+      id: TokenKindType::default_kind_id(),
       value: TokenKindType::default(),
     }
   }
@@ -118,7 +118,7 @@ mod tests {
 
   #[test]
   fn default_token_kind_id_binding() {
-    assert_eq!(MyKind::default_binding_kind_id(), A::kind_id());
+    assert_eq!(MyKind::default_kind_id(), A::kind_id());
     assert_eq!(MyKind::default(), MyKind::A);
 
     let binding = TokenKindIdBinding::<MyKind>::default();
