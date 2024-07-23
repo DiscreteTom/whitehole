@@ -63,6 +63,12 @@ impl<TokenKindType> TokenKindId<TokenKindType> {
       __: PhantomData,
     }
   }
+
+  /// The name of the sub token kind.
+  #[inline]
+  pub const fn name(&self) -> &'static str {
+    self.name
+  }
 }
 
 // manually implement these traits to avoid `TokenKindType`
@@ -135,6 +141,7 @@ mod tests {
     let id = TokenKindId::new(42, "Sub") as TokenKindId<MyKind>;
     assert_eq!(id.value, 42);
     assert_eq!(id.name, "Sub");
+    assert_eq!(id.name(), "Sub");
   }
 
   #[test]
