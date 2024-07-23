@@ -154,6 +154,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
       Fields::Named(_) | Fields::Unnamed(_) => {
         gen.push(quote! {
           impl Into<#enum_name> for #variant_name {
+            #[inline]
             fn into(self) -> #enum_name {
               #enum_name::#variant_name(self)
             }
@@ -163,6 +164,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
       Fields::Unit => {
         gen.push(quote! {
           impl Into<#enum_name> for #variant_name {
+            #[inline]
             fn into(self) -> #enum_name {
               #enum_name::#variant_name
             }
@@ -175,6 +177,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
     // this is required by `Action::select`
     gen.push(quote! {
       impl Into<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
+        #[inline]
         fn into(self) -> #crate_name::lexer::token::TokenKindIdBinding<#enum_name> {
           #crate_name::lexer::token::TokenKindIdBinding::new(self)
         }
@@ -196,6 +199,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
         const #token_kind_id_const: TokenKindId<TokenKindIdBinding<#enum_name>> = TokenKindId::new(#index, #sub_token_kind_name);
         // impl SubTokenKind so users can get the kind id from the type instead of the value
         impl SubTokenKind<TokenKindIdBinding<#enum_name>> for #variant_name {
+          #[inline]
           fn kind_id() -> &'static TokenKindId<TokenKindIdBinding<#enum_name>> {
             &#token_kind_id_const
           }
@@ -204,6 +208,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
         // this is helpful in expectational lexing, if users wants to provide the expected kind id
         // they can just use the value (especially for unit variants)
         impl Into<&'static TokenKindId<TokenKindIdBinding<#enum_name>>> for #variant_name {
+          #[inline]
           fn into(self) -> &'static TokenKindId<TokenKindIdBinding<#enum_name>> {
             &#token_kind_id_const
           }
@@ -215,6 +220,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
     if variant_attrs.iter().any(|attr| attr.path.is_ident("default")) {
       gen.push(quote! {
         impl #crate_name::lexer::token::DefaultTokenKindIdBinding<#enum_name> for #enum_name {
+          #[inline]
           fn default_kind_id() -> &'static #crate_name::lexer::token::TokenKindId<
             #crate_name::lexer::token::TokenKindIdBinding<#enum_name>
           > {
