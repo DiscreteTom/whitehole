@@ -43,16 +43,16 @@ use std::{
 /// `TypeId` is not.
 /// - Currently `TypeId` use 128 bits to represent the type, which is too large for our purpose.
 #[derive(Debug)]
-pub struct TokenKindId<TokenKindType> {
+pub struct TokenKindId<Kind> {
   value: usize,
   /// The name of the sub token kind.
   /// This is only used for display when debugging.
   /// The value won't be used in logic.
   name: &'static str,
-  __: PhantomData<TokenKindType>,
+  __: PhantomData<Kind>,
 }
 
-impl<TokenKindType> TokenKindId<TokenKindType> {
+impl<Kind> TokenKindId<Kind> {
   /// You should not call this function directly.
   /// This function should only be used in [`token_kind`](super::token_kind) macro.
   #[inline]
@@ -71,24 +71,24 @@ impl<TokenKindType> TokenKindId<TokenKindType> {
   }
 }
 
-// manually implement these traits to avoid `TokenKindType`
+// manually implement these traits to avoid `Kind`
 // being `Clone`, `Copy`, `Eq`, `PartialEq`, `Hash
-impl<TokenKindType> Clone for TokenKindId<TokenKindType> {
+impl<Kind> Clone for TokenKindId<Kind> {
   #[inline]
   fn clone(&self) -> Self {
     Self::new(self.value, self.name)
   }
 }
-impl<TokenKindType> Copy for TokenKindId<TokenKindType> {}
-impl<TokenKindType> PartialEq for TokenKindId<TokenKindType> {
+impl<Kind> Copy for TokenKindId<Kind> {}
+impl<Kind> PartialEq for TokenKindId<Kind> {
   #[inline]
   fn eq(&self, other: &Self) -> bool {
     // we only need to compare the value
     self.value == other.value
   }
 }
-impl<TokenKindType> Eq for TokenKindId<TokenKindType> {}
-impl<TokenKindType> Hash for TokenKindId<TokenKindType> {
+impl<Kind> Eq for TokenKindId<Kind> {}
+impl<Kind> Hash for TokenKindId<Kind> {
   #[inline]
   fn hash<H: Hasher>(&self, state: &mut H) {
     // we only need to hash the value
@@ -116,10 +116,10 @@ impl<TokenKindType> Hash for TokenKindId<TokenKindType> {
 /// assert_eq!(a.id(), a.id());
 /// # }
 /// ```
-pub trait TokenKindIdProvider<TokenKindType> {
+pub trait TokenKindIdProvider<Kind> {
   /// The token kind id of this token kind value.
   /// See [`TokenKindId`].
-  fn id(&self) -> &'static TokenKindId<TokenKindType>; // use a static reference to avoid creating a new one every time
+  fn id(&self) -> &'static TokenKindId<Kind>; // use a static reference to avoid creating a new one every time
 }
 
 #[cfg(test)]

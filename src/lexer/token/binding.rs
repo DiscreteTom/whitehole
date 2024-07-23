@@ -22,30 +22,28 @@ use super::{SubTokenKind, TokenKindId, TokenKindIdProvider};
 /// # }
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct TokenKindIdBinding<TokenKindType: 'static> {
-  /// This is `TokenKindId<TokenKindIdBinding<TokenKindType>>`
-  /// instead of `TokenKindId<TokenKindType>`
+pub struct TokenKindIdBinding<Kind: 'static> {
+  /// This is `TokenKindId<TokenKindIdBinding<Kind>>`
+  /// instead of `TokenKindId<Kind>`
   /// because when using [`TokenKindIdBinding`] as the token kind
   /// of an [`Action`](crate::lexer::action::Action),
   /// the [`Action::kind_id`](crate::lexer::action::Action::kind_id)
-  /// should be `TokenKindId<TokenKindIdBinding<TokenKindType>>`
+  /// should be `TokenKindId<TokenKindIdBinding<Kind>>`
   id: &'static TokenKindId<Self>,
-  value: TokenKindType,
+  value: Kind,
 }
 
-impl<TokenKindType> TokenKindIdProvider<Self> for TokenKindIdBinding<TokenKindType> {
+impl<Kind> TokenKindIdProvider<Self> for TokenKindIdBinding<Kind> {
   #[inline]
   fn id(&self) -> &'static TokenKindId<Self> {
     &self.id
   }
 }
 
-impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
+impl<Kind> TokenKindIdBinding<Kind> {
   /// Create a new binding from a value of a sub token kind.
   #[inline]
-  pub fn new<ViaKind: SubTokenKind<TokenKindIdBinding<TokenKindType>> + Into<TokenKindType>>(
-    value: ViaKind,
-  ) -> Self {
+  pub fn new<ViaKind: SubTokenKind<TokenKindIdBinding<Kind>> + Into<Kind>>(value: ViaKind) -> Self {
     Self {
       value: value.into(),
       id: ViaKind::kind_id(),
@@ -54,13 +52,13 @@ impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
 
   /// Get the value of the token kind.
   #[inline]
-  pub const fn value(&self) -> &TokenKindType {
+  pub const fn value(&self) -> &Kind {
     &self.value
   }
 
   /// Consume self and take the value out.
   #[inline]
-  pub fn take(self) -> TokenKindType {
+  pub fn take(self) -> Kind {
     self.value
   }
 }
@@ -89,18 +87,16 @@ impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
 /// assert_eq!(TokenKindIdBinding::<MyKind>::default().take(), MyKind::A);
 /// # }
 /// ```
-pub trait DefaultTokenKindIdBinding<TokenKindType>: Default {
-  fn default_kind_id() -> &'static TokenKindId<TokenKindIdBinding<TokenKindType>>;
+pub trait DefaultTokenKindIdBinding<Kind>: Default {
+  fn default_kind_id() -> &'static TokenKindId<TokenKindIdBinding<Kind>>;
 }
 
-impl<TokenKindType: DefaultTokenKindIdBinding<TokenKindType>> Default
-  for TokenKindIdBinding<TokenKindType>
-{
+impl<Kind: DefaultTokenKindIdBinding<Kind>> Default for TokenKindIdBinding<Kind> {
   #[inline]
   fn default() -> Self {
     Self {
-      id: TokenKindType::default_kind_id(),
-      value: TokenKindType::default(),
+      id: Kind::default_kind_id(),
+      value: Kind::default(),
     }
   }
 }
