@@ -70,20 +70,23 @@ impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
 /// # Examples
 /// ```
 /// use whitehole::lexer::token::{
-///   token_kind, TokenKindId, TokenKindIdBinding, SubTokenKind, DefaultTokenKindIdBinding, TokenKindIdProvider,
+///   token_kind, TokenKindIdBinding, SubTokenKind, DefaultTokenKindIdBinding, TokenKindIdProvider,
 /// };
 ///
 /// #[token_kind]
-/// #[derive(Default, Debug)]
-/// enum MyKind { #[default] A }
+/// #[derive(Default, Debug, PartialEq, Eq)]
+/// enum MyKind {
+///   #[default]
+///   A
+/// }
 ///
 /// # fn main() {
 /// assert_eq!(MyKind::default_kind_id(), A::kind_id());
-/// assert!(matches!(MyKind::default(), MyKind::A));
+/// assert_eq!(MyKind::default(), MyKind::A);
 ///
 /// // besides, `Default` will be implemented for `TokenKindIdBinding<MyKind>`
-/// assert!(matches!(TokenKindIdBinding::<MyKind>::default().value(), MyKind::A));
 /// assert_eq!(TokenKindIdBinding::<MyKind>::default().id(), A::kind_id());
+/// assert_eq!(TokenKindIdBinding::<MyKind>::default().take(), MyKind::A);
 /// # }
 /// ```
 pub trait DefaultTokenKindIdBinding<TokenKindType>: Default {
