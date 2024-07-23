@@ -53,7 +53,7 @@ impl<TokenKindType> TokenKindIdBinding<TokenKindType> {
   }
 
   #[inline]
-  pub fn value(&self) -> &TokenKindType {
+  pub const fn value(&self) -> &TokenKindType {
     &self.value
   }
 
