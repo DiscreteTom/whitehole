@@ -1,6 +1,6 @@
 use whitehole::lexer::{
   action::{comment, exact_chars, exact_vec, regex, simple, whitespaces, word_vec},
-  token::token_kind,
+  token::{token_kind, Range},
   LexerBuilder,
 };
 
@@ -79,16 +79,18 @@ fn action_decorators() {
         .prevent(|input| input.state.reject)
       },
     )
-    .build("a b c");
+    // collect errors in a vec
+    .build_with::<Vec<_>>(MyState::default(), "a b c");
 
   // the first lex should be accepted but with error set
   let res = lexer.lex();
   let token = res.token.unwrap();
   assert!(matches!(token.kind.value(), MyKind::A));
-  assert!(matches!(token.error, Some("error")));
+  assert!(matches!(
+    res.errors[0],
+    ("error", Range { start: 0, end: 1 })
+  ));
   assert_eq!(res.digested, 1);
-  // res.token is not included in res.errors even if the token has error
-  assert_eq!(res.errors.len(), 0);
 
   // the second lex should be rejected but still digest some characters
   let res = lexer.lex();

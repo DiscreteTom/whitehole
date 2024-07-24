@@ -22,7 +22,7 @@ struct MyState {
 }
 
 #[test]
-fn lex_with_head_matcher() {
+fn lex_with_head() {
   // by default the lexer will evaluate all your actions one by one
   // but in some cases we can know which action to use
   // by looking at the first character of the rest of the text.
@@ -138,18 +138,18 @@ fn lex_with_head_matcher() {
 }
 
 #[test]
-fn head_matcher_set_by_action_utils() {
+fn head_set_by_action_utils() {
   // many action utils already have the head matcher set
   assert!(
-    matches!(exact::<(), ()>("true").head_matcher(), Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['t']))
+    matches!(exact::<(), ()>("true").head(), Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['t']))
   );
   assert!(
-    matches!(whitespaces::<(), ()>().head_matcher(), Some(HeadMatcher::OneOf(set)) if set.len() == 25)
+    matches!(whitespaces::<(), ()>().head(), Some(HeadMatcher::OneOf(set)) if set.len() == 25)
   );
 }
 
 #[test]
-fn utf8_head_matcher() {
+fn utf8_head() {
   // head matcher will work with utf8
   let mut lexer = LexerBuilder::stateful::<MyState>()
     .define_with(True, exact("真"), |a| {

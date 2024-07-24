@@ -1,6 +1,6 @@
 use whitehole::lexer::{
   action::{regex, whitespaces},
-  token::token_kind,
+  token::{token_kind, Range},
   LexerBuilder,
 };
 
@@ -36,21 +36,25 @@ fn error_tokens() {
         }
       })
     })
-    .build(" a");
+    .build_with::<Vec<_>>((), " a");
 
   // when `lex`, `peek` or `trim`, we can get error tokens from the output
   let (output, _) = lexer.peek();
   // even if the whitespace is muted, it contains an error.
-  // error tokens will be collected in the output even they are muted,
-  // so we can get the error token from the peek result
-  assert_eq!(output.errors.len(), 1);
-  assert!(matches!(output.errors[0].kind.value(), MyKind::Anonymous));
-  assert!(matches!(output.errors[0].error, Some("ignored")));
-  // we can still get the peeked token, which is also an error token
+  // errors will be collected with its range and error value
+  assert_eq!(output.errors.len(), 2);
+  assert!(matches!(
+    output.errors[0],
+    ("ignored", Range { start: 0, end: 1 })
+  ));
+  // we can still get the peeked token, which also contains an error
   // but it is not muted
   let token = output.token.unwrap();
   assert!(matches!(token.kind.value(), MyKind::A));
-  assert!(matches!(token.error, Some("end")));
+  assert!(matches!(
+    output.errors[1],
+    ("end", Range { start: 1, end: 2 })
+  ));
 }
 
 #[test]

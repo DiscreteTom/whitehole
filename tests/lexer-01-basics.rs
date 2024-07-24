@@ -70,7 +70,6 @@ fn lexer_basics() {
       token,
       Token {
         range: Range { start: 0, end: 1 },
-        error: None,
         kind
       } if matches!(kind.value(), MyKind::A)
   ));
@@ -86,7 +85,6 @@ fn lexer_basics() {
       token,
       Token {
         range: Range { start: 2, end: 3 },
-        error: None,
         kind
       } if matches!(kind.value(), MyKind::BC)
   ));
@@ -98,7 +96,6 @@ fn lexer_basics() {
       token,
       Token {
         range: Range { start: 4, end: 5 },
-        error: None,
         kind
       } if matches!(kind.value(), MyKind::BC)
   ));
