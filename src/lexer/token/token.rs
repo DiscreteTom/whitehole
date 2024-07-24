@@ -12,7 +12,6 @@ pub struct Token<Kind> {
   /// let token = Token {
   ///   kind: (),
   ///   range: 0..5,
-  ///   error: Some(()),
   /// };
   /// // index a string with the range
   /// assert_eq!(&"0123456"[token.range], "01234");
