@@ -49,8 +49,8 @@ pub struct Action<Kind: 'static, ActionState = (), ErrorType = ()> {
   // input is mutable so the action can mutate the action state.
   // TODO: add lifetime to the exec? is there a use case?
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
-  /// See [`Self::kind_id`].
-  kind_id: &'static TokenKindId<Kind>,
+  /// See [`Self::kind`].
+  kind: &'static TokenKindId<Kind>,
   /// See [`Self::literal`].
   literal: Option<String>,
   /// See [`Self::head_matcher`].
@@ -66,9 +66,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// see [`Expectation::kind`](crate::lexer::expectation::Expectation::kind).
   /// Every action must have this field set by [`Self::bind`],
   /// [`Self::bind_default`] or [`Self::select`].
-  // these method will ensure the integrity between the `Self::kind_id` and the `ActionOutput::kind`
-  pub fn kind_id(&self) -> &TokenKindId<Kind> {
-    &self.kind_id
+  // these method will ensure the integrity between the `Self::kind` and the `ActionOutput::kind`
+  pub fn kind(&self) -> &TokenKindId<Kind> {
+    &self.kind
   }
 
   /// This is used to accelerate expectational lexing if an expected literal is provided,
@@ -127,7 +127,7 @@ mod tests {
     static KIND_ID: TokenKindId<()> = TokenKindId::new(1, "");
     let action: Action<()> = Action {
       exec: Box::new(|_| None),
-      kind_id: &KIND_ID,
+      kind: &KIND_ID,
       head_matcher: None,
       muted: false,
       may_mutate_state: false,
@@ -136,7 +136,7 @@ mod tests {
     assert!(!action.muted());
     assert!(!action.may_mutate_state());
     assert!(action.never_mutate_state());
-    assert_eq!(action.kind_id(), &TokenKindId::new(1, ""));
+    assert_eq!(action.kind(), &TokenKindId::new(1, ""));
     assert!(action.head_matcher().is_none());
     assert!(action.literal().is_none());
   }
@@ -146,7 +146,7 @@ mod tests {
     static KIND_ID: TokenKindId<()> = TokenKindId::new(1, "");
     let action: Action<()> = Action {
       exec: Box::new(|_| None),
-      kind_id: &KIND_ID,
+      kind: &KIND_ID,
       head_matcher: Some(HeadMatcher::OneOf(HashSet::from(['a']))),
       muted: true,
       may_mutate_state: true,
@@ -155,7 +155,7 @@ mod tests {
     assert!(action.muted());
     assert!(action.may_mutate_state());
     assert!(!action.never_mutate_state());
-    assert_eq!(action.kind_id(), &TokenKindId::new(1, ""));
+    assert_eq!(action.kind(), &TokenKindId::new(1, ""));
     assert!(
       matches!(action.head_matcher(), Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['a']))
     );

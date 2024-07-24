@@ -87,13 +87,13 @@ mod tests {
     // single
     let builder = LexerBuilder::new().define(A, word("A"));
     assert_eq!(builder.actions.len(), 1);
-    assert_eq!(builder.actions[0].kind_id(), A::kind_id());
+    assert_eq!(builder.actions[0].kind(), A::kind_id());
 
     // multiple
     let builder = LexerBuilder::new().define(A, [word("A"), word("AA")]);
     assert_eq!(builder.actions.len(), 2);
-    assert_eq!(builder.actions[0].kind_id(), A::kind_id());
-    assert_eq!(builder.actions[1].kind_id(), A::kind_id());
+    assert_eq!(builder.actions[0].kind(), A::kind_id());
+    assert_eq!(builder.actions[1].kind(), A::kind_id());
   }
 
   #[test]
@@ -101,14 +101,14 @@ mod tests {
     // single
     let builder = LexerBuilder::new().define_with(A, word("A"), |a| a.mute());
     assert_eq!(builder.actions.len(), 1);
-    assert_eq!(builder.actions[0].kind_id(), A::kind_id());
+    assert_eq!(builder.actions[0].kind(), A::kind_id());
     assert!(builder.actions[0].muted());
 
     // multiple
     let builder = LexerBuilder::new().define_with(A, [exact("A"), exact("B")], |a| a.mute());
     assert_eq!(builder.actions.len(), 2);
-    assert_eq!(builder.actions[0].kind_id(), A::kind_id());
-    assert_eq!(builder.actions[1].kind_id(), A::kind_id());
+    assert_eq!(builder.actions[0].kind(), A::kind_id());
+    assert_eq!(builder.actions[1].kind(), A::kind_id());
     assert!(builder.actions[0].muted());
     assert!(builder.actions[1].muted());
   }

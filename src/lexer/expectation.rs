@@ -39,7 +39,7 @@ impl<'expect_literal, Kind> From<&'expect_literal str> for Expectation<'expect_l
 
 impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
   /// If the [`kind`](Self::kind) is provided, the lexer will skip [`Action`](crate::lexer::action::Action)s
-  /// with different [`kind_id`](crate::lexer::action::Action::kind_id) (unless [`muted`](crate::lexer::action::Action::muted)).
+  /// with different [`kind_id`](crate::lexer::action::Action::kind) (unless [`muted`](crate::lexer::action::Action::muted)).
   /// # Examples
   /// ```
   /// # use whitehole::lexer::token::{token_kind, SubTokenKind};

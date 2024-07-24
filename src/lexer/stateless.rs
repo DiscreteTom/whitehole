@@ -14,7 +14,7 @@
 //!
 //! To optimize the runtime performance, the [`StatelessLexer`] will
 //! pre-calculate and cache some action lists based on [`Action`]'s attributes
-//! like [`Action::kind_id`] [`Action::head_matcher`], [`Action::literal`], etc.
+//! like [`Action::kind`] [`Action::head_matcher`], [`Action::literal`], etc.
 //! When lexing, maybe not all of the actions will be executed.
 //! Here are the rules:
 //!
@@ -31,7 +31,7 @@
 //! ### With Expected Kind
 //!
 //! If there is an expected kind, the lexer will first ignore
-//! non-muted actions with mismatched [`Action::kind_id`] before the lexing loop,
+//! non-muted actions with mismatched [`Action::kind`] before the lexing loop,
 //! then ignore actions by the head matcher just like the case without expectation
 //! during the lexing loop.
 //!
@@ -47,7 +47,7 @@
 //! ### With Both Expected Kind and Literal
 //!
 //! If there is both an expected kind and a literal, the lexer will first ignore
-//! non-muted actions with mismatched [`Action::kind_id`] and mismatched [`Action::literal`]
+//! non-muted actions with mismatched [`Action::kind`] and mismatched [`Action::literal`]
 //! before the lexing loop,
 //! then check if the rest of the input text starts with the expected literal
 //! during the lexing loop, if the literal doesn't match, all non-muted actions will be ignored,
@@ -91,7 +91,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     // because we need to iter over all possible kinds when filling the map
     for a in &actions {
       kinds_action_map
-        .entry(a.kind_id().clone())
+        .entry(a.kind().clone())
         .or_insert(Vec::new());
     }
     // fill it
@@ -103,10 +103,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         }
       } else {
         // non-muted, only add to possible kinds
-        kinds_action_map
-          .get_mut(a.kind_id())
-          .unwrap()
-          .push(a.clone());
+        kinds_action_map.get_mut(a.kind()).unwrap().push(a.clone());
       }
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
@@ -165,7 +162,7 @@ mod tests {
   ) {
     assert_eq!(actions.len(), expected.len());
     for i in 0..actions.len() {
-      assert_eq!(actions[i].kind_id(), expected[i].kind_id());
+      assert_eq!(actions[i].kind(), expected[i].kind());
       assert_eq!(actions[i].head_matcher(), expected[i].head_matcher());
       assert_eq!(actions[i].literal(), expected[i].literal());
       assert_eq!(actions[i].muted(), expected[i].muted());

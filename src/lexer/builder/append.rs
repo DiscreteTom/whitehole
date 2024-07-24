@@ -175,13 +175,13 @@ mod tests {
     // single
     let builder = LexerBuilder::new().append_default(word("A"));
     assert_eq!(builder.actions.len(), 1);
-    assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id());
+    assert_eq!(builder.actions[0].kind(), Anonymous::kind_id());
 
     // many
     let builder = LexerBuilder::new().append_default([word("A"), word("B")]);
     assert_eq!(builder.actions.len(), 2);
-    assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id());
-    assert_eq!(builder.actions[1].kind_id(), Anonymous::kind_id());
+    assert_eq!(builder.actions[0].kind(), Anonymous::kind_id());
+    assert_eq!(builder.actions[1].kind(), Anonymous::kind_id());
   }
 
   #[test]
@@ -189,14 +189,14 @@ mod tests {
     // single
     let builder = LexerBuilder::new().append_default_with(word("A"), |a| a.mute());
     assert_eq!(builder.actions.len(), 1);
-    assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id(),);
+    assert_eq!(builder.actions[0].kind(), Anonymous::kind_id(),);
     assert!(builder.actions[0].muted());
 
     // many
     let builder = LexerBuilder::new().append_default_with([exact("A"), exact("B")], |a| a.mute());
     assert_eq!(builder.actions.len(), 2);
-    assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id(),);
-    assert_eq!(builder.actions[1].kind_id(), Anonymous::kind_id(),);
+    assert_eq!(builder.actions[0].kind(), Anonymous::kind_id(),);
+    assert_eq!(builder.actions[1].kind(), Anonymous::kind_id(),);
     // ensure decorator is applied to all actions
     assert!(builder.actions[0].muted());
     assert!(builder.actions[1].muted());

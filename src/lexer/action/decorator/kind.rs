@@ -37,7 +37,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   {
     let exec = self.exec;
     Action {
-      kind_id: ViaKind::kind_id(),
+      kind: ViaKind::kind_id(),
       head_matcher: self.head_matcher,
       muted: self.muted,
       may_mutate_state: self.may_mutate_state,
@@ -76,7 +76,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   {
     let exec = self.exec;
     Action {
-      kind_id: NewKind::default_kind_id(),
+      kind: NewKind::default_kind_id(),
       head_matcher: self.head_matcher,
       muted: self.muted,
       may_mutate_state: self.may_mutate_state,
@@ -129,7 +129,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   {
     let exec = self.exec;
     Action {
-      kind_id: ViaKind::kind_id(),
+      kind: ViaKind::kind_id(),
       head_matcher: self.head_matcher,
       muted: self.muted,
       may_mutate_state: self.may_mutate_state,
@@ -178,7 +178,7 @@ mod tests {
   #[test]
   fn action_bind() {
     let action: Action<_> = exact("A").bind(A);
-    assert_eq!(action.kind_id, A::kind_id());
+    assert_eq!(action.kind, A::kind_id());
     assert!(matches!(
       action.exec(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
       Some(ActionOutput {
@@ -192,7 +192,7 @@ mod tests {
   #[test]
   fn action_bind_default() {
     let action: Action<_> = exact("A").bind_default();
-    assert_eq!(action.kind_id, MyKind::default_kind_id());
+    assert_eq!(action.kind, MyKind::default_kind_id());
     assert!(matches!(
       action.exec(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
       Some(ActionOutput {
@@ -207,7 +207,7 @@ mod tests {
   fn action_select() {
     let action: Action<_> =
       Action::from(regex(r"^\d+")).select(|ctx| Value(ctx.content().parse().unwrap()));
-    assert_eq!(action.kind_id, Value::kind_id());
+    assert_eq!(action.kind, Value::kind_id());
     assert!(matches!(
       action.exec(&mut ActionInput::new("1", 0, &mut ()).unwrap()),
       Some(ActionOutput {
