@@ -38,12 +38,12 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
   /// # fn main() {
-  /// # let mut builder = LexerBuilder::with_error();
+  /// # let mut builder = LexerBuilder::new();
   /// // append a single action
-  /// builder.ignore_with(word("A").bind(A), |a| a.mute());
-  /// # let mut builder = LexerBuilder::with_error();
+  /// builder.ignore_with(word("A").bind(A), |a| a.reject());
+  /// # let mut builder = LexerBuilder::new();
   /// // append multiple actions
-  /// builder.ignore_with([word("A").bind(A), word("B").bind(B)], |a| a.mute());
+  /// builder.ignore_with([word("A").bind(A), word("B").bind(B)], |a| a.reject());
   /// # }
   /// ```
   pub fn ignore_with<F>(
@@ -101,12 +101,12 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   /// # #[derive(Clone, Default)]
   /// # enum MyKind { #[default] A }
   /// # fn main() {
-  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>, (), _>::with_error();
+  /// # let mut builder = LexerBuilder::new();
   /// // append a single action
-  /// builder.ignore_default_with(word("A"), |a| a.mute());
-  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>, (), _>::with_error();
+  /// builder.ignore_default_with(word("A"), |a| a.reject());
+  /// # let mut builder = LexerBuilder::new();
   /// // append multiple actions
-  /// builder.ignore_default_with([word("A"), word("B")], |a| a.mute());
+  /// builder.ignore_default_with([word("A"), word("B")], |a| a.reject());
   /// # }
   /// ```
   pub fn ignore_default_with<F>(
