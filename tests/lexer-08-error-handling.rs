@@ -36,10 +36,10 @@ fn error_tokens() {
         }
       })
     })
-    .build_with::<Vec<_>>((), " a");
+    .build(" a");
 
   // when `lex`, `peek` or `trim`, we can get error tokens from the output
-  let (output, _) = lexer.peek();
+  let (output, _) = lexer.peek_with(|o| o.errs_to_vec());
   // even if the whitespace is muted, it contains an error.
   // errors will be collected with its range and error value
   assert_eq!(output.errors.len(), 2);

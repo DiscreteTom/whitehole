@@ -45,6 +45,6 @@ fn stateless_to_lexer() {
   // if you already have all actions, but don't have an input text yet,
   // you can build a stateless lexer first, and then build a stateful lexer from it
   let stateless = LexerBuilder::<MyKind>::default().build_stateless();
-  let lexer: Lexer<MyKind, (), (), ()> = Lexer::new(Rc::new(stateless), (), "123");
+  let lexer = Lexer::new(Rc::new(stateless), (), "123");
   assert_eq!(lexer.state().text(), "123");
 }
