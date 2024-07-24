@@ -31,7 +31,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       + Into<TokenKindIdBinding<NewKind>>
       + Clone
       + 'static,
-    Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
@@ -123,7 +122,6 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   ) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
   where
     ViaKind: Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKindIdBinding<NewKind>>,
-    Kind: 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
