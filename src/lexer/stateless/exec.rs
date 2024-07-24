@@ -12,7 +12,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'expect_literal,
     'head_map,
     ErrAcc: Accumulator<(ErrorType, Range)>,
-    ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType, ErrAcc>,
+    ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
     StatelessOutputType: StatelessOutput<Token<Kind>, ErrAcc, ReLexableFactoryType::StatelessReLexableType>,
   >(
     head_map_getter: impl Fn(
@@ -113,8 +113,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   fn traverse_actions<
     'text,
     'expect_literal,
-    ErrAcc,
-    ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType, ErrAcc>,
+    ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
   >(
     input: &mut ActionInput<ActionState>,
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
@@ -191,7 +190,7 @@ mod tests {
     let mut input = ActionInput::new("abc", 1, &mut action_state).unwrap();
 
     // all actions are checked, no accepted action
-    assert!(StatelessLexer::<_>::traverse_actions::<(), _>(
+    assert!(StatelessLexer::<_>::traverse_actions(
       &mut input,
       &vec![Rc::new(exact("d")),],
       &ReLexContext::default(),
@@ -201,7 +200,7 @@ mod tests {
 
     // accept without re-lex context
     assert!(matches!(
-      StatelessLexer::<_>::traverse_actions::<(), _>(
+      StatelessLexer::<_>::traverse_actions(
         &mut input,
         &vec![
           Rc::new(exact("a")),
@@ -223,7 +222,7 @@ mod tests {
 
     // accept with re-lex context
     assert!(matches!(
-      StatelessLexer::<_>::traverse_actions::<(), _>(
+      StatelessLexer::<_>::traverse_actions(
         &mut input,
         &vec![
           Rc::new(exact("a")),
@@ -245,7 +244,7 @@ mod tests {
 
     // accepted actions are skipped, no accepted action
     assert!(matches!(
-      StatelessLexer::<_>::traverse_actions::<(), _>(
+      StatelessLexer::<_>::traverse_actions(
         &mut input,
         &vec![
           Rc::new(exact("a")),
@@ -260,7 +259,7 @@ mod tests {
 
     // ignore re-lex context when start mismatch
     assert!(matches!(
-      StatelessLexer::<_>::traverse_actions::<(), _>(
+      StatelessLexer::<_>::traverse_actions(
         &mut input,
         &vec![
           Rc::new(exact("a")),

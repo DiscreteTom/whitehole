@@ -10,9 +10,8 @@ pub struct StatelessLexOptions<'expect_literal, Kind: 'static, ActionStateRef, E
   pub start: usize,
   /// This is usually `&mut ActionState`.
   pub action_state: ActionStateRef,
-  pub err_acc: ErrAcc,
   // pub error_handler:
-  pub base: LexOptions<'expect_literal, Kind, Fork>,
+  pub base: LexOptions<'expect_literal, Kind, ErrAcc, Fork>,
 }
 
 impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), ForkDisabled> {
@@ -20,8 +19,7 @@ impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), F
     Self {
       start: 0,
       action_state: (), // use `()` as a placeholder, user should use `self.action_state` to set this
-      err_acc: (),
-      base: LexOptions::default(),
+      base: LexOptions::new(),
     }
   }
 }
@@ -40,14 +38,13 @@ impl<'expect_literal, Kind> From<ReLexContext>
     Self::new().re_lex(re_lex)
   }
 }
-impl<'expect_literal, Kind, Fork> From<LexOptions<'expect_literal, Kind, Fork>>
-  for StatelessLexOptions<'expect_literal, Kind, (), (), Fork>
+impl<'expect_literal, Kind, ErrAcc, Fork> From<LexOptions<'expect_literal, Kind, ErrAcc, Fork>>
+  for StatelessLexOptions<'expect_literal, Kind, (), ErrAcc, Fork>
 {
-  fn from(base: LexOptions<'expect_literal, Kind, Fork>) -> Self {
+  fn from(base: LexOptions<'expect_literal, Kind, ErrAcc, Fork>) -> Self {
     Self {
       start: 0,
       action_state: (),
-      err_acc: (),
       base,
     }
   }
@@ -70,20 +67,6 @@ impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
     StatelessLexOptions {
       start: self.start,
       action_state,
-      err_acc: self.err_acc,
-      base: self.base,
-    }
-  }
-
-  /// Set the error accumulator.
-  pub fn err_acc<NewErrAcc>(
-    self,
-    err_acc: NewErrAcc,
-  ) -> StatelessLexOptions<'expect_literal, Kind, ActionStateRef, NewErrAcc, Fork> {
-    StatelessLexOptions {
-      start: self.start,
-      action_state: self.action_state,
-      err_acc,
       base: self.base,
     }
   }
@@ -111,6 +94,27 @@ impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
     self.base.expectation = f(Expectation::default());
     self
   }
+  /// See [`LexOptions::err_acc()`].
+  pub fn err_acc<NewErrAcc>(
+    self,
+    err_acc: NewErrAcc,
+  ) -> StatelessLexOptions<'expect_literal, Kind, ActionStateRef, NewErrAcc, Fork> {
+    StatelessLexOptions {
+      start: self.start,
+      action_state: self.action_state,
+      base: self.base.err_acc(err_acc),
+    }
+  }
+  /// See [`LexOptions::errs_to_vec`].
+  pub fn errs_to_vec(
+    self,
+  ) -> StatelessLexOptions<'expect_literal, Kind, ActionStateRef, Vec<ErrAcc>, Fork> {
+    StatelessLexOptions {
+      start: self.start,
+      action_state: self.action_state,
+      base: self.base.errs_to_vec(),
+    }
+  }
   /// See [`LexOptions::fork()`].
   pub fn fork<ActionState>(
     self,
@@ -118,7 +122,6 @@ impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
     StatelessLexOptions {
       start: self.start,
       action_state: self.action_state,
-      err_acc: self.err_acc,
       base: self.base.fork(),
     }
   }

@@ -45,7 +45,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'expect_literal,
     'action_state,
     ErrAcc: Accumulator<(ErrorType, Range)>,
-    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType, ErrAcc>,
+    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>,
   >(
     &self,
     text: &'text str,
@@ -57,7 +57,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       &'action_state mut ActionState,ErrAcc,
       Fork,
     >,
-  ) -> LexOutput<Token<Kind>, ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType, ErrAcc>>::StatelessReLexableType>
+  ) -> LexOutput<Token<Kind>, ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
@@ -79,12 +79,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'expect_literal,
     'action_state,
     ErrAcc: Accumulator<(ErrorType, Range)>,
-    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType, ErrAcc>,
+    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>,
   >(
     &self,
     text: &'text str,
     options: impl Into<StatelessLexOptions<'expect_literal, Kind, &'action_state mut ActionState,ErrAcc, Fork>>,
-  ) -> LexOutput<Token<Kind>,ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType, ErrAcc>>::StatelessReLexableType>
+  ) -> LexOutput<Token<Kind>,ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
@@ -121,7 +121,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         options.start,
         options.action_state,
         Fork::ReLexableFactoryType::default(),
-        LexOutput::with_err_acc(options.err_acc),
+        LexOutput::with_err_acc(options.base.err_acc),
       )
     } else {
       let head_map = options.base.expectation.kind.map_or(
@@ -142,7 +142,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         options.start,
         options.action_state,
         Fork::ReLexableFactoryType::default(),
-        LexOutput::with_err_acc(options.err_acc),
+        LexOutput::with_err_acc(options.base.err_acc),
       )
     }
   }

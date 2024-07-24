@@ -113,15 +113,15 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     StatelessLexer::new(self.actions.into_iter().map(Rc::new).collect())
   }
 
-  pub fn build_with<'text, ErrAcc: Default>(
+  pub fn build_with<'text>(
     self,
     action_state: ActionState,
     text: &'text str,
-  ) -> Lexer<'text, Kind, ActionState, ErrorType, ErrAcc> {
+  ) -> Lexer<'text, Kind, ActionState, ErrorType> {
     Lexer::new(Rc::new(self.build_stateless()), action_state, text)
   }
 
-  pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, ActionState, ErrorType, ()>
+  pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, ActionState, ErrorType>
   where
     ActionState: Default,
   {
