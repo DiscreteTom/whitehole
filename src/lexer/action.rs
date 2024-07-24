@@ -34,7 +34,7 @@ use super::token::TokenKindId;
 use std::collections::HashSet;
 
 /// See [`Action::head`].
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum HeadMatcher {
   OneOf(HashSet<char>),
   Not(HashSet<char>),
