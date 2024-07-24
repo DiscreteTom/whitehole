@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OneOrMore<T>(pub Vec<T>);
 
 impl<T> From<T> for OneOrMore<T> {
