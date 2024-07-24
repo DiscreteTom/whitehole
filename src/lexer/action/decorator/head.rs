@@ -15,6 +15,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// builder.define(A, regex(r"^A").unchecked_head_in(['A']));
   /// # }
   /// ```
+  #[inline]
   pub fn unchecked_head_in(mut self, char_set: impl Into<HashSet<char>>) -> Self {
     self.head = Some(HeadMatcher::OneOf(char_set.into()));
     self
@@ -33,6 +34,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # let mut builder = LexerBuilder::new();
   /// builder.define(A, regex(r"^[A-Z]").unchecked_head_in_range('A'..='Z'));
   /// # }
+  #[inline]
   pub fn unchecked_head_in_range(self, range: impl Into<RangeInclusive<char>>) -> Self {
     self.unchecked_head_in(range.into().into_iter().collect::<HashSet<_>>())
   }
@@ -50,6 +52,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// builder.define(A, regex(r"^[^A]").unchecked_head_not(['A']));
   /// # }
   /// ```
+  #[inline]
   pub fn unchecked_head_not(mut self, char_set: impl Into<HashSet<char>>) -> Self {
     self.head = Some(HeadMatcher::Not(char_set.into()));
     self
@@ -68,6 +71,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// builder.define(A, regex(r"^.").unchecked_head_unknown());
   /// # }
   /// ```
+  #[inline]
   pub fn unchecked_head_unknown(mut self) -> Self {
     self.head = Some(HeadMatcher::Unknown);
     self
