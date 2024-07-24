@@ -141,6 +141,8 @@ pub fn whitespaces<ActionState, ErrorType>() -> Action<MockTokenKind<()>, Action
 /// If the `close` is not found, accept all the rest.
 ///
 /// The [`Action::head`] will be set automatically.
+/// # Panics
+/// Panics if the open quote is empty.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, comment};
