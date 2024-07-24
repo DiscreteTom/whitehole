@@ -1,11 +1,9 @@
-mod action_list;
 mod append;
 mod define;
 mod ignore;
 
-pub use action_list::*;
-
 use super::{action::Action, stateless::StatelessLexer, Lexer};
+use crate::utils::OneOrMore;
 use std::rc::Rc;
 
 /// To create this, see [`Self::new`], [`Self::stateful`],
@@ -129,7 +127,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   }
 
   fn map_actions<OldKind: 'static, NewKind>(
-    actions: impl Into<ActionList<Action<OldKind, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<OldKind, ActionState, ErrorType>>>,
     f: impl Fn(Action<OldKind, ActionState, ErrorType>) -> Action<NewKind, ActionState, ErrorType>,
   ) -> Vec<Action<NewKind, ActionState, ErrorType>> {
     actions.into().0.into_iter().map(f).collect()

@@ -1,7 +1,10 @@
-use super::{ActionList, LexerBuilder};
-use crate::lexer::{
-  action::Action,
-  token::{MockTokenKind, SubTokenKind, TokenKindIdBinding},
+use super::LexerBuilder;
+use crate::{
+  lexer::{
+    action::Action,
+    token::{MockTokenKind, SubTokenKind, TokenKindIdBinding},
+  },
+  utils::OneOrMore,
 };
 
 impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, ActionState, ErrorType> {
@@ -24,7 +27,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   pub fn define<ViaKind>(
     self,
     kind: ViaKind,
-    actions: impl Into<ActionList<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
   ) -> Self
   where
     ViaKind:
@@ -54,7 +57,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   pub fn define_with<ViaKind>(
     self,
     kind: ViaKind,
-    actions: impl Into<ActionList<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
     decorator: impl Fn(
       Action<MockTokenKind<()>, ActionState, ErrorType>,
     ) -> Action<MockTokenKind<()>, ActionState, ErrorType>,

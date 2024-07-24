@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::lexer::action::{NumericSeparatorOptions, StringList};
+use crate::{lexer::action::NumericSeparatorOptions, utils::OneOrMore};
 
 #[derive(Clone, Debug)]
 pub struct FloatFractionOptions<Acc> {
@@ -86,7 +86,7 @@ impl<Acc> FloatExponentOptions<Acc> {
   /// # use whitehole::lexer::action::FloatExponentOptions;
   /// let options = FloatExponentOptions::default().indicators(["e", "E"]);
   /// ```
-  pub fn indicators(mut self, indicators: impl Into<StringList>) -> Self {
+  pub fn indicators(mut self, indicators: impl Into<OneOrMore<String>>) -> Self {
     self.indicators = indicators.into().0;
     self.indicator_heads = self
       .indicators

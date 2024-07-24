@@ -1,7 +1,10 @@
-use super::{ActionList, LexerBuilder};
-use crate::lexer::{
-  action::Action,
-  token::{DefaultTokenKindIdBinding, MockTokenKind, TokenKindIdBinding},
+use super::LexerBuilder;
+use crate::{
+  lexer::{
+    action::Action,
+    token::{DefaultTokenKindIdBinding, MockTokenKind, TokenKindIdBinding},
+  },
+  utils::OneOrMore,
 };
 
 impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
@@ -21,7 +24,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// builder.ignore([word("A").bind(A), word("B").bind(B)]);
   /// # }
   /// ```
-  pub fn ignore(self, actions: impl Into<ActionList<Action<Kind, ActionState, ErrorType>>>) -> Self
+  pub fn ignore(self, actions: impl Into<OneOrMore<Action<Kind, ActionState, ErrorType>>>) -> Self
   where
     Kind: 'static,
     ActionState: 'static,
@@ -48,7 +51,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// ```
   pub fn ignore_with<F>(
     self,
-    actions: impl Into<ActionList<Action<Kind, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<Kind, ActionState, ErrorType>>>,
     decorator: F,
   ) -> Self
   where
@@ -83,7 +86,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   /// ```
   pub fn ignore_default(
     self,
-    actions: impl Into<ActionList<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
   ) -> Self
   where
     Kind: DefaultTokenKindIdBinding<Kind>,
@@ -111,7 +114,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   /// ```
   pub fn ignore_default_with<F>(
     self,
-    actions: impl Into<ActionList<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
     decorator: F,
   ) -> Self
   where

@@ -13,22 +13,20 @@ mod escape;
 mod options;
 mod value;
 
-use std::collections::HashSet;
-
 pub use body::*;
 pub use error::*;
 pub use escape::*;
 pub use options::*;
 pub use value::*;
 
-use super::StringList;
 use crate::{
   lexer::{
     action::{simple_with_data, Action},
     token::MockTokenKind,
   },
-  utils::Accumulator,
+  utils::{Accumulator, OneOrMore},
 };
+use std::collections::HashSet;
 
 // TODO: comments
 pub fn string<
@@ -38,7 +36,7 @@ pub fn string<
   CustomError: 'static,
   BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone,
 >(
-  open: impl Into<StringList>,
+  open: impl Into<OneOrMore<String>>,
   options: StringBodyOptions<Value, CustomError, BodyAcc>,
 ) -> Action<MockTokenKind<BodyAcc>, ActionState, ErrorType> {
   let open: Vec<String> = open.into().0;

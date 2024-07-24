@@ -1,5 +1,5 @@
 use super::{Escape, EscapeHandler};
-use crate::lexer::action::{PartialStringBodyValue, StringList};
+use crate::{lexer::action::PartialStringBodyValue, utils::OneOrMore};
 use std::collections::HashMap;
 
 /// Returns an escape handler that
@@ -37,7 +37,7 @@ pub fn map<Value: PartialStringBodyValue, CustomError>(
 /// # let escape_handler: EscapeHandler<(), MyError> =
 /// line_continuation(["\r\n", "\n"]);
 pub fn line_continuation<Value: PartialStringBodyValue, CustomError>(
-  ss: impl Into<StringList>,
+  ss: impl Into<OneOrMore<String>>,
 ) -> EscapeHandler<Value, CustomError> {
   let ss: Vec<String> = ss.into().0;
   Box::new(move |input| {

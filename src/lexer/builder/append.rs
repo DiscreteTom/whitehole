@@ -1,7 +1,10 @@
-use super::{ActionList, LexerBuilder};
-use crate::lexer::{
-  action::Action,
-  token::{DefaultTokenKindIdBinding, MockTokenKind, TokenKindIdBinding},
+use super::LexerBuilder;
+use crate::{
+  lexer::{
+    action::Action,
+    token::{DefaultTokenKindIdBinding, MockTokenKind, TokenKindIdBinding},
+  },
+  utils::OneOrMore,
 };
 
 impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
@@ -23,7 +26,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// ```
   pub fn append(
     mut self,
-    actions: impl Into<ActionList<Action<Kind, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<Kind, ActionState, ErrorType>>>,
   ) -> Self {
     self.actions.extend(actions.into().0);
     self
@@ -47,7 +50,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// ```
   pub fn append_with(
     self,
-    actions: impl Into<ActionList<Action<Kind, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<Kind, ActionState, ErrorType>>>,
     decorator: impl Fn(Action<Kind, ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
   ) -> Self {
     self.append(Self::map_actions(actions, decorator))
@@ -76,7 +79,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   /// ```
   pub fn append_default(
     self,
-    actions: impl Into<ActionList<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
   ) -> Self
   where
     Kind: DefaultTokenKindIdBinding<Kind>,
@@ -104,7 +107,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   /// ```
   pub fn append_default_with(
     self,
-    actions: impl Into<ActionList<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
     decorator: impl Fn(
       Action<MockTokenKind<()>, ActionState, ErrorType>,
     ) -> Action<MockTokenKind<()>, ActionState, ErrorType>,
