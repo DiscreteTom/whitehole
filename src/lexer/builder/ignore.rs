@@ -101,10 +101,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   /// # #[derive(Clone, Default)]
   /// # enum MyKind { #[default] A }
   /// # fn main() {
-  /// # let mut builder = LexerBuilder::new();
+  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>>::new();
   /// // append a single action
   /// builder.ignore_default_with(word("A"), |a| a.reject());
-  /// # let mut builder = LexerBuilder::new();
+  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>>::new();
   /// // append multiple actions
   /// builder.ignore_default_with([word("A"), word("B")], |a| a.reject());
   /// # }
