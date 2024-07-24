@@ -71,7 +71,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessLexOptions};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// # let mut action_state = ();
-  /// let options = StatelessLexOptions::default().action_state(&mut action_state);
+  /// let options = StatelessLexOptions::new().action_state(&mut action_state);
   /// stateless.lex_with_options("123", options);
   /// ```
   pub fn lex_with_options<
@@ -198,7 +198,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessTrimOptions};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// # let mut action_state = ();
-  /// let options = StatelessTrimOptions::default().action_state(&mut action_state);
+  /// let options = StatelessTrimOptions::new().action_state(&mut action_state);
   /// stateless.trim_with_options("123", options);
   /// ```
   pub fn trim_with_options<'text, 'action_state, ErrAcc>(
