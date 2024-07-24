@@ -181,7 +181,7 @@ impl<'text, Kind, ActionState, ErrorType, ErrAcc>
       digested: output.digested,
       token: output.token,
       re_lexable: Fork::ReLexableFactoryType::into_re_lexable(output.re_lexable, &self),
-      err_acc: output.err_acc,
+      errors: output.errors,
     };
 
     (output, tmp_action_state)
@@ -234,7 +234,7 @@ impl<'text, Kind, ActionState, ErrorType, ErrAcc>
       digested: output.digested,
       token: output.token,
       re_lexable: Fork::ReLexableFactoryType::into_re_lexable(output.re_lexable, &self),
-      err_acc: output.err_acc,
+      errors: output.errors,
     };
 
     // update state
