@@ -38,7 +38,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     let exec = self.exec;
     Action {
       kind: ViaKind::kind_id(),
-      head_matcher: self.head_matcher,
+      head: self.head,
       muted: self.muted,
       may_mutate_state: self.may_mutate_state,
       literal: self.literal,
@@ -77,7 +77,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     let exec = self.exec;
     Action {
       kind: NewKind::default_kind_id(),
-      head_matcher: self.head_matcher,
+      head: self.head,
       muted: self.muted,
       may_mutate_state: self.may_mutate_state,
       literal: self.literal,
@@ -130,7 +130,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     let exec = self.exec;
     Action {
       kind: ViaKind::kind_id(),
-      head_matcher: self.head_matcher,
+      head: self.head,
       muted: self.muted,
       may_mutate_state: self.may_mutate_state,
       literal: self.literal,

@@ -9,7 +9,7 @@ use regex::Regex;
 /// Create a new action that uses a regex to match the rest of input.
 /// Reject if the regex does not match anything.
 ///
-/// It's recommended to set [`Action::head_matcher`] to optimize the lex performance.
+/// It's recommended to set [`Action::head`] to optimize the lex performance.
 /// # Panics
 /// Panics if the regex is invalid.
 /// # Examples

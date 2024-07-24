@@ -138,7 +138,7 @@ mod tests {
 
     // head matcher
     assert!(
-      matches!(&a.head_matcher, Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['"', 'c', 'r']))
+      matches!(&a.head, Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['"', 'c', 'r']))
     );
 
     // wrong prefix

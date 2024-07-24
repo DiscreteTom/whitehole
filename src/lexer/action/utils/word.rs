@@ -55,7 +55,7 @@ pub fn no_word_boundary_in_rest<ActionState, ErrorType>(
 /// ***LOOKAHEAD*** one char to ensure there is a word boundary
 /// (non-alphanumeric and not `_`) or end of input after the word.
 ///
-/// The [`Action::head_matcher`] and [`Action::literal`] will be set automatically.
+/// The [`Action::head`] and [`Action::literal`] will be set automatically.
 /// # Panics
 /// Panics if the string is empty.
 /// # Examples
@@ -116,7 +116,7 @@ mod tests {
     assert_reject(&action, "a我");
     // head matcher
     assert!(matches!(
-      action.head_matcher().as_ref().unwrap(),
+      action.head().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'a')
     ));
     // literal
@@ -137,11 +137,11 @@ mod tests {
     assert_reject(&actions[1], "bool_");
     // head matcher
     assert!(matches!(
-      actions[0].head_matcher().as_ref().unwrap(),
+      actions[0].head().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'i')
     ));
     assert!(matches!(
-      actions[1].head_matcher().as_ref().unwrap(),
+      actions[1].head().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'b')
     ));
   }

@@ -2,7 +2,7 @@ use crate::lexer::action::{Action, HeadMatcher};
 use std::{collections::HashSet, ops::RangeInclusive};
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
-  /// Set [`Action::head_matcher`] to [`OneOf`](HeadMatcher::OneOf).
+  /// Set [`Action::head`] to [`OneOf`](HeadMatcher::OneOf).
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
@@ -16,11 +16,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # }
   /// ```
   pub fn unchecked_head_in(mut self, char_set: impl Into<HashSet<char>>) -> Self {
-    self.head_matcher = Some(HeadMatcher::OneOf(char_set.into()));
+    self.head = Some(HeadMatcher::OneOf(char_set.into()));
     self
   }
 
-  /// Set [`Action::head_matcher`] to [`OneOf`](HeadMatcher::OneOf)
+  /// Set [`Action::head`] to [`OneOf`](HeadMatcher::OneOf)
   /// with the given range.
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
@@ -37,7 +37,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self.unchecked_head_in(range.into().into_iter().collect::<HashSet<_>>())
   }
 
-  /// Set [`Action::head_matcher`] to [`Not`](HeadMatcher::Not).
+  /// Set [`Action::head`] to [`Not`](HeadMatcher::Not).
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
@@ -51,11 +51,11 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # }
   /// ```
   pub fn unchecked_head_not(mut self, char_set: impl Into<HashSet<char>>) -> Self {
-    self.head_matcher = Some(HeadMatcher::Not(char_set.into()));
+    self.head = Some(HeadMatcher::Not(char_set.into()));
     self
   }
 
-  /// Set [`Action::head_matcher`] to [`Unknown`](HeadMatcher::Unknown).
+  /// Set [`Action::head`] to [`Unknown`](HeadMatcher::Unknown).
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
@@ -69,7 +69,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// # }
   /// ```
   pub fn unchecked_head_unknown(mut self) -> Self {
-    self.head_matcher = Some(HeadMatcher::Unknown);
+    self.head = Some(HeadMatcher::Unknown);
     self
   }
 }
@@ -83,7 +83,7 @@ mod tests {
   fn action_head_in() {
     let action: Action<_> = Action::from(simple(|_| 1)).unchecked_head_in(['a']);
     assert!(matches!(
-      action.head_matcher,
+      action.head,
       Some(HeadMatcher::OneOf(set)) if set == HashSet::from(['a'])
     ));
   }
@@ -92,7 +92,7 @@ mod tests {
   fn action_head_in_range() {
     let action: Action<_> = Action::from(simple(|_| 1)).unchecked_head_in_range('a'..='z');
     assert!(matches!(
-      action.head_matcher,
+      action.head,
       Some(HeadMatcher::OneOf(set)) if set == ('a'..='z').into_iter().collect::<HashSet<_>>()
     ));
   }
@@ -101,7 +101,7 @@ mod tests {
   fn action_head_not() {
     let action: Action<_> = Action::from(regex(r"^a")).unchecked_head_not(['b']);
     assert!(matches!(
-      action.head_matcher,
+      action.head,
       Some(HeadMatcher::Not(set)) if set == HashSet::from(['b'])
     ));
   }
@@ -109,6 +109,6 @@ mod tests {
   #[test]
   fn action_head_unknown() {
     let action: Action<_> = Action::from(simple(|_| 1)).unchecked_head_unknown();
-    assert!(matches!(action.head_matcher, Some(HeadMatcher::Unknown)));
+    assert!(matches!(action.head, Some(HeadMatcher::Unknown)));
   }
 }

@@ -21,8 +21,8 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
     let mut res = HashMap::new();
 
     for a in actions {
-      if let Some(head_matcher) = a.head_matcher() {
-        for c in match head_matcher {
+      if let Some(head) = a.head() {
+        for c in match head {
           HeadMatcher::OneOf(set) => set,
           HeadMatcher::Not(set) => set,
           HeadMatcher::Unknown => continue,
@@ -51,8 +51,8 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
       // so we don't need to check if an action is muted or not here (like in literal map)
       // see [[@check if the action is muted or not in literal map]]
 
-      if let Some(head_matcher) = a.head_matcher() {
-        match head_matcher {
+      if let Some(head) = a.head() {
+        match head {
           HeadMatcher::OneOf(set) => {
             for c in set {
               res.known_map.get_mut(c).unwrap().push(a.clone());
@@ -109,7 +109,7 @@ mod tests {
       regex("[^c]").unchecked_head_not(['c']),
       regex(".").unchecked_head_unknown(),
       regex("a_muted").unchecked_head_in(['a']).mute(),
-      regex("no_head_matcher").into(),
+      regex("no_head").into(),
     ]
     .into_iter()
     .map(Rc::new)
@@ -124,9 +124,9 @@ mod tests {
     assert_eq!(hm.known_map().len(), 3);
 
     // check action count
-    assert_eq!(hm.known_map()[&'a'].len(), 5); // "a", "aa", "[^c]", a_muted, no_head_matcher
-    assert_eq!(hm.known_map()[&'b'].len(), 3); // "b", "[^c]", no_head_matcher
-    assert_eq!(hm.known_map()[&'c'].len(), 1); // no_head_matcher
-    assert_eq!(hm.unknown_fallback().len(), 3); // "[^c]", ".", no_head_matcher
+    assert_eq!(hm.known_map()[&'a'].len(), 5); // "a", "aa", "[^c]", a_muted, no_head
+    assert_eq!(hm.known_map()[&'b'].len(), 3); // "b", "[^c]", no_head
+    assert_eq!(hm.known_map()[&'c'].len(), 1); // no_head
+    assert_eq!(hm.unknown_fallback().len(), 3); // "[^c]", ".", no_head
   }
 }

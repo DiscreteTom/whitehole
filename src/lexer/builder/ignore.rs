@@ -162,7 +162,7 @@ mod tests {
       LexerBuilder::new().ignore_with(word("A").bind(A), |a| a.unchecked_head_unknown());
     assert_eq!(builder.actions.len(), 1);
     assert!(builder.actions[0].muted());
-    assert!(builder.actions[0].head_matcher().is_some());
+    assert!(builder.actions[0].head().is_some());
 
     // many
     let builder = LexerBuilder::new().ignore_with([word("A").bind(A), word("B").bind(B)], |a| {
@@ -171,8 +171,8 @@ mod tests {
     assert_eq!(builder.actions.len(), 2);
     assert!(builder.actions[0].muted());
     assert!(builder.actions[1].muted());
-    assert!(builder.actions[0].head_matcher().is_some());
-    assert!(builder.actions[1].head_matcher().is_some());
+    assert!(builder.actions[0].head().is_some());
+    assert!(builder.actions[1].head().is_some());
   }
 
   #[test]
@@ -200,7 +200,7 @@ mod tests {
     assert_eq!(builder.actions.len(), 1);
     assert_eq!(builder.actions[0].kind(), Anonymous::kind_id());
     assert!(builder.actions[0].muted());
-    assert!(builder.actions[0].head_matcher().is_some());
+    assert!(builder.actions[0].head().is_some());
 
     // many
     let builder = LexerBuilder::new()
@@ -210,7 +210,7 @@ mod tests {
     assert_eq!(builder.actions[1].kind(), Anonymous::kind_id());
     assert!(builder.actions[0].muted());
     assert!(builder.actions[1].muted());
-    assert!(builder.actions[0].head_matcher().is_some());
-    assert!(builder.actions[1].head_matcher().is_some());
+    assert!(builder.actions[0].head().is_some());
+    assert!(builder.actions[1].head().is_some());
   }
 }

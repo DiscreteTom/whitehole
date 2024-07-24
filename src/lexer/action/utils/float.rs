@@ -262,7 +262,7 @@ pub fn float_literal_body_with_options<
 /// the default exponent indicators (`"e-", "e+", "e", "E-", "E+", "E"`)
 /// and no accumulators.
 ///
-/// The [`Action::head_matcher`] will be set automatically.
+/// The [`Action::head`] will be set automatically.
 /// # Caveat
 /// If the matched content is exponent only, the action will reject it.
 ///
@@ -283,7 +283,7 @@ pub fn float_literal<ActionState, ErrorType>(
 /// in the rest of the input text
 /// with the given [`FloatLiteralOptions`].
 ///
-/// The [`Action::head_matcher`] will be set automatically.
+/// The [`Action::head`] will be set automatically.
 /// # Caveat
 /// If the matched content is exponent only, the action will reject it.
 ///
@@ -313,7 +313,7 @@ pub fn float_literal_with<
 /// in the rest of the input text
 /// with the given [`FloatLiteralOptions`].
 ///
-/// The [`Action::head_matcher`] will be set automatically.
+/// The [`Action::head`] will be set automatically.
 /// # Caveat
 /// If the matched content is exponent only, the action will reject it.
 ///
@@ -503,29 +503,29 @@ mod tests {
   }
 
   #[test]
-  fn test_float_literal_action_head_matcher() {
+  fn test_float_literal_action_head() {
     // default
     let action: Action<_> = float_literal_with(|o| o);
     assert!(
-      matches!(action.head_matcher(), Some(HeadMatcher::OneOf(set)) if set.len() == 10 && set.contains(&'0') && set.contains(&'9'))
+      matches!(action.head(), Some(HeadMatcher::OneOf(set)) if set.len() == 10 && set.contains(&'0') && set.contains(&'9'))
     );
 
     // enable fraction
     let action: Action<_> = float_literal_with(|o| o.default_fraction());
     assert!(
-      matches!(action.head_matcher(), Some(HeadMatcher::OneOf(set)) if set.len() == 11&& set.contains(&'0') && set.contains(&'9') && set.contains(&'.'))
+      matches!(action.head(), Some(HeadMatcher::OneOf(set)) if set.len() == 11&& set.contains(&'0') && set.contains(&'9') && set.contains(&'.'))
     );
 
     // enable exponent
     let action: Action<_> = float_literal_with(|o| o.default_exponent());
     assert!(
-      matches!(action.head_matcher(), Some(HeadMatcher::OneOf(set)) if set.len() == 10&& set.contains(&'0') && set.contains(&'9'))
+      matches!(action.head(), Some(HeadMatcher::OneOf(set)) if set.len() == 10&& set.contains(&'0') && set.contains(&'9'))
     );
 
     // enable fraction and exponent
     let action: Action<_> = float_literal_with(|o| o.default_fraction().default_exponent());
     assert!(
-      matches!(action.head_matcher(), Some(HeadMatcher::OneOf(set)) if set.len() == 11&& set.contains(&'0') && set.contains(&'9') && set.contains(&'.'))
+      matches!(action.head(), Some(HeadMatcher::OneOf(set)) if set.len() == 11&& set.contains(&'0') && set.contains(&'9') && set.contains(&'.'))
     );
   }
 

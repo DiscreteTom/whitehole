@@ -211,7 +211,7 @@ macro_rules! generate_integer_literal_functions {
     $action_fn_name_with_options:ident,
     $prefix:literal,
     $is_body: expr,
-    $head_matcher: expr
+    $head: expr
   ) => {
     /// Try to match the integer literal body in the rest of the input text
     /// with the default separator (`'_'`) and no accumulator.
@@ -296,7 +296,7 @@ macro_rules! generate_integer_literal_functions {
     /// in the rest of the input text
     /// with the default separator (`'_'`) and no accumulator.
     ///
-    /// The [`Action::head_matcher`] will be set automatically.
+    /// The [`Action::head`] will be set automatically.
     /// # Caveat
     /// If the integer literal's body is separators only, the action will be rejected.
     /// E.g. if the separator char is `'_'`, then
@@ -321,7 +321,7 @@ macro_rules! generate_integer_literal_functions {
     /// in the rest of the input text
     /// with the default [`IntegerLiteralBodyOptions`] (no separator, no accumulator).
     ///
-    /// The [`Action::head_matcher`] will be set automatically.
+    /// The [`Action::head`] will be set automatically.
     pub fn $action_fn_name_default<ActionState, ErrorType>(
     ) -> Action<MockTokenKind<IntegerLiteralData<(), ()>>, ActionState, ErrorType> {
       $action_fn_name_with_options(IntegerLiteralBodyOptions::default())
@@ -331,7 +331,7 @@ macro_rules! generate_integer_literal_functions {
     /// in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
     ///
-    /// The [`Action::head_matcher`] will be set automatically.
+    /// The [`Action::head`] will be set automatically.
     /// # Caveat
     /// If the integer literal's body is separators only, the action will be rejected.
     /// E.g. if the separator char is `'_'`, then
@@ -361,7 +361,7 @@ macro_rules! generate_integer_literal_functions {
     /// in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
     ///
-    /// The [`Action::head_matcher`] will be set automatically.
+    /// The [`Action::head`] will be set automatically.
     /// # Caveat
     /// If the integer literal's body is separators only, the action will be rejected.
     /// E.g. if the separator char is `'_'`, then
@@ -413,7 +413,7 @@ macro_rules! generate_integer_literal_functions {
           Some((digested + prefix.len(), data))
         })
       }
-      .unchecked_head_in($head_matcher)
+      .unchecked_head_in($head)
     }
   };
 }

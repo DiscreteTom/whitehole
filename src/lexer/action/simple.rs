@@ -5,7 +5,7 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 /// You can't modify the action state in this function.
 /// The function should return `0` if the action is rejected.
 ///
-/// It's recommended to set [`Action::head_matcher`] to optimize the lex performance.
+/// It's recommended to set [`Action::head`] to optimize the lex performance.
 /// # Examples
 /// ```
 /// use whitehole::lexer::action::{Action, simple};
@@ -26,7 +26,7 @@ pub fn simple<ActionState, ErrorType>(
       }),
     }),
     kind: MockTokenKind::kind_id(),
-    head_matcher: None,
+    head: None,
     muted: false,
     may_mutate_state: false,
     literal: None,
@@ -42,7 +42,7 @@ pub fn simple<ActionState, ErrorType>(
 /// instead of parsing the [`content`](super::AcceptedActionOutputContext::content)
 /// later using [`Action::data`].
 ///
-/// It's recommended to set [`Action::head_matcher`] to optimize the lex performance.
+/// It's recommended to set [`Action::head`] to optimize the lex performance.
 /// # Examples
 /// ```
 /// use whitehole::lexer::token::MockTokenKind;
@@ -64,7 +64,7 @@ pub fn simple_with_data<ActionState, ErrorType, T>(
       _ => None,
     }),
     kind: MockTokenKind::kind_id(),
-    head_matcher: None,
+    head: None,
     muted: false,
     may_mutate_state: false,
     literal: None,

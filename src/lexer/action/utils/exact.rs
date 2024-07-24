@@ -7,7 +7,7 @@ pub use whitehole_helpers::exact_vec;
 
 /// Match one string exactly, ***NO LOOKAHEAD***.
 ///
-/// [`Action::head_matcher`] and [`Action::literal`] will be set automatically.
+/// [`Action::head`] and [`Action::literal`] will be set automatically.
 /// # Panics
 /// Panics if the string is empty.
 /// # Examples
@@ -38,7 +38,7 @@ pub fn exact<ActionState, ErrorType>(
 
 /// Create an action for each char using [`exact`].
 ///
-/// The [`Action::head_matcher`] will be set automatically.
+/// The [`Action::head`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, exact_chars, exact};
@@ -90,7 +90,7 @@ mod tests {
     assert_accept(&action, "ab", 1);
     // head matcher
     assert!(matches!(
-      action.head_matcher().as_ref().unwrap(),
+      action.head().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'a')
     ));
     // literal
@@ -107,11 +107,11 @@ mod tests {
     assert_accept(&actions[1], "---", 2);
     // head matcher
     assert!(matches!(
-      actions[0].head_matcher().as_ref().unwrap(),
+      actions[0].head().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'+')
     ));
     assert!(matches!(
-      actions[1].head_matcher().as_ref().unwrap(),
+      actions[1].head().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'-')
     ));
   }
@@ -134,19 +134,19 @@ mod tests {
     assert_accept(&actions[1], "--", 1);
     // head matcher
     assert!(matches!(
-      actions[0].head_matcher().as_ref().unwrap(),
+      actions[0].head().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'+')
     ));
     assert!(matches!(
-      actions[1].head_matcher().as_ref().unwrap(),
+      actions[1].head().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'-')
     ));
     assert!(matches!(
-      actions[2].head_matcher().as_ref().unwrap(),
+      actions[2].head().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'*')
     ));
     assert!(matches!(
-      actions[3].head_matcher().as_ref().unwrap(),
+      actions[3].head().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'/')
     ));
   }

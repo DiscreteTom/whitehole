@@ -14,7 +14,7 @@
 //!
 //! To optimize the runtime performance, the [`StatelessLexer`] will
 //! pre-calculate and cache some action lists based on [`Action`]'s attributes
-//! like [`Action::kind`] [`Action::head_matcher`], [`Action::literal`], etc.
+//! like [`Action::kind`] [`Action::head`], [`Action::literal`], etc.
 //! When lexing, maybe not all of the actions will be executed.
 //! Here are the rules:
 //!
@@ -163,7 +163,7 @@ mod tests {
     assert_eq!(actions.len(), expected.len());
     for i in 0..actions.len() {
       assert_eq!(actions[i].kind(), expected[i].kind());
-      assert_eq!(actions[i].head_matcher(), expected[i].head_matcher());
+      assert_eq!(actions[i].head(), expected[i].head());
       assert_eq!(actions[i].literal(), expected[i].literal());
       assert_eq!(actions[i].muted(), expected[i].muted());
     }

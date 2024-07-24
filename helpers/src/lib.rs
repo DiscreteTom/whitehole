@@ -1,7 +1,7 @@
 /// Create an action for each string using
 /// [`exact`](https://docs.rs/whitehole/latest/whitehole/lexer/action/utils/exact/fn.exact.html).
 ///
-/// The [`Action::head_matcher`](https://docs.rs/whitehole/latest/whitehole/lexer/action/struct.Action.html)
+/// The [`Action::head`](https://docs.rs/whitehole/latest/whitehole/lexer/action/struct.Action.html)
 /// will be set automatically.
 /// # Panics
 /// Panics if any string is empty.
@@ -31,7 +31,7 @@ macro_rules! _exact_vec {
 /// Create an action for each string using
 /// [`word`](https://docs.rs/whitehole/latest/whitehole/lexer/action/utils/word/fn.word.html).
 ///
-/// The [`Action::head_matcher`](https://docs.rs/whitehole/latest/whitehole/lexer/action/struct.Action.html)
+/// The [`Action::head`](https://docs.rs/whitehole/latest/whitehole/lexer/action/struct.Action.html)
 /// will be set automatically.
 /// # Panics
 /// Panics if any string is empty.

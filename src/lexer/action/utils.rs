@@ -46,7 +46,7 @@ pub fn chars<ActionState, ErrorType>(
 
 /// Match chars in the range greedily.
 ///
-/// The [`Action::head_matcher`] will be set automatically.
+/// The [`Action::head`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, chars_in_range};
@@ -67,7 +67,7 @@ pub fn chars_in_range<ActionState, ErrorType>(
 
 /// Match chars in the set greedily.
 ///
-/// The [`Action::head_matcher`] will be set automatically.
+/// The [`Action::head`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, charset};
@@ -88,7 +88,7 @@ pub fn charset<ActionState, ErrorType>(
 
 /// Match chars in the string greedily.
 ///
-/// The [`Action::head_matcher`] will be set automatically.
+/// The [`Action::head`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, chars_in_str};
@@ -105,7 +105,7 @@ pub fn chars_in_str<ActionState, ErrorType>(
 /// Match unicode whitespaces greedily.
 /// For the list of whitespaces, see https://www.unicode.org/Public/UCD/latest/ucd/PropList.txt.
 ///
-/// The [`Action::head_matcher`] will be set automatically.
+/// The [`Action::head`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::{action::whitespaces, token::{TokenKindIdBinding, token_kind}};
@@ -142,7 +142,7 @@ pub fn whitespaces<ActionState, ErrorType>() -> Action<MockTokenKind<()>, Action
 /// Match from the `open` to the `close`, including the `open` and `close`.
 /// If the `close` is not found, accept all the rest.
 ///
-/// [`Action::head_matcher`] will be set automatically.
+/// [`Action::head`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, comment};
@@ -221,7 +221,7 @@ mod tests {
 
     // head matcher
     assert!(matches!(
-      action.head_matcher().as_ref().unwrap(),
+      action.head().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'/')
     ));
   }
@@ -248,7 +248,7 @@ mod tests {
 
     // head matcher
     assert!(matches!(
-      action.head_matcher().as_ref().unwrap(),
+      action.head().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == text.chars().count() && set.iter().all(|c| text.contains(*c))
     ));
   }

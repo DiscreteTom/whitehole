@@ -33,7 +33,7 @@ pub use utils::*;
 use super::token::TokenKindId;
 use std::collections::HashSet;
 
-/// See [`Action::head_matcher`].
+/// See [`Action::head`].
 #[derive(PartialEq, Debug)]
 pub enum HeadMatcher {
   OneOf(HashSet<char>),
@@ -53,8 +53,8 @@ pub struct Action<Kind: 'static, ActionState = (), ErrorType = ()> {
   kind: &'static TokenKindId<Kind>,
   /// See [`Self::literal`].
   literal: Option<String>,
-  /// See [`Self::head_matcher`].
-  head_matcher: Option<HeadMatcher>,
+  /// See [`Self::head`].
+  head: Option<HeadMatcher>,
   /// See [`Self::muted`].
   muted: bool,
   /// See [`Self::may_mutate_state`].
@@ -86,8 +86,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// If you want to set this field manually,
   /// this could be set by [`Self::unchecked_head_in`], [`Self::unchecked_head_in_range`],
   /// [`Self::unchecked_head_not`] or [`Self::unchecked_head_unknown`].
-  pub fn head_matcher(&self) -> &Option<HeadMatcher> {
-    &self.head_matcher
+  pub fn head(&self) -> &Option<HeadMatcher> {
+    &self.head
   }
 
   /// Muted actions won't yield tokens and won't stop a lexing process from running.
@@ -128,7 +128,7 @@ mod tests {
     let action: Action<()> = Action {
       exec: Box::new(|_| None),
       kind: &KIND_ID,
-      head_matcher: None,
+      head: None,
       muted: false,
       may_mutate_state: false,
       literal: None,
@@ -137,7 +137,7 @@ mod tests {
     assert!(!action.may_mutate_state());
     assert!(action.never_mutate_state());
     assert_eq!(action.kind(), &TokenKindId::new(1, ""));
-    assert!(action.head_matcher().is_none());
+    assert!(action.head().is_none());
     assert!(action.literal().is_none());
   }
 
@@ -147,7 +147,7 @@ mod tests {
     let action: Action<()> = Action {
       exec: Box::new(|_| None),
       kind: &KIND_ID,
-      head_matcher: Some(HeadMatcher::OneOf(HashSet::from(['a']))),
+      head: Some(HeadMatcher::OneOf(HashSet::from(['a']))),
       muted: true,
       may_mutate_state: true,
       literal: Some("123".into()),
@@ -156,9 +156,7 @@ mod tests {
     assert!(action.may_mutate_state());
     assert!(!action.never_mutate_state());
     assert_eq!(action.kind(), &TokenKindId::new(1, ""));
-    assert!(
-      matches!(action.head_matcher(), Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['a']))
-    );
+    assert!(matches!(action.head(), Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['a'])));
     assert_eq!(action.literal(), &Some("123".into()));
   }
 }
