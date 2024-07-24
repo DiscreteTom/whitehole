@@ -17,17 +17,20 @@ macro_rules! impl_ctx {
       AcceptedActionOutputContext<$input, $output>
     {
       /// The [`Range::end`](crate::lexer::token::Range) of the token that this action will emit.
+      #[inline]
       pub fn end(&self) -> usize {
         self.input.start() + self.output.digested
       }
 
       /// The text content of the token that this action will emit.
+      #[inline]
       pub fn content(&self) -> &'text str {
         // we don't cache this slice since it might not be used frequently
         &self.input.text()[self.input.start()..self.end()]
       }
 
       /// The rest of the input text after this action is accepted.
+      #[inline]
       pub fn rest(&self) -> &'text str {
         // we don't cache this slice since it might not be used frequently
         &self.input.text()[self.end()..]
