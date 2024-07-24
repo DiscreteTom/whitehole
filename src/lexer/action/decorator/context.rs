@@ -3,10 +3,10 @@ use crate::lexer::action::{ActionInput, ActionOutput};
 /// This struct provides the [`ActionInput`] and [`ActionOutput`]
 /// in action decorators when the action is accepted.
 pub struct AcceptedActionOutputContext<InputType, OutputType> {
-  /// The [`ActionInput`]. Might also be `&ActionInput` or `&mut ActionInput`,
+  /// The [`ActionInput`]. Might be `&ActionInput` or `&mut ActionInput`,
   /// depends on the specific action decorator you are using.
   pub input: InputType,
-  /// The [`ActionOutput`]. Might also be `&ActionOutput` or `&mut ActionOutput`,
+  /// The [`ActionOutput`]. Might also be `&ActionOutput`,
   /// depends on the specific action decorator you are using.
   pub output: OutputType,
 }
@@ -36,15 +36,12 @@ macro_rules! impl_ctx {
   };
 }
 
-impl_ctx!(ActionInput<'text, 'action_state, ActionState>, ActionOutput<Kind, OptionErrorType>);
-impl_ctx!(ActionInput<'text, 'action_state, ActionState>, &ActionOutput<Kind, OptionErrorType>);
-impl_ctx!(ActionInput<'text, 'action_state, ActionState>, &mut ActionOutput<Kind, OptionErrorType>);
+// ActionInput won't be consumed.
+// ActionOutput won't be modified directly in the context.
 impl_ctx!(&ActionInput<'text, 'action_state, ActionState>, ActionOutput<Kind, OptionErrorType>);
 impl_ctx!(&ActionInput<'text, 'action_state, ActionState>, &ActionOutput<Kind, OptionErrorType>);
-impl_ctx!(&ActionInput<'text, 'action_state, ActionState>, &mut ActionOutput<Kind, OptionErrorType>);
 impl_ctx!(&mut ActionInput<'text, 'action_state, ActionState>, ActionOutput<Kind, OptionErrorType>);
 impl_ctx!(&mut ActionInput<'text, 'action_state, ActionState>, &ActionOutput<Kind, OptionErrorType>);
-impl_ctx!(&mut ActionInput<'text, 'action_state, ActionState>, &mut ActionOutput<Kind, OptionErrorType>);
 
 #[cfg(test)]
 mod tests {
@@ -65,13 +62,6 @@ mod tests {
   fn accepted_action_decorator_context() {
     // ensure the methods are working
 
-    // input and output
-    AcceptedActionOutputContext {
-      input: create_input(&mut ()),
-      output: create_output(),
-    }
-    .end();
-
     // &input and output
     AcceptedActionOutputContext {
       input: &create_input(&mut ()),
@@ -83,13 +73,6 @@ mod tests {
     AcceptedActionOutputContext {
       input: &mut create_input(&mut ()),
       output: create_output(),
-    }
-    .end();
-
-    // input and &output
-    AcceptedActionOutputContext {
-      input: create_input(&mut ()),
-      output: &create_output(),
     }
     .end();
 
@@ -107,31 +90,10 @@ mod tests {
     }
     .end();
 
-    // input and &mut output
-    AcceptedActionOutputContext {
-      input: create_input(&mut ()),
-      output: &mut create_output(),
-    }
-    .end();
-
-    // &input and &mut output
-    AcceptedActionOutputContext {
-      input: &create_input(&mut ()),
-      output: &mut create_output(),
-    }
-    .end();
-
-    // &mut input and &mut output
-    AcceptedActionOutputContext {
-      input: &mut create_input(&mut ()),
-      output: &mut create_output(),
-    }
-    .end();
-
     // ensure the value is correct
     assert_eq!(
       AcceptedActionOutputContext {
-        input: create_input(&mut ()),
+        input: &create_input(&mut ()),
         output: create_output(),
       }
       .end(),
@@ -139,7 +101,7 @@ mod tests {
     );
     assert_eq!(
       AcceptedActionOutputContext {
-        input: create_input(&mut ()),
+        input: &create_input(&mut ()),
         output: create_output(),
       }
       .content(),
@@ -147,7 +109,7 @@ mod tests {
     );
     assert_eq!(
       AcceptedActionOutputContext {
-        input: create_input(&mut ()),
+        input: &create_input(&mut ()),
         output: create_output(),
       }
       .rest(),
