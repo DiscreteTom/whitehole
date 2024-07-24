@@ -72,7 +72,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::word;
+  use crate::lexer::action::{exact, word};
   use whitehole_macros::_token_kind;
 
   #[_token_kind]
@@ -85,12 +85,12 @@ mod tests {
   #[test]
   fn lexer_builder_define() {
     // single
-    let builder = LexerBuilder::<_>::default().define(A, word("A"));
+    let builder = LexerBuilder::new().define(A, word("A"));
     assert_eq!(builder.actions.len(), 1);
     assert_eq!(builder.actions[0].kind_id(), A::kind_id());
 
     // multiple
-    let builder = LexerBuilder::<_>::default().define(A, [word("A"), word("AA")]);
+    let builder = LexerBuilder::new().define(A, [word("A"), word("AA")]);
     assert_eq!(builder.actions.len(), 2);
     assert_eq!(builder.actions[0].kind_id(), A::kind_id());
     assert_eq!(builder.actions[1].kind_id(), A::kind_id());
@@ -99,21 +99,17 @@ mod tests {
   #[test]
   fn lexer_builder_define_with() {
     // single
-    let builder = LexerBuilder::<_, (), i32>::default().define_with(A, word("A"), |a| a.error(123));
+    let builder = LexerBuilder::new().define_with(A, word("A"), |a| a.mute());
     assert_eq!(builder.actions.len(), 1);
     assert_eq!(builder.actions[0].kind_id(), A::kind_id());
-    let stateless = builder.build_stateless();
-    assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), 123);
+    assert!(builder.actions[0].muted());
 
     // multiple
-    let builder =
-      LexerBuilder::<_, (), i32>::default()
-        .define_with(A, [word("A"), word("B")], |a| a.error(123));
+    let builder = LexerBuilder::new().define_with(A, [exact("A"), exact("B")], |a| a.mute());
     assert_eq!(builder.actions.len(), 2);
     assert_eq!(builder.actions[0].kind_id(), A::kind_id());
     assert_eq!(builder.actions[1].kind_id(), A::kind_id());
-    let stateless = builder.build_stateless();
-    assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), 123);
-    assert_eq!(stateless.lex("B").0.token.unwrap().error.unwrap(), 123);
+    assert!(builder.actions[0].muted());
+    assert!(builder.actions[1].muted());
   }
 }

@@ -5,54 +5,56 @@ use crate::lexer::{
   re_lex::ReLexContext,
 };
 
-pub struct StatelessLexOptions<'expect_literal, Kind: 'static, ActionStateRef, Fork> {
+pub struct StatelessLexOptions<'expect_literal, Kind: 'static, ActionStateRef, ErrAcc, Fork> {
   /// See [`StatelessLexOptions::start()`].
   pub start: usize,
   /// This is usually `&mut ActionState`.
   pub action_state: ActionStateRef,
+  pub err_acc: ErrAcc,
+  // pub error_handler:
   pub base: LexOptions<'expect_literal, Kind, Fork>,
 }
 
-impl<'expect_literal, Kind> Default
-  for StatelessLexOptions<'expect_literal, Kind, (), ForkDisabled>
-{
-  fn default() -> Self {
+impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), ForkDisabled> {
+  pub fn new() -> Self {
     Self {
       start: 0,
       action_state: (), // use `()` as a placeholder, user should use `self.action_state` to set this
+      err_acc: (),
       base: LexOptions::default(),
     }
   }
 }
 
 impl<'expect_literal, Kind> From<Expectation<'expect_literal, Kind>>
-  for StatelessLexOptions<'expect_literal, Kind, (), ForkDisabled>
+  for StatelessLexOptions<'expect_literal, Kind, (), (), ForkDisabled>
 {
   fn from(expectation: Expectation<'expect_literal, Kind>) -> Self {
-    Self::default().expect(expectation)
+    Self::new().expect(expectation)
   }
 }
 impl<'expect_literal, Kind> From<ReLexContext>
-  for StatelessLexOptions<'expect_literal, Kind, (), ForkDisabled>
+  for StatelessLexOptions<'expect_literal, Kind, (), (), ForkDisabled>
 {
   fn from(re_lex: ReLexContext) -> Self {
-    Self::default().re_lex(re_lex)
+    Self::new().re_lex(re_lex)
   }
 }
 impl<'expect_literal, Kind, Fork> From<LexOptions<'expect_literal, Kind, Fork>>
-  for StatelessLexOptions<'expect_literal, Kind, (), Fork>
+  for StatelessLexOptions<'expect_literal, Kind, (), (), Fork>
 {
   fn from(base: LexOptions<'expect_literal, Kind, Fork>) -> Self {
     Self {
       start: 0,
       action_state: (),
+      err_acc: (),
       base,
     }
   }
 }
 
-impl<'expect_literal, Kind, ActionStateRef, Fork>
-  StatelessLexOptions<'expect_literal, Kind, ActionStateRef, Fork>
+impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
+  StatelessLexOptions<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
 {
   /// The start index of the text to lex.
   pub fn start(mut self, start: usize) -> Self {
@@ -64,10 +66,24 @@ impl<'expect_literal, Kind, ActionStateRef, Fork>
   pub fn action_state<NewActionStateRef>(
     self,
     action_state: NewActionStateRef,
-  ) -> StatelessLexOptions<'expect_literal, Kind, NewActionStateRef, Fork> {
+  ) -> StatelessLexOptions<'expect_literal, Kind, NewActionStateRef, ErrAcc, Fork> {
     StatelessLexOptions {
       start: self.start,
       action_state,
+      err_acc: self.err_acc,
+      base: self.base,
+    }
+  }
+
+  /// Set the error accumulator.
+  pub fn err_acc<NewErrAcc>(
+    self,
+    err_acc: NewErrAcc,
+  ) -> StatelessLexOptions<'expect_literal, Kind, ActionStateRef, NewErrAcc, Fork> {
+    StatelessLexOptions {
+      start: self.start,
+      action_state: self.action_state,
+      err_acc,
       base: self.base,
     }
   }
@@ -76,8 +92,8 @@ impl<'expect_literal, Kind, ActionStateRef, Fork>
 // re-export/override from `LexOptions`
 // but with `StatelessLexOptions` as the return type
 // instead of `LexOptions`
-impl<'expect_literal, Kind, ActionStateRef, Fork>
-  StatelessLexOptions<'expect_literal, Kind, ActionStateRef, Fork>
+impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
+  StatelessLexOptions<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
 {
   /// See [`LexOptions::expect()`].
   pub fn expect(mut self, expectation: impl Into<Expectation<'expect_literal, Kind>>) -> Self
@@ -98,10 +114,11 @@ impl<'expect_literal, Kind, ActionStateRef, Fork>
   /// See [`LexOptions::fork()`].
   pub fn fork<ActionState>(
     self,
-  ) -> StatelessLexOptions<'expect_literal, Kind, ActionStateRef, ForkEnabled> {
+  ) -> StatelessLexOptions<'expect_literal, Kind, ActionStateRef, ErrAcc, ForkEnabled> {
     StatelessLexOptions {
       start: self.start,
       action_state: self.action_state,
+      err_acc: self.err_acc,
       base: self.base.fork(),
     }
   }
@@ -112,23 +129,25 @@ impl<'expect_literal, Kind, ActionStateRef, Fork>
   }
 }
 
-pub struct StatelessTrimOptions<ActionStateRef> {
+pub struct StatelessTrimOptions<ActionStateRef, ErrAcc> {
   /// See [`StatelessTrimOptions::start()`].
   pub start: usize,
   /// This is usually `&mut ActionState`.
   pub action_state: ActionStateRef,
+  pub err_acc: ErrAcc,
 }
 
-impl Default for StatelessTrimOptions<()> {
-  fn default() -> Self {
+impl StatelessTrimOptions<(), ()> {
+  pub fn new() -> Self {
     Self {
       start: 0,
       action_state: (), // use `()` as a placeholder, user should use `self.action_state` to set this
+      err_acc: (),
     }
   }
 }
 
-impl<ActionStateRef> StatelessTrimOptions<ActionStateRef> {
+impl<ActionStateRef, ErrAcc> StatelessTrimOptions<ActionStateRef, ErrAcc> {
   /// The start index of the text to trim.
   pub fn start(mut self, start: usize) -> Self {
     self.start = start;
@@ -139,10 +158,23 @@ impl<ActionStateRef> StatelessTrimOptions<ActionStateRef> {
   pub fn action_state<NewActionStateRef>(
     self,
     action_state: NewActionStateRef,
-  ) -> StatelessTrimOptions<NewActionStateRef> {
+  ) -> StatelessTrimOptions<NewActionStateRef, ErrAcc> {
     StatelessTrimOptions {
       start: self.start,
       action_state,
+      err_acc: self.err_acc,
+    }
+  }
+
+  /// Set the error accumulator.
+  pub fn err_acc<NewErrAcc>(
+    self,
+    err_acc: NewErrAcc,
+  ) -> StatelessTrimOptions<ActionStateRef, NewErrAcc> {
+    StatelessTrimOptions {
+      start: self.start,
+      action_state: self.action_state,
+      err_acc,
     }
   }
 }

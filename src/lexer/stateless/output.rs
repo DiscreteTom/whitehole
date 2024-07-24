@@ -1,16 +1,25 @@
 use crate::lexer::output::{LexOutput, TrimOutput};
 
-pub(super) trait StatelessOutput<TokenType, ReLexableType>: Default {
+pub(super) trait StatelessOutput<TokenType, ErrAcc, ReLexableType> {
+  fn with_err_acc(err_acc: ErrAcc) -> Self;
   fn digested(&self) -> usize;
   fn digest(&mut self, n: usize);
-  fn append_error_token(&mut self, token: TokenType);
+  fn err_acc_mut(&mut self) -> &mut ErrAcc;
   /// This is called if an un-muted action is accepted.
   fn emit(&mut self, token: TokenType, re_lexable: ReLexableType);
 }
 
-impl<TokenType, ReLexableType: Default> StatelessOutput<TokenType, ReLexableType>
-  for LexOutput<TokenType, ReLexableType>
+impl<TokenType, ErrAcc, ReLexableType: Default> StatelessOutput<TokenType, ErrAcc, ReLexableType>
+  for LexOutput<TokenType, ErrAcc, ReLexableType>
 {
+  fn with_err_acc(err_acc: ErrAcc) -> Self {
+    Self {
+      token: None,
+      digested: 0,
+      err_acc,
+      re_lexable: ReLexableType::default(),
+    }
+  }
   fn digested(&self) -> usize {
     self.digested
   }
@@ -19,8 +28,8 @@ impl<TokenType, ReLexableType: Default> StatelessOutput<TokenType, ReLexableType
     self.digested += n;
   }
 
-  fn append_error_token(&mut self, token: TokenType) {
-    self.errors.push(token);
+  fn err_acc_mut(&mut self) -> &mut ErrAcc {
+    &mut self.err_acc
   }
 
   fn emit(&mut self, token: TokenType, re_lexable: ReLexableType) {
@@ -29,7 +38,15 @@ impl<TokenType, ReLexableType: Default> StatelessOutput<TokenType, ReLexableType
   }
 }
 
-impl<TokenType, ReLexableType> StatelessOutput<TokenType, ReLexableType> for TrimOutput<TokenType> {
+impl<TokenType, ReLexableType, ErrAcc> StatelessOutput<TokenType, ErrAcc, ReLexableType>
+  for TrimOutput<ErrAcc>
+{
+  fn with_err_acc(err_acc: ErrAcc) -> Self {
+    Self {
+      digested: 0,
+      err_acc,
+    }
+  }
   fn digested(&self) -> usize {
     self.digested
   }
@@ -38,8 +55,8 @@ impl<TokenType, ReLexableType> StatelessOutput<TokenType, ReLexableType> for Tri
     self.digested += n;
   }
 
-  fn append_error_token(&mut self, token: TokenType) {
-    self.errors.push(token);
+  fn err_acc_mut(&mut self) -> &mut ErrAcc {
+    &mut self.err_acc
   }
 
   fn emit(&mut self, _token: TokenType, _re_lexable: ReLexableType) {

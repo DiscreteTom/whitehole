@@ -1,10 +1,12 @@
-use super::{options::StatelessLexOptions, StatelessLexer, StatelessTrimOptions};
+use super::{
+  options::StatelessLexOptions, output::StatelessOutput, StatelessLexer, StatelessTrimOptions,
+};
 use crate::lexer::{
-  action::ActionInput,
+  action::{Accumulator, ActionInput},
   fork::{ForkDisabled, LexOptionsFork},
   output::{LexOutput, TrimOutput},
   re_lex::{ReLexContext, ReLexableFactory},
-  token::{Token, TokenKindIdProvider},
+  token::{Range, Token, TokenKindIdProvider},
 };
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
@@ -15,7 +17,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # let stateless = LexerBuilder::new().append(exact("1")).build_stateless();
   /// stateless.lex("123");
   /// ```
-  pub fn lex<'text>(&self, text: &'text str) -> (LexOutput<Token<Kind, ErrorType>, ()>, ActionState)
+  pub fn lex<'text>(&self, text: &'text str) -> (LexOutput<Token<Kind>, (), ()>, ActionState)
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: Default,
@@ -24,7 +26,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     (
       self.lex_with_options(
         text,
-        StatelessLexOptions::default().action_state(&mut action_state),
+        StatelessLexOptions::new().action_state(&mut action_state),
       ),
       action_state,
     )
@@ -42,24 +44,25 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'text,
     'expect_literal,
     'action_state,
-    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>,
+    ErrAcc: Accumulator<(ErrorType, Range)>,
+    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType, ErrAcc>,
   >(
     &self,
     text: &'text str,
     options_builder: impl FnOnce(
-      StatelessLexOptions<'expect_literal, Kind, (), ForkDisabled>,
+      StatelessLexOptions<'expect_literal, Kind, (),(), ForkDisabled>,
     ) -> StatelessLexOptions<
       'expect_literal,
       Kind,
-      &'action_state mut ActionState,
+      &'action_state mut ActionState,ErrAcc,
       Fork,
     >,
-  ) -> LexOutput<Token< Kind, ErrorType>,  <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
+  ) -> LexOutput<Token<Kind>, ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType, ErrAcc>>::StatelessReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
   {
-    self.lex_with_options(text, options_builder(StatelessLexOptions::default()))
+    self.lex_with_options(text, options_builder(StatelessLexOptions::new()))
   }
 
   /// Lex with the given [`StatelessLexOptions`].
@@ -75,17 +78,18 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'text,
     'expect_literal,
     'action_state,
-    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>,
+    ErrAcc: Accumulator<(ErrorType, Range)>,
+    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType, ErrAcc>,
   >(
     &self,
     text: &'text str,
-    options: impl Into<StatelessLexOptions<'expect_literal, Kind, &'action_state mut ActionState, Fork>>,
-  ) -> LexOutput<Token< Kind, ErrorType>, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
+    options: impl Into<StatelessLexOptions<'expect_literal, Kind, &'action_state mut ActionState,ErrAcc, Fork>>,
+  ) -> LexOutput<Token<Kind>,ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType, ErrAcc>>::StatelessReLexableType>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
   {
-    let options: StatelessLexOptions<_, _, _> = options.into();
+    let options: StatelessLexOptions<_, _, _, _> = options.into();
 
     if let Some(literal) = options.base.expectation.literal {
       let literal_map = options
@@ -117,7 +121,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         options.start,
         options.action_state,
         Fork::ReLexableFactoryType::default(),
-        LexOutput::default(),
+        LexOutput::with_err_acc(options.err_acc),
       )
     } else {
       let head_map = options.base.expectation.kind.map_or(
@@ -138,7 +142,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         options.start,
         options.action_state,
         Fork::ReLexableFactoryType::default(),
-        LexOutput::default(),
+        LexOutput::with_err_acc(options.err_acc),
       )
     }
   }
@@ -150,7 +154,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// stateless.trim("123");
   /// ```
-  pub fn trim<'text>(&self, text: &'text str) -> (TrimOutput<Token<Kind, ErrorType>>, ActionState)
+  pub fn trim<'text>(&self, text: &'text str) -> (TrimOutput<()>, ActionState)
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: Default,
@@ -159,7 +163,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     (
       self.trim_with_options(
         text,
-        StatelessTrimOptions::default().action_state(&mut action_state),
+        StatelessTrimOptions::new().action_state(&mut action_state),
       ),
       action_state,
     )
@@ -173,18 +177,19 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// # let mut action_state = ();
   /// stateless.trim_with("123", |o| o.action_state(&mut action_state));
   /// ```
-  pub fn trim_with<'text, 'action_state>(
+  pub fn trim_with<'text, 'action_state, ErrAcc>(
     &self,
     text: &'text str,
     options_builder: impl FnOnce(
-      StatelessTrimOptions<()>,
-    ) -> StatelessTrimOptions<&'action_state mut ActionState>,
-  ) -> TrimOutput<Token<Kind, ErrorType>>
+      StatelessTrimOptions<(), ()>,
+    ) -> StatelessTrimOptions<&'action_state mut ActionState, ErrAcc>,
+  ) -> TrimOutput<ErrAcc>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
+    ErrAcc: Accumulator<(ErrorType, Range)>,
   {
-    self.trim_with_options(text, options_builder(StatelessTrimOptions::default()))
+    self.trim_with_options(text, options_builder(StatelessTrimOptions::new()))
   }
 
   /// Lex with muted actions and the given [`StatelessLexOptions`].
@@ -196,16 +201,17 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// let options = StatelessTrimOptions::default().action_state(&mut action_state);
   /// stateless.trim_with_options("123", options);
   /// ```
-  pub fn trim_with_options<'text, 'action_state>(
+  pub fn trim_with_options<'text, 'action_state, ErrAcc>(
     &self,
     text: &'text str,
-    options: impl Into<StatelessTrimOptions<&'action_state mut ActionState>>,
-  ) -> TrimOutput<Token<Kind, ErrorType>>
+    options: impl Into<StatelessTrimOptions<&'action_state mut ActionState, ErrAcc>>,
+  ) -> TrimOutput<ErrAcc>
   where
     Kind: TokenKindIdProvider<Kind>,
     ActionState: 'action_state,
+    ErrAcc: Accumulator<(ErrorType, Range)>,
   {
-    let options: StatelessTrimOptions<_> = options.into();
+    let options: StatelessTrimOptions<_, _> = options.into();
     Self::execute_actions(
       |_| &self.muted_head_map,
       &ReLexContext::default(),
@@ -213,7 +219,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       options.start,
       options.action_state,
       (),
-      TrimOutput::default(),
+      <TrimOutput<_> as StatelessOutput<(), _, ()>>::with_err_acc(options.err_acc),
     )
   }
 }

@@ -23,7 +23,7 @@ impl Default for ReLexContext {
   }
 }
 
-pub trait ReLexableFactory<'text, Kind: 'static, ActionState, ErrorType> {
+pub trait ReLexableFactory<'text, Kind: 'static, ActionState, ErrorType, ErrAcc> {
   type StatelessReLexableType: Default;
   type ReLexableType;
 
@@ -40,12 +40,12 @@ pub trait ReLexableFactory<'text, Kind: 'static, ActionState, ErrorType> {
   /// This should be called before [`Lexer::state`] is mutated.
   fn into_re_lexable(
     stateless_re_lexable: Self::StatelessReLexableType,
-    lexer: &Lexer<'text, Kind, ActionState, ErrorType>,
+    lexer: &Lexer<'text, Kind, ActionState, ErrorType, ErrAcc>,
   ) -> Self::ReLexableType;
 }
 
-impl<'text, Kind: 'static, ActionState, ErrorType>
-  ReLexableFactory<'text, Kind, ActionState, ErrorType> for ()
+impl<'text, Kind: 'static, ActionState, ErrorType, ErrAcc>
+  ReLexableFactory<'text, Kind, ActionState, ErrorType, ErrAcc> for ()
 {
   type StatelessReLexableType = ();
   type ReLexableType = ();
@@ -63,7 +63,7 @@ impl<'text, Kind: 'static, ActionState, ErrorType>
 
   fn into_re_lexable(
     _stateless_re_lexable: Self::StatelessReLexableType,
-    _lexer: &Lexer<'text, Kind, ActionState, ErrorType>,
+    _lexer: &Lexer<'text, Kind, ActionState, ErrorType, ErrAcc>,
   ) -> Self::ReLexableType {
     ()
   }
@@ -82,11 +82,14 @@ impl<ActionState> Default for ReLexableBuilder<ActionState> {
   }
 }
 
-impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
-  ReLexableFactory<'text, Kind, ActionState, ErrorType> for ReLexableBuilder<ActionState>
+impl<'text, Kind: 'static, ActionState: Clone, ErrorType, ErrAcc: Clone>
+  ReLexableFactory<'text, Kind, ActionState, ErrorType, ErrAcc> for ReLexableBuilder<ActionState>
 {
   type StatelessReLexableType = Option<(Option<ActionState>, ReLexContext)>;
-  type ReLexableType = Option<(Lexer<'text, Kind, ActionState, ErrorType>, ReLexContext)>;
+  type ReLexableType = Option<(
+    Lexer<'text, Kind, ActionState, ErrorType, ErrAcc>,
+    ReLexContext,
+  )>;
 
   fn before_mutate_action_state(&mut self, action_state: &ActionState) {
     // backup the action state before the first mutation during one lexing loop
@@ -121,7 +124,7 @@ impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
 
   fn into_re_lexable(
     stateless_re_lexable: Self::StatelessReLexableType,
-    lexer: &Lexer<'text, Kind, ActionState, ErrorType>,
+    lexer: &Lexer<'text, Kind, ActionState, ErrorType, ErrAcc>,
   ) -> Self::ReLexableType {
     stateless_re_lexable.map(|(action_state_bk, ctx)| {
       (

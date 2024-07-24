@@ -122,8 +122,8 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
 mod tests {
   use super::*;
   use crate::lexer::{
-    action::word,
-    token::{SubTokenKind, TokenKindIdBinding},
+    action::{exact, word},
+    token::SubTokenKind,
   };
   use whitehole_macros::_token_kind;
 
@@ -140,16 +140,13 @@ mod tests {
   fn lexer_builder_append() {
     // single
     assert_eq!(
-      LexerBuilder::<_>::default()
-        .append(word("A").bind(A))
-        .actions
-        .len(),
+      LexerBuilder::new().append(word("A").bind(A)).actions.len(),
       1
     );
 
     // many
     assert_eq!(
-      LexerBuilder::<_>::default()
+      LexerBuilder::new()
         .append([word("A").bind(A), word("B").bind(B)])
         .actions
         .len(),
@@ -160,32 +157,28 @@ mod tests {
   #[test]
   fn lexer_builder_append_with() {
     // single
-    let builder =
-      LexerBuilder::<_, (), _>::default().append_with(word("A").bind(A), |a| a.error("123"));
+    let builder = LexerBuilder::new().append_with(word("A").bind(A), |a| a.mute());
     assert_eq!(builder.actions.len(), 1);
-    let stateless = builder.build_stateless();
-    assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), "123");
+    assert!(builder.actions[0].muted());
 
     // many
-    let builder = LexerBuilder::<_, (), &str>::default()
-      .append_with([word("A").bind(A), word("B").bind(B)], |a| a.error("123"));
+    let builder =
+      LexerBuilder::new().append_with([exact("A").bind(A), exact("B").bind(B)], |a| a.mute());
     assert_eq!(builder.actions.len(), 2);
     // ensure decorator is applied to all actions
-    let stateless = builder.build_stateless();
-    assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), "123");
-    assert_eq!(stateless.lex("B").0.token.unwrap().error.unwrap(), "123");
+    assert!(builder.actions[0].muted());
+    assert!(builder.actions[1].muted());
   }
 
   #[test]
   fn lexer_builder_append_default() {
     // single
-    let builder = LexerBuilder::<TokenKindIdBinding<MyKind>>::default().append_default(word("A"));
+    let builder = LexerBuilder::new().append_default(word("A"));
     assert_eq!(builder.actions.len(), 1);
     assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id());
 
     // many
-    let builder =
-      LexerBuilder::<TokenKindIdBinding<MyKind>>::default().append_default([word("A"), word("B")]);
+    let builder = LexerBuilder::new().append_default([word("A"), word("B")]);
     assert_eq!(builder.actions.len(), 2);
     assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id());
     assert_eq!(builder.actions[1].kind_id(), Anonymous::kind_id());
@@ -194,22 +187,18 @@ mod tests {
   #[test]
   fn lexer_builder_append_default_with() {
     // single
-    let builder = LexerBuilder::<TokenKindIdBinding<MyKind>, (), &str>::default()
-      .append_default_with(word("A"), |a| a.error("123"));
+    let builder = LexerBuilder::new().append_default_with(word("A"), |a| a.mute());
     assert_eq!(builder.actions.len(), 1);
     assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id(),);
-    let stateless = builder.build_stateless();
-    assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), "123");
+    assert!(builder.actions[0].muted());
 
     // many
-    let builder = LexerBuilder::<TokenKindIdBinding<MyKind>, (), &str>::default()
-      .append_default_with([word("A"), word("B")], |a| a.error("123"));
+    let builder = LexerBuilder::new().append_default_with([exact("A"), exact("B")], |a| a.mute());
     assert_eq!(builder.actions.len(), 2);
     assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id(),);
     assert_eq!(builder.actions[1].kind_id(), Anonymous::kind_id(),);
     // ensure decorator is applied to all actions
-    let stateless = builder.build_stateless();
-    assert_eq!(stateless.lex("A").0.token.unwrap().error.unwrap(), "123");
-    assert_eq!(stateless.lex("B").0.token.unwrap().error.unwrap(), "123");
+    assert!(builder.actions[0].muted());
+    assert!(builder.actions[1].muted());
   }
 }

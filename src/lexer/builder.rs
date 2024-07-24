@@ -113,19 +113,20 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
     StatelessLexer::new(self.actions.into_iter().map(Rc::new).collect())
   }
 
-  pub fn build_with<'text>(
+  pub fn build_with<'text, ErrAcc>(
     self,
-    action_state: ActionState,
+    action_state: ActionState, // TODO: extract to options?
+    err_acc: ErrAcc,
     text: &'text str,
-  ) -> Lexer<'text, Kind, ActionState, ErrorType> {
-    Lexer::new(Rc::new(self.build_stateless()), action_state, text)
+  ) -> Lexer<'text, Kind, ActionState, ErrorType, ErrAcc> {
+    Lexer::new(Rc::new(self.build_stateless()), action_state, err_acc, text)
   }
 
-  pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, ActionState, ErrorType>
+  pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, ActionState, ErrorType, ()>
   where
     ActionState: Default,
   {
-    self.build_with(ActionState::default(), text)
+    self.build_with(ActionState::default(), (), text)
   }
 
   fn map_actions<OldKind: 'static, NewKind>(

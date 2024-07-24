@@ -40,10 +40,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// # fn main() {
   /// # let mut builder = LexerBuilder::with_error();
   /// // append a single action
-  /// builder.ignore_with(word("A").bind(A), |a| a.error(123));
+  /// builder.ignore_with(word("A").bind(A), |a| a.mute());
   /// # let mut builder = LexerBuilder::with_error();
   /// // append multiple actions
-  /// builder.ignore_with([word("A").bind(A), word("B").bind(B)], |a| a.error(123));
+  /// builder.ignore_with([word("A").bind(A), word("B").bind(B)], |a| a.mute());
   /// # }
   /// ```
   pub fn ignore_with<F>(
@@ -103,10 +103,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   /// # fn main() {
   /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>, (), _>::with_error();
   /// // append a single action
-  /// builder.ignore_default_with(word("A"), |a| a.error(123));
+  /// builder.ignore_default_with(word("A"), |a| a.mute());
   /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>, (), _>::with_error();
   /// // append multiple actions
-  /// builder.ignore_default_with([word("A"), word("B")], |a| a.error(123));
+  /// builder.ignore_default_with([word("A"), word("B")], |a| a.mute());
   /// # }
   /// ```
   pub fn ignore_default_with<F>(
@@ -144,12 +144,12 @@ mod tests {
   #[test]
   fn lexer_builder_ignore() {
     // single
-    let builder = LexerBuilder::<_>::default().ignore(word("A").bind(A));
+    let builder = LexerBuilder::new().ignore(word("A").bind(A));
     assert_eq!(builder.actions.len(), 1);
     assert!(builder.actions[0].muted());
 
     // many
-    let builder = LexerBuilder::<_>::default().ignore([word("A").bind(A), word("B").bind(B)]);
+    let builder = LexerBuilder::new().ignore([word("A").bind(A), word("B").bind(B)]);
     assert_eq!(builder.actions.len(), 2);
     assert!(builder.actions[0].muted());
     assert!(builder.actions[1].muted());
@@ -159,28 +159,32 @@ mod tests {
   fn lexer_builder_ignore_with() {
     // single
     let builder =
-      LexerBuilder::<_, (), i32>::default().ignore_with(word("A").bind(A), |a| a.error(123));
+      LexerBuilder::new().ignore_with(word("A").bind(A), |a| a.unchecked_head_unknown());
     assert_eq!(builder.actions.len(), 1);
     assert!(builder.actions[0].muted());
+    assert!(builder.actions[0].head_matcher().is_some());
 
     // many
-    let builder = LexerBuilder::<_, (), i32>::default()
-      .ignore_with([word("A").bind(A), word("B").bind(B)], |a| a.error(123));
+    let builder = LexerBuilder::new().ignore_with([word("A").bind(A), word("B").bind(B)], |a| {
+      a.unchecked_head_unknown()
+    });
     assert_eq!(builder.actions.len(), 2);
     assert!(builder.actions[0].muted());
     assert!(builder.actions[1].muted());
+    assert!(builder.actions[0].head_matcher().is_some());
+    assert!(builder.actions[1].head_matcher().is_some());
   }
 
   #[test]
   fn lexer_builder_ignore_default() {
     // single
-    let builder = LexerBuilder::<_>::default().ignore_default(word("A"));
+    let builder = LexerBuilder::new().ignore_default(word("A"));
     assert_eq!(builder.actions.len(), 1);
     assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id());
     assert!(builder.actions[0].muted());
 
     // many
-    let builder = LexerBuilder::<_>::default().ignore_default([word("A"), word("B")]);
+    let builder = LexerBuilder::new().ignore_default([word("A"), word("B")]);
     assert_eq!(builder.actions.len(), 2);
     assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id());
     assert_eq!(builder.actions[1].kind_id(), Anonymous::kind_id());
@@ -192,18 +196,21 @@ mod tests {
   fn lexer_builder_ignore_default_with() {
     // single
     let builder =
-      LexerBuilder::<_, (), i32>::default().ignore_default_with(word("A"), |a| a.error(123));
+      LexerBuilder::new().ignore_default_with(word("A"), |a| a.unchecked_head_unknown());
     assert_eq!(builder.actions.len(), 1);
     assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id());
     assert!(builder.actions[0].muted());
+    assert!(builder.actions[0].head_matcher().is_some());
 
     // many
-    let builder = LexerBuilder::<_, (), i32>::default()
-      .ignore_default_with([word("A"), word("B")], |a| a.error(123));
+    let builder = LexerBuilder::new()
+      .ignore_default_with([word("A"), word("B")], |a| a.unchecked_head_unknown());
     assert_eq!(builder.actions.len(), 2);
     assert_eq!(builder.actions[0].kind_id(), Anonymous::kind_id());
     assert_eq!(builder.actions[1].kind_id(), Anonymous::kind_id());
     assert!(builder.actions[0].muted());
     assert!(builder.actions[1].muted());
+    assert!(builder.actions[0].head_matcher().is_some());
+    assert!(builder.actions[1].head_matcher().is_some());
   }
 }
