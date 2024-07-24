@@ -47,7 +47,6 @@ pub enum HeadMatcher {
 /// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
 pub struct Action<Kind: 'static, ActionState = (), ErrorType = ()> {
   // input is mutable so the action can mutate the action state.
-  // TODO: add lifetime to the exec? is there a use case?
   exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
   /// See [`Self::kind`].
   kind: &'static TokenKindId<Kind>,
