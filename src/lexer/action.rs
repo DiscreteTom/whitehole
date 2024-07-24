@@ -127,13 +127,20 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::lexer::token::SubTokenKind;
+  use whitehole_macros::_token_kind;
+
+  #[_token_kind]
+  #[derive(Debug)]
+  enum MyKind {
+    A,
+  }
 
   #[test]
   fn action_getters_default() {
-    static KIND_ID: TokenKindId<()> = TokenKindId::new(1, "");
-    let action: Action<()> = Action {
+    let action: Action<_> = Action {
       exec: Box::new(|_| None),
-      kind: &KIND_ID,
+      kind: A::kind_id(),
       head: None,
       muted: false,
       may_mutate_state: false,
@@ -142,17 +149,16 @@ mod tests {
     assert!(!action.muted());
     assert!(!action.may_mutate_state());
     assert!(action.never_mutate_state());
-    assert_eq!(action.kind(), &TokenKindId::new(1, ""));
+    assert_eq!(action.kind(), A::kind_id());
     assert!(action.head().is_none());
     assert!(action.literal().is_none());
   }
 
   #[test]
   fn action_getters() {
-    static KIND_ID: TokenKindId<()> = TokenKindId::new(1, "");
-    let action: Action<()> = Action {
+    let action: Action<_> = Action {
       exec: Box::new(|_| None),
-      kind: &KIND_ID,
+      kind: A::kind_id(),
       head: Some(HeadMatcher::OneOf(HashSet::from(['a']))),
       muted: true,
       may_mutate_state: true,
@@ -161,7 +167,7 @@ mod tests {
     assert!(action.muted());
     assert!(action.may_mutate_state());
     assert!(!action.never_mutate_state());
-    assert_eq!(action.kind(), &TokenKindId::new(1, ""));
+    assert_eq!(action.kind(), A::kind_id());
     assert!(matches!(action.head(), Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['a'])));
     assert_eq!(action.literal(), &Some("123".into()));
   }
