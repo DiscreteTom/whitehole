@@ -6,11 +6,13 @@ pub trait Accumulator<T> {
 
 // mock accumulator
 impl<T> Accumulator<T> for () {
+  #[inline]
   fn update(&mut self, _: T) {}
 }
 
 // vector accumulator
 impl<T> Accumulator<T> for Vec<T> {
+  #[inline]
   fn update(&mut self, c: T) {
     self.push(c);
   }
@@ -18,11 +20,13 @@ impl<T> Accumulator<T> for Vec<T> {
 
 // string accumulator
 impl Accumulator<char> for String {
+  #[inline]
   fn update(&mut self, c: char) {
     self.push(c);
   }
 }
 impl Accumulator<String> for String {
+  #[inline]
   fn update(&mut self, c: String) {
     self.push_str(&c);
   }
