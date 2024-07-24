@@ -21,10 +21,13 @@ pub use escape::*;
 pub use options::*;
 pub use value::*;
 
-use super::{Accumulator, StringList};
-use crate::lexer::{
-  action::{simple_with_data, Action},
-  token::MockTokenKind,
+use super::StringList;
+use crate::{
+  lexer::{
+    action::{simple_with_data, Action},
+    token::MockTokenKind,
+  },
+  utils::Accumulator,
 };
 
 // TODO: comments

@@ -1,5 +1,4 @@
 use super::{
-  action::Accumulator,
   fork::{ForkDisabled, LexOptionsFork},
   options::LexOptions,
   output::{LexOutput, TrimOutput},
@@ -8,6 +7,7 @@ use super::{
   stateless::{StatelessLexOptions, StatelessLexer, StatelessTrimOptions},
   token::{Range, Token, TokenKindIdProvider},
 };
+use crate::utils::Accumulator;
 use std::rc::Rc;
 
 pub struct Lexer<'text, Kind: 'static, ActionState, ErrorType> {

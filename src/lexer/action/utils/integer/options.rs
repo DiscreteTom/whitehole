@@ -1,4 +1,4 @@
-use crate::lexer::action::Accumulator;
+use crate::utils::Accumulator;
 
 pub trait NumericSeparatorAccumulator: Accumulator<usize> {
   /// The underlying accumulator type.

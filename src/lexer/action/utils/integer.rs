@@ -5,10 +5,12 @@ mod options;
 pub use data::*;
 pub use options::*;
 
-use super::Accumulator;
-use crate::lexer::{
-  action::{simple_with_data, Action},
-  token::MockTokenKind,
+use crate::{
+  lexer::{
+    action::{simple_with_data, Action},
+    token::MockTokenKind,
+  },
+  utils::Accumulator,
 };
 
 /// Try to match an integer literal body in the rest of the input text

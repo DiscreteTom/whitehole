@@ -1,5 +1,5 @@
 use super::{PartialStringBodyValue, StringBodyOptions, StringLiteralError};
-use crate::lexer::action::Accumulator;
+use crate::utils::Accumulator;
 
 pub struct StringBodyMatcherInput<'text> {
   /// The rest of the input text.

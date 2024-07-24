@@ -1,8 +1,11 @@
 use super::{output::StatelessOutput, HeadMap, StatelessLexer};
-use crate::lexer::{
-  action::{Accumulator, Action, ActionInput, ActionOutput},
-  re_lex::{ReLexContext, ReLexableFactory},
-  token::{Range, Token, TokenKindIdProvider},
+use crate::{
+  lexer::{
+    action::{Action, ActionInput, ActionOutput},
+    re_lex::{ReLexContext, ReLexableFactory},
+    token::{Range, Token, TokenKindIdProvider},
+  },
+  utils::Accumulator,
 };
 use std::rc::Rc;
 

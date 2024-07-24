@@ -5,12 +5,14 @@ pub use data::*;
 pub use options::*;
 
 use super::{
-  decimal_integer_literal_body_with_options, Accumulator, IntegerLiteralBodyOptions,
-  NumericSeparatorAccumulator,
+  decimal_integer_literal_body_with_options, IntegerLiteralBodyOptions, NumericSeparatorAccumulator,
 };
-use crate::lexer::{
-  action::{simple_with_data, Action},
-  token::MockTokenKind,
+use crate::{
+  lexer::{
+    action::{simple_with_data, Action},
+    token::MockTokenKind,
+  },
+  utils::Accumulator,
 };
 use std::collections::HashSet;
 

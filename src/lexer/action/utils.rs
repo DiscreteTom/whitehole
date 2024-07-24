@@ -1,4 +1,3 @@
-mod accumulator;
 mod exact;
 mod float;
 mod integer;
@@ -8,7 +7,6 @@ mod string;
 mod string_list;
 mod word;
 
-pub use accumulator::*;
 pub use exact::*;
 pub use float::*;
 pub use integer::*;

@@ -1,12 +1,15 @@
 use super::{
   options::StatelessLexOptions, output::StatelessOutput, StatelessLexer, StatelessTrimOptions,
 };
-use crate::lexer::{
-  action::{Accumulator, ActionInput},
-  fork::{ForkDisabled, LexOptionsFork},
-  output::{LexOutput, TrimOutput},
-  re_lex::{ReLexContext, ReLexableFactory},
-  token::{Range, Token, TokenKindIdProvider},
+use crate::{
+  lexer::{
+    action::ActionInput,
+    fork::{ForkDisabled, LexOptionsFork},
+    output::{LexOutput, TrimOutput},
+    re_lex::{ReLexContext, ReLexableFactory},
+    token::{Range, Token, TokenKindIdProvider},
+  },
+  utils::Accumulator,
 };
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
