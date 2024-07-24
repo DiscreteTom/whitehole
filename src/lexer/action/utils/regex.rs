@@ -24,7 +24,7 @@ pub fn regex<ActionState, ErrorType>(
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   Regex::new(re)
     .map(|re| simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
-    .unwrap()
+    .expect("invalid regex")
 }
 
 // since `regex` is based on `simple`, users could create their own regex action
