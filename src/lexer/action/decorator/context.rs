@@ -2,6 +2,7 @@ use crate::lexer::action::{ActionInput, ActionOutput};
 
 /// This struct provides the [`ActionInput`] and [`ActionOutput`]
 /// in action decorators when the action is accepted.
+#[derive(Debug, Clone)]
 pub struct AcceptedActionOutputContext<InputType, OutputType> {
   /// The [`ActionInput`]. Might be `&ActionInput` or `&mut ActionInput`,
   /// depends on the specific action decorator you are using.
