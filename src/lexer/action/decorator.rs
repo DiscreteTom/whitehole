@@ -32,7 +32,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   pub fn prevent(
     mut self,
     condition: impl Fn(
-        // action state is immutable
+        // action state is immutable, so use immutable reference
         &ActionInput<ActionState>,
       ) -> bool
       + 'static,
@@ -102,7 +102,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// );
   /// # }
   /// ```
-  pub fn mute(mut self) -> Self {
+  #[inline]
+  pub const fn mute(mut self) -> Self {
     self.muted = true;
     self
   }
@@ -122,7 +123,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// );
   /// # }
   /// ```
-  pub fn unmute(mut self) -> Self {
+  #[inline]
+  pub const fn unmute(mut self) -> Self {
     self.muted = false;
     self
   }
@@ -210,6 +212,10 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ErrorType: 'static,
     NewError: Clone + 'static,
   {
+    // to optimize the runtime performance,
+    // don't just use `check(|_| Some(error.clone()))`
+    // to prevent constructing the context
+
     let exec = self.exec;
     Action {
       exec: Box::new(move |input| {
@@ -294,6 +300,10 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
+    // to optimize the runtime performance,
+    // don't just use `reject_if(|_| true)`
+    // to prevent constructing the context
+
     let exec = self.exec;
     self.exec = Box::new(move |input| {
       exec(input);
@@ -301,7 +311,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     });
     self
   }
-  // `reject_if(move |_| false)` is meaningless
+  // `reject_if(|_| false)` is meaningless
   // so there is no method like `un_reject`
 
   /// Call the `cb` if the action is accepted.
