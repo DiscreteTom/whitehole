@@ -22,7 +22,7 @@ impl<Kind, ActionState, ErrorType> Default for LexerBuilder<Kind, ActionState, E
   }
 }
 
-impl<Kind> LexerBuilder<Kind, (), ()> {
+impl<Kind> LexerBuilder<Kind> {
   /// Create a new lexer builder, set `ActionState` and `ErrorType` to `()`.
   /// # Examples
   /// ```
@@ -59,7 +59,7 @@ impl<Kind> LexerBuilder<Kind, (), ()> {
   /// LexerBuilder::<_, MyState, ()>::default();
   /// # builder.append(exact("a"));
   /// ```
-  pub fn stateful<ActionState>() -> LexerBuilder<Kind, ActionState, ()> {
+  pub fn stateful<ActionState>() -> LexerBuilder<Kind, ActionState> {
     LexerBuilder::default()
   }
 }
@@ -109,7 +109,6 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   // TODO: move into `generate`?
   pub fn build_stateless(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
     // TODO: warning if action has no head matcher
-
     // wrap actions with Rc, make them immutable and clone-able
     StatelessLexer::new(self.actions.into_iter().map(Rc::new).collect())
   }
