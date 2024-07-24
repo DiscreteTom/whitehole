@@ -22,7 +22,7 @@ pub fn exact<ActionState, ErrorType>(
   s: impl Into<String>,
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   let s: String = s.into();
-  let head = s.chars().next().unwrap();
+  let head = s.chars().next().expect("empty string is not allowed");
   let literal = Some(s.clone());
   let mut a = simple(move |input| {
     if input.rest().starts_with(&s) {
@@ -51,7 +51,7 @@ pub fn exact<ActionState, ErrorType>(
 pub fn exact_chars<ActionState, ErrorType>(
   s: impl Into<String>,
 ) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>> {
-  s.into().chars().map(|c| exact(c.to_string())).collect()
+  s.into().chars().map(|c| exact(c)).collect()
 }
 
 #[cfg(test)]
