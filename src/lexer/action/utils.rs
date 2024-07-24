@@ -22,6 +22,8 @@ use crate::lexer::token::MockTokenKind;
 use std::{collections::HashSet, ops::RangeInclusive};
 
 /// Match chars by the condition greedily.
+///
+/// It's recommended to set [`Action::head`] to optimize the lex performance.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, chars};
@@ -142,7 +144,7 @@ pub fn whitespaces<ActionState, ErrorType>() -> Action<MockTokenKind<()>, Action
 /// Match from the `open` to the `close`, including the `open` and `close`.
 /// If the `close` is not found, accept all the rest.
 ///
-/// [`Action::head`] will be set automatically.
+/// The [`Action::head`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, comment};
@@ -163,7 +165,7 @@ pub fn comment<ActionState, ErrorType>(
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   let open: String = open.into();
   let close: String = close.into();
-  let first = open.chars().next().unwrap();
+  let first = open.chars().next().expect("open is empty");
 
   simple(move |input| {
     // open mismatch
@@ -181,8 +183,6 @@ pub fn comment<ActionState, ErrorType>(
   })
   .unchecked_head_in([first])
 }
-
-// TODO: add string & numeric utils?
 
 #[cfg(test)]
 mod tests {
@@ -202,6 +202,67 @@ mod tests {
     assert!(action
       .exec(&mut ActionInput::new(text, 0, &mut ()).unwrap())
       .is_none());
+  }
+
+  #[test]
+  fn action_utils_chars() {
+    let action: Action<MockTokenKind<()>> = chars(|ch| ch.is_ascii_digit());
+
+    // common cases
+    assert_reject(&action, "abc");
+    assert_accept(&action, "123abc", 3);
+    assert_accept(&action, "123", 3);
+
+    // head matcher
+    assert!(action.head().is_none());
+  }
+
+  #[test]
+  fn action_utils_chars_in_range() {
+    let action: Action<MockTokenKind<()>> = chars_in_range('1'..='3');
+
+    // common cases
+    assert_reject(&action, "abc");
+    assert_accept(&action, "123abc", 3);
+    assert_accept(&action, "123", 3);
+
+    // head matcher
+    assert!(matches!(
+      action.head().as_ref().unwrap(),
+      HeadMatcher::OneOf(set) if set == &HashSet::from(['1', '2', '3'])
+    ));
+  }
+
+  #[test]
+  fn action_utils_charset() {
+    let action: Action<MockTokenKind<()>> = charset(['1', '3', '5']);
+
+    // common cases
+    assert_reject(&action, "abc");
+    assert_accept(&action, "135abc", 3);
+    assert_accept(&action, "135", 3);
+
+    // head matcher
+    assert!(matches!(
+      action.head().as_ref().unwrap(),
+      HeadMatcher::OneOf(set) if set == &HashSet::from(['1', '3', '5'])
+    ));
+  }
+
+  #[test]
+  fn action_utils_chars_in_str() {
+    let action: Action<MockTokenKind<()>> = chars_in_str("135");
+
+    // common cases
+    assert_reject(&action, "abc");
+    assert_accept(&action, "135abc", 3);
+    assert_accept(&action, "135", 3);
+
+    // head matcher
+    assert!(matches!(
+      action.head().as_ref().unwrap(),
+      HeadMatcher::OneOf(set) if set == &HashSet::from(['1', '3', '5'])
+    ));
   }
 
   #[test]
