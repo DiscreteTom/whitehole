@@ -176,3 +176,59 @@ impl<SepAcc, ValueAcc> IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
     self.value_to(String::new())
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_mock_numeric_separator_accumulator() {
+    fn test(acc: impl NumericSeparatorAccumulator<Acc = ()>) {
+      assert!(!acc.validate('_'));
+      assert!(!acc.validate('1'));
+      assert_eq!(acc.emit(), ());
+    }
+    test(());
+  }
+
+  #[test]
+  fn test_numeric_separator_options() {
+    // new
+    let mut options = NumericSeparatorOptions::new();
+    assert_eq!(options.char, '_');
+    assert_eq!(options.indexes_to, ());
+
+    // methods
+    options = options.char('-');
+    assert_eq!(options.char, '-');
+    let options = options.indexes_to(vec![()]);
+    assert_eq!(options.indexes_to, vec![()]);
+    let mut options = options.indexes_to_vec();
+    assert_eq!(options.indexes_to, vec![]);
+
+    // impl
+    assert!(options.validate('-'));
+    assert!(!options.validate('_'));
+    options.update(0);
+    assert_eq!(options.emit(), vec![0]);
+  }
+
+  #[test]
+  fn test_integer_literal_body_options() {
+    // new
+    let options = IntegerLiteralBodyOptions::new();
+    assert_eq!(options.separator, ());
+    assert_eq!(options.value_to, ());
+
+    // methods
+    let options = options.separator(NumericSeparatorOptions::new());
+    assert_eq!(options.separator.char, '_');
+    let options = options.separator_with(|s| s.char('-').indexes_to_vec());
+    assert_eq!(options.separator.char, '-');
+    assert_eq!(options.separator.indexes_to, vec![]);
+    let options = options.value_to(String::new());
+    assert_eq!(options.value_to, String::new());
+    let options = options.value_to_string();
+    assert_eq!(options.value_to, String::new());
+  }
+}
