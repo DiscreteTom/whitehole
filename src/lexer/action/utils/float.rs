@@ -17,45 +17,6 @@ use crate::{
 use std::collections::HashSet;
 
 /// Try to match a float point literal in the rest of the input text
-/// with the default separator (`'_'`), default decimal point (`'.'`),
-/// the default exponent indicators (`"e-", "e+", "e", "E-", "E+", "E"`)
-/// and no accumulators.
-/// Return how many bytes are digested and the float point literal data.
-/// # Caveat
-/// If the matched result is exponent part only, the total digested length
-/// (the `return.0`) will be set to `0`.
-/// E.g. if the exponent indicator is `e` then
-/// `e10` won't be treated as a valid float literal.
-///
-/// Besides, each part (the integer part, the fraction part and the exponent part)
-/// will be matched using [`decimal_integer_literal_body_with_options`]
-/// so its caveat also applies here.
-/// # Examples
-/// ```
-/// # use whitehole::lexer::action::{float_literal_body};
-/// let (digested, data) = float_literal_body(
-///   "1_23.4_56e-7_8z",
-/// );
-/// assert_eq!(digested, 14); // total digested bytes
-/// let (integer_digested, integer_data) = data.integer;
-/// assert_eq!(integer_digested, 4);
-/// let (fraction_digested, fraction_data) = data.fraction.unwrap();
-/// assert_eq!(fraction_digested, 5); // including the `.`
-/// let (exponent_digested, exponent_data) = data.exponent.unwrap();
-/// assert_eq!(exponent_digested, 5); // including the `e-`
-/// assert_eq!(exponent_data.indicator_len, 2);
-/// ```
-pub fn float_literal_body(rest: &str) -> (usize, FloatLiteralData<(), (), (), ()>) {
-  float_literal_body_with_options(
-    rest,
-    FloatLiteralOptions::default()
-      .default_separator()
-      .default_fraction()
-      .default_exponent(),
-  )
-}
-
-/// Try to match a float point literal in the rest of the input text
 /// with the given [`FloatLiteralOptions`].
 /// Return how many bytes are digested and the float point literal data.
 /// # Caveat
@@ -78,13 +39,13 @@ pub fn float_literal_body(rest: &str) -> (usize, FloatLiteralData<(), (), (), ()
 ///     .separator_with(|s| s.char('_').indexes_to_vec())
 ///     // collect the value of the integer part
 ///     // into a string
-///     .integer_to_string()
+///     .integral_to_string()
 ///     // enable fraction part using `.` as the decimal point
 ///     // and collect the value to a string
-///     .fraction_with(|o| o.point('.').acc_to_string())
+///     .fractional_with(|o| o.point('.').value_to_string())
 ///     // enable exponent part using the default exponent indicators
 ///     // and collect the value to a string
-///     .exponent_with(|o| o.acc_to_string())
+///     .exponent_with(|o| o.value_to_string())
 /// );
 /// assert_eq!(digested, 14); // total digested bytes
 /// let (integer_digested, integer_data) = data.integer;
@@ -115,7 +76,7 @@ pub fn float_literal_body_with<
   usize,
   FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>,
 ) {
-  float_literal_body_with_options(rest, options_builder(FloatLiteralOptions::default()))
+  float_literal_body_with_options(rest, options_builder(FloatLiteralOptions::new()))
 }
 
 /// Try to match a float point literal in the rest of the input text
@@ -135,19 +96,19 @@ pub fn float_literal_body_with<
 /// # use whitehole::lexer::action::{float_literal_body_with_options, FloatLiteralOptions};
 /// let (digested, data) = float_literal_body_with_options(
 ///   "1_23.4_56e-7_8z",
-///   FloatLiteralOptions::default()
+///   FloatLiteralOptions::new()
 ///     // enable numeric separator using `_`
 ///     // and collect their indexes into a vector
 ///     .separator_with(|s| s.char('_').indexes_to_vec())
 ///     // collect the value of the integer part
 ///     // into a string
-///     .integer_to_string()
+///     .integral_to_string()
 ///     // enable fraction part using `.` as the decimal point
 ///     // and collect the value to a string
-///     .fraction_with(|o| o.point('.').acc_to_string())
+///     .fractional_with(|o| o.point('.').value_to_string())
 ///     // enable exponent part using the default exponent indicators
 ///     // and collect the value to a string
-///     .exponent_with(|o| o.acc_to_string())
+///     .exponent_with(|o| o.value_to_string())
 /// );
 /// assert_eq!(digested, 14); // total digested bytes
 /// let (integer_digested, integer_data) = data.integer;
@@ -183,7 +144,7 @@ pub fn float_literal_body_with_options<
     rest,
     IntegerLiteralBodyOptions {
       separator: options.separator.clone(),
-      value_to: options.integer,
+      value_to: options.integral_to,
     },
   );
   total_digested += integer_digested;
@@ -191,14 +152,14 @@ pub fn float_literal_body_with_options<
   // e.g. in some languages like JavaScript, ".5" is a valid float literal
 
   // next, parse the optional fraction part
-  let fraction_part = options.fraction.and_then(|fraction| {
+  let fraction_part = options.fractional.and_then(|fraction| {
     let rest = &rest[total_digested..];
     rest.starts_with(fraction.point).then(|| {
       let (body_digested, data) = decimal_integer_literal_body_with_options(
         &rest[fraction.point.len_utf8()..],
         IntegerLiteralBodyOptions {
           separator: options.separator.clone(),
-          value_to: fraction.acc,
+          value_to: fraction.value_to,
         },
       );
       let fraction_digested = body_digested + fraction.point.len_utf8();
@@ -226,7 +187,7 @@ pub fn float_literal_body_with_options<
           &rest[indicator.len()..],
           IntegerLiteralBodyOptions {
             separator: options.separator,
-            value_to: exponent.acc,
+            value_to: exponent.value_to,
           },
         );
         let exponent_digested = body_digested + indicator.len();
@@ -260,29 +221,6 @@ pub fn float_literal_body_with_options<
 
 /// Create an [`Action`] that tries to match the float literal
 /// in the rest of the input text
-/// with the default separator (`'_'`), default decimal point (`'.'`),
-/// the default exponent indicators (`"e-", "e+", "e", "E-", "E+", "E"`)
-/// and no accumulators.
-///
-/// The [`Action::head`] will be set automatically.
-/// # Caveat
-/// If the matched content is exponent only, the action will reject it.
-///
-/// Besides, each part (the integer part, the fraction part and the exponent part)
-/// will be matched using [`decimal_integer_literal_body_with_options`]
-/// so its caveat also applies here.
-pub fn float_literal<ActionState, ErrorType>(
-) -> Action<MockTokenKind<FloatLiteralData<(), (), (), ()>>, ActionState, ErrorType> {
-  float_literal_with_options(
-    FloatLiteralOptions::default()
-      .default_separator()
-      .default_fraction()
-      .default_exponent(),
-  )
-}
-
-/// Create an [`Action`] that tries to match the float literal
-/// in the rest of the input text
 /// with the given [`FloatLiteralOptions`].
 ///
 /// The [`Action::head`] will be set automatically.
@@ -308,7 +246,7 @@ pub fn float_literal_with<
   ActionState,
   ErrorType,
 > {
-  float_literal_with_options(options_builder(FloatLiteralOptions::default()))
+  float_literal_with_options(options_builder(FloatLiteralOptions::new()))
 }
 
 /// Create an [`Action`] that tries to match the float literal
@@ -340,7 +278,7 @@ pub fn float_literal_with_options<
   let mut heads = HashSet::from(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
 
   // if fraction part is enabled, add the decimal point to the head
-  if let Some(fraction) = options.fraction.as_ref() {
+  if let Some(fraction) = options.fractional.as_ref() {
     heads.insert(fraction.point);
   }
 
@@ -403,11 +341,11 @@ mod tests {
 
   #[test]
   fn test_float_literal_body_with_options() {
-    let options = FloatLiteralOptions::default()
+    let options = FloatLiteralOptions::new()
       .separator_with(|s| s.indexes_to_vec())
-      .integer_to_string()
-      .fraction_with(|o| o.acc_to_string())
-      .exponent_with(|o| o.acc_to_string());
+      .integral_to_string()
+      .fractional_with(|o| o.value_to_string())
+      .exponent_with(|o| o.value_to_string());
 
     // invalid start
     assert_float_literal_body(
@@ -513,7 +451,7 @@ mod tests {
     );
 
     // enable fraction
-    let action: Action<_> = float_literal_with(|o| o.default_fraction());
+    let action: Action<_> = float_literal_with(|o| o.default_fractional());
     assert!(
       matches!(action.head(), Some(HeadMatcher::OneOf(set)) if set.len() == 11&& set.contains(&'0') && set.contains(&'9') && set.contains(&'.'))
     );
@@ -525,7 +463,7 @@ mod tests {
     );
 
     // enable fraction and exponent
-    let action: Action<_> = float_literal_with(|o| o.default_fraction().default_exponent());
+    let action: Action<_> = float_literal_with(|o| o.default_fractional().default_exponent());
     assert!(
       matches!(action.head(), Some(HeadMatcher::OneOf(set)) if set.len() == 11&& set.contains(&'0') && set.contains(&'9') && set.contains(&'.'))
     );
@@ -557,11 +495,11 @@ mod tests {
 
   #[test]
   fn test_float_literal_action_with_options() {
-    let options = FloatLiteralOptions::default()
+    let options = FloatLiteralOptions::new()
       .separator_with(|s| s.indexes_to_vec())
-      .integer_to_string()
-      .fraction_with(|o| o.acc_to_string())
-      .exponent_with(|o| o.acc_to_string());
+      .integral_to_string()
+      .fractional_with(|o| o.value_to_string())
+      .exponent_with(|o| o.value_to_string());
     let action: Action<_> = float_literal_with_options(options);
 
     // reject invalid start
