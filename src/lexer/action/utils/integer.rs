@@ -426,17 +426,29 @@ mod tests {
   use super::*;
   use crate::lexer::action::ActionInput;
 
-  fn assert_integer_literal_body(
-    (digested, data): (usize, IntegerLiteralData<Vec<usize>, String>),
-    expect_value: &str,
-  ) {
-    assert_eq!(digested, 4);
+  #[test]
+  fn test_integer_literal_body_with() {
+    let (digested, data) = integer_literal_body_with(
+      "1_234z",
+      |c| c.is_ascii_digit(),
+      |o| o.separator_with(|s| s.indexes_to_vec()).value_to_string(),
+    );
+    assert_eq!(digested, 5);
     assert_eq!(data.separators, vec![1]);
-    assert_eq!(data.value, expect_value.to_string());
+    assert_eq!(data.value, "1234".to_string());
   }
 
   #[test]
   fn test_integer_literal_body_with_options() {
+    fn assert_integer_literal_body(
+      (digested, data): (usize, IntegerLiteralData<Vec<usize>, String>),
+      expect_value: &str,
+    ) {
+      assert_eq!(digested, 4);
+      assert_eq!(data.separators, vec![1]);
+      assert_eq!(data.value, expect_value.to_string());
+    }
+
     let options_builder = |o: IntegerLiteralBodyOptions<(), ()>| {
       o.separator_with(|s| s.indexes_to_vec()).value_to_string()
     };
@@ -477,15 +489,54 @@ mod tests {
     );
   }
 
-  fn assert_default_integer_literal_action(
-    action: Action<MockTokenKind<IntegerLiteralData<(), ()>>>,
-    s: &str,
-    expect_digested: usize,
-  ) {
-    let res = action
-      .exec(&mut ActionInput::new(s, 0, &mut ()).unwrap())
-      .unwrap();
-    assert_eq!(res.digested, expect_digested);
+  #[test]
+  fn test_integer_literal_body_with_options_separators_only() {
+    fn test(
+      f: impl Fn(&str, IntegerLiteralBodyOptions<(), ()>) -> (usize, IntegerLiteralData<(), ()>),
+    ) {
+      let options = IntegerLiteralBodyOptions::new();
+      assert_eq!(f("____", options).0, 0);
+    }
+    test(binary_integer_literal_body_with_options);
+    test(octal_integer_literal_body_with_options);
+    test(decimal_integer_literal_body_with_options);
+    test(hexadecimal_integer_literal_body_with_options);
+  }
+
+  #[test]
+  fn test_integer_literal_body_with_options_starts_or_ends_with_separators() {
+    fn test(
+      f: impl Fn(
+        &str,
+        IntegerLiteralBodyOptions<NumericSeparatorOptions<()>, ()>,
+      ) -> (usize, IntegerLiteralData<(), ()>),
+    ) {
+      let options = IntegerLiteralBodyOptions::new().separator('_');
+      assert_eq!(f("_000_", options.clone()).0, 5);
+      assert_eq!(f("000_", options.clone()).0, 4);
+      assert_eq!(f("_000", options).0, 4);
+    }
+    test(binary_integer_literal_body_with_options);
+    test(octal_integer_literal_body_with_options);
+    test(decimal_integer_literal_body_with_options);
+    test(hexadecimal_integer_literal_body_with_options);
+  }
+
+  #[test]
+  fn test_integer_literal_body_with_options_consecutive_separators() {
+    fn test(
+      f: impl Fn(
+        &str,
+        IntegerLiteralBodyOptions<NumericSeparatorOptions<()>, ()>,
+      ) -> (usize, IntegerLiteralData<(), ()>),
+    ) {
+      let options = IntegerLiteralBodyOptions::new().separator('_');
+      assert_eq!(f("0__0", options).0, 4);
+    }
+    test(binary_integer_literal_body_with_options);
+    test(octal_integer_literal_body_with_options);
+    test(decimal_integer_literal_body_with_options);
+    test(hexadecimal_integer_literal_body_with_options);
   }
 
   fn assert_reject(action: Action<MockTokenKind<IntegerLiteralData<(), ()>>>, s: &str) {
@@ -494,21 +545,20 @@ mod tests {
       .is_none());
   }
 
-  fn assert_integer_literal_action(
-    action: Action<MockTokenKind<IntegerLiteralData<Vec<usize>, String>>>,
-    s: &str,
-    expect_value: &str,
-  ) {
-    let res = action
-      .exec(&mut ActionInput::new(s, 0, &mut ()).unwrap())
-      .unwrap();
-    assert_eq!(res.digested, 6);
-    assert_eq!(res.kind.data.separators, vec![1]);
-    assert_eq!(res.kind.data.value, expect_value);
-  }
-
   #[test]
   fn test_integer_literal_actions() {
+    fn assert_integer_literal_action(
+      action: Action<MockTokenKind<IntegerLiteralData<Vec<usize>, String>>>,
+      s: &str,
+      expect_value: &str,
+    ) {
+      let res = action
+        .exec(&mut ActionInput::new(s, 0, &mut ()).unwrap())
+        .unwrap();
+      assert_eq!(res.digested, 6);
+      assert_eq!(res.kind.data.separators, vec![1]);
+      assert_eq!(res.kind.data.value, expect_value);
+    }
     let options_builder = |o: IntegerLiteralBodyOptions<(), ()>| {
       o.separator_with(|s| s.indexes_to_vec()).value_to_string()
     };
@@ -559,6 +609,37 @@ mod tests {
   }
 
   #[test]
+  fn test_decimal_integer_literal_action_starts_with_separator() {
+    let action = decimal_integer_literal_with_options(IntegerLiteralBodyOptions::new());
+    assert_reject(action, "_123");
+  }
+
+  #[test]
+  fn test_integer_literal_actions_wrong_prefix() {
+    let action = binary_integer_literal_with_options(IntegerLiteralBodyOptions::new());
+    assert_reject(action, "z");
+    let action = octal_integer_literal_with_options(IntegerLiteralBodyOptions::new());
+    assert_reject(action, "z");
+    let action = hexadecimal_integer_literal_with_options(IntegerLiteralBodyOptions::new());
+    assert_reject(action, "z");
+    let action =
+      decimal_integer_literal_with_options(IntegerLiteralBodyOptions::new().separator('_'));
+    assert_reject(action, "_123");
+  }
+
+  #[test]
+  fn test_no_digested() {
+    let action = binary_integer_literal_with_options(IntegerLiteralBodyOptions::new());
+    assert_reject(action, "0b");
+    let action = octal_integer_literal_with_options(IntegerLiteralBodyOptions::new());
+    assert_reject(action, "0o");
+    let action = decimal_integer_literal_with_options(IntegerLiteralBodyOptions::new());
+    assert_reject(action, "z");
+    let action = hexadecimal_integer_literal_with_options(IntegerLiteralBodyOptions::new());
+    assert_reject(action, "0x");
+  }
+
+  #[test]
   fn with_suffix() {
     // this is an example of customize an action with literal body utils
     let action_factory = || {
@@ -583,7 +664,13 @@ mod tests {
       })
       .unchecked_head_in(['0'])
     };
-    assert_default_integer_literal_action(action_factory(), "0B101n", 6);
+    assert_eq!(
+      action_factory()
+        .exec(&mut ActionInput::new("0B101n", 0, &mut ()).unwrap())
+        .unwrap()
+        .digested,
+      6
+    );
     // missing suffix
     assert_reject(action_factory(), "0B101");
     // wrong prefix
