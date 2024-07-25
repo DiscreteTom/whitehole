@@ -197,7 +197,7 @@ pub fn float_literal_body_with_options<
           exponent_digested,
           FloatExponentData {
             indicator_len: indicator.len(),
-            base: data,
+            body: data,
           },
         )
       })
@@ -212,8 +212,8 @@ pub fn float_literal_body_with_options<
   (
     total_digested,
     FloatLiteralData {
-      integer: (integer_digested, integer_data),
-      fraction: fraction_part,
+      integral: (integer_digested, integer_data),
+      fractional: fraction_part,
       exponent: exponent_part,
     },
   )
@@ -318,22 +318,22 @@ mod tests {
           + exponent.as_ref().map(|f| f.0).unwrap_or_default()
       );
     }
-    assert_eq!(data.integer.0, integer.0);
-    assert_eq!(data.integer.1.value, integer.1);
-    assert_eq!(data.integer.1.separators, integer.2);
+    assert_eq!(data.integral.0, integer.0);
+    assert_eq!(data.integral.1.value, integer.1);
+    assert_eq!(data.integral.1.separators, integer.2);
 
     if let Some(fraction) = fraction {
-      assert_eq!(data.fraction.as_ref().unwrap().0, fraction.0);
-      assert_eq!(data.fraction.as_ref().unwrap().1.value, fraction.1);
-      assert_eq!(data.fraction.as_ref().unwrap().1.separators, fraction.2);
+      assert_eq!(data.fractional.as_ref().unwrap().0, fraction.0);
+      assert_eq!(data.fractional.as_ref().unwrap().1.value, fraction.1);
+      assert_eq!(data.fractional.as_ref().unwrap().1.separators, fraction.2);
     }
 
     if let Some(exponent) = exponent {
       assert_eq!(data.exponent.as_ref().unwrap().0, exponent.0);
-      assert_eq!(data.exponent.as_ref().unwrap().1.base.value, exponent.1);
+      assert_eq!(data.exponent.as_ref().unwrap().1.body.value, exponent.1);
       assert_eq!(data.exponent.as_ref().unwrap().1.indicator_len, exponent.2);
       assert_eq!(
-        data.exponent.as_ref().unwrap().1.base.separators,
+        data.exponent.as_ref().unwrap().1.body.separators,
         exponent.3
       );
     }
