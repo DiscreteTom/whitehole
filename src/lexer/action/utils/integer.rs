@@ -515,7 +515,7 @@ mod tests {
         IntegerLiteralBodyOptions<NumericSeparatorOptions<()>, ()>,
       ) -> (usize, IntegerLiteralData<(), ()>),
     ) {
-      let options = IntegerLiteralBodyOptions::new().separator('_');
+      let options = IntegerLiteralBodyOptions::new().default_separator();
       assert_eq!(f("_000_", options.clone()).0, 5);
       assert_eq!(f("000_", options.clone()).0, 4);
       assert_eq!(f("_000", options).0, 4);
@@ -534,7 +534,7 @@ mod tests {
         IntegerLiteralBodyOptions<NumericSeparatorOptions<()>, ()>,
       ) -> (usize, IntegerLiteralData<(), ()>),
     ) {
-      let options = IntegerLiteralBodyOptions::new().separator('_');
+      let options = IntegerLiteralBodyOptions::new().default_separator();
       assert_eq!(f("0__0", options).0, 4);
     }
     test(binary_integer_literal_body_with_options);
@@ -627,7 +627,7 @@ mod tests {
     let action = hexadecimal_integer_literal_with_options(IntegerLiteralBodyOptions::new());
     assert_reject(action, "z");
     let action =
-      decimal_integer_literal_with_options(IntegerLiteralBodyOptions::new().separator('_'));
+      decimal_integer_literal_with_options(IntegerLiteralBodyOptions::new().default_separator());
     assert_reject(action, "_123");
   }
 
