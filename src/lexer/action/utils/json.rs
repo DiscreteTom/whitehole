@@ -1,13 +1,16 @@
 // TODO: only available in feature "json"
 
 use super::{
-  chars_in_str, exact_chars, float_literal_body_with_options, map, unicode_with, Accumulator,
-  FloatLiteralData, FloatLiteralOptions, HexEscapeError, PartialStringBody, PartialStringBodyValue,
+  chars_in_str, exact_chars, float_literal_body_with_options, map, unicode_with, FloatLiteralData,
+  FloatLiteralOptions, HexEscapeError, PartialStringBody, PartialStringBodyValue,
   StringBodyOptions,
 };
-use crate::lexer::{
-  action::{simple_with_data, Action},
-  token::MockTokenKind,
+use crate::{
+  lexer::{
+    action::{simple_with_data, Action},
+    token::MockTokenKind,
+  },
+  utils::Accumulator,
 };
 
 /// Create an action that matches any JSON whitespace characters greedily.
