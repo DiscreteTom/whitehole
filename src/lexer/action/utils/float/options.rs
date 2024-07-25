@@ -267,7 +267,7 @@ impl<Sep, IntAcc, FracAcc, ExpAcc> FloatLiteralOptions<Sep, IntAcc, FracAcc, Exp
     self,
     options_builder: impl FnOnce(NumericSeparatorOptions<()>) -> NewSep,
   ) -> FloatLiteralOptions<NewSep, IntAcc, FracAcc, ExpAcc> {
-    self.separator(options_builder(NumericSeparatorOptions::default()))
+    self.separator(options_builder(NumericSeparatorOptions::new()))
   }
 
   /// Set the numeric separator for the float literal to the default value of
@@ -275,6 +275,6 @@ impl<Sep, IntAcc, FracAcc, ExpAcc> FloatLiteralOptions<Sep, IntAcc, FracAcc, Exp
   pub fn default_separator(
     self,
   ) -> FloatLiteralOptions<NumericSeparatorOptions<()>, IntAcc, FracAcc, ExpAcc> {
-    self.separator(NumericSeparatorOptions::default())
+    self.separator(NumericSeparatorOptions::new())
   }
 }

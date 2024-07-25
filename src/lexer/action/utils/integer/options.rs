@@ -1,34 +1,51 @@
 use crate::utils::Accumulator;
 
+/// [`Accumulator`] that can also verify whether a character is a valid numeric separator.
+///
+/// These types already implement the [`NumericSeparatorAccumulator`] trait:
+/// - `()` - mock accumulator that does nothing. This also means the numeric separator is disabled.
+/// - [`NumericSeparatorOptions`] - check for separators and accumulate the index of numeric separators.
 pub trait NumericSeparatorAccumulator: Accumulator<usize> {
   /// The underlying accumulator type.
   type Acc;
   /// Return whether the character is a valid numeric separator.
+  /// If return `true`, the character will be used to update the accumulator.
   fn validate(&self, c: char) -> bool;
-  /// Emit the underlying accumulator.
+  /// Consume self, emit the underlying accumulator.
   fn emit(self) -> Self::Acc;
 }
 
 impl NumericSeparatorAccumulator for () {
   type Acc = ();
+  #[inline]
   fn validate(&self, _: char) -> bool {
-    // TODO: explain why false
+    // `()` means the numeric separator is disabled,
+    // nothing will be treated as a valid separator
+    // so always return false
     false
   }
+  #[inline]
   fn emit(self) -> Self::Acc {}
 }
 
+/// This struct indicates the numeric separator is enabled.
+/// It will check whether the character is the separator and accumulate the index of separators.
 #[derive(Clone, Debug)]
 pub struct NumericSeparatorOptions<Acc> {
-  /// See [`Self::ch`].
-  pub ch: char,
-  /// See [`Self::acc`].
-  pub acc: Acc,
+  /// See [`Self::char`].
+  pub char: char,
+  /// See [`Self::indexes_to`].
+  pub indexes_to: Acc,
 }
 
-impl Default for NumericSeparatorOptions<()> {
-  fn default() -> Self {
-    Self { ch: '_', acc: () }
+impl NumericSeparatorOptions<()> {
+  /// Create a new instance with the separator character `'_'` and no index accumulator.
+  #[inline]
+  pub const fn new() -> Self {
+    Self {
+      char: '_',
+      indexes_to: (),
+    }
   }
 }
 
@@ -38,43 +55,52 @@ impl<Acc> NumericSeparatorOptions<Acc> {
   /// # Examples
   /// ```rust
   /// # use whitehole::lexer::action::NumericSeparatorOptions;
-  /// let options = NumericSeparatorOptions::default().ch('-');
+  /// let options = NumericSeparatorOptions::new().char('-');
   /// ```
-  pub fn ch(mut self, separator: char) -> Self {
-    self.ch = separator;
+  #[inline]
+  pub const fn char(mut self, separator: char) -> Self {
+    self.char = separator;
     self
   }
 
   /// Set an accumulator to accumulate the index of numeric separators.
-  /// Default is [`()`].
+  /// Default is `()` which means no accumulator.
   /// # Examples
   /// ```rust
   /// # use whitehole::lexer::action::{NumericSeparatorOptions};
   /// # let options: NumericSeparatorOptions<Vec<usize>> =
-  /// NumericSeparatorOptions::default().acc(vec![]);
+  /// NumericSeparatorOptions::new().indexes_to(vec![]);
   /// ```
-  pub fn acc<NewAcc>(self, acc: NewAcc) -> NumericSeparatorOptions<NewAcc> {
-    NumericSeparatorOptions { ch: self.ch, acc }
+  #[inline]
+  pub fn indexes_to<NewAcc>(self, acc: NewAcc) -> NumericSeparatorOptions<NewAcc> {
+    NumericSeparatorOptions {
+      char: self.char,
+      indexes_to: acc,
+    }
   }
 
-  /// Set [`Self::acc`] to [`Vec`].
-  pub fn acc_to_vec(self) -> NumericSeparatorOptions<Vec<usize>> {
-    self.acc(vec![])
+  /// Accumulate the index of numeric separators into a vector.
+  #[inline]
+  pub fn indexes_to_vec(self) -> NumericSeparatorOptions<Vec<usize>> {
+    self.indexes_to(vec![])
   }
 }
 
 impl<Acc: Accumulator<usize>> NumericSeparatorAccumulator for NumericSeparatorOptions<Acc> {
   type Acc = Acc;
+  #[inline]
   fn validate(&self, c: char) -> bool {
-    c == self.ch
+    c == self.char
   }
+  #[inline]
   fn emit(self) -> Self::Acc {
-    self.acc
+    self.indexes_to
   }
 }
 impl<Acc: Accumulator<usize>> Accumulator<usize> for NumericSeparatorOptions<Acc> {
+  #[inline]
   fn update(&mut self, c: usize) {
-    self.acc.update(c);
+    self.indexes_to.update(c);
   }
 }
 
@@ -82,73 +108,71 @@ impl<Acc: Accumulator<usize>> Accumulator<usize> for NumericSeparatorOptions<Acc
 pub struct IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// See [`Self::separator`].
   pub separator: SepAcc,
-  /// See [`Self::value`].
-  pub value: ValueAcc,
+  /// See [`Self::value_to`].
+  pub value_to: ValueAcc,
 }
 
-impl Default for IntegerLiteralBodyOptions<(), ()> {
-  fn default() -> Self {
+impl IntegerLiteralBodyOptions<(), ()> {
+  /// Create a new instance with numeric separator disabled and no value accumulator.
+  #[inline]
+  pub const fn new() -> Self {
     Self {
       separator: (),
-      value: (),
+      value_to: (),
     }
   }
 }
 
 impl<SepAcc, ValueAcc> IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// Set the numeric separator for the integer literal.
-  /// Default is [`()`] (no separator allowed).
+  /// Default is `()` which means numeric separator is disabled.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::{IntegerLiteralBodyOptions, NumericSeparatorOptions};
-  /// let options = IntegerLiteralBodyOptions::default()
-  ///   .separator(NumericSeparatorOptions::default());
+  /// let options = IntegerLiteralBodyOptions::new()
+  ///   .separator(NumericSeparatorOptions::new());
   /// ```
+  #[inline]
   pub fn separator<Acc>(self, options: Acc) -> IntegerLiteralBodyOptions<Acc, ValueAcc> {
     IntegerLiteralBodyOptions {
       separator: options,
-      value: self.value,
+      value_to: self.value_to,
     }
   }
 
-  /// Set [`Self::separator`] to [`NumericSeparatorOptions`] using the given options builder.
+  /// Enable numeric separator with [`NumericSeparatorOptions`] using the given options builder.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::{IntegerLiteralBodyOptions};
-  /// let options = IntegerLiteralBodyOptions::default()
-  ///   .separator_with(|s| s.ch('-').acc_to_vec());
+  /// let options = IntegerLiteralBodyOptions::new()
+  ///   .separator_with(|s| s.char('-').indexes_to_vec());
   /// ```
+  #[inline]
   pub fn separator_with<Acc>(
     self,
     options_builder: impl FnOnce(NumericSeparatorOptions<()>) -> Acc,
   ) -> IntegerLiteralBodyOptions<Acc, ValueAcc> {
-    self.separator(options_builder(NumericSeparatorOptions::default()))
-  }
-
-  /// Set the numeric separator for the integer literal to the default value of
-  /// [`NumericSeparatorOptions`] (use `'_'` as the separator, no accumulator).
-  pub fn default_separator(
-    self,
-  ) -> IntegerLiteralBodyOptions<NumericSeparatorOptions<()>, ValueAcc> {
-    self.separator(NumericSeparatorOptions::default())
+    self.separator(options_builder(NumericSeparatorOptions::new()))
   }
 
   /// Set an accumulator to accumulate the integer literal body's value.
-  /// Default is [`()`].
+  /// Default is `()` which means no accumulator.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::{IntegerLiteralBodyOptions};
-  /// let options = IntegerLiteralBodyOptions::default().value(String::new());
+  /// let options = IntegerLiteralBodyOptions::new().value_to(String::new());
   /// ```
-  pub fn value<NewAcc>(self, acc: NewAcc) -> IntegerLiteralBodyOptions<SepAcc, NewAcc> {
+  #[inline]
+  pub fn value_to<NewAcc>(self, acc: NewAcc) -> IntegerLiteralBodyOptions<SepAcc, NewAcc> {
     IntegerLiteralBodyOptions {
       separator: self.separator,
-      value: acc,
+      value_to: acc,
     }
   }
 
-  /// Set [`Self::value`] to [`String`].
+  /// Accumulate the integer literal body's value into a string.
+  #[inline]
   pub fn value_to_string(self) -> IntegerLiteralBodyOptions<SepAcc, String> {
-    self.value(String::new())
+    self.value_to(String::new())
   }
 }

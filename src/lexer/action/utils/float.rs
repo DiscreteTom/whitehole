@@ -183,7 +183,7 @@ pub fn float_literal_body_with_options<
     rest,
     IntegerLiteralBodyOptions {
       separator: options.separator.clone(),
-      value: options.integer,
+      value_to: options.integer,
     },
   );
   total_digested += integer_digested;
@@ -198,7 +198,7 @@ pub fn float_literal_body_with_options<
         &rest[fraction.point.len_utf8()..],
         IntegerLiteralBodyOptions {
           separator: options.separator.clone(),
-          value: fraction.acc,
+          value_to: fraction.acc,
         },
       );
       let fraction_digested = body_digested + fraction.point.len_utf8();
@@ -226,7 +226,7 @@ pub fn float_literal_body_with_options<
           &rest[indicator.len()..],
           IntegerLiteralBodyOptions {
             separator: options.separator,
-            value: exponent.acc,
+            value_to: exponent.acc,
           },
         );
         let exponent_digested = body_digested + indicator.len();
@@ -404,7 +404,7 @@ mod tests {
   #[test]
   fn test_float_literal_body_with_options() {
     let options = FloatLiteralOptions::default()
-      .separator_with(|s| s.acc_to_vec())
+      .separator_with(|s| s.indexes_to_vec())
       .integer_to_string()
       .fraction_with(|o| o.acc_to_string())
       .exponent_with(|o| o.acc_to_string());
@@ -558,7 +558,7 @@ mod tests {
   #[test]
   fn test_float_literal_action_with_options() {
     let options = FloatLiteralOptions::default()
-      .separator_with(|s| s.acc_to_vec())
+      .separator_with(|s| s.indexes_to_vec())
       .integer_to_string()
       .fraction_with(|o| o.acc_to_string())
       .exponent_with(|o| o.acc_to_string());

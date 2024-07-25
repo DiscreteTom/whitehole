@@ -207,7 +207,7 @@ pub fn number<
 ) -> Action<MockTokenKind<FloatLiteralData<SepAcc, IntAcc, FracAcc, ExpAcc>>, ActionState, ErrorType>
 {
   let options = FloatLiteralOptions::default()
-    .separator_with(|o| o.acc(options.separator))
+    .separator_with(|o| o.indexes_to(options.separator))
     .integer(options.integer)
     .fraction_with(|o| o.acc(options.fraction))
     .exponent_with(|o| o.acc(options.exponent));
