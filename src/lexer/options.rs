@@ -55,6 +55,18 @@ impl<'expect_literal, Kind: 'static, ErrAcc, Fork> LexOptions<'expect_literal, K
   }
 
   /// Set the error accumulator.
+  /// # Design
+  /// ## Why there is no `Lexer::errors` to store all errors?
+  /// Why the error accumulator is not a field of [`Lexer`](crate::lexer::Lexer)
+  /// just like [`Lexer::action_state`](crate::lexer::Lexer::action_state)?
+  ///
+  /// Action state is just a value, but the error accumulator is a collection/container.
+  /// We don't want unnecessary memory allocation, so we won't create the container
+  /// for users. Users can create their own accumulator and manage its memory allocation.
+  /// E.g. some users may just want to print the errors, so they don't need any container;
+  /// some users may want to process errors after each lexing, and clear the container
+  /// before next lexing to save memory; some users may want to store all errors
+  /// in a container and process them later.
   pub fn err_acc<NewErrAcc>(
     self,
     err_acc: NewErrAcc,
