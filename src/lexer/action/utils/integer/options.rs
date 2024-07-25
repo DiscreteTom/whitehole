@@ -49,6 +49,13 @@ impl NumericSeparatorOptions<()> {
   }
 }
 
+impl From<char> for NumericSeparatorOptions<()> {
+  #[inline]
+  fn from(char: char) -> Self {
+    Self::new().char(char)
+  }
+}
+
 impl<Acc> NumericSeparatorOptions<Acc> {
   /// Set the character used as the numeric separator.
   /// Default is `'_'`.
@@ -131,11 +138,18 @@ impl<SepAcc, ValueAcc> IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// # use whitehole::lexer::action::{IntegerLiteralBodyOptions, NumericSeparatorOptions};
   /// let options = IntegerLiteralBodyOptions::new()
   ///   .separator(NumericSeparatorOptions::new());
+  ///
+  /// // you can also use a char directly
+  /// let options = IntegerLiteralBodyOptions::new()
+  ///   .separator('_');
   /// ```
   #[inline]
-  pub fn separator<Acc>(self, options: Acc) -> IntegerLiteralBodyOptions<Acc, ValueAcc> {
+  pub fn separator<Acc>(
+    self,
+    options: impl Into<NumericSeparatorOptions<Acc>>,
+  ) -> IntegerLiteralBodyOptions<NumericSeparatorOptions<Acc>, ValueAcc> {
     IntegerLiteralBodyOptions {
-      separator: options,
+      separator: options.into(),
       value_to: self.value_to,
     }
   }
@@ -150,8 +164,8 @@ impl<SepAcc, ValueAcc> IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   #[inline]
   pub fn separator_with<Acc>(
     self,
-    options_builder: impl FnOnce(NumericSeparatorOptions<()>) -> Acc,
-  ) -> IntegerLiteralBodyOptions<Acc, ValueAcc> {
+    options_builder: impl FnOnce(NumericSeparatorOptions<()>) -> NumericSeparatorOptions<Acc>,
+  ) -> IntegerLiteralBodyOptions<NumericSeparatorOptions<Acc>, ValueAcc> {
     self.separator(options_builder(NumericSeparatorOptions::new()))
   }
 
@@ -211,6 +225,10 @@ mod tests {
     assert!(!options.validate('_'));
     options.update(0);
     assert_eq!(options.emit(), vec![0]);
+
+    // from
+    let options: NumericSeparatorOptions<()> = '-'.into();
+    assert_eq!(options.char, '-');
   }
 
   #[test]
