@@ -242,7 +242,7 @@ impl<Sep, IntAcc, FracAcc, ExpAcc> FloatLiteralOptions<Sep, IntAcc, FracAcc, Exp
   /// ```
   /// # use whitehole::lexer::action::{FloatLiteralOptions, NumericSeparatorOptions};
   /// let options = FloatLiteralOptions::default()
-  ///   .separator(NumericSeparatorOptions::default());
+  ///   .separator(NumericSeparatorOptions::new());
   /// ```
   pub fn separator<NewSep>(
     self,
@@ -261,7 +261,7 @@ impl<Sep, IntAcc, FracAcc, ExpAcc> FloatLiteralOptions<Sep, IntAcc, FracAcc, Exp
   /// ```
   /// # use whitehole::lexer::action::{FloatLiteralOptions};
   /// let options = FloatLiteralOptions::default()
-  ///   .separator_with(|s| s.ch('-').acc_to_vec());
+  ///   .separator_with(|s| s.char('-').indexes_to_vec());
   /// ```
   pub fn separator_with<NewSep>(
     self,

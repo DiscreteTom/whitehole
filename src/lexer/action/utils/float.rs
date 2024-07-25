@@ -75,7 +75,7 @@ pub fn float_literal_body(rest: &str) -> (usize, FloatLiteralData<(), (), (), ()
 ///   |o| o
 ///     // enable numeric separator using `_`
 ///     // and collect their indexes into a vector
-///     .separator_with(|s| s.ch('_').acc_to_vec())
+///     .separator_with(|s| s.char('_').indexes_to_vec())
 ///     // collect the value of the integer part
 ///     // into a string
 ///     .integer_to_string()
@@ -138,7 +138,7 @@ pub fn float_literal_body_with<
 ///   FloatLiteralOptions::default()
 ///     // enable numeric separator using `_`
 ///     // and collect their indexes into a vector
-///     .separator_with(|s| s.ch('_').acc_to_vec())
+///     .separator_with(|s| s.char('_').indexes_to_vec())
 ///     // collect the value of the integer part
 ///     // into a string
 ///     .integer_to_string()
