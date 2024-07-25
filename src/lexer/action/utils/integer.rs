@@ -81,6 +81,7 @@ use crate::{
 /// assert_eq!(data.separators, vec![1, 2]);
 /// assert_eq!(data.value, "12".to_string());
 /// ```
+#[inline]
 pub fn integer_literal_body_with<
   SepAcc: NumericSeparatorAccumulator,
   ValueAcc: Accumulator<char>,
@@ -240,6 +241,7 @@ macro_rules! generate_integer_literal_functions {
     ///
     /// Similarly, consecutive separators are allowed in a valid integer literal body.
     /// It's up to the caller to decide whether to accept consecutive separators.
+    #[inline]
     pub fn $body_fn_name_with<SepAcc: NumericSeparatorAccumulator, ValueAcc: Accumulator<char>>(
       rest: &str,
       options_builder: impl FnOnce(
@@ -268,6 +270,7 @@ macro_rules! generate_integer_literal_functions {
     ///
     /// Similarly, consecutive separators are allowed in a valid integer literal body.
     /// It's up to the caller to decide whether to accept consecutive separators.
+    #[inline]
     pub fn $body_fn_name_with_options<
       SepAcc: NumericSeparatorAccumulator,
       ValueAcc: Accumulator<char>,
@@ -299,6 +302,7 @@ macro_rules! generate_integer_literal_functions {
     /// It's up to the caller to decide whether to accept consecutive separators.
     ///
     /// For decimal integer literals, if the first char is a separator, the action will be rejected.
+    #[inline]
     pub fn $action_fn_name_with<
       ActionState,
       ErrorType,
