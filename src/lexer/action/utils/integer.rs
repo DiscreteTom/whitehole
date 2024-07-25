@@ -17,26 +17,31 @@ use crate::{
 /// E.g. in `0x1_23`, the body is `1_23`, the value is `123`, 4 bytes will be digested.
 /// Return how many bytes are digested and the integer literal data.
 /// # Caveat
-/// If the matched content is separators only, no bytes will be digested
-/// (`return.0` will be set to `0`).
+/// If the matched content is separators only, no bytes will be digested,
+/// the first element of the return tuple will be set to `0`.
 /// E.g. if the separator char is `'_'`, then
 /// `___` won't be treated as a valid integer literal body.
 ///
-/// However, the matched content may starts/ends with separators.
+/// However, the matched content may starts or ends with separators.
 /// E.g. if the separator char is `'_'`, then
-/// `_123`/`123_` will be treated as a valid integer literal body.
+/// `_123` and `123_` will be treated as a valid integer literal body.
 /// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
-/// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+/// however in other languages (e.g. javascript) `0x_123` and `0x123_` are not valid integer literals.
 /// So it's up to the caller to decide whether to accept the leading/trailing separators.
+///
+/// Similarly, consecutive separators are allowed in a valid integer literal body.
+/// It's up to the caller to decide whether to accept consecutive separators.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{integer_literal_body_with};
 /// let (digested, data) = integer_literal_body_with(
 ///   "1_234z",
 ///   |c| c.is_ascii_digit(),
-///   |o| o.separator_with(|s| s.ch('_').acc(vec![])).value(String::new())
+///   |o| o
+///     .separator_with(|s| s.indexes_to_vec())
+///     .value_to_string()
 /// );
-/// assert_eq!(digested, 5);
+/// assert_eq!(digested, 5); // `1_234`
 /// assert_eq!(data.separators, vec![1]);
 /// assert_eq!(data.value, "1234".to_string());
 ///
@@ -44,11 +49,37 @@ use crate::{
 /// let (digested, data) = integer_literal_body_with(
 ///   "____z",
 ///   |c| c.is_ascii_digit(),
-///   |o| o.separator_with(|s| s.ch('_').acc(vec![])).value(String::new())
+///   |o| o
+///     .separator_with(|s| s.indexes_to_vec())
+///     .value_to_string()
 /// );
 /// assert_eq!(digested, 0); // digested will be set to 0
 /// assert_eq!(data.separators, vec![0, 1, 2, 3]); // separators will still be collected
 /// assert_eq!(data.value, "".to_string()); // no value
+///
+/// // starts or ends with separators
+/// let (digested, data) = integer_literal_body_with(
+///   "_123_z",
+///   |c| c.is_ascii_digit(),
+///   |o| o
+///     .separator_with(|s| s.indexes_to_vec())
+///     .value_to_string()
+/// );
+/// assert_eq!(digested, 5); // `_123_`
+/// assert_eq!(data.separators, vec![0, 4]);
+/// assert_eq!(data.value, "123".to_string());
+///
+/// // consecutive separators
+/// let (digested, data) = integer_literal_body_with(
+///   "1__2z",
+///   |c| c.is_ascii_digit(),
+///   |o| o
+///     .separator_with(|s| s.indexes_to_vec())
+///     .value_to_string()
+/// );
+/// assert_eq!(digested, 4); // `1__2`
+/// assert_eq!(data.separators, vec![1, 2]);
+/// assert_eq!(data.value, "12".to_string());
 /// ```
 pub fn integer_literal_body_with<
   SepAcc: NumericSeparatorAccumulator,
@@ -73,17 +104,20 @@ pub fn integer_literal_body_with<
 ///
 /// E.g. in `0x1_23`, the body is `1_23`, the value is `123`, 4 bytes will be digested.
 /// # Caveat
-/// If the matched content is separators only, no bytes will be digested
-/// (`return.0` will be set to `0`).
+/// If the matched content is separators only, no bytes will be digested,
+/// the first element of the return tuple will be set to `0`.
 /// E.g. if the separator char is `'_'`, then
 /// `___` won't be treated as a valid integer literal body.
 ///
-/// However, the matched content may starts/ends with separators.
+/// However, the matched content may starts or ends with separators.
 /// E.g. if the separator char is `'_'`, then
-/// `_123`/`123_` will be treated as a valid integer literal body.
+/// `_123` and `123_` will be treated as a valid integer literal body.
 /// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
-/// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+/// however in other languages (e.g. javascript) `0x_123` and `0x123_` are not valid integer literals.
 /// So it's up to the caller to decide whether to accept the leading/trailing separators.
+///
+/// Similarly, consecutive separators are allowed in a valid integer literal body.
+/// It's up to the caller to decide whether to accept consecutive separators.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{integer_literal_body_with_options, IntegerLiteralBodyOptions};
@@ -91,10 +125,10 @@ pub fn integer_literal_body_with<
 ///   "1_234z",
 ///   |c| c.is_ascii_digit(),
 ///   IntegerLiteralBodyOptions::new()
-///     .separator_with(|s| s.ch('_').acc(vec![]))
-///     .value(String::new())
+///     .separator_with(|s| s.indexes_to_vec())
+///     .value_to_string()
 /// );
-/// assert_eq!(digested, 5);
+/// assert_eq!(digested, 5); // `1_234`
 /// assert_eq!(data.separators, vec![1]);
 /// assert_eq!(data.value, "1234".to_string());
 ///
@@ -103,12 +137,36 @@ pub fn integer_literal_body_with<
 ///   "____z",
 ///   |c| c.is_ascii_digit(),
 ///   IntegerLiteralBodyOptions::new()
-///     .separator_with(|s| s.ch('_').acc(vec![]))
-///     .value(String::new())
+///     .separator_with(|s| s.indexes_to_vec())
+///     .value_to_string()
 /// );
 /// assert_eq!(digested, 0); // digested will be set to 0
 /// assert_eq!(data.separators, vec![0, 1, 2, 3]); // separators will still be collected
 /// assert_eq!(data.value, "".to_string()); // no value
+///
+/// // starts or ends with separators
+/// let (digested, data) = integer_literal_body_with_options(
+///   "_123_z",
+///   |c| c.is_ascii_digit(),
+///   IntegerLiteralBodyOptions::new()
+///     .separator_with(|s| s.indexes_to_vec())
+///     .value_to_string()
+/// );
+/// assert_eq!(digested, 5); // `_123_`
+/// assert_eq!(data.separators, vec![0, 4]);
+/// assert_eq!(data.value, "123".to_string());
+///
+/// // consecutive separators
+/// let (digested, data) = integer_literal_body_with_options(
+///   "1__2z",
+///   |c| c.is_ascii_digit(),
+///   IntegerLiteralBodyOptions::new()
+///     .separator_with(|s| s.indexes_to_vec())
+///     .value_to_string()
+/// );
+/// assert_eq!(digested, 4); // `1__2`
+/// assert_eq!(data.separators, vec![1, 2]);
+/// assert_eq!(data.value, "12".to_string());
 /// ```
 pub fn integer_literal_body_with_options<
   SepAcc: NumericSeparatorAccumulator,
@@ -123,7 +181,7 @@ pub fn integer_literal_body_with_options<
 
   for c in rest.chars() {
     if options.separator.validate(c) {
-      options.separator.update(digested);
+      options.separator.update(digested); // record the separator index
       digested += c.len_utf8();
       continue;
     }
@@ -139,6 +197,7 @@ pub fn integer_literal_body_with_options<
     break;
   }
 
+  // if the matched content is separators only, no bytes will be digested
   if sep_only {
     digested = 0;
   }
@@ -164,19 +223,23 @@ macro_rules! generate_integer_literal_functions {
   ) => {
     /// Try to match the integer literal body in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
+    /// E.g. in `0x1_23`, the body is `1_23`, the value is `123`, 4 bytes will be digested.
     /// Return how many bytes are digested and the integer literal data.
     /// # Caveat
-    /// If the matched content is separators only, no bytes will be digested
-    /// (the return value will be set to `0`).
+    /// If the matched content is separators only, no bytes will be digested,
+    /// the first element of the return tuple will be set to `0`.
     /// E.g. if the separator char is `'_'`, then
     /// `___` won't be treated as a valid integer literal body.
     ///
-    /// However, the matched content may starts/ends with separators.
+    /// However, the matched content may starts or ends with separators.
     /// E.g. if the separator char is `'_'`, then
-    /// `_123`/`123_` will be treated as a valid integer literal body.
+    /// `_123` and `123_` will be treated as a valid integer literal body.
     /// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
-    /// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+    /// however in other languages (e.g. javascript) `0x_123` and `0x123_` are not valid integer literals.
     /// So it's up to the caller to decide whether to accept the leading/trailing separators.
+    ///
+    /// Similarly, consecutive separators are allowed in a valid integer literal body.
+    /// It's up to the caller to decide whether to accept consecutive separators.
     pub fn $body_fn_name_with<SepAcc: NumericSeparatorAccumulator, ValueAcc: Accumulator<char>>(
       rest: &str,
       options_builder: impl FnOnce(
@@ -188,19 +251,23 @@ macro_rules! generate_integer_literal_functions {
 
     /// Try to match the integer literal body in the rest of the input text
     /// with the given [`IntegerLiteralBodyOptions`].
+    /// E.g. in `0x1_23`, the body is `1_23`, the value is `123`, 4 bytes will be digested.
     /// Return how many bytes are digested and the integer literal data.
     /// # Caveat
-    /// If the matched content is separators only, no bytes will be digested
-    /// (the return value will be set to `0`).
+    /// If the matched content is separators only, no bytes will be digested,
+    /// the first element of the return tuple will be set to `0`.
     /// E.g. if the separator char is `'_'`, then
     /// `___` won't be treated as a valid integer literal body.
     ///
-    /// However, the matched content may starts/ends with separators.
+    /// However, the matched content may starts or ends with separators.
     /// E.g. if the separator char is `'_'`, then
-    /// `_123`/`123_` will be treated as a valid integer literal body.
+    /// `_123` and `123_` will be treated as a valid integer literal body.
     /// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
-    /// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+    /// however in other languages (e.g. javascript) `0x_123` and `0x123_` are not valid integer literals.
     /// So it's up to the caller to decide whether to accept the leading/trailing separators.
+    ///
+    /// Similarly, consecutive separators are allowed in a valid integer literal body.
+    /// It's up to the caller to decide whether to accept consecutive separators.
     pub fn $body_fn_name_with_options<
       SepAcc: NumericSeparatorAccumulator,
       ValueAcc: Accumulator<char>,
@@ -221,13 +288,17 @@ macro_rules! generate_integer_literal_functions {
     /// E.g. if the separator char is `'_'`, then
     /// `___` won't be treated as a valid integer literal body.
     ///
-    /// However, the integer literal's body may starts/ends with separators
-    /// (decimal integer literal actions will reject if the body starts with a separator).
+    /// However, the matched content may starts or ends with separators.
     /// E.g. if the separator char is `'_'`, then
-    /// `_123`/`123_` will be treated as a valid integer literal body.
+    /// `_123` and `123_` will be treated as a valid integer literal body.
     /// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
-    /// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+    /// however in other languages (e.g. javascript) `0x_123` and `0x123_` are not valid integer literals.
     /// So it's up to the caller to decide whether to accept the leading/trailing separators.
+    ///
+    /// Similarly, consecutive separators are allowed in a valid integer literal body.
+    /// It's up to the caller to decide whether to accept consecutive separators.
+    ///
+    /// For decimal integer literals, if the first char is a separator, the action will be rejected.
     pub fn $action_fn_name_with<
       ActionState,
       ErrorType,
@@ -251,13 +322,17 @@ macro_rules! generate_integer_literal_functions {
     /// E.g. if the separator char is `'_'`, then
     /// `___` won't be treated as a valid integer literal body.
     ///
-    /// However, the integer literal's body may starts/ends with separators
-    /// (decimal integer literal actions will reject if the body starts with a separator).
+    /// However, the matched content may starts or ends with separators.
     /// E.g. if the separator char is `'_'`, then
-    /// `_123`/`123_` will be treated as a valid integer literal body.
+    /// `_123` and `123_` will be treated as a valid integer literal body.
     /// This is because in some languages (e.g. rust) `0x_123_` is a valid integer literal,
-    /// however in other languages (e.g. javascript) `0x_123` or `0x123_` is not a valid integer literal.
+    /// however in other languages (e.g. javascript) `0x_123` and `0x123_` are not valid integer literals.
     /// So it's up to the caller to decide whether to accept the leading/trailing separators.
+    ///
+    /// Similarly, consecutive separators are allowed in a valid integer literal body.
+    /// It's up to the caller to decide whether to accept consecutive separators.
+    ///
+    /// For decimal integer literals, if the first char is a separator, the action will be rejected.
     pub fn $action_fn_name_with_options<
       ActionState,
       ErrorType,
@@ -286,6 +361,7 @@ macro_rules! generate_integer_literal_functions {
         })
       } else {
         simple_with_data(move |input| {
+          // check prefix
           if !input.rest().starts_with(prefix) {
             return None;
           }
@@ -327,7 +403,7 @@ generate_integer_literal_functions!(
   decimal_integer_literal_body_with_options,
   decimal_integer_literal_with,
   decimal_integer_literal_with_options,
-  "",
+  "", // no prefix
   |c| c.is_ascii_digit(),
   ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 );
