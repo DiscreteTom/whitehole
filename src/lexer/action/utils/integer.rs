@@ -346,14 +346,14 @@ macro_rules! generate_integer_literal_functions {
       if prefix.len() == 0 {
         // no prefix, decimal integer literal
         simple_with_data(move |input| {
-          let (digested, data) = $body_fn_name_with_options(&input.rest(), options.clone());
-
-          if digested == 0 {
+          // reject if the first char is a separator
+          if options.separator.validate(input.next()) {
             return None;
           }
 
-          // reject if the first char is a separator
-          if options.separator.validate(input.next()) {
+          let (digested, data) = $body_fn_name_with_options(&input.rest(), options.clone());
+
+          if digested == 0 {
             return None;
           }
 
@@ -365,11 +365,14 @@ macro_rules! generate_integer_literal_functions {
           if !input.rest().starts_with(prefix) {
             return None;
           }
+
           let (digested, data) =
             $body_fn_name_with_options(&input.rest()[prefix.len()..], options.clone());
+
           if digested == 0 {
             return None;
           }
+
           Some((digested + prefix.len(), data))
         })
       }
