@@ -94,6 +94,7 @@ pub fn charset<ActionState, ErrorType>(
 /// # let action: Action<_> =
 /// chars_in_str("09");
 /// ```
+#[inline]
 pub fn chars_in_str<ActionState, ErrorType>(
   s: impl Into<String>,
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
