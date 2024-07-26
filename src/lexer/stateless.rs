@@ -82,17 +82,23 @@ use std::{collections::HashMap, rc::Rc};
 
 /// Stateless, immutable lexer.
 pub struct StatelessLexer<Kind: 'static, ActionState = (), ErrorType = ()> {
-  /// This is used to accelerate lexing by the first character when there is no expectation.
+  /// This is used to accelerate lexing by actions' head matcher when there is no expectation.
+  /// This is pre-calculated to optimize the runtime performance.
   head_map: HeadMap<Kind, ActionState, ErrorType>,
-  /// This is used to accelerate expected lexing by the expected kind and the first character.
+  /// This is used to accelerate expected lexing by the expected kind and actions' head matcher.
+  /// This is pre-calculated to optimize the runtime performance.
   kind_head_map: HashMap<TokenKindId<Kind>, HeadMap<Kind, ActionState, ErrorType>>,
-  /// This is used to accelerate expected lexing by the expected literal.
+  /// This is used to accelerate expected lexing by the expected literal and actions' head matcher.
+  /// This is pre-calculated to optimize the runtime performance.
   literal_map: LiteralMap<Kind, ActionState, ErrorType>,
-  /// This is used to accelerate expected lexing by the expected kind and literal.
+  /// This is used to accelerate expected lexing by the expected kind, the expected literal and actions' head matcher.
+  /// This is pre-calculated to optimize the runtime performance.
   kind_literal_map: HashMap<TokenKindId<Kind>, LiteralMap<Kind, ActionState, ErrorType>>,
 }
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
+  /// Create a new [`StatelessLexer`] from a list of actions.
+  /// This function will pre-calculate some collections to optimize the runtime performance.
   pub fn new(actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>) -> Self {
     // known kinds => actions
     let mut kinds_action_map = HashMap::new();
