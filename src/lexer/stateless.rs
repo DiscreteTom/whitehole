@@ -139,6 +139,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     }
     // fill it
     for a in actions {
+      // TODO: why the following line is not covered in the coverage report?
       if a.muted() {
         // muted, add to all kinds
         for (_, vec) in res.iter_mut() {
