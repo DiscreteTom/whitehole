@@ -104,3 +104,34 @@ impl<'expect_literal, Kind: 'static, ErrAcc, Fork> LexOptions<'expect_literal, K
     self
   }
 }
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TrimOptions<ErrAcc> {
+  /// See [`Self::err_acc`]
+  pub err_acc: ErrAcc,
+}
+
+impl TrimOptions<()> {
+  /// Create a new instance with no error accumulator.
+  #[inline]
+  pub const fn new() -> Self {
+    Self { err_acc: () }
+  }
+}
+
+impl<ErrAcc> TrimOptions<ErrAcc> {
+  /// Set the error accumulator.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::options::TrimOptions;
+  /// let options = TrimOptions::new().errors_to(vec![]);
+  /// ```
+  pub fn errors_to<NewErrAcc>(self, err_acc: NewErrAcc) -> TrimOptions<NewErrAcc> {
+    TrimOptions { err_acc }
+  }
+
+  /// Collect the errors into a vector.
+  pub fn errors_to_vec<E>(self) -> TrimOptions<Vec<E>> {
+    self.errors_to(Vec::new()) // TODO: use a trait for `errors_to`
+  }
+}
