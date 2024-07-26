@@ -4,10 +4,10 @@
 //!
 //! 1. [`self::token`]
 //! 2. [`self::action`]
-//! 3. [`self::stateless`]
 //! 4. [`self::state`]
 //! 5. [`self::lexer`]
 //! 6. [`self::builder`]
+//! 3. [`self::stateless`]
 
 pub mod action;
 pub mod builder;
