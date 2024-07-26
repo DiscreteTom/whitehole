@@ -55,35 +55,6 @@ impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), F
   }
 }
 
-impl<'expect_literal, Kind> From<Expectation<'expect_literal, Kind>>
-  for StatelessLexOptions<'expect_literal, Kind, (), (), ForkDisabled>
-{
-  #[inline]
-  fn from(expectation: Expectation<'expect_literal, Kind>) -> Self {
-    Self::new().expect(expectation)
-  }
-}
-impl<'expect_literal, Kind> From<ReLexContext>
-  for StatelessLexOptions<'expect_literal, Kind, (), (), ForkDisabled>
-{
-  #[inline]
-  fn from(re_lex: ReLexContext) -> Self {
-    Self::new().re_lex(re_lex)
-  }
-}
-impl<'expect_literal, Kind, ErrAcc, Fork> From<LexOptions<'expect_literal, Kind, ErrAcc, Fork>>
-  for StatelessLexOptions<'expect_literal, Kind, (), ErrAcc, Fork>
-{
-  #[inline]
-  fn from(base: LexOptions<'expect_literal, Kind, ErrAcc, Fork>) -> Self {
-    Self {
-      start: 0,
-      action_state: (),
-      base,
-    }
-  }
-}
-
 // re-export from `LexOptions`
 // but with `StatelessLexOptions` as the return type
 // instead of `LexOptions`
