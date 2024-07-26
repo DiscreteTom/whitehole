@@ -209,11 +209,11 @@ pub fn number<
   options: NumberOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
 ) -> Action<MockTokenKind<FloatLiteralData<SepAcc, IntAcc, FracAcc, ExpAcc>>, ActionState, ErrorType>
 {
-  let options = FloatLiteralOptions::default()
+  let options = FloatLiteralOptions::new()
     .separator_with(|o| o.indexes_to(options.separator))
-    .integer(options.integer)
-    .fraction_with(|o| o.acc(options.fraction))
-    .exponent_with(|o| o.acc(options.exponent));
+    .integral_to(options.integer)
+    .fractional_with(|o| o.value_to(options.fraction))
+    .exponent_with(|o| o.value_to(options.exponent));
 
   simple_with_data(
     move |input: &crate::lexer::action::ActionInput<ActionState>| {
