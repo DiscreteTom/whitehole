@@ -223,7 +223,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       options.start,
       options.action_state,
       (),
-      <TrimOutput<_> as StatelessOutput<(), _, ()>>::with_err_acc(options.err_acc),
+      <TrimOutput<_> as StatelessOutput<(), _, ()>>::with_err_acc(options.base.err_acc),
     )
   }
 }

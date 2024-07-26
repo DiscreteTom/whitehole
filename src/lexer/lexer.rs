@@ -1,6 +1,6 @@
 use super::{
   fork::{ForkDisabled, LexOptionsFork},
-  options::LexOptions,
+  options::{LexOptions, TrimOptions},
   output::{LexOutput, TrimOutput},
   re_lex::ReLexableFactory,
   state::LexerState,
@@ -267,7 +267,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
       StatelessTrimOptions {
         start: self.state.digested(),
         action_state: &mut self.action_state,
-        err_acc,
+        base: TrimOptions::new().errors_to(err_acc),
       },
     );
 
@@ -275,6 +275,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
 
     Some(res)
   }
+  // TODO: add trim_with/trim_with_options
 
   fn lex_with_stateless<'expect_literal, ErrAcc,Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>>(
     stateless: &Rc<StatelessLexer<Kind, ActionState, ErrorType>>,
