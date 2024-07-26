@@ -90,11 +90,13 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
     }
   }
 
-  pub fn known_map(&self) -> &HashMap<String, HeadMap<Kind, ActionState, ErrorType>> {
+  #[inline]
+  pub const fn known_map(&self) -> &HashMap<String, HeadMap<Kind, ActionState, ErrorType>> {
     &self.known_map
   }
 
-  pub fn muted_map(&self) -> &HeadMap<Kind, ActionState, ErrorType> {
+  #[inline]
+  pub const fn muted_map(&self) -> &HeadMap<Kind, ActionState, ErrorType> {
     &self.muted_map
   }
 }
