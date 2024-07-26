@@ -216,7 +216,8 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   {
     let options: StatelessTrimOptions<_, _> = options.into();
     Self::execute_actions(
-      |_| &self.muted_head_map,
+      // the literal map's muted map contains all the muted actions
+      |_| self.literal_map.muted_map(),
       &ReLexContext::default(),
       text,
       options.start,
