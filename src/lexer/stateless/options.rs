@@ -15,10 +15,13 @@ pub struct StatelessLexOptions<'expect_literal, Kind: 'static, ActionStateRef, E
 }
 
 impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), ForkDisabled> {
-  pub fn new() -> Self {
+  /// Create a new instance with `0` as the start index and no action state.
+  #[inline]
+  pub const fn new() -> Self {
     Self {
       start: 0,
-      action_state: (), // use `()` as a placeholder, user should use `self.action_state` to set this
+      // use `()` as a placeholder, users should use `self.action_state` to set this
+      action_state: (),
       base: LexOptions::new(),
     }
   }

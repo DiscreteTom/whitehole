@@ -16,10 +16,17 @@ pub struct ReLexContext {
   pub skip: usize,
 }
 
-impl Default for ReLexContext {
-  fn default() -> Self {
+impl ReLexContext {
+  #[inline]
+  pub const fn new() -> Self {
     // set skip to 0 means this is not a re-lex
     Self { start: 0, skip: 0 }
+  }
+}
+
+impl Default for ReLexContext {
+  fn default() -> Self {
+    Self::new()
   }
 }
 

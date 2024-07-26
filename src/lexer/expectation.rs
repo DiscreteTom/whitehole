@@ -8,11 +8,9 @@ pub struct Expectation<'expect_literal, Kind: 'static> {
 }
 
 impl<'expect_literal, Kind> Default for Expectation<'expect_literal, Kind> {
+  #[inline]
   fn default() -> Self {
-    Expectation {
-      kind: None,
-      literal: None,
-    }
+    Self::new()
   }
 }
 
@@ -38,6 +36,14 @@ impl<'expect_literal, Kind> From<&'expect_literal str> for Expectation<'expect_l
 }
 
 impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
+  #[inline]
+  pub const fn new() -> Self {
+    Expectation {
+      kind: None,
+      literal: None,
+    }
+  }
+
   /// If the [`kind`](Self::kind) is provided, the lexer will skip [`Action`](crate::lexer::action::Action)s
   /// with different [`kind_id`](crate::lexer::action::Action::kind) (unless [`muted`](crate::lexer::action::Action::muted)).
   /// # Examples

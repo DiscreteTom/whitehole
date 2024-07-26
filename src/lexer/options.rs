@@ -15,12 +15,13 @@ pub struct LexOptions<'expect_literal, Kind: 'static, ErrAcc, Fork> {
 }
 
 impl<'expect_literal, Kind: 'static> LexOptions<'expect_literal, Kind, (), ForkDisabled> {
-  pub fn new() -> Self {
+  #[inline]
+  pub const fn new() -> Self {
     Self {
-      expectation: Expectation::default(),
+      expectation: Expectation::new(),
       err_acc: (),
       fork: ForkDisabled,
-      re_lex: ReLexContext::default(),
+      re_lex: ReLexContext::new(),
     }
   }
 }
