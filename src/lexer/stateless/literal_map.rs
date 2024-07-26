@@ -2,14 +2,13 @@ use super::head_map::{HeadMap, KnownHead};
 use crate::lexer::action::Action;
 use std::{collections::HashMap, rc::Rc};
 
-pub(super) struct LiteralMapItem<Kind: 'static, ActionState, ErrorType> {
-  pub head_map: HeadMap<Kind, ActionState, ErrorType>,
-  pub muted_head_map: HeadMap<Kind, ActionState, ErrorType>,
-}
-
 pub(super) struct LiteralMap<Kind: 'static, ActionState, ErrorType> {
   /// The key of the map is the literal.
-  known_map: HashMap<String, LiteralMapItem<Kind, ActionState, ErrorType>>,
+  /// Actions in the value should be either muted or have a matched [`Action::literal`].
+  known_map: HashMap<String, HeadMap<Kind, ActionState, ErrorType>>,
+  /// When the rest of the input text doesn't starts with the expected literal,
+  /// only muted actions will be checked.
+  muted_map: HeadMap<Kind, ActionState, ErrorType>,
   // for literal map there is no unknown_fallback because we don't check
   // actions with mismatched/unknown literals (should panic)
 }
@@ -44,7 +43,7 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
   ) -> Self {
     // fill the action map
     for a in actions {
-      // [[check if the action is muted or not in literal map]]
+      // check if the action is muted or not in literal map
       if a.muted() {
         // muted, expectation.literal will be ignored, add to all known literals
         for vec in known_map.values_mut() {
@@ -63,24 +62,25 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
     Self {
       known_map: known_map
         .into_iter()
-        .map(|(literal, vec)| {
-          (
-            literal,
-            LiteralMapItem {
-              head_map: HeadMap::new(&vec, known_head_map.clone()),
-              muted_head_map: HeadMap::new(
-                &vec.into_iter().filter(|a| a.muted()).collect(),
-                known_head_map.clone(),
-              ),
-            },
-          )
-        })
+        .map(|(literal, vec)| (literal, HeadMap::new(&vec, known_head_map.clone())))
         .collect(),
+      muted_map: HeadMap::new(
+        &actions
+          .iter()
+          .filter(|a| a.muted())
+          .map(Clone::clone)
+          .collect(),
+        known_head_map.clone(),
+      ),
     }
   }
 
-  pub fn known_map(&self) -> &HashMap<String, LiteralMapItem<Kind, ActionState, ErrorType>> {
+  pub fn known_map(&self) -> &HashMap<String, HeadMap<Kind, ActionState, ErrorType>> {
     &self.known_map
+  }
+
+  pub fn muted_map(&self) -> &HeadMap<Kind, ActionState, ErrorType> {
+    &self.muted_map
   }
 }
 
@@ -146,7 +146,7 @@ mod tests {
     // collect all literals
     assert_eq!(lm.known_map().len(), ["a", "b"].len());
 
-    let literal_a_head_map = &lm.known_map().get("a").unwrap().head_map;
+    let literal_a_head_map = &lm.known_map().get("a").unwrap();
     assert_eq!(literal_a_head_map.known_map().len(), ['a', 'b', 'c'].len());
     assert_actions_eq(
       literal_a_head_map.known_map().get(&'a').unwrap(),
@@ -191,13 +191,10 @@ mod tests {
     );
     // literal_b_head_map should be similar to literal_a_head_map, skip
 
-    let literal_a_muted_head_map = &lm.known_map().get("a").unwrap().muted_head_map;
-    assert_eq!(
-      literal_a_muted_head_map.known_map().len(),
-      ['a', 'b', 'c'].len()
-    );
+    let muted_map = &lm.muted_map();
+    assert_eq!(muted_map.known_map().len(), ['a', 'b', 'c'].len());
     assert_actions_eq(
-      literal_a_muted_head_map.known_map().get(&'a').unwrap(),
+      muted_map.known_map().get(&'a').unwrap(),
       vec![
         exact("a").mute(),                       // "a", muted
         r("a").unchecked_head_in(['a']).mute(),  // OneOf('a'), muted
@@ -208,7 +205,7 @@ mod tests {
       ],
     );
     assert_actions_eq(
-      literal_a_muted_head_map.known_map().get(&'b').unwrap(),
+      muted_map.known_map().get(&'b').unwrap(),
       vec![
         r("a").unchecked_head_not(['c']).mute(), // Not('c'), muted
         r("a").mute(),                           // no head, muted
@@ -219,14 +216,14 @@ mod tests {
       ],
     );
     assert_actions_eq(
-      literal_a_muted_head_map.known_map().get(&'c').unwrap(),
+      muted_map.known_map().get(&'c').unwrap(),
       vec![
         r("a").mute(), // no head, muted
         r("b").mute(), // no head, muted
       ],
     );
     assert_actions_eq(
-      literal_a_muted_head_map.unknown_fallback(),
+      muted_map.unknown_fallback(),
       vec![
         r("a").unchecked_head_not(['c']).mute(), // Not('c'), muted
         r("a").unchecked_head_unknown().mute(),  // Unknown, muted
@@ -236,6 +233,5 @@ mod tests {
         r("b").mute(),                           // no head, muted
       ],
     );
-    // literal_b_muted_head_map should be similar to literal_a_muted_head_map, skip
   }
 }

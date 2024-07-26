@@ -114,9 +114,9 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         |input: &ActionInput<ActionState>| {
           let literal_mismatch = !input.rest().starts_with(literal);
           if literal_mismatch {
-            &literal_map_item.muted_head_map
+            literal_map.muted_map()
           } else {
-            &literal_map_item.head_map
+            literal_map_item
           }
         },
         &options.base.re_lex,

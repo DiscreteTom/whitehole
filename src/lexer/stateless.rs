@@ -316,7 +316,7 @@ mod tests {
 
     // literal_map
     assert_eq!(lexer.literal_map.known_map().len(), ["a", "b"].len());
-    let literal_a_head_map = &lexer.literal_map.known_map().get("a").unwrap().head_map;
+    let literal_a_head_map = &lexer.literal_map.known_map().get("a").unwrap();
     assert_eq!(literal_a_head_map.known_map().len(), ['a', 'b', 'c'].len());
     assert_actions_eq(
       literal_a_head_map.known_map().get(&'a').unwrap(),
@@ -360,12 +360,7 @@ mod tests {
       ],
     );
     // literal_b_head_map should be similar to literal_a_head_map, skip
-    let literal_a_muted_head_map = &lexer
-      .literal_map
-      .known_map()
-      .get("a")
-      .unwrap()
-      .muted_head_map;
+    let literal_a_muted_head_map = &lexer.literal_map.muted_map();
     assert_eq!(
       literal_a_muted_head_map.known_map().len(),
       ['a', 'b', 'c'].len()
@@ -417,7 +412,7 @@ mod tests {
     let kind_a_literal_map = &lexer.kind_literal_map[A::kind_id()];
     assert_eq!(kind_a_literal_map.known_map().len(), ["a", "b"].len());
     assert_actions_eq(
-      &kind_a_literal_map.known_map()["a"].head_map.known_map()[&'a'],
+      &kind_a_literal_map.known_map()["a"].known_map()[&'a'],
       vec![
         exact("a").bind(A),                              // A, "a", not muted
         exact("a").mute().bind(A),                       // A, "a", muted
@@ -429,7 +424,7 @@ mod tests {
       ],
     );
     assert_actions_eq(
-      &kind_a_literal_map.known_map()["a"].head_map.known_map()[&'b'],
+      &kind_a_literal_map.known_map()["a"].known_map()[&'b'],
       vec![
         r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
         r("a").mute().bind(A),                           // A, no head, muted
@@ -440,16 +435,14 @@ mod tests {
       ],
     );
     assert_actions_eq(
-      &kind_a_literal_map.known_map()["a"].head_map.known_map()[&'c'],
+      &kind_a_literal_map.known_map()["a"].known_map()[&'c'],
       vec![
         r("a").mute().bind(A), // A, no head, muted
         r("b").mute().bind(B), // B, no head, muted
       ],
     );
     assert_actions_eq(
-      &kind_a_literal_map.known_map()["a"]
-        .head_map
-        .unknown_fallback(),
+      &kind_a_literal_map.known_map()["a"].unknown_fallback(),
       vec![
         r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
         r("a").unchecked_head_unknown().mute().bind(A),  // A, Unknown, muted
@@ -460,9 +453,7 @@ mod tests {
       ],
     );
     assert_actions_eq(
-      &kind_a_literal_map.known_map()["a"]
-        .muted_head_map
-        .known_map()[&'a'],
+      &kind_a_literal_map.muted_map().known_map()[&'a'],
       vec![
         exact("a").mute().bind(A),                       // A, "a", muted
         r("a").unchecked_head_in(['a']).mute().bind(A),  // A, OneOf('a'), muted
@@ -473,9 +464,7 @@ mod tests {
       ],
     );
     assert_actions_eq(
-      &kind_a_literal_map.known_map()["a"]
-        .muted_head_map
-        .known_map()[&'b'],
+      &kind_a_literal_map.muted_map().known_map()[&'b'],
       vec![
         r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
         r("a").mute().bind(A),                           // A, no head, muted
@@ -486,18 +475,14 @@ mod tests {
       ],
     );
     assert_actions_eq(
-      &kind_a_literal_map.known_map()["a"]
-        .muted_head_map
-        .known_map()[&'c'],
+      &kind_a_literal_map.muted_map().known_map()[&'c'],
       vec![
         r("a").mute().bind(A), // A, no head, muted
         r("b").mute().bind(B), // B, no head, muted
       ],
     );
     assert_actions_eq(
-      &kind_a_literal_map.known_map()["a"]
-        .muted_head_map
-        .unknown_fallback(),
+      &kind_a_literal_map.muted_map().unknown_fallback(),
       vec![
         r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
         r("a").unchecked_head_unknown().mute().bind(A),  // A, Unknown, muted
@@ -507,7 +492,5 @@ mod tests {
         r("b").mute().bind(B),                           // B, no head, muted
       ],
     );
-    // kind_a_literal_map.known_map()["b"] should be similar to kind_a_literal_map.known_map()["a"], skip
-    // kind_b_literal_map should be similar to kind_a_literal_map, skip
   }
 }
