@@ -12,16 +12,20 @@
 //!
 //! ## The Lexing Process
 //!
-//! To optimize the runtime performance, the [`StatelessLexer`] will
-//! pre-calculate and cache some action lists based on [`Action`]'s attributes
+//! Macroscopically, the lexing process will execute your actions one by one,
+//! in the order you provided, until a token is emitted or the input text is exhausted.
+//!
+//! However, to optimize the runtime performance, the [`StatelessLexer`] will
+//! skip some actions based on [`Action`]'s attributes
 //! like [`Action::kind`] [`Action::head`], [`Action::literal`], etc.
-//! When lexing, not all actions may be executed.
-//! Here are the rules:
+//! So when lexing, not all actions may be executed, but the order of actions
+//! will be preserved.
+//! Here are the skipping rules:
 //!
 //! ### Without Expectation
 //!
-//! If there is no expectation provided, the lexer will filter actions
-//! by the first character of the rest of the input text, and actions' head matcher,
+//! If there is no expectation provided, the lexer will skip actions
+//! by the first character of the rest of the input text, and actions' head matcher ([`Action::head`]),
 //! during the lexing loop.
 //!
 //! For example,
@@ -29,30 +33,37 @@
 //! if the first character of the rest of the input text is `'a'`
 //! only actions accepting `'a'` as the first character will be executed.
 //!
+//! If an action has no head matcher, it will be executed no matter what the first character is.
+//! So it is recommended to add a head matcher to all actions to make the lexer faster.
+//!
 //! ### With Expected Kind
 //!
-//! If there is an expected kind, the lexer will first ignore
-//! non-muted actions with mismatched [`Action::kind`] before the lexing loop,
-//! then ignore actions by the head matcher just like the case without expectation
+//! If there is an expected kind, the lexer will first skip
+//! non-muted actions with mismatched [`Action::kind`]
+//! (muted actions won't emit tokens so even they have mismatched kind they will be executed),
+//! then skip actions by the head matcher just like the case without expectation
 //! during the lexing loop.
 //!
 //! ### With Expected Literal
 //!
-//! If there is an expected literal, the lexer will first ignore
-//! non-muted actions with mismatched [`Action::literal`] before the lexing loop,
+//! If there is an expected literal, the lexer will first skip
+//! non-muted actions with mismatched [`Action::literal`]
+//! (muted actions won't emit tokens so even they have mismatched literal they will be executed),
 //! then check if the rest of the input text starts with the expected literal
-//! during the lexing loop, if the literal doesn't match, all non-muted actions will be ignored,
-//! finally ignore actions by the head matcher just like the case without expectation
+//! during the lexing loop. If the literal doesn't match, all non-muted actions will be skipped,
+//! only muted actions will be executed.
+//! Finally skip actions by the head matcher just like the case without expectation
 //! during the lexing loop.
 //!
 //! ### With Both Expected Kind and Literal
 //!
-//! If there is both an expected kind and a literal, the lexer will first ignore
+//! If there is both an expected kind and a literal, the lexer will first skip
 //! non-muted actions with mismatched [`Action::kind`] and mismatched [`Action::literal`]
 //! before the lexing loop,
 //! then check if the rest of the input text starts with the expected literal
-//! during the lexing loop, if the literal doesn't match, all non-muted actions will be ignored,
-//! finally ignore actions by the head matcher just like the case without expectation
+//! during the lexing loop. If the literal doesn't match, all non-muted actions will be skipped,
+//! only muted actions will be executed.
+//! Finally skip actions by the head matcher just like the case without expectation
 //! during the lexing loop.
 
 mod exec;
