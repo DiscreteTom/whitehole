@@ -10,6 +10,7 @@ pub trait LexOptionsFork<'text, Kind: 'static, ActionState, ErrorType> {
 /// This struct is used to indicate that the fork feature is enabled.
 /// This struct implements [`LexOptionsFork`].
 /// See [`LexOptions::fork`](crate::lexer::options::LexOptions::fork).
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ForkEnabled;
 
 impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
@@ -21,6 +22,7 @@ impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
 /// This struct is used to indicate that the fork feature is disabled.
 /// This struct implements [`LexOptionsFork`].
 /// See [`LexOptions::fork`](crate::lexer::options::LexOptions::fork).
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ForkDisabled;
 
 impl<'text, Kind: 'static, ActionState, ErrorType>
