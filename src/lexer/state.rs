@@ -6,16 +6,17 @@ pub struct LexerState<'text> {
   digested: usize,
   /// See [`Self::trimmed`].
   trimmed: bool,
-  // we don't store error tokens here. we store as less as possible
+  // we don't store tokens here. we store as less as possible
   // for a better memory usage and flexibility.
   // the generated tokens should be consumed/dropped immediately after each lex.
-  // users can store error tokens as needed by themselves as needed.
+  // users can store tokens as needed by themselves.
 }
 
 impl<'text> LexerState<'text> {
   /// Create a new lexer state with the given text.
-  /// [`Self::digested`] will be 0.
-  pub fn new(text: &'text str) -> Self {
+  /// [`Self::digested`] will be set to `0`.
+  #[inline]
+  pub const fn new(text: &'text str) -> Self {
     LexerState {
       text,
       digested: 0,
@@ -24,25 +25,30 @@ impl<'text> LexerState<'text> {
   }
 
   /// The whole input text.
-  pub fn text(&self) -> &'text str {
+  #[inline]
+  pub const fn text(&self) -> &'text str {
     self.text
   }
   /// How many bytes are digested.
-  pub fn digested(&self) -> usize {
+  #[inline]
+  pub const fn digested(&self) -> usize {
     self.digested
   }
   /// Whether the text is trimmed.
-  pub fn trimmed(&self) -> bool {
+  #[inline]
+  pub const fn trimmed(&self) -> bool {
     self.trimmed
   }
 
-  /// Get the rest of the text which is not digested.
+  /// Get the undigested text.
+  #[inline]
   pub fn rest(&self) -> &'text str {
     &self.text[self.digested..]
   }
 
   /// Digest `n` bytes.
   /// The caller should ensure `n` is smaller than the rest text length.
+  #[inline]
   pub fn digest(&mut self, n: usize) {
     debug_assert!(
       self.digested + n <= self.text.len(),
@@ -58,6 +64,7 @@ impl<'text> LexerState<'text> {
 
   /// Digest `n` bytes and set [`Self::trimmed`] to `true`.
   /// The caller should ensure `n` is smaller than the rest text length.
+  #[inline]
   pub fn trim(&mut self, n: usize) {
     debug_assert!(
       self.digested + n <= self.text.len(),
