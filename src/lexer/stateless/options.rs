@@ -162,3 +162,97 @@ impl<ActionStateRef, ErrAcc> StatelessTrimOptions<ActionStateRef, ErrAcc> {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_stateless_options() {
+    let options = StatelessOptions {
+      start: 0,
+      action_state: (),
+      base: (),
+    };
+    assert_eq!(options.start, 0);
+    assert_eq!(options.action_state, ());
+    assert_eq!(options.base, ());
+
+    let options = options.start(1);
+    assert_eq!(options.start, 1);
+    assert_eq!(options.action_state, ());
+    assert_eq!(options.base, ());
+
+    let options = options.action_state(1);
+    assert_eq!(options.start, 1);
+    assert_eq!(options.action_state, 1);
+    assert_eq!(options.base, ());
+  }
+
+  #[test]
+  fn test_stateless_lex_options() {
+    let options = StatelessLexOptions::new();
+    assert_eq!(options.start, 0);
+    assert_eq!(options.action_state, ());
+    assert_eq!(options.base, LexOptions::<(), _, _>::new());
+
+    let options = options.expect(Expectation::default());
+    assert_eq!(options.start, 0);
+    assert_eq!(options.action_state, ());
+    assert_eq!(
+      options.base,
+      LexOptions::new().expect(Expectation::default())
+    );
+
+    let options = options.expect_with(|e| e.literal("a"));
+    assert_eq!(options.start, 0);
+    assert_eq!(options.action_state, ());
+    assert_eq!(
+      options.base,
+      LexOptions::new().expect_with(|e| e.literal("a"))
+    );
+
+    let options = options.expect_with(|e| e).errors_to(vec![()]);
+    assert_eq!(options.start, 0);
+    assert_eq!(options.action_state, ());
+    assert_eq!(options.base, LexOptions::new().errors_to(vec![()]));
+
+    let options = options.errors_to(()).errors_to_vec();
+    assert_eq!(options.start, 0);
+    assert_eq!(options.action_state, ());
+    assert_eq!(options.base, LexOptions::new().errors_to_vec());
+
+    let options = options.errors_to(()).fork();
+    assert_eq!(options.start, 0);
+    assert_eq!(options.action_state, ());
+    assert_eq!(options.base, LexOptions::new().fork());
+
+    let options = options.re_lex(ReLexContext { start: 1, skip: 1 });
+    assert_eq!(options.start, 0);
+    assert_eq!(options.action_state, ());
+    assert_eq!(
+      options.base,
+      LexOptions::new()
+        .fork()
+        .re_lex(ReLexContext { start: 1, skip: 1 })
+    );
+  }
+
+  #[test]
+  fn test_stateless_trim_options() {
+    let options = StatelessTrimOptions::new();
+    assert_eq!(options.start, 0);
+    assert_eq!(options.action_state, ());
+    assert_eq!(options.base, TrimOptions::new());
+
+    let options = StatelessTrimOptions::new().errors_to(vec![()]);
+    assert_eq!(options.start, 0);
+    assert_eq!(options.action_state, ());
+    assert_eq!(options.base, TrimOptions::new().errors_to(vec![()]));
+
+    let options = StatelessTrimOptions::new().errors_to_vec();
+    assert_eq!(options.start, 0);
+    assert_eq!(options.action_state, ());
+    assert_eq!(options.base, TrimOptions::new().errors_to_vec());
+  }
+}
