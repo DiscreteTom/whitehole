@@ -2,30 +2,31 @@
 //!
 //! [`StatelessLexer`] doesn't hold lexer states or action states.
 //! It is just a collection of immutable [`Action`]s, and it is immutable itself.
-//! We can wrap it
+//! You can wrap it
 //! with [`Rc`] to make it clone-able and re-use it across multiple lexers.
 //!
 //! The [`StatelessLexer`] implements all the core lexing features,
-//! including expectation, fork, etc. If we
-//! want a stateless experience, we can use the [`StatelessLexer`] directly,
-//! but we may need to manage the lexer states and action states manually.
+//! including expectation, fork, etc. If you
+//! want a stateless experience, you can use the [`StatelessLexer`] directly,
+//! but you may need to manage the lexer states and action states manually.
 //!
-//! ## Lexing Process
+//! ## The Lexing Process
 //!
 //! To optimize the runtime performance, the [`StatelessLexer`] will
 //! pre-calculate and cache some action lists based on [`Action`]'s attributes
 //! like [`Action::kind`] [`Action::head`], [`Action::literal`], etc.
-//! When lexing, maybe not all of the actions will be executed.
+//! When lexing, not all actions may be executed.
 //! Here are the rules:
 //!
 //! ### Without Expectation
 //!
 //! If there is no expectation provided, the lexer will filter actions
-//! by the first character of the rest of input text, and action's head matcher,
+//! by the first character of the rest of the input text, and actions' head matcher,
 //! during the lexing loop.
 //!
-//! For example, if the first character of the rest of input text is `'a'`
-//! in an iteration of the lexing loop,
+//! For example,
+//! in one iteration of the lexing loop,
+//! if the first character of the rest of the input text is `'a'`
 //! only actions accepting `'a'` as the first character will be executed.
 //!
 //! ### With Expected Kind
