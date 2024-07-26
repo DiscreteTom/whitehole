@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LexerState<'text> {
   /// See [`Self::text`].
   text: &'text str,
