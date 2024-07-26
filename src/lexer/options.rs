@@ -124,7 +124,8 @@ impl<ErrAcc> TrimOptions<ErrAcc> {
   /// # Examples
   /// ```
   /// # use whitehole::lexer::options::TrimOptions;
-  /// let options = TrimOptions::new().errors_to(vec![]);
+  /// # let options: TrimOptions<Vec<()>> =
+  /// TrimOptions::new().errors_to(vec![]);
   /// ```
   pub fn errors_to<NewErrAcc>(self, acc: NewErrAcc) -> TrimOptions<NewErrAcc> {
     TrimOptions { errors_to: acc }
