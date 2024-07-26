@@ -13,6 +13,20 @@ pub(super) struct LiteralMap<Kind: 'static, ActionState, ErrorType> {
   // actions with mismatched/unknown literals (should panic)
 }
 
+/// A new-type to represent the return type of [`LiteralMap::collect_all_known`].
+/// This is to prevent other modules from modifying the known map by mistake
+/// before calling [`LiteralMap::new`].
+pub(super) struct KnownLiteral<Kind: 'static, ActionState, ErrorType>(
+  HashMap<String, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
+);
+
+impl<Kind: 'static, ActionState, ErrorType> Clone for KnownLiteral<Kind, ActionState, ErrorType> {
+  #[inline]
+  fn clone(&self) -> Self {
+    Self(self.0.clone())
+  }
+}
+
 impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
   /// Collect all known literals from all actions instead of a subset of actions to make sure
   /// 'known' as a consistent meaning across all literal maps in a stateless lexer
@@ -22,7 +36,7 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
   /// when filling the literal map with no-literal actions.
   pub fn collect_all_known(
     actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
-  ) -> HashMap<String, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
+  ) -> KnownLiteral<Kind, ActionState, ErrorType> {
     let mut res = HashMap::new();
 
     for a in actions {
@@ -31,16 +45,17 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
       }
     }
 
-    res
+    KnownLiteral(res)
   }
 
   /// Create a self with a subset of actions, a known literal map created by [`Self::collect_all_known`]
   /// and a known head map created by [`HeadMap::collect_all_known`].
   pub fn new(
     actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
-    mut known_map: HashMap<String, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
+    known_map: KnownLiteral<Kind, ActionState, ErrorType>,
     known_head_map: &KnownHead<Kind, ActionState, ErrorType>,
   ) -> Self {
+    let mut known_map = known_map.0;
     // fill the action map
     for a in actions {
       // check if the action is muted or not in literal map
