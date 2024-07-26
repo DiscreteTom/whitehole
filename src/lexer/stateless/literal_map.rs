@@ -58,7 +58,6 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
     let mut known_map = known_map.0;
     // fill the action map
     for a in actions {
-      // check if the action is muted or not in literal map
       if a.muted() {
         // muted, expectation.literal will be ignored, add to all known literals
         for vec in known_map.values_mut() {
@@ -68,6 +67,7 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
         continue;
       }
 
+      // else, not muted, check literal
       if let Some(literal) = a.literal() {
         known_map.get_mut(literal).unwrap().push(a.clone());
       }
@@ -83,7 +83,7 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
         &actions
           .iter()
           .filter(|a| a.muted())
-          .map(Clone::clone)
+          .map(Clone::clone) // clone the Rc
           .collect(),
         known_head_map.clone(),
       ),
