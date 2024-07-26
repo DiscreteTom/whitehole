@@ -58,6 +58,7 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
     let mut known_map = known_map.0;
     // fill the action map
     for a in actions {
+      // TODO: why the following line is not covered in the coverage report?
       if a.muted() {
         // muted, expectation.literal will be ignored, add to all known literals
         for vec in known_map.values_mut() {
