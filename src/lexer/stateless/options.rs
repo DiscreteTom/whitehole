@@ -90,13 +90,13 @@ impl<'expect_literal, Kind, ErrAcc, Fork> From<LexOptions<'expect_literal, Kind,
 impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
   StatelessLexOptions<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
 {
-  /// See [`LexOptions::expect()`].
+  /// See [`LexOptions::expect`].
   #[inline]
   pub fn expect(mut self, expectation: impl Into<Expectation<'expect_literal, Kind>>) -> Self {
     self.base.expectation = expectation.into();
     self
   }
-  /// See [`LexOptions::expect_with()`].
+  /// See [`LexOptions::expect_with`].
   #[inline]
   pub fn expect_with(
     mut self,
@@ -128,7 +128,7 @@ impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
       base: self.base.errors_to_vec(),
     }
   }
-  /// See [`LexOptions::fork()`].
+  /// See [`LexOptions::fork`].
   #[inline]
   pub fn fork<ActionState>(
     self,
@@ -139,7 +139,7 @@ impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
       base: self.base.fork(),
     }
   }
-  /// See [`LexOptions::re_lex()`].
+  /// See [`LexOptions::re_lex`].
   #[inline]
   pub const fn re_lex(mut self, re_lex: ReLexContext) -> Self {
     self.base.re_lex = re_lex;
