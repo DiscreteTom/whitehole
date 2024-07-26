@@ -124,7 +124,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         options.start,
         options.action_state,
         Fork::ReLexableFactoryType::default(),
-        LexOutput::with_err_acc(options.base.err_acc),
+        LexOutput::with_err_acc(options.base.errors_to),
       )
     } else {
       let head_map = options.base.expectation.kind.map_or(
@@ -145,7 +145,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         options.start,
         options.action_state,
         Fork::ReLexableFactoryType::default(),
-        LexOutput::with_err_acc(options.base.err_acc),
+        LexOutput::with_err_acc(options.base.errors_to),
       )
     }
   }
@@ -223,7 +223,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       options.start,
       options.action_state,
       (),
-      <TrimOutput<_> as StatelessOutput<(), _, ()>>::with_err_acc(options.base.err_acc),
+      <TrimOutput<_> as StatelessOutput<(), _, ()>>::with_err_acc(options.base.errors_to),
     )
   }
 }

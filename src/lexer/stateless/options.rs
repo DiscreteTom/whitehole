@@ -105,27 +105,27 @@ impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
     self.base.expectation = f(Expectation::default());
     self
   }
-  /// See [`LexOptions::err_acc()`].
+  /// See [`LexOptions::errors_to`].
   #[inline]
-  pub fn err_acc<NewErrAcc>(
+  pub fn errors_to<NewErrAcc>(
     self,
-    err_acc: NewErrAcc,
+    acc: NewErrAcc,
   ) -> StatelessLexOptions<'expect_literal, Kind, ActionStateRef, NewErrAcc, Fork> {
     StatelessLexOptions {
       start: self.start,
       action_state: self.action_state,
-      base: self.base.err_acc(err_acc),
+      base: self.base.errors_to(acc),
     }
   }
-  /// See [`LexOptions::errs_to_vec`].
+  /// See [`LexOptions::errors_to_vec`].
   #[inline]
-  pub fn errs_to_vec(
+  pub fn errors_to_vec(
     self,
   ) -> StatelessLexOptions<'expect_literal, Kind, ActionStateRef, Vec<ErrAcc>, Fork> {
     StatelessLexOptions {
       start: self.start,
       action_state: self.action_state,
-      base: self.base.errs_to_vec(),
+      base: self.base.errors_to_vec(),
     }
   }
   /// See [`LexOptions::fork()`].

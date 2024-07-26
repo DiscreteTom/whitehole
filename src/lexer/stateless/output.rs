@@ -44,7 +44,7 @@ impl<TokenType, ReLexableType, ErrAcc> StatelessOutput<TokenType, ErrAcc, ReLexa
   fn with_err_acc(err_acc: ErrAcc) -> Self {
     Self {
       digested: 0,
-      err_acc,
+      errors: err_acc,
     }
   }
   fn digested(&self) -> usize {
@@ -56,7 +56,7 @@ impl<TokenType, ReLexableType, ErrAcc> StatelessOutput<TokenType, ErrAcc, ReLexa
   }
 
   fn err_acc_mut(&mut self) -> &mut ErrAcc {
-    &mut self.err_acc
+    &mut self.errors
   }
 
   fn emit(&mut self, _token: TokenType, _re_lexable: ReLexableType) {

@@ -19,5 +19,5 @@ pub struct TrimOutput<ErrAcc> {
   /// because there might be many actions which are accepted during multiple iterations
   /// of the lexing loop, this value is the sum of them.
   pub digested: usize,
-  pub err_acc: ErrAcc,
+  pub errors: ErrAcc,
 }
