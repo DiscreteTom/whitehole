@@ -38,6 +38,7 @@ impl<ActionStateRef, Base> StatelessOptions<ActionStateRef, Base> {
   }
 }
 
+/// Add [`StatelessLexOptions::start`] and [`StatelessLexOptions::action_state`] to [`LexOptions`].
 pub type StatelessLexOptions<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork> =
   StatelessOptions<ActionStateRef, LexOptions<'expect_literal, Kind, ErrAcc, Fork>>;
 
@@ -146,6 +147,7 @@ impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
   }
 }
 
+/// Add [`StatelessTrimOptions::start`] and [`StatelessTrimOptions::action_state`] to [`TrimOptions`].
 pub type StatelessTrimOptions<ActionStateRef, ErrAcc> =
   StatelessOptions<ActionStateRef, TrimOptions<ErrAcc>>;
 
