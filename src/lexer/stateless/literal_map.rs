@@ -1,4 +1,4 @@
-use super::head_map::{HeadMap, KnownHead};
+use super::head_map::{HeadMap, KnownHeadChars};
 use crate::lexer::action::Action;
 use std::{collections::HashMap, rc::Rc};
 
@@ -16,11 +16,11 @@ pub(super) struct LiteralMap<Kind: 'static, ActionState, ErrorType> {
 /// A new-type to represent the return type of [`LiteralMap::collect_all_known`].
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`LiteralMap::new`].
-pub(super) struct KnownLiteral<Kind: 'static, ActionState, ErrorType>(
+pub(super) struct KnownLiterals<Kind: 'static, ActionState, ErrorType>(
   HashMap<String, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
 );
 
-impl<Kind: 'static, ActionState, ErrorType> Clone for KnownLiteral<Kind, ActionState, ErrorType> {
+impl<Kind: 'static, ActionState, ErrorType> Clone for KnownLiterals<Kind, ActionState, ErrorType> {
   #[inline]
   fn clone(&self) -> Self {
     Self(self.0.clone())
@@ -36,7 +36,7 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
   /// when filling the literal map with no-literal actions.
   pub fn collect_all_known(
     actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
-  ) -> KnownLiteral<Kind, ActionState, ErrorType> {
+  ) -> KnownLiterals<Kind, ActionState, ErrorType> {
     let mut res = HashMap::new();
 
     for a in actions {
@@ -45,15 +45,15 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
       }
     }
 
-    KnownLiteral(res)
+    KnownLiterals(res)
   }
 
   /// Create a self with a subset of actions, a known literal map created by [`Self::collect_all_known`]
   /// and a known head map created by [`HeadMap::collect_all_known`].
   pub fn new(
     actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
-    known_map: KnownLiteral<Kind, ActionState, ErrorType>,
-    known_head_map: &KnownHead<Kind, ActionState, ErrorType>,
+    known_map: KnownLiterals<Kind, ActionState, ErrorType>,
+    known_head_map: &KnownHeadChars<Kind, ActionState, ErrorType>,
   ) -> Self {
     let mut known_map = known_map.0;
     // fill the action map
@@ -71,7 +71,7 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
       // else, not muted, check literal
       if let Some(literal) = a.literal() {
         // SAFETY: the key must exist because we have collected all known chars in `collect_all_known`
-        // and `KnownLiteral` ensures the known map is not modified before creating the literal map
+        // and `KnownLiterals` ensures the known map is not modified before creating the literal map
         unsafe { known_map.get_mut(literal).unwrap_unchecked() }.push(a.clone());
       }
     }

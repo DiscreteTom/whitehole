@@ -11,11 +11,11 @@ pub(super) struct HeadMap<Kind: 'static, ActionState, ErrorType> {
 /// A new-type to represent the return type of [`HeadMap::collect_all_known`].
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`HeadMap::new`].
-pub(super) struct KnownHead<Kind: 'static, ActionState, ErrorType>(
+pub(super) struct KnownHeadChars<Kind: 'static, ActionState, ErrorType>(
   HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
 );
 
-impl<Kind: 'static, ActionState, ErrorType> Clone for KnownHead<Kind, ActionState, ErrorType> {
+impl<Kind: 'static, ActionState, ErrorType> Clone for KnownHeadChars<Kind, ActionState, ErrorType> {
   #[inline]
   fn clone(&self) -> Self {
     Self(self.0.clone())
@@ -31,7 +31,7 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
   /// with [`HeadMatcher::Not`] and [`HeadMatcher::Unknown`].
   pub fn collect_all_known(
     actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
-  ) -> KnownHead<Kind, ActionState, ErrorType> {
+  ) -> KnownHeadChars<Kind, ActionState, ErrorType> {
     let mut res = HashMap::new();
 
     for a in actions {
@@ -45,13 +45,13 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
       }
     }
 
-    KnownHead(res)
+    KnownHeadChars(res)
   }
 
   /// Create a new instance with a subset of actions and a known char map created by [`Self::collect_all_known`].
   pub fn new(
     actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
-    known_map: KnownHead<Kind, ActionState, ErrorType>,
+    known_map: KnownHeadChars<Kind, ActionState, ErrorType>,
   ) -> Self {
     let mut res = Self {
       known_map: known_map.0,
@@ -68,7 +68,7 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
           HeadMatcher::OneOf(set) => {
             for c in set {
               // SAFETY: the key must exist because we have collected all known chars in `collect_all_known`
-              // and `KnownHead` ensures the known map is not modified before creating the head map
+              // and `KnownHeadChars` ensures the known map is not modified before creating the head map
               unsafe { res.known_map.get_mut(c).unwrap_unchecked() }.push(a.clone());
             }
           }
