@@ -34,6 +34,7 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
   /// in this case the 'known' has an inconsistent meaning).
   /// This must be done before creating a literal map because we need to iter over all known literals
   /// when filling the literal map with no-literal actions.
+  #[inline] // there is only one call site, so mark this as inline
   pub fn collect_all_known(
     actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
   ) -> KnownLiterals<Kind, ActionState, ErrorType> {

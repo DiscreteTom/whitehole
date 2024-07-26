@@ -29,6 +29,7 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
   /// in this case the 'known' has an inconsistent meaning).
   /// This must be done before creating a head map because we need to iter over all known chars when filling the head map
   /// with [`HeadMatcher::Not`] and [`HeadMatcher::Unknown`].
+  #[inline] // there is only one call site, so mark this as inline
   pub fn collect_all_known(
     actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
   ) -> KnownHeadChars<Kind, ActionState, ErrorType> {
