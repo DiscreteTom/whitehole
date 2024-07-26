@@ -1,4 +1,4 @@
-use super::head_map::HeadMap;
+use super::head_map::{HeadMap, KnownHead};
 use crate::lexer::action::Action;
 use std::{collections::HashMap, rc::Rc};
 
@@ -40,7 +40,7 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
   pub fn new(
     actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
     mut known_map: HashMap<String, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
-    known_head_map: &HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
+    known_head_map: &KnownHead<Kind, ActionState, ErrorType>,
   ) -> Self {
     // fill the action map
     for a in actions {

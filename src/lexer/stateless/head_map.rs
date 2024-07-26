@@ -8,6 +8,20 @@ pub(super) struct HeadMap<Kind: 'static, ActionState, ErrorType> {
   unknown_fallback: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
 }
 
+/// A new-type to represent the return type of [`HeadMap::collect_all_known`].
+/// This is to prevent other modules from modifying the known map by mistake
+/// before calling [`HeadMap::new`].
+pub(super) struct KnownHead<Kind: 'static, ActionState, ErrorType>(
+  HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
+);
+
+impl<Kind: 'static, ActionState, ErrorType> Clone for KnownHead<Kind, ActionState, ErrorType> {
+  #[inline]
+  fn clone(&self) -> Self {
+    Self(self.0.clone())
+  }
+}
+
 impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
   /// Collect all known head chars from all actions instead of a subset of actions to make sure
   /// 'known' has a consistent meaning across all head maps in a stateless lexer
@@ -17,7 +31,7 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
   /// with [`HeadMatcher::Not`] and [`HeadMatcher::Unknown`].
   pub fn collect_all_known(
     actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
-  ) -> HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
+  ) -> KnownHead<Kind, ActionState, ErrorType> {
     let mut res = HashMap::new();
 
     for a in actions {
@@ -32,16 +46,16 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
       }
     }
 
-    res
+    KnownHead(res)
   }
 
-  /// Create a self with a subset of actions and a known char map created by [`Self::collect_all_known`].
+  /// Create a new instance with a subset of actions and a known char map created by [`Self::collect_all_known`].
   pub fn new(
     actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
-    known_map: HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
+    known_map: KnownHead<Kind, ActionState, ErrorType>,
   ) -> Self {
     let mut res = Self {
-      known_map,
+      known_map: known_map.0,
       unknown_fallback: Vec::new(),
     };
 
