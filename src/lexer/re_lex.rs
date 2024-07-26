@@ -5,7 +5,7 @@ use super::Lexer;
 /// (when lexing with [`LexOptions::fork`](crate::lexer::options::LexOptions::fork) enabled).
 /// You can also construct this if you implement [`LexOptionsFork`](crate::lexer::fork::LexOptionsFork),
 /// but make sure you know what you are doing.
-#[derive(PartialEq, Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ReLexContext {
   /// See [`Self::skip`].
   pub start: usize,

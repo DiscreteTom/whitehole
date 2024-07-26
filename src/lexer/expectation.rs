@@ -1,5 +1,6 @@
 use super::token::{TokenKindId, TokenKindIdProvider};
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Expectation<'expect_literal, Kind: 'static> {
   /// See [`Self::kind`].
   pub kind: Option<&'static TokenKindId<Kind>>,

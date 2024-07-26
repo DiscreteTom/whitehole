@@ -4,6 +4,7 @@ use super::{
   re_lex::ReLexContext,
 };
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LexOptions<'expect_literal, Kind: 'static, ErrAcc, Fork> {
   pub expectation: Expectation<'expect_literal, Kind>,
   /// See [`Self::err_acc`]

@@ -5,6 +5,7 @@ use crate::lexer::{
   re_lex::ReLexContext,
 };
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StatelessLexOptions<'expect_literal, Kind: 'static, ActionStateRef, ErrAcc, Fork> {
   /// See [`StatelessLexOptions::start()`].
   pub start: usize,
