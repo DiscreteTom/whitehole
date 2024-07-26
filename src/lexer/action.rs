@@ -67,7 +67,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// [`Self::bind_default`] or [`Self::select`].
   // these method will ensure the integrity between the `Self::kind` and the `ActionOutput::kind`
   #[inline]
-  pub const fn kind(&self) -> &TokenKindId<Kind> {
+  pub const fn kind(&self) -> &'static TokenKindId<Kind> {
     &self.kind
   }
 
