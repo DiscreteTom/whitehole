@@ -65,14 +65,14 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
               if actions[action_index].muted() {
                 // err but muted, collect errors and continue
                 res
-                  .err_acc_mut()
+                  .errors()
                   .update((err, Self::construct_range(&input, output.digested)));
                 continue;
               } else {
                 // err and not muted, collect error and emit token
                 let token = Self::create_token(&input, output.kind, output.digested);
-                res.err_acc_mut().update((err, token.range.clone()));
-                res.emit(
+                res.errors().update((err, token.range.clone()));
+                res.token(
                   token,
                   re_lexable_factory.into_stateless_re_lexable(
                     input.start(),
@@ -93,7 +93,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
               }
 
               // not muted, emit token
-              res.emit(
+              res.token(
                 Self::create_token(&input, output.kind, output.digested),
                 re_lexable_factory.into_stateless_re_lexable(
                   input.start(),
