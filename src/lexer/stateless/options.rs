@@ -130,7 +130,7 @@ impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
   }
   /// See [`LexOptions::fork`].
   #[inline]
-  pub fn fork<ActionState>(
+  pub fn fork(
     self,
   ) -> StatelessLexOptions<'expect_literal, Kind, ActionStateRef, ErrAcc, ForkEnabled> {
     StatelessLexOptions {
