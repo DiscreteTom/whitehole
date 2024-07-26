@@ -65,6 +65,24 @@
 //! only muted actions will be executed.
 //! Finally skip actions by the head matcher just like the case without expectation
 //! during the lexing loop.
+//!
+//! ### Trim
+//!
+//! ## Caveats
+//!
+//! Be careful with stateless lexer.
+//!
+//! ## For Developers
+//!
+//! Here is the recommended order of reading the source code:
+//!
+//! 1. [`self::head_map`]
+//! 2. [`self::literal_map`]
+//! 3. [`self`]
+//! 4. [`self::options`]
+//! 5. [`self::output`]
+//! 6. [`self::lex`]
+//! 7. [`self::exec`]
 
 mod exec;
 mod head_map;
