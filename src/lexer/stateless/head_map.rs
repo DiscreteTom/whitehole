@@ -37,8 +37,7 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
     for a in actions {
       if let Some(head) = a.head() {
         for c in match head {
-          HeadMatcher::OneOf(set) => set,
-          HeadMatcher::Not(set) => set,
+          HeadMatcher::OneOf(set) | HeadMatcher::Not(set) => set,
           HeadMatcher::Unknown => continue,
         } {
           res.entry(*c).or_insert(Vec::new());
@@ -61,10 +60,8 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
 
     // fill the head map
     for a in actions {
-      // no matter the action is muted or not, we need to check the head matcher
-      // so we don't need to check if an action is muted or not here (like in literal map)
-      // see [[@check if the action is muted or not in literal map]]
-
+      // when lexing the lexer needs to check the head matcher no matter the action is muted or not
+      // so we won't check if the action is muted here
       if let Some(head) = a.head() {
         match head {
           HeadMatcher::OneOf(set) => {
@@ -73,7 +70,9 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
             }
           }
           HeadMatcher::Not(set) => {
+            // e.g. the head matcher is `Not(['a', 'b'])`, the `set` is `['a', 'b']`
             for (c, vec) in res.known_map.iter_mut() {
+              // e.g. if the head char is `'c'` which is not in `set`, add the action to the vec
               if !set.contains(c) {
                 vec.push(a.clone());
               }
@@ -85,7 +84,7 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
           }
         }
       } else {
-        // no head matcher, add to all known chars
+        // no head matcher, add the action to all known chars
         for vec in res.known_map.values_mut() {
           vec.push(a.clone());
         }
