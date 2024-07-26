@@ -48,19 +48,19 @@ use std::collections::HashSet;
 ///     .exponent_with(|o| o.value_to_string())
 /// );
 /// assert_eq!(digested, 14); // total digested bytes
-/// let (integer_digested, integer_data) = data.integer;
+/// let (integer_digested, integer_data) = data.integral;
 /// assert_eq!(integer_digested, 4);
 /// assert_eq!(integer_data.value, "123".to_string());
 /// assert_eq!(integer_data.separators, vec![1]);
-/// let (fraction_digested, fraction_data) = data.fraction.unwrap();
+/// let (fraction_digested, fraction_data) = data.fractional.unwrap();
 /// assert_eq!(fraction_digested, 5); // including the `.`
 /// assert_eq!(fraction_data.value, "456".to_string());
 /// assert_eq!(fraction_data.separators, vec![1]); // index in the fraction body
 /// let (exponent_digested, exponent_data) = data.exponent.unwrap();
 /// assert_eq!(exponent_digested, 5); // including the `e-`
 /// assert_eq!(exponent_data.indicator_len, 2);
-/// assert_eq!(exponent_data.base.value, "78".to_string());
-/// assert_eq!(exponent_data.base.separators, vec![1]); // index in the exponent body
+/// assert_eq!(exponent_data.body.value, "78".to_string());
+/// assert_eq!(exponent_data.body.separators, vec![1]); // index in the exponent body
 /// ```
 pub fn float_literal_body_with<
   SepAcc: NumericSeparatorAccumulator + Clone,
@@ -111,19 +111,19 @@ pub fn float_literal_body_with<
 ///     .exponent_with(|o| o.value_to_string())
 /// );
 /// assert_eq!(digested, 14); // total digested bytes
-/// let (integer_digested, integer_data) = data.integer;
+/// let (integer_digested, integer_data) = data.integral;
 /// assert_eq!(integer_digested, 4);
 /// assert_eq!(integer_data.value, "123".to_string());
 /// assert_eq!(integer_data.separators, vec![1]);
-/// let (fraction_digested, fraction_data) = data.fraction.unwrap();
+/// let (fraction_digested, fraction_data) = data.fractional.unwrap();
 /// assert_eq!(fraction_digested, 5); // including the `.`
 /// assert_eq!(fraction_data.value, "456".to_string());
 /// assert_eq!(fraction_data.separators, vec![1]); // index in the fraction body
 /// let (exponent_digested, exponent_data) = data.exponent.unwrap();
 /// assert_eq!(exponent_digested, 5); // including the `e-`
 /// assert_eq!(exponent_data.indicator_len, 2);
-/// assert_eq!(exponent_data.base.value, "78".to_string());
-/// assert_eq!(exponent_data.base.separators, vec![1]); // index in the exponent body
+/// assert_eq!(exponent_data.body.value, "78".to_string());
+/// assert_eq!(exponent_data.body.separators, vec![1]); // index in the exponent body
 /// ```
 pub fn float_literal_body_with_options<
   SepAcc: NumericSeparatorAccumulator + Clone,
