@@ -78,3 +78,48 @@ impl<'text> LexerState<'text> {
     self.trimmed = true;
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_digest() {
+    let mut state = LexerState::new("123");
+    assert_eq!(state.digested(), 0);
+    assert_eq!(state.trimmed(), false);
+
+    state.digest(1);
+    assert_eq!(state.digested(), 1);
+    assert_eq!(state.trimmed(), false);
+
+    state.digest(2);
+    assert_eq!(state.digested(), 3);
+    assert_eq!(state.trimmed(), true);
+  }
+
+  #[test]
+  #[should_panic]
+  fn test_digest_overflow() {
+    let mut state = LexerState::new("123");
+    state.digest(4);
+  }
+
+  #[test]
+  fn test_trim() {
+    let mut state = LexerState::new("123");
+    assert_eq!(state.digested(), 0);
+    assert_eq!(state.trimmed(), false);
+
+    state.trim(1);
+    assert_eq!(state.digested(), 1);
+    assert_eq!(state.trimmed(), true);
+  }
+
+  #[test]
+  #[should_panic]
+  fn test_trim_overflow() {
+    let mut state = LexerState::new("123");
+    state.trim(4);
+  }
+}
