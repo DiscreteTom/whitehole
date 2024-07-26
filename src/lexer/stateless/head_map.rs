@@ -118,6 +118,19 @@ mod tests {
     token::MockTokenKind,
   };
 
+  fn assert_actions_eq(
+    actions: &Vec<Rc<Action<MockTokenKind<()>>>>,
+    expected: Vec<Action<MockTokenKind<()>>>,
+  ) {
+    assert_eq!(actions.len(), expected.len());
+    for i in 0..actions.len() {
+      assert_eq!(actions[i].kind(), expected[i].kind());
+      assert_eq!(actions[i].head(), expected[i].head());
+      assert_eq!(actions[i].literal(), expected[i].literal());
+      assert_eq!(actions[i].muted(), expected[i].muted());
+    }
+  }
+
   #[test]
   fn test_head_map() {
     let actions: Vec<Rc<Action<MockTokenKind<()>>>> = vec![
@@ -127,7 +140,7 @@ mod tests {
       regex("[^c]").unchecked_head_not(['c']),
       regex(".").unchecked_head_unknown(),
       regex("a_muted").unchecked_head_in(['a']).mute(),
-      regex("no_head").into(),
+      regex("no_head"),
     ]
     .into_iter()
     .map(Rc::new)
@@ -141,10 +154,33 @@ mod tests {
     assert!(hm.known_map().contains_key(&'c'));
     assert_eq!(hm.known_map().len(), 3);
 
-    // check action count
-    assert_eq!(hm.known_map()[&'a'].len(), 5); // "a", "aa", "[^c]", a_muted, no_head
-    assert_eq!(hm.known_map()[&'b'].len(), 3); // "b", "[^c]", no_head
-    assert_eq!(hm.known_map()[&'c'].len(), 1); // no_head
-    assert_eq!(hm.unknown_fallback().len(), 3); // "[^c]", ".", no_head
+    // check actions
+    assert_actions_eq(
+      &hm.known_map()[&'a'],
+      vec![
+        exact("a"),
+        exact("aa"),
+        regex("[^c]").unchecked_head_not(['c']),
+        regex("a_muted").unchecked_head_in(['a']).mute(),
+        regex("no_head"),
+      ],
+    );
+    assert_actions_eq(
+      &hm.known_map()[&'b'],
+      vec![
+        exact("b"),
+        regex("[^c]").unchecked_head_not(['c']),
+        regex("no_head"),
+      ],
+    );
+    assert_actions_eq(&hm.known_map()[&'c'], vec![regex("no_head")]);
+    assert_actions_eq(
+      hm.unknown_fallback(),
+      vec![
+        regex("[^c]").unchecked_head_not(['c']),
+        regex(".").unchecked_head_unknown(),
+        regex("no_head"),
+      ],
+    );
   }
 }
