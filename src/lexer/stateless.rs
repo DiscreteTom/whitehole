@@ -87,13 +87,13 @@ pub struct StatelessLexer<Kind: 'static, ActionState = (), ErrorType = ()> {
   head_map: HeadMap<Kind, ActionState, ErrorType>,
   /// This is used to accelerate expected lexing by the expected kind and actions' head matcher.
   /// This is pre-calculated to optimize the runtime performance.
-  kind_head_map: HashMap<TokenKindId<Kind>, HeadMap<Kind, ActionState, ErrorType>>,
+  kind_head_map: HashMap<&'static TokenKindId<Kind>, HeadMap<Kind, ActionState, ErrorType>>,
   /// This is used to accelerate expected lexing by the expected literal and actions' head matcher.
   /// This is pre-calculated to optimize the runtime performance.
   literal_map: LiteralMap<Kind, ActionState, ErrorType>,
   /// This is used to accelerate expected lexing by the expected kind, the expected literal and actions' head matcher.
   /// This is pre-calculated to optimize the runtime performance.
-  kind_literal_map: HashMap<TokenKindId<Kind>, LiteralMap<Kind, ActionState, ErrorType>>,
+  kind_literal_map: HashMap<&'static TokenKindId<Kind>, LiteralMap<Kind, ActionState, ErrorType>>,
 }
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
@@ -101,50 +101,58 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// This function will pre-calculate some collections to optimize the runtime performance.
   pub fn new(actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>) -> Self {
     // known kinds => actions
-    let mut kinds_action_map = HashMap::new();
-    // prepare kind map, add value for all known possible kinds
-    // this has to be done before filling the map
-    // because we need to iter over all possible kinds when filling the map
-    for a in &actions {
-      kinds_action_map
-        .entry(a.kind().clone())
-        .or_insert(Vec::new());
-    }
-    // fill it
-    for a in &actions {
-      if a.muted() {
-        // muted, add to all kinds
-        for (_, vec) in kinds_action_map.iter_mut() {
-          vec.push(a.clone());
-        }
-      } else {
-        // non-muted, only add to possible kinds
-        kinds_action_map.get_mut(a.kind()).unwrap().push(a.clone());
-      }
-    }
-    // the above code should make sure the order of actions in each vec is the same as the order in `actions`
+    let kinds_action_map = Self::init_kind_map(&actions);
 
-    // collect known chars/literals using all actions so we can re-use this map for all head/literal maps
-    let known_char_map = HeadMap::collect_all_known(&actions);
-    let known_literal_map = LiteralMap::collect_all_known(&actions);
+    // collect known chars/literals using all actions so we can re-use these map for all head/literal maps
+    let known_head_chars = HeadMap::collect_all_known(&actions);
+    let known_literals = LiteralMap::collect_all_known(&actions);
 
     Self {
       kind_head_map: kinds_action_map
         .iter()
-        .map(|(k, v)| (*k, HeadMap::new(v, known_char_map.clone())))
+        .map(|(k, v)| (*k, HeadMap::new(v, known_head_chars.clone())))
         .collect(),
       kind_literal_map: kinds_action_map
         .iter()
         .map(|(k, v)| {
           (
             *k,
-            LiteralMap::new(v, known_literal_map.clone(), &known_char_map),
+            LiteralMap::new(v, known_literals.clone(), &known_head_chars),
           )
         })
         .collect(),
-      literal_map: LiteralMap::new(&actions, known_literal_map, &known_char_map),
-      head_map: HeadMap::new(&actions, known_char_map),
+      literal_map: LiteralMap::new(&actions, known_literals, &known_head_chars),
+      head_map: HeadMap::new(&actions, known_head_chars),
     }
+  }
+
+  #[inline] // there is only one call site, so mark this as inline
+  fn init_kind_map(
+    actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
+  ) -> HashMap<&'static TokenKindId<Kind>, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
+    let mut res = HashMap::new();
+    // prepare kind map, add value for all known possible kinds
+    // this has to be done before filling the map
+    // because we need to iter over all possible kinds when filling the map
+    for a in actions {
+      res.entry(a.kind()).or_insert(Vec::new());
+    }
+    // fill it
+    for a in actions {
+      if a.muted() {
+        // muted, add to all kinds
+        for (_, vec) in res.iter_mut() {
+          vec.push(a.clone());
+        }
+      } else {
+        // non-muted, only add to possible kinds
+        // SAFETY: the entry is guaranteed to exist since we've collected all possible kinds
+        unsafe { res.get_mut(a.kind()).unwrap_unchecked() }.push(a.clone());
+      }
+    }
+    // the above code should make sure the order of actions in each vec is the same as the order in `actions`
+
+    res
   }
 }
 
