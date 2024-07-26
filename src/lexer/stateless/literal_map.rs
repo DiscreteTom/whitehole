@@ -69,7 +69,9 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
 
       // else, not muted, check literal
       if let Some(literal) = a.literal() {
-        known_map.get_mut(literal).unwrap().push(a.clone());
+        // SAFETY: the key must exist because we have collected all known chars in `collect_all_known`
+        // and `KnownLiteral` ensures the known map is not modified before creating the literal map
+        unsafe { known_map.get_mut(literal).unwrap_unchecked() }.push(a.clone());
       }
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`

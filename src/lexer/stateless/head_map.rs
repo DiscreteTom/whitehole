@@ -67,7 +67,9 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
         match head {
           HeadMatcher::OneOf(set) => {
             for c in set {
-              res.known_map.get_mut(c).unwrap().push(a.clone());
+              // SAFETY: the key must exist because we have collected all known chars in `collect_all_known`
+              // and `KnownHead` ensures the known map is not modified before creating the head map
+              unsafe { res.known_map.get_mut(c).unwrap_unchecked() }.push(a.clone());
             }
           }
           HeadMatcher::Not(set) => {
