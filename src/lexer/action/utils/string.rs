@@ -2,10 +2,10 @@
 //!
 //! Here is the recommended order of reading the source code:
 //!
-//! 1. [`self::body`]
-//! 2. [`self::options`]
-//! 3. [`self::escape`]
-//! 4. [`self`]
+//! - [`self::body`]
+//! - [`self::options`]
+//! - [`self::escape`]
+//! - [`self`]
 
 mod body;
 mod error;

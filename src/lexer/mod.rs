@@ -2,18 +2,18 @@
 //!
 //! Here is the recommended order of reading the source code:
 //!
-//! 1. [`self::token`]
-//! 2. [`self::action`]
-//! 3. [`self::state`]
-//! 4. [`self::expectation`]
-//! 5. [`self::re_lex`]
-//! 6. [`self::fork`]
-//! 7. [`self::options`]
-//! 8. [`self::output`]
-//! 9. [`self::lexer`]
-//! 10. [`self::builder`]
-//! 11. [`self::stateless`]
-//! 12. [`self::position`]
+//! - [`self::token`]
+//! - [`self::action`]
+//! - [`self::state`]
+//! - [`self::expectation`]
+//! - [`self::re_lex`]
+//! - [`self::fork`]
+//! - [`self::options`]
+//! - [`self::output`]
+//! - [`self::lexer`]
+//! - [`self::builder`]
+//! - [`self::stateless`]
+//! - [`self::position`]
 
 pub mod action;
 pub mod builder;

@@ -194,12 +194,12 @@
 //!
 //! Here is the recommended order of reading the source code:
 //!
-//! 1. [`self::token`]
-//! 2. [`self::token_kind_id`]
-//! 3. [`self::sub_token_kind`]
-//! 4. [`self::mock`]
-//! 5. [`self::binding`]
-//! 6. [`self::token_kind`]
+//! - [`self::token`]
+//! - [`self::token_kind_id`]
+//! - [`self::sub_token_kind`]
+//! - [`self::mock`]
+//! - [`self::binding`]
+//! - [`self::token_kind`]
 //!
 //! The [`token_kind`] macro will be tested here.
 

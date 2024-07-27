@@ -11,12 +11,12 @@
 //!
 //! Here is the recommended order of reading the source code:
 //!
-//! 1. [`self::input`]
-//! 2. [`self::output`]
-//! 3. [`self`]
-//! 4. [`self::decorator`]
-//! 5. [`self::simple`]
-//! 6. [`self::utils`]
+//! - [`self::input`]
+//! - [`self::output`]
+//! - [`self`]
+//! - [`self::decorator`]
+//! - [`self::simple`]
+//! - [`self::utils`]
 
 mod decorator;
 mod input;
