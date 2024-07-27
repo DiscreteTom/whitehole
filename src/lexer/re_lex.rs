@@ -174,3 +174,59 @@ impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
     })
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lexer::LexerBuilder;
+
+  #[test]
+  fn re_lex_context() {
+    let context = ReLexContext::new();
+    assert_eq!(context, ReLexContext { start: 0, skip: 0 });
+    let context = ReLexContext::default();
+    assert_eq!(context, ReLexContext { start: 0, skip: 0 });
+  }
+
+  #[test]
+  fn mock_re_lexable_factory() {
+    let mut factory = ();
+    let action_state = 0;
+    ReLexableFactory::<(), _, ()>::before_mutate_action_state(&mut factory, &action_state);
+    let stateless_re_lexable =
+      ReLexableFactory::<(), i32, ()>::into_stateless_re_lexable(factory, 0, 2, 1);
+    assert_eq!(stateless_re_lexable, ());
+    let lexer = LexerBuilder::<()>::new().build("");
+    let re_lexable =
+      <() as ReLexableFactory<_, _, _>>::into_re_lexable(stateless_re_lexable, &lexer);
+    assert_eq!(re_lexable, ());
+  }
+
+  #[test]
+  fn re_lexable_builder() {
+    let mut builder = ReLexableBuilder::default();
+    let action_state = 0;
+    ReLexableFactory::<(), _, ()>::before_mutate_action_state(&mut builder, &action_state);
+    let stateless_re_lexable =
+      ReLexableFactory::<(), i32, ()>::into_stateless_re_lexable(builder, 0, 2, 1);
+    assert_eq!(stateless_re_lexable, None);
+    let lexer = LexerBuilder::<(), _>::stateful().build("");
+    let re_lexable = ReLexableBuilder::into_re_lexable(stateless_re_lexable, &lexer);
+    assert!(re_lexable.is_none());
+
+    let mut builder = ReLexableBuilder::default();
+    let action_state = 0;
+    ReLexableFactory::<(), _, ()>::before_mutate_action_state(&mut builder, &action_state);
+    let stateless_re_lexable =
+      ReLexableFactory::<(), i32, ()>::into_stateless_re_lexable(builder, 0, 2, 0);
+    assert_eq!(
+      stateless_re_lexable,
+      Some((Some(0), ReLexContext { start: 0, skip: 1 }))
+    );
+    let mut lexer = LexerBuilder::<(), _>::stateful().build("");
+    lexer.action_state = 1;
+    let (lexer, context) = ReLexableBuilder::into_re_lexable(stateless_re_lexable, &lexer).unwrap();
+    assert_eq!(context, ReLexContext { start: 0, skip: 1 });
+    assert_eq!(lexer.action_state, 0);
+  }
+}
