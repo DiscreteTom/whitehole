@@ -92,7 +92,7 @@ impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
   /// expectation.literal(&String::from("import"));
   /// ```
   #[inline]
-  pub fn literal(mut self, text: &'expect_literal str) -> Self {
+  pub const fn literal(mut self, text: &'expect_literal str) -> Self {
     self.literal = Some(text);
     self
   }
