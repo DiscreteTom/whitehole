@@ -19,14 +19,8 @@ impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
   type ReLexableFactoryType = ReLexableBuilder<ActionState>;
 }
 
-/// This struct is used to indicate that the fork feature is disabled.
-/// This struct implements [`LexOptionsFork`].
-/// See [`LexOptions::fork`](crate::lexer::options::LexOptions::fork).
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct ForkDisabled;
-
 impl<'text, Kind: 'static, ActionState, ErrorType>
-  LexOptionsFork<'text, Kind, ActionState, ErrorType> for ForkDisabled
+  LexOptionsFork<'text, Kind, ActionState, ErrorType> for ()
 {
   type ReLexableFactoryType = ();
 }

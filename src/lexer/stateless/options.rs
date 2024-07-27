@@ -1,6 +1,6 @@
 use crate::lexer::{
   expectation::Expectation,
-  fork::{ForkDisabled, ForkEnabled},
+  fork::ForkEnabled,
   options::{LexOptions, TrimOptions},
   re_lex::ReLexContext,
 };
@@ -42,7 +42,7 @@ impl<ActionStateRef, Base> StatelessOptions<ActionStateRef, Base> {
 pub type StatelessLexOptions<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork> =
   StatelessOptions<ActionStateRef, LexOptions<'expect_literal, Kind, ErrAcc, Fork>>;
 
-impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), ForkDisabled> {
+impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), ()> {
   /// Create a new instance with `0` as the start index and no action state.
   #[inline]
   pub const fn new() -> Self {

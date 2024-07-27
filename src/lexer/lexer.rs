@@ -1,5 +1,5 @@
 use super::{
-  fork::{ForkDisabled, LexOptionsFork},
+  fork::LexOptionsFork,
   options::{LexOptions, TrimOptions},
   output::{LexOutput, TrimOutput},
   re_lex::ReLexableFactory,
@@ -105,7 +105,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   >(
     &self,
     options_builder: impl FnOnce(
-      LexOptions<'expect_literal, Kind, (), ForkDisabled>,
+      LexOptions<'expect_literal, Kind, (), ()>,
     ) -> LexOptions<'expect_literal, Kind, ErrAcc, Fork>,
   ) -> (
     LexOutput<
@@ -193,7 +193,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   pub fn lex_with<'expect_literal, ErrAcc, Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>>(
     &mut self,
     options_builder: impl FnOnce(
-      LexOptions<'expect_literal, Kind, (),ForkDisabled>,
+      LexOptions<'expect_literal, Kind, (),()>,
     ) -> LexOptions<'expect_literal, Kind, ErrAcc,Fork>,
   ) -> LexOutput<Token<Kind>, ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>
   where

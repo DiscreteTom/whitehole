@@ -1,8 +1,4 @@
-use super::{
-  expectation::Expectation,
-  fork::{ForkDisabled, ForkEnabled},
-  re_lex::ReLexContext,
-};
+use super::{expectation::Expectation, fork::ForkEnabled, re_lex::ReLexContext};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LexOptions<'expect_literal, Kind: 'static, ErrAcc, Fork> {
@@ -15,27 +11,27 @@ pub struct LexOptions<'expect_literal, Kind: 'static, ErrAcc, Fork> {
   pub re_lex: ReLexContext,
 }
 
-impl<'expect_literal, Kind: 'static> LexOptions<'expect_literal, Kind, (), ForkDisabled> {
+impl<'expect_literal, Kind: 'static> LexOptions<'expect_literal, Kind, (), ()> {
   #[inline]
   pub const fn new() -> Self {
     Self {
       expectation: Expectation::new(),
       errors_to: (),
-      fork: ForkDisabled,
+      fork: (),
       re_lex: ReLexContext::new(),
     }
   }
 }
 
 impl<'expect_literal, Kind: 'static> From<Expectation<'expect_literal, Kind>>
-  for LexOptions<'expect_literal, Kind, (), ForkDisabled>
+  for LexOptions<'expect_literal, Kind, (), ()>
 {
   fn from(expectation: Expectation<'expect_literal, Kind>) -> Self {
     Self::new().expect(expectation)
   }
 }
 impl<'expect_literal, Kind: 'static> From<ReLexContext>
-  for LexOptions<'expect_literal, Kind, (), ForkDisabled>
+  for LexOptions<'expect_literal, Kind, (), ()>
 {
   fn from(re_lex: ReLexContext) -> Self {
     Self::new().re_lex(re_lex)

@@ -3,7 +3,7 @@ use super::{
 };
 use crate::{
   lexer::{
-    fork::{ForkDisabled, LexOptionsFork},
+    fork::LexOptionsFork,
     output::{LexOutput, TrimOutput},
     re_lex::{ReLexContext, ReLexableFactory},
     token::{Range, Token, TokenKindIdProvider},
@@ -55,7 +55,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     &self,
     text: &'text str,
     options_builder: impl FnOnce(
-      StatelessLexOptions<'expect_literal,Kind, (), (), ForkDisabled>,
+      StatelessLexOptions<'expect_literal,Kind, (), (), ()>,
     ) -> StatelessLexOptions<
       'expect_literal,
       Kind,
