@@ -1,4 +1,4 @@
-use super::token::{TokenKindId, TokenKindIdProvider};
+use super::token::{SubTokenKind, TokenKindId};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Expectation<'expect_literal, Kind: 'static> {
@@ -15,28 +15,33 @@ impl<'expect_literal, Kind> Default for Expectation<'expect_literal, Kind> {
   }
 }
 
-impl<'expect_literal, Kind> From<&'static TokenKindId<Kind>> for Expectation<'expect_literal, Kind>
-where
-  Kind: TokenKindIdProvider<Kind>,
+impl<'expect_literal, Kind> From<&'static TokenKindId<Kind>>
+  for Expectation<'expect_literal, Kind>
 {
+  #[inline]
   fn from(id: &'static TokenKindId<Kind>) -> Self {
-    Expectation {
-      kind: Some(id),
-      literal: None,
-    }
+    Self::new().kind(id)
+  }
+}
+
+impl<'expect_literal, Kind, ViaKind: SubTokenKind<TokenKind = Kind>> From<ViaKind>
+  for Expectation<'expect_literal, Kind>
+{
+  #[inline]
+  fn from(_: ViaKind) -> Self {
+    Self::new().kind(ViaKind::kind_id())
   }
 }
 
 impl<'expect_literal, Kind> From<&'expect_literal str> for Expectation<'expect_literal, Kind> {
+  #[inline]
   fn from(text: &'expect_literal str) -> Self {
-    Expectation {
-      kind: None,
-      literal: Some(text),
-    }
+    Self::new().literal(text)
   }
 }
 
 impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
+  /// Create a new [`Expectation`] with no expected [`kind`](Self::kind) and no expected [`literal`](Self::literal).
   #[inline]
   pub const fn new() -> Self {
     Expectation {
@@ -52,46 +57,43 @@ impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
   /// # use whitehole::lexer::token::{token_kind, SubTokenKind};
   /// # use whitehole::lexer::expectation::Expectation;
   /// #[token_kind]
-  /// enum MyKind { A }
-  /// // use kind id
+  /// enum MyKind { A(String), B }
   /// # fn main() {
-  /// # let mut expectation = Expectation::default();
+  /// // use kind id, useful for enum variant with associated data
+  /// // so you don't need to create a new instance
+  /// # let mut expectation = Expectation::new();
   /// expectation.kind(A::kind_id());
-  /// // for unit enum variant, you can use the variant itself
-  /// # let mut expectation = Expectation::default();
-  /// expectation.kind(A);
+  /// // use the variant itself, useful for unit variants
+  /// # let mut expectation = Expectation::new();
+  /// expectation.kind(B);
   /// # }
   /// ```
-  pub fn kind(mut self, kind: impl Into<&'static TokenKindId<Kind>>) -> Self
-  where
-    Kind: TokenKindIdProvider<TokenKind = Kind>,
-  {
+  #[inline]
+  pub fn kind(mut self, kind: impl Into<&'static TokenKindId<Kind>>) -> Self {
     self.kind = Some(kind.into());
     self
   }
-}
 
-impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
   /// If the [`literal`](Self::literal) is provided, the lexer will skip [`Action`](crate::lexer::action::Action)s
   /// with different [`literal`](crate::lexer::action::Action::literal) (unless [`muted`](crate::lexer::action::Action::muted)).
   /// # Caveats
   /// Be ware, we are checking the [`Action::literal`](crate::lexer::action::Action::literal)
-  /// before executing an action,
-  /// not the token's text content
-  /// after executing an action.
+  /// *before* executing an action,
+  /// not the action output's text content
+  /// *after* executing an action.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::token::{token_kind};
   /// # use whitehole::lexer::expectation::Expectation;
-  /// # #[token_kind]
-  /// # enum MyKind { A }
-  /// # fn main() {
-  /// # let mut expectation = Expectation::<MyKind>::default();
+  /// // with static string
+  /// # let mut expectation = Expectation::<()>::new();
   /// expectation.literal("import");
-  /// # }
+  /// // with owned string
+  /// # let mut expectation = Expectation::<()>::new();
+  /// expectation.literal(&String::from("import"));
   /// ```
-  pub fn literal(mut self, text: impl Into<&'expect_literal str>) -> Self {
-    self.literal = Some(text.into());
+  #[inline]
+  pub fn literal(mut self, text: &'expect_literal str) -> Self {
+    self.literal = Some(text);
     self
   }
 }
