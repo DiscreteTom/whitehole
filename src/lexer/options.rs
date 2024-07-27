@@ -193,3 +193,97 @@ impl<ErrAcc> TrimOptions<ErrAcc> {
     self.errors_to(Vec::new()) // TODO: use a trait for `errors_to`
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn lex_options() {
+    let options: LexOptions<(), _, _> = LexOptions::new();
+    assert_eq!(
+      options,
+      LexOptions {
+        expectation: Expectation::new(),
+        errors_to: (),
+        fork: (),
+        re_lex: ReLexContext::new(),
+      }
+    );
+
+    let options = options.expect("literal");
+    assert_eq!(
+      options,
+      LexOptions {
+        expectation: Expectation::new().literal("literal"),
+        errors_to: (),
+        fork: (),
+        re_lex: ReLexContext::new(),
+      }
+    );
+
+    let options: LexOptions<(), Vec<()>, _> = options.errors_to_vec();
+    assert_eq!(
+      options,
+      LexOptions {
+        expectation: Expectation::new().literal("literal"),
+        errors_to: vec![],
+        fork: (),
+        re_lex: ReLexContext::new(),
+      }
+    );
+
+    let options = options.fork();
+    assert_eq!(
+      options,
+      LexOptions {
+        expectation: Expectation::new().literal("literal"),
+        errors_to: vec![],
+        fork: ForkEnabled,
+        re_lex: ReLexContext::new(),
+      }
+    );
+
+    let options = options.re_lex(ReLexContext { start: 1, skip: 1 });
+    assert_eq!(
+      options,
+      LexOptions {
+        expectation: Expectation::new().literal("literal"),
+        errors_to: vec![],
+        fork: ForkEnabled,
+        re_lex: ReLexContext { start: 1, skip: 1 },
+      }
+    );
+
+    // from
+    let options: LexOptions<(), _, _> = Expectation::new().literal("literal").into();
+    assert_eq!(
+      options,
+      LexOptions {
+        expectation: Expectation::new().literal("literal"),
+        errors_to: (),
+        fork: (),
+        re_lex: ReLexContext::new(),
+      }
+    );
+    let options: LexOptions<(), _, _> = ReLexContext { start: 1, skip: 1 }.into();
+    assert_eq!(
+      options,
+      LexOptions {
+        expectation: Expectation::new(),
+        errors_to: (),
+        fork: (),
+        re_lex: ReLexContext { start: 1, skip: 1 },
+      }
+    );
+  }
+
+  #[test]
+  fn trim_options() {
+    let options = TrimOptions::new();
+    assert_eq!(options, TrimOptions { errors_to: () });
+
+    let options: TrimOptions<Vec<()>> = options.errors_to_vec();
+    assert_eq!(options, TrimOptions { errors_to: vec![] });
+  }
+}
