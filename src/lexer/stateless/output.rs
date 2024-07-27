@@ -3,7 +3,7 @@ use crate::lexer::output::{LexOutput, TrimOutput};
 /// Use this trait to abstract the output of a stateless lexer.
 pub(super) trait StatelessOutput<TokenType, ErrAcc, ReLexableType> {
   /// Create a new instance of the output with the given error accumulator.
-  fn new(err_acc: ErrAcc) -> Self;
+  fn new(errors: ErrAcc) -> Self;
   /// How many bytes are digested during the whole lexing loop in current lexing.
   fn digested(&self) -> usize;
   /// Digest the next `n` chars.
@@ -18,11 +18,11 @@ impl<TokenType, ErrAcc, ReLexableType: Default> StatelessOutput<TokenType, ErrAc
   for LexOutput<TokenType, ErrAcc, ReLexableType>
 {
   #[inline]
-  fn new(err_acc: ErrAcc) -> Self {
+  fn new(errors: ErrAcc) -> Self {
     Self {
       token: None,
       digested: 0,
-      errors: err_acc,
+      errors,
       re_lexable: ReLexableType::default(),
     }
   }
@@ -52,10 +52,10 @@ impl<TokenType, ReLexableType, ErrAcc> StatelessOutput<TokenType, ErrAcc, ReLexa
   for TrimOutput<ErrAcc>
 {
   #[inline]
-  fn new(err_acc: ErrAcc) -> Self {
+  fn new(errors: ErrAcc) -> Self {
     Self {
       digested: 0,
-      errors: err_acc,
+      errors,
     }
   }
   #[inline]
