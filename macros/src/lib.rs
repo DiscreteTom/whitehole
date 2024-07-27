@@ -9,7 +9,7 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// ```
 /// use whitehole_macros::token_kind;
 /// #[token_kind]
-/// enum MyKind {
+/// pub enum MyKind {
 ///   A,
 ///   B(i32),
 ///   C { c: i32 }
@@ -17,7 +17,7 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// ```
 /// will be transformed into:
 /// ```no_run
-/// enum MyKind { A, B(B), C(C) }
+/// pub enum MyKind { A, B(B), C(C) }
 /// pub struct A;
 /// impl Into<MyKind> for A { ... }
 /// impl Into<TokenKindIdBinding<MyKind>> for A { ... }
@@ -125,7 +125,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
           })
           .collect();
         gen.push(quote! {
-          #(#attrs)* pub struct #variant_name{ #(#generated_fields),* } // no semicolon at the end
+          #(#attrs)* #vis struct #variant_name{ #(#generated_fields),* } // no semicolon at the end
         });
       }
       Fields::Unnamed(fields) => {
@@ -138,12 +138,12 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
           })
           .collect();
         gen.push(quote! {
-          #(#attrs)* pub struct #variant_name(#(#generated_fields),*);
+          #(#attrs)* #vis struct #variant_name(#(#generated_fields),*);
         });
       }
       Fields::Unit => {
         gen.push(quote! {
-          #(#attrs)* pub struct #variant_name;
+          #(#attrs)* #vis struct #variant_name;
         });
       }
     }
