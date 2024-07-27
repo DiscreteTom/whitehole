@@ -64,7 +64,7 @@ impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
   /// ```
   pub fn kind(mut self, kind: impl Into<&'static TokenKindId<Kind>>) -> Self
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
     self.kind = Some(kind.into());
     self

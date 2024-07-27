@@ -33,9 +33,10 @@ pub struct TokenKindIdBinding<Kind: 'static> {
   value: Kind,
 }
 
-impl<Kind> TokenKindIdProvider<Self> for TokenKindIdBinding<Kind> {
+impl<Kind> TokenKindIdProvider for TokenKindIdBinding<Kind> {
+  type TokenKind = Self;
   #[inline]
-  fn id(&self) -> &'static TokenKindId<Self> {
+  fn id(&self) -> &'static TokenKindId<Self::TokenKind> {
     &self.id
   }
 }
@@ -43,7 +44,9 @@ impl<Kind> TokenKindIdProvider<Self> for TokenKindIdBinding<Kind> {
 impl<Kind> TokenKindIdBinding<Kind> {
   /// Create a new binding from a value of a sub token kind.
   #[inline]
-  pub fn new<ViaKind: SubTokenKind<TokenKindIdBinding<Kind>> + Into<Kind>>(value: ViaKind) -> Self {
+  pub fn new<ViaKind: SubTokenKind<TokenKind = TokenKindIdBinding<Kind>> + Into<Kind>>(
+    value: ViaKind,
+  ) -> Self {
     Self {
       value: value.into(),
       id: ViaKind::kind_id(),

@@ -89,7 +89,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   /// This will clone [`Self::action_state`] and return it.
   pub fn peek(&self) -> (LexOutput<Token<Kind>, (), ()>, ActionState)
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
     ActionState: Clone,
   {
     self.peek_with_options(LexOptions::new())
@@ -121,7 +121,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     ActionState,
   )
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
     ActionState: Clone,
     ErrAcc: Accumulator<(ErrorType, Range)>,
   {
@@ -152,7 +152,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     ActionState,
   )
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
     ActionState: Clone,
     ErrAcc: Accumulator<(ErrorType, Range)>,
   {
@@ -183,7 +183,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   /// [`Self::state`] and [`Self::action_state`] will be updated.
   pub fn lex(&mut self) -> LexOutput<Token<Kind>, (), ()>
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
     self.lex_with_options(LexOptions::new())
   }
@@ -197,7 +197,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     ) -> LexOptions<'expect_literal, Kind, ErrAcc,Fork>,
   ) -> LexOutput<Token<Kind>, ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
     ErrAcc:Accumulator<(ErrorType, Range)>+Default
   {
     self.lex_with_options(options_builder(LexOptions::new()))
@@ -210,7 +210,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     options: impl Into<LexOptions<'expect_literal, Kind,ErrAcc, Fork>>,
   ) -> LexOutput<Token<Kind>, ErrAcc,<Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
     ErrAcc:Accumulator<(ErrorType, Range)>+Default
   {
     let output = Self::lex_with_stateless(
@@ -255,7 +255,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   /// Returns [`None`] if the lexer is already trimmed.
   pub fn trim<ErrAcc>(&mut self, err_acc: ErrAcc) -> Option<TrimOutput<ErrAcc>>
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
     ErrAcc: Accumulator<(ErrorType, Range)>,
   {
     if self.state.trimmed() {
@@ -284,7 +284,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     options: LexOptions<'expect_literal, Kind, ErrAcc,Fork>,
   ) -> LexOutput<Token<Kind>,ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType>
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
     ErrAcc:Accumulator<(ErrorType, Range)>,
   {
     stateless.lex_with_options(

@@ -29,7 +29,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     mut res: StatelessOutputType,
   ) -> StatelessOutputType
   where
-    Kind: TokenKindIdProvider<Kind> + 'static,
+    Kind: TokenKindIdProvider<TokenKind = Kind> + 'static,
     ActionState: 'head_map,
     ErrorType: 'head_map,
   {
@@ -124,7 +124,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     re_lexable_factory: &mut ReLexableFactoryType,
   ) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize)>
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
     for (i, action) in actions
       .iter()

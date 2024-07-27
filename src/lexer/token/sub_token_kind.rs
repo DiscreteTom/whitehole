@@ -22,7 +22,8 @@ use super::TokenKindId;
 /// assert_ne!(A::kind_id(), B::kind_id());
 /// # }
 /// ```
-pub trait SubTokenKind<TokenKindType> {
+pub trait SubTokenKind {
+  type TokenKind;
   /// Return the kind id of this sub token kind.
-  fn kind_id() -> &'static TokenKindId<TokenKindType>; // use a static reference to avoid creating a new one every time
+  fn kind_id() -> &'static TokenKindId<Self::TokenKind>; // use a static reference to avoid creating a new one every time
 }

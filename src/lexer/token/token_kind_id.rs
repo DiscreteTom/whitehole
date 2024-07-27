@@ -116,10 +116,11 @@ impl<Kind> Hash for TokenKindId<Kind> {
 /// assert_eq!(a.id(), a.id());
 /// # }
 /// ```
-pub trait TokenKindIdProvider<Kind> {
+pub trait TokenKindIdProvider {
+  type TokenKind;
   /// The token kind id of this token kind value.
   /// See [`TokenKindId`].
-  fn id(&self) -> &'static TokenKindId<Kind>; // use a static reference to avoid creating a new one every time
+  fn id(&self) -> &'static TokenKindId<Self::TokenKind>; // use a static reference to avoid creating a new one every time
 }
 
 #[cfg(test)]

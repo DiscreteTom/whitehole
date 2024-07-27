@@ -33,16 +33,18 @@ impl<T> MockTokenKind<T> {
   }
 }
 
-impl<T> TokenKindIdProvider<Self> for MockTokenKind<T> {
+impl<T> TokenKindIdProvider for MockTokenKind<T> {
+  type TokenKind = Self;
   #[inline]
-  fn id(&self) -> &'static TokenKindId<Self> {
+  fn id(&self) -> &'static TokenKindId<Self::TokenKind> {
     cast_mock_token_kind_id()
   }
 }
 
-impl<T> SubTokenKind<Self> for MockTokenKind<T> {
+impl<T> SubTokenKind for MockTokenKind<T> {
+  type TokenKind = Self;
   #[inline]
-  fn kind_id() -> &'static TokenKindId<Self> {
+  fn kind_id() -> &'static TokenKindId<Self::TokenKind> {
     cast_mock_token_kind_id()
   }
 }

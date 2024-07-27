@@ -22,19 +22,19 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// impl Into<MyKind> for A { ... }
 /// impl Into<TokenKindIdBinding<MyKind>> for A { ... }
 /// impl Into<&'static TokenKindId<TokenKindIdBinding<MyKind>>> for A { ... }
-/// impl SubTokenKind<TokenKindIdBinding<MyKind>> for A { ... }
+/// impl SubTokenKind for A { ... }
 ///
 /// pub struct B(pub i32);
 /// impl Into<MyKind> for B { ... }
 /// impl Into<TokenKindIdBinding<MyKind>> for B { ... }
 /// impl Into<&'static TokenKindId<TokenKindIdBinding<MyKind>>> for B { ... }
-/// impl SubTokenKind<TokenKindIdBinding<MyKind>> for B { ... }
+/// impl SubTokenKind for B { ... }
 ///
 /// pub struct C { pub c: i32 }
 /// impl Into<MyKind> for C { ... }
 /// impl Into<TokenKindIdBinding<MyKind>> for C { ... }
 /// impl Into<&'static TokenKindId<TokenKindIdBinding<MyKind>>> for C { ... }
-/// impl SubTokenKind<TokenKindIdBinding<MyKind>> for C { ... }
+/// impl SubTokenKind for C { ... }
 /// ```
 /// Besides, if the token kind derive `Default`:
 /// ```
@@ -198,9 +198,10 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
         use #crate_name::lexer::token::{SubTokenKind, TokenKindId, TokenKindIdBinding};
         const #token_kind_id_const: TokenKindId<TokenKindIdBinding<#enum_name>> = TokenKindId::new(#index, #sub_token_kind_name);
         // impl SubTokenKind so users can get the kind id from the type instead of the value
-        impl SubTokenKind<TokenKindIdBinding<#enum_name>> for #variant_name {
+        impl SubTokenKind for #variant_name {
+          type TokenKind = TokenKindIdBinding<#enum_name>;
           #[inline]
-          fn kind_id() -> &'static TokenKindId<TokenKindIdBinding<#enum_name>> {
+          fn kind_id() -> &'static TokenKindId<Self::TokenKind> {
             &#token_kind_id_const
           }
         }
@@ -224,7 +225,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
           fn default_kind_id() -> &'static #crate_name::lexer::token::TokenKindId<
             #crate_name::lexer::token::TokenKindIdBinding<#enum_name>
           > {
-            <#variant_name as #crate_name::lexer::token::SubTokenKind<_>>::kind_id()
+            <#variant_name as #crate_name::lexer::token::SubTokenKind>::kind_id()
           }
         }
       });

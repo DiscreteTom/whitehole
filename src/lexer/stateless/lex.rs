@@ -24,7 +24,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   #[inline]
   pub fn lex<'text>(&self, text: &'text str) -> (LexOutput<Token<Kind>, (), ()>, ActionState)
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
     ActionState: Default,
   {
     let mut action_state = ActionState::default();
@@ -69,7 +69,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType
   >
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
     ActionState: 'action_state,
   {
     self.lex_with_options(text, options_builder(StatelessLexOptions::new()))
@@ -102,7 +102,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType
   >
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
     const INVALID_EXPECTED_KIND: &str = "no action is defined for the expected kind";
 
@@ -169,7 +169,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   #[inline]
   pub fn trim<'text>(&self, text: &'text str) -> (TrimOutput<()>, ActionState)
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
     ActionState: Default,
   {
     let mut action_state = ActionState::default();
@@ -196,7 +196,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     ) -> StatelessTrimOptions<&'action_state mut ActionState, ErrAcc>,
   ) -> TrimOutput<ErrAcc>
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
     ActionState: 'action_state,
   {
     self.trim_with_options(text, options_builder(StatelessTrimOptions::new()))
@@ -217,7 +217,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     options: StatelessTrimOptions<&'action_state mut ActionState, ErrAcc>,
   ) -> TrimOutput<ErrAcc>
   where
-    Kind: TokenKindIdProvider<Kind>,
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
     Self::execute_actions(
       // the literal map's muted map contains all the muted actions

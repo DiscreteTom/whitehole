@@ -30,8 +30,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
     actions: impl Into<OneOrMore<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
   ) -> Self
   where
-    ViaKind:
-      SubTokenKind<TokenKindIdBinding<Kind>> + Into<TokenKindIdBinding<Kind>> + Clone + 'static,
+    ViaKind: SubTokenKind<TokenKind = TokenKindIdBinding<Kind>>
+      + Into<TokenKindIdBinding<Kind>>
+      + Clone
+      + 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
@@ -63,8 +65,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
     ) -> Action<MockTokenKind<()>, ActionState, ErrorType>,
   ) -> Self
   where
-    ViaKind:
-      SubTokenKind<TokenKindIdBinding<Kind>> + Into<TokenKindIdBinding<Kind>> + Clone + 'static,
+    ViaKind: SubTokenKind<TokenKind = TokenKindIdBinding<Kind>>
+      + Into<TokenKindIdBinding<Kind>>
+      + Clone
+      + 'static,
     ActionState: 'static,
     ErrorType: 'static,
   {
