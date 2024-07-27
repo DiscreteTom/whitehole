@@ -28,7 +28,7 @@ pub struct TokenKindIdBinding<Kind: 'static> {
   /// because when using [`TokenKindIdBinding`] as the token kind
   /// of an [`Action`](crate::lexer::action::Action),
   /// the [`Action::kind`](crate::lexer::action::Action::kind)
-  /// should be `TokenKindId<TokenKindIdBinding<Kind>>`
+  /// should be `TokenKindId<TokenKindIdBinding<Kind>>`.
   id: &'static TokenKindId<Self>,
   value: Kind,
 }
