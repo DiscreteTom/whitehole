@@ -1,7 +1,8 @@
 use crate::lexer::output::{LexOutput, TrimOutput};
 
 /// Use this trait to abstract the output of a stateless lexer.
-pub(super) trait StatelessOutput<TokenType, ErrAcc, ReLexableType> {
+pub(super) trait StatelessOutputFactory<TokenType, ErrAcc, ReLexableType> {
+  type Target;
   /// Create a new instance of the output with the given error accumulator.
   fn new(errors: ErrAcc) -> Self;
   /// How many bytes are digested during the whole lexing loop in current lexing.
@@ -10,22 +11,33 @@ pub(super) trait StatelessOutput<TokenType, ErrAcc, ReLexableType> {
   fn digest(&mut self, n: usize);
   /// Get a mutable reference to the error accumulator.
   fn errors(&mut self) -> &mut ErrAcc;
+  /// This is called if no token is emitted.
+  fn emit(self) -> Self::Target;
   /// This is called if an un-muted action is accepted.
-  fn token(&mut self, token: TokenType, re_lexable: ReLexableType);
+  fn emit_with_token(self, token: TokenType, re_lexable: ReLexableType) -> Self::Target;
 }
 
-impl<TokenType, ErrAcc, ReLexableType: Default> StatelessOutput<TokenType, ErrAcc, ReLexableType>
-  for LexOutput<TokenType, ErrAcc, ReLexableType>
+/// A helper struct to build [`LexOutput`].
+pub(super) struct LexOutputBuilder<ErrAcc> {
+  /// See [`LexOutput::digested`].
+  digested: usize,
+  /// See [`LexOutput::errors`].
+  errors: ErrAcc,
+}
+
+impl<TokenType, ErrAcc, ReLexableType: Default>
+  StatelessOutputFactory<TokenType, ErrAcc, ReLexableType> for LexOutputBuilder<ErrAcc>
 {
+  type Target = LexOutput<TokenType, ErrAcc, ReLexableType>;
+
   #[inline]
   fn new(errors: ErrAcc) -> Self {
     Self {
-      token: None,
       digested: 0,
       errors,
-      re_lexable: ReLexableType::default(),
     }
   }
+
   #[inline]
   fn digested(&self) -> usize {
     self.digested
@@ -42,15 +54,31 @@ impl<TokenType, ErrAcc, ReLexableType: Default> StatelessOutput<TokenType, ErrAc
   }
 
   #[inline]
-  fn token(&mut self, token: TokenType, re_lexable: ReLexableType) {
-    self.token = Some(token);
-    self.re_lexable = re_lexable;
+  fn emit(self) -> Self::Target {
+    Self::Target {
+      digested: self.digested,
+      token: None,
+      re_lexable: ReLexableType::default(),
+      errors: self.errors,
+    }
+  }
+
+  #[inline]
+  fn emit_with_token(self, token: TokenType, re_lexable: ReLexableType) -> Self::Target {
+    Self::Target {
+      digested: self.digested,
+      token: Some(token),
+      re_lexable,
+      errors: self.errors,
+    }
   }
 }
 
-impl<TokenType, ReLexableType, ErrAcc> StatelessOutput<TokenType, ErrAcc, ReLexableType>
+impl<TokenType, ReLexableType, ErrAcc> StatelessOutputFactory<TokenType, ErrAcc, ReLexableType>
   for TrimOutput<ErrAcc>
 {
+  type Target = Self;
+
   #[inline]
   fn new(errors: ErrAcc) -> Self {
     Self {
@@ -58,6 +86,7 @@ impl<TokenType, ReLexableType, ErrAcc> StatelessOutput<TokenType, ErrAcc, ReLexa
       errors,
     }
   }
+
   #[inline]
   fn digested(&self) -> usize {
     self.digested
@@ -74,7 +103,12 @@ impl<TokenType, ReLexableType, ErrAcc> StatelessOutput<TokenType, ErrAcc, ReLexa
   }
 
   #[inline]
-  fn token(&mut self, _token: TokenType, _re_lexable: ReLexableType) {
+  fn emit(self) -> Self::Target {
+    self
+  }
+
+  #[inline]
+  fn emit_with_token(self, _token: TokenType, _re_lexable: ReLexableType) -> Self::Target {
     // this will never be called
     // because when trim, all actions are muted, no token will be emitted
     unreachable!()

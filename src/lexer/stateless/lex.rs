@@ -1,11 +1,13 @@
 use super::{
-  options::StatelessLexOptions, output::StatelessOutput, StatelessLexer, StatelessTrimOptions,
+  options::StatelessLexOptions, output::StatelessOutputFactory, StatelessLexer,
+  StatelessTrimOptions,
 };
 use crate::{
   lexer::{
     fork::LexOptionsFork,
     output::{LexOutput, TrimOutput},
     re_lex::{ReLexContext, ReLexableFactory},
+    stateless::output::LexOutputBuilder,
     token::{Range, Token, TokenKindIdProvider},
   },
   utils::Accumulator,
@@ -136,7 +138,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         options.start,
         options.action_state,
         Fork::ReLexableFactoryType::default(),
-        LexOutput::new(options.base.errors_to),
+        <
+          LexOutputBuilder<ErrAcc> as StatelessOutputFactory<
+            Token<Kind>,
+            _,
+            <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType
+          >
+        >::new(options.base.errors_to),
       )
     } else {
       // else, no expected literal
@@ -152,7 +160,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         options.start,
         options.action_state,
         Fork::ReLexableFactoryType::default(),
-        LexOutput::new(options.base.errors_to),
+        <
+          LexOutputBuilder<ErrAcc> as StatelessOutputFactory<
+            Token<Kind>,
+            _,
+            <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType
+          >
+        >::new(options.base.errors_to),
       )
     }
   }
@@ -230,7 +244,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       options.start,
       options.action_state,
       (),
-      <TrimOutput<_> as StatelessOutput<(), _, ()>>::new(options.base.errors_to),
+      <TrimOutput<_> as StatelessOutputFactory<(), _, ()>>::new(options.base.errors_to),
     )
   }
 }
