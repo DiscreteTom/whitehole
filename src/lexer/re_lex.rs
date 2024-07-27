@@ -1,22 +1,48 @@
 use super::Lexer;
 
-/// With this struct you can continue a finished lex.
-/// For most cases this will be constructed by [`ForkEnabled`](crate::lexer::fork::ForkEnabled)
+/// With this struct you can retry a lex with different actions.
+///
+/// This will be constructed by [`ForkEnabled`](crate::lexer::fork::ForkEnabled)
 /// (when lexing with [`LexOptions::fork`](crate::lexer::options::LexOptions::fork) enabled).
-/// You can also construct this if you implement [`LexOptionsFork`](crate::lexer::fork::LexOptionsFork),
-/// but make sure you know what you are doing.
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// You should never construct this struct manually
+/// because whe [`StatelessLexer`](crate::lexer::stateless::StatelessLexer) will skip
+/// actions as needed and it is not guaranteed the fields of this struct are stable across versions.
+/// # Caveats
+/// Be careful with stateful lexers, because when actions are skipped your action state
+/// may be inconsistent with the original lexing.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::{action::{exact, regex}, LexerBuilder};
+/// let text = "Option<Option<()>>";
+/// let mut lexer = LexerBuilder::new()
+///   // try to match `>>` first, if failed, try to match `>`
+///   .append([exact(">>"), exact(">")])
+///   // ignore all other characters
+///   .ignore(regex(".").unchecked_head_unknown())
+///   .build(text);
+/// // the first lex will emit `>>`, which is not what we want
+/// let output = lexer.lex_with(|o| o.fork());
+/// assert_eq!(&text[output.token.unwrap().range], ">>");
+/// // since we enabled `fork`, the lexer will return a re-lexable if possible.
+/// let (mut lexer, context) = output.re_lexable.unwrap();
+/// // lex with the re-lex context to retry the lex, but skip `exact(">>")` when lexing ">>"
+/// let output = lexer.lex_with(|o| o.re_lex(context));
+/// // now the lexer will emit `>`
+/// assert_eq!(&text[output.token.unwrap().range], ">");
+/// ```
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ReLexContext {
   /// See [`Self::skip`].
-  pub start: usize,
+  pub(crate) start: usize,
   /// How many actions are skipped.
   /// This is effective only if
   /// the [`ActionInput::start`](crate::lexer::action::ActionInput::start)
   /// equals to [`Self::start`].
-  pub skip: usize,
+  pub(crate) skip: usize,
 }
 
 impl ReLexContext {
+  /// Create a new re-lex context with re-lex disabled.
   #[inline]
   pub const fn new() -> Self {
     // set skip to 0 means this is not a re-lex
@@ -24,12 +50,9 @@ impl ReLexContext {
   }
 }
 
-impl Default for ReLexContext {
-  fn default() -> Self {
-    Self::new()
-  }
-}
-
+/// These types already implement the [`ReLexableFactory`] trait:
+/// - `()` - no re-lexable will be created.
+/// - [`ReLexableBuilder`] - create re-lexable structs if possible.
 pub trait ReLexableFactory<'text, Kind: 'static, ActionState, ErrorType> {
   type StatelessReLexableType: Default;
   type ReLexableType;
