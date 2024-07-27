@@ -54,6 +54,8 @@ impl ReLexContext {
 /// - `()` - no re-lexable will be created.
 /// - [`ReLexableBuilder`] - create re-lexable structs if possible.
 pub trait ReLexableFactory<'text, Kind: 'static, ActionState, ErrorType> {
+  /// This should extends [`Default`] so when no token is emitted,
+  /// the output can be created with a default value.
   type StatelessReLexableType: Default;
   type ReLexableType;
 
@@ -67,35 +69,38 @@ pub trait ReLexableFactory<'text, Kind: 'static, ActionState, ErrorType> {
     action_index: usize,
   ) -> Self::StatelessReLexableType;
 
-  /// This should be called before [`Lexer::state`] is mutated.
+  /// This should be called before [`Lexer::state`] is mutated
+  /// to ensure the re-lexable has the state before the mutation.
   fn into_re_lexable(
     stateless_re_lexable: Self::StatelessReLexableType,
     lexer: &Lexer<'text, Kind, ActionState, ErrorType>,
   ) -> Self::ReLexableType;
 }
 
+// mock re-lexable factory
 impl<'text, Kind: 'static, ActionState, ErrorType>
   ReLexableFactory<'text, Kind, ActionState, ErrorType> for ()
 {
   type StatelessReLexableType = ();
   type ReLexableType = ();
 
+  #[inline]
   fn before_mutate_action_state(&mut self, _action_state: &ActionState) {}
 
+  #[inline]
   fn into_stateless_re_lexable(
     self,
     _start: usize,
     _actions_len: usize,
     _action_index: usize,
   ) -> Self::StatelessReLexableType {
-    ()
   }
 
+  #[inline]
   fn into_re_lexable(
     _stateless_re_lexable: Self::StatelessReLexableType,
     _lexer: &Lexer<'text, Kind, ActionState, ErrorType>,
   ) -> Self::ReLexableType {
-    ()
   }
 }
 
@@ -105,6 +110,7 @@ pub struct ReLexableBuilder<ActionState> {
 }
 
 impl<ActionState> Default for ReLexableBuilder<ActionState> {
+  #[inline]
   fn default() -> Self {
     Self {
       action_state_bk: None,
@@ -158,6 +164,7 @@ impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
         action_state_bk
           // if there is a backup action state, it means the lexer's action state is mutated
           // so clone the lexer with the backup action state
+          // to get a lexer with the state before the mutation
           .map(|action_state_bk| lexer.clone_with(action_state_bk))
           // if there is no backup action state, it means the lexer's action state is not mutated
           // just clone the lexer
