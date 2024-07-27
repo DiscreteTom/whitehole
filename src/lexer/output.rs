@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LexOutput<TokenType, ErrAcc, ReLexableType> {
   pub token: Option<TokenType>,
   /// How many bytes are digested during the whole lexing loop in current lexing.
@@ -14,6 +14,7 @@ pub struct LexOutput<TokenType, ErrAcc, ReLexableType> {
   pub re_lexable: ReLexableType, // TODO: example
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TrimOutput<ErrAcc> {
   /// How many bytes are digested during the whole lexing loop in current lexing.
   /// This is NOT [`ActionOutput::digested`](crate::lexer::action::ActionOutput::digested)
