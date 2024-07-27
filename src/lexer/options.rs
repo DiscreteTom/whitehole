@@ -48,7 +48,7 @@ impl<'expect_literal, Kind: 'static, ErrAcc, Fork> LexOptions<'expect_literal, K
   /// ```
   /// # use whitehole::lexer::options::LexOptions;
   /// # use whitehole::lexer::expectation::Expectation;
-  /// # use whitehole::lexer::token::token_kind;
+  /// # use whitehole::lexer::token::{token_kind, SubTokenKind};
   /// #[token_kind]
   /// enum MyKind { A }
   ///
@@ -102,7 +102,7 @@ impl<'expect_literal, Kind: 'static, ErrAcc, Fork> LexOptions<'expect_literal, K
   /// # Examples
   /// ```
   /// # use whitehole::lexer::options::LexOptions;
-  /// # let options: LexOptions<(), _, _, _> =
+  /// # let options: LexOptions<(), Vec<()>, _> =
   /// LexOptions::new().errors_to(vec![]);
   /// ```
   #[inline]
@@ -122,7 +122,7 @@ impl<'expect_literal, Kind: 'static, ErrAcc, Fork> LexOptions<'expect_literal, K
   /// # Examples
   /// ```
   /// # use whitehole::lexer::options::LexOptions;
-  /// # let options: LexOptions<(), _, _, _> =
+  /// # let options: LexOptions<(), Vec<()>, _> =
   /// LexOptions::new().errors_to_vec();
   /// ```
   #[inline]
