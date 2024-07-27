@@ -100,35 +100,56 @@ impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
 
 #[cfg(test)]
 mod tests {
-  use crate::lexer::token::SubTokenKind;
-
   use super::*;
+  use crate::lexer::token::SubTokenKind;
   use whitehole_macros::_token_kind;
 
   #[_token_kind]
   #[derive(Debug)]
   enum MyKind {
-    A,
+    A(()),
+    B,
   }
 
   #[test]
-  fn expectation_default() {
-    let expectation = Expectation::<MyKind>::default();
+  fn expectation_new_default() {
+    let expectation = Expectation::<()>::default();
+    assert_eq!(expectation.kind, None);
+    assert_eq!(expectation.literal, None);
+    let expectation = Expectation::<()>::new();
     assert_eq!(expectation.kind, None);
     assert_eq!(expectation.literal, None);
   }
 
   #[test]
-  fn expectation_from_kind_id() {
+  fn expectation_from_kind_id_or_sub_token_kind_value() {
     let expectation = Expectation::from(A::kind_id());
     assert_eq!(expectation.kind, Some(A::kind_id()));
+    assert_eq!(expectation.literal, None);
+    let expectation = Expectation::from(B);
+    assert_eq!(expectation.kind, Some(B::kind_id()));
     assert_eq!(expectation.literal, None);
   }
 
   #[test]
   fn expectation_from_text() {
-    let expectation = Expectation::<MyKind>::from("text");
+    let expectation = Expectation::<()>::from("text");
     assert_eq!(expectation.kind, None);
     assert_eq!(expectation.literal, Some("text"));
+  }
+
+  #[test]
+  fn expectation_methods() {
+    let expectation = Expectation::new();
+    let expectation = expectation.kind(A::kind_id());
+    assert_eq!(expectation.kind, Some(A::kind_id()));
+    assert_eq!(expectation.literal, None);
+    let expectation = expectation.literal("text");
+    assert_eq!(expectation.kind, Some(A::kind_id()));
+    assert_eq!(expectation.literal, Some("text"));
+    let s = String::from("owned");
+    let expectation = expectation.kind(B).literal(&s);
+    assert_eq!(expectation.kind, Some(B::kind_id()));
+    assert_eq!(expectation.literal, Some("owned"));
   }
 }
