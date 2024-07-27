@@ -7,6 +7,7 @@ pub struct LexOutput<TokenType, ErrAcc, ReLexableType> {
   /// of the lexing loop, this value is the sum of them.
   pub digested: usize,
   pub errors: ErrAcc,
+  /// If re-lex is disabled, this will always be `()`.
   /// If [`Some`], the lex is re-lexable and you can use this value
   /// to continue a lex. This *might* be [`Some`] only if the [`LexOptions::fork`](super::options::LexOptions::fork)
   /// is enabled.
