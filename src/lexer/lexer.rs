@@ -206,7 +206,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     let output = LexOutput {
       digested: output.digested,
       token: output.token,
-      re_lexable: Fork::ReLexableFactoryType::into_re_lexable(
+      re_lexable: Fork::ReLexableFactoryType::build_re_lexable(
         output.re_lexable,
         output.digested,
         &self,
@@ -264,7 +264,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     let output = LexOutput {
       digested: output.digested,
       token: output.token,
-      re_lexable: Fork::ReLexableFactoryType::into_re_lexable(
+      re_lexable: Fork::ReLexableFactoryType::build_re_lexable(
         output.re_lexable,
         output.digested,
         &self,

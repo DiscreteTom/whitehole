@@ -76,7 +76,7 @@ pub trait ReLexableFactory<'text, Kind: 'static, ActionState, ErrorType> {
 
   /// This should be called before [`Lexer::state`] is mutated
   /// to ensure the re-lexable has the state before the mutation.
-  fn into_re_lexable(
+  fn build_re_lexable(
     stateless_re_lexable: Self::StatelessReLexableType,
     digested: usize,
     lexer: &Lexer<'text, Kind, ActionState, ErrorType>,
@@ -103,7 +103,7 @@ impl<'text, Kind: 'static, ActionState, ErrorType>
   }
 
   #[inline]
-  fn into_re_lexable(
+  fn build_re_lexable(
     _stateless_re_lexable: Self::StatelessReLexableType,
     _digested: usize,
     _lexer: &Lexer<'text, Kind, ActionState, ErrorType>,
@@ -221,7 +221,7 @@ impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
     }
   }
 
-  fn into_re_lexable(
+  fn build_re_lexable(
     stateless_re_lexable: Self::StatelessReLexableType,
     digested: usize,
     lexer: &Lexer<'text, Kind, ActionState, ErrorType>,
@@ -256,7 +256,7 @@ mod tests {
     assert_eq!(stateless_re_lexable, ());
     let lexer = LexerBuilder::<()>::new().build("");
     let re_lexable =
-      <() as ReLexableFactory<_, _, _>>::into_re_lexable(stateless_re_lexable, 0, &lexer);
+      <() as ReLexableFactory<_, _, _>>::build_re_lexable(stateless_re_lexable, 0, &lexer);
     assert_eq!(re_lexable, ());
   }
 
@@ -275,7 +275,7 @@ mod tests {
       }
     );
     let lexer = LexerBuilder::<(), _>::stateful().build("");
-    let re_lexable = ReLexableBuilder::into_re_lexable(stateless_re_lexable.clone(), 0, &lexer);
+    let re_lexable = ReLexableBuilder::build_re_lexable(stateless_re_lexable.clone(), 0, &lexer);
     assert_eq!(
       re_lexable,
       ReLexable {
@@ -283,7 +283,7 @@ mod tests {
         state_bk: None
       }
     );
-    let re_lexable = ReLexableBuilder::into_re_lexable(stateless_re_lexable.clone(), 1, &lexer);
+    let re_lexable = ReLexableBuilder::build_re_lexable(stateless_re_lexable.clone(), 1, &lexer);
     assert_eq!(
       re_lexable,
       ReLexable {
@@ -306,7 +306,7 @@ mod tests {
     );
     let mut lexer = LexerBuilder::<(), _>::stateful().build("");
     lexer.action_state = 1;
-    let re_lexable = ReLexableBuilder::into_re_lexable(stateless_re_lexable.clone(), 0, &lexer);
+    let re_lexable = ReLexableBuilder::build_re_lexable(stateless_re_lexable.clone(), 0, &lexer);
     assert_eq!(
       re_lexable,
       ReLexable {
@@ -314,7 +314,7 @@ mod tests {
         state_bk: None
       }
     );
-    let re_lexable = ReLexableBuilder::into_re_lexable(stateless_re_lexable.clone(), 1, &lexer);
+    let re_lexable = ReLexableBuilder::build_re_lexable(stateless_re_lexable.clone(), 1, &lexer);
     assert_eq!(
       re_lexable,
       ReLexable {
