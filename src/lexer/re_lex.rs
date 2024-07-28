@@ -20,13 +20,17 @@ use super::{state::LexerState, Lexer};
 ///   // ignore all other characters
 ///   .ignore(regex(".").unchecked_head_unknown())
 ///   .build(text);
+///
 /// // the first lex will emit `>>`, which is not what we want
 /// let output = lexer.lex_with(|o| o.fork());
 /// assert_eq!(&text[output.token.unwrap().range], ">>");
+///
 /// // since we enabled `fork`, the lexer will return a re-lexable.
-/// // we can transform the re-lexable into a lexer and a re-lex context
+/// // we can try to transform the re-lexable into a lexer and a re-lex context
 /// let (mut lexer, context) = output.re_lexable.into_lexer(&lexer).unwrap();
-/// // lex with the re-lex context to retry the lex, but skip `exact(">>")` when lexing ">>"
+///
+/// // lex with the re-lex context to retry the lex,
+/// // but skip `exact(">>")` when lexing ">>"
 /// let output = lexer.lex_with(|o| o.re_lex(context));
 /// // now the lexer will emit `>`
 /// assert_eq!(&text[output.token.unwrap().range], ">");
@@ -144,6 +148,9 @@ pub struct ReLexable<'text, ActionState> {
 
 impl<'text, ActionState: Clone> ReLexable<'text, ActionState> {
   /// Consume self, try to build a lexer with the state before previous lexing.
+  /// Return [`None`] if the lex is not re-lexable.
+  ///
+  /// See [`ReLexContext`] for more details.
   pub fn into_lexer<Kind, ErrorType>(
     self,
     lexer: &Lexer<'text, Kind, ActionState, ErrorType>,
