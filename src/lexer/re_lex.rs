@@ -261,6 +261,40 @@ mod tests {
   }
 
   #[test]
+  fn test_stateless_re_lexable() {
+    let builder = StatelessReLexable::<()>::default();
+    assert_eq!(
+      builder,
+      StatelessReLexable {
+        action_state_bk: None,
+        ctx: None
+      }
+    );
+  }
+
+  #[test]
+  fn test_re_lexable() {
+    let re_lexable = ReLexable {
+      stateless: StatelessReLexable {
+        action_state_bk: Some(1),
+        ctx: Some(ReLexContext { start: 1, skip: 1 }),
+      },
+      state_bk: {
+        let mut s = LexerState::new("123");
+        s.digest(1);
+        s
+      }
+      .into(),
+    };
+    let (lexer, ctx) = re_lexable
+      .into_lexer(&LexerBuilder::<()>::stateful().build(""))
+      .unwrap();
+    assert_eq!(ctx, ReLexContext { start: 1, skip: 1 });
+    assert_eq!(lexer.state().digested(), 1);
+    assert_eq!(lexer.action_state, 1);
+  }
+
+  #[test]
   fn re_lexable_builder() {
     let mut builder = ReLexableBuilder::default();
     let action_state = 0;
