@@ -20,7 +20,7 @@ fn error_tokens() {
 
   // in this example we use `&str` as the error type.
   // use `LexerBuilder::with_error` to auto infer the error type
-  let lexer = LexerBuilder::with_error()
+  let mut lexer = LexerBuilder::with_error()
     .ignore_default_with(whitespaces(), |a| {
       a
         // set the error by using `error`
@@ -39,7 +39,7 @@ fn error_tokens() {
     .build(" a");
 
   // when `lex`, `peek` or `trim`, we can get error tokens from the output
-  let (output, _) = lexer.peek_with(|o| o.errors_to_vec());
+  let output = lexer.peek_with(|o| o.errors_to_vec());
   // even if the whitespace is muted, it contains an error.
   // errors will be collected with its range and error value
   assert_eq!(output.errors.len(), 2);
@@ -70,7 +70,7 @@ fn panic_mode() {
   // in this case when we peek the lexer
   // the 'b' is not accepted by any action
   // and the peek will fail
-  let (output, _) = lexer.peek();
+  let output = lexer.peek();
   assert!(output.token.is_none());
   assert_eq!(output.digested, 0);
 
@@ -78,7 +78,7 @@ fn panic_mode() {
   // this will reset the lexer's action state, unless you provide a new action state
   lexer.digest(1);
   // now we can peek
-  let (output, _) = lexer.peek();
+  let output = lexer.peek();
   assert!(matches!(output.token.unwrap().kind.value(), MyKind::A));
   assert_eq!(output.digested, 2);
 

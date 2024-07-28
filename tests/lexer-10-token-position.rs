@@ -23,12 +23,12 @@ fn token_position() {
   // when creating a PositionTransformer it will calculate the range in byte of each line
   let pt = PositionTransformer::new(text);
 
-  let lexer = LexerBuilder::new()
+  let mut lexer = LexerBuilder::new()
     .ignore_default(regex(r"^\n"))
     .define(A, regex(r"^123"))
     .build(text);
 
-  let (output, _) = lexer.peek();
+  let output = lexer.peek();
   let token = output.token.unwrap();
 
   // use `transform` to get the position from the index,
