@@ -82,7 +82,7 @@ fn action_decorators() {
     .build("a b c");
 
   // the first lex should be accepted but with error set
-  let res = lexer.lex_with(|o| o.errs_to_vec());
+  let res = lexer.lex_with(|o| o.errors_to_vec());
   let token = res.token.unwrap();
   assert!(matches!(token.kind.value(), MyKind::A));
   assert!(matches!(
@@ -92,7 +92,7 @@ fn action_decorators() {
   assert_eq!(res.digested, 1);
 
   // the second lex should be rejected but still digest some characters
-  let res = lexer.lex_with(|o| o.errs_to_vec());
+  let res = lexer.lex_with(|o| o.errors_to_vec());
   assert!(matches!(res.token, None));
   assert_eq!(res.digested, 1); // digest one whitespace
   assert_eq!(res.errors.len(), 0); // no new error
