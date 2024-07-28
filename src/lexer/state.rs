@@ -48,6 +48,7 @@ impl<'text> LexerState<'text> {
 
   /// Digest `n` bytes.
   /// The caller should ensure `n` is smaller than the rest text length.
+  /// `0` is allowed.
   #[inline]
   pub fn digest(&mut self, n: usize) {
     debug_assert!(
@@ -58,12 +59,18 @@ impl<'text> LexerState<'text> {
       self.text.len()
     );
 
+    if n == 0 {
+      // don't override trimmed
+      return;
+    }
+
     self.digested += n;
     self.trimmed = self.digested == self.text.len();
   }
 
   /// Digest `n` bytes and set [`Self::trimmed`] to `true`.
   /// The caller should ensure `n` is smaller than the rest text length.
+  /// `0` is allowed.
   #[inline]
   pub fn trim(&mut self, n: usize) {
     debug_assert!(
@@ -95,6 +102,20 @@ mod tests {
 
     state.digest(2);
     assert_eq!(state.digested(), 3);
+    assert_eq!(state.trimmed(), true);
+  }
+
+  #[test]
+  fn test_digest_0() {
+    let mut state = LexerState::new("123");
+    assert_eq!(state.digested(), 0);
+    assert_eq!(state.trimmed(), false);
+    state.trim(0);
+    assert_eq!(state.digested(), 0);
+    assert_eq!(state.trimmed(), true);
+    // make sure digest 0 won't change trimmed
+    state.digest(0);
+    assert_eq!(state.digested(), 0);
     assert_eq!(state.trimmed(), true);
   }
 
