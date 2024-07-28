@@ -206,7 +206,11 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     let output = LexOutput {
       digested: output.digested,
       token: output.token,
-      re_lexable: Fork::ReLexableFactoryType::into_re_lexable(output.re_lexable, &self),
+      re_lexable: Fork::ReLexableFactoryType::into_re_lexable(
+        output.re_lexable,
+        output.digested,
+        &self,
+      ),
       errors: output.errors,
     };
 
@@ -260,7 +264,11 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
     let output = LexOutput {
       digested: output.digested,
       token: output.token,
-      re_lexable: Fork::ReLexableFactoryType::into_re_lexable(output.re_lexable, &self),
+      re_lexable: Fork::ReLexableFactoryType::into_re_lexable(
+        output.re_lexable,
+        output.digested,
+        &self,
+      ),
       errors: output.errors,
     };
 
@@ -334,5 +342,17 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
         base: options,
       },
     )
+  }
+
+  pub(crate) fn from_re_lexable(
+    stateless: Rc<StatelessLexer<Kind, ActionState, ErrorType>>,
+    action_state: ActionState,
+    state: LexerState<'text>,
+  ) -> Self {
+    Lexer {
+      stateless,
+      state,
+      action_state,
+    }
   }
 }

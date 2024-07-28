@@ -1,4 +1,4 @@
-use super::Lexer;
+use super::{state::LexerState, Lexer};
 
 /// With this struct you can retry a lex with different actions.
 ///
@@ -23,8 +23,9 @@ use super::Lexer;
 /// // the first lex will emit `>>`, which is not what we want
 /// let output = lexer.lex_with(|o| o.fork());
 /// assert_eq!(&text[output.token.unwrap().range], ">>");
-/// // since we enabled `fork`, the lexer will return a re-lexable if possible.
-/// let (mut lexer, context) = output.re_lexable.unwrap();
+/// // since we enabled `fork`, the lexer will return a re-lexable.
+/// // we can transform the re-lexable into a lexer and a re-lex context
+/// let (mut lexer, context) = output.re_lexable.into_lexer(&lexer).unwrap();
 /// // lex with the re-lex context to retry the lex, but skip `exact(">>")` when lexing ">>"
 /// let output = lexer.lex_with(|o| o.re_lex(context));
 /// // now the lexer will emit `>`
@@ -73,6 +74,7 @@ pub trait ReLexableFactory<'text, Kind: 'static, ActionState, ErrorType> {
   /// to ensure the re-lexable has the state before the mutation.
   fn into_re_lexable(
     stateless_re_lexable: Self::StatelessReLexableType,
+    digested: usize,
     lexer: &Lexer<'text, Kind, ActionState, ErrorType>,
   ) -> Self::ReLexableType;
 }
@@ -99,13 +101,71 @@ impl<'text, Kind: 'static, ActionState, ErrorType>
   #[inline]
   fn into_re_lexable(
     _stateless_re_lexable: Self::StatelessReLexableType,
+    _digested: usize,
     _lexer: &Lexer<'text, Kind, ActionState, ErrorType>,
   ) -> Self::ReLexableType {
   }
 }
 
-pub struct ReLexableBuilder<ActionState> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StatelessReLexable<ActionState> {
   /// The action state before any mutation in the current lex.
+  /// If [`None`], it means no mutation happened.
+  ///
+  /// Even if the lexing is not re-lexable ([`Self::ctx`] is [`None`]),
+  /// the backup-ed action state may be useful by the caller,
+  /// e.g. peeking is a special case of fork, which needs to backup the action state before mutation,
+  /// but doesn't need the re-lex context.
+  pub action_state_bk: Option<ActionState>, // users can always mutate the action state directly so it is ok to expose it
+  /// If [`Some`], it means the lex is re-lexable.
+  pub ctx: Option<ReLexContext>, // ReLexContext's fields are private so its ok to expose it
+}
+
+impl<ActionState> Default for StatelessReLexable<ActionState> {
+  #[inline]
+  fn default() -> Self {
+    Self {
+      action_state_bk: None,
+      ctx: None,
+    }
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReLexable<'text, ActionState> {
+  pub stateless: StatelessReLexable<ActionState>,
+  /// The backup-ed lexer state before it is mutated.
+  /// If [`None`], it means the current lex digest 0 bytes.
+  /// This is private to prevent caller from mutating the lexer state directly.
+  state_bk: Option<LexerState<'text>>,
+  // TODO: add a ref of the lexer as a guard to prevent caller from mutating the lexer
+  // before applying this re-lexable?
+}
+
+impl<'text, ActionState: Clone> ReLexable<'text, ActionState> {
+  /// Consume self, try to build a lexer with the state before previous lexing.
+  pub fn into_lexer<Kind, ErrorType>(
+    self,
+    lexer: &Lexer<'text, Kind, ActionState, ErrorType>,
+  ) -> Option<(Lexer<'text, Kind, ActionState, ErrorType>, ReLexContext)> {
+    self.stateless.ctx.map(|ctx| {
+      (
+        Lexer::from_re_lexable(
+          lexer.stateless().clone(),
+          self
+            .stateless
+            .action_state_bk
+            .unwrap_or_else(|| lexer.action_state.clone()),
+          self.state_bk.unwrap_or_else(|| lexer.state().clone()),
+        ),
+        ctx,
+      )
+    })
+  }
+}
+
+pub struct ReLexableBuilder<ActionState> {
+  /// See [`StatelessReLexable::action_state_bk`].
   action_state_bk: Option<ActionState>,
 }
 
@@ -121,8 +181,8 @@ impl<ActionState> Default for ReLexableBuilder<ActionState> {
 impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
   ReLexableFactory<'text, Kind, ActionState, ErrorType> for ReLexableBuilder<ActionState>
 {
-  type StatelessReLexableType = Option<(Option<ActionState>, ReLexContext)>;
-  type ReLexableType = Option<(Lexer<'text, Kind, ActionState, ErrorType>, ReLexContext)>;
+  type StatelessReLexableType = StatelessReLexable<ActionState>;
+  type ReLexableType = ReLexable<'text, ActionState>;
 
   fn before_mutate_action_state(&mut self, action_state: &ActionState) {
     // backup the action state before the first mutation during one lexing loop
@@ -137,41 +197,32 @@ impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
     actions_len: usize,
     action_index: usize,
   ) -> Self::StatelessReLexableType {
-    if action_index < actions_len - 1 {
-      // current action is not the last one
-      // so the lex is re-lex-able
-      Some((
-        // the backup action state could be `None` to indicate no mutation happened
-        self.action_state_bk,
-        ReLexContext {
+    Self::StatelessReLexableType {
+      action_state_bk: self.action_state_bk,
+      ctx: if action_index < actions_len - 1 {
+        // current action is not the last one
+        // so the lex is re-lex-able
+        Some(ReLexContext {
           skip: action_index + 1, // index + 1 is the count of actions to skip
           start,
-        },
-      ))
-    } else {
-      // current action is the last one
-      // no next action to re-lex
-      None
+        })
+      } else {
+        // current action is the last one
+        // no next action to re-lex
+        None
+      },
     }
   }
 
   fn into_re_lexable(
     stateless_re_lexable: Self::StatelessReLexableType,
+    digested: usize,
     lexer: &Lexer<'text, Kind, ActionState, ErrorType>,
   ) -> Self::ReLexableType {
-    stateless_re_lexable.map(|(action_state_bk, ctx)| {
-      (
-        action_state_bk
-          // if there is a backup action state, it means the lexer's action state is mutated
-          // so clone the lexer with the backup action state
-          // to get a lexer with the state before the mutation
-          .map(|action_state_bk| lexer.clone_with(action_state_bk))
-          // if there is no backup action state, it means the lexer's action state is not mutated
-          // just clone the lexer
-          .unwrap_or_else(|| lexer.clone()),
-        ctx,
-      )
-    })
+    Self::ReLexableType {
+      stateless: stateless_re_lexable,
+      state_bk: (digested != 0).then(|| lexer.state().clone()),
+    }
   }
 }
 
@@ -198,7 +249,7 @@ mod tests {
     assert_eq!(stateless_re_lexable, ());
     let lexer = LexerBuilder::<()>::new().build("");
     let re_lexable =
-      <() as ReLexableFactory<_, _, _>>::into_re_lexable(stateless_re_lexable, &lexer);
+      <() as ReLexableFactory<_, _, _>>::into_re_lexable(stateless_re_lexable, 0, &lexer);
     assert_eq!(re_lexable, ());
   }
 
@@ -209,10 +260,30 @@ mod tests {
     ReLexableFactory::<(), _, ()>::before_mutate_action_state(&mut builder, &action_state);
     let stateless_re_lexable =
       ReLexableFactory::<(), i32, ()>::into_stateless_re_lexable(builder, 0, 2, 1);
-    assert_eq!(stateless_re_lexable, None);
+    assert_eq!(
+      stateless_re_lexable,
+      StatelessReLexable {
+        action_state_bk: Some(0),
+        ctx: None
+      }
+    );
     let lexer = LexerBuilder::<(), _>::stateful().build("");
-    let re_lexable = ReLexableBuilder::into_re_lexable(stateless_re_lexable, &lexer);
-    assert!(re_lexable.is_none());
+    let re_lexable = ReLexableBuilder::into_re_lexable(stateless_re_lexable.clone(), 0, &lexer);
+    assert_eq!(
+      re_lexable,
+      ReLexable {
+        stateless: stateless_re_lexable.clone(),
+        state_bk: None
+      }
+    );
+    let re_lexable = ReLexableBuilder::into_re_lexable(stateless_re_lexable.clone(), 1, &lexer);
+    assert_eq!(
+      re_lexable,
+      ReLexable {
+        stateless: stateless_re_lexable,
+        state_bk: Some(lexer.state().clone())
+      }
+    );
 
     let mut builder = ReLexableBuilder::default();
     let action_state = 0;
@@ -221,12 +292,28 @@ mod tests {
       ReLexableFactory::<(), i32, ()>::into_stateless_re_lexable(builder, 0, 2, 0);
     assert_eq!(
       stateless_re_lexable,
-      Some((Some(0), ReLexContext { start: 0, skip: 1 }))
+      StatelessReLexable {
+        action_state_bk: Some(0),
+        ctx: Some(ReLexContext { start: 0, skip: 1 })
+      }
     );
     let mut lexer = LexerBuilder::<(), _>::stateful().build("");
     lexer.action_state = 1;
-    let (lexer, context) = ReLexableBuilder::into_re_lexable(stateless_re_lexable, &lexer).unwrap();
-    assert_eq!(context, ReLexContext { start: 0, skip: 1 });
-    assert_eq!(lexer.action_state, 0);
+    let re_lexable = ReLexableBuilder::into_re_lexable(stateless_re_lexable.clone(), 0, &lexer);
+    assert_eq!(
+      re_lexable,
+      ReLexable {
+        stateless: stateless_re_lexable.clone(),
+        state_bk: None
+      }
+    );
+    let re_lexable = ReLexableBuilder::into_re_lexable(stateless_re_lexable.clone(), 1, &lexer);
+    assert_eq!(
+      re_lexable,
+      ReLexable {
+        stateless: stateless_re_lexable,
+        state_bk: Some(lexer.state().clone())
+      }
+    );
   }
 }
