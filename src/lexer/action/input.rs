@@ -1,9 +1,9 @@
 #[derive(Debug)]
-pub struct ActionInput<'text, 'action_state, ActionState> {
+pub struct ActionInput<'text, ActionStateRef> {
   // users can mutate the action state directly, so it's public.
   // with the action state, users can build stateful lexers,
   // while actions remain stateless and clone-able.
-  pub state: &'action_state mut ActionState,
+  pub state: ActionStateRef,
 
   // below fields are readonly
 
@@ -23,17 +23,13 @@ pub struct ActionInput<'text, 'action_state, ActionState> {
   next: char,
 }
 
-impl<'text, 'action_state, ActionState> ActionInput<'text, 'action_state, ActionState> {
+impl<'text, ActionStateRef> ActionInput<'text, ActionStateRef> {
   /// Return [`None`] if [`start`](Self::start) is equal to the length of
   /// [`text`](Self::text).
   /// # Panics
   /// This method panics if [`start`](Self::start) is out of bounds of
   /// [`text`](Self::text).
-  pub fn new(
-    text: &'text str,
-    start: usize,
-    state: &'action_state mut ActionState,
-  ) -> Option<Self> {
+  pub fn new(text: &'text str, start: usize, state: ActionStateRef) -> Option<Self> {
     let rest = &text[start..];
 
     rest.chars().next().map(|next| Self {
@@ -69,6 +65,21 @@ impl<'text, 'action_state, ActionState> ActionInput<'text, 'action_state, Action
   #[inline]
   pub const fn next(&self) -> char {
     self.next
+  }
+}
+
+impl<'text, 'action_state, ActionState> ActionInput<'text, &'action_state mut ActionState> {
+  /// Cast `ActionInput<&mut ActionState>` to `ActionInput<&ActionState>`
+  #[inline]
+  pub fn as_ref<'input>(&'input self) -> ActionInput<'text, &'input ActionState> {
+    // TODO: maybe just transmute self?
+    ActionInput {
+      state: self.state,
+      text: self.text,
+      start: self.start,
+      rest: self.rest,
+      next: self.next,
+    }
   }
 }
 

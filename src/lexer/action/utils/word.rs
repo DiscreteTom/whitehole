@@ -45,7 +45,7 @@ pub fn starts_with_word_boundary(rest: &str) -> bool {
 #[inline]
 pub fn no_word_boundary_in_rest<ActionState, ErrorType>(
   ctx: AcceptedActionOutputContext<
-    &ActionInput<ActionState>,
+    &ActionInput<&ActionState>,
     &ActionOutput<MockTokenKind<()>, Option<ErrorType>>,
   >,
 ) -> bool {

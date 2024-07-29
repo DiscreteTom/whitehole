@@ -5,7 +5,7 @@ mod kind;
 
 pub use context::*;
 
-use super::{input::ActionInput, output::ActionOutput, Action};
+use super::{input::ActionInput, output::ActionOutput, Action, ActionExec};
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Check the [`ActionInput`] before the action is executed.
@@ -33,7 +33,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     mut self,
     condition: impl Fn(
         // action state is immutable, so use immutable reference
-        &ActionInput<ActionState>,
+        &ActionInput<&ActionState>,
       ) -> bool
       + 'static,
   ) -> Self
@@ -41,8 +41,20 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
-    let exec = self.exec;
-    self.exec = Box::new(move |input| if condition(input) { None } else { exec(input) });
+    self.exec = match self.exec {
+      ActionExec::Immutable(exec) => {
+        ActionExec::Immutable(Box::new(
+          move |input| if condition(input) { None } else { exec(input) },
+        ))
+      }
+      ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
+        if condition(&input.as_ref()) {
+          None
+        } else {
+          exec(input)
+        }
+      })),
+    };
     self
   }
 
@@ -71,19 +83,23 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     mut self,
     modifier: impl Fn(
         // action state is mutable
-        &mut ActionInput<ActionState>,
+        &mut ActionInput<&mut ActionState>,
       ) + 'static,
   ) -> Self
   where
     ActionState: 'static,
     ErrorType: 'static,
   {
-    let exec = self.exec;
-    self.exec = Box::new(move |input| {
-      modifier(input);
-      exec(input)
-    });
-    self.may_mutate_state = true;
+    self.exec = match self.exec {
+      ActionExec::Immutable(exec) => ActionExec::Mutable(Box::new(move |input| {
+        modifier(input);
+        exec(&input.as_ref())
+      })),
+      ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
+        modifier(input);
+        exec(input)
+      })),
+    };
     self
   }
 
@@ -155,7 +171,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self,
     condition: impl Fn(
         AcceptedActionOutputContext<
-          &ActionInput<ActionState>,
+          &ActionInput<&ActionState>,
           // user could consume the old error, but not able to consume the kind
           ActionOutput<&Kind, Option<ErrorType>>,
         >,
@@ -166,23 +182,39 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
-    let exec = self.exec;
     Action {
-      exec: Box::new(move |input| {
-        exec(input).map(|output| ActionOutput {
-          error: condition(AcceptedActionOutputContext {
-            input,
-            output: ActionOutput {
-              kind: &output.kind,  // don't consume the kind
-              error: output.error, // but the error is consumable
+      exec: match self.exec {
+        ActionExec::Immutable(exec) => {
+          ActionExec::Immutable(Box::new(move |input| {
+            exec(input).map(|output| ActionOutput {
+              error: condition(AcceptedActionOutputContext {
+                input,
+                output: ActionOutput {
+                  kind: &output.kind,  // don't consume the kind
+                  error: output.error, // but the error is consumable
+                  digested: output.digested,
+                },
+              }),
+              kind: output.kind,
               digested: output.digested,
-            },
-          }),
-          kind: output.kind,
-          digested: output.digested,
-        })
-      }),
-      may_mutate_state: self.may_mutate_state,
+            })
+          }))
+        }
+        ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
+          exec(input).map(|output| ActionOutput {
+            error: condition(AcceptedActionOutputContext {
+              input: &input.as_ref(),
+              output: ActionOutput {
+                kind: &output.kind,  // don't consume the kind
+                error: output.error, // but the error is consumable
+                digested: output.digested,
+              },
+            }),
+            kind: output.kind,
+            digested: output.digested,
+          })
+        })),
+      },
       muted: self.muted,
       head: self.head,
       kind: self.kind,
@@ -216,16 +248,23 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     // don't just use `check(|_| Some(error.clone()))`
     // to prevent constructing the context
 
-    let exec = self.exec;
     Action {
-      exec: Box::new(move |input| {
-        exec(input).map(|output| ActionOutput {
-          error: Some(error.clone()),
-          kind: output.kind,
-          digested: output.digested,
-        })
-      }),
-      may_mutate_state: self.may_mutate_state,
+      exec: match self.exec {
+        ActionExec::Immutable(exec) => ActionExec::Immutable(Box::new(move |input| {
+          exec(input).map(|output| ActionOutput {
+            error: Some(error.clone()),
+            kind: output.kind,
+            digested: output.digested,
+          })
+        })),
+        ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
+          exec(input).map(|output| ActionOutput {
+            error: Some(error.clone()),
+            kind: output.kind,
+            digested: output.digested,
+          })
+        })),
+      },
       muted: self.muted,
       head: self.head,
       kind: self.kind,
@@ -254,7 +293,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     condition: impl Fn(
         // user should NOT mutate the output directly
         AcceptedActionOutputContext<
-          &ActionInput<ActionState>,
+          &ActionInput<&ActionState>,
           &ActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> bool
@@ -264,19 +303,32 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
-    let exec = self.exec;
-    self.exec = Box::new(move |input| {
-      exec(input).and_then(|output| {
-        if condition(AcceptedActionOutputContext {
-          input,
-          output: &output,
-        }) {
-          None
-        } else {
-          output.into()
-        }
-      })
-    });
+    self.exec = match self.exec {
+      ActionExec::Immutable(exec) => ActionExec::Immutable(Box::new(move |input| {
+        exec(input).and_then(|output| {
+          if condition(AcceptedActionOutputContext {
+            input,
+            output: &output,
+          }) {
+            None
+          } else {
+            output.into()
+          }
+        })
+      })),
+      ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
+        exec(input).and_then(|output| {
+          if condition(AcceptedActionOutputContext {
+            input: &input.as_ref(),
+            output: &output,
+          }) {
+            None
+          } else {
+            output.into()
+          }
+        })
+      })),
+    };
     self
   }
 
@@ -304,11 +356,16 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     // don't just use `reject_if(|_| true)`
     // to prevent constructing the context
 
-    let exec = self.exec;
-    self.exec = Box::new(move |input| {
-      exec(input);
-      None
-    });
+    self.exec = match self.exec {
+      ActionExec::Immutable(exec) => ActionExec::Immutable(Box::new(move |input| {
+        exec(input);
+        None
+      })),
+      ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
+        exec(input);
+        None
+      })),
+    };
     self
   }
   // `reject_if(|_| false)` is meaningless
@@ -341,7 +398,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     cb: impl Fn(
         AcceptedActionOutputContext<
           // user can mutate the input.state
-          &mut ActionInput<ActionState>,
+          &mut ActionInput<&mut ActionState>,
           // user should NOT mutate the output directly
           &ActionOutput<Kind, Option<ErrorType>>,
         >,
@@ -351,17 +408,26 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
-    let exec = self.exec;
-    self.exec = Box::new(move |input| {
-      exec(input).map(|output| {
-        cb(AcceptedActionOutputContext {
-          output: &output,
-          input,
-        });
-        output
-      })
-    });
-    self.may_mutate_state = true;
+    self.exec = match self.exec {
+      ActionExec::Immutable(exec) => ActionExec::Mutable(Box::new(move |input| {
+        exec(&input.as_ref()).map(|output| {
+          cb(AcceptedActionOutputContext {
+            output: &output,
+            input,
+          });
+          output
+        })
+      })),
+      ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
+        exec(input).map(|output| {
+          cb(AcceptedActionOutputContext {
+            output: &output,
+            input,
+          });
+          output
+        })
+      })),
+    };
     self
   }
 }

@@ -1,4 +1,4 @@
-use super::{input::ActionInput, Action, ActionOutput};
+use super::{input::ActionInput, Action, ActionExec, ActionOutput};
 use crate::lexer::token::{MockTokenKind, SubTokenKind};
 
 /// Accept a function that digests the rest of the input text and returns the number of digested bytes.
@@ -14,21 +14,20 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 /// ```
 pub fn simple<ActionState, ErrorType>(
   // ActionInput is immutable so we can set `Action::may_mutate_state` to false.
-  f: impl Fn(&ActionInput<ActionState>) -> usize + 'static,
+  f: impl Fn(&ActionInput<&ActionState>) -> usize + 'static,
 ) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
   Action {
-    exec: Box::new(move |input| match f(input) {
+    exec: ActionExec::Immutable(Box::new(move |input| match f(input) {
       0 => None,
       digested => Some(ActionOutput {
         kind: MockTokenKind::new(()),
         digested,
         error: None,
       }),
-    }),
+    })),
     kind: MockTokenKind::kind_id(),
     head: None,
     muted: false,
-    may_mutate_state: false,
     literal: None,
   }
 }
@@ -52,21 +51,20 @@ pub fn simple<ActionState, ErrorType>(
 /// ```
 pub fn simple_with_data<ActionState, ErrorType, T>(
   // ActionInput is immutable so we can set `Action::may_mutate_state` to false.
-  f: impl Fn(&ActionInput<ActionState>) -> Option<(usize, T)> + 'static,
+  f: impl Fn(&ActionInput<&ActionState>) -> Option<(usize, T)> + 'static,
 ) -> Action<MockTokenKind<T>, ActionState, ErrorType> {
   Action {
-    exec: Box::new(move |input| match f(input) {
+    exec: ActionExec::Immutable(Box::new(move |input| match f(input) {
       Some((digested, data)) => Some(ActionOutput {
         kind: MockTokenKind::new(data),
         digested,
         error: None,
       }),
       _ => None,
-    }),
+    })),
     kind: MockTokenKind::kind_id(),
     head: None,
     muted: false,
-    may_mutate_state: false,
     literal: None,
   }
 }

@@ -43,11 +43,23 @@ pub enum HeadMatcher {
   Unknown,
 }
 
+// TODO: move to a single mod
+pub enum ActionExec<Kind, ActionState, ErrorType> {
+  Immutable(
+    Box<dyn Fn(&ActionInput<&ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
+  ),
+  Mutable(
+    Box<
+      dyn Fn(&mut ActionInput<&mut ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>,
+    >,
+  ),
+}
+
 /// To create this, use [`simple`](simple::simple), [`simple_with_data`](simple::simple_with_data)
 /// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
 pub struct Action<Kind: 'static, ActionState = (), ErrorType = ()> {
   // input is mutable so the action can mutate the action state.
-  exec: Box<dyn Fn(&mut ActionInput<ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
+  exec: ActionExec<Kind, ActionState, ErrorType>,
   /// See [`Self::kind`].
   kind: &'static TokenKindId<Kind>,
   /// See [`Self::literal`].
@@ -56,8 +68,6 @@ pub struct Action<Kind: 'static, ActionState = (), ErrorType = ()> {
   head: Option<HeadMatcher>,
   /// See [`Self::muted`].
   muted: bool,
-  /// See [`Self::may_mutate_state`].
-  may_mutate_state: bool,
 }
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
@@ -99,28 +109,10 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self.muted
   }
 
-  /// This flag is to indicate whether this action might mutate the `ActionState`.
-  /// This will be `false` by default, and will be `true` if [`Self::prepare`]
-  /// or [`Self::callback`] is called.
-  #[inline]
-  pub const fn may_mutate_state(&self) -> bool {
-    self.may_mutate_state
-  }
-
-  /// Equals to `!self.may_mutate_state()`.
-  /// See [`Self::may_mutate_state`].
-  #[inline]
-  pub const fn never_mutate_state(&self) -> bool {
-    !self.may_mutate_state
-  }
-
   /// Execute the action.
   #[inline]
-  pub fn exec(
-    &self,
-    input: &mut ActionInput<ActionState>,
-  ) -> Option<ActionOutput<Kind, Option<ErrorType>>> {
-    (self.exec)(input)
+  pub fn exec(&self) -> &ActionExec<Kind, ActionState, ErrorType> {
+    &self.exec
   }
 }
 

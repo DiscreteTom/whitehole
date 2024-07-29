@@ -1,7 +1,7 @@
 use super::{output::StatelessOutputFactory, HeadMap, StatelessLexer};
 use crate::{
   lexer::{
-    action::{Action, ActionInput, ActionOutput},
+    action::{Action, ActionExec, ActionInput, ActionOutput},
     re_lex::{ReLexContext, ReLexableFactory},
     token::{Range, Token, TokenKindIdProvider},
   },
@@ -19,7 +19,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     StatelessOutputType: StatelessOutputFactory<Token<Kind>, ErrAcc, ReLexableFactoryType::StatelessReLexableType>,
   >(
     head_map_getter: impl Fn(
-      &ActionInput<ActionState>,
+      &ActionInput<&mut ActionState>,
     ) -> &'head_map HeadMap<Kind, ActionState, ErrorType>,
     re_lex: &ReLexContext,
     text: &'text str,
@@ -35,7 +35,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   {
     loop {
       // all actions will reuse this action input in this iteration
-      let mut input = match ActionInput::new(text, start + res.digested(), state) {
+      let mut input = match ActionInput::new(text, start + res.digested(), &mut *state) {
         None => {
           // maybe some token is muted in the last iteration which cause the rest is empty
           // but the `res.digested` might be updated by the last iteration
@@ -114,7 +114,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'expect_literal,
     ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
   >(
-    input: &mut ActionInput<ActionState>,
+    input: &mut ActionInput<&mut ActionState>,
     actions: &[Rc<Action<Kind, ActionState, ErrorType>>],
     re_lex: &ReLexContext,
     re_lexable_factory: &mut ReLexableFactoryType,
@@ -131,13 +131,14 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         0
       })
     {
-      // TODO: when fork is disabled, skip this check to optimize performance?
-      // TODO: pre-calculate whether a whole head_map won't mutate state.
-      if action.may_mutate_state() {
-        re_lexable_factory.before_mutate_action_state(input.state);
-      }
-
-      if let Some(output) = action.exec(input) {
+      if let Some(output) = match action.exec() {
+        ActionExec::Immutable(exec) => exec(&input.as_ref()),
+        ActionExec::Mutable(exec) => {
+          // TODO: pre-calculate whether a whole head_map won't mutate state.
+          re_lexable_factory.before_mutate_action_state(input.state);
+          exec(input)
+        }
+      } {
         return Some((output, i));
       }
     }
@@ -146,7 +147,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     None
   }
 
-  fn create_token(input: &ActionInput<ActionState>, kind: Kind, digested: usize) -> Token<Kind> {
+  fn create_token(
+    input: &ActionInput<&mut ActionState>,
+    kind: Kind,
+    digested: usize,
+  ) -> Token<Kind> {
     Token {
       range: Self::construct_range(input, digested),
       kind,
@@ -154,7 +159,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   }
 
   #[inline]
-  fn construct_range(input: &ActionInput<ActionState>, digested: usize) -> Range {
+  fn construct_range(input: &ActionInput<&mut ActionState>, digested: usize) -> Range {
     Range {
       start: input.start(),
       end: input.start() + digested,

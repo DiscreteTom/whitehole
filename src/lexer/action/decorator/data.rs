@@ -1,6 +1,6 @@
 use super::AcceptedActionOutputContext;
 use crate::lexer::{
-  action::{Action, ActionInput, ActionOutput},
+  action::{Action, ActionExec, ActionInput, ActionOutput},
   token::{MockTokenKind, SubTokenKind},
 };
 
@@ -18,7 +18,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     factory: impl Fn(
         AcceptedActionOutputContext<
           // user can't mutate the input
-          &ActionInput<ActionState>,
+          &ActionInput<&ActionState>,
           // output is consumed except the error
           ActionOutput<Kind, &Option<ErrorType>>,
         >,
@@ -29,26 +29,43 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
-    let exec = self.exec;
     Action {
-      exec: Box::new(move |input| {
-        exec(input).map(|output| ActionOutput {
-          kind: MockTokenKind {
-            data: factory(AcceptedActionOutputContext {
-              input,
-              // don't consume the error
-              output: ActionOutput {
-                kind: output.kind,
-                digested: output.digested,
-                error: &output.error,
-              },
-            }),
-          },
-          digested: output.digested,
-          error: output.error,
-        })
-      }),
-      may_mutate_state: self.may_mutate_state,
+      exec: match self.exec {
+        ActionExec::Immutable(exec) => ActionExec::Immutable(Box::new(move |input| {
+          exec(input).map(|output| ActionOutput {
+            kind: MockTokenKind {
+              data: factory(AcceptedActionOutputContext {
+                input,
+                // don't consume the error
+                output: ActionOutput {
+                  kind: output.kind,
+                  digested: output.digested,
+                  error: &output.error,
+                },
+              }),
+            },
+            digested: output.digested,
+            error: output.error,
+          })
+        })),
+        ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
+          exec(input).map(|output| ActionOutput {
+            kind: MockTokenKind {
+              data: factory(AcceptedActionOutputContext {
+                input: &input.as_ref(),
+                // don't consume the error
+                output: ActionOutput {
+                  kind: output.kind,
+                  digested: output.digested,
+                  error: &output.error,
+                },
+              }),
+            },
+            digested: output.digested,
+            error: output.error,
+          })
+        })),
+      },
       muted: self.muted,
       head: self.head,
       kind: MockTokenKind::kind_id(),
