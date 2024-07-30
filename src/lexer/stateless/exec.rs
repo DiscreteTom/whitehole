@@ -66,11 +66,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
                 // err but muted, collect errors and continue
                 res
                   .errors()
-                  .update((err, Self::construct_range(&input, output.digested)));
+                  .update((err, create_range(input.start(), output.digested)));
                 continue;
               } else {
                 // err and not muted, collect error and emit token
-                let token = Self::create_token(&input, output.kind, output.digested);
+                let token = create_token(input.start(), output.kind, output.digested);
                 res.errors().update((err, token.range.clone()));
                 return res.emit_with_token(
                   token,
@@ -92,7 +92,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
               // not muted, emit token
               return res.emit_with_token(
-                Self::create_token(&input, output.kind, output.digested),
+                create_token(input.start(), output.kind, output.digested),
                 re_lexable_factory.into_stateless_re_lexable(
                   input.start(),
                   actions.len(),
@@ -146,24 +146,21 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     // all actions are checked, no accepted action
     None
   }
+}
 
-  fn create_token(
-    input: &ActionInput<&mut ActionState>,
-    kind: Kind,
-    digested: usize,
-  ) -> Token<Kind> {
-    Token {
-      range: Self::construct_range(input, digested),
-      kind,
-    }
+#[inline]
+const fn create_token<Kind>(start: usize, kind: Kind, digested: usize) -> Token<Kind> {
+  Token {
+    range: create_range(start, digested),
+    kind,
   }
+}
 
-  #[inline]
-  fn construct_range(input: &ActionInput<&mut ActionState>, digested: usize) -> Range {
-    Range {
-      start: input.start(),
-      end: input.start() + digested,
-    }
+#[inline]
+const fn create_range(start: usize, digested: usize) -> Range {
+  Range {
+    start,
+    end: start + digested,
   }
 }
 
