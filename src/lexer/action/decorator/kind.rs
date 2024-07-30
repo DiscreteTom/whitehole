@@ -1,6 +1,6 @@
 use super::AcceptedActionOutputContext;
 use crate::lexer::{
-  action::{Action, ActionExec, ActionInput, ActionOutput},
+  action::{action_input_to_ref, Action, ActionExec, ActionInput, ActionOutput},
   token::{DefaultTokenKindIdBinding, SubTokenKind, TokenKindIdBinding},
 };
 
@@ -34,27 +34,26 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
+    macro_rules! impl_bind {
+      ($exec: ident) => {
+        Box::new(move |input| {
+          $exec(input).map(|output| ActionOutput {
+            kind: kind.clone().into(),
+            digested: output.digested,
+            error: output.error,
+          })
+        })
+      };
+    }
+
     Action {
       kind: ViaKind::kind_id(),
       head: self.head,
       muted: self.muted,
       literal: self.literal,
-      // TODO: optimize code
       exec: match self.exec {
-        ActionExec::Immutable(exec) => ActionExec::Immutable(Box::new(move |input| {
-          exec(input).map(|output| ActionOutput {
-            kind: kind.clone().into(),
-            digested: output.digested,
-            error: output.error,
-          })
-        })),
-        ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
-          exec(input).map(|output| ActionOutput {
-            kind: kind.clone().into(),
-            digested: output.digested,
-            error: output.error,
-          })
-        })),
+        ActionExec::Immutable(exec) => ActionExec::Immutable(impl_bind!(exec)),
+        ActionExec::Mutable(exec) => ActionExec::Mutable(impl_bind!(exec)),
       },
     }
   }
@@ -81,27 +80,26 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
+    macro_rules! impl_bind_default {
+      ($exec: ident) => {
+        Box::new(move |input| {
+          $exec(input).map(|output| ActionOutput {
+            kind: TokenKindIdBinding::default(),
+            digested: output.digested,
+            error: output.error,
+          })
+        })
+      };
+    }
+
     Action {
       kind: NewKind::default_kind_id(),
       head: self.head,
       muted: self.muted,
       literal: self.literal,
-      // TODO: optimize code
       exec: match self.exec {
-        ActionExec::Immutable(exec) => ActionExec::Immutable(Box::new(move |input| {
-          exec(input).map(|output| ActionOutput {
-            kind: TokenKindIdBinding::default(),
-            digested: output.digested,
-            error: output.error,
-          })
-        })),
-        ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
-          exec(input).map(|output| ActionOutput {
-            kind: TokenKindIdBinding::default(),
-            digested: output.digested,
-            error: output.error,
-          })
-        })),
+        ActionExec::Immutable(exec) => ActionExec::Immutable(impl_bind_default!(exec)),
+        ActionExec::Mutable(exec) => ActionExec::Mutable(impl_bind_default!(exec)),
       },
     }
   }
@@ -142,52 +140,39 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
+    macro_rules! impl_select {
+      ($exec: ident, $to_mutable: ident) => {
+        Box::new(move |input| {
+          $exec(input).map(|output| {
+            ActionOutput {
+              kind: selector(AcceptedActionOutputContext {
+                input: action_input_to_ref!(input, $to_mutable),
+                // construct a new ActionOutput
+                output: ActionOutput {
+                  // consume the original output.kind
+                  kind: output.kind,
+                  digested: output.digested,
+                  // but don't consume the error
+                  error: &output.error,
+                },
+              })
+              .into(),
+              digested: output.digested,
+              error: output.error,
+            }
+          })
+        })
+      };
+    }
+
     Action {
       kind: ViaKind::kind_id(),
       head: self.head,
       muted: self.muted,
       literal: self.literal,
       exec: match self.exec {
-        ActionExec::Immutable(exec) => ActionExec::Immutable(Box::new(move |input| {
-          exec(input).map(|output| {
-            ActionOutput {
-              kind: selector(AcceptedActionOutputContext {
-                input,
-                // construct a new ActionOutput
-                output: ActionOutput {
-                  // consume the original output.kind
-                  kind: output.kind,
-                  digested: output.digested,
-                  // but don't consume the error
-                  error: &output.error,
-                },
-              })
-              .into(),
-              digested: output.digested,
-              error: output.error,
-            }
-          })
-        })),
-        ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
-          exec(input).map(|output| {
-            ActionOutput {
-              kind: selector(AcceptedActionOutputContext {
-                input: &input.as_ref(),
-                // construct a new ActionOutput
-                output: ActionOutput {
-                  // consume the original output.kind
-                  kind: output.kind,
-                  digested: output.digested,
-                  // but don't consume the error
-                  error: &output.error,
-                },
-              })
-              .into(),
-              digested: output.digested,
-              error: output.error,
-            }
-          })
-        })),
+        ActionExec::Immutable(exec) => ActionExec::Immutable(impl_select!(exec, false)),
+        ActionExec::Mutable(exec) => ActionExec::Mutable(impl_select!(exec, true)),
       },
     }
   }

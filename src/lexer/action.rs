@@ -68,6 +68,21 @@ pub enum ActionExec<Kind, ActionState, ErrorType> {
   Mutable(MutableActionExec<Kind, ActionState, ErrorType>),
 }
 
+/// Conditionally convert [`ActionInput<&mut ActionState>`] to [`ActionInput<&ActionState>`].
+///
+/// Usage:
+/// - `action_input_to_ref(input, true)`: `&input.as_ref()`
+/// - `action_input_to_ref(input, false)`: `input`
+macro_rules! action_input_to_ref {
+  ($input: ident, true) => {
+    &$input.as_ref()
+  };
+  ($input: ident, false) => {
+    $input
+  };
+}
+pub(crate) use action_input_to_ref;
+
 #[cfg(test)]
 impl<Kind, ActionState, ErrorType> ActionExec<Kind, ActionState, ErrorType> {
   pub(crate) fn as_immutable(&self) -> &ImmutableActionExec<Kind, ActionState, ErrorType> {

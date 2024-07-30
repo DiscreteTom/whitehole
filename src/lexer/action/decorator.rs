@@ -5,7 +5,7 @@ mod kind;
 
 pub use context::*;
 
-use super::{input::ActionInput, output::ActionOutput, Action, ActionExec};
+use super::{action_input_to_ref, input::ActionInput, output::ActionOutput, Action, ActionExec};
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// Check the [`ActionInput`] before the action is executed.
@@ -41,19 +41,21 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
+    macro_rules! impl_prevent {
+      ($exec: ident, $to_mutable: ident) => {
+        Box::new(move |input| {
+          if condition(action_input_to_ref!(input, $to_mutable)) {
+            None
+          } else {
+            $exec(input)
+          }
+        })
+      };
+    }
+
     self.exec = match self.exec {
-      ActionExec::Immutable(exec) => {
-        ActionExec::Immutable(Box::new(
-          move |input| if condition(input) { None } else { exec(input) },
-        ))
-      }
-      ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
-        if condition(&input.as_ref()) {
-          None
-        } else {
-          exec(input)
-        }
-      })),
+      ActionExec::Immutable(exec) => ActionExec::Immutable(impl_prevent!(exec, false)),
+      ActionExec::Mutable(exec) => ActionExec::Mutable(impl_prevent!(exec, true)),
     };
     self
   }
@@ -90,15 +92,18 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
+    macro_rules! impl_prepare {
+      ($exec: ident, $to_mutable: ident) => {
+        Box::new(move |input| {
+          modifier(input);
+          $exec(action_input_to_ref!(input, $to_mutable))
+        })
+      };
+    }
+
     self.exec = match self.exec {
-      ActionExec::Immutable(exec) => ActionExec::Mutable(Box::new(move |input| {
-        modifier(input);
-        exec(&input.as_ref())
-      })),
-      ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
-        modifier(input);
-        exec(input)
-      })),
+      ActionExec::Immutable(exec) => ActionExec::Mutable(impl_prepare!(exec, true)),
+      ActionExec::Mutable(exec) => ActionExec::Mutable(impl_prepare!(exec, false)),
     };
     self
   }
@@ -182,28 +187,12 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
-    Action {
-      exec: match self.exec {
-        ActionExec::Immutable(exec) => {
-          ActionExec::Immutable(Box::new(move |input| {
-            exec(input).map(|output| ActionOutput {
-              error: condition(AcceptedActionOutputContext {
-                input,
-                output: ActionOutput {
-                  kind: &output.kind,  // don't consume the kind
-                  error: output.error, // but the error is consumable
-                  digested: output.digested,
-                },
-              }),
-              kind: output.kind,
-              digested: output.digested,
-            })
-          }))
-        }
-        ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
-          exec(input).map(|output| ActionOutput {
+    macro_rules! impl_check {
+      ($exec: ident, $to_mutable: ident) => {
+        Box::new(move |input| {
+          $exec(input).map(|output| ActionOutput {
             error: condition(AcceptedActionOutputContext {
-              input: &input.as_ref(),
+              input: action_input_to_ref!(input, $to_mutable),
               output: ActionOutput {
                 kind: &output.kind,  // don't consume the kind
                 error: output.error, // but the error is consumable
@@ -213,7 +202,14 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
             kind: output.kind,
             digested: output.digested,
           })
-        })),
+        })
+      };
+    }
+
+    Action {
+      exec: match self.exec {
+        ActionExec::Immutable(exec) => ActionExec::Immutable(impl_check!(exec, false)),
+        ActionExec::Mutable(exec) => ActionExec::Mutable(impl_check!(exec, true)),
       },
       muted: self.muted,
       head: self.head,
@@ -248,22 +244,22 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     // don't just use `check(|_| Some(error.clone()))`
     // to prevent constructing the context
 
+    macro_rules! impl_error {
+      ($exec: ident) => {
+        Box::new(move |input| {
+          $exec(input).map(|output| ActionOutput {
+            error: Some(error.clone()),
+            kind: output.kind,
+            digested: output.digested,
+          })
+        })
+      };
+    }
+
     Action {
       exec: match self.exec {
-        ActionExec::Immutable(exec) => ActionExec::Immutable(Box::new(move |input| {
-          exec(input).map(|output| ActionOutput {
-            error: Some(error.clone()),
-            kind: output.kind,
-            digested: output.digested,
-          })
-        })),
-        ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
-          exec(input).map(|output| ActionOutput {
-            error: Some(error.clone()),
-            kind: output.kind,
-            digested: output.digested,
-          })
-        })),
+        ActionExec::Immutable(exec) => ActionExec::Immutable(impl_error!(exec)),
+        ActionExec::Mutable(exec) => ActionExec::Mutable(impl_error!(exec)),
       },
       muted: self.muted,
       head: self.head,
@@ -303,31 +299,26 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
+    macro_rules! impl_reject_if {
+      ($exec: ident, $to_mutable: ident) => {
+        Box::new(move |input| {
+          $exec(input).and_then(|output| {
+            if condition(AcceptedActionOutputContext {
+              input: action_input_to_ref!(input, $to_mutable),
+              output: &output,
+            }) {
+              None
+            } else {
+              output.into()
+            }
+          })
+        })
+      };
+    }
+
     self.exec = match self.exec {
-      ActionExec::Immutable(exec) => ActionExec::Immutable(Box::new(move |input| {
-        exec(input).and_then(|output| {
-          if condition(AcceptedActionOutputContext {
-            input,
-            output: &output,
-          }) {
-            None
-          } else {
-            output.into()
-          }
-        })
-      })),
-      ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
-        exec(input).and_then(|output| {
-          if condition(AcceptedActionOutputContext {
-            input: &input.as_ref(),
-            output: &output,
-          }) {
-            None
-          } else {
-            output.into()
-          }
-        })
-      })),
+      ActionExec::Immutable(exec) => ActionExec::Immutable(impl_reject_if!(exec, false)),
+      ActionExec::Mutable(exec) => ActionExec::Mutable(impl_reject_if!(exec, true)),
     };
     self
   }
@@ -356,15 +347,18 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     // don't just use `reject_if(|_| true)`
     // to prevent constructing the context
 
+    macro_rules! impl_reject {
+      ($exec: ident) => {
+        Box::new(move |input| {
+          $exec(input);
+          None
+        })
+      };
+    }
+
     self.exec = match self.exec {
-      ActionExec::Immutable(exec) => ActionExec::Immutable(Box::new(move |input| {
-        exec(input);
-        None
-      })),
-      ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
-        exec(input);
-        None
-      })),
+      ActionExec::Immutable(exec) => ActionExec::Immutable(impl_reject!(exec)),
+      ActionExec::Mutable(exec) => ActionExec::Mutable(impl_reject!(exec)),
     };
     self
   }
@@ -408,25 +402,23 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
+    macro_rules! impl_callback {
+      ($exec: ident, $to_mutable: ident) => {
+        Box::new(move |input| {
+          $exec(action_input_to_ref!(input, $to_mutable)).map(|output| {
+            cb(AcceptedActionOutputContext {
+              output: &output,
+              input,
+            });
+            output
+          })
+        })
+      };
+    }
+
     self.exec = match self.exec {
-      ActionExec::Immutable(exec) => ActionExec::Mutable(Box::new(move |input| {
-        exec(&input.as_ref()).map(|output| {
-          cb(AcceptedActionOutputContext {
-            output: &output,
-            input,
-          });
-          output
-        })
-      })),
-      ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
-        exec(input).map(|output| {
-          cb(AcceptedActionOutputContext {
-            output: &output,
-            input,
-          });
-          output
-        })
-      })),
+      ActionExec::Immutable(exec) => ActionExec::Mutable(impl_callback!(exec, true)),
+      ActionExec::Mutable(exec) => ActionExec::Mutable(impl_callback!(exec, false)),
     };
     self
   }

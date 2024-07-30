@@ -1,6 +1,6 @@
 use super::AcceptedActionOutputContext;
 use crate::lexer::{
-  action::{Action, ActionExec, ActionInput, ActionOutput},
+  action::{action_input_to_ref, Action, ActionExec, ActionInput, ActionOutput},
   token::{MockTokenKind, SubTokenKind},
 };
 
@@ -29,42 +29,32 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     ActionState: 'static,
     ErrorType: 'static,
   {
+    macro_rules! impl_data {
+      ($exec: ident, $to_mutable: ident) => {
+        Box::new(move |input| {
+          $exec(input).map(|output| ActionOutput {
+            kind: MockTokenKind {
+              data: factory(AcceptedActionOutputContext {
+                input: action_input_to_ref!(input, $to_mutable),
+                // don't consume the error
+                output: ActionOutput {
+                  kind: output.kind,
+                  digested: output.digested,
+                  error: &output.error,
+                },
+              }),
+            },
+            digested: output.digested,
+            error: output.error,
+          })
+        })
+      };
+    }
+
     Action {
       exec: match self.exec {
-        ActionExec::Immutable(exec) => ActionExec::Immutable(Box::new(move |input| {
-          exec(input).map(|output| ActionOutput {
-            kind: MockTokenKind {
-              data: factory(AcceptedActionOutputContext {
-                input,
-                // don't consume the error
-                output: ActionOutput {
-                  kind: output.kind,
-                  digested: output.digested,
-                  error: &output.error,
-                },
-              }),
-            },
-            digested: output.digested,
-            error: output.error,
-          })
-        })),
-        ActionExec::Mutable(exec) => ActionExec::Mutable(Box::new(move |input| {
-          exec(input).map(|output| ActionOutput {
-            kind: MockTokenKind {
-              data: factory(AcceptedActionOutputContext {
-                input: &input.as_ref(),
-                // don't consume the error
-                output: ActionOutput {
-                  kind: output.kind,
-                  digested: output.digested,
-                  error: &output.error,
-                },
-              }),
-            },
-            digested: output.digested,
-            error: output.error,
-          })
-        })),
+        ActionExec::Immutable(exec) => ActionExec::Immutable(impl_data!(exec, false)),
+        ActionExec::Mutable(exec) => ActionExec::Mutable(impl_data!(exec, true)),
       },
       muted: self.muted,
       head: self.head,
