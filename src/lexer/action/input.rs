@@ -1,33 +1,28 @@
 #[derive(Debug)]
 pub struct ActionInput<'text, ActionStateRef> {
-  // users can mutate the action state directly, so it's public.
-  // with the action state, users can build stateful lexers,
-  // while actions remain stateless and clone-able.
+  /// An reference of the `ActionState`.
+  ///
+  /// This is public, so if this is `&mut ActionState` then you can mutate this directly.
+  ///
+  /// With the `ActionState`, you can construct stateful lexers,
+  /// while actions remain stateless and clone-able.
   pub state: ActionStateRef,
 
-  // below fields are readonly
-
-  // users could access the whole input text instead of only the rest of text,
-  // to check chars before the start position if needed
   /// See [`Self::text`].
   text: &'text str,
   /// See [`Self::start`].
   start: usize,
-  // cache the rest of the text to prevent creating the slice every time
-  // because `input.rest` is frequently used across all actions during the lexing loop.
   /// See [`Self::rest`].
   rest: &'text str,
-  // this is precalculated and cached because this might be used for at least once
-  // when traversing actions in the lexing loop.
   /// See [`Self::next`].
   next: char,
 }
 
 impl<'text, ActionStateRef> ActionInput<'text, ActionStateRef> {
-  /// Return [`None`] if [`start`](Self::start) is equal to the length of
+  /// Return [`None`] if the [`start`](Self::start) is equal to the length of
   /// [`text`](Self::text).
   /// # Panics
-  /// This method panics if [`start`](Self::start) is out of bounds of
+  /// This method panics if the [`start`](Self::start) is out of bounds of
   /// [`text`](Self::text).
   pub fn new(text: &'text str, start: usize, state: ActionStateRef) -> Option<Self> {
     let rest = &text[start..];
@@ -42,6 +37,9 @@ impl<'text, ActionStateRef> ActionInput<'text, ActionStateRef> {
   }
 
   /// The whole input text.
+  ///
+  /// You can access the whole input text instead of only the rest of text,
+  /// so that you can check chars before the [`Self::start`] position if needed.
   #[inline]
   pub const fn text(&self) -> &'text str {
     self.text
@@ -56,12 +54,18 @@ impl<'text, ActionStateRef> ActionInput<'text, ActionStateRef> {
 
   /// The undigested part of the input text.
   /// This is guaranteed to be not empty.
+  ///
+  /// This is precalculated and cached to prevent creating the slice every time
+  /// because this is frequently used across all actions during the lexing loop.
   #[inline]
   pub const fn rest(&self) -> &'text str {
     self.rest
   }
 
   /// The next char in the rest of the input text.
+  ///
+  /// This is precalculated and cached because this will be used for at least once
+  /// when traversing actions in the lexing loop.
   #[inline]
   pub const fn next(&self) -> char {
     self.next
@@ -72,7 +76,7 @@ impl<'text, 'action_state, ActionState> ActionInput<'text, &'action_state mut Ac
   /// Cast `ActionInput<&mut ActionState>` to `ActionInput<&ActionState>`
   #[inline]
   pub fn as_ref<'input>(&'input self) -> ActionInput<'text, &'input ActionState> {
-    // TODO: maybe just transmute self?
+    // TODO(perf): maybe just transmute self?
     ActionInput {
       state: self.state,
       text: self.text,
