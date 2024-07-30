@@ -105,7 +105,7 @@ impl<Kind, ActionState, ErrorType> ActionExec<Kind, ActionState, ErrorType> {
 pub type Action<Kind, ActionState = (), ErrorType = ()> =
   ActionBase<Kind, ActionExec<Kind, ActionState, ErrorType>>;
 
-impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
+impl<Kind, Exec> ActionBase<Kind, Exec> {
   /// This is used to accelerate expectational lexing if an expected kind is provided,
   /// see [`Expectation::kind`](crate::lexer::expectation::Expectation::kind).
   /// Every action must have this field set by [`Self::bind`],
@@ -146,7 +146,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 
   /// Execute the action.
   #[inline]
-  pub fn exec(&self) -> &ActionExec<Kind, ActionState, ErrorType> {
+  pub fn exec(&self) -> &Exec {
     &self.exec
   }
 }
