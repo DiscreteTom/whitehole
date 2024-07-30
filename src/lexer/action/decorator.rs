@@ -31,11 +31,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// ```
   pub fn prevent(
     mut self,
-    condition: impl Fn(
-        // action state is immutable, so use immutable reference
-        &ActionInput<&ActionState>,
-      ) -> bool
-      + 'static,
+    // action state is immutable
+    condition: impl Fn(&ActionInput<&ActionState>) -> bool + 'static,
   ) -> Self
   where
     ActionState: 'static,
@@ -83,10 +80,8 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// ```
   pub fn prepare(
     mut self,
-    modifier: impl Fn(
-        // action state is mutable
-        &mut ActionInput<&mut ActionState>,
-      ) + 'static,
+    // action state is mutable
+    modifier: impl Fn(&mut ActionInput<&mut ActionState>) + 'static,
   ) -> Self
   where
     ActionState: 'static,
@@ -102,6 +97,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     }
 
     self.exec = match self.exec {
+      // convert immutable to mutable
       ActionExec::Immutable(exec) => ActionExec::Mutable(impl_prepare!(exec, true)),
       ActionExec::Mutable(exec) => ActionExec::Mutable(impl_prepare!(exec, false)),
     };
@@ -287,9 +283,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   pub fn reject_if(
     mut self,
     condition: impl Fn(
-        // user should NOT mutate the output directly
         AcceptedActionOutputContext<
           &ActionInput<&ActionState>,
+          // user should NOT mutate the output directly
           &ActionOutput<Kind, Option<ErrorType>>,
         >,
       ) -> bool
@@ -417,6 +413,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     }
 
     self.exec = match self.exec {
+      // convert immutable to mutable
       ActionExec::Immutable(exec) => ActionExec::Mutable(impl_callback!(exec, true)),
       ActionExec::Mutable(exec) => ActionExec::Mutable(impl_callback!(exec, false)),
     };
