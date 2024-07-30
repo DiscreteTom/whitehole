@@ -459,6 +459,10 @@ mod tests {
     let output = action.exec.as_mutable()(&mut ActionInput::new("aa", 1, &mut state).unwrap());
     assert!(matches!(output, None));
     assert_eq!(state.value, 1); // the state is not updated
+
+    // prevent for immutable action
+    let action: Action<_> = exact("a").prevent(|_| true);
+    assert!(action.exec.as_immutable()(&ActionInput::new("a", 0, &()).unwrap()).is_none());
   }
 
   #[test]
@@ -472,6 +476,13 @@ mod tests {
     let output = action.exec.as_mutable()(&mut ActionInput::new("b", 0, &mut state).unwrap());
     assert!(matches!(output, None));
     assert_eq!(state.value, 1);
+
+    // prepare for mutable action
+    let action = action.prepare(|input| input.state.value += 1);
+    state.value = 0;
+    let output = action.exec.as_mutable()(&mut ActionInput::new("b", 0, &mut state).unwrap());
+    assert!(matches!(output, None));
+    assert_eq!(state.value, 2);
   }
 
   #[test]
@@ -533,6 +544,17 @@ mod tests {
       action.exec.as_immutable()(&ActionInput::new("aa", 0, &()).unwrap()),
       None
     ));
+
+    // reject for mutable action
+    let action: Action<_, i32> = exact("a")
+      .prepare(|input| *input.state += 1)
+      .reject_if(|ctx| ctx.rest().len() > 0);
+    let mut state = 0;
+    assert!(matches!(
+      action.exec.as_mutable()(&mut ActionInput::new("a ", 0, &mut state).unwrap()),
+      None
+    ));
+    assert_eq!(state, 1);
   }
 
   #[test]
@@ -543,6 +565,15 @@ mod tests {
       rejected_action.exec.as_immutable()(&ActionInput::new("a", 0, &()).unwrap()),
       None
     ));
+
+    // reject for mutable action
+    let action: Action<_, i32> = exact("a").prepare(|input| *input.state += 1).reject();
+    let mut state = 0;
+    assert!(matches!(
+      action.exec.as_mutable()(&mut ActionInput::new("a ", 0, &mut state).unwrap()),
+      None
+    ));
+    assert_eq!(state, 1);
   }
 
   #[test]
@@ -560,5 +591,14 @@ mod tests {
       Some(ActionOutput { .. })
     ));
     assert_eq!(state.value, 1);
+
+    // callback for mutable action
+    let action = action.callback(|ctx| ctx.input.state.value += 1);
+    state.value = 0;
+    assert!(matches!(
+      action.exec.as_mutable()(&mut ActionInput::new("a", 0, &mut state).unwrap()),
+      Some(ActionOutput { .. })
+    ));
+    assert_eq!(state.value, 2);
   }
 }
