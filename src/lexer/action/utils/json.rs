@@ -215,23 +215,21 @@ pub fn number<
     .fractional_with(|o| o.value_to(options.fraction))
     .exponent_with(|o| o.value_to(options.exponent));
 
-  simple_with_data(
-    move |input: &crate::lexer::action::ActionInput<ActionState>| {
-      let mut digested = 0;
-      if input.next() == '-' {
-        digested += 1;
-      }
+  simple_with_data(move |input| {
+    let mut digested = 0;
+    if input.next() == '-' {
+      digested += 1;
+    }
 
-      let mut res = float_literal_body_with_options(&input.rest()[digested..], options.clone());
-      res.0 += digested;
+    let mut res = float_literal_body_with_options(&input.rest()[digested..], options.clone());
+    res.0 += digested;
 
-      if res.0 == 0 {
-        return None;
-      }
+    if res.0 == 0 {
+      return None;
+    }
 
-      Some(res)
-    },
-  )
+    Some(res)
+  })
   .unchecked_head_in(['-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
 }
 
@@ -252,4 +250,3 @@ pub fn number_with<
 {
   number(options_builder(NumberOptions::new()))
 }
-
