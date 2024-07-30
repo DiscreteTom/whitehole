@@ -37,9 +37,9 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       // all actions will reuse this action input in this iteration
       let mut input = match ActionInput::new(text, start + res.digested(), &mut *state) {
         None => {
-          // maybe some token is muted in the last iteration which cause the rest is empty
-          // but the `res.digested` might be updated by the last iteration
-          // so we have to return the result
+          // maybe some token is muted in previous iterations which cause the rest is empty
+          // but the `res.digested` might be updated by previous iterations
+          // so we have to return the result instead of a `None`
           return res.emit();
         }
         Some(input) => input,
