@@ -43,23 +43,7 @@ pub enum HeadMatcher {
   Unknown,
 }
 
-// TODO: move to a single mod
-pub enum ActionExec<Kind, ActionState, ErrorType> {
-  Immutable(
-    Box<dyn Fn(&ActionInput<&ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>,
-  ),
-  Mutable(
-    Box<
-      dyn Fn(&mut ActionInput<&mut ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>,
-    >,
-  ),
-}
-
-/// To create this, use [`simple`](simple::simple), [`simple_with_data`](simple::simple_with_data)
-/// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
-pub struct Action<Kind: 'static, ActionState = (), ErrorType = ()> {
-  // input is mutable so the action can mutate the action state.
-  exec: ActionExec<Kind, ActionState, ErrorType>,
+pub struct ActionBase<Kind: 'static, Exec> {
   /// See [`Self::kind`].
   kind: &'static TokenKindId<Kind>,
   /// See [`Self::literal`].
@@ -68,7 +52,26 @@ pub struct Action<Kind: 'static, ActionState = (), ErrorType = ()> {
   head: Option<HeadMatcher>,
   /// See [`Self::muted`].
   muted: bool,
+
+  exec: Exec,
 }
+
+type ImmutableActionExec<Kind, ActionState, ErrorType> =
+  Box<dyn Fn(&ActionInput<&ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>;
+
+type MutableActionExec<Kind, ActionState, ErrorType> =
+  Box<dyn Fn(&mut ActionInput<&mut ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>;
+
+// TODO: move to a single mod
+pub enum ActionExec<Kind, ActionState, ErrorType> {
+  Immutable(ImmutableActionExec<Kind, ActionState, ErrorType>),
+  Mutable(MutableActionExec<Kind, ActionState, ErrorType>),
+}
+
+/// To create this, use [`simple`](simple::simple), [`simple_with_data`](simple::simple_with_data)
+/// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
+pub type Action<Kind, ActionState = (), ErrorType = ()> =
+  ActionBase<Kind, ActionExec<Kind, ActionState, ErrorType>>;
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// This is used to accelerate expectational lexing if an expected kind is provided,
