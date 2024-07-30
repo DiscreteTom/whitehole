@@ -70,7 +70,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
                 continue;
               } else {
                 // err and not muted, collect error and emit token
-                let token = create_token(input.start(), output.kind, output.digested);
+                let token = create_token(output.kind, input.start(), output.digested);
                 res.errors().update((err, token.range.clone()));
                 return res.emit_with_token(
                   token,
@@ -92,7 +92,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
               // not muted, emit token
               return res.emit_with_token(
-                create_token(input.start(), output.kind, output.digested),
+                create_token(output.kind, input.start(), output.digested),
                 re_lexable_factory.into_stateless_re_lexable(
                   input.start(),
                   actions.len(),
@@ -149,10 +149,10 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 }
 
 #[inline]
-const fn create_token<Kind>(start: usize, kind: Kind, digested: usize) -> Token<Kind> {
+const fn create_token<Kind>(kind: Kind, start: usize, digested: usize) -> Token<Kind> {
   Token {
-    range: create_range(start, digested),
     kind,
+    range: create_range(start, digested),
   }
 }
 
