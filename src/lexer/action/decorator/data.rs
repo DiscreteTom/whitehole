@@ -93,7 +93,7 @@ mod tests {
 
   #[test]
   fn action_data() {
-    let action: Action<MockTokenKind<Box<usize>>> = simple_with_data(|_| Some((1, Box::new(1))))
+    let action: Action<_> = simple_with_data(|_| Some((1, Box::new(1))))
       // ensure output.kind can be consumed
       .data(|ctx| ctx.output.kind.data);
     assert!(matches!(
@@ -108,12 +108,12 @@ mod tests {
 
   #[test]
   fn action_map() {
-    let action: Action<MockTokenKind<Box<Box<usize>>>> =
-      simple_with_data(|_| Some((1, Box::new(1))))
-        // ensure data can be consumed in the transformer
-        .map(|data| Box::new(data));
+    let action: Action<_, i32> = simple_with_data(|_| Some((1, Box::new(1))))
+      // ensure data can be consumed in the transformer
+      .map(|data| Box::new(data))
+      .prepare(|input| *input.state += 1);
     assert!(matches!(
-      action.exec.as_immutable()(&mut ActionInput::new("A", 0, &()).unwrap()),
+      action.exec.as_mutable()(&mut ActionInput::new("A", 0, &mut 123).unwrap()),
       Some(ActionOutput {
         kind: MockTokenKind { data },
         digested: 1,
