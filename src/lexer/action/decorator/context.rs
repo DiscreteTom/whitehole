@@ -51,8 +51,8 @@ impl_ctx!(&mut ActionInput<'text, ActionStateRef>, &ActionOutput<Kind, OptionErr
 mod tests {
   use super::*;
 
-  fn create_input<'state>(state: &'state mut ()) -> ActionInput<'static, 'state, ()> {
-    ActionInput::new("123", 1, state).unwrap()
+  fn create_input() -> ActionInput<'static, ()> {
+    ActionInput::new("123", 1, ()).unwrap()
   }
   fn create_output() -> ActionOutput<(), Option<()>> {
     ActionOutput {
@@ -68,28 +68,28 @@ mod tests {
 
     // &input and output
     AcceptedActionOutputContext {
-      input: &create_input(&mut ()),
+      input: &create_input(),
       output: create_output(),
     }
     .end();
 
     // &mut input and output
     AcceptedActionOutputContext {
-      input: &mut create_input(&mut ()),
+      input: &mut create_input(),
       output: create_output(),
     }
     .end();
 
     // &input and &output
     AcceptedActionOutputContext {
-      input: &create_input(&mut ()),
+      input: &create_input(),
       output: &create_output(),
     }
     .end();
 
     // &mut input and &output
     AcceptedActionOutputContext {
-      input: &mut create_input(&mut ()),
+      input: &mut create_input(),
       output: &create_output(),
     }
     .end();
@@ -97,7 +97,7 @@ mod tests {
     // ensure the value is correct
     assert_eq!(
       AcceptedActionOutputContext {
-        input: &create_input(&mut ()),
+        input: &create_input(),
         output: create_output(),
       }
       .end(),
@@ -105,7 +105,7 @@ mod tests {
     );
     assert_eq!(
       AcceptedActionOutputContext {
-        input: &create_input(&mut ()),
+        input: &create_input(),
         output: create_output(),
       }
       .content(),
@@ -113,7 +113,7 @@ mod tests {
     );
     assert_eq!(
       AcceptedActionOutputContext {
-        input: &create_input(&mut ()),
+        input: &create_input(),
         output: create_output(),
       }
       .rest(),

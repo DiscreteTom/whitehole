@@ -544,9 +544,7 @@ mod tests {
   }
 
   fn assert_reject(action: Action<MockTokenKind<IntegerLiteralData<(), ()>>>, s: &str) {
-    assert!(action
-      .exec(&mut ActionInput::new(s, 0, &mut ()).unwrap())
-      .is_none());
+    assert!(action.exec.as_immutable()(&ActionInput::new(s, 0, &()).unwrap()).is_none());
   }
 
   #[test]
@@ -556,9 +554,7 @@ mod tests {
       s: &str,
       expect_value: &str,
     ) {
-      let res = action
-        .exec(&mut ActionInput::new(s, 0, &mut ()).unwrap())
-        .unwrap();
+      let res = action.exec.as_immutable()(&ActionInput::new(s, 0, &()).unwrap()).unwrap();
       assert_eq!(res.digested, 6);
       assert_eq!(res.kind.data.separators, vec![1]);
       assert_eq!(res.kind.data.value, expect_value);
@@ -669,8 +665,7 @@ mod tests {
       .unchecked_head_in(['0'])
     };
     assert_eq!(
-      action_factory()
-        .exec(&mut ActionInput::new("0B101n", 0, &mut ()).unwrap())
+      action_factory().exec.as_immutable()(&ActionInput::new("0B101n", 0, &()).unwrap())
         .unwrap()
         .digested,
       6

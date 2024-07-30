@@ -215,7 +215,7 @@ mod tests {
     let action: Action<_> = exact("A").bind(A);
     assert_eq!(action.kind, A::kind_id());
     assert!(matches!(
-      action.exec(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
+      action.exec.as_immutable()(& ActionInput::new("A", 0, & ()).unwrap()),
       Some(ActionOutput {
         kind: binding,
         digested: 1,
@@ -229,7 +229,7 @@ mod tests {
     let action: Action<_> = exact("A").bind_default();
     assert_eq!(action.kind, MyKind::default_kind_id());
     assert!(matches!(
-      action.exec(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
+      action.exec.as_immutable()(& ActionInput::new("A", 0, & ()).unwrap()),
       Some(ActionOutput {
         kind: binding,
         digested: 1,
@@ -244,7 +244,7 @@ mod tests {
       Action::from(regex(r"^\d+")).select(|ctx| Value(ctx.content().parse().unwrap()));
     assert_eq!(action.kind, Value::kind_id());
     assert!(matches!(
-      action.exec(&mut ActionInput::new("1", 0, &mut ()).unwrap()),
+      action.exec.as_immutable()(& ActionInput::new("1", 0, & ()).unwrap()),
       Some(ActionOutput {
         kind: binding,
         digested: 1,

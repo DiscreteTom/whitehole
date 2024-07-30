@@ -470,9 +470,7 @@ mod tests {
   }
 
   fn assert_reject<T>(action: &Action<T>, s: &str) {
-    assert!(action
-      .exec(&mut ActionInput::new(s, 0, &mut ()).unwrap())
-      .is_none())
+    assert!(action.exec.as_immutable()(&ActionInput::new(s, 0, &()).unwrap()).is_none())
   }
 
   fn assert_accept(
@@ -482,9 +480,7 @@ mod tests {
     fraction: Option<(usize, &str, Vec<usize>)>,
     exponent: Option<(usize, &str, usize, Vec<usize>)>,
   ) {
-    let output = action
-      .exec(&mut ActionInput::new(s, 0, &mut ()).unwrap())
-      .unwrap();
+    let output = action.exec.as_immutable()(&ActionInput::new(s, 0, &()).unwrap()).unwrap();
     assert_float_literal_body(
       (output.digested, output.kind.data),
       integer,

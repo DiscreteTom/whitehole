@@ -78,9 +78,10 @@ mod tests {
   fn simple_accept_all() {
     assert!(matches!(
       simple::<_, ()>(|input| input.text().len())
-        .exec(&mut ActionInput::new("123", 0, &mut ()).unwrap())
-        .unwrap()
-        .digested,
+        .exec
+        .as_immutable()(&ActionInput::new("123", 0, &()).unwrap())
+      .unwrap()
+      .digested,
       3
     ));
   }
@@ -89,9 +90,10 @@ mod tests {
   fn simple_accept_rest() {
     assert!(matches!(
       simple::<_, ()>(|input| input.rest().len())
-        .exec(&mut ActionInput::new("123", 1, &mut ()).unwrap())
-        .unwrap()
-        .digested,
+        .exec
+        .as_immutable()(&ActionInput::new("123", 1, &()).unwrap())
+      .unwrap()
+      .digested,
       2
     ));
   }
@@ -99,7 +101,7 @@ mod tests {
   #[test]
   fn simple_reject_on_0() {
     assert!(matches!(
-      simple::<_, ()>(|_| 0).exec(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+      simple::<_, ()>(|_| 0).exec.as_immutable()(&ActionInput::new("123", 0, &()).unwrap()),
       None
     ));
   }
@@ -108,7 +110,7 @@ mod tests {
   fn simple_option_with_data_accept() {
     let action: Action<MockTokenKind<u32>> =
       simple_with_data(|input| Some((input.text().len(), 123)));
-    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()).unwrap());
+    let output = action.exec.as_immutable()(&ActionInput::new("123", 0, &()).unwrap());
     assert!(matches!(
       output,
       Some(ActionOutput {
@@ -122,7 +124,7 @@ mod tests {
   #[test]
   fn simple_option_with_data_accept_0() {
     let action: Action<MockTokenKind<u32>> = simple_with_data(|_| Some((0, 123)));
-    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()).unwrap());
+    let output = action.exec.as_immutable()(&ActionInput::new("123", 0, &()).unwrap());
     assert!(matches!(
       output,
       Some(ActionOutput {
@@ -136,7 +138,7 @@ mod tests {
   #[test]
   fn simple_option_with_data_reject() {
     let action: Action<MockTokenKind<u32>> = simple_with_data(|_| None);
-    let output = action.exec(&mut ActionInput::new("123", 0, &mut ()).unwrap());
+    let output = action.exec.as_immutable()(&ActionInput::new("123", 0, &()).unwrap());
     assert!(matches!(output, None));
   }
 }

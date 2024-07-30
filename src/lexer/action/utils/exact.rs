@@ -57,22 +57,23 @@ pub fn exact_chars<ActionState, ErrorType>(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::{ActionInput, HeadMatcher};
+  use crate::lexer::action::{ActionExec, ActionInput, HeadMatcher};
   use whitehole_helpers::_exact_vec;
 
   fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
-      action
-        .exec(&mut ActionInput::new(text, 0, &mut ()).unwrap())
-        .unwrap()
-        .digested,
+      match &action.exec {
+        ActionExec::Immutable(exec) =>
+          exec(&mut ActionInput::new(text, 0, &()).unwrap())
+            .unwrap()
+            .digested,
+        _ => unreachable!(),
+      },
       expected
     );
   }
   fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
-    assert!(action
-      .exec(&mut ActionInput::new(text, 0, &mut ()).unwrap())
-      .is_none());
+    assert!(action.exec.as_immutable()(&ActionInput::new(text, 0, &()).unwrap()).is_none());
   }
 
   #[should_panic]

@@ -71,7 +71,7 @@ mod tests {
     action: &Action<MockTokenKind<Vec<PartialStringBody<String, ()>>>, (), ()>,
     text: &str,
   ) -> Option<ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>, Option<()>>> {
-    action.exec(&mut ActionInput::new(text, 0, &mut ()).unwrap())
+    action.exec.as_immutable()(&ActionInput::new(text, 0, &()).unwrap())
   }
 
   fn validate_output(

@@ -68,6 +68,23 @@ pub enum ActionExec<Kind, ActionState, ErrorType> {
   Mutable(MutableActionExec<Kind, ActionState, ErrorType>),
 }
 
+#[cfg(test)]
+impl<Kind, ActionState, ErrorType> ActionExec<Kind, ActionState, ErrorType> {
+  pub(crate) fn as_immutable(&self) -> &ImmutableActionExec<Kind, ActionState, ErrorType> {
+    match self {
+      ActionExec::Immutable(exec) => exec,
+      ActionExec::Mutable(_) => panic!("ActionExec is mutable"),
+    }
+  }
+
+  pub(crate) fn as_mutable(&self) -> &MutableActionExec<Kind, ActionState, ErrorType> {
+    match self {
+      ActionExec::Immutable(_) => panic!("ActionExec is immutable"),
+      ActionExec::Mutable(exec) => exec,
+    }
+  }
+}
+
 /// To create this, use [`simple`](simple::simple), [`simple_with_data`](simple::simple_with_data)
 /// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
 pub type Action<Kind, ActionState = (), ErrorType = ()> =
@@ -134,16 +151,13 @@ mod tests {
   #[test]
   fn action_getters_default() {
     let action: Action<_> = Action {
-      exec: Box::new(|_| None),
+      exec: ActionExec::Immutable(Box::new(|_| None)),
       kind: A::kind_id(),
       head: None,
       muted: false,
-      may_mutate_state: false,
       literal: None,
     };
     assert!(!action.muted());
-    assert!(!action.may_mutate_state());
-    assert!(action.never_mutate_state());
     assert_eq!(action.kind(), A::kind_id());
     assert!(action.head().is_none());
     assert!(action.literal().is_none());
@@ -152,16 +166,13 @@ mod tests {
   #[test]
   fn action_getters() {
     let action: Action<_> = Action {
-      exec: Box::new(|_| None),
+      exec: ActionExec::Immutable(Box::new(|_| None)),
       kind: A::kind_id(),
       head: Some(HeadMatcher::OneOf(HashSet::from(['a']))),
       muted: true,
-      may_mutate_state: true,
       literal: Some("123".into()),
     };
     assert!(action.muted());
-    assert!(action.may_mutate_state());
-    assert!(!action.never_mutate_state());
     assert_eq!(action.kind(), A::kind_id());
     assert!(matches!(action.head(), Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['a'])));
     assert_eq!(action.literal(), &Some("123".into()));

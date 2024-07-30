@@ -454,17 +454,17 @@ mod tests {
     let mut state = MyState { value: 0 };
     let action: Action<_, _> = exact("a")
       // modify the state before the action is executed
-      .prepare(|input: &mut ActionInput<MyState>| input.state.value += 1)
+      .prepare(|input: &mut ActionInput<&mut MyState>| input.state.value += 1)
       // prevent the action if the rest is empty
       .prevent(|input| input.rest().len() == 1);
 
     // the first exec, state will be changed, digest all chars
-    let output = action.exec(&mut ActionInput::new("aa", 0, &mut state).unwrap());
+    let output = action.exec.as_mutable()(&mut ActionInput::new("aa", 0, &mut state).unwrap());
     assert!(matches!(output, Some(ActionOutput { digested: 1, .. })));
     assert_eq!(state.value, 1);
 
     // the second exec, the action is prevented, so the state is not updated
-    let output = action.exec(&mut ActionInput::new("aa", 1, &mut state).unwrap());
+    let output = action.exec.as_mutable()(&mut ActionInput::new("aa", 1, &mut state).unwrap());
     assert!(matches!(output, None));
     assert_eq!(state.value, 1); // the state is not updated
   }
@@ -474,13 +474,10 @@ mod tests {
     let mut state = MyState { value: 0 };
     let action: Action<_, _> = exact("a")
       // modify the state before the action is executed
-      .prepare(|input: &mut ActionInput<MyState>| input.state.value += 1);
-
-    // ensure may_mutate_state is set to true
-    assert!(action.may_mutate_state);
+      .prepare(|input: &mut ActionInput<&mut MyState>| input.state.value += 1);
 
     // the action is rejected, but the state is still updated
-    let output = action.exec(&mut ActionInput::new("b", 0, &mut state).unwrap());
+    let output = action.exec.as_mutable()(&mut ActionInput::new("b", 0, &mut state).unwrap());
     assert!(matches!(output, None));
     assert_eq!(state.value, 1);
   }
@@ -507,11 +504,11 @@ mod tests {
     );
 
     assert!(matches!(
-      action.exec(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
+      action.exec.as_immutable()(&ActionInput::new("a", 0, &()).unwrap()),
       Some(ActionOutput { error: None, .. })
     ));
     assert!(matches!(
-      action.exec(&mut ActionInput::new("aa", 0, &mut ()).unwrap()),
+      action.exec.as_immutable()(&ActionInput::new("aa", 0, &()).unwrap()),
       Some(ActionOutput {
         error: Some("error"),
         ..
@@ -524,7 +521,7 @@ mod tests {
     let action = exact::<_, &str>("a").error("error");
 
     assert!(matches!(
-      action.exec(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
+      action.exec.as_immutable()(&ActionInput::new("a", 0, &()).unwrap()),
       Some(ActionOutput {
         error: Some("error"),
         ..
@@ -537,11 +534,11 @@ mod tests {
     let action: Action<_> = exact("a").reject_if(|ctx| ctx.rest().len() > 0);
 
     assert!(matches!(
-      action.exec(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
+      action.exec.as_immutable()(&ActionInput::new("a", 0, &()).unwrap()),
       Some(ActionOutput { error: None, .. })
     ));
     assert!(matches!(
-      action.exec(&mut ActionInput::new("aa", 0, &mut ()).unwrap()),
+      action.exec.as_immutable()(&ActionInput::new("aa", 0, &()).unwrap()),
       None
     ));
   }
@@ -551,7 +548,7 @@ mod tests {
     let rejected_action: Action<_> = exact("a").reject();
 
     assert!(matches!(
-      rejected_action.exec(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
+      rejected_action.exec.as_immutable()(&ActionInput::new("a", 0, &()).unwrap()),
       None
     ));
   }
@@ -561,14 +558,13 @@ mod tests {
     // ensure callback can update the state
     let mut state = MyState { value: 0 };
     let action: Action<_, MyState, ()> = exact("a").callback(
-      |ctx: AcceptedActionOutputContext<&mut ActionInput<MyState>, _>| ctx.input.state.value += 1,
+      |ctx: AcceptedActionOutputContext<&mut ActionInput<&mut MyState>, _>| {
+        ctx.input.state.value += 1
+      },
     );
 
-    // ensure may_mutate_state is set to true
-    assert!(action.may_mutate_state);
-
     assert!(matches!(
-      action.exec(&mut ActionInput::new("a", 0, &mut state).unwrap()),
+      action.exec.as_mutable()(&mut ActionInput::new("a", 0, &mut state).unwrap()),
       Some(ActionOutput { .. })
     ));
     assert_eq!(state.value, 1);
