@@ -69,66 +69,26 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       let (output, state) = traverse_actions(&input, actions, re_lex, &mut re_lexable_factory);
       new_state = state;
 
-      match output {
-        // all definition checked, no accepted action
-        // but the digested and errors might be updated by the last iteration
-        // so we have to return them
-        None => return (res.emit(), new_state),
-        Some((output, action_index, muted)) => {
-          // update digested, no matter the output is muted or not
-          res.digest(output.digested);
-
-          match output.error {
-            Some(err) => {
-              if muted {
-                // err but muted, collect errors and continue
-                res
-                  .errors()
-                  .update((err, create_range(input.start(), output.digested)));
-                continue;
-              } else {
-                // err and not muted, collect error and emit token
-                let token = create_token(output.kind, input.start(), output.digested);
-                res.errors().update((err, token.range.clone()));
-                return (
-                  res.emit_with_token(
-                    token,
-                    re_lexable_factory.into_stateless_re_lexable(
-                      input.start(),
-                      actions.len(),
-                      action_index,
-                    ),
-                  ),
-                  new_state,
-                );
-              }
-            }
-            None => {
-              // else, no error
-
-              // don't emit token if muted
-              if muted {
-                continue;
-              }
-
-              // not muted, emit token
-              return (
-                res.emit_with_token(
-                  create_token(output.kind, input.start(), output.digested),
-                  re_lexable_factory.into_stateless_re_lexable(
-                    input.start(),
-                    actions.len(),
-                    action_index,
-                  ),
-                ),
-                new_state,
-              );
-            }
-          }
+      match process_output(output, input.start(), &mut res) {
+        ProcessResult::Continue => continue,
+        ProcessResult::Return => return (res.emit(), new_state),
+        ProcessResult::Token((token, action_index)) => {
+          return (
+            res.emit_with_token(
+              token,
+              re_lexable_factory.into_stateless_re_lexable(
+                input.start(),
+                actions.len(),
+                action_index,
+              ),
+            ),
+            new_state,
+          );
         }
       }
     }
   }
+
   pub(super) fn execute_actions_mut<
     'text,
     'head_map,
@@ -167,56 +127,83 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         .get(&input.next())
         .unwrap_or(head_map.unknown_fallback());
 
-      match traverse_actions_mut(&mut input, actions, re_lex, &mut re_lexable_factory) {
-        // all definition checked, no accepted action
-        // but the digested and errors might be updated by the last iteration
-        // so we have to return them
-        None => return res.emit(),
-        Some((output, action_index, muted)) => {
-          // update digested, no matter the output is muted or not
-          res.digest(output.digested);
+      match process_output(
+        traverse_actions_mut(&mut input, actions, re_lex, &mut re_lexable_factory),
+        input.start(),
+        &mut res,
+      ) {
+        ProcessResult::Continue => continue,
+        ProcessResult::Return => return res.emit(),
+        ProcessResult::Token((token, action_index)) => {
+          return res.emit_with_token(
+            token,
+            re_lexable_factory.into_stateless_re_lexable(
+              input.start(),
+              actions.len(),
+              action_index,
+            ),
+          );
+        }
+      }
+    }
+  }
+}
 
-          match output.error {
-            Some(err) => {
-              if muted {
-                // err but muted, collect errors and continue
-                res
-                  .errors()
-                  .update((err, create_range(input.start(), output.digested)));
-                continue;
-              } else {
-                // err and not muted, collect error and emit token
-                let token = create_token(output.kind, input.start(), output.digested);
-                res.errors().update((err, token.range.clone()));
-                return res.emit_with_token(
-                  token,
-                  re_lexable_factory.into_stateless_re_lexable(
-                    input.start(),
-                    actions.len(),
-                    action_index,
-                  ),
-                );
-              }
-            }
-            None => {
-              // else, no error
+enum ProcessResult<TokenType> {
+  Continue,
+  Return,
+  Token((TokenType, usize)),
+}
 
-              // don't emit token if muted
-              if muted {
-                continue;
-              }
+fn process_output<
+  'text,
+  Kind: 'static,
+  ErrorType,
+  ErrAcc: Accumulator<(ErrorType, Range)>,
+  StatelessReLexableType,
+  StatelessOutputType: StatelessOutputFactory<Token<Kind>, ErrAcc, StatelessReLexableType>,
+>(
+  output: Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)>,
+  start: usize,
+  res: &mut StatelessOutputType,
+) -> ProcessResult<Token<Kind>> {
+  match output {
+    // all definition checked, no accepted action
+    // but the digested and errors might be updated by the last iteration
+    // so we have to return them
+    None => return ProcessResult::Return,
+    Some((output, action_index, muted)) => {
+      // update digested, no matter the output is muted or not
+      res.digest(output.digested);
 
-              // not muted, emit token
-              return res.emit_with_token(
-                create_token(output.kind, input.start(), output.digested),
-                re_lexable_factory.into_stateless_re_lexable(
-                  input.start(),
-                  actions.len(),
-                  action_index,
-                ),
-              );
-            }
+      match output.error {
+        Some(err) => {
+          if muted {
+            // err but muted, collect errors and continue
+            res
+              .errors()
+              .update((err, create_range(start, output.digested)));
+            return ProcessResult::Continue;
+          } else {
+            // err and not muted, collect error and emit token
+            let token = create_token(output.kind, start, output.digested);
+            res.errors().update((err, token.range.clone()));
+            return ProcessResult::Token((token, action_index));
           }
+        }
+        None => {
+          // else, no error
+
+          // don't emit token if muted
+          if muted {
+            return ProcessResult::Continue;
+          }
+
+          // not muted, emit token
+          return ProcessResult::Token((
+            create_token(output.kind, start, output.digested),
+            action_index,
+          ));
         }
       }
     }
