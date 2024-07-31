@@ -214,6 +214,42 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   }
 }
 
+// getters
+impl<Kind: 'static, ActionState, ErrorType> GeneralAction<Kind, ActionState, ErrorType> {
+  /// See [`Action::kind`].
+  #[inline]
+  pub fn kind(&self) -> &'static TokenKindId<Kind> {
+    match self {
+      GeneralAction::Immutable(action) => action.kind(),
+      GeneralAction::Mutable(action) => action.kind(),
+    }
+  }
+  /// See [`Action::literal`].
+  #[inline]
+  pub fn literal(&self) -> &Option<String> {
+    match self {
+      GeneralAction::Immutable(action) => action.literal(),
+      GeneralAction::Mutable(action) => action.literal(),
+    }
+  }
+  /// See [`Action::head`].
+  #[inline]
+  pub fn head(&self) -> &Option<HeadMatcher> {
+    match self {
+      GeneralAction::Immutable(action) => action.head(),
+      GeneralAction::Mutable(action) => action.head(),
+    }
+  }
+  /// See [`Action::muted`].
+  #[inline]
+  pub fn muted(&self) -> bool {
+    match self {
+      GeneralAction::Immutable(action) => action.muted(),
+      GeneralAction::Mutable(action) => action.muted(),
+    }
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
