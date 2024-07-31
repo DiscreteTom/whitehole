@@ -66,8 +66,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         .get(&input.next())
         .unwrap_or(head_map.unknown_fallback());
 
-      let (output, state) =
-        Self::traverse_actions(&input, actions, re_lex, &mut re_lexable_factory);
+      let (output, state) = traverse_actions(&input, actions, re_lex, &mut re_lexable_factory);
       new_state = state;
 
       match output {
@@ -168,7 +167,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         .get(&input.next())
         .unwrap_or(head_map.unknown_fallback());
 
-      match Self::traverse_actions_mut(&mut input, actions, re_lex, &mut re_lexable_factory) {
+      match traverse_actions_mut(&mut input, actions, re_lex, &mut re_lexable_factory) {
         // all definition checked, no accepted action
         // but the digested and errors might be updated by the last iteration
         // so we have to return them
@@ -222,70 +221,76 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       }
     }
   }
+}
 
-  /// Traverse all actions to find the first accepted action.
-  /// Return the output and the index of the accepted action.
-  /// If no accepted action, return `None`.
-  fn traverse_actions<
-    'text,
-    ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
-  >(
-    input: &ActionInput<&ActionState>,
-    actions: &HeadMapActions<Kind, ActionState, ErrorType>,
-    re_lex: &ReLexContext,
-    re_lexable_factory: &mut ReLexableFactoryType,
-  ) -> (
-    Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)>,
-    Option<ActionState>,
+/// Traverse all actions to find the first accepted action.
+/// Return the output and the index of the accepted action.
+/// If no accepted action, return `None`.
+fn traverse_actions<
+  'text,
+  Kind,
+  ActionState,
+  ErrorType,
+  ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
+>(
+  input: &ActionInput<&ActionState>,
+  actions: &HeadMapActions<Kind, ActionState, ErrorType>,
+  re_lex: &ReLexContext,
+  re_lexable_factory: &mut ReLexableFactoryType,
+) -> (
+  Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)>,
+  Option<ActionState>,
+)
+where
+  Kind: TokenKindIdProvider<TokenKind = Kind>,
+  ActionState: Clone,
+{
+  if let Some(res) = traverse_immutables(input, actions, re_lex) {
+    return (Some(res), None);
+  }
+
+  // prevent unnecessary clone if there is no mutable actions
+  if actions.rest().len() == 0 {
+    return (None, None);
+  }
+
+  // clone the state to construct mutable action input
+  let mut state = input.state.clone();
+
+  (
+    traverse_rest(
+      &mut input.clone_with(&mut state),
+      actions,
+      re_lex,
+      re_lexable_factory,
+    ),
+    Some(state),
   )
-  where
-    Kind: TokenKindIdProvider<TokenKind = Kind>,
-    ActionState: Clone,
-  {
-    if let Some(res) = traverse_immutables(input, actions, re_lex) {
-      return (Some(res), None);
-    }
+}
 
-    // prevent unnecessary clone if there is no mutable actions
-    if actions.rest().len() == 0 {
-      return (None, None);
-    }
-
-    // clone the state to construct mutable action input
-    let mut state = input.state.clone();
-
-    (
-      traverse_rest(
-        &mut input.clone_with(&mut state),
-        actions,
-        re_lex,
-        re_lexable_factory,
-      ),
-      Some(state),
-    )
+/// Traverse all actions to find the first accepted action.
+/// Return the output and the index of the accepted action.
+/// If no accepted action, return `None`.
+fn traverse_actions_mut<
+  'text,
+  Kind,
+  ActionState,
+  ErrorType,
+  ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
+>(
+  input: &mut ActionInput<&mut ActionState>,
+  actions: &HeadMapActions<Kind, ActionState, ErrorType>,
+  re_lex: &ReLexContext,
+  re_lexable_factory: &mut ReLexableFactoryType,
+) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)>
+where
+  Kind: TokenKindIdProvider<TokenKind = Kind>,
+{
+  if let Some(res) = traverse_immutables(&input.as_ref(), actions, re_lex) {
+    return Some(res);
   }
 
-  /// Traverse all actions to find the first accepted action.
-  /// Return the output and the index of the accepted action.
-  /// If no accepted action, return `None`.
-  fn traverse_actions_mut<
-    'text,
-    ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
-  >(
-    input: &mut ActionInput<&mut ActionState>,
-    actions: &HeadMapActions<Kind, ActionState, ErrorType>,
-    re_lex: &ReLexContext,
-    re_lexable_factory: &mut ReLexableFactoryType,
-  ) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)>
-  where
-    Kind: TokenKindIdProvider<TokenKind = Kind>,
-  {
-    if let Some(res) = traverse_immutables(&input.as_ref(), actions, re_lex) {
-      return Some(res);
-    }
-
-    traverse_rest(input, actions, re_lex, re_lexable_factory)
-  }
+  traverse_rest(input, actions, re_lex, re_lexable_factory)
 }
 
 fn traverse_immutables<Kind, ActionState, ErrorType>(
