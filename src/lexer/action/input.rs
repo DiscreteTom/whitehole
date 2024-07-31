@@ -70,6 +70,21 @@ impl<'text, ActionStateRef> ActionInput<'text, ActionStateRef> {
   pub const fn next(&self) -> char {
     self.next
   }
+
+  /// Clone this [`ActionInput`] with a new `ActionStateRef`.
+  #[inline]
+  pub(crate) const fn clone_with<NewActionStateRef>(
+    &self,
+    s: NewActionStateRef,
+  ) -> ActionInput<'text, NewActionStateRef> {
+    ActionInput {
+      state: s,
+      text: self.text,
+      start: self.start,
+      rest: self.rest,
+      next: self.next,
+    }
+  }
 }
 
 impl<'text, 'action_state, ActionState> ActionInput<'text, &'action_state mut ActionState> {

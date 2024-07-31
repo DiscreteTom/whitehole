@@ -229,11 +229,14 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     }
 
     let mut state = input.state.clone();
-    // TODO: prevent unwrap
-    let mut input = ActionInput::new(input.text(), input.start(), &mut state).unwrap();
 
     (
-      traverse_rest(&mut input, actions, re_lex, re_lexable_factory),
+      traverse_rest(
+        &mut input.clone_with(&mut state),
+        actions,
+        re_lex,
+        re_lexable_factory,
+      ),
       Some(state),
     )
   }
