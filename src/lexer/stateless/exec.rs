@@ -69,23 +69,15 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       let (output, state) = traverse_actions(&input, actions, re_lex, &mut re_lexable_factory);
       new_state = state;
 
-      match process_output(output, input.start(), &mut res) {
+      let target = match process_output(output, input.start(), &mut res) {
         ProcessResult::Continue => continue,
-        ProcessResult::Return => return (res.emit(), new_state),
-        ProcessResult::Token((token, action_index)) => {
-          return (
-            res.emit_with_token(
-              token,
-              re_lexable_factory.into_stateless_re_lexable(
-                input.start(),
-                actions.len(),
-                action_index,
-              ),
-            ),
-            new_state,
-          );
-        }
-      }
+        ProcessResult::Return => res.emit(),
+        ProcessResult::Token((token, action_index)) => res.emit_with_token(
+          token,
+          re_lexable_factory.into_stateless_re_lexable(input.start(), actions.len(), action_index),
+        ),
+      };
+      return (target, new_state);
     }
   }
 
@@ -127,24 +119,17 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         .get(&input.next())
         .unwrap_or(head_map.unknown_fallback());
 
-      match process_output(
-        traverse_actions_mut(&mut input, actions, re_lex, &mut re_lexable_factory),
-        input.start(),
-        &mut res,
-      ) {
+      let output = traverse_actions_mut(&mut input, actions, re_lex, &mut re_lexable_factory);
+
+      let target = match process_output(output, input.start(), &mut res) {
         ProcessResult::Continue => continue,
-        ProcessResult::Return => return res.emit(),
-        ProcessResult::Token((token, action_index)) => {
-          return res.emit_with_token(
-            token,
-            re_lexable_factory.into_stateless_re_lexable(
-              input.start(),
-              actions.len(),
-              action_index,
-            ),
-          );
-        }
-      }
+        ProcessResult::Return => res.emit(),
+        ProcessResult::Token((token, action_index)) => res.emit_with_token(
+          token,
+          re_lexable_factory.into_stateless_re_lexable(input.start(), actions.len(), action_index),
+        ),
+      };
+      return target;
     }
   }
 }
