@@ -103,12 +103,15 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
   }
 }
 
+/// [`Action::exec`] that won't mutate the action state.
 type ImmutableActionExec<Kind, ActionState, ErrorType> =
   Box<dyn Fn(&ActionInput<&ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>;
 
+/// [`Action::exec`] that will mutate the action state.
 type MutableActionExec<Kind, ActionState, ErrorType> =
   Box<dyn Fn(&mut ActionInput<&mut ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>;
 
+/// See [`Action::exec`].
 pub enum ActionExec<Kind, ActionState, ErrorType> {
   Immutable(ImmutableActionExec<Kind, ActionState, ErrorType>),
   Mutable(MutableActionExec<Kind, ActionState, ErrorType>),
@@ -131,13 +134,20 @@ pub(super) use action_input_to_ref;
 
 #[cfg(test)]
 impl<Kind, ActionState, ErrorType> ActionExec<Kind, ActionState, ErrorType> {
+  /// Try to convert [`ActionExec`] into [`ImmutableActionExec`].
+  /// This is only for testing.
+  /// # Panics
+  /// If the action is mutable.
   pub(super) fn as_immutable(&self) -> &ImmutableActionExec<Kind, ActionState, ErrorType> {
     match self {
       ActionExec::Immutable(exec) => exec,
       ActionExec::Mutable(_) => panic!("ActionExec is mutable"),
     }
   }
-
+  /// Try to convert [`ActionExec`] into [`MutableActionExec`].
+  /// This is only for testing.
+  /// # Panics
+  /// If the action is immutable.
   pub(super) fn as_mutable(&self) -> &MutableActionExec<Kind, ActionState, ErrorType> {
     match self {
       ActionExec::Immutable(_) => panic!("ActionExec is immutable"),
