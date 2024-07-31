@@ -232,32 +232,10 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     // TODO: prevent unwrap
     let mut input = ActionInput::new(input.text(), input.start(), &mut state).unwrap();
 
-    for (i, action) in actions
-      .rest()
-      .iter()
-      .enumerate()
-      .skip(if input.start() == re_lex.start {
-        re_lex.skip.saturating_sub(actions.immutables().len())
-      } else {
-        0
-      })
-    {
-      if let Some(output) = match action {
-        GeneralAction::Immutable(action) => action.exec()(&input.as_ref()),
-        GeneralAction::Mutable(action) => {
-          re_lexable_factory.before_mutate_action_state(input.state);
-          action.exec()(&mut input)
-        }
-      } {
-        return (
-          Some((output, i + actions.immutables().len(), action.muted())),
-          Some(state),
-        );
-      }
-    }
-
-    // all actions are checked, no accepted action
-    (None, Some(state))
+    (
+      traverse_rest(&mut input, actions, re_lex, re_lexable_factory),
+      Some(state),
+    )
   }
 
   /// Traverse all actions to find the first accepted action.
@@ -279,29 +257,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       return Some(res);
     }
 
-    for (i, action) in actions
-      .rest()
-      .iter()
-      .enumerate()
-      .skip(if input.start() == re_lex.start {
-        re_lex.skip.saturating_sub(actions.immutables().len())
-      } else {
-        0
-      })
-    {
-      if let Some(output) = match action {
-        GeneralAction::Immutable(action) => action.exec()(&input.as_ref()),
-        GeneralAction::Mutable(action) => {
-          re_lexable_factory.before_mutate_action_state(input.state);
-          action.exec()(input)
-        }
-      } {
-        return Some((output, i + actions.immutables().len(), action.muted()));
-      }
-    }
-
-    // all actions are checked, no accepted action
-    None
+    traverse_rest(input, actions, re_lex, re_lexable_factory)
   }
 }
 
@@ -326,6 +282,43 @@ fn traverse_immutables<Kind, ActionState, ErrorType>(
       return Some((output, i, action.muted()));
     }
   }
+  None
+}
+
+fn traverse_rest<
+  'text,
+  Kind,
+  ActionState,
+  ErrorType,
+  ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
+>(
+  input: &mut ActionInput<&mut ActionState>,
+  actions: &HeadMapActions<Kind, ActionState, ErrorType>,
+  re_lex: &ReLexContext,
+  re_lexable_factory: &mut ReLexableFactoryType,
+) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)> {
+  for (i, action) in actions
+    .rest()
+    .iter()
+    .enumerate()
+    .skip(if input.start() == re_lex.start {
+      // prevent subtraction overflow, e.g. skip is 0
+      re_lex.skip.saturating_sub(actions.immutables().len())
+    } else {
+      0
+    })
+  {
+    if let Some(output) = match action {
+      GeneralAction::Immutable(action) => action.exec()(&input.as_ref()),
+      GeneralAction::Mutable(action) => {
+        re_lexable_factory.before_mutate_action_state(input.state);
+        action.exec()(input)
+      }
+    } {
+      return Some((output, i + actions.immutables().len(), action.muted()));
+    }
+  }
+
   None
 }
 
