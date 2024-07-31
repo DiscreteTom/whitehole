@@ -279,9 +279,12 @@ fn traverse_immutables<Kind, ActionState, ErrorType>(
       })
   {
     if let Some(output) = action.exec()(input) {
+      // return once accepted action is found
       return Some((output, i, action.muted()));
     }
   }
+
+  // no accepted action
   None
 }
 
@@ -315,10 +318,12 @@ fn traverse_rest<
         action.exec()(input)
       }
     } {
+      // return once accepted action is found
       return Some((output, i + actions.immutables().len(), action.muted()));
     }
   }
 
+  // no accepted action
   None
 }
 
