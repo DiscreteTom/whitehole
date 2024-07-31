@@ -23,7 +23,7 @@ fn peek_lexer() {
     .build(" a");
 
   // we can peek the next token without updating the lexer's state,
-  let output = lexer.peek();
+  let (output, _) = lexer.peek();
   let token = output.token.unwrap();
   assert!(matches!(token.kind.value(), MyKind::A));
   assert_eq!(output.digested, 2); // the whitespace is also digested by the peek
@@ -41,13 +41,10 @@ fn peek_lexer() {
   // we can directly apply them to the lexer if the peek result is what we want
   let mut lexer = lexer.reload(" a");
   assert_eq!(lexer.state().digested(), 0);
-  let output = lexer.peek();
+  let (output, new_action_state) = lexer.peek();
   lexer.digest_with(
     output.digested,
-    output
-      .re_lexable
-      .action_state_bk
-      .unwrap_or_else(|| lexer.action_state.clone()), // TODO: prevent clone
+    new_action_state.unwrap_or_else(|| lexer.action_state.clone()), // TODO: prevent clone
   );
   assert_eq!(lexer.state().digested(), 2);
 
@@ -56,8 +53,8 @@ fn peek_lexer() {
 
   // another thing to mention is that
   // you can provide expectations when peek just like in lex
-  let mut lexer = lexer.reload(" a");
-  let output = lexer.peek_with(|o| o.expect(B::kind_id()));
+  let lexer = lexer.reload(" a");
+  let (output, _) = lexer.peek_with(|o| o.expect(B::kind_id()));
   assert!(output.token.is_none());
 }
 
@@ -95,13 +92,13 @@ fn trim_lexer() {
     .build(" a");
 
   // for example, this peek will first ignore the whitespace then yield `A`
-  let output = lexer.peek_with(|o| o.expect(A::kind_id()));
+  let (output, _) = lexer.peek_with(|o| o.expect(A::kind_id()));
   assert!(matches!(output.token.unwrap().kind.value(), MyKind::A));
   assert_eq!(output.digested, 2);
 
   // if then we do another peek with different expectation
   // the lexer will ignore the whitespace again
-  let output = lexer.peek_with(|o| o.expect(B::kind_id()));
+  let (output, _) = lexer.peek_with(|o| o.expect(B::kind_id()));
   assert!(matches!(output.token.unwrap().kind.value(), MyKind::B));
   assert_eq!(output.digested, 2);
 
@@ -115,10 +112,10 @@ fn trim_lexer() {
   assert!(lexer.trim(()).is_none()); // trim the lexer again, the lexer is already trimmed, so it will return None
 
   // now if we peek the lexer, the whitespaces won't be lexed again
-  let output = lexer.peek_with(|o| o.expect(A::kind_id()));
+  let (output, _) = lexer.peek_with(|o| o.expect(A::kind_id()));
   assert!(matches!(output.token.unwrap().kind.value(), MyKind::A));
   assert_eq!(output.digested, 1); // only the 'a' is digested
-  let output = lexer.peek_with(|o| o.expect(B::kind_id()));
+  let (output, _) = lexer.peek_with(|o| o.expect(B::kind_id()));
   assert!(matches!(output.token.unwrap().kind.value(), MyKind::B));
   assert_eq!(output.digested, 1); // only the 'a' is digested
 }
