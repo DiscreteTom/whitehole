@@ -1,14 +1,14 @@
 use super::{
-  fork::{ForkEnabled, LexOptionsFork},
+  fork::LexOptionsFork,
   options::{LexOptions, TrimOptions},
   output::{LexOutput, TrimOutput},
-  re_lex::{ReLexableFactory, StatelessReLexable},
+  re_lex::ReLexableFactory,
   state::LexerState,
   stateless::{StatelessLexOptions, StatelessLexer, StatelessTrimOptions},
   token::{Range, Token, TokenKindIdProvider},
 };
 use crate::utils::Accumulator;
-use std::{mem::swap, rc::Rc};
+use std::rc::Rc;
 
 /// This is the "stateful" lexer, it manages 2 states: the [`LexerState`] and the `ActionState`.
 /// The [`LexerState`] is responsible to manage the text and the position of the lexer.
@@ -120,64 +120,72 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
   /// [`Self::state`] and [`Self::action_state`].
   ///
   /// If `ActionState` is mutated in the lexing process,
-  /// the mutated `ActionState` will be returned in [`LexOutput::re_lexable`].
+  /// [`Self::action_state`] will be cloned and returned.
   #[inline]
-  pub fn peek(&mut self) -> LexOutput<Token<Kind>, (), StatelessReLexable<ActionState>>
+  pub fn peek(&self) -> (LexOutput<Token<Kind>, (), ()>, Option<ActionState>)
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
     ActionState: Clone,
   {
-    self.peek_with_options(LexOptions::new().fork())
+    self.peek_with_options(LexOptions::new())
   }
 
   /// Peek the next token with custom options, without updating
   /// [`Self::state`] and [`Self::action_state`].
   ///
   /// If `ActionState` is mutated in the lexing process,
-  /// the mutated `ActionState` will be returned in [`LexOutput::re_lexable`].
   #[inline]
-  pub fn peek_with<'expect_literal, ErrAcc>(
-    &mut self,
+  pub fn peek_with<'expect_literal, ErrAcc, Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>>(
+    &self,
     options_builder: impl FnOnce(
-      LexOptions<'expect_literal, Kind, (), ForkEnabled>,
-    ) -> LexOptions<'expect_literal, Kind, ErrAcc, ForkEnabled>,
-  ) -> LexOutput<Token<Kind>, ErrAcc, StatelessReLexable<ActionState>>
+      LexOptions<'expect_literal, Kind, (), ()>,
+    ) -> LexOptions<'expect_literal, Kind, ErrAcc, Fork>,
+  ) -> (LexOutput<Token<Kind>, ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>, Option<ActionState>)
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
     ActionState: Clone,
     ErrAcc: Accumulator<(ErrorType, Range)>,
   {
-    self.peek_with_options(options_builder(LexOptions::new().fork()))
+    self.peek_with_options(options_builder(LexOptions::new()))
   }
 
   /// Peek the next token with custom options, without updating
   /// [`Self::state`] and [`Self::action_state`].
   ///
-  /// If `ActionState` is mutated in the lexing process,
-  /// the mutated `ActionState` will be returned in [`LexOutput::re_lexable`].
-  pub fn peek_with_options<'expect_literal, ErrAcc>(
-    &mut self, // TODO: prevent mut
-    options: impl Into<LexOptions<'expect_literal, Kind, ErrAcc, ForkEnabled>>,
-  ) -> LexOutput<Token<Kind>, ErrAcc, StatelessReLexable<ActionState>>
+  /// [`Self::action_state`] will be cloned and returned.
+  pub fn peek_with_options<'expect_literal, ErrAcc, Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>>(
+    &self,
+    options: impl Into<LexOptions<'expect_literal, Kind, ErrAcc, Fork>>,
+  ) -> (LexOutput<Token<Kind>, ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>, Option<ActionState>)
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
     ActionState: Clone,
     ErrAcc: Accumulator<(ErrorType, Range)>,
   {
-    let mut output = Self::lex_with_stateless(
-      &self.stateless,
-      &self.state,
-      &mut self.action_state,
-      options.into(),
+    let (output, new_action_state) = self.stateless.peek_with_options(
+      self.state.text(),
+      StatelessLexOptions {
+        start: self.state.digested(),
+        action_state: &self.action_state,
+        base: options.into(),
+      },
     );
 
+    // TODO: prevent re-constructing the output?
+    let output = LexOutput {
+      digested: output.digested,
+      token: output.token,
+      re_lexable: Fork::ReLexableFactoryType::build_re_lexable(
+        output.re_lexable,
+        output.digested,
+        self,
+      ),
+      errors: output.errors,
+    };
+
+    (output, new_action_state)
+
     // don't update lexer state
-
-    if let Some(action_state_bk) = &mut output.re_lexable.action_state_bk {
-      swap(&mut self.action_state, action_state_bk);
-    }
-
-    output
   }
 
   /// Try to yield the next token with the default options.
@@ -208,7 +216,7 @@ impl<'text, Kind, ActionState, ErrorType> Lexer<'text, Kind, ActionState, ErrorT
 
   /// Try to yield the next token with custom options.
   /// [`Self::state`] and [`Self::action_state`] will be updated.
-  pub fn lex_with_options<'expect_literal, ErrAcc,Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>>(
+  pub fn lex_with_options<'expect_literal, ErrAcc, Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>>(
     &mut self,
     options: impl Into<LexOptions<'expect_literal, Kind,ErrAcc, Fork>>,
   ) -> LexOutput<Token<Kind>, ErrAcc,<Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::ReLexableType>
