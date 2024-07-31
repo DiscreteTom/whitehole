@@ -25,6 +25,7 @@ impl<ActionStateRef, Base> StatelessOptions<ActionStateRef, Base> {
 
   /// Set the action state.
   /// This is usually `&mut ActionState`.
+  /// For peek, this is `&ActionState`.
   #[inline]
   pub fn action_state<NewActionStateRef>(
     self,
