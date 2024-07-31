@@ -31,7 +31,7 @@ pub use simple::*;
 pub use utils::*;
 
 use super::token::TokenKindId;
-use std::collections::HashSet;
+use std::{collections::HashSet, rc::Rc};
 
 /// See [`Action::head`].
 #[derive(PartialEq, Debug, Clone)]
@@ -163,22 +163,35 @@ pub type Action<Kind, ActionState = (), ErrorType = ()> =
 
 pub(super) type ImmutableAction<Kind, ActionState, ErrorType> =
   ActionBase<Kind, ImmutableActionExec<Kind, ActionState, ErrorType>>;
+pub(super) type MutableAction<Kind, ActionState, ErrorType> =
+  ActionBase<Kind, MutableActionExec<Kind, ActionState, ErrorType>>;
+
+/// Give [`Action`]s deterministic type and wrap them in [`Rc`] to make them clone-able.
+#[derive(Clone)]
+pub(super) enum GeneralAction<Kind: 'static, ActionState, ErrorType> {
+  Immutable(Rc<ImmutableAction<Kind, ActionState, ErrorType>>),
+  Mutable(Rc<MutableAction<Kind, ActionState, ErrorType>>),
+}
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
-  /// Try to convert [`Action`] into [`ImmutableAction`].
-  /// If the action is mutable, return [`Err`] with the original action.
-  pub(super) fn into_immutable(
-    self,
-  ) -> Result<ActionBase<Kind, ImmutableActionExec<Kind, ActionState, ErrorType>>, Self> {
+  /// Convert [`Action`] into [`GeneralAction`].
+  #[inline]
+  pub(super) fn into_general(self) -> GeneralAction<Kind, ActionState, ErrorType> {
     match self.exec {
-      ActionExec::Immutable(exec) => Ok(ActionBase {
+      ActionExec::Immutable(exec) => GeneralAction::Immutable(Rc::new(ImmutableAction {
         kind: self.kind,
         literal: self.literal,
         head: self.head,
         muted: self.muted,
         exec,
-      }),
-      ActionExec::Mutable(_) => Err(self),
+      })),
+      ActionExec::Mutable(exec) => GeneralAction::Mutable(Rc::new(MutableAction {
+        kind: self.kind,
+        literal: self.literal,
+        head: self.head,
+        muted: self.muted,
+        exec,
+      })),
     }
   }
 }
