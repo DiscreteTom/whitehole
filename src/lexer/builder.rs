@@ -108,7 +108,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   pub fn build_stateless(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
     // TODO: warning if action has no head matcher
     // wrap actions with Rc, make them immutable and clone-able
-    StatelessLexer::new(self.actions.into_iter().map(Rc::new).collect())
+    StatelessLexer::new(self.actions)
   }
 
   pub fn build_with<'text>(

@@ -95,10 +95,13 @@ mod trim;
 
 pub use options::*;
 
-use super::{action::Action, token::TokenKindId};
+use super::{
+  action::{Action, GeneralAction},
+  token::TokenKindId,
+};
 use head_map::HeadMap;
 use literal_map::LiteralMap;
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 /// Stateless, immutable lexer.
 pub struct StatelessLexer<Kind: 'static, ActionState = (), ErrorType = ()> {
@@ -119,7 +122,9 @@ pub struct StatelessLexer<Kind: 'static, ActionState = (), ErrorType = ()> {
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
   /// Create a new [`StatelessLexer`] from a list of actions.
   /// This function will pre-calculate some collections to optimize the runtime performance.
-  pub fn new(actions: Vec<Rc<Action<Kind, ActionState, ErrorType>>>) -> Self {
+  pub fn new(actions: Vec<Action<Kind, ActionState, ErrorType>>) -> Self {
+    let actions = actions.into_iter().map(|a| a.into_general()).collect();
+
     // known kinds => actions
     let kinds_action_map = Self::init_kind_map(&actions);
 
@@ -148,8 +153,8 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
   #[inline] // there is only one call site, so mark this as inline
   fn init_kind_map(
-    actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
-  ) -> HashMap<&'static TokenKindId<Kind>, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
+    actions: &Vec<GeneralAction<Kind, ActionState, ErrorType>>,
+  ) -> HashMap<&'static TokenKindId<Kind>, Vec<GeneralAction<Kind, ActionState, ErrorType>>> {
     let mut res = HashMap::new();
     // prepare kind map, add value for all known possible kinds
     // this has to be done before filling the map

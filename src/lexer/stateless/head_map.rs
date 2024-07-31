@@ -1,18 +1,71 @@
-use crate::lexer::action::{Action, HeadMatcher};
+use crate::lexer::action::{GeneralAction, HeadMatcher, ImmutableAction};
 use std::{collections::HashMap, rc::Rc};
+
+/// [`HeadMapActions`] consists of 2 parts:
+/// - [`Self::immutables`]: immutable actions, this should always be checked first.
+/// - [`Self::rest`]: immutable or mutable actions, this should be checked after [`Self::immutables`].
+/// If this is not empty, this must starts with a mutable action.
+pub(super) struct HeadMapActions<Kind: 'static, ActionState, ErrorType> {
+  immutables: Vec<Rc<ImmutableAction<Kind, ActionState, ErrorType>>>,
+  rest: Vec<GeneralAction<Kind, ActionState, ErrorType>>,
+}
+
+impl<Kind: 'static, ActionState, ErrorType> Clone for HeadMapActions<Kind, ActionState, ErrorType> {
+  #[inline]
+  fn clone(&self) -> Self {
+    Self {
+      immutables: self.immutables.clone(),
+      rest: self.rest.clone(),
+    }
+  }
+}
+
+impl<Kind, ActionState, ErrorType> HeadMapActions<Kind, ActionState, ErrorType> {
+  #[inline]
+  pub const fn new() -> Self {
+    Self {
+      immutables: Vec::new(),
+      rest: Vec::new(),
+    }
+  }
+
+  #[inline]
+  pub fn push(&mut self, action: GeneralAction<Kind, ActionState, ErrorType>) {
+    if self.rest.len() == 0 {
+      // no mutable actions yet, check if the action is immutable
+      match action {
+        GeneralAction::Immutable(immutable) => self.immutables.push(immutable),
+        GeneralAction::Mutable(_) => self.rest.push(action),
+      }
+    } else {
+      // mutable actions are already added, add the action to the rest
+      self.rest.push(action);
+    }
+  }
+
+  // getters
+  #[inline]
+  pub const fn immutables(&self) -> &Vec<Rc<ImmutableAction<Kind, ActionState, ErrorType>>> {
+    &self.immutables
+  }
+  #[inline]
+  pub const fn rest(&self) -> &Vec<GeneralAction<Kind, ActionState, ErrorType>> {
+    &self.rest
+  }
+}
 
 pub(super) struct HeadMap<Kind: 'static, ActionState, ErrorType> {
   /// Store actions for known chars.
-  known_map: HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
+  known_map: HashMap<char, HeadMapActions<Kind, ActionState, ErrorType>>,
   /// Store actions for unknown chars.
-  unknown_fallback: Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
+  unknown_fallback: HeadMapActions<Kind, ActionState, ErrorType>,
 }
 
 /// A new-type to represent the return type of [`HeadMap::collect_all_known`].
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`HeadMap::new`].
 pub(super) struct KnownHeadChars<Kind: 'static, ActionState, ErrorType>(
-  HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
+  HashMap<char, HeadMapActions<Kind, ActionState, ErrorType>>,
 );
 
 impl<Kind: 'static, ActionState, ErrorType> Clone for KnownHeadChars<Kind, ActionState, ErrorType> {
@@ -31,7 +84,7 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
   /// with [`HeadMatcher::Not`] and [`HeadMatcher::Unknown`].
   #[inline] // there is only one call site, so mark this as inline
   pub fn collect_all_known(
-    actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
+    actions: &Vec<GeneralAction<Kind, ActionState, ErrorType>>,
   ) -> KnownHeadChars<Kind, ActionState, ErrorType> {
     let mut res = HashMap::new();
 
@@ -41,7 +94,7 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
           HeadMatcher::OneOf(set) | HeadMatcher::Not(set) => set,
           HeadMatcher::Unknown => continue,
         } {
-          res.entry(*c).or_insert(Vec::new());
+          res.entry(*c).or_insert(HeadMapActions::new());
         }
       }
     }
@@ -51,12 +104,12 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
 
   /// Create a new instance with a subset of actions and a known char map created by [`Self::collect_all_known`].
   pub fn new(
-    actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
+    actions: &Vec<GeneralAction<Kind, ActionState, ErrorType>>,
     known_map: KnownHeadChars<Kind, ActionState, ErrorType>,
   ) -> Self {
     let mut res = Self {
       known_map: known_map.0,
-      unknown_fallback: Vec::new(),
+      unknown_fallback: HeadMapActions::new(),
     };
 
     // fill the head map
@@ -102,11 +155,11 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
   }
 
   #[inline]
-  pub const fn known_map(&self) -> &HashMap<char, Vec<Rc<Action<Kind, ActionState, ErrorType>>>> {
+  pub const fn known_map(&self) -> &HashMap<char, HeadMapActions<Kind, ActionState, ErrorType>> {
     &self.known_map
   }
   #[inline]
-  pub const fn unknown_fallback(&self) -> &Vec<Rc<Action<Kind, ActionState, ErrorType>>> {
+  pub const fn unknown_fallback(&self) -> &HeadMapActions<Kind, ActionState, ErrorType> {
     &self.unknown_fallback
   }
 }

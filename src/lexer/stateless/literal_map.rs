@@ -1,6 +1,7 @@
+use crate::lexer::action::GeneralAction;
+
 use super::head_map::{HeadMap, KnownHeadChars};
-use crate::lexer::action::Action;
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 pub(super) struct LiteralMap<Kind: 'static, ActionState, ErrorType> {
   /// The key of the map is the literal.
@@ -17,7 +18,7 @@ pub(super) struct LiteralMap<Kind: 'static, ActionState, ErrorType> {
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`LiteralMap::new`].
 pub(super) struct KnownLiterals<Kind: 'static, ActionState, ErrorType>(
-  HashMap<String, Vec<Rc<Action<Kind, ActionState, ErrorType>>>>,
+  HashMap<String, Vec<GeneralAction<Kind, ActionState, ErrorType>>>,
 );
 
 impl<Kind: 'static, ActionState, ErrorType> Clone for KnownLiterals<Kind, ActionState, ErrorType> {
@@ -36,7 +37,7 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
   /// when filling the literal map with no-literal actions.
   #[inline] // there is only one call site, so mark this as inline
   pub fn collect_all_known(
-    actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
+    actions: &Vec<GeneralAction<Kind, ActionState, ErrorType>>,
   ) -> KnownLiterals<Kind, ActionState, ErrorType> {
     let mut res = HashMap::new();
 
@@ -52,7 +53,7 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
   /// Create a self with a subset of actions, a known literal map created by [`Self::collect_all_known`]
   /// and a known head map created by [`HeadMap::collect_all_known`].
   pub fn new(
-    actions: &Vec<Rc<Action<Kind, ActionState, ErrorType>>>,
+    actions: &Vec<GeneralAction<Kind, ActionState, ErrorType>>,
     known_map: KnownLiterals<Kind, ActionState, ErrorType>,
     known_head_map: &KnownHeadChars<Kind, ActionState, ErrorType>,
   ) -> Self {
