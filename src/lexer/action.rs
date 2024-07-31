@@ -151,6 +151,28 @@ impl<Kind, ActionState, ErrorType> ActionExec<Kind, ActionState, ErrorType> {
 pub type Action<Kind, ActionState = (), ErrorType = ()> =
   ActionBase<Kind, ActionExec<Kind, ActionState, ErrorType>>;
 
+pub(super) type ImmutableAction<Kind, ActionState, ErrorType> =
+  ActionBase<Kind, ImmutableActionExec<Kind, ActionState, ErrorType>>;
+
+impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
+  /// Try to convert [`Action`] into [`ImmutableAction`].
+  /// If the action is mutable, return [`Err`] with the original action.
+  pub(super) fn into_immutable(
+    self,
+  ) -> Result<ActionBase<Kind, ImmutableActionExec<Kind, ActionState, ErrorType>>, Self> {
+    match self.exec {
+      ActionExec::Immutable(exec) => Ok(ActionBase {
+        kind: self.kind,
+        literal: self.literal,
+        head: self.head,
+        muted: self.muted,
+        exec,
+      }),
+      ActionExec::Mutable(_) => Err(self),
+    }
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
