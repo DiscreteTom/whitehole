@@ -29,14 +29,33 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     ActionState: Clone + 'head_map,
     ErrorType: 'head_map,
   {
+    // since the provided action state is an immutable reference,
+    // if the action state needs to be mutated, it will be cloned and returned
+    let mut new_state = None;
+
     loop {
-      // all actions will reuse this action input in this iteration
+      // if the action state is already mutated, use it
+      if let Some(state) = &mut new_state {
+        return (
+          Self::execute_actions_mut(
+            head_map_getter,
+            re_lex,
+            text,
+            start + res.digested(),
+            state,
+            re_lexable_factory,
+            res,
+          ),
+          new_state,
+        );
+      }
+
       let input = match ActionInput::new(text, start + res.digested(), state) {
         None => {
           // maybe some token is muted in previous iterations which cause the rest is empty
           // but the `res.digested` might be updated by previous iterations
           // so we have to return the result instead of a `None`
-          return (res.emit(), None); // TODO: this shouldn't be None, fix this
+          return (res.emit(), new_state);
         }
         Some(input) => input,
       };
@@ -47,12 +66,16 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         .get(&input.next())
         .unwrap_or(head_map.unknown_fallback());
 
-      match Self::traverse_actions(&input, actions, re_lex, &mut re_lexable_factory) {
+      let (output, state) =
+        Self::traverse_actions(&input, actions, re_lex, &mut re_lexable_factory);
+      new_state = state;
+
+      match output {
         // all definition checked, no accepted action
         // but the digested and errors might be updated by the last iteration
         // so we have to return them
-        (None, state) => return (res.emit(), state),
-        (Some((output, action_index, muted)), state) => {
+        None => return (res.emit(), new_state),
+        Some((output, action_index, muted)) => {
           // update digested, no matter the output is muted or not
           res.digest(output.digested);
 
@@ -77,7 +100,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
                       action_index,
                     ),
                   ),
-                  state,
+                  new_state,
                 );
               }
             }
@@ -99,7 +122,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
                     action_index,
                   ),
                 ),
-                state,
+                new_state,
               );
             }
           }
