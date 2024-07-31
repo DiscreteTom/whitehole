@@ -81,18 +81,18 @@ macro_rules! action_input_to_ref {
     $input
   };
 }
-pub(crate) use action_input_to_ref;
+pub(super) use action_input_to_ref;
 
 #[cfg(test)]
 impl<Kind, ActionState, ErrorType> ActionExec<Kind, ActionState, ErrorType> {
-  pub(crate) fn as_immutable(&self) -> &ImmutableActionExec<Kind, ActionState, ErrorType> {
+  pub(super) fn as_immutable(&self) -> &ImmutableActionExec<Kind, ActionState, ErrorType> {
     match self {
       ActionExec::Immutable(exec) => exec,
       ActionExec::Mutable(_) => panic!("ActionExec is mutable"),
     }
   }
 
-  pub(crate) fn as_mutable(&self) -> &MutableActionExec<Kind, ActionState, ErrorType> {
+  pub(super) fn as_mutable(&self) -> &MutableActionExec<Kind, ActionState, ErrorType> {
     match self {
       ActionExec::Immutable(_) => panic!("ActionExec is immutable"),
       ActionExec::Mutable(exec) => exec,
