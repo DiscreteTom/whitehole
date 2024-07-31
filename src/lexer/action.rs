@@ -176,10 +176,19 @@ pub(super) type MutableAction<Kind, ActionState, ErrorType> =
 /// we should know the exact type of each action instead of using pattern matching
 /// to determine the type every time.
 /// That's why we need [`GeneralAction`].
-#[derive(Clone)]
 pub(super) enum GeneralAction<Kind: 'static, ActionState, ErrorType> {
   Immutable(Rc<ImmutableAction<Kind, ActionState, ErrorType>>),
   Mutable(Rc<MutableAction<Kind, ActionState, ErrorType>>),
+}
+
+impl<Kind: 'static, ActionState, ErrorType> Clone for GeneralAction<Kind, ActionState, ErrorType> {
+  #[inline]
+  fn clone(&self) -> Self {
+    match self {
+      GeneralAction::Immutable(action) => GeneralAction::Immutable(action.clone()),
+      GeneralAction::Mutable(action) => GeneralAction::Mutable(action.clone()),
+    }
+  }
 }
 
 impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
