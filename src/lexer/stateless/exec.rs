@@ -52,13 +52,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         // but the digested and errors might be updated by the last iteration
         // so we have to return them
         (None, state) => return (res.emit(), state),
-        (Some((output, action_index)), state) => {
+        (Some((output, action_index, muted)), state) => {
           // update digested, no matter the output is muted or not
           res.digest(output.digested);
 
           match output.error {
             Some(err) => {
-              if actions.is_muted(action_index) {
+              if muted {
                 // err but muted, collect errors and continue
                 res
                   .errors()
@@ -85,7 +85,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
               // else, no error
 
               // don't emit token if muted
-              if actions.is_muted(action_index) {
+              if muted {
                 continue;
               }
 
@@ -150,13 +150,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         // but the digested and errors might be updated by the last iteration
         // so we have to return them
         None => return res.emit(),
-        Some((output, action_index)) => {
+        Some((output, action_index, muted)) => {
           // update digested, no matter the output is muted or not
           res.digest(output.digested);
 
           match output.error {
             Some(err) => {
-              if actions.is_muted(action_index) {
+              if muted {
                 // err but muted, collect errors and continue
                 res
                   .errors()
@@ -180,7 +180,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
               // else, no error
 
               // don't emit token if muted
-              if actions.is_muted(action_index) {
+              if muted {
                 continue;
               }
 
@@ -212,28 +212,15 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     re_lex: &ReLexContext,
     re_lexable_factory: &mut ReLexableFactoryType,
   ) -> (
-    Option<(ActionOutput<Kind, Option<ErrorType>>, usize)>,
+    Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)>,
     Option<ActionState>,
   )
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
     ActionState: Clone,
   {
-    for (i, action) in
-      actions
-        .immutables()
-        .iter()
-        .enumerate()
-        .skip(if input.start() == re_lex.start {
-          // SAFETY: `skip` can be larger than `immutables.len()`
-          re_lex.skip
-        } else {
-          0
-        })
-    {
-      if let Some(output) = action.exec()(input) {
-        return (Some((output, i)), None);
-      }
+    if let Some(res) = traverse_immutables(input, actions, re_lex) {
+      return (Some(res), None);
     }
 
     // prevent unnecessary clone
@@ -262,7 +249,10 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
           action.exec()(&mut input)
         }
       } {
-        return (Some((output, i + actions.immutables().len())), Some(state));
+        return (
+          Some((output, i + actions.immutables().len(), action.muted())),
+          Some(state),
+        );
       }
     }
 
@@ -281,25 +271,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     actions: &HeadMapActions<Kind, ActionState, ErrorType>,
     re_lex: &ReLexContext,
     re_lexable_factory: &mut ReLexableFactoryType,
-  ) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize)>
+  ) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)>
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
-    for (i, action) in
-      actions
-        .immutables()
-        .iter()
-        .enumerate()
-        .skip(if input.start() == re_lex.start {
-          // SAFETY: `skip` can be larger than `immutables.len()`
-          re_lex.skip
-        } else {
-          0
-        })
-    {
-      if let Some(output) = action.exec()(&input.as_ref()) {
-        return Some((output, i));
-      }
+    if let Some(res) = traverse_immutables(&input.as_ref(), actions, re_lex) {
+      return Some(res);
     }
 
     for (i, action) in actions
@@ -319,13 +296,37 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
           action.exec()(input)
         }
       } {
-        return Some((output, i + actions.immutables().len()));
+        return Some((output, i + actions.immutables().len(), action.muted()));
       }
     }
 
     // all actions are checked, no accepted action
     None
   }
+}
+
+fn traverse_immutables<Kind, ActionState, ErrorType>(
+  input: &ActionInput<&ActionState>,
+  actions: &HeadMapActions<Kind, ActionState, ErrorType>,
+  re_lex: &ReLexContext,
+) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)> {
+  for (i, action) in
+    actions
+      .immutables()
+      .iter()
+      .enumerate()
+      .skip(if input.start() == re_lex.start {
+        // SAFETY: it is ok that if `skip` is larger than `immutables.len()`
+        re_lex.skip
+      } else {
+        0
+      })
+  {
+    if let Some(output) = action.exec()(input) {
+      return Some((output, i, action.muted()));
+    }
+  }
+  None
 }
 
 #[inline]

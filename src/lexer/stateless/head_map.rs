@@ -54,15 +54,6 @@ impl<Kind, ActionState, ErrorType> HeadMapActions<Kind, ActionState, ErrorType> 
   }
 
   // TODO: remove this function?
-  pub fn is_muted(&self, n: usize) -> bool {
-    if n < self.immutables.len() {
-      self.immutables[n].muted()
-    } else {
-      self.rest[n - self.immutables.len()].muted()
-    }
-  }
-
-  // TODO: remove this function?
   #[inline]
   pub fn len(&self) -> usize {
     self.immutables.len() + self.rest.len()
