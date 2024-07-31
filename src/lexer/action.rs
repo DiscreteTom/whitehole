@@ -167,6 +167,15 @@ pub(super) type MutableAction<Kind, ActionState, ErrorType> =
   ActionBase<Kind, MutableActionExec<Kind, ActionState, ErrorType>>;
 
 /// Give [`Action`]s deterministic type and wrap them in [`Rc`] to make them clone-able.
+///
+/// When constructing a lexer using [`LexerBuilder`](crate::lexer::builder::LexerBuilder)
+/// users should use [`Action`] to represent
+/// both immutable and mutable actions, so that [`LexerBuilder`](crate::lexer::builder::LexerBuilder)
+/// can accept one or more actions in one method call.
+/// But when the lexer is built, to optimize the runtime performance,
+/// we should know the exact type of each action instead of using pattern matching
+/// to determine the type every time.
+/// That's why we need [`GeneralAction`].
 #[derive(Clone)]
 pub(super) enum GeneralAction<Kind: 'static, ActionState, ErrorType> {
   Immutable(Rc<ImmutableAction<Kind, ActionState, ErrorType>>),
