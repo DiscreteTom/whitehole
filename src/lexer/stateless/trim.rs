@@ -71,7 +71,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
-    Self::execute_actions(
+    Self::execute_actions_mut(
       // the literal map's muted map contains all the muted actions
       |_| self.literal_map.muted_map(),
       // there is no expectation options for trim,

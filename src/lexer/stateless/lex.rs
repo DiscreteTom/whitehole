@@ -121,9 +121,9 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         .get(literal)
         .expect("no action is defined for the expected literal");
 
-      Self::execute_actions(
-        |input| {
-          let literal_mismatch = !input.rest().starts_with(literal);
+      Self::execute_actions_mut(
+        |rest| {
+          let literal_mismatch = !rest.starts_with(literal);
           if literal_mismatch {
             literal_map.muted_map()
           } else {
@@ -150,7 +150,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         |kind| self.kind_head_map.get(&kind).expect(INVALID_EXPECTED_KIND),
       );
 
-      Self::execute_actions(
+      Self::execute_actions_mut(
         |_| head_map,
         &options.base.re_lex,
         text,
