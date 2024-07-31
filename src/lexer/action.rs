@@ -56,55 +56,7 @@ pub struct ActionBase<Kind: 'static, Exec> {
   exec: Exec,
 }
 
-type ImmutableActionExec<Kind, ActionState, ErrorType> =
-  Box<dyn Fn(&ActionInput<&ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>;
-
-type MutableActionExec<Kind, ActionState, ErrorType> =
-  Box<dyn Fn(&mut ActionInput<&mut ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>;
-
-// TODO: move to a single mod
-pub enum ActionExec<Kind, ActionState, ErrorType> {
-  Immutable(ImmutableActionExec<Kind, ActionState, ErrorType>),
-  Mutable(MutableActionExec<Kind, ActionState, ErrorType>),
-}
-
-/// Conditionally convert [`ActionInput<&mut ActionState>`] to [`ActionInput<&ActionState>`].
-///
-/// Usage:
-/// - `action_input_to_ref(input, true)`: `&input.as_ref()`
-/// - `action_input_to_ref(input, false)`: `input`
-macro_rules! action_input_to_ref {
-  ($input: ident, true) => {
-    &$input.as_ref()
-  };
-  ($input: ident, false) => {
-    $input
-  };
-}
-pub(super) use action_input_to_ref;
-
-#[cfg(test)]
-impl<Kind, ActionState, ErrorType> ActionExec<Kind, ActionState, ErrorType> {
-  pub(super) fn as_immutable(&self) -> &ImmutableActionExec<Kind, ActionState, ErrorType> {
-    match self {
-      ActionExec::Immutable(exec) => exec,
-      ActionExec::Mutable(_) => panic!("ActionExec is mutable"),
-    }
-  }
-
-  pub(super) fn as_mutable(&self) -> &MutableActionExec<Kind, ActionState, ErrorType> {
-    match self {
-      ActionExec::Immutable(_) => panic!("ActionExec is immutable"),
-      ActionExec::Mutable(exec) => exec,
-    }
-  }
-}
-
-/// To create this, use [`simple`](simple::simple), [`simple_with_data`](simple::simple_with_data)
-/// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
-pub type Action<Kind, ActionState = (), ErrorType = ()> =
-  ActionBase<Kind, ActionExec<Kind, ActionState, ErrorType>>;
-
+// getters
 impl<Kind, Exec> ActionBase<Kind, Exec> {
   /// This is used to accelerate expectational lexing if an expected kind is provided,
   /// see [`Expectation::kind`](crate::lexer::expectation::Expectation::kind).
@@ -146,10 +98,58 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
 
   /// Execute the action.
   #[inline]
-  pub fn exec(&self) -> &Exec {
+  pub const fn exec(&self) -> &Exec {
     &self.exec
   }
 }
+
+type ImmutableActionExec<Kind, ActionState, ErrorType> =
+  Box<dyn Fn(&ActionInput<&ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>;
+
+type MutableActionExec<Kind, ActionState, ErrorType> =
+  Box<dyn Fn(&mut ActionInput<&mut ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>;
+
+pub enum ActionExec<Kind, ActionState, ErrorType> {
+  Immutable(ImmutableActionExec<Kind, ActionState, ErrorType>),
+  Mutable(MutableActionExec<Kind, ActionState, ErrorType>),
+}
+
+/// Conditionally convert [`ActionInput<&mut ActionState>`] to [`ActionInput<&ActionState>`].
+///
+/// Usage:
+/// - `action_input_to_ref(input, true)`: `&input.as_ref()`
+/// - `action_input_to_ref(input, false)`: `input`
+macro_rules! action_input_to_ref {
+  ($input: ident, true) => {
+    &$input.as_ref()
+  };
+  ($input: ident, false) => {
+    $input
+  };
+}
+pub(super) use action_input_to_ref;
+
+#[cfg(test)]
+impl<Kind, ActionState, ErrorType> ActionExec<Kind, ActionState, ErrorType> {
+  pub(super) fn as_immutable(&self) -> &ImmutableActionExec<Kind, ActionState, ErrorType> {
+    match self {
+      ActionExec::Immutable(exec) => exec,
+      ActionExec::Mutable(_) => panic!("ActionExec is mutable"),
+    }
+  }
+
+  pub(super) fn as_mutable(&self) -> &MutableActionExec<Kind, ActionState, ErrorType> {
+    match self {
+      ActionExec::Immutable(_) => panic!("ActionExec is immutable"),
+      ActionExec::Mutable(exec) => exec,
+    }
+  }
+}
+
+/// To create this, use [`simple`](simple::simple), [`simple_with_data`](simple::simple_with_data)
+/// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
+pub type Action<Kind, ActionState = (), ErrorType = ()> =
+  ActionBase<Kind, ActionExec<Kind, ActionState, ErrorType>>;
 
 #[cfg(test)]
 mod tests {
