@@ -223,11 +223,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       return (Some(res), None);
     }
 
-    // prevent unnecessary clone
+    // prevent unnecessary clone if there is no mutable actions
     if actions.rest().len() == 0 {
       return (None, None);
     }
 
+    // clone the state to construct mutable action input
     let mut state = input.state.clone();
 
     (
