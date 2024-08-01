@@ -153,15 +153,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       }
     } else {
       // else, no expected literal
-      let head_map = options.base.expectation.kind.map_or(
-        &self.head_map, // if no expected kind, use the head map with all actions
-        |kind| {
-          self
-            .kind_head_map
-            .get(&kind)
-            .expect(Self::INVALID_EXPECTED_KIND)
-        },
-      );
+      let head_map = self.get_kind_head_map(options.base.expectation.kind);
 
       while let Some(((input_start, actions_len), (output, action_index, muted))) =
         ActionInput::new(text, options.start + digested, &mut *options.action_state).and_then(
@@ -389,6 +381,21 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       .get(literal)
       .expect(Self::INVALID_EXPECTED_LITERAL);
     (literal_map, head_map)
+  }
+
+  fn get_kind_head_map(
+    &self,
+    kind: Option<&'static TokenKindId<Kind>>,
+  ) -> &HeadMap<Kind, ActionState, ErrorType> {
+    kind.map_or(
+      &self.head_map, // if no expected kind, use the head map with all actions
+      |kind| {
+        self
+          .kind_head_map
+          .get(&kind)
+          .expect(Self::INVALID_EXPECTED_KIND)
+      },
+    )
   }
 }
 
