@@ -1,11 +1,11 @@
-use super::{options::StatelessLexOptions, StatelessLexer};
+use super::{exec::extract_token, options::StatelessLexOptions, StatelessLexer};
 use crate::{
   lexer::{
     action::{ActionInput, ActionOutput},
     fork::LexOptionsFork,
     output::LexOutput,
     re_lex::ReLexableFactory,
-    stateless::exec::{create_range, create_token, traverse_actions_mut},
+    stateless::exec::{traverse_actions_mut, update_state},
     token::{Range, Token, TokenKindIdProvider},
   },
   utils::Accumulator,
@@ -225,16 +225,8 @@ fn process_output<Kind, ErrorType, ErrAcc: Accumulator<(ErrorType, Range)>>(
   digested: &mut usize,
   errors: &mut ErrAcc,
 ) -> Option<Token<Kind>> {
-  // update digested, no matter the output is muted or not
-  *digested += output.digested;
-
-  // collect errors if any
-  if let Some(err) = output.error {
-    errors.update((err, create_range(start, output.digested)));
-  }
-
-  // if not muted, emit token
-  (!muted).then(|| create_token(output.kind, start, output.digested))
+  update_state(output.digested, output.error, start, digested, errors);
+  extract_token(output.kind, output.digested, muted, start)
 }
 
 // TODO: add tests

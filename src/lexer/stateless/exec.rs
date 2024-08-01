@@ -319,6 +319,34 @@ fn traverse_rest<
   None
 }
 
+pub(super) fn update_state<ErrorType, ErrAcc: Accumulator<(ErrorType, Range)>>(
+  output_digested: usize,
+  error: Option<ErrorType>,
+  start: usize,
+  digested: &mut usize,
+  errors: &mut ErrAcc,
+) {
+  // update digested, no matter the output is muted or not
+  *digested += output_digested;
+
+  // collect errors if any
+  if let Some(err) = error {
+    errors.update((err, create_range(start, output_digested)));
+  }
+}
+
+/// Return the token if not muted, otherwise return [`None`].
+#[inline]
+pub(super) fn extract_token<Kind>(
+  kind: Kind,
+  output_digested: usize,
+  muted: bool,
+  start: usize,
+) -> Option<Token<Kind>> {
+  // if not muted, emit token
+  (!muted).then(|| create_token(kind, start, output_digested))
+}
+
 #[inline]
 const fn create_token<Kind>(kind: Kind, start: usize, digested: usize) -> Token<Kind> {
   Token {
