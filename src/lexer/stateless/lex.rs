@@ -12,6 +12,9 @@ use crate::{
 };
 
 impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
+  const INVALID_EXPECTED_KIND: &'static str = "no action is defined for the expected kind";
+  const INVALID_EXPECTED_LITERAL: &'static str = "no action is defined for the expected literal";
+
   /// Lex from the start of the input text with the default action state and options.
   ///
   /// This function will create a new action state and return it.
@@ -104,8 +107,6 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
-    const INVALID_EXPECTED_KIND: &str = "no action is defined for the expected kind";
-
     let mut digested = 0;
     let mut errors = options.base.errors_to;
     let mut re_lexable_factory = Fork::ReLexableFactoryType::default();
@@ -119,12 +120,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
           self
             .kind_literal_map
             .get(&kind)
-            .expect(INVALID_EXPECTED_KIND)
+            .expect(Self::INVALID_EXPECTED_KIND)
         });
       let head_map = literal_map
         .known_map()
         .get(literal)
-        .expect("no action is defined for the expected literal");
+        .expect(Self::INVALID_EXPECTED_LITERAL);
 
       while let Some(((input_start, actions_len), (output, action_index, muted))) =
         ActionInput::new(text, options.start + digested, &mut *options.action_state).and_then(
@@ -170,7 +171,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       // else, no expected literal
       let head_map = options.base.expectation.kind.map_or(
         &self.head_map, // if no expected kind, use the head map with all actions
-        |kind| self.kind_head_map.get(&kind).expect(INVALID_EXPECTED_KIND),
+        |kind| {
+          self
+            .kind_head_map
+            .get(&kind)
+            .expect(Self::INVALID_EXPECTED_KIND)
+        },
       );
 
       while let Some(((input_start, actions_len), (output, action_index, muted))) =
@@ -296,9 +302,6 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     Kind: TokenKindIdProvider<TokenKind = Kind>,
     ActionState: Clone
   {
-    // TODO: move to impl scope
-    const INVALID_EXPECTED_KIND: &str = "no action is defined for the expected kind";
-
     let mut digested = 0;
     let mut errors = options.base.errors_to;
     let mut re_lexable_factory = Fork::ReLexableFactoryType::default();
@@ -313,12 +316,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
           self
             .kind_literal_map
             .get(&kind)
-            .expect(INVALID_EXPECTED_KIND)
+            .expect(Self::INVALID_EXPECTED_KIND)
         });
       let head_map = literal_map
         .known_map()
         .get(literal)
-        .expect("no action is defined for the expected literal");
+        .expect(Self::INVALID_EXPECTED_LITERAL);
 
       while let Some(((input_start, actions_len), (output, action_index, muted))) =
         ActionInput::new(text, options.start + digested, options.action_state).and_then(|input| {
