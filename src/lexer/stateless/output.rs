@@ -3,8 +3,6 @@ use crate::lexer::output::{LexOutput, TrimOutput};
 /// Use this trait to abstract the output of a stateless lexer.
 pub(super) trait StatelessOutputFactory<TokenType, ErrAcc, ReLexableType> {
   type Target;
-  /// Create a new instance of the output with the given error accumulator.
-  fn new(errors: ErrAcc) -> Self;
   /// How many bytes are digested during the whole lexing loop in current lexing.
   fn digested(&self) -> usize;
   /// Digest the next `n` chars.
@@ -25,18 +23,20 @@ pub(super) struct LexOutputBuilder<ErrAcc> {
   errors: ErrAcc,
 }
 
-impl<TokenType, ErrAcc, ReLexableType: Default>
-  StatelessOutputFactory<TokenType, ErrAcc, ReLexableType> for LexOutputBuilder<ErrAcc>
-{
-  type Target = LexOutput<TokenType, ErrAcc, ReLexableType>;
-
+impl<ErrAcc> LexOutputBuilder<ErrAcc> {
   #[inline]
-  fn new(errors: ErrAcc) -> Self {
+  pub fn new(errors: ErrAcc) -> Self {
     Self {
       digested: 0,
       errors,
     }
   }
+}
+
+impl<TokenType, ErrAcc, ReLexableType: Default>
+  StatelessOutputFactory<TokenType, ErrAcc, ReLexableType> for LexOutputBuilder<ErrAcc>
+{
+  type Target = LexOutput<TokenType, ErrAcc, ReLexableType>;
 
   #[inline]
   fn digested(&self) -> usize {
@@ -78,14 +78,6 @@ impl<TokenType, ReLexableType, ErrAcc> StatelessOutputFactory<TokenType, ErrAcc,
   for TrimOutput<ErrAcc>
 {
   type Target = Self;
-
-  #[inline]
-  fn new(errors: ErrAcc) -> Self {
-    Self {
-      digested: 0,
-      errors,
-    }
-  }
 
   #[inline]
   fn digested(&self) -> usize {

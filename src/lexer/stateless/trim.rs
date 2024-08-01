@@ -1,4 +1,4 @@
-use super::{output::StatelessOutputFactory, StatelessLexer, StatelessTrimOptions};
+use super::{StatelessLexer, StatelessTrimOptions};
 use crate::{
   lexer::{
     output::TrimOutput,
@@ -82,7 +82,10 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       options.start,
       options.action_state,
       (),
-      <TrimOutput<_> as StatelessOutputFactory<(), _, ()>>::new(options.base.errors_to),
+      TrimOutput {
+        digested: 0,
+        errors: options.base.errors_to,
+      },
     )
   }
 }

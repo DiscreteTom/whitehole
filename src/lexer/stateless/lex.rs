@@ -1,4 +1,4 @@
-use super::{options::StatelessLexOptions, output::StatelessOutputFactory, StatelessLexer};
+use super::{options::StatelessLexOptions, StatelessLexer};
 use crate::{
   lexer::{
     fork::LexOptionsFork,
@@ -135,13 +135,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         options.start,
         options.action_state,
         Fork::ReLexableFactoryType::default(),
-        <
-          LexOutputBuilder<ErrAcc> as StatelessOutputFactory<
-            Token<Kind>,
-            _,
-            <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType
-          >
-        >::new(options.base.errors_to),
+        LexOutputBuilder::new(options.base.errors_to),
       )
     } else {
       // else, no expected literal
@@ -157,13 +151,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         options.start,
         options.action_state,
         Fork::ReLexableFactoryType::default(),
-        <
-          LexOutputBuilder<ErrAcc> as StatelessOutputFactory<
-            Token<Kind>,
-            _,
-            <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType
-          >
-        >::new(options.base.errors_to),
+        LexOutputBuilder::new(options.base.errors_to),
       )
     }
   }
