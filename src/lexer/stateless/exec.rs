@@ -137,36 +137,23 @@ fn process_output<
       // update digested, no matter the output is muted or not
       res.digest(output.digested);
 
-      match output.error {
-        Some(err) => {
-          if muted {
-            // err but muted, collect errors and continue
-            res
-              .errors()
-              .update((err, create_range(start, output.digested)));
-            return ProcessResult::Continue;
-          } else {
-            // err and not muted, collect error and emit token
-            let token = create_token(output.kind, start, output.digested);
-            res.errors().update((err, token.range.clone()));
-            return ProcessResult::Token((token, action_index));
-          }
-        }
-        None => {
-          // else, no error
-
-          // don't emit token if muted
-          if muted {
-            return ProcessResult::Continue;
-          }
-
-          // not muted, emit token
-          return ProcessResult::Token((
-            create_token(output.kind, start, output.digested),
-            action_index,
-          ));
-        }
+      // collect errors
+      if let Some(err) = output.error {
+        res
+          .errors()
+          .update((err, create_range(start, output.digested)));
       }
+
+      // don't emit token if muted
+      if muted {
+        return ProcessResult::Continue;
+      }
+
+      // not muted, emit token
+      return ProcessResult::Token((
+        create_token(output.kind, start, output.digested),
+        action_index,
+      ));
     }
   }
 }
