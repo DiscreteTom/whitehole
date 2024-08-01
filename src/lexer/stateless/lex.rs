@@ -5,7 +5,6 @@ use super::{
 use crate::{
   lexer::{
     action::{ActionInput, ActionOutput},
-    expectation::Expectation,
     fork::LexOptionsFork,
     output::LexOutput,
     re_lex::ReLexableFactory,
@@ -205,12 +204,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     }
 
     // no more input or no accepted actions
-    return LexOutput {
-      digested,
-      token: None,
-      re_lexable: Default::default(),
-      errors,
-    };
+    return done_without_token(digested, errors);
   }
 
   // there is no `StatelessLexer::peek()` because it is just the same with `StatelessLexer::lex()`
@@ -391,15 +385,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     }
 
     // no more input or no accepted actions
-    return (
-      LexOutput {
-        digested,
-        token: None,
-        re_lexable: Default::default(),
-        errors,
-      },
-      new_action_state,
-    );
+    return (done_without_token(digested, errors), new_action_state);
   }
 
   fn get_literal_head_map(
@@ -435,6 +421,19 @@ fn process_output<Kind, ErrorType, ErrAcc: Accumulator<(ErrorType, Range)>>(
 ) -> Option<Token<Kind>> {
   update_state(output.digested, output.error, start, digested, errors);
   extract_token(output.kind, output.digested, muted, start)
+}
+
+#[inline]
+fn done_without_token<TokenType, ErrAcc, ReLexableType: Default>(
+  digested: usize,
+  errors: ErrAcc,
+) -> LexOutput<TokenType, ErrAcc, ReLexableType> {
+  LexOutput {
+    digested,
+    token: None,
+    re_lexable: ReLexableType::default(),
+    errors,
+  }
 }
 
 // TODO: add tests
