@@ -1,6 +1,10 @@
-use super::{StatelessLexer, StatelessTrimOptions};
+use super::{
+  exec::{create_range, traverse_actions_mut},
+  StatelessLexer, StatelessTrimOptions,
+};
 use crate::{
   lexer::{
+    action::{ActionInput, ActionOutput},
     output::TrimOutput,
     re_lex::ReLexContext,
     token::{Range, TokenKindIdProvider},
@@ -71,21 +75,41 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
-    Self::execute_actions_mut(
-      // the literal map's muted map contains all the muted actions
-      |_| self.literal_map.muted_map(),
-      // there is no expectation options for trim,
-      // with the same `start` and `action_state` all trims will get the same result,
-      // so re-lex is meaningless, always use the default re-lex context
-      &ReLexContext::default(),
-      text,
-      options.start,
-      options.action_state,
-      (),
-      TrimOutput {
-        digested: 0,
-        errors: options.base.errors_to,
-      },
-    )
+    let re_lex = ReLexContext::default();
+
+    let mut digested = 0;
+    let mut errors = options.base.errors_to;
+
+    while let Some((input_start, (output, _action_index, _muted))) =
+      ActionInput::new(text, options.start + digested, &mut *options.action_state).and_then(
+        |mut input| {
+          // the literal map's muted map contains all the muted actions
+          let actions = self.literal_map.muted_map().get(input.next());
+
+          traverse_actions_mut(&mut input, actions, &re_lex, &mut ())
+            .map(|res| (input.start(), res))
+        },
+      )
+    {
+      process_output(output, input_start, &mut digested, &mut errors);
+    }
+
+    TrimOutput { digested, errors }
+  }
+}
+
+/// Process the output, update the digested, collect errors.
+fn process_output<Kind, ErrorType, ErrAcc: Accumulator<(ErrorType, Range)>>(
+  output: ActionOutput<Kind, Option<ErrorType>>,
+  start: usize,
+  digested: &mut usize,
+  errors: &mut ErrAcc,
+) {
+  // update digested, no matter the output is muted or not
+  *digested += output.digested;
+
+  // collect errors if any
+  if let Some(err) = output.error {
+    errors.update((err, create_range(start, output.digested)));
   }
 }
