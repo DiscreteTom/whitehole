@@ -1,5 +1,8 @@
 use super::{
-  exec::extract_token, head_map::HeadMap, literal_map::LiteralMap, options::StatelessLexOptions,
+  exec::extract_token,
+  head_map::{HeadMap, HeadMapActions},
+  literal_map::LiteralMap,
+  options::StatelessLexOptions,
   StatelessLexer,
 };
 use crate::{
@@ -121,16 +124,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       while let Some(((input_start, actions_len), (output, action_index, muted))) =
         ActionInput::new(text, options.start + digested, &mut *options.action_state).and_then(
           |mut input| {
-            let actions = {
-              if !input.rest().starts_with(literal) {
-                // prefix mismatch, only execute muted actions
-                literal_map.muted_map()
-              } else {
-                // prefix match, use the literal's head map
-                head_map
-              }
-            }
-            .get(input.next());
+            let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
 
             traverse_actions_mut(
               &mut input,
@@ -299,16 +293,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 
       while let Some(((input_start, actions_len), (output, action_index, muted))) =
         ActionInput::new(text, options.start + digested, options.action_state).and_then(|input| {
-          let actions = {
-            if !input.rest().starts_with(literal) {
-              // prefix mismatch, only execute muted actions
-              literal_map.muted_map()
-            } else {
-              // prefix match, use the literal's head map
-              head_map
-            }
-          }
-          .get(input.next());
+          let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
 
           let (output, action_state) = traverse_actions(
             &input,
@@ -408,6 +393,24 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       .expect(Self::INVALID_EXPECTED_LITERAL);
     (literal_map, head_map)
   }
+}
+
+fn get_actions_by_literal_map<'this, Kind: 'static, ActionState, ActionStateRef, ErrorType>(
+  input: &ActionInput<ActionStateRef>,
+  literal: &str,
+  literal_map: &'this LiteralMap<Kind, ActionState, ErrorType>,
+  head_map: &'this HeadMap<Kind, ActionState, ErrorType>,
+) -> &'this HeadMapActions<Kind, ActionState, ErrorType> {
+  {
+    if !input.rest().starts_with(literal) {
+      // prefix mismatch, only execute muted actions
+      literal_map.muted_map()
+    } else {
+      // prefix match, use the literal's head map
+      head_map
+    }
+  }
+  .get(input.next())
 }
 
 /// Process the output, update the digested, collect errors, and emit token if not muted.
