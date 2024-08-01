@@ -45,16 +45,13 @@ use std::{
 #[derive(Debug)]
 pub struct TokenKindId<Kind> {
   value: usize,
-  /// The name of the sub token kind.
-  /// This is only used for display when debugging.
-  /// The value won't be used in logic.
   name: &'static str,
   __: PhantomData<Kind>,
 }
 
 impl<Kind> TokenKindId<Kind> {
-  /// You should not call this function directly.
-  /// This function should only be used in [`token_kind`](super::token_kind) macro.
+  /// You should NEVER call this function directly.
+  /// This function should only be used in the [`token_kind`](super::token_kind) macro.
   #[inline]
   pub const fn new(value: usize, name: &'static str) -> Self {
     Self {
@@ -65,6 +62,9 @@ impl<Kind> TokenKindId<Kind> {
   }
 
   /// The name of the sub token kind.
+  ///
+  /// This is only used for display when debugging.
+  /// The value won't be used in logic (e.g. [`PartialEq`], [`Hash`]).
   #[inline]
   pub const fn name(&self) -> &'static str {
     self.name
