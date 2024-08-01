@@ -10,7 +10,7 @@ use crate::{
     action::{ActionInput, ActionOutput},
     fork::LexOptionsFork,
     output::LexOutput,
-    re_lex::ReLexableFactory,
+    re_lex::{ReLexContext, ReLexableFactory},
     stateless::exec::{traverse_actions, traverse_actions_mut, update_state},
     token::{Range, Token, TokenKindId, TokenKindIdProvider},
   },
@@ -113,82 +113,37 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
-    let mut digested = 0;
-    let mut errors = options.base.errors_to;
-    let mut re_lexable_factory = Fork::ReLexableFactoryType::default();
-
     if let Some(literal) = options.base.expectation.literal {
       let (literal_map, head_map) =
         self.get_literal_head_map(options.base.expectation.kind, literal);
 
-      while let Some(((input_start, actions_len), (output, action_index, muted))) =
-        ActionInput::new(text, options.start + digested, &mut *options.action_state).and_then(
-          |mut input| {
-            let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
-
-            traverse_actions_mut(
-              &mut input,
-              actions,
-              &options.base.re_lex,
-              &mut re_lexable_factory,
-            )
-            .map(|res| ((input.start(), actions.len()), res))
-          },
-        )
-      {
-        if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors)
-        {
-          return done_with_token(
-            digested,
-            token,
-            re_lexable_factory,
-            input_start,
-            actions_len,
-            action_index,
-            errors,
-          );
-        }
-
-        // else, muted, continue
-      }
+      self.lex_mut_with_literal(
+        literal_map,
+        head_map,
+        0,
+        options.base.errors_to,
+        options.start,
+        text,
+        options.action_state,
+        literal,
+        &options.base.re_lex,
+        Fork::ReLexableFactoryType::default(),
+      )
     } else {
       // else, no expected literal
       let head_map = self.get_kind_head_map(options.base.expectation.kind);
 
-      while let Some(((input_start, actions_len), (output, action_index, muted))) =
-        ActionInput::new(text, options.start + digested, &mut *options.action_state).and_then(
-          |mut input| {
-            let actions = head_map.get(input.next());
-
-            traverse_actions_mut(
-              &mut input,
-              actions,
-              &options.base.re_lex,
-              &mut re_lexable_factory,
-            )
-            .map(|res| ((input.start(), actions.len()), res))
-          },
-        )
-      {
-        if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors)
-        {
-          return done_with_token(
-            digested,
-            token,
-            re_lexable_factory,
-            input_start,
-            actions_len,
-            action_index,
-            errors,
-          );
-        }
-
-        // else, muted, continue
-      }
+      self.lex_mut_without_literal(
+        head_map,
+        0,
+        options.base.errors_to,
+        options.start,
+        text,
+        options.action_state,
+        &options.base.re_lex,
+        Fork::ReLexableFactoryType::default(),
+      )
     }
-
-    // no more input or no accepted actions
-    return done_without_token(digested, errors);
   }
 
   // there is no `StatelessLexer::peek()` because it is just the same with `StatelessLexer::lex()`
@@ -311,51 +266,80 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
           );
         }
 
-        // if action state is mutated, use lex
-        if let Some(action_state) = new_action_state {
-          todo!() // TODO
+        // if action state is mutated, continue with mutable lexing
+        if let Some(mut action_state) = new_action_state {
+          return (
+            self.lex_mut_with_literal(
+              literal_map,
+              head_map,
+              digested,
+              errors,
+              options.start,
+              text,
+              &mut action_state,
+              literal,
+              &options.base.re_lex,
+              re_lexable_factory,
+            ),
+            Some(action_state),
+          );
         }
 
         // else, muted, continue
       }
     } else {
-      // // else, no expected literal
-      // let head_map = options.base.expectation.kind.map_or(
-      //   &self.head_map, // if no expected kind, use the head map with all actions
-      //   |kind| self.kind_head_map.get(&kind).expect(INVALID_EXPECTED_KIND),
-      // );
+      // else, no expected literal
+      let head_map = self.get_kind_head_map(options.base.expectation.kind);
 
-      // while let Some(((input_start, actions_len), (output, action_index, muted))) =
-      //   ActionInput::new(text, options.start + digested, &mut *options.action_state).and_then(
-      //     |mut input| {
-      //       let actions = head_map.get(input.next());
+      while let Some(((input_start, actions_len), (output, action_index, muted))) =
+        ActionInput::new(text, options.start + digested, options.action_state).and_then(|input| {
+          let actions = head_map.get(input.next());
 
-      //       traverse_actions_mut(
-      //         &mut input,
-      //         actions,
-      //         &options.base.re_lex,
-      //         &mut re_lexable_factory,
-      //       )
-      //       .map(|res| ((input.start(), actions.len()), res))
-      //     },
-      //   )
-      // {
-      //   if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors)
-      //   {
-      //     return LexOutput {
-      //       digested,
-      //       token: Some(token),
-      //       re_lexable: re_lexable_factory.into_stateless_re_lexable(
-      //         input_start,
-      //         actions_len,
-      //         action_index,
-      //       ),
-      //       errors,
-      //     };
-      //   }
+          let (output, action_state) = traverse_actions(
+            &input,
+            actions,
+            &options.base.re_lex,
+            &mut re_lexable_factory,
+          );
+          new_action_state = action_state;
+          output.map(|res| ((input.start(), actions.len()), res))
+        })
+      {
+        if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors)
+        {
+          return (
+            done_with_token(
+              digested,
+              token,
+              re_lexable_factory,
+              input_start,
+              actions_len,
+              action_index,
+              errors,
+            ),
+            new_action_state,
+          );
+        }
 
-      //   // else, muted, continue
-      // }
+        // if action state is mutated, continue with mutable lexing
+        if let Some(mut action_state) = new_action_state {
+          return (
+            self.lex_mut_without_literal(
+              head_map,
+              digested,
+              errors,
+              options.start,
+              text,
+              &mut action_state,
+              &options.base.re_lex,
+              re_lexable_factory,
+            ),
+            Some(action_state),
+          );
+        }
+
+        // else, muted, continue
+      }
     }
 
     // no more input or no accepted actions
@@ -396,6 +380,98 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
           .expect(Self::INVALID_EXPECTED_KIND)
       },
     )
+  }
+
+  fn lex_mut_with_literal<
+    'text,
+    ErrAcc: Accumulator<(ErrorType, Range)>,
+    ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
+  >(
+    &self,
+    literal_map: &LiteralMap<Kind, ActionState, ErrorType>,
+    head_map: &HeadMap<Kind, ActionState, ErrorType>,
+    mut digested: usize,
+    mut errors: ErrAcc,
+    start: usize,
+    text: &'text str,
+    action_state: &mut ActionState,
+    literal: &str,
+    re_lex: &ReLexContext,
+    mut re_lexable_factory: ReLexableFactoryType,
+  ) -> LexOutput<Token<Kind>, ErrAcc, ReLexableFactoryType::StatelessReLexableType>
+  where
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
+  {
+    while let Some(((input_start, actions_len), (output, action_index, muted))) =
+      ActionInput::new(text, start + digested, &mut *action_state).and_then(|mut input| {
+        let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
+
+        traverse_actions_mut(&mut input, actions, re_lex, &mut re_lexable_factory)
+          .map(|res| ((input.start(), actions.len()), res))
+      })
+    {
+      if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors) {
+        return done_with_token(
+          digested,
+          token,
+          re_lexable_factory,
+          input_start,
+          actions_len,
+          action_index,
+          errors,
+        );
+      }
+
+      // else, muted, continue
+    }
+
+    // no more input or no accepted actions
+    return done_without_token(digested, errors);
+  }
+
+  fn lex_mut_without_literal<
+    'text,
+    ErrAcc: Accumulator<(ErrorType, Range)>,
+    ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
+  >(
+    &self,
+    head_map: &HeadMap<Kind, ActionState, ErrorType>,
+    mut digested: usize,
+    mut errors: ErrAcc,
+    start: usize,
+    text: &'text str,
+    action_state: &mut ActionState,
+    re_lex: &ReLexContext,
+    mut re_lexable_factory: ReLexableFactoryType,
+  ) -> LexOutput<Token<Kind>, ErrAcc, ReLexableFactoryType::StatelessReLexableType>
+  where
+    Kind: TokenKindIdProvider<TokenKind = Kind>,
+  {
+    while let Some(((input_start, actions_len), (output, action_index, muted))) =
+      ActionInput::new(text, start + digested, &mut *action_state).and_then(|mut input| {
+        let actions = head_map.get(input.next());
+
+        traverse_actions_mut(&mut input, actions, re_lex, &mut re_lexable_factory)
+          .map(|res| ((input.start(), actions.len()), res))
+      })
+    {
+      if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors) {
+        return done_with_token(
+          digested,
+          token,
+          re_lexable_factory,
+          input_start,
+          actions_len,
+          action_index,
+          errors,
+        );
+      }
+
+      // else, muted, continue
+    }
+
+    // no more input or no accepted actions
+    return done_without_token(digested, errors);
   }
 }
 
