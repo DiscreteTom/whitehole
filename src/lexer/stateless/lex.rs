@@ -1,12 +1,16 @@
-use super::{exec::extract_token, options::StatelessLexOptions, StatelessLexer};
+use super::{
+  exec::extract_token, head_map::HeadMap, literal_map::LiteralMap, options::StatelessLexOptions,
+  StatelessLexer,
+};
 use crate::{
   lexer::{
     action::{ActionInput, ActionOutput},
+    expectation::Expectation,
     fork::LexOptionsFork,
     output::LexOutput,
     re_lex::ReLexableFactory,
     stateless::exec::{traverse_actions, traverse_actions_mut, update_state},
-    token::{Range, Token, TokenKindIdProvider},
+    token::{Range, Token, TokenKindId, TokenKindIdProvider},
   },
   utils::Accumulator,
 };
@@ -112,20 +116,8 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     let mut re_lexable_factory = Fork::ReLexableFactoryType::default();
 
     if let Some(literal) = options.base.expectation.literal {
-      let literal_map = options
-        .base
-        .expectation
-        .kind
-        .map_or(&self.literal_map, |kind| {
-          self
-            .kind_literal_map
-            .get(&kind)
-            .expect(Self::INVALID_EXPECTED_KIND)
-        });
-      let head_map = literal_map
-        .known_map()
-        .get(literal)
-        .expect(Self::INVALID_EXPECTED_LITERAL);
+      let (literal_map, head_map) =
+        self.get_literal_head_map(options.base.expectation.kind, literal);
 
       while let Some(((input_start, actions_len), (output, action_index, muted))) =
         ActionInput::new(text, options.start + digested, &mut *options.action_state).and_then(
@@ -308,20 +300,8 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     let mut new_action_state = None;
 
     if let Some(literal) = options.base.expectation.literal {
-      let literal_map = options
-        .base
-        .expectation
-        .kind
-        .map_or(&self.literal_map, |kind| {
-          self
-            .kind_literal_map
-            .get(&kind)
-            .expect(Self::INVALID_EXPECTED_KIND)
-        });
-      let head_map = literal_map
-        .known_map()
-        .get(literal)
-        .expect(Self::INVALID_EXPECTED_LITERAL);
+      let (literal_map, head_map) =
+        self.get_literal_head_map(options.base.expectation.kind, literal);
 
       while let Some(((input_start, actions_len), (output, action_index, muted))) =
         ActionInput::new(text, options.start + digested, options.action_state).and_then(|input| {
@@ -420,6 +400,27 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       },
       new_action_state,
     );
+  }
+
+  fn get_literal_head_map(
+    &self,
+    kind: Option<&'static TokenKindId<Kind>>,
+    literal: &str,
+  ) -> (
+    &LiteralMap<Kind, ActionState, ErrorType>,
+    &HeadMap<Kind, ActionState, ErrorType>,
+  ) {
+    let literal_map = kind.map_or(&self.literal_map, |kind| {
+      self
+        .kind_literal_map
+        .get(&kind)
+        .expect(Self::INVALID_EXPECTED_KIND)
+    });
+    let head_map = literal_map
+      .known_map()
+      .get(literal)
+      .expect(Self::INVALID_EXPECTED_LITERAL);
+    (literal_map, head_map)
   }
 }
 
