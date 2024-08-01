@@ -82,7 +82,6 @@
 //! - [`self::options`]
 //! - [`self::lex`]
 //! - [`self::trim`]
-//! - [`self::peek`]
 //! - [`self::exec`]
 
 mod exec;
@@ -90,7 +89,6 @@ mod head_map;
 mod lex;
 mod literal_map;
 mod options;
-mod peek;
 mod trim;
 
 pub use options::*;
