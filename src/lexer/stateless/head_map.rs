@@ -160,13 +160,10 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
     res
   }
 
+  /// Get actions by the next char.
   #[inline]
-  pub const fn known_map(&self) -> &HashMap<char, HeadMapActions<Kind, ActionState, ErrorType>> {
-    &self.known_map
-  }
-  #[inline]
-  pub const fn unknown_fallback(&self) -> &HeadMapActions<Kind, ActionState, ErrorType> {
-    &self.unknown_fallback
+  pub fn get(&self, next: char) -> &HeadMapActions<Kind, ActionState, ErrorType> {
+    self.known_map.get(&next).unwrap_or(&self.unknown_fallback)
   }
 }
 

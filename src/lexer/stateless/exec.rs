@@ -190,10 +190,8 @@ fn prepare_input<
 )> {
   ActionInput::new(text, start, state).map(|input| {
     let head_map = head_map_getter(input.rest());
-    let actions = head_map
-      .known_map()
-      .get(&input.next())
-      .unwrap_or(head_map.unknown_fallback());
+    let actions = head_map.get(input.next());
+
     (input, actions)
   })
 }
