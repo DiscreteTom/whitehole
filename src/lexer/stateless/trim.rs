@@ -75,22 +75,33 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
+    // there is no expectation when trimming, so the re-lex is meaningless.
+    // use the default re-lex context as a placeholder
     let re_lex = ReLexContext::default();
 
     let mut digested = 0;
     let mut errors = options.base.errors_to;
 
-    while let Some((input_start, (output, _action_index, _muted))) =
+    while let Some((input_start, (output, _action_index, muted))) =
       ActionInput::new(text, options.start + digested, &mut *options.action_state).and_then(
         |mut input| {
           // the literal map's muted map contains all the muted actions
           let actions = self.literal_map.muted_map().get(input.next());
 
-          traverse_actions_mut(&mut input, actions, &re_lex, &mut ())
-            .map(|res| (input.start(), res))
+          traverse_actions_mut(
+            &mut input,
+            actions,
+            &re_lex,
+            // there is no expectation when trimming, so the re-lex is meaningless.
+            // use `()` as a placeholder
+            &mut (),
+          )
+          .map(|res| (input.start(), res))
         },
       )
     {
+      debug_assert!(muted, "all actions should be muted when trimming");
+
       update_state(
         output.digested,
         output.error,
@@ -100,6 +111,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       );
     }
 
+    // no more input or no accepted actions
     TrimOutput { digested, errors }
   }
 }
