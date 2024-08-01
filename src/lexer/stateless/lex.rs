@@ -181,16 +181,15 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       {
         if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors)
         {
-          return LexOutput {
+          return done_with_token(
             digested,
-            token: Some(token),
-            re_lexable: re_lexable_factory.into_stateless_re_lexable(
-              input_start,
-              actions_len,
-              action_index,
-            ),
+            token,
+            re_lexable_factory,
+            input_start,
+            actions_len,
+            action_index,
             errors,
-          };
+          );
         }
 
         // else, muted, continue
@@ -308,16 +307,15 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors)
         {
           return (
-            LexOutput {
+            done_with_token(
               digested,
-              token: Some(token),
-              re_lexable: re_lexable_factory.into_stateless_re_lexable(
-                input_start,
-                actions_len,
-                action_index,
-              ),
+              token,
+              re_lexable_factory,
+              input_start,
+              actions_len,
+              action_index,
               errors,
-            },
+            ),
             new_action_state,
           );
         }
@@ -392,6 +390,34 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       .get(literal)
       .expect(Self::INVALID_EXPECTED_LITERAL);
     (literal_map, head_map)
+  }
+}
+
+fn done_with_token<
+  'text,
+  Kind: 'static,
+  ActionState,
+  ErrorType,
+  ErrAcc,
+  ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
+>(
+  digested: usize,
+  token: Token<Kind>,
+  re_lexable_factory: ReLexableFactoryType,
+  input_start: usize,
+  actions_len: usize,
+  action_index: usize,
+  errors: ErrAcc,
+) -> LexOutput<Token<Kind>, ErrAcc, ReLexableFactoryType::StatelessReLexableType> {
+  LexOutput {
+    digested,
+    token: Some(token),
+    re_lexable: re_lexable_factory.into_stateless_re_lexable(
+      input_start,
+      actions_len,
+      action_index,
+    ),
+    errors,
   }
 }
 
