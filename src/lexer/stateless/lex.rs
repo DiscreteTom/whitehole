@@ -138,16 +138,15 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       {
         if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors)
         {
-          return LexOutput {
+          return done_with_token(
             digested,
-            token: Some(token),
-            re_lexable: re_lexable_factory.into_stateless_re_lexable(
-              input_start,
-              actions_len,
-              action_index,
-            ),
+            token,
+            re_lexable_factory,
+            input_start,
+            actions_len,
+            action_index,
             errors,
-          };
+          );
         }
 
         // else, muted, continue
