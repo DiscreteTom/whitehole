@@ -80,7 +80,6 @@
 //! - [`self::literal_map`]
 //! - [`self`]
 //! - [`self::options`]
-//! - [`self::output`]
 //! - [`self::lex`]
 //! - [`self::trim`]
 //! - [`self::peek`]
@@ -91,7 +90,6 @@ mod head_map;
 mod lex;
 mod literal_map;
 mod options;
-mod output;
 mod peek;
 mod trim;
 
