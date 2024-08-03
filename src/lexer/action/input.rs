@@ -138,4 +138,16 @@ mod tests {
     let mut state = ();
     ActionInput::new("123", 4, &mut state);
   }
+
+  #[test]
+  fn action_input_reload() {
+    let mut state = ();
+    let input = ActionInput::new("123", 1, &mut state).unwrap();
+    let mut state = 123;
+    let input = input.reload(&mut state);
+    assert_eq!(input.text(), "123");
+    assert_eq!(input.start(), 1);
+    assert_eq!(input.rest(), "23");
+    assert_eq!(input.next(), '2');
+  }
 }
