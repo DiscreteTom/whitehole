@@ -65,7 +65,7 @@ pub trait ReLexableFactory<'text, Kind: 'static, State, ErrorType> {
   type ReLexableType;
 
   /// This will be called only once before the first mutation of the action state.
-  fn backup_action_state(&mut self, action_state: &State);
+  fn backup_state(&mut self, state: &State);
 
   fn into_stateless_re_lexable(
     self,
@@ -91,7 +91,7 @@ impl<'text, Kind: 'static, State, ErrorType> ReLexableFactory<'text, Kind, State
   type ReLexableType = ();
 
   #[inline]
-  fn backup_action_state(&mut self, _action_state: &State) {}
+  fn backup_state(&mut self, _state: &State) {}
 
   #[inline]
   fn into_stateless_re_lexable(
@@ -118,7 +118,7 @@ pub struct StatelessReLexable<State> {
   ///
   /// This will always be [`None`] when peeking
   /// because the original state is not mutated.
-  pub action_state_bk: Option<State>, // users can always mutate the action state directly so it is ok to expose it
+  pub state_bk: Option<State>, // users can always mutate the action state directly so it is ok to expose it
   /// If [`Some`], it means the lex is re-lexable.
   pub ctx: Option<ReLexContext>, // ReLexContext's fields are private so its ok to expose it
 }
@@ -127,7 +127,7 @@ impl<State> Default for StatelessReLexable<State> {
   #[inline]
   fn default() -> Self {
     Self {
-      action_state_bk: None,
+      state_bk: None,
       ctx: None,
     }
   }
@@ -159,7 +159,7 @@ impl<'text, State: Clone> ReLexable<'text, State> {
           lexer.stateless().clone(),
           self
             .stateless
-            .action_state_bk
+            .state_bk
             .unwrap_or_else(|| lexer.state.clone()),
           self.state_bk.unwrap_or_else(|| lexer.state().clone()),
         ),
@@ -170,16 +170,14 @@ impl<'text, State: Clone> ReLexable<'text, State> {
 }
 
 pub struct ReLexableBuilder<State> {
-  /// See [`StatelessReLexable::action_state_bk`].
-  action_state_bk: Option<State>,
+  /// See [`StatelessReLexable::state_bk`].
+  state_bk: Option<State>,
 }
 
 impl<State> Default for ReLexableBuilder<State> {
   #[inline]
   fn default() -> Self {
-    Self {
-      action_state_bk: None,
-    }
+    Self { state_bk: None }
   }
 }
 
@@ -189,16 +187,16 @@ impl<'text, Kind: 'static, State: Clone, ErrorType> ReLexableFactory<'text, Kind
   type StatelessReLexableType = StatelessReLexable<State>;
   type ReLexableType = ReLexable<'text, State>;
 
-  fn backup_action_state(&mut self, action_state: &State) {
+  fn backup_state(&mut self, state: &State) {
     // this should only be called once to prevent duplicated clone of the action state,
     // so the action state backup must be none
     debug_assert!(
-      self.action_state_bk.is_none(),
+      self.state_bk.is_none(),
       "action state backup is already set"
     );
 
     // backup the action state before the first mutation during one lexing loop
-    self.action_state_bk = Some(action_state.clone());
+    self.state_bk = Some(state.clone());
   }
 
   fn into_stateless_re_lexable(
@@ -208,7 +206,7 @@ impl<'text, Kind: 'static, State: Clone, ErrorType> ReLexableFactory<'text, Kind
     action_index: usize,
   ) -> Self::StatelessReLexableType {
     Self::StatelessReLexableType {
-      action_state_bk: self.action_state_bk,
+      state_bk: self.state_bk,
       ctx: if action_index < actions_len - 1 {
         // current action is not the last one
         // so the lex is re-lex-able
@@ -252,8 +250,8 @@ mod tests {
   #[test]
   fn mock_re_lexable_factory() {
     let mut factory = ();
-    let action_state = 0;
-    ReLexableFactory::<(), _, ()>::backup_action_state(&mut factory, &action_state);
+    let state = 0;
+    ReLexableFactory::<(), _, ()>::backup_state(&mut factory, &state);
     let stateless_re_lexable =
       ReLexableFactory::<(), i32, ()>::into_stateless_re_lexable(factory, 0, 2, 1);
     assert_eq!(stateless_re_lexable, ());
@@ -269,7 +267,7 @@ mod tests {
     assert_eq!(
       builder,
       StatelessReLexable {
-        action_state_bk: None,
+        state_bk: None,
         ctx: None
       }
     );
@@ -279,7 +277,7 @@ mod tests {
   fn test_re_lexable() {
     let re_lexable = ReLexable {
       stateless: StatelessReLexable {
-        action_state_bk: Some(1),
+        state_bk: Some(1),
         ctx: Some(ReLexContext { start: 1, skip: 1 }),
       },
       state_bk: {
@@ -300,14 +298,14 @@ mod tests {
   #[test]
   fn re_lexable_builder() {
     let mut builder = ReLexableBuilder::default();
-    let action_state = 0;
-    ReLexableFactory::<(), _, ()>::backup_action_state(&mut builder, &action_state);
+    let state = 0;
+    ReLexableFactory::<(), _, ()>::backup_state(&mut builder, &state);
     let stateless_re_lexable =
       ReLexableFactory::<(), i32, ()>::into_stateless_re_lexable(builder, 0, 2, 1);
     assert_eq!(
       stateless_re_lexable,
       StatelessReLexable {
-        action_state_bk: Some(0),
+        state_bk: Some(0),
         ctx: None
       }
     );
@@ -330,14 +328,14 @@ mod tests {
     );
 
     let mut builder = ReLexableBuilder::default();
-    let action_state = 0;
-    ReLexableFactory::<(), _, ()>::backup_action_state(&mut builder, &action_state);
+    let state = 0;
+    ReLexableFactory::<(), _, ()>::backup_state(&mut builder, &state);
     let stateless_re_lexable =
       ReLexableFactory::<(), i32, ()>::into_stateless_re_lexable(builder, 0, 2, 0);
     assert_eq!(
       stateless_re_lexable,
       StatelessReLexable {
-        action_state_bk: Some(0),
+        state_bk: Some(0),
         ctx: Some(ReLexContext { start: 0, skip: 1 })
       }
     );
@@ -363,10 +361,10 @@ mod tests {
 
   #[test]
   #[should_panic]
-  fn re_lexable_builder_multi_call_to_mutate_action_state() {
+  fn re_lexable_builder_multi_call_to_mutate_state() {
     let mut builder = ReLexableBuilder::default();
-    let action_state = 0;
-    ReLexableFactory::<(), _, ()>::backup_action_state(&mut builder, &action_state);
-    ReLexableFactory::<(), _, ()>::backup_action_state(&mut builder, &action_state);
+    let state = 0;
+    ReLexableFactory::<(), _, ()>::backup_state(&mut builder, &state);
+    ReLexableFactory::<(), _, ()>::backup_state(&mut builder, &state);
   }
 }

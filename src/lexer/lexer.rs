@@ -21,10 +21,10 @@ use std::rc::Rc;
 /// # Design
 /// ## Why there is no `Lexer::errors` to store all the errors?
 /// Why the error accumulator is not a field of [`Lexer`]
-/// just like [`Lexer::action_state`],
+/// just like [`Lexer::state`],
 /// but a field of [`LexOptions`] which needs to be provided every time?
 ///
-/// [`Lexer::action_state`] is just a value, but the error accumulator is a collection/container.
+/// [`Lexer::state`] is just a value, but the error accumulator is a collection/container.
 /// We don't want unnecessary memory allocation, so we won't create the container
 /// for users. Users can create their own accumulator and manage its memory allocation.
 /// E.g. some users may just want to print the errors, so they don't need any container;
@@ -58,11 +58,11 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   #[inline]
   pub const fn new(
     stateless: Rc<StatelessLexer<Kind, State, ErrorType>>,
-    action_state: State,
+    state: State,
     text: &'text str,
   ) -> Self {
     Self {
-      state: action_state,
+      state: state,
       stateless,
       instant: Instant::new(text),
     }
@@ -82,12 +82,12 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
 
   /// Clone self with a new action state.
   #[inline]
-  pub fn clone_with(&self, action_state: State) -> Self {
-    Self::new(self.stateless.clone(), action_state, self.instant.text())
+  pub fn clone_with(&self, state: State) -> Self {
+    Self::new(self.stateless.clone(), state, self.instant.text())
   }
 
   /// Consume self, return a new lexer with the same actions and a new text.
-  /// [`Self::state`] and [`Self::action_state`] will be reset to default.
+  /// [`Self::state`] and [`Self::state`] will be reset to default.
   #[inline]
   pub fn reload<'new_text>(self, text: &'new_text str) -> Lexer<'new_text, Kind, State, ErrorType>
   where
@@ -106,16 +106,16 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   pub fn reload_with<'new_text>(
     self,
     text: &'new_text str,
-    action_state: State,
+    state: State,
   ) -> Lexer<'new_text, Kind, State, ErrorType> {
-    Lexer::new(self.stateless, action_state, text)
+    Lexer::new(self.stateless, state, text)
   }
 
   /// Peek the next token with the default options, without updating
-  /// [`Self::state`] and [`Self::action_state`].
+  /// [`Self::state`] and [`Self::state`].
   ///
   /// If `State` is mutated in the lexing process,
-  /// [`Self::action_state`] will be cloned and returned.
+  /// [`Self::state`] will be cloned and returned.
   #[inline]
   pub fn peek(&self) -> (LexOutput<Token<Kind>, (), ()>, Option<State>)
   where
@@ -126,7 +126,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   }
 
   /// Peek the next token with custom options, without updating
-  /// [`Self::state`] and [`Self::action_state`].
+  /// [`Self::state`] and [`Self::state`].
   ///
   /// If `State` is mutated in the lexing process,
   #[inline]
@@ -145,9 +145,9 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   }
 
   /// Peek the next token with custom options, without updating
-  /// [`Self::state`] and [`Self::action_state`].
+  /// [`Self::state`] and [`Self::state`].
   ///
-  /// [`Self::action_state`] will be cloned and returned.
+  /// [`Self::state`] will be cloned and returned.
   pub fn peek_with_options<'expect_literal, ErrAcc, Fork: LexOptionsFork<'text, Kind, State, ErrorType>>(
     &self,
     options: impl Into<LexOptions<'expect_literal, Kind, ErrAcc, Fork>>,
@@ -157,11 +157,11 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     State: Clone,
     ErrAcc: Accumulator<(ErrorType, Range)>,
   {
-    let (output, new_action_state) = self.stateless.peek_with_options(
+    let (output, new_state) = self.stateless.peek_with_options(
       self.instant.text(),
       StatelessLexOptions {
         start: self.instant.digested(),
-        action_state: &self.state,
+        state: &self.state,
         base: options.into(),
       },
     );
@@ -178,13 +178,13 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
       errors: output.errors,
     };
 
-    (output, new_action_state)
+    (output, new_state)
 
     // don't update lexer state
   }
 
   /// Try to yield the next token with the default options.
-  /// [`Self::state`] and [`Self::action_state`] will be updated.
+  /// [`Self::state`] and [`Self::state`] will be updated.
   #[inline]
   pub fn lex(&mut self) -> LexOutput<Token<Kind>, (), ()>
   where
@@ -194,7 +194,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   }
 
   /// Try to yield the next token with custom options.
-  /// [`Self::state`] and [`Self::action_state`] will be updated.
+  /// [`Self::state`] and [`Self::state`] will be updated.
   #[inline]
   pub fn lex_with<'expect_literal, ErrAcc, Fork: LexOptionsFork<'text, Kind, State, ErrorType>>(
     &mut self,
@@ -214,7 +214,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   }
 
   /// Try to yield the next token with custom options.
-  /// [`Self::state`] and [`Self::action_state`] will be updated.
+  /// [`Self::state`] and [`Self::state`] will be updated.
   pub fn lex_with_options<
     'expect_literal,
     ErrAcc,
@@ -256,16 +256,16 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     output
   }
 
-  /// Digest the next `n` chars and set [`Self::action_state`].
+  /// Digest the next `n` chars and set [`Self::state`].
   /// The caller should make sure `n` is smaller than the rest text length.
   #[inline]
-  pub fn digest_with(&mut self, n: usize, action_state: State) -> &mut Self {
+  pub fn digest_with(&mut self, n: usize, state: State) -> &mut Self {
     self.instant.digest(n);
-    self.state = action_state;
+    self.state = state;
     self
   }
 
-  /// Digest the next `n` chars and set [`Self::action_state`] to default.
+  /// Digest the next `n` chars and set [`Self::state`] to default.
   /// The caller should make sure `n` is smaller than the rest text length.
   #[inline]
   pub fn digest(&mut self, n: usize) -> &mut Self
@@ -290,7 +290,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
       self.instant.text(),
       StatelessTrimOptions {
         start: self.instant.digested(),
-        action_state: &mut self.state,
+        state: &mut self.state,
         base: TrimOptions::new().errors_to(err_acc),
       },
     );
@@ -304,8 +304,8 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   #[inline]
   fn lex_with_stateless<'expect_literal, ErrAcc,Fork: LexOptionsFork<'text, Kind, State, ErrorType>>(
     stateless: &Rc<StatelessLexer<Kind, State, ErrorType>>,
-    state: &Instant<'text>,
-    action_state: &mut State,
+    instant: &Instant<'text>,
+    state: &mut State,
     options: LexOptions<'expect_literal, Kind, ErrAcc,Fork>,
   ) -> LexOutput<Token<Kind>,ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::StatelessReLexableType>
   where
@@ -313,10 +313,10 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     ErrAcc:Accumulator<(ErrorType, Range)>,
   {
     stateless.lex_with_options(
-      state.text(),
+      instant.text(),
       StatelessLexOptions {
-        start: state.digested(),
-        action_state,
+        start: instant.digested(),
+        state,
         base: options,
       },
     )
@@ -324,13 +324,13 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
 
   pub(crate) fn from_re_lexable(
     stateless: Rc<StatelessLexer<Kind, State, ErrorType>>,
-    action_state: State,
-    state: Instant<'text>,
+    state: State,
+    instant: Instant<'text>,
   ) -> Self {
     Lexer {
       stateless,
-      instant: state,
-      state: action_state,
+      instant,
+      state,
     }
   }
 }

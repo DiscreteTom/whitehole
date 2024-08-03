@@ -21,7 +21,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
-  /// let (output, action_state) = stateless.trim("123");
+  /// let (output, state) = stateless.trim("123");
   /// ```
   #[inline]
   pub fn trim<'text>(&self, text: &'text str) -> (TrimOutput<()>, State)
@@ -29,11 +29,8 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     Kind: TokenKindIdProvider<TokenKind = Kind>,
     State: Default,
   {
-    let mut action_state = State::default();
-    (
-      self.trim_with(text, |o| o.action_state(&mut action_state)),
-      action_state,
-    )
+    let mut state = State::default();
+    (self.trim_with(text, |o| o.state(&mut state)), state)
   }
 
   /// Lex with muted actions and the given options builder.
@@ -41,20 +38,20 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
-  /// # let mut action_state = ();
-  /// stateless.trim_with("123", |o| o.action_state(&mut action_state));
+  /// # let mut state = ();
+  /// stateless.trim_with("123", |o| o.state(&mut state));
   /// ```
   #[inline]
-  pub fn trim_with<'text, 'action_state, ErrAcc: Accumulator<(ErrorType, Range)>>(
+  pub fn trim_with<'text, 'state, ErrAcc: Accumulator<(ErrorType, Range)>>(
     &self,
     text: &'text str,
     options_builder: impl FnOnce(
       StatelessTrimOptions<(), ()>,
-    ) -> StatelessTrimOptions<&'action_state mut State, ErrAcc>,
+    ) -> StatelessTrimOptions<&'state mut State, ErrAcc>,
   ) -> TrimOutput<ErrAcc>
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
-    State: 'action_state,
+    State: 'state,
   {
     self.trim_with_options(text, options_builder(StatelessTrimOptions::new()))
   }
@@ -64,14 +61,14 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessTrimOptions};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
-  /// # let mut action_state = ();
-  /// let options = StatelessTrimOptions::new().action_state(&mut action_state);
+  /// # let mut state = ();
+  /// let options = StatelessTrimOptions::new().state(&mut state);
   /// stateless.trim_with_options("123", options);
   /// ```
-  pub fn trim_with_options<'text, 'action_state, ErrAcc: Accumulator<(ErrorType, Range)>>(
+  pub fn trim_with_options<'text, 'state, ErrAcc: Accumulator<(ErrorType, Range)>>(
     &self,
     text: &'text str,
-    options: StatelessTrimOptions<&'action_state mut State, ErrAcc>,
+    options: StatelessTrimOptions<&'state mut State, ErrAcc>,
   ) -> TrimOutput<ErrAcc>
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
@@ -88,11 +85,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
 
     loop {
       let input_start = options.start + digested;
-      let input = break_loop_on_none!(ActionInput::new(
-        text,
-        input_start,
-        &mut *options.action_state
-      ));
+      let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *options.state));
       // the literal map's muted map contains all the muted actions
       let actions = self.literal_map.muted_map().get(input.next());
       let res = traverse_actions_mut(input, actions, &re_lex, &mut re_lexable_factory, false);

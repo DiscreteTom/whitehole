@@ -84,7 +84,7 @@ impl<'text, StateRef> ActionInput<'text, StateRef> {
   }
 }
 
-impl<'text, 'action_state, State> ActionInput<'text, &'action_state mut State> {
+impl<'text, 'state, State> ActionInput<'text, &'state mut State> {
   /// Cast `ActionInput<&mut State>` to `ActionInput<&State>`
   #[inline]
   pub fn as_ref<'input>(&'input self) -> ActionInput<'text, &'input State> {

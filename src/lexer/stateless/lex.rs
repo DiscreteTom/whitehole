@@ -28,7 +28,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("1")).build_stateless();
-  /// let (output, action_state) = stateless.lex("123");
+  /// let (output, state) = stateless.lex("123");
   /// ```
   #[inline]
   pub fn lex<'text>(&self, text: &'text str) -> (LexOutput<Token<Kind>, (), ()>, State)
@@ -36,11 +36,8 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     Kind: TokenKindIdProvider<TokenKind = Kind>,
     State: Default,
   {
-    let mut action_state = State::default();
-    (
-      self.lex_with(text, |o| o.action_state(&mut action_state)),
-      action_state,
-    )
+    let mut state = State::default();
+    (self.lex_with(text, |o| o.state(&mut state)), state)
   }
 
   /// Lex with the given options builder.
@@ -50,14 +47,14 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
-  /// # let mut action_state = ();
-  /// stateless.lex_with("123", |o| o.action_state(&mut action_state));
+  /// # let mut state = ();
+  /// stateless.lex_with("123", |o| o.state(&mut state));
   /// ```
   #[inline]
   pub fn lex_with<
     'text,
     'expect_literal,
-    'action_state,
+    'state,
     ErrAcc: Accumulator<(ErrorType, Range)>,
     Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
   >(
@@ -68,7 +65,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     ) -> StatelessLexOptions<
       'expect_literal,
       Kind,
-      &'action_state mut State,
+      &'state mut State,
       ErrAcc,
       Fork,
     >
@@ -79,7 +76,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   >
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
-    State: 'action_state,
+    State: 'state,
   {
     self.lex_with_options(text, options_builder(StatelessLexOptions::new()))
   }
@@ -91,20 +88,20 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessLexOptions};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
-  /// # let mut action_state = ();
-  /// let options = StatelessLexOptions::new().action_state(&mut action_state);
+  /// # let mut state = ();
+  /// let options = StatelessLexOptions::new().state(&mut state);
   /// stateless.lex_with_options("123", options);
   /// ```
   pub fn lex_with_options<
     'text,
     'expect_literal,
-    'action_state,
+    'state,
     ErrAcc: Accumulator<(ErrorType, Range)>,
     Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
   >(
     &self,
     text: &'text str,
-    options: StatelessLexOptions<'expect_literal, Kind, &'action_state mut State, ErrAcc, Fork>,
+    options: StatelessLexOptions<'expect_literal, Kind, &'state mut State, ErrAcc, Fork>,
   ) -> LexOutput<
     Token<Kind>,
     ErrAcc,
@@ -124,7 +121,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
         options.base.errors_to,
         options.start,
         text,
-        options.action_state,
+        options.state,
         literal,
         &options.base.re_lex,
         Fork::ReLexableFactoryType::default(),
@@ -140,7 +137,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
         options.base.errors_to,
         options.start,
         text,
-        options.action_state,
+        options.state,
         &options.base.re_lex,
         Fork::ReLexableFactoryType::default(),
         false,
@@ -151,21 +148,21 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   // there is no `StatelessLexer::peek()` because it is just the same with `StatelessLexer::lex()`
 
   /// Peek with the given options builder.
-  /// This will clone [`StatelessLexOptions::action_state`] if it is mutated.
+  /// This will clone [`StatelessLexOptions::state`] if it is mutated.
   /// # Panics
   /// Panics if no action is defined for the expected kind or literal.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
-  /// # let action_state = ();
-  /// let (output, mutated_action_state) = stateless.peek_with("123", |o| o.action_state(&action_state));
+  /// # let state = ();
+  /// let (output, mutated_state) = stateless.peek_with("123", |o| o.state(&state));
   /// ```
   #[inline]
   pub fn peek_with<
     'text,
     'expect_literal,
-    'action_state,
+    'state,
     ErrAcc: Accumulator<(ErrorType, Range)>,
     Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
   >(
@@ -176,7 +173,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     ) -> StatelessLexOptions<
       'expect_literal,
       Kind,
-      &'action_state State,
+      &'state State,
       ErrAcc,
       Fork,
     >
@@ -190,33 +187,33 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   )
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
-    State: Clone + 'action_state,
+    State: Clone + 'state,
   {
     self.peek_with_options(text, options_builder(StatelessLexOptions::new()))
   }
 
   /// Peek with the given [`StatelessLexOptions`].
-  /// This will clone [`StatelessLexOptions::action_state`] if it is mutated.
+  /// This will clone [`StatelessLexOptions::state`] if it is mutated.
   /// # Panics
   /// Panics if no action is defined for the expected kind or literal.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessLexOptions};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
-  /// # let action_state = ();
-  /// let options = StatelessLexOptions::new().action_state(&action_state);
-  /// let (output, mutated_action_state) = stateless.peek_with_options("123", options);
+  /// # let state = ();
+  /// let options = StatelessLexOptions::new().state(&state);
+  /// let (output, mutated_state) = stateless.peek_with_options("123", options);
   /// ```
   pub fn peek_with_options<
     'text,
     'expect_literal,
-    'action_state,
+    'state,
     ErrAcc: Accumulator<(ErrorType, Range)>,
     Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
   >(
     &self,
     text: &'text str,
-    options: StatelessLexOptions<'expect_literal, Kind, &'action_state State, ErrAcc, Fork>,
+    options: StatelessLexOptions<'expect_literal, Kind, &'state State, ErrAcc, Fork>,
   ) -> (
     LexOutput<
       Token<Kind>,
@@ -232,7 +229,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     let mut digested = 0;
     let mut errors = options.base.errors_to;
     let re_lexable_factory = Fork::ReLexableFactoryType::default();
-    let mut new_action_state = None;
+    let mut new_state = None;
 
     if let Some(literal) = options.base.expectation.literal {
       let (literal_map, head_map) =
@@ -240,10 +237,10 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
 
       loop {
         let input_start = options.start + digested;
-        let input = break_loop_on_none!(ActionInput::new(text, input_start, options.action_state));
+        let input = break_loop_on_none!(ActionInput::new(text, input_start, options.state));
         let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
-        let (res, action_state) = traverse_actions(input, actions, &options.base.re_lex);
-        new_action_state = action_state;
+        let (res, state) = traverse_actions(input, actions, &options.base.re_lex);
+        new_state = state;
         let (output, action_index, muted) = break_loop_on_none!(res);
 
         if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors)
@@ -258,12 +255,12 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
               action_index,
               errors,
             ),
-            new_action_state,
+            new_state,
           );
         }
 
         // if action state is mutated, continue with mutable lexing
-        if let Some(mut action_state) = new_action_state {
+        if let Some(mut state) = new_state {
           return (
             self.lex_mut_with_literal(
               literal_map,
@@ -272,13 +269,13 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
               errors,
               options.start,
               text,
-              &mut action_state,
+              &mut state,
               literal,
               &options.base.re_lex,
               re_lexable_factory,
               true,
             ),
-            Some(action_state),
+            Some(state),
           );
         }
 
@@ -290,10 +287,10 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
 
       loop {
         let input_start = options.start + digested;
-        let input = break_loop_on_none!(ActionInput::new(text, input_start, options.action_state));
+        let input = break_loop_on_none!(ActionInput::new(text, input_start, options.state));
         let actions = head_map.get(input.next());
-        let (res, action_state) = traverse_actions(input, actions, &options.base.re_lex);
-        new_action_state = action_state;
+        let (res, state) = traverse_actions(input, actions, &options.base.re_lex);
+        new_state = state;
         let (output, action_index, muted) = break_loop_on_none!(res);
 
         if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors)
@@ -308,12 +305,12 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
               action_index,
               errors,
             ),
-            new_action_state,
+            new_state,
           );
         }
 
         // if action state is mutated, continue with mutable lexing
-        if let Some(mut action_state) = new_action_state {
+        if let Some(mut state) = new_state {
           return (
             self.lex_mut_without_literal(
               head_map,
@@ -321,12 +318,12 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
               errors,
               options.start,
               text,
-              &mut action_state,
+              &mut state,
               &options.base.re_lex,
               re_lexable_factory,
               true,
             ),
-            Some(action_state),
+            Some(state),
           );
         }
 
@@ -335,7 +332,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     }
 
     // no more input or no accepted actions
-    return (done_without_token(digested, errors), new_action_state);
+    return (done_without_token(digested, errors), new_state);
   }
 
   fn get_literal_head_map(
@@ -386,7 +383,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     mut errors: ErrAcc,
     start: usize,
     text: &'text str,
-    action_state: &mut State,
+    state: &mut State,
     literal: &str,
     re_lex: &ReLexContext,
     mut re_lexable_factory: ReLexableFactoryType,
@@ -397,7 +394,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   {
     loop {
       let input_start = start + digested;
-      let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *action_state));
+      let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state));
       let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
       let res = traverse_actions_mut(input, actions, re_lex, &mut re_lexable_factory, peek);
       let (output, action_index, muted) = break_loop_on_none!(res);
@@ -432,7 +429,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     mut errors: ErrAcc,
     start: usize,
     text: &'text str,
-    action_state: &mut State,
+    state: &mut State,
     re_lex: &ReLexContext,
     mut re_lexable_factory: ReLexableFactoryType,
     peek: bool,
@@ -442,7 +439,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   {
     loop {
       let input_start = start + digested;
-      let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *action_state));
+      let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state));
       let actions = head_map.get(input.next());
       let res = traverse_actions_mut(input, actions, re_lex, &mut re_lexable_factory, peek);
       let (output, action_index, muted) = break_loop_on_none!(res);

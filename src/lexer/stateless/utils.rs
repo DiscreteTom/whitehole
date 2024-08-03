@@ -78,7 +78,7 @@ where
   // because the original state is not mutated,
   // so only backup when not peeking
   if !peek {
-    re_lexable_factory.backup_action_state(input.state);
+    re_lexable_factory.backup_state(input.state);
   }
 
   traverse_rest(&mut input, actions, re_lex)

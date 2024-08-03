@@ -113,10 +113,10 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
 
   pub fn build_with<'text>(
     self,
-    action_state: State,
+    state: State,
     text: &'text str,
   ) -> Lexer<'text, Kind, State, ErrorType> {
-    Lexer::new(Rc::new(self.build_stateless()), action_state, text)
+    Lexer::new(Rc::new(self.build_stateless()), state, text)
   }
 
   pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, State, ErrorType>
