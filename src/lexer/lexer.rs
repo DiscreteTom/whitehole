@@ -5,7 +5,7 @@ use super::{
   output::{LexOutput, TrimOutput},
   re_lex::ReLexableFactory,
   stateless::{StatelessLexOptions, StatelessLexer, StatelessTrimOptions},
-  token::{Range, Token, TokenKindIdProvider},
+  token::{Range, Token},
 };
 use crate::utils::Accumulator;
 use std::rc::Rc;
