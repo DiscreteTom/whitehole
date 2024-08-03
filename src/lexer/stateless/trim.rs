@@ -4,11 +4,8 @@ use super::{
 };
 use crate::{
   lexer::{
-    action::ActionInput,
-    output::TrimOutput,
-    re_lex::ReLexContext,
-    stateless::utils::break_loop_on_none,
-    token::{Range, TokenKindIdProvider},
+    action::ActionInput, output::TrimOutput, re_lex::ReLexContext,
+    stateless::utils::break_loop_on_none, token::Range,
   },
   utils::Accumulator,
 };
@@ -26,7 +23,6 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   #[inline]
   pub fn trim<'text>(&self, text: &'text str) -> (TrimOutput<()>, State)
   where
-    Kind: TokenKindIdProvider<TokenKind = Kind>,
     State: Default,
   {
     let mut state = State::default();
@@ -50,7 +46,6 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     ) -> StatelessTrimOptions<&'state mut State, ErrAcc>,
   ) -> TrimOutput<ErrAcc>
   where
-    Kind: TokenKindIdProvider<TokenKind = Kind>,
     State: 'state,
   {
     self.trim_with_options(text, options_builder(StatelessTrimOptions::new()))
