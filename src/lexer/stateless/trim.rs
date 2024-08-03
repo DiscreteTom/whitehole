@@ -77,6 +77,9 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
     // there is no expectation when trimming, so the re-lex is meaningless.
+    // use `()` as a mock re-lexable factory
+    let mut re_lexable_factory = ();
+    // since the mock re-lexable factory will never yield a re-lex context,
     // use the default re-lex context as a placeholder
     let re_lex = ReLexContext::default();
 
@@ -92,14 +95,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       ));
       // the literal map's muted map contains all the muted actions
       let actions = self.literal_map.muted_map().get(input.next());
-      let res = traverse_actions_mut(
-        input,
-        actions,
-        &re_lex,
-        // there is no expectation when trimming, so the re-lex is meaningless.
-        // use `()` as a placeholder
-        &mut (), // TODO: optimize code
-      );
+      let res = traverse_actions_mut(input, actions, &re_lex, &mut re_lexable_factory);
       let (output, _action_index, muted) = break_loop_on_none!(res);
 
       debug_assert!(muted, "all actions should be muted when trimming");
