@@ -7,6 +7,7 @@ use crate::{
     action::ActionInput,
     output::TrimOutput,
     re_lex::ReLexContext,
+    stateless::utils::break_loop_on_none,
     token::{Range, TokenKindIdProvider},
   },
   utils::Accumulator,
@@ -82,24 +83,25 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     let mut digested = 0;
     let mut errors = options.base.errors_to;
 
-    while let Some((input_start, (output, _action_index, muted))) =
-      ActionInput::new(text, options.start + digested, &mut *options.action_state).and_then(
-        |mut input| {
-          // the literal map's muted map contains all the muted actions
-          let actions = self.literal_map.muted_map().get(input.next());
+    loop {
+      let input_start = options.start + digested;
+      let input = break_loop_on_none!(ActionInput::new(
+        text,
+        input_start,
+        &mut *options.action_state
+      ));
+      // the literal map's muted map contains all the muted actions
+      let actions = self.literal_map.muted_map().get(input.next());
+      let res = traverse_actions_mut(
+        input,
+        actions,
+        &re_lex,
+        // there is no expectation when trimming, so the re-lex is meaningless.
+        // use `()` as a placeholder
+        &mut (), // TODO: optimize code
+      );
+      let (output, _action_index, muted) = break_loop_on_none!(res);
 
-          traverse_actions_mut(
-            &mut input,
-            actions,
-            &re_lex,
-            // there is no expectation when trimming, so the re-lex is meaningless.
-            // use `()` as a placeholder
-            &mut (),
-          )
-          .map(|res| (input.start(), res))
-        },
-      )
-    {
       debug_assert!(muted, "all actions should be muted when trimming");
 
       update_state(

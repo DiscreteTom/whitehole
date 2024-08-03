@@ -2,7 +2,7 @@ use super::{
   head_map::{HeadMap, HeadMapActions},
   literal_map::LiteralMap,
   options::StatelessLexOptions,
-  utils::extract_token,
+  utils::{break_loop_on_none, extract_token},
   StatelessLexer,
 };
 use crate::{
@@ -236,20 +236,19 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       let (literal_map, head_map) =
         self.get_literal_head_map(options.base.expectation.kind, literal);
 
-      while let Some(((input_start, actions_len), (output, action_index, muted))) =
-        ActionInput::new(text, options.start + digested, options.action_state).and_then(|input| {
-          let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
+      loop {
+        let input_start = options.start + digested;
+        let input = break_loop_on_none!(ActionInput::new(text, input_start, options.action_state));
+        let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
+        let (res, action_state) = traverse_actions(
+          input,
+          actions,
+          &options.base.re_lex,
+          &mut re_lexable_factory,
+        );
+        new_action_state = action_state;
+        let (output, action_index, muted) = break_loop_on_none!(res);
 
-          let (output, action_state) = traverse_actions(
-            &input,
-            actions,
-            &options.base.re_lex,
-            &mut re_lexable_factory,
-          );
-          new_action_state = action_state;
-          output.map(|res| ((input.start(), actions.len()), res))
-        })
-      {
         if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors)
         {
           return (
@@ -258,7 +257,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
               token,
               re_lexable_factory,
               input_start,
-              actions_len,
+              actions.len(),
               action_index,
               errors,
             ),
@@ -291,20 +290,19 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       // else, no expected literal
       let head_map = self.get_kind_head_map(options.base.expectation.kind);
 
-      while let Some(((input_start, actions_len), (output, action_index, muted))) =
-        ActionInput::new(text, options.start + digested, options.action_state).and_then(|input| {
-          let actions = head_map.get(input.next());
+      loop {
+        let input_start = options.start + digested;
+        let input = break_loop_on_none!(ActionInput::new(text, input_start, options.action_state));
+        let actions = head_map.get(input.next());
+        let (res, action_state) = traverse_actions(
+          input,
+          actions,
+          &options.base.re_lex,
+          &mut re_lexable_factory,
+        );
+        new_action_state = action_state;
+        let (output, action_index, muted) = break_loop_on_none!(res);
 
-          let (output, action_state) = traverse_actions(
-            &input,
-            actions,
-            &options.base.re_lex,
-            &mut re_lexable_factory,
-          );
-          new_action_state = action_state;
-          output.map(|res| ((input.start(), actions.len()), res))
-        })
-      {
         if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors)
         {
           return (
@@ -313,7 +311,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
               token,
               re_lexable_factory,
               input_start,
-              actions_len,
+              actions.len(),
               action_index,
               errors,
             ),
@@ -402,21 +400,20 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
-    while let Some(((input_start, actions_len), (output, action_index, muted))) =
-      ActionInput::new(text, start + digested, &mut *action_state).and_then(|mut input| {
-        let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
+    loop {
+      let input_start = start + digested;
+      let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *action_state));
+      let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
+      let res = traverse_actions_mut(input, actions, re_lex, &mut re_lexable_factory);
+      let (output, action_index, muted) = break_loop_on_none!(res);
 
-        traverse_actions_mut(&mut input, actions, re_lex, &mut re_lexable_factory)
-          .map(|res| ((input.start(), actions.len()), res))
-      })
-    {
       if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors) {
         return done_with_token(
           digested,
           token,
           re_lexable_factory,
           input_start,
-          actions_len,
+          actions.len(),
           action_index,
           errors,
         );
@@ -447,21 +444,20 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
-    while let Some(((input_start, actions_len), (output, action_index, muted))) =
-      ActionInput::new(text, start + digested, &mut *action_state).and_then(|mut input| {
-        let actions = head_map.get(input.next());
+    loop {
+      let input_start = start + digested;
+      let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *action_state));
+      let actions = head_map.get(input.next());
+      let res = traverse_actions_mut(input, actions, re_lex, &mut re_lexable_factory);
+      let (output, action_index, muted) = break_loop_on_none!(res);
 
-        traverse_actions_mut(&mut input, actions, re_lex, &mut re_lexable_factory)
-          .map(|res| ((input.start(), actions.len()), res))
-      })
-    {
       if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors) {
         return done_with_token(
           digested,
           token,
           re_lexable_factory,
           input_start,
-          actions_len,
+          actions.len(),
           action_index,
           errors,
         );

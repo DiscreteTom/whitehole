@@ -71,10 +71,10 @@ impl<'text, ActionStateRef> ActionInput<'text, ActionStateRef> {
     self.next
   }
 
-  /// Clone this [`ActionInput`] with a new `ActionStateRef`.
+  /// Consume self, return a new instance with a new `ActionStateRef`.
   #[inline]
-  pub(crate) const fn clone_with<NewActionStateRef>(
-    &self,
+  pub(crate) fn reload<NewActionStateRef>(
+    self,
     s: NewActionStateRef,
   ) -> ActionInput<'text, NewActionStateRef> {
     ActionInput {

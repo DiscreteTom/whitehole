@@ -19,7 +19,7 @@ pub(super) fn traverse_actions<
   ErrorType,
   ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
 >(
-  input: &ActionInput<&ActionState>,
+  input: ActionInput<&ActionState>,
   actions: &HeadMapActions<Kind, ActionState, ErrorType>,
   re_lex: &ReLexContext,
   re_lexable_factory: &mut ReLexableFactoryType,
@@ -31,7 +31,7 @@ where
   Kind: TokenKindIdProvider<TokenKind = Kind>,
   ActionState: Clone,
 {
-  if let Some(res) = traverse_immutables(input, actions, re_lex) {
+  if let Some(res) = traverse_immutables(&input, actions, re_lex) {
     return (Some(res), None);
   }
 
@@ -43,7 +43,7 @@ where
   let mut state = input.state.clone();
 
   (
-    traverse_rest(&mut input.clone_with(&mut state), actions, re_lex),
+    traverse_rest(&mut input.reload(&mut state), actions, re_lex),
     Some(state),
   )
 }
@@ -58,7 +58,7 @@ pub(super) fn traverse_actions_mut<
   ErrorType,
   ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
 >(
-  input: &mut ActionInput<&mut ActionState>,
+  mut input: ActionInput<&mut ActionState>,
   actions: &HeadMapActions<Kind, ActionState, ErrorType>,
   re_lex: &ReLexContext,
   re_lexable_factory: &mut ReLexableFactoryType,
@@ -74,7 +74,7 @@ where
     return None;
   }
 
-  traverse_rest(input, actions, re_lex)
+  traverse_rest(&mut input, actions, re_lex)
 }
 
 // TODO: better name?
@@ -197,5 +197,15 @@ const fn create_range(start: usize, digested: usize) -> Range {
     end: start + digested,
   }
 }
+
+macro_rules! break_loop_on_none {
+  ($e:expr) => {
+    match $e {
+      Some(v) => v,
+      None => break,
+    }
+  };
+}
+pub(super) use break_loop_on_none;
 
 // TODO: add tests
