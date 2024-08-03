@@ -171,26 +171,55 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
 mod tests {
   use super::*;
   use crate::lexer::{
-    action::{exact, regex},
+    action::{exact, regex, Action},
     token::MockTokenKind,
   };
 
-  fn assert_actions_eq(
-    actions: &Vec<Rc<Action<MockTokenKind<()>>>>,
-    expected: Vec<Action<MockTokenKind<()>>>,
+  #[test]
+  fn test_head_map_actions() {
+    let mut actions: HeadMapActions<MockTokenKind<()>, i32, ()> = HeadMapActions::new();
+    assert_eq!(actions.len(), 0);
+
+    actions.push(exact("a").into_general());
+    assert_eq!(actions.len(), 1);
+    assert_eq!(actions.immutables.len(), 1);
+
+    actions.push(exact("b").into_general());
+    assert_eq!(actions.len(), 2);
+    assert_eq!(actions.immutables.len(), 2);
+
+    actions.push(exact("c").prepare(|input| *input.state += 1).into_general());
+    assert_eq!(actions.len(), 3);
+    assert_eq!(actions.immutables.len(), 2);
+    assert_eq!(actions.rest.len(), 1);
+
+    actions.push(exact("d").into_general());
+    assert_eq!(actions.len(), 4);
+    assert_eq!(actions.immutables.len(), 2);
+    assert_eq!(actions.rest.len(), 2);
+
+    actions.push(exact("e").prepare(|input| *input.state += 1).into_general());
+    assert_eq!(actions.len(), 5);
+    assert_eq!(actions.immutables.len(), 2);
+    assert_eq!(actions.rest.len(), 3);
+  }
+
+  fn assert_immutable_actions_eq(
+    actions: &HeadMapActions<MockTokenKind<()>, (), ()>,
+    expected: Vec<Action<MockTokenKind<()>, (), ()>>,
   ) {
     assert_eq!(actions.len(), expected.len());
-    for i in 0..actions.len() {
-      assert_eq!(actions[i].kind(), expected[i].kind());
-      assert_eq!(actions[i].head(), expected[i].head());
-      assert_eq!(actions[i].literal(), expected[i].literal());
-      assert_eq!(actions[i].muted(), expected[i].muted());
+    for i in 0..actions.immutables.len() {
+      assert_eq!(actions.immutables[i].kind(), expected[i].kind());
+      assert_eq!(actions.immutables[i].head(), expected[i].head());
+      assert_eq!(actions.immutables[i].literal(), expected[i].literal());
+      assert_eq!(actions.immutables[i].muted(), expected[i].muted());
     }
   }
 
   #[test]
   fn test_head_map() {
-    let actions: Vec<Rc<Action<MockTokenKind<()>>>> = vec![
+    let actions: Vec<GeneralAction<MockTokenKind<()>, (), ()>> = vec![
       exact("a"),
       exact("aa"),
       exact("b"),
@@ -200,20 +229,20 @@ mod tests {
       regex("no_head"),
     ]
     .into_iter()
-    .map(Rc::new)
+    .map(|a| a.into_general())
     .collect();
 
     let hm = HeadMap::new(&actions, HeadMap::collect_all_known(&actions));
 
     // collect all known heads
-    assert!(hm.known_map().contains_key(&'a'));
-    assert!(hm.known_map().contains_key(&'b'));
-    assert!(hm.known_map().contains_key(&'c'));
-    assert_eq!(hm.known_map().len(), 3);
+    assert!(hm.known_map.contains_key(&'a'));
+    assert!(hm.known_map.contains_key(&'b'));
+    assert!(hm.known_map.contains_key(&'c'));
+    assert_eq!(hm.known_map.len(), 3);
 
     // check actions
-    assert_actions_eq(
-      &hm.known_map()[&'a'],
+    assert_immutable_actions_eq(
+      &hm.get('a'),
       vec![
         exact("a"),
         exact("aa"),
@@ -222,17 +251,17 @@ mod tests {
         regex("no_head"),
       ],
     );
-    assert_actions_eq(
-      &hm.known_map()[&'b'],
+    assert_immutable_actions_eq(
+      &hm.get('b'),
       vec![
         exact("b"),
         regex("[^c]").unchecked_head_not(['c']),
         regex("no_head"),
       ],
     );
-    assert_actions_eq(&hm.known_map()[&'c'], vec![regex("no_head")]);
-    assert_actions_eq(
-      hm.unknown_fallback(),
+    assert_immutable_actions_eq(&hm.get('c'), vec![regex("no_head")]);
+    assert_immutable_actions_eq(
+      &hm.get('z'),
       vec![
         regex("[^c]").unchecked_head_not(['c']),
         regex(".").unchecked_head_unknown(),
