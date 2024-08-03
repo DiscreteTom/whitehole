@@ -4,7 +4,7 @@ pub type Range = std::ops::Range<usize>;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Token<Kind: 'static> {
-  /// The kind and the binding data.
+  /// The token kind value and the id of the token kind.
   pub binding: TokenKindIdBinding<Kind>,
   /// The byte range of the token in the input text.
   /// This can be used to index the input text.
@@ -20,7 +20,7 @@ pub struct Token<Kind: 'static> {
   pub range: Range,
   // we don't store `token.content` here (as a `&str`).
   // when lexing users can get the content in the lexing context,
-  // parse its value if needed and store the result data in `self::kind`.
+  // parse its value if needed and store the result data in `self.binding.kind`.
   // `token.content` may only be used less than once, and can be calculated from `token.range`.
   // users can calculate and cache it by themselves, we don't do unnecessary work.
 }
