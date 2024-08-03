@@ -8,9 +8,10 @@ use crate::{
   utils::Accumulator,
 };
 
-/// Traverse all actions to find the first accepted action.
-/// Return the output and the index of the accepted action.
+/// Traverse all actions with an immutable input to find the first accepted action.
+/// Return the output, the index of the accepted action and whether the action is muted.
 /// If no accepted action, return [`None`].
+/// If the action state is mutated during the traversal, return the new action state.
 pub(super) fn traverse_actions<
   'text,
   Kind,
@@ -47,8 +48,8 @@ where
   )
 }
 
-/// Traverse all actions to find the first accepted action.
-/// Return the output and the index of the accepted action.
+/// Traverse all actions with a mutable input to find the first accepted action.
+/// Return the output, the index of the accepted action and whether the action is muted.
 /// If no accepted action, return [`None`].
 pub(super) fn traverse_actions_mut<
   'text,
