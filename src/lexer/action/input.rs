@@ -1,12 +1,12 @@
 #[derive(Debug)]
-pub struct ActionInput<'text, ActionStateRef> {
-  /// An reference of the `ActionState`.
+pub struct ActionInput<'text, StateRef> {
+  /// An reference of the `State`.
   ///
-  /// This is public, so if this is `&mut ActionState` then you can mutate this directly.
+  /// This is public, so if this is `&mut State` then you can mutate this directly.
   ///
-  /// With the `ActionState`, you can construct stateful lexers,
+  /// With the `State`, you can construct stateful lexers,
   /// while actions remain stateless and clone-able.
-  pub state: ActionStateRef,
+  pub state: StateRef,
 
   /// See [`Self::text`].
   text: &'text str,
@@ -18,13 +18,13 @@ pub struct ActionInput<'text, ActionStateRef> {
   next: char,
 }
 
-impl<'text, ActionStateRef> ActionInput<'text, ActionStateRef> {
+impl<'text, StateRef> ActionInput<'text, StateRef> {
   /// Return [`None`] if the [`start`](Self::start) is equal to the length of
   /// [`text`](Self::text).
   /// # Panics
   /// This method panics if the [`start`](Self::start) is out of bounds of
   /// [`text`](Self::text).
-  pub fn new(text: &'text str, start: usize, state: ActionStateRef) -> Option<Self> {
+  pub fn new(text: &'text str, start: usize, state: StateRef) -> Option<Self> {
     let rest = &text[start..];
 
     rest.chars().next().map(|next| Self {
@@ -71,12 +71,9 @@ impl<'text, ActionStateRef> ActionInput<'text, ActionStateRef> {
     self.next
   }
 
-  /// Consume self, return a new instance with a new `ActionStateRef`.
+  /// Consume self, return a new instance with a new `StateRef`.
   #[inline]
-  pub(crate) fn reload<NewActionStateRef>(
-    self,
-    s: NewActionStateRef,
-  ) -> ActionInput<'text, NewActionStateRef> {
+  pub(crate) fn reload<NewStateRef>(self, s: NewStateRef) -> ActionInput<'text, NewStateRef> {
     ActionInput {
       state: s,
       text: self.text,
@@ -87,10 +84,10 @@ impl<'text, ActionStateRef> ActionInput<'text, ActionStateRef> {
   }
 }
 
-impl<'text, 'action_state, ActionState> ActionInput<'text, &'action_state mut ActionState> {
-  /// Cast `ActionInput<&mut ActionState>` to `ActionInput<&ActionState>`
+impl<'text, 'action_state, State> ActionInput<'text, &'action_state mut State> {
+  /// Cast `ActionInput<&mut State>` to `ActionInput<&State>`
   #[inline]
-  pub fn as_ref<'input>(&'input self) -> ActionInput<'text, &'input ActionState> {
+  pub fn as_ref<'input>(&'input self) -> ActionInput<'text, &'input State> {
     // TODO(perf): maybe just transmute self?
     ActionInput {
       state: self.state,

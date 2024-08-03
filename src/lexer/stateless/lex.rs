@@ -17,7 +17,7 @@ use crate::{
   utils::Accumulator,
 };
 
-impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   const INVALID_EXPECTED_KIND: &'static str = "no action is defined for the expected kind";
   const INVALID_EXPECTED_LITERAL: &'static str = "no action is defined for the expected literal";
 
@@ -31,12 +31,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// let (output, action_state) = stateless.lex("123");
   /// ```
   #[inline]
-  pub fn lex<'text>(&self, text: &'text str) -> (LexOutput<Token<Kind>, (), ()>, ActionState)
+  pub fn lex<'text>(&self, text: &'text str) -> (LexOutput<Token<Kind>, (), ()>, State)
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
-    ActionState: Default,
+    State: Default,
   {
-    let mut action_state = ActionState::default();
+    let mut action_state = State::default();
     (
       self.lex_with(text, |o| o.action_state(&mut action_state)),
       action_state,
@@ -59,7 +59,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'expect_literal,
     'action_state,
     ErrAcc: Accumulator<(ErrorType, Range)>,
-    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>,
+    Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
   >(
     &self,
     text: &'text str,
@@ -68,18 +68,18 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     ) -> StatelessLexOptions<
       'expect_literal,
       Kind,
-      &'action_state mut ActionState,
+      &'action_state mut State,
       ErrAcc,
       Fork,
     >
   ) -> LexOutput<
     Token<Kind>,
     ErrAcc,
-    <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType
+    <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::StatelessReLexableType
   >
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
-    ActionState: 'action_state,
+    State: 'action_state,
   {
     self.lex_with_options(text, options_builder(StatelessLexOptions::new()))
   }
@@ -100,15 +100,15 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'expect_literal,
     'action_state,
     ErrAcc: Accumulator<(ErrorType, Range)>,
-    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>,
+    Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
   >(
     &self,
     text: &'text str,
-    options: StatelessLexOptions<'expect_literal, Kind, &'action_state mut ActionState, ErrAcc, Fork>,
+    options: StatelessLexOptions<'expect_literal, Kind, &'action_state mut State, ErrAcc, Fork>,
   ) -> LexOutput<
     Token<Kind>,
     ErrAcc,
-    <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType
+    <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::StatelessReLexableType
   >
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
@@ -167,7 +167,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'expect_literal,
     'action_state,
     ErrAcc: Accumulator<(ErrorType, Range)>,
-    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>,
+    Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
   >(
     &self,
     text: &'text str,
@@ -176,7 +176,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     ) -> StatelessLexOptions<
       'expect_literal,
       Kind,
-      &'action_state ActionState,
+      &'action_state State,
       ErrAcc,
       Fork,
     >
@@ -184,13 +184,13 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     LexOutput<
       Token<Kind>,
       ErrAcc,
-      <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType
+      <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::StatelessReLexableType
     >,
-    Option<ActionState>
+    Option<State>
   )
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
-    ActionState: Clone + 'action_state,
+    State: Clone + 'action_state,
   {
     self.peek_with_options(text, options_builder(StatelessLexOptions::new()))
   }
@@ -212,22 +212,22 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     'expect_literal,
     'action_state,
     ErrAcc: Accumulator<(ErrorType, Range)>,
-    Fork: LexOptionsFork<'text, Kind, ActionState, ErrorType>,
+    Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
   >(
     &self,
     text: &'text str,
-    options: StatelessLexOptions<'expect_literal, Kind, &'action_state ActionState, ErrAcc, Fork>,
+    options: StatelessLexOptions<'expect_literal, Kind, &'action_state State, ErrAcc, Fork>,
   ) -> (
     LexOutput<
       Token<Kind>,
       ErrAcc,
-      <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, ActionState, ErrorType>>::StatelessReLexableType
+      <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::StatelessReLexableType
     >,
-    Option<ActionState>
+    Option<State>
   )
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
-    ActionState: Clone
+    State: Clone
   {
     let mut digested = 0;
     let mut errors = options.base.errors_to;
@@ -343,8 +343,8 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     kind: Option<&'static TokenKindId<Kind>>,
     literal: &str,
   ) -> (
-    &LiteralMap<Kind, ActionState, ErrorType>,
-    &HeadMap<Kind, ActionState, ErrorType>,
+    &LiteralMap<Kind, State, ErrorType>,
+    &HeadMap<Kind, State, ErrorType>,
   ) {
     let literal_map = kind.map_or(&self.literal_map, |kind| {
       self
@@ -362,7 +362,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   fn get_kind_head_map(
     &self,
     kind: Option<&'static TokenKindId<Kind>>,
-  ) -> &HeadMap<Kind, ActionState, ErrorType> {
+  ) -> &HeadMap<Kind, State, ErrorType> {
     kind.map_or(
       &self.head_map, // if no expected kind, use the head map with all actions
       |kind| {
@@ -377,16 +377,16 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   fn lex_mut_with_literal<
     'text,
     ErrAcc: Accumulator<(ErrorType, Range)>,
-    ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
+    ReLexableFactoryType: ReLexableFactory<'text, Kind, State, ErrorType>,
   >(
     &self,
-    literal_map: &LiteralMap<Kind, ActionState, ErrorType>,
-    head_map: &HeadMap<Kind, ActionState, ErrorType>,
+    literal_map: &LiteralMap<Kind, State, ErrorType>,
+    head_map: &HeadMap<Kind, State, ErrorType>,
     mut digested: usize,
     mut errors: ErrAcc,
     start: usize,
     text: &'text str,
-    action_state: &mut ActionState,
+    action_state: &mut State,
     literal: &str,
     re_lex: &ReLexContext,
     mut re_lexable_factory: ReLexableFactoryType,
@@ -424,15 +424,15 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   fn lex_mut_without_literal<
     'text,
     ErrAcc: Accumulator<(ErrorType, Range)>,
-    ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
+    ReLexableFactoryType: ReLexableFactory<'text, Kind, State, ErrorType>,
   >(
     &self,
-    head_map: &HeadMap<Kind, ActionState, ErrorType>,
+    head_map: &HeadMap<Kind, State, ErrorType>,
     mut digested: usize,
     mut errors: ErrAcc,
     start: usize,
     text: &'text str,
-    action_state: &mut ActionState,
+    action_state: &mut State,
     re_lex: &ReLexContext,
     mut re_lexable_factory: ReLexableFactoryType,
     peek: bool,
@@ -470,10 +470,10 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
 fn done_with_token<
   'text,
   Kind: 'static,
-  ActionState,
+  State,
   ErrorType,
   ErrAcc,
-  ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
+  ReLexableFactoryType: ReLexableFactory<'text, Kind, State, ErrorType>,
 >(
   digested: usize,
   token: Token<Kind>,
@@ -495,12 +495,12 @@ fn done_with_token<
   }
 }
 
-fn get_actions_by_literal_map<'this, Kind: 'static, ActionState, ActionStateRef, ErrorType>(
-  input: &ActionInput<ActionStateRef>,
+fn get_actions_by_literal_map<'this, Kind: 'static, State, StateRef, ErrorType>(
+  input: &ActionInput<StateRef>,
   literal: &str,
-  literal_map: &'this LiteralMap<Kind, ActionState, ErrorType>,
-  head_map: &'this HeadMap<Kind, ActionState, ErrorType>,
-) -> &'this HeadMapActions<Kind, ActionState, ErrorType> {
+  literal_map: &'this LiteralMap<Kind, State, ErrorType>,
+  head_map: &'this HeadMap<Kind, State, ErrorType>,
+) -> &'this HeadMapActions<Kind, State, ErrorType> {
   {
     if !input.rest().starts_with(literal) {
       // prefix mismatch, only execute muted actions

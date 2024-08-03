@@ -3,13 +3,13 @@ use crate::lexer::action::GeneralAction;
 use super::head_map::{HeadMap, KnownHeadChars};
 use std::collections::HashMap;
 
-pub(super) struct LiteralMap<Kind: 'static, ActionState, ErrorType> {
+pub(super) struct LiteralMap<Kind: 'static, State, ErrorType> {
   /// The key of the map is the literal.
   /// Actions in the value should be either muted or have a matched [`Action::literal`].
-  known_map: HashMap<String, HeadMap<Kind, ActionState, ErrorType>>,
+  known_map: HashMap<String, HeadMap<Kind, State, ErrorType>>,
   /// When the rest of the input text doesn't starts with the expected literal,
   /// only muted actions will be checked.
-  muted_map: HeadMap<Kind, ActionState, ErrorType>,
+  muted_map: HeadMap<Kind, State, ErrorType>,
   // for literal map there is no unknown_fallback because we don't check
   // actions with mismatched/unknown literals (should panic)
 }
@@ -17,18 +17,18 @@ pub(super) struct LiteralMap<Kind: 'static, ActionState, ErrorType> {
 /// A new-type to represent the return type of [`LiteralMap::collect_all_known`].
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`LiteralMap::new`].
-pub(super) struct KnownLiterals<Kind: 'static, ActionState, ErrorType>(
-  HashMap<String, Vec<GeneralAction<Kind, ActionState, ErrorType>>>,
+pub(super) struct KnownLiterals<Kind: 'static, State, ErrorType>(
+  HashMap<String, Vec<GeneralAction<Kind, State, ErrorType>>>,
 );
 
-impl<Kind: 'static, ActionState, ErrorType> Clone for KnownLiterals<Kind, ActionState, ErrorType> {
+impl<Kind: 'static, State, ErrorType> Clone for KnownLiterals<Kind, State, ErrorType> {
   #[inline]
   fn clone(&self) -> Self {
     Self(self.0.clone())
   }
 }
 
-impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> LiteralMap<Kind, State, ErrorType> {
   /// Collect all known literals from all actions instead of a subset of actions to make sure
   /// 'known' as a consistent meaning across all literal maps in a stateless lexer
   /// (otherwise maybe only a subset of literals are known for a subset of actions,
@@ -37,8 +37,8 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
   /// when filling the literal map with no-literal actions.
   #[inline] // there is only one call site, so mark this as inline
   pub fn collect_all_known(
-    actions: &Vec<GeneralAction<Kind, ActionState, ErrorType>>,
-  ) -> KnownLiterals<Kind, ActionState, ErrorType> {
+    actions: &Vec<GeneralAction<Kind, State, ErrorType>>,
+  ) -> KnownLiterals<Kind, State, ErrorType> {
     let mut res = HashMap::new();
 
     for a in actions {
@@ -53,9 +53,9 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
   /// Create a self with a subset of actions, a known literal map created by [`Self::collect_all_known`]
   /// and a known head map created by [`HeadMap::collect_all_known`].
   pub fn new(
-    actions: &Vec<GeneralAction<Kind, ActionState, ErrorType>>,
-    known_map: KnownLiterals<Kind, ActionState, ErrorType>,
-    known_head_map: &KnownHeadChars<Kind, ActionState, ErrorType>,
+    actions: &Vec<GeneralAction<Kind, State, ErrorType>>,
+    known_map: KnownLiterals<Kind, State, ErrorType>,
+    known_head_map: &KnownHeadChars<Kind, State, ErrorType>,
   ) -> Self {
     let mut known_map = known_map.0;
     // fill the action map
@@ -96,12 +96,12 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
   }
 
   #[inline]
-  pub const fn known_map(&self) -> &HashMap<String, HeadMap<Kind, ActionState, ErrorType>> {
+  pub const fn known_map(&self) -> &HashMap<String, HeadMap<Kind, State, ErrorType>> {
     &self.known_map
   }
 
   #[inline]
-  pub const fn muted_map(&self) -> &HeadMap<Kind, ActionState, ErrorType> {
+  pub const fn muted_map(&self) -> &HeadMap<Kind, State, ErrorType> {
     &self.muted_map
   }
 }

@@ -231,7 +231,7 @@ pub fn float_literal_body_with_options<
 /// will be matched using [`decimal_integer_literal_body_with_options`]
 /// so its caveat also applies here.
 pub fn float_literal_with<
-  ActionState,
+  State,
   ErrorType,
   SepAcc: NumericSeparatorAccumulator + Clone + 'static,
   IntAcc: Accumulator<char> + Clone + 'static,
@@ -241,11 +241,8 @@ pub fn float_literal_with<
   options_builder: impl FnOnce(
     FloatLiteralOptions<(), (), (), ()>,
   ) -> FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
-) -> Action<
-  MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>,
-  ActionState,
-  ErrorType,
-> {
+) -> Action<MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>, State, ErrorType>
+{
   float_literal_with_options(options_builder(FloatLiteralOptions::new()))
 }
 
@@ -261,7 +258,7 @@ pub fn float_literal_with<
 /// will be matched using [`decimal_integer_literal_body_with_options`]
 /// so its caveat also applies here.
 pub fn float_literal_with_options<
-  ActionState,
+  State,
   ErrorType,
   SepAcc: NumericSeparatorAccumulator + Clone + 'static,
   IntAcc: Accumulator<char> + Clone + 'static,
@@ -269,11 +266,8 @@ pub fn float_literal_with_options<
   ExpAcc: Accumulator<char> + Clone + 'static,
 >(
   options: FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
-) -> Action<
-  MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>,
-  ActionState,
-  ErrorType,
-> {
+) -> Action<MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>, State, ErrorType>
+{
   // head for integer part
   let mut heads = HashSet::from(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
 

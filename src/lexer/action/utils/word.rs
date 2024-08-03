@@ -43,9 +43,9 @@ pub fn starts_with_word_boundary(rest: &str) -> bool {
 /// exact("hello").reject_if(no_word_boundary_in_rest);
 /// ```
 #[inline]
-pub fn no_word_boundary_in_rest<ActionState, ErrorType>(
+pub fn no_word_boundary_in_rest<State, ErrorType>(
   ctx: AcceptedActionOutputContext<
-    &ActionInput<&ActionState>,
+    &ActionInput<&State>,
     &ActionOutput<MockTokenKind<()>, Option<ErrorType>>,
   >,
 ) -> bool {
@@ -66,9 +66,9 @@ pub fn no_word_boundary_in_rest<ActionState, ErrorType>(
 /// word("import");
 /// ```
 #[inline]
-pub fn word<ActionState: 'static, ErrorType: 'static>(
+pub fn word<State: 'static, ErrorType: 'static>(
   s: impl Into<String>,
-) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+) -> Action<MockTokenKind<()>, State, ErrorType> {
   exact(s).reject_if(no_word_boundary_in_rest)
 }
 

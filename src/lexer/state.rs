@@ -1,5 +1,6 @@
+/// The instantaneous state of a lexer (a.k.a the "configuration" in the automata theory).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LexerState<'text> {
+pub struct Instant<'text> {
   /// See [`Self::text`].
   text: &'text str,
   /// See [`Self::digested`].
@@ -12,12 +13,12 @@ pub struct LexerState<'text> {
   // users can store tokens as needed by themselves.
 }
 
-impl<'text> LexerState<'text> {
+impl<'text> Instant<'text> {
   /// Create a new lexer state with the given text.
   /// [`Self::digested`] will be set to `0`.
   #[inline]
   pub const fn new(text: &'text str) -> Self {
-    LexerState {
+    Instant {
       text,
       digested: 0,
       trimmed: text.len() == 0,
@@ -92,7 +93,7 @@ mod tests {
 
   #[test]
   fn test_digest() {
-    let mut state = LexerState::new("123");
+    let mut state = Instant::new("123");
     assert_eq!(state.digested(), 0);
     assert_eq!(state.trimmed(), false);
 
@@ -107,7 +108,7 @@ mod tests {
 
   #[test]
   fn test_digest_0() {
-    let mut state = LexerState::new("123");
+    let mut state = Instant::new("123");
     assert_eq!(state.digested(), 0);
     assert_eq!(state.trimmed(), false);
     state.trim(0);
@@ -122,13 +123,13 @@ mod tests {
   #[test]
   #[should_panic]
   fn test_digest_overflow() {
-    let mut state = LexerState::new("123");
+    let mut state = Instant::new("123");
     state.digest(4);
   }
 
   #[test]
   fn test_trim() {
-    let mut state = LexerState::new("123");
+    let mut state = Instant::new("123");
     assert_eq!(state.digested(), 0);
     assert_eq!(state.trimmed(), false);
 
@@ -140,7 +141,7 @@ mod tests {
   #[test]
   #[should_panic]
   fn test_trim_overflow() {
-    let mut state = LexerState::new("123");
+    let mut state = Instant::new("123");
     state.trim(4);
   }
 }

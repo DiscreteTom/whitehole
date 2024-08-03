@@ -18,9 +18,9 @@ pub use whitehole_helpers::exact_vec;
 /// # let action: Action<_> =
 /// exact(';'); // with a char
 /// ```
-pub fn exact<ActionState, ErrorType>(
+pub fn exact<State, ErrorType>(
   s: impl Into<String>,
-) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+) -> Action<MockTokenKind<()>, State, ErrorType> {
   let s: String = s.into();
   let head = s.chars().next().expect("empty string is not allowed");
   let literal = Some(s.clone());
@@ -48,9 +48,9 @@ pub fn exact<ActionState, ErrorType>(
 /// # let actions: Vec<Action<_>> =
 /// vec![exact("+"), exact("-"), exact("*"), exact("/"), exact("("), exact(")")];
 /// ```
-pub fn exact_chars<ActionState, ErrorType>(
+pub fn exact_chars<State, ErrorType>(
   s: impl Into<String>,
-) -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>> {
+) -> Vec<Action<MockTokenKind<()>, State, ErrorType>> {
   s.into().chars().map(|c| exact(c)).collect()
 }
 

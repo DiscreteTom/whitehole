@@ -5,12 +5,12 @@ use std::{collections::HashMap, rc::Rc};
 /// - [`Self::immutables`]: immutable actions, this should always be checked first.
 /// - [`Self::rest`]: immutable or mutable actions, this should be checked after [`Self::immutables`].
 /// If this is not empty, this must starts with a mutable action.
-pub(super) struct HeadMapActions<Kind: 'static, ActionState, ErrorType> {
-  immutables: Vec<Rc<ImmutableAction<Kind, ActionState, ErrorType>>>,
-  rest: Vec<GeneralAction<Kind, ActionState, ErrorType>>,
+pub(super) struct HeadMapActions<Kind: 'static, State, ErrorType> {
+  immutables: Vec<Rc<ImmutableAction<Kind, State, ErrorType>>>,
+  rest: Vec<GeneralAction<Kind, State, ErrorType>>,
 }
 
-impl<Kind: 'static, ActionState, ErrorType> Clone for HeadMapActions<Kind, ActionState, ErrorType> {
+impl<Kind: 'static, State, ErrorType> Clone for HeadMapActions<Kind, State, ErrorType> {
   #[inline]
   fn clone(&self) -> Self {
     Self {
@@ -20,7 +20,7 @@ impl<Kind: 'static, ActionState, ErrorType> Clone for HeadMapActions<Kind, Actio
   }
 }
 
-impl<Kind, ActionState, ErrorType> HeadMapActions<Kind, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> HeadMapActions<Kind, State, ErrorType> {
   #[inline]
   pub const fn new() -> Self {
     Self {
@@ -30,7 +30,7 @@ impl<Kind, ActionState, ErrorType> HeadMapActions<Kind, ActionState, ErrorType> 
   }
 
   #[inline]
-  pub fn push(&mut self, action: GeneralAction<Kind, ActionState, ErrorType>) {
+  pub fn push(&mut self, action: GeneralAction<Kind, State, ErrorType>) {
     if self.rest.len() == 0 {
       // no mutable actions yet, check if the action is immutable
       match action {
@@ -45,11 +45,11 @@ impl<Kind, ActionState, ErrorType> HeadMapActions<Kind, ActionState, ErrorType> 
 
   // getters
   #[inline]
-  pub const fn immutables(&self) -> &Vec<Rc<ImmutableAction<Kind, ActionState, ErrorType>>> {
+  pub const fn immutables(&self) -> &Vec<Rc<ImmutableAction<Kind, State, ErrorType>>> {
     &self.immutables
   }
   #[inline]
-  pub const fn rest(&self) -> &Vec<GeneralAction<Kind, ActionState, ErrorType>> {
+  pub const fn rest(&self) -> &Vec<GeneralAction<Kind, State, ErrorType>> {
     &self.rest
   }
 
@@ -60,28 +60,28 @@ impl<Kind, ActionState, ErrorType> HeadMapActions<Kind, ActionState, ErrorType> 
   }
 }
 
-pub(super) struct HeadMap<Kind: 'static, ActionState, ErrorType> {
+pub(super) struct HeadMap<Kind: 'static, State, ErrorType> {
   /// Store actions for known chars.
-  known_map: HashMap<char, HeadMapActions<Kind, ActionState, ErrorType>>,
+  known_map: HashMap<char, HeadMapActions<Kind, State, ErrorType>>,
   /// Store actions for unknown chars.
-  unknown_fallback: HeadMapActions<Kind, ActionState, ErrorType>,
+  unknown_fallback: HeadMapActions<Kind, State, ErrorType>,
 }
 
 /// A new-type to represent the return type of [`HeadMap::collect_all_known`].
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`HeadMap::new`].
-pub(super) struct KnownHeadChars<Kind: 'static, ActionState, ErrorType>(
-  HashMap<char, HeadMapActions<Kind, ActionState, ErrorType>>,
+pub(super) struct KnownHeadChars<Kind: 'static, State, ErrorType>(
+  HashMap<char, HeadMapActions<Kind, State, ErrorType>>,
 );
 
-impl<Kind: 'static, ActionState, ErrorType> Clone for KnownHeadChars<Kind, ActionState, ErrorType> {
+impl<Kind: 'static, State, ErrorType> Clone for KnownHeadChars<Kind, State, ErrorType> {
   #[inline]
   fn clone(&self) -> Self {
     Self(self.0.clone())
   }
 }
 
-impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
   /// Collect all known head chars from all actions instead of a subset of actions to make sure
   /// 'known' has a consistent meaning across all head maps in a stateless lexer
   /// (otherwise maybe only a subset of chars are known for a subset of actions,
@@ -90,8 +90,8 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
   /// with [`HeadMatcher::Not`] and [`HeadMatcher::Unknown`].
   #[inline] // there is only one call site, so mark this as inline
   pub fn collect_all_known(
-    actions: &Vec<GeneralAction<Kind, ActionState, ErrorType>>,
-  ) -> KnownHeadChars<Kind, ActionState, ErrorType> {
+    actions: &Vec<GeneralAction<Kind, State, ErrorType>>,
+  ) -> KnownHeadChars<Kind, State, ErrorType> {
     let mut res = HashMap::new();
 
     for a in actions {
@@ -110,8 +110,8 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
 
   /// Create a new instance with a subset of actions and a known char map created by [`Self::collect_all_known`].
   pub fn new(
-    actions: &Vec<GeneralAction<Kind, ActionState, ErrorType>>,
-    known_map: KnownHeadChars<Kind, ActionState, ErrorType>,
+    actions: &Vec<GeneralAction<Kind, State, ErrorType>>,
+    known_map: KnownHeadChars<Kind, State, ErrorType>,
   ) -> Self {
     let mut res = Self {
       known_map: known_map.0,
@@ -162,7 +162,7 @@ impl<Kind, ActionState, ErrorType> HeadMap<Kind, ActionState, ErrorType> {
 
   /// Get actions by the next char.
   #[inline]
-  pub fn get(&self, next: char) -> &HeadMapActions<Kind, ActionState, ErrorType> {
+  pub fn get(&self, next: char) -> &HeadMapActions<Kind, State, ErrorType> {
     self.known_map.get(&next).unwrap_or(&self.unknown_fallback)
   }
 }

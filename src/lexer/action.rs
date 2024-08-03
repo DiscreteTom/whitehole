@@ -104,20 +104,20 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
 }
 
 /// [`Action::exec`] that won't mutate the action state.
-type ImmutableActionExec<Kind, ActionState, ErrorType> =
-  Box<dyn Fn(&ActionInput<&ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>;
+type ImmutableActionExec<Kind, State, ErrorType> =
+  Box<dyn Fn(&ActionInput<&State>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>;
 
 /// [`Action::exec`] that will mutate the action state.
-type MutableActionExec<Kind, ActionState, ErrorType> =
-  Box<dyn Fn(&mut ActionInput<&mut ActionState>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>;
+type MutableActionExec<Kind, State, ErrorType> =
+  Box<dyn Fn(&mut ActionInput<&mut State>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>;
 
 /// See [`Action::exec`].
-pub enum ActionExec<Kind, ActionState, ErrorType> {
-  Immutable(ImmutableActionExec<Kind, ActionState, ErrorType>),
-  Mutable(MutableActionExec<Kind, ActionState, ErrorType>),
+pub enum ActionExec<Kind, State, ErrorType> {
+  Immutable(ImmutableActionExec<Kind, State, ErrorType>),
+  Mutable(MutableActionExec<Kind, State, ErrorType>),
 }
 
-/// Conditionally convert [`ActionInput<&mut ActionState>`] to [`ActionInput<&ActionState>`].
+/// Conditionally convert [`ActionInput<&mut State>`] to [`ActionInput<&State>`].
 ///
 /// Usage:
 /// - `action_input_to_ref(input, true)`: `&input.as_ref()`
@@ -133,12 +133,12 @@ macro_rules! action_input_to_ref {
 pub(super) use action_input_to_ref;
 
 #[cfg(test)]
-impl<Kind, ActionState, ErrorType> ActionExec<Kind, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> ActionExec<Kind, State, ErrorType> {
   /// Try to convert [`ActionExec`] into [`ImmutableActionExec`].
   /// This is only for testing.
   /// # Panics
   /// If the action is mutable.
-  pub(super) fn as_immutable(&self) -> &ImmutableActionExec<Kind, ActionState, ErrorType> {
+  pub(super) fn as_immutable(&self) -> &ImmutableActionExec<Kind, State, ErrorType> {
     match self {
       ActionExec::Immutable(exec) => exec,
       ActionExec::Mutable(_) => panic!("ActionExec is mutable"),
@@ -148,7 +148,7 @@ impl<Kind, ActionState, ErrorType> ActionExec<Kind, ActionState, ErrorType> {
   /// This is only for testing.
   /// # Panics
   /// If the action is immutable.
-  pub(super) fn as_mutable(&self) -> &MutableActionExec<Kind, ActionState, ErrorType> {
+  pub(super) fn as_mutable(&self) -> &MutableActionExec<Kind, State, ErrorType> {
     match self {
       ActionExec::Immutable(_) => panic!("ActionExec is immutable"),
       ActionExec::Mutable(exec) => exec,
@@ -158,13 +158,13 @@ impl<Kind, ActionState, ErrorType> ActionExec<Kind, ActionState, ErrorType> {
 
 /// To create this, use [`simple`](simple::simple), [`simple_with_data`](simple::simple_with_data)
 /// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
-pub type Action<Kind, ActionState = (), ErrorType = ()> =
-  ActionBase<Kind, ActionExec<Kind, ActionState, ErrorType>>;
+pub type Action<Kind, State = (), ErrorType = ()> =
+  ActionBase<Kind, ActionExec<Kind, State, ErrorType>>;
 
-pub(super) type ImmutableAction<Kind, ActionState, ErrorType> =
-  ActionBase<Kind, ImmutableActionExec<Kind, ActionState, ErrorType>>;
-pub(super) type MutableAction<Kind, ActionState, ErrorType> =
-  ActionBase<Kind, MutableActionExec<Kind, ActionState, ErrorType>>;
+pub(super) type ImmutableAction<Kind, State, ErrorType> =
+  ActionBase<Kind, ImmutableActionExec<Kind, State, ErrorType>>;
+pub(super) type MutableAction<Kind, State, ErrorType> =
+  ActionBase<Kind, MutableActionExec<Kind, State, ErrorType>>;
 
 /// Give [`Action`]s deterministic type and wrap them in [`Rc`] to make them clone-able.
 ///
@@ -176,12 +176,12 @@ pub(super) type MutableAction<Kind, ActionState, ErrorType> =
 /// we should know the exact type of each action instead of using pattern matching
 /// to determine the type every time.
 /// That's why we need [`GeneralAction`].
-pub(super) enum GeneralAction<Kind: 'static, ActionState, ErrorType> {
-  Immutable(Rc<ImmutableAction<Kind, ActionState, ErrorType>>),
-  Mutable(Rc<MutableAction<Kind, ActionState, ErrorType>>),
+pub(super) enum GeneralAction<Kind: 'static, State, ErrorType> {
+  Immutable(Rc<ImmutableAction<Kind, State, ErrorType>>),
+  Mutable(Rc<MutableAction<Kind, State, ErrorType>>),
 }
 
-impl<Kind: 'static, ActionState, ErrorType> Clone for GeneralAction<Kind, ActionState, ErrorType> {
+impl<Kind: 'static, State, ErrorType> Clone for GeneralAction<Kind, State, ErrorType> {
   #[inline]
   fn clone(&self) -> Self {
     match self {
@@ -191,10 +191,10 @@ impl<Kind: 'static, ActionState, ErrorType> Clone for GeneralAction<Kind, Action
   }
 }
 
-impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// Convert [`Action`] into [`GeneralAction`].
   #[inline]
-  pub(super) fn into_general(self) -> GeneralAction<Kind, ActionState, ErrorType> {
+  pub(super) fn into_general(self) -> GeneralAction<Kind, State, ErrorType> {
     match self.exec {
       ActionExec::Immutable(exec) => GeneralAction::Immutable(Rc::new(ImmutableAction {
         kind: self.kind,
@@ -215,7 +215,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
 }
 
 // getters
-impl<Kind: 'static, ActionState, ErrorType> GeneralAction<Kind, ActionState, ErrorType> {
+impl<Kind: 'static, State, ErrorType> GeneralAction<Kind, State, ErrorType> {
   /// See [`Action::kind`].
   #[inline]
   pub fn kind(&self) -> &'static TokenKindId<Kind> {

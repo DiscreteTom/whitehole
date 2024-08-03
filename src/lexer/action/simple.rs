@@ -12,10 +12,10 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 /// // accept all rest characters
 /// let a: Action<_> = simple(|input| input.rest().len());
 /// ```
-pub fn simple<ActionState, ErrorType>(
+pub fn simple<State, ErrorType>(
   // ActionInput is immutable so we can set `Action::may_mutate_state` to false.
-  f: impl Fn(&ActionInput<&ActionState>) -> usize + 'static,
-) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+  f: impl Fn(&ActionInput<&State>) -> usize + 'static,
+) -> Action<MockTokenKind<()>, State, ErrorType> {
   Action {
     exec: ActionExec::Immutable(Box::new(move |input| match f(input) {
       0 => None,
@@ -49,10 +49,10 @@ pub fn simple<ActionState, ErrorType>(
 /// // accept all rest characters and parse them into an integer
 /// let a: Action<MockTokenKind<i32>> = simple_with_data(|input| Some((input.rest().len(), input.rest().parse().unwrap())));
 /// ```
-pub fn simple_with_data<ActionState, ErrorType, T>(
+pub fn simple_with_data<State, ErrorType, T>(
   // ActionInput is immutable so we can set `Action::may_mutate_state` to false.
-  f: impl Fn(&ActionInput<&ActionState>) -> Option<(usize, T)> + 'static,
-) -> Action<MockTokenKind<T>, ActionState, ErrorType> {
+  f: impl Fn(&ActionInput<&State>) -> Option<(usize, T)> + 'static,
+) -> Action<MockTokenKind<T>, State, ErrorType> {
   Action {
     exec: ActionExec::Immutable(Box::new(move |input| match f(input) {
       Some((digested, data)) => Some(ActionOutput {

@@ -7,15 +7,15 @@ use crate::lexer::{
 
 /// Add [`Self::start`] and [`Self::action_state`] to the `Base` options.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct StatelessOptions<ActionStateRef, Base> {
+pub struct StatelessOptions<StateRef, Base> {
   /// See [`Self::start`].
   pub start: usize,
   /// See [`Self::action_state`].
-  pub action_state: ActionStateRef,
+  pub action_state: StateRef,
   pub base: Base,
 }
 
-impl<ActionStateRef, Base> StatelessOptions<ActionStateRef, Base> {
+impl<StateRef, Base> StatelessOptions<StateRef, Base> {
   /// The start index of the text to lex.
   #[inline]
   pub const fn start(mut self, start: usize) -> Self {
@@ -24,13 +24,13 @@ impl<ActionStateRef, Base> StatelessOptions<ActionStateRef, Base> {
   }
 
   /// Set the action state.
-  /// This is usually `&mut ActionState`.
-  /// For peek, this is `&ActionState`.
+  /// This is usually `&mut State`.
+  /// For peek, this is `&State`.
   #[inline]
-  pub fn action_state<NewActionStateRef>(
+  pub fn action_state<NewStateRef>(
     self,
-    action_state: NewActionStateRef,
-  ) -> StatelessOptions<NewActionStateRef, Base> {
+    action_state: NewStateRef,
+  ) -> StatelessOptions<NewStateRef, Base> {
     StatelessOptions {
       start: self.start,
       action_state,
@@ -40,8 +40,8 @@ impl<ActionStateRef, Base> StatelessOptions<ActionStateRef, Base> {
 }
 
 /// Add [`StatelessLexOptions::start`] and [`StatelessLexOptions::action_state`] to [`LexOptions`].
-pub type StatelessLexOptions<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork> =
-  StatelessOptions<ActionStateRef, LexOptions<'expect_literal, Kind, ErrAcc, Fork>>;
+pub type StatelessLexOptions<'expect_literal, Kind, StateRef, ErrAcc, Fork> =
+  StatelessOptions<StateRef, LexOptions<'expect_literal, Kind, ErrAcc, Fork>>;
 
 impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), ()> {
   /// Create a new instance with `0` as the start index and no action state.
@@ -59,8 +59,8 @@ impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), (
 // re-export from `LexOptions`
 // but with `StatelessLexOptions` as the return type
 // instead of `LexOptions`
-impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
-  StatelessLexOptions<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
+impl<'expect_literal, Kind, StateRef, ErrAcc, Fork>
+  StatelessLexOptions<'expect_literal, Kind, StateRef, ErrAcc, Fork>
 {
   /// See [`LexOptions::expect`].
   #[inline]
@@ -82,7 +82,7 @@ impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
   pub fn errors_to<NewErrAcc>(
     self,
     acc: NewErrAcc,
-  ) -> StatelessLexOptions<'expect_literal, Kind, ActionStateRef, NewErrAcc, Fork> {
+  ) -> StatelessLexOptions<'expect_literal, Kind, StateRef, NewErrAcc, Fork> {
     StatelessLexOptions {
       start: self.start,
       action_state: self.action_state,
@@ -93,7 +93,7 @@ impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
   #[inline]
   pub fn errors_to_vec(
     self,
-  ) -> StatelessLexOptions<'expect_literal, Kind, ActionStateRef, Vec<ErrAcc>, Fork> {
+  ) -> StatelessLexOptions<'expect_literal, Kind, StateRef, Vec<ErrAcc>, Fork> {
     StatelessLexOptions {
       start: self.start,
       action_state: self.action_state,
@@ -102,9 +102,7 @@ impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
   }
   /// See [`LexOptions::fork`].
   #[inline]
-  pub fn fork(
-    self,
-  ) -> StatelessLexOptions<'expect_literal, Kind, ActionStateRef, ErrAcc, ForkEnabled> {
+  pub fn fork(self) -> StatelessLexOptions<'expect_literal, Kind, StateRef, ErrAcc, ForkEnabled> {
     StatelessLexOptions {
       start: self.start,
       action_state: self.action_state,
@@ -120,8 +118,7 @@ impl<'expect_literal, Kind, ActionStateRef, ErrAcc, Fork>
 }
 
 /// Add [`StatelessTrimOptions::start`] and [`StatelessTrimOptions::action_state`] to [`TrimOptions`].
-pub type StatelessTrimOptions<ActionStateRef, ErrAcc> =
-  StatelessOptions<ActionStateRef, TrimOptions<ErrAcc>>;
+pub type StatelessTrimOptions<StateRef, ErrAcc> = StatelessOptions<StateRef, TrimOptions<ErrAcc>>;
 
 impl StatelessTrimOptions<(), ()> {
   /// Create a new instance with `0` as the start index and no action state.
@@ -139,13 +136,10 @@ impl StatelessTrimOptions<(), ()> {
 // re-export from `TrimOptions`
 // but with `StatelessTrimOptions` as the return type
 // instead of `TrimOptions`
-impl<ActionStateRef, ErrAcc> StatelessTrimOptions<ActionStateRef, ErrAcc> {
+impl<StateRef, ErrAcc> StatelessTrimOptions<StateRef, ErrAcc> {
   /// See [`TrimOptions::errors_to`].
   #[inline]
-  pub fn errors_to<NewErrAcc>(
-    self,
-    acc: NewErrAcc,
-  ) -> StatelessTrimOptions<ActionStateRef, NewErrAcc> {
+  pub fn errors_to<NewErrAcc>(self, acc: NewErrAcc) -> StatelessTrimOptions<StateRef, NewErrAcc> {
     StatelessTrimOptions {
       start: self.start,
       action_state: self.action_state,
@@ -155,7 +149,7 @@ impl<ActionStateRef, ErrAcc> StatelessTrimOptions<ActionStateRef, ErrAcc> {
 
   /// See [`TrimOptions::errors_to_vec`].
   #[inline]
-  pub fn errors_to_vec(self) -> StatelessTrimOptions<ActionStateRef, Vec<ErrAcc>> {
+  pub fn errors_to_vec(self) -> StatelessTrimOptions<StateRef, Vec<ErrAcc>> {
     StatelessTrimOptions {
       start: self.start,
       action_state: self.action_state,

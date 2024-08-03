@@ -15,14 +15,13 @@ use crate::{
 
 /// Create an action that matches any JSON whitespace characters greedily.
 /// The characters are: `'\x20'` (space), `'\x0a'` (line feed), `'\x0d'` (carriage return), `'\x09'` (tab).
-pub fn whitespaces<ActionState, ErrorType>() -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+pub fn whitespaces<State, ErrorType>() -> Action<MockTokenKind<()>, State, ErrorType> {
   chars_in_str("\x20\x0a\x0d\x09")
 }
 
 /// Create an action that matches one JSON boundary character exactly.
 /// The characters are: `'{'`, `'}'`, `','`, `':'`, `'['`, `']'`.
-pub fn boundaries<ActionState, ErrorType>() -> Vec<Action<MockTokenKind<()>, ActionState, ErrorType>>
-{
+pub fn boundaries<State, ErrorType>() -> Vec<Action<MockTokenKind<()>, State, ErrorType>> {
   exact_chars("{},:[]")
 }
 
@@ -66,14 +65,14 @@ impl<BodyAcc, CustomError> StringOptions<BodyAcc, CustomError> {
 /// Create an action that matches a JSON string literal
 /// with the given options.
 pub fn string<
-  ActionState,
+  State,
   ErrorType,
   Value: PartialStringBodyValue + 'static,
   CustomError: 'static,
   BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone,
 >(
   options: StringOptions<BodyAcc, CustomError>,
-) -> Action<MockTokenKind<BodyAcc>, ActionState, ErrorType> {
+) -> Action<MockTokenKind<BodyAcc>, State, ErrorType> {
   super::string(
     "\"",
     StringBodyOptions::default()
@@ -107,14 +106,14 @@ pub fn string<
 /// Create an action that matches a JSON string literal
 /// with the given options.
 pub fn string_with<
-  ActionState,
+  State,
   ErrorType,
   Value: PartialStringBodyValue + 'static,
   CustomError: 'static,
   BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone,
 >(
   options_builder: impl FnOnce(StringOptions<(), HexEscapeError>) -> StringOptions<BodyAcc, CustomError>,
-) -> Action<MockTokenKind<BodyAcc>, ActionState, ErrorType> {
+) -> Action<MockTokenKind<BodyAcc>, State, ErrorType> {
   string(options_builder(StringOptions::new()))
 }
 
@@ -199,7 +198,7 @@ impl<SepAcc, IntAcc, FracAcc, ExpAcc> NumberOptions<SepAcc, IntAcc, FracAcc, Exp
 /// Create an action that matches a JSON number literal
 /// with the given options.
 pub fn number<
-  ActionState,
+  State,
   ErrorType,
   SepAcc: Accumulator<usize> + Clone,
   IntAcc: Accumulator<char> + Clone,
@@ -207,8 +206,7 @@ pub fn number<
   ExpAcc: Accumulator<char> + Clone,
 >(
   options: NumberOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
-) -> Action<MockTokenKind<FloatLiteralData<SepAcc, IntAcc, FracAcc, ExpAcc>>, ActionState, ErrorType>
-{
+) -> Action<MockTokenKind<FloatLiteralData<SepAcc, IntAcc, FracAcc, ExpAcc>>, State, ErrorType> {
   let options = FloatLiteralOptions::new()
     .separator_with(|o| o.indexes_to(options.separator))
     .integral_to(options.integer)
@@ -236,7 +234,7 @@ pub fn number<
 /// Create an action that matches a JSON number literal
 /// with the given options.
 pub fn number_with<
-  ActionState,
+  State,
   ErrorType,
   SepAcc: Accumulator<usize> + Clone,
   IntAcc: Accumulator<char> + Clone,
@@ -246,7 +244,6 @@ pub fn number_with<
   options_builder: impl FnOnce(
     NumberOptions<(), (), (), ()>,
   ) -> NumberOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
-) -> Action<MockTokenKind<FloatLiteralData<SepAcc, IntAcc, FracAcc, ExpAcc>>, ActionState, ErrorType>
-{
+) -> Action<MockTokenKind<FloatLiteralData<SepAcc, IntAcc, FracAcc, ExpAcc>>, State, ErrorType> {
   number(options_builder(NumberOptions::new()))
 }

@@ -7,7 +7,7 @@ use crate::{
   utils::OneOrMore,
 };
 
-impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`].
   /// # Examples
   /// ```
@@ -24,10 +24,10 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// builder.ignore([word("A").bind(A), word("B").bind(B)]);
   /// # }
   /// ```
-  pub fn ignore(self, actions: impl Into<OneOrMore<Action<Kind, ActionState, ErrorType>>>) -> Self
+  pub fn ignore(self, actions: impl Into<OneOrMore<Action<Kind, State, ErrorType>>>) -> Self
   where
     Kind: 'static,
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     self.append(Self::map_actions(actions, |a| a.mute()))
@@ -51,20 +51,20 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// ```
   pub fn ignore_with<F>(
     self,
-    actions: impl Into<OneOrMore<Action<Kind, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<Kind, State, ErrorType>>>,
     decorator: F,
   ) -> Self
   where
     Kind: 'static,
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
-    F: Fn(Action<Kind, ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
+    F: Fn(Action<Kind, State, ErrorType>) -> Action<Kind, State, ErrorType>,
   {
     self.ignore(Self::map_actions(actions, decorator))
   }
 }
 
-impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, State, ErrorType> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] and bind them to the default kind.
   /// # Examples
   /// ```
@@ -86,11 +86,11 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   /// ```
   pub fn ignore_default(
     self,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
   ) -> Self
   where
     Kind: DefaultTokenKindIdBinding<Kind>,
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     self.ignore(Self::map_actions(actions, |a| a.bind_default()))
@@ -114,16 +114,16 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   /// ```
   pub fn ignore_default_with<F>(
     self,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
     decorator: F,
   ) -> Self
   where
     Kind: DefaultTokenKindIdBinding<Kind>,
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
     F: Fn(
-      Action<MockTokenKind<()>, ActionState, ErrorType>,
-    ) -> Action<MockTokenKind<()>, ActionState, ErrorType>,
+      Action<MockTokenKind<()>, State, ErrorType>,
+    ) -> Action<MockTokenKind<()>, State, ErrorType>,
   {
     self.ignore_default(Self::map_actions(actions, decorator))
   }

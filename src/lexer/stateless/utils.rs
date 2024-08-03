@@ -12,17 +12,17 @@ use crate::{
 /// Return the output, the index of the accepted action and whether the action is muted.
 /// If no accepted action, return [`None`].
 /// If the action state is mutated during the traversal, return the new action state.
-pub(super) fn traverse_actions<'text, Kind, ActionState, ErrorType>(
-  input: ActionInput<&ActionState>,
-  actions: &HeadMapActions<Kind, ActionState, ErrorType>,
+pub(super) fn traverse_actions<'text, Kind, State, ErrorType>(
+  input: ActionInput<&State>,
+  actions: &HeadMapActions<Kind, State, ErrorType>,
   re_lex: &ReLexContext,
 ) -> (
   Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)>,
-  Option<ActionState>,
+  Option<State>,
 )
 where
   Kind: TokenKindIdProvider<TokenKind = Kind>,
-  ActionState: Clone,
+  State: Clone,
 {
   if let Some(res) = traverse_immutables(&input, actions, re_lex) {
     return (Some(res), None);
@@ -37,7 +37,7 @@ where
   let mut state = input.state.clone();
 
   // we don't need re-lexable factory to clone the state here
-  // because the `ActionState` is already `Clone`
+  // because the `State` is already `Clone`
   // and it will always be cloned here
 
   (
@@ -52,12 +52,12 @@ where
 pub(super) fn traverse_actions_mut<
   'text,
   Kind,
-  ActionState,
+  State,
   ErrorType,
-  ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
+  ReLexableFactoryType: ReLexableFactory<'text, Kind, State, ErrorType>,
 >(
-  mut input: ActionInput<&mut ActionState>,
-  actions: &HeadMapActions<Kind, ActionState, ErrorType>,
+  mut input: ActionInput<&mut State>,
+  actions: &HeadMapActions<Kind, State, ErrorType>,
   re_lex: &ReLexContext,
   re_lexable_factory: &mut ReLexableFactoryType,
   peek: bool,
@@ -84,9 +84,9 @@ where
   traverse_rest(&mut input, actions, re_lex)
 }
 
-fn traverse_immutables<Kind, ActionState, ErrorType>(
-  input: &ActionInput<&ActionState>,
-  actions: &HeadMapActions<Kind, ActionState, ErrorType>,
+fn traverse_immutables<Kind, State, ErrorType>(
+  input: &ActionInput<&State>,
+  actions: &HeadMapActions<Kind, State, ErrorType>,
   re_lex: &ReLexContext,
 ) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)> {
   for (i, action) in
@@ -111,9 +111,9 @@ fn traverse_immutables<Kind, ActionState, ErrorType>(
   None
 }
 
-fn traverse_rest<'text, Kind, ActionState, ErrorType>(
-  input: &mut ActionInput<&mut ActionState>,
-  actions: &HeadMapActions<Kind, ActionState, ErrorType>,
+fn traverse_rest<'text, Kind, State, ErrorType>(
+  input: &mut ActionInput<&mut State>,
+  actions: &HeadMapActions<Kind, State, ErrorType>,
   re_lex: &ReLexContext,
 ) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)> {
   for (i, action) in actions

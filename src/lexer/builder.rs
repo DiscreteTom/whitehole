@@ -8,11 +8,11 @@ use std::rc::Rc;
 
 /// To create this, see [`Self::new`], [`Self::stateful`],
 /// [`Self::with_error`] and [`Self::stateful_with_error`].
-pub struct LexerBuilder<Kind: 'static, ActionState = (), ErrorType = ()> {
-  actions: Vec<Action<Kind, ActionState, ErrorType>>,
+pub struct LexerBuilder<Kind: 'static, State = (), ErrorType = ()> {
+  actions: Vec<Action<Kind, State, ErrorType>>,
 }
 
-impl<Kind, ActionState, ErrorType> Default for LexerBuilder<Kind, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> Default for LexerBuilder<Kind, State, ErrorType> {
   fn default() -> Self {
     Self {
       actions: Vec::new(),
@@ -21,7 +21,7 @@ impl<Kind, ActionState, ErrorType> Default for LexerBuilder<Kind, ActionState, E
 }
 
 impl<Kind> LexerBuilder<Kind> {
-  /// Create a new lexer builder, set `ActionState` and `ErrorType` to `()`.
+  /// Create a new lexer builder, set `State` and `ErrorType` to `()`.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{LexerBuilder, action::exact};
@@ -40,7 +40,7 @@ impl<Kind> LexerBuilder<Kind> {
     Self::default()
   }
 
-  /// Create a new lexer builder with the provided `ActionState`,
+  /// Create a new lexer builder with the provided `State`,
   /// set `ErrorType` to `()`.
   /// # Examples
   /// ```
@@ -57,13 +57,13 @@ impl<Kind> LexerBuilder<Kind> {
   /// LexerBuilder::<_, MyState, ()>::default();
   /// # builder.append(exact("a"));
   /// ```
-  pub fn stateful<ActionState>() -> LexerBuilder<Kind, ActionState> {
+  pub fn stateful<State>() -> LexerBuilder<Kind, State> {
     LexerBuilder::default()
   }
 }
 
 impl<Kind, ErrorType> LexerBuilder<Kind, (), ErrorType> {
-  /// Create a new lexer builder, set `ActionState` to `()`,
+  /// Create a new lexer builder, set `State` to `()`,
   /// infer `ErrorType` from the provided actions.
   /// # Examples
   /// ```
@@ -82,7 +82,7 @@ impl<Kind, ErrorType> LexerBuilder<Kind, (), ErrorType> {
     Self::default()
   }
 
-  /// Create a new lexer builder with the provided `ActionState`,
+  /// Create a new lexer builder with the provided `State`,
   /// infer `ErrorType` from the provided actions.
   /// # Examples
   /// ```
@@ -98,14 +98,14 @@ impl<Kind, ErrorType> LexerBuilder<Kind, (), ErrorType> {
   /// LexerBuilder::<_, MyState, _>::default();
   /// # builder.append_with(exact("a"), |a| a.error(MyError));
   /// ```
-  pub fn stateful_with_error<ActionState>() -> LexerBuilder<Kind, ActionState, ErrorType> {
+  pub fn stateful_with_error<State>() -> LexerBuilder<Kind, State, ErrorType> {
     LexerBuilder::default()
   }
 }
 
-impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   // TODO: move into `generate`?
-  pub fn build_stateless(self) -> StatelessLexer<Kind, ActionState, ErrorType> {
+  pub fn build_stateless(self) -> StatelessLexer<Kind, State, ErrorType> {
     // TODO: warning if action has no head matcher
     // wrap actions with Rc, make them immutable and clone-able
     StatelessLexer::new(self.actions)
@@ -113,23 +113,23 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
 
   pub fn build_with<'text>(
     self,
-    action_state: ActionState,
+    action_state: State,
     text: &'text str,
-  ) -> Lexer<'text, Kind, ActionState, ErrorType> {
+  ) -> Lexer<'text, Kind, State, ErrorType> {
     Lexer::new(Rc::new(self.build_stateless()), action_state, text)
   }
 
-  pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, ActionState, ErrorType>
+  pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, State, ErrorType>
   where
-    ActionState: Default,
+    State: Default,
   {
-    self.build_with(ActionState::default(), text)
+    self.build_with(State::default(), text)
   }
 
   fn map_actions<OldKind: 'static, NewKind>(
-    actions: impl Into<OneOrMore<Action<OldKind, ActionState, ErrorType>>>,
-    f: impl Fn(Action<OldKind, ActionState, ErrorType>) -> Action<NewKind, ActionState, ErrorType>,
-  ) -> Vec<Action<NewKind, ActionState, ErrorType>> {
+    actions: impl Into<OneOrMore<Action<OldKind, State, ErrorType>>>,
+    f: impl Fn(Action<OldKind, State, ErrorType>) -> Action<NewKind, State, ErrorType>,
+  ) -> Vec<Action<NewKind, State, ErrorType>> {
     actions.into().0.into_iter().map(f).collect()
   }
 }

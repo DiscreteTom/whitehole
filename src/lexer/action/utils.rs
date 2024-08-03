@@ -27,9 +27,9 @@ use std::{collections::HashSet, ops::RangeInclusive};
 /// # let action: Action<_> =
 /// chars(|ch| ch.is_ascii_digit());
 /// ```
-pub fn chars<ActionState, ErrorType>(
+pub fn chars<State, ErrorType>(
   condition: impl Fn(char) -> bool + 'static,
-) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+) -> Action<MockTokenKind<()>, State, ErrorType> {
   simple(move |input| {
     let mut digested = 0;
     for ch in input.rest().chars() {
@@ -52,9 +52,9 @@ pub fn chars<ActionState, ErrorType>(
 /// # let action: Action<_> =
 /// chars_in_range('0'..='9');
 /// ```
-pub fn chars_in_range<ActionState, ErrorType>(
+pub fn chars_in_range<State, ErrorType>(
   range: impl Into<RangeInclusive<char>>,
-) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+) -> Action<MockTokenKind<()>, State, ErrorType> {
   let range = range.into();
   {
     let range = range.clone();
@@ -73,9 +73,9 @@ pub fn chars_in_range<ActionState, ErrorType>(
 /// # let action: Action<_> =
 /// charset(['0', '9']);
 /// ```
-pub fn charset<ActionState, ErrorType>(
+pub fn charset<State, ErrorType>(
   set: impl Into<HashSet<char>>,
-) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+) -> Action<MockTokenKind<()>, State, ErrorType> {
   let set = set.into();
   {
     let set = set.clone();
@@ -95,9 +95,9 @@ pub fn charset<ActionState, ErrorType>(
 /// chars_in_str("09");
 /// ```
 #[inline]
-pub fn chars_in_str<ActionState, ErrorType>(
+pub fn chars_in_str<State, ErrorType>(
   s: impl Into<String>,
-) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+) -> Action<MockTokenKind<()>, State, ErrorType> {
   charset(s.into().chars().collect::<HashSet<_>>())
 }
 
@@ -117,7 +117,7 @@ pub fn chars_in_str<ActionState, ErrorType>(
 /// builder.ignore_default(whitespaces());
 /// # }
 /// ```
-pub fn whitespaces<ActionState, ErrorType>() -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+pub fn whitespaces<State, ErrorType>() -> Action<MockTokenKind<()>, State, ErrorType> {
   chars(|ch| ch.is_whitespace())
     // 0009..000D    ; White_Space # Cc   [5] <control-0009>..<control-000D>
     // 0020          ; White_Space # Zs       SPACE
@@ -158,10 +158,10 @@ pub fn whitespaces<ActionState, ErrorType>() -> Action<MockTokenKind<()>, Action
 /// # let action: Action<_> =
 /// comment("<!--", "-->");
 /// ```
-pub fn comment<ActionState, ErrorType>(
+pub fn comment<State, ErrorType>(
   open: impl Into<String>,
   close: impl Into<String>,
-) -> Action<MockTokenKind<()>, ActionState, ErrorType> {
+) -> Action<MockTokenKind<()>, State, ErrorType> {
   let open: String = open.into();
   let close: String = close.into();
   let first = open.chars().next().expect("open is empty");

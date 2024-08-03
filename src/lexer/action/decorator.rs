@@ -7,7 +7,7 @@ pub use context::*;
 
 use super::{action_input_to_ref, input::ActionInput, output::ActionOutput, Action, ActionExec};
 
-impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// Check the [`ActionInput`] before the action is executed.
   /// Reject the action if the `condition` returns `true`.
   /// # Examples
@@ -32,10 +32,10 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   pub fn prevent(
     mut self,
     // action state is immutable
-    condition: impl Fn(&ActionInput<&ActionState>) -> bool + 'static,
+    condition: impl Fn(&ActionInput<&State>) -> bool + 'static,
   ) -> Self
   where
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     macro_rules! impl_prevent {
@@ -57,7 +57,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self
   }
 
-  /// Modify `ActionState` before the action is executed.
+  /// Modify `State` before the action is executed.
   /// This will set [`Self::may_mutate_state`] to `true`.
   /// # Examples
   /// ```
@@ -81,10 +81,10 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   pub fn prepare(
     mut self,
     // action state is mutable
-    modifier: impl Fn(&mut ActionInput<&mut ActionState>) + 'static,
+    modifier: impl Fn(&mut ActionInput<&mut State>) + 'static,
   ) -> Self
   where
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     macro_rules! impl_prepare {
@@ -172,15 +172,15 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     self,
     condition: impl Fn(
         AcceptedActionOutputContext<
-          &ActionInput<&ActionState>,
+          &ActionInput<&State>,
           // user could consume the old error, but not able to consume the kind
           ActionOutput<&Kind, Option<ErrorType>>,
         >,
       ) -> Option<NewError>
       + 'static,
-  ) -> Action<Kind, ActionState, NewError>
+  ) -> Action<Kind, State, NewError>
   where
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     macro_rules! impl_check {
@@ -230,9 +230,9 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// );
   /// # }
   /// ```
-  pub fn error<NewError>(self, error: NewError) -> Action<Kind, ActionState, NewError>
+  pub fn error<NewError>(self, error: NewError) -> Action<Kind, State, NewError>
   where
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
     NewError: Clone + 'static,
   {
@@ -284,7 +284,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     mut self,
     condition: impl Fn(
         AcceptedActionOutputContext<
-          &ActionInput<&ActionState>,
+          &ActionInput<&State>,
           // user should NOT mutate the output directly
           &ActionOutput<Kind, Option<ErrorType>>,
         >,
@@ -292,7 +292,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
       + 'static,
   ) -> Self
   where
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     macro_rules! impl_reject_if {
@@ -336,7 +336,7 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// ```
   pub fn reject(mut self) -> Self
   where
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     // to optimize the runtime performance,
@@ -388,14 +388,14 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     cb: impl Fn(
         AcceptedActionOutputContext<
           // user can mutate the input.state
-          &mut ActionInput<&mut ActionState>,
+          &mut ActionInput<&mut State>,
           // user should NOT mutate the output directly
           &ActionOutput<Kind, Option<ErrorType>>,
         >,
       ) + 'static,
   ) -> Self
   where
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     macro_rules! impl_callback {

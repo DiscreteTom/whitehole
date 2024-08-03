@@ -7,7 +7,7 @@ use crate::{
   utils::OneOrMore,
 };
 
-impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, State, ErrorType> {
   /// Define actions and bind them to the provided kind.
   /// # Examples
   /// ```
@@ -27,14 +27,14 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   pub fn define<ViaKind>(
     self,
     kind: ViaKind,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
   ) -> Self
   where
     ViaKind: SubTokenKind<TokenKind = TokenKindIdBinding<Kind>>
       + Into<TokenKindIdBinding<Kind>>
       + Clone
       + 'static,
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     self.append(Self::map_actions(actions, |a| a.bind(kind.clone())))
@@ -59,17 +59,17 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   pub fn define_with<ViaKind>(
     self,
     kind: ViaKind,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
     decorator: impl Fn(
-      Action<MockTokenKind<()>, ActionState, ErrorType>,
-    ) -> Action<MockTokenKind<()>, ActionState, ErrorType>,
+      Action<MockTokenKind<()>, State, ErrorType>,
+    ) -> Action<MockTokenKind<()>, State, ErrorType>,
   ) -> Self
   where
     ViaKind: SubTokenKind<TokenKind = TokenKindIdBinding<Kind>>
       + Into<TokenKindIdBinding<Kind>>
       + Clone
       + 'static,
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     self.define(kind, Self::map_actions(actions, decorator))

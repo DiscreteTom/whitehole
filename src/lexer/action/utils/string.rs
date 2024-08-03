@@ -30,7 +30,7 @@ use std::collections::HashSet;
 
 // TODO: comments
 pub fn string<
-  ActionState,
+  State,
   ErrorType,
   Value: PartialStringBodyValue + 'static,
   CustomError: 'static,
@@ -38,7 +38,7 @@ pub fn string<
 >(
   open: impl Into<OneOrMore<String>>,
   options: StringBodyOptions<Value, CustomError, BodyAcc>,
-) -> Action<MockTokenKind<BodyAcc>, ActionState, ErrorType> {
+) -> Action<MockTokenKind<BodyAcc>, State, ErrorType> {
   let open: Vec<String> = open.into().0;
   let head: HashSet<_> = open
     .iter()

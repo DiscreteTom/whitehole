@@ -7,7 +7,7 @@ use crate::{
   utils::OneOrMore,
 };
 
-impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// Append actions to the builder.
   /// # Examples
   /// ```
@@ -24,10 +24,7 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// builder.append([word("A").bind(A), word("B").bind(B)]);
   /// # }
   /// ```
-  pub fn append(
-    mut self,
-    actions: impl Into<OneOrMore<Action<Kind, ActionState, ErrorType>>>,
-  ) -> Self {
+  pub fn append(mut self, actions: impl Into<OneOrMore<Action<Kind, State, ErrorType>>>) -> Self {
     self.actions.extend(actions.into().0);
     self
   }
@@ -50,14 +47,14 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<Kind, ActionState, ErrorType> {
   /// ```
   pub fn append_with(
     self,
-    actions: impl Into<OneOrMore<Action<Kind, ActionState, ErrorType>>>,
-    decorator: impl Fn(Action<Kind, ActionState, ErrorType>) -> Action<Kind, ActionState, ErrorType>,
+    actions: impl Into<OneOrMore<Action<Kind, State, ErrorType>>>,
+    decorator: impl Fn(Action<Kind, State, ErrorType>) -> Action<Kind, State, ErrorType>,
   ) -> Self {
     self.append(Self::map_actions(actions, decorator))
   }
 }
 
-impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, State, ErrorType> {
   /// Append actions and bind them to the default kind.
   /// # Examples
   /// ```
@@ -79,11 +76,11 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   /// ```
   pub fn append_default(
     self,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
   ) -> Self
   where
     Kind: DefaultTokenKindIdBinding<Kind>,
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     self.append(Self::map_actions(actions, |a| a.bind_default()))
@@ -107,14 +104,14 @@ impl<Kind, ActionState, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, Action
   /// ```
   pub fn append_default_with(
     self,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, ActionState, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
     decorator: impl Fn(
-      Action<MockTokenKind<()>, ActionState, ErrorType>,
-    ) -> Action<MockTokenKind<()>, ActionState, ErrorType>,
+      Action<MockTokenKind<()>, State, ErrorType>,
+    ) -> Action<MockTokenKind<()>, State, ErrorType>,
   ) -> Self
   where
     Kind: DefaultTokenKindIdBinding<Kind>,
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     self.append_default(Self::map_actions(actions, decorator))

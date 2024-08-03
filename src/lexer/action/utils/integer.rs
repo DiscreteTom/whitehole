@@ -304,7 +304,7 @@ macro_rules! generate_integer_literal_functions {
     /// For decimal integer literals, if the first char is a separator, the action will be rejected.
     #[inline]
     pub fn $action_fn_name_with<
-      ActionState,
+      State,
       ErrorType,
       SepAcc: NumericSeparatorAccumulator + Clone + 'static,
       ValueAcc: Accumulator<char> + Clone + 'static,
@@ -312,7 +312,7 @@ macro_rules! generate_integer_literal_functions {
       options_builder: impl FnOnce(
         IntegerLiteralBodyOptions<(), ()>,
       ) -> IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
-    ) -> Action<MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, ActionState, ErrorType> {
+    ) -> Action<MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, State, ErrorType> {
       $action_fn_name_with_options(options_builder(IntegerLiteralBodyOptions::new()))
     }
 
@@ -338,13 +338,13 @@ macro_rules! generate_integer_literal_functions {
     ///
     /// For decimal integer literals, if the first char is a separator, the action will be rejected.
     pub fn $action_fn_name_with_options<
-      ActionState,
+      State,
       ErrorType,
       SepAcc: NumericSeparatorAccumulator + Clone + 'static,
       ValueAcc: Accumulator<char> + Clone + 'static,
     >(
       options: IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
-    ) -> Action<MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, ActionState, ErrorType> {
+    ) -> Action<MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, State, ErrorType> {
       let prefix = $prefix;
 
       if prefix.len() == 0 {

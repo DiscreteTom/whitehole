@@ -13,7 +13,7 @@ use crate::{
   utils::Accumulator,
 };
 
-impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// Lex with muted actions, the default action state and the default options.
   ///
   /// This function will create a new action state and return it.
@@ -24,12 +24,12 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// let (output, action_state) = stateless.trim("123");
   /// ```
   #[inline]
-  pub fn trim<'text>(&self, text: &'text str) -> (TrimOutput<()>, ActionState)
+  pub fn trim<'text>(&self, text: &'text str) -> (TrimOutput<()>, State)
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
-    ActionState: Default,
+    State: Default,
   {
-    let mut action_state = ActionState::default();
+    let mut action_state = State::default();
     (
       self.trim_with(text, |o| o.action_state(&mut action_state)),
       action_state,
@@ -50,11 +50,11 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     text: &'text str,
     options_builder: impl FnOnce(
       StatelessTrimOptions<(), ()>,
-    ) -> StatelessTrimOptions<&'action_state mut ActionState, ErrAcc>,
+    ) -> StatelessTrimOptions<&'action_state mut State, ErrAcc>,
   ) -> TrimOutput<ErrAcc>
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
-    ActionState: 'action_state,
+    State: 'action_state,
   {
     self.trim_with_options(text, options_builder(StatelessTrimOptions::new()))
   }
@@ -71,7 +71,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   pub fn trim_with_options<'text, 'action_state, ErrAcc: Accumulator<(ErrorType, Range)>>(
     &self,
     text: &'text str,
-    options: StatelessTrimOptions<&'action_state mut ActionState, ErrAcc>,
+    options: StatelessTrimOptions<&'action_state mut State, ErrAcc>,
   ) -> TrimOutput<ErrAcc>
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,

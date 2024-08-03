@@ -4,7 +4,7 @@ use crate::lexer::{
   token::{DefaultTokenKindIdBinding, SubTokenKind, TokenKindIdBinding},
 };
 
-impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
+impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// Set the kind and the data binding for this action.
   /// Use this if your action can only yield a const token kind value.
   /// # Examples
@@ -25,13 +25,13 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   pub fn bind<NewKind, ViaKind>(
     self,
     kind: ViaKind,
-  ) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
+  ) -> Action<TokenKindIdBinding<NewKind>, State, ErrorType>
   where
     ViaKind: SubTokenKind<TokenKind = TokenKindIdBinding<NewKind>>
       + Into<TokenKindIdBinding<NewKind>>
       + Clone
       + 'static,
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     macro_rules! impl_bind {
@@ -74,10 +74,10 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
   /// let action: Action<TokenKindIdBinding<MyKind>> = exact("A").bind_default();
   /// # }
   /// ```
-  pub fn bind_default<NewKind>(self) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
+  pub fn bind_default<NewKind>(self) -> Action<TokenKindIdBinding<NewKind>, State, ErrorType>
   where
     NewKind: DefaultTokenKindIdBinding<NewKind>,
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     macro_rules! impl_bind_default {
@@ -127,17 +127,17 @@ impl<Kind, ActionState, ErrorType> Action<Kind, ActionState, ErrorType> {
     selector: impl Fn(
         AcceptedActionOutputContext<
           // user can't mutate the input
-          &ActionInput<&ActionState>,
+          &ActionInput<&State>,
           // output is consumed except the error
           ActionOutput<Kind, &Option<ErrorType>>,
         >,
       ) -> ViaKind
       + 'static,
-  ) -> Action<TokenKindIdBinding<NewKind>, ActionState, ErrorType>
+  ) -> Action<TokenKindIdBinding<NewKind>, State, ErrorType>
   where
     ViaKind:
       Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKind = TokenKindIdBinding<NewKind>>,
-    ActionState: 'static,
+    State: 'static,
     ErrorType: 'static,
   {
     macro_rules! impl_select {
