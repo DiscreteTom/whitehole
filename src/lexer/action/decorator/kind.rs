@@ -196,7 +196,7 @@ mod tests {
     assert!(matches!(
       action.exec.as_immutable()(& ActionInput::new("A", 0, & ()).unwrap()),
       Some(ActionOutput {
-        binding: binding,
+        binding,
         digested: 1,
         error: None
       }) if matches!(binding.kind(), MyKind::A) && binding.id() == A::kind_id()
@@ -210,7 +210,7 @@ mod tests {
     assert!(matches!(
       action.exec.as_immutable()(& ActionInput::new("A", 0, & ()).unwrap()),
       Some(ActionOutput {
-        binding: binding,
+        binding,
         digested: 1,
         error: None
       }) if matches!(binding.kind(), MyKind::A) && binding.id() == MyKind::default_kind_id()
@@ -225,7 +225,7 @@ mod tests {
     assert!(matches!(
       action.exec.as_immutable()(& ActionInput::new("1", 0, & ()).unwrap()),
       Some(ActionOutput {
-        binding: binding,
+        binding,
         digested: 1,
         error: None
       }) if matches!(binding.kind(), MyKind::Value(value) if value.0 == 1) && binding.id() == Value::kind_id()
