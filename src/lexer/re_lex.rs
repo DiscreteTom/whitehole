@@ -1,4 +1,4 @@
-use super::{state::Instant, Lexer};
+use super::{instant::Instant, Lexer};
 
 /// With this struct you can retry a lex with different actions.
 ///

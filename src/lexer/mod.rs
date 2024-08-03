@@ -4,7 +4,7 @@
 //!
 //! - [`self::token`]
 //! - [`self::action`]
-//! - [`self::state`]
+//! - [`self::instant`]
 //! - [`self::expectation`]
 //! - [`self::re_lex`]
 //! - [`self::fork`]
@@ -19,12 +19,12 @@ pub mod action;
 pub mod builder;
 pub mod expectation;
 pub mod fork;
+pub mod instant;
 pub mod lexer;
 pub mod options;
 pub mod output;
 pub mod position;
 pub mod re_lex;
-pub mod state;
 pub mod stateless;
 pub mod token;
 

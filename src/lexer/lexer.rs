@@ -1,9 +1,9 @@
 use super::{
   fork::LexOptionsFork,
+  instant::Instant,
   options::{LexOptions, TrimOptions},
   output::{LexOutput, TrimOutput},
   re_lex::ReLexableFactory,
-  state::Instant,
   stateless::{StatelessLexOptions, StatelessLexer, StatelessTrimOptions},
   token::{Range, Token, TokenKindIdProvider},
 };
