@@ -117,6 +117,15 @@ fn traverse_rest<
   re_lex: &ReLexContext,
   re_lexable_factory: &mut ReLexableFactoryType,
 ) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)> {
+  // prevent unnecessary clone of the action state
+  if actions.rest().len() == 0 {
+    return None;
+  }
+
+  // actions.rest is not empty, the first one must be a mutable action
+  // so we should backup the action state here
+  re_lexable_factory.before_mutate_action_state(input.state);
+
   for (i, action) in actions
     .rest()
     .iter()
@@ -130,10 +139,7 @@ fn traverse_rest<
   {
     if let Some(output) = match action {
       GeneralAction::Immutable(action) => action.exec()(&input.as_ref()),
-      GeneralAction::Mutable(action) => {
-        re_lexable_factory.before_mutate_action_state(input.state);
-        action.exec()(input)
-      }
+      GeneralAction::Mutable(action) => action.exec()(input),
     } {
       // return once accepted action is found
       return Some((output, i + actions.immutables().len(), action.muted()));

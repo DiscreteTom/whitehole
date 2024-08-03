@@ -193,9 +193,7 @@ impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
 
   fn before_mutate_action_state(&mut self, action_state: &ActionState) {
     // backup the action state before the first mutation during one lexing loop
-    if self.action_state_bk.is_none() {
-      self.action_state_bk = Some(action_state.clone());
-    }
+    self.action_state_bk = Some(action_state.clone());
   }
 
   fn into_stateless_re_lexable(
