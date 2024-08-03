@@ -18,7 +18,7 @@ pub struct Token<Kind> {
   pub range: Range,
   // we don't store `token.content` here (as a `&str`).
   // when lexing users can get the content in the lexing context,
-  // parse its value if needed and store the data in `self::kind`.
+  // parse its value if needed and store the result data in `self::kind`.
   // `token.content` may only be used less than once, and can be calculated from `token.range`.
   // users can calculate and cache it by themselves, we don't do unnecessary work.
 }
