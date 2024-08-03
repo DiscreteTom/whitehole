@@ -10,7 +10,7 @@ use crate::{
 
 /// Traverse all actions to find the first accepted action.
 /// Return the output and the index of the accepted action.
-/// If no accepted action, return `None`.
+/// If no accepted action, return [`None`].
 pub(super) fn traverse_actions<
   'text,
   Kind,
@@ -49,7 +49,7 @@ where
 
 /// Traverse all actions to find the first accepted action.
 /// Return the output and the index of the accepted action.
-/// If no accepted action, return `None`.
+/// If no accepted action, return [`None`].
 pub(super) fn traverse_actions_mut<
   'text,
   Kind,
