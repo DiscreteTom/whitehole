@@ -187,7 +187,7 @@ mod tests {
   use super::*;
   use crate::lexer::{
     action::{exact, regex},
-    token::{MockTokenKind, SubTokenKind, TokenKindIdBinding},
+    token::{MockTokenKind, SubTokenKind},
   };
   use head_map::HeadMapActions;
   use whitehole_macros::_token_kind;
@@ -204,8 +204,8 @@ mod tests {
   }
 
   fn assert_immutable_actions_eq(
-    actions: &HeadMapActions<TokenKindIdBinding<MyKind>, (), ()>,
-    expected: Vec<Action<TokenKindIdBinding<MyKind>, (), ()>>,
+    actions: &HeadMapActions<MyKind, (), ()>,
+    expected: Vec<Action<MyKind, (), ()>>,
   ) {
     assert_eq!(actions.len(), expected.len());
     for i in 0..actions.immutables().len() {

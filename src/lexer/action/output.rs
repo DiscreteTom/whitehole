@@ -1,8 +1,8 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ActionOutput<Kind, OptionErrorType> {
-  /// The [`Token::kind`](crate::lexer::token::Token::kind)
+pub struct ActionOutput<BindingType, OptionErrorType> {
+  /// The [`Token::binding`](crate::lexer::token::Token::binding)
   /// that is created by this action.
-  pub kind: Kind,
+  pub binding: BindingType,
   /// How many bytes are digested by this action.
   /// `0` is allowed, but be careful with infinite loops.
   pub digested: usize,

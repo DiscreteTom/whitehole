@@ -1,9 +1,11 @@
+use super::TokenKindIdBinding;
+
 pub type Range = std::ops::Range<usize>;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Token<Kind> {
+pub struct Token<Kind: 'static> {
   /// The kind and the binding data.
-  pub kind: Kind,
+  pub binding: TokenKindIdBinding<Kind>,
   /// The byte range of the token in the input text.
   /// This can be used to index the input text.
   /// # Example
@@ -26,11 +28,12 @@ pub struct Token<Kind> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::lexer::token::MockTokenKind;
 
   #[test]
   fn test_token() {
     let token = Token {
-      kind: (),
+      binding: MockTokenKind::new(()).into(),
       range: 0..5, // ensure we can create the range with the range syntax
     };
 

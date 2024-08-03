@@ -48,13 +48,14 @@ impl_ctx!(&mut ActionInput<'text, StateRef>, &ActionOutput<Kind, OptionErrorType
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::lexer::token::MockTokenKind;
 
   fn create_input() -> ActionInput<'static, ()> {
     ActionInput::new("123", 1, ()).unwrap()
   }
-  fn create_output() -> ActionOutput<(), Option<()>> {
+  fn create_output() -> ActionOutput<MockTokenKind<()>, Option<()>> {
     ActionOutput {
-      kind: (),
+      binding: MockTokenKind::new(()).into(),
       digested: 1,
       error: None::<()>,
     }

@@ -2,7 +2,7 @@ use super::LexerBuilder;
 use crate::{
   lexer::{
     action::Action,
-    token::{DefaultTokenKindIdBinding, MockTokenKind, TokenKindIdBinding},
+    token::{DefaultTokenKindIdBinding, MockTokenKind},
   },
   utils::OneOrMore,
 };
@@ -62,9 +62,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   {
     self.ignore(Self::map_actions(actions, decorator))
   }
-}
 
-impl<Kind, State, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, State, ErrorType> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] and bind them to the default kind.
   /// # Examples
   /// ```

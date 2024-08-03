@@ -12,7 +12,7 @@ use crate::{
     output::LexOutput,
     re_lex::{ReLexContext, ReLexableFactory},
     stateless::utils::{traverse_actions, traverse_actions_mut, update_state},
-    token::{Range, Token, TokenKindId, TokenKindIdProvider},
+    token::{Range, Token, TokenKindId, TokenKindIdBinding},
   },
   utils::Accumulator,
 };
@@ -33,7 +33,6 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   #[inline]
   pub fn lex<'text>(&self, text: &'text str) -> (LexOutput<Token<Kind>, (), ()>, State)
   where
-    Kind: TokenKindIdProvider<TokenKind = Kind>,
     State: Default,
   {
     let mut state = State::default();
@@ -75,7 +74,6 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::StatelessReLexableType
   >
   where
-    Kind: TokenKindIdProvider<TokenKind = Kind>,
     State: 'state,
   {
     self.lex_with_options(text, options_builder(StatelessLexOptions::new()))
@@ -107,8 +105,6 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     ErrAcc,
     <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::StatelessReLexableType
   >
-  where
-    Kind: TokenKindIdProvider<TokenKind = Kind>,
   {
     if let Some(literal) = options.base.expectation.literal {
       let (literal_map, head_map) =
@@ -186,7 +182,6 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     Option<State>
   )
   where
-    Kind: TokenKindIdProvider<TokenKind = Kind>,
     State: Clone + 'state,
   {
     self.peek_with_options(text, options_builder(StatelessLexOptions::new()))
@@ -223,7 +218,6 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     Option<State>
   )
   where
-    Kind: TokenKindIdProvider<TokenKind = Kind>,
     State: Clone
   {
     let mut digested = 0;
@@ -388,10 +382,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     re_lex: &ReLexContext,
     mut re_lexable_factory: ReLexableFactoryType,
     peek: bool,
-  ) -> LexOutput<Token<Kind>, ErrAcc, ReLexableFactoryType::StatelessReLexableType>
-  where
-    Kind: TokenKindIdProvider<TokenKind = Kind>,
-  {
+  ) -> LexOutput<Token<Kind>, ErrAcc, ReLexableFactoryType::StatelessReLexableType> {
     loop {
       let input_start = start + digested;
       let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state));
@@ -433,10 +424,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     re_lex: &ReLexContext,
     mut re_lexable_factory: ReLexableFactoryType,
     peek: bool,
-  ) -> LexOutput<Token<Kind>, ErrAcc, ReLexableFactoryType::StatelessReLexableType>
-  where
-    Kind: TokenKindIdProvider<TokenKind = Kind>,
-  {
+  ) -> LexOutput<Token<Kind>, ErrAcc, ReLexableFactoryType::StatelessReLexableType> {
     loop {
       let input_start = start + digested;
       let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state));
@@ -513,14 +501,14 @@ fn get_actions_by_literal_map<'this, Kind: 'static, State, StateRef, ErrorType>(
 /// Process the output, update the digested, collect errors, and emit token if not muted.
 /// Return the token if not muted, otherwise return [`None`].
 fn process_output<Kind, ErrorType, ErrAcc: Accumulator<(ErrorType, Range)>>(
-  output: ActionOutput<Kind, Option<ErrorType>>,
+  output: ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
   muted: bool,
   start: usize,
   digested: &mut usize,
   errors: &mut ErrAcc,
 ) -> Option<Token<Kind>> {
   update_state(output.digested, output.error, start, digested, errors);
-  extract_token(output.kind, output.digested, muted, start)
+  extract_token(output.binding, output.digested, muted, start)
 }
 
 #[inline]

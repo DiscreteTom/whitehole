@@ -20,7 +20,7 @@ pub fn simple<State, ErrorType>(
     exec: ActionExec::Immutable(Box::new(move |input| match f(input) {
       0 => None,
       digested => Some(ActionOutput {
-        kind: MockTokenKind::new(()),
+        binding: MockTokenKind::new(()).into(),
         digested,
         error: None,
       }),
@@ -56,7 +56,7 @@ pub fn simple_with_data<State, ErrorType, T>(
   Action {
     exec: ActionExec::Immutable(Box::new(move |input| match f(input) {
       Some((digested, data)) => Some(ActionOutput {
-        kind: MockTokenKind::new(data),
+        binding: MockTokenKind::new(data).into(),
         digested,
         error: None,
       }),
@@ -114,10 +114,10 @@ mod tests {
     assert!(matches!(
       output,
       Some(ActionOutput {
-        kind: MockTokenKind { data: 123 },
+        binding,
         digested: 3,
         error: None
-      })
+      }) if binding.kind().data == 123
     ));
   }
 
@@ -128,10 +128,10 @@ mod tests {
     assert!(matches!(
       output,
       Some(ActionOutput {
-        kind: MockTokenKind { data: 123 },
+        binding,
         digested: 0,
         error: None
-      })
+      }) if binding.kind().data == 123
     ));
   }
 

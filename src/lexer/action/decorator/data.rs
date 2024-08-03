@@ -1,7 +1,7 @@
 use super::AcceptedActionOutputContext;
 use crate::lexer::{
   action::{action_input_to_ref, Action, ActionExec, ActionInput, ActionOutput},
-  token::{MockTokenKind, SubTokenKind},
+  token::{MockTokenKind, SubTokenKind, TokenKindIdBinding},
 };
 
 impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
@@ -20,7 +20,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
           // user can't mutate the input
           &ActionInput<&State>,
           // output is consumed except the error
-          ActionOutput<Kind, &Option<ErrorType>>,
+          ActionOutput<TokenKindIdBinding<Kind>, &Option<ErrorType>>,
         >,
       ) -> T
       + 'static,
@@ -33,17 +33,18 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       ($exec: ident, $to_mutable: ident) => {
         Box::new(move |input| {
           $exec(input).map(|output| ActionOutput {
-            kind: MockTokenKind {
+            binding: MockTokenKind {
               data: factory(AcceptedActionOutputContext {
                 input: action_input_to_ref!(input, $to_mutable),
                 // don't consume the error
                 output: ActionOutput {
-                  kind: output.kind,
+                  binding: output.binding,
                   digested: output.digested,
                   error: &output.error,
                 },
               }),
-            },
+            }
+            .into(),
             digested: output.digested,
             error: output.error,
           })
@@ -82,7 +83,7 @@ impl<Data, State, ErrorType> Action<MockTokenKind<Data>, State, ErrorType> {
     State: 'static,
     ErrorType: 'static,
   {
-    self.data(move |ctx| transformer(ctx.output.kind.data))
+    self.data(move |ctx| transformer(ctx.output.binding.take().data))
   }
 }
 
@@ -94,15 +95,15 @@ mod tests {
   #[test]
   fn action_data() {
     let action: Action<_> = simple_with_data(|_| Some((1, Box::new(1))))
-      // ensure output.kind can be consumed
-      .data(|ctx| ctx.output.kind.data);
+      // ensure output.binding can be consumed
+      .data(|ctx| ctx.output.binding.take().data);
     assert!(matches!(
       action.exec.as_immutable()(&mut ActionInput::new("A", 0, &()).unwrap()),
       Some(ActionOutput {
-        kind: MockTokenKind { data },
+        binding,
         digested: 1,
         error: None
-      }) if *data == 1
+      }) if *binding.kind().data == 1
     ));
   }
 
@@ -115,10 +116,10 @@ mod tests {
     assert!(matches!(
       action.exec.as_mutable()(&mut ActionInput::new("A", 0, &mut 123).unwrap()),
       Some(ActionOutput {
-        kind: MockTokenKind { data },
+        binding,
         digested: 1,
         error: None
-      }) if **data == 1
+      }) if **binding.kind().data == 1
     ));
   }
 }

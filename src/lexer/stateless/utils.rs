@@ -3,7 +3,7 @@ use crate::{
   lexer::{
     action::{ActionInput, ActionOutput, GeneralAction},
     re_lex::{ReLexContext, ReLexableFactory},
-    token::{Range, Token, TokenKindIdProvider},
+    token::{Range, Token, TokenKindIdBinding},
   },
   utils::Accumulator,
 };
@@ -17,11 +17,14 @@ pub(super) fn traverse_actions<'text, Kind, State, ErrorType>(
   actions: &HeadMapActions<Kind, State, ErrorType>,
   re_lex: &ReLexContext,
 ) -> (
-  Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)>,
+  Option<(
+    ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
+    usize,
+    bool,
+  )>,
   Option<State>,
 )
 where
-  Kind: TokenKindIdProvider<TokenKind = Kind>,
   State: Clone,
 {
   if let Some(res) = traverse_immutables(&input, actions, re_lex) {
@@ -61,10 +64,11 @@ pub(super) fn traverse_actions_mut<
   re_lex: &ReLexContext,
   re_lexable_factory: &mut ReLexableFactoryType,
   peek: bool,
-) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)>
-where
-  Kind: TokenKindIdProvider<TokenKind = Kind>,
-{
+) -> Option<(
+  ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
+  usize,
+  bool,
+)> {
   if let Some(res) = traverse_immutables(&input.as_ref(), actions, re_lex) {
     return Some(res);
   }
@@ -88,7 +92,11 @@ fn traverse_immutables<Kind, State, ErrorType>(
   input: &ActionInput<&State>,
   actions: &HeadMapActions<Kind, State, ErrorType>,
   re_lex: &ReLexContext,
-) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)> {
+) -> Option<(
+  ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
+  usize,
+  bool,
+)> {
   for (i, action) in
     actions
       .immutables()
@@ -115,7 +123,11 @@ fn traverse_rest<'text, Kind, State, ErrorType>(
   input: &mut ActionInput<&mut State>,
   actions: &HeadMapActions<Kind, State, ErrorType>,
   re_lex: &ReLexContext,
-) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)> {
+) -> Option<(
+  ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
+  usize,
+  bool,
+)> {
   for (i, action) in actions
     .rest()
     .iter()
@@ -159,19 +171,23 @@ pub(super) fn update_state<ErrorType, ErrAcc: Accumulator<(ErrorType, Range)>>(
 /// Return the token if not muted, otherwise return [`None`].
 #[inline]
 pub(super) fn extract_token<Kind>(
-  kind: Kind,
+  binding: TokenKindIdBinding<Kind>,
   output_digested: usize,
   muted: bool,
   start: usize,
 ) -> Option<Token<Kind>> {
   // if not muted, emit token
-  (!muted).then(|| create_token(kind, start, output_digested))
+  (!muted).then(|| create_token(binding, start, output_digested))
 }
 
 #[inline]
-const fn create_token<Kind>(kind: Kind, start: usize, digested: usize) -> Token<Kind> {
+const fn create_token<Kind>(
+  binding: TokenKindIdBinding<Kind>,
+  start: usize,
+  digested: usize,
+) -> Token<Kind> {
   Token {
-    kind,
+    binding,
     range: create_range(start, digested),
   }
 }

@@ -188,7 +188,7 @@ mod tests {
     // ensure the string representation contains the sub token kind name
     assert_eq!(
       format!("{:?}", A::kind_id()),
-      "TokenKindId { value: 0, name: \"A\", __: PhantomData<whitehole::lexer::token::binding::TokenKindIdBinding<whitehole::lexer::token::token_kind_id::tests::MyKind>> }"
+      "TokenKindId { value: 0, name: \"A\", __: PhantomData<whitehole::lexer::token::token_kind_id::tests::MyKind> }"
     );
   }
 }

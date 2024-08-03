@@ -1,7 +1,7 @@
 use super::exact;
 use crate::lexer::{
   action::{AcceptedActionOutputContext, Action, ActionInput, ActionOutput},
-  token::MockTokenKind,
+  token::{MockTokenKind, TokenKindIdBinding},
 };
 
 pub use whitehole_helpers::word_vec;
@@ -46,7 +46,7 @@ pub fn starts_with_word_boundary(rest: &str) -> bool {
 pub fn no_word_boundary_in_rest<State, ErrorType>(
   ctx: AcceptedActionOutputContext<
     &ActionInput<&State>,
-    &ActionOutput<MockTokenKind<()>, Option<ErrorType>>,
+    &ActionOutput<TokenKindIdBinding<MockTokenKind<()>>, Option<ErrorType>>,
   >,
 ) -> bool {
   !starts_with_word_boundary(ctx.rest())

@@ -65,29 +65,44 @@ pub fn string<
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::action::{ActionInput, ActionOutput, HeadMatcher};
+  use crate::lexer::{
+    action::{ActionInput, ActionOutput, HeadMatcher},
+    token::TokenKindIdBinding,
+  };
 
   fn exec_action(
     action: &Action<MockTokenKind<Vec<PartialStringBody<String, ()>>>, (), ()>,
     text: &str,
-  ) -> Option<ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>, Option<()>>> {
+  ) -> Option<
+    ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>, Option<()>>,
+  > {
     action.exec.as_immutable()(&ActionInput::new(text, 0, &()).unwrap())
   }
 
   fn validate_output(
-    output: ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>, Option<()>>,
-  ) -> ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>, Option<()>> {
+    output: ActionOutput<
+      TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>,
+      Option<()>,
+    >,
+  ) -> ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>, Option<()>>
+  {
     // ensure at least one partial string body (the unterminated error)
-    assert!(output.kind.data.len() > 0);
+    assert!(output.binding.kind().data.len() > 0);
 
     // ensure only the last partial string body is the close
-    output.kind.data.iter().enumerate().for_each(|(i, p)| {
-      assert!(if i == output.kind.data.len() - 1 {
-        p.close
-      } else {
-        !p.close
+    output
+      .binding
+      .kind()
+      .data
+      .iter()
+      .enumerate()
+      .for_each(|(i, p)| {
+        assert!(if i == output.binding.kind().data.len() - 1 {
+          p.close
+        } else {
+          !p.close
+        });
       });
-    });
 
     output
   }
@@ -96,12 +111,14 @@ mod tests {
     action: &Action<MockTokenKind<Vec<PartialStringBody<String, ()>>>, (), ()>,
     text: &str,
     value: &str,
-  ) -> ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>, Option<()>> {
+  ) -> ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>, Option<()>>
+  {
     let output = exec_action(action, text).unwrap();
     assert_eq!(output.digested, text.len());
     assert_eq!(
       output
-        .kind
+        .binding
+        .kind()
         .data
         .iter()
         .map(|p| p.value.clone())
@@ -147,40 +164,40 @@ mod tests {
 
     // unterminated
     let output = assert_accept_all(&a, "\"", "");
-    assert_eq!(output.kind.data.len(), 1);
+    assert_eq!(output.binding.kind().data.len(), 1);
     assert!(matches!(
-      output.kind.data[0].error,
+      output.binding.kind().data[0].error,
       Some(StringLiteralError::Unterminated)
     ));
 
     // no matcher matches
     let output = validate_output(exec_action(&a, "\"a").unwrap());
     assert_eq!(output.digested, 1);
-    assert_eq!(output.kind.data.len(), 1);
-    assert_eq!(output.kind.data[0].value, "");
+    assert_eq!(output.binding.kind().data.len(), 1);
+    assert_eq!(output.binding.kind().data[0].value, "");
     assert!(matches!(
-      output.kind.data[0].error,
+      output.binding.kind().data[0].error,
       Some(StringLiteralError::Unterminated)
     ));
 
     // terminate on line break
     let output = validate_output(exec_action(&a, "\"\n").unwrap());
     assert_eq!(output.digested, 1); // new line is not digested
-    assert_eq!(output.kind.data.len(), 1);
-    assert_eq!(output.kind.data[0].value, "");
+    assert_eq!(output.binding.kind().data.len(), 1);
+    assert_eq!(output.binding.kind().data[0].value, "");
     assert!(matches!(
-      output.kind.data[0].error,
+      output.binding.kind().data[0].error,
       Some(StringLiteralError::Unterminated)
     ));
 
     // unhandled escape
     let output = assert_accept_all(&a, "\"\\1\"", "\\1");
-    assert_eq!(output.kind.data.len(), 3);
+    assert_eq!(output.binding.kind().data.len(), 3);
     assert!(matches!(
-      output.kind.data[0].error,
+      output.binding.kind().data[0].error,
       Some(StringLiteralError::UnhandledEscape)
     ));
-    assert!(matches!(output.kind.data[1].error, None));
+    assert!(matches!(output.binding.kind().data[1].error, None));
 
     // all together
     let value = "123\n\t\x11\u{1234}\u{1234}\\1";

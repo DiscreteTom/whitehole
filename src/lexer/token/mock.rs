@@ -1,14 +1,16 @@
-use super::{SubTokenKind, TokenKindId, TokenKindIdProvider};
+use super::{SubTokenKind, TokenKindId, TokenKindIdBinding};
 use std::mem::transmute;
 
-/// This implements [`SubTokenKind`] and [`TokenKindIdProvider`],
+/// This implements [`SubTokenKind`]
 /// and only has one possible token kind id value.
 /// This is useful as a placeholder or data carrier.
 /// # Examples
 /// ```
-/// use whitehole::lexer::token::{MockTokenKind, SubTokenKind, TokenKindIdProvider};
-/// assert_eq!(MockTokenKind::new(42).id(), MockTokenKind::kind_id());
-/// assert_eq!(MockTokenKind::new(()).id(), MockTokenKind::kind_id());
+/// use whitehole::lexer::token::{MockTokenKind, SubTokenKind, TokenKindIdBinding};
+/// let v1: TokenKindIdBinding<MockTokenKind<i32>> = MockTokenKind::new(42).into();
+/// let v2: TokenKindIdBinding<MockTokenKind<bool>> = MockTokenKind::new(true).into();
+/// assert_eq!(v1.id(), MockTokenKind::kind_id());
+/// assert_eq!(v2.id(), MockTokenKind::kind_id());
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct MockTokenKind<T> {
@@ -33,19 +35,18 @@ impl<T> MockTokenKind<T> {
   }
 }
 
-impl<T> TokenKindIdProvider for MockTokenKind<T> {
-  type TokenKind = Self;
-  #[inline]
-  fn id(&self) -> &'static TokenKindId<Self::TokenKind> {
-    cast_mock_token_kind_id()
-  }
-}
-
 impl<T> SubTokenKind for MockTokenKind<T> {
   type TokenKind = Self;
   #[inline]
   fn kind_id() -> &'static TokenKindId<Self::TokenKind> {
     cast_mock_token_kind_id()
+  }
+}
+
+impl<T> Into<TokenKindIdBinding<MockTokenKind<T>>> for MockTokenKind<T> {
+  #[inline]
+  fn into(self) -> TokenKindIdBinding<MockTokenKind<T>> {
+    TokenKindIdBinding::new(self)
   }
 }
 
@@ -57,12 +58,6 @@ mod tests {
   fn mock_token_kind_new() {
     assert_eq!(MockTokenKind::new(42).data, 42);
     assert_eq!(MockTokenKind::new(()).data, ());
-  }
-
-  #[test]
-  fn mock_token_kind_id() {
-    assert_eq!(MockTokenKind::new(42).id(), MockTokenKind::kind_id());
-    assert_eq!(MockTokenKind::new(()).id(), MockTokenKind::kind_id());
   }
 
   #[test]
@@ -83,10 +78,6 @@ mod tests {
       cast_to_unit(&id2),
       cast_to_unit(&id3),
       cast_to_unit(&id4),
-      cast_to_unit(MockTokenKind::new(()).id()),
-      cast_to_unit(MockTokenKind::new(123).id()),
-      cast_to_unit(MockTokenKind::new(Box::new(123)).id()),
-      cast_to_unit(MockTokenKind::new(Some(123)).id()),
     ];
 
     // ensure their memory layout is the same

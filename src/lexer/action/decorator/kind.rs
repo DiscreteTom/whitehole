@@ -22,15 +22,10 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// let action: Action<TokenKindIdBinding<MyKind>> = exact("A").bind(A);
   /// # }
   /// ```
-  pub fn bind<NewKind, ViaKind>(
-    self,
-    kind: ViaKind,
-  ) -> Action<TokenKindIdBinding<NewKind>, State, ErrorType>
+  pub fn bind<NewKind, ViaKind>(self, kind: ViaKind) -> Action<NewKind, State, ErrorType>
   where
-    ViaKind: SubTokenKind<TokenKind = TokenKindIdBinding<NewKind>>
-      + Into<TokenKindIdBinding<NewKind>>
-      + Clone
-      + 'static,
+    ViaKind:
+      SubTokenKind<TokenKind = NewKind> + Into<TokenKindIdBinding<NewKind>> + Clone + 'static,
     State: 'static,
     ErrorType: 'static,
   {
@@ -38,7 +33,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       ($exec: ident) => {
         Box::new(move |input| {
           $exec(input).map(|output| ActionOutput {
-            kind: kind.clone().into(),
+            binding: kind.clone().into(),
             digested: output.digested,
             error: output.error,
           })
@@ -74,7 +69,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// let action: Action<TokenKindIdBinding<MyKind>> = exact("A").bind_default();
   /// # }
   /// ```
-  pub fn bind_default<NewKind>(self) -> Action<TokenKindIdBinding<NewKind>, State, ErrorType>
+  pub fn bind_default<NewKind>(self) -> Action<NewKind, State, ErrorType>
   where
     NewKind: DefaultTokenKindIdBinding<NewKind>,
     State: 'static,
@@ -84,7 +79,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       ($exec: ident) => {
         Box::new(move |input| {
           $exec(input).map(|output| ActionOutput {
-            kind: TokenKindIdBinding::default(),
+            binding: TokenKindIdBinding::default(),
             digested: output.digested,
             error: output.error,
           })
@@ -129,14 +124,13 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
           // user can't mutate the input
           &ActionInput<&State>,
           // output is consumed except the error
-          ActionOutput<Kind, &Option<ErrorType>>,
+          ActionOutput<TokenKindIdBinding<Kind>, &Option<ErrorType>>,
         >,
       ) -> ViaKind
       + 'static,
-  ) -> Action<TokenKindIdBinding<NewKind>, State, ErrorType>
+  ) -> Action<NewKind, State, ErrorType>
   where
-    ViaKind:
-      Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKind = TokenKindIdBinding<NewKind>>,
+    ViaKind: Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKind = NewKind>,
     State: 'static,
     ErrorType: 'static,
   {
@@ -145,12 +139,12 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
         Box::new(move |input| {
           $exec(input).map(|output| {
             ActionOutput {
-              kind: selector(AcceptedActionOutputContext {
+              binding: selector(AcceptedActionOutputContext {
                 input: action_input_to_ref!(input, $to_mutable),
                 // construct a new ActionOutput
                 output: ActionOutput {
-                  // consume the original output.kind
-                  kind: output.kind,
+                  // consume the original output.binding
+                  binding: output.binding,
                   digested: output.digested,
                   // but don't consume the error
                   error: &output.error,
@@ -202,10 +196,10 @@ mod tests {
     assert!(matches!(
       action.exec.as_immutable()(& ActionInput::new("A", 0, & ()).unwrap()),
       Some(ActionOutput {
-        kind: binding,
+        binding: binding,
         digested: 1,
         error: None
-      }) if matches!(binding.value(), MyKind::A) && binding.id() == A::kind_id()
+      }) if matches!(binding.kind(), MyKind::A) && binding.id() == A::kind_id()
     ));
   }
 
@@ -216,10 +210,10 @@ mod tests {
     assert!(matches!(
       action.exec.as_immutable()(& ActionInput::new("A", 0, & ()).unwrap()),
       Some(ActionOutput {
-        kind: binding,
+        binding: binding,
         digested: 1,
         error: None
-      }) if matches!(binding.value(), MyKind::A) && binding.id() == MyKind::default_kind_id()
+      }) if matches!(binding.kind(), MyKind::A) && binding.id() == MyKind::default_kind_id()
     ));
   }
 
@@ -231,10 +225,10 @@ mod tests {
     assert!(matches!(
       action.exec.as_immutable()(& ActionInput::new("1", 0, & ()).unwrap()),
       Some(ActionOutput {
-        kind: binding,
+        binding: binding,
         digested: 1,
         error: None
-      }) if matches!(binding.value(), MyKind::Value(value) if value.0 == 1) && binding.id() == Value::kind_id()
+      }) if matches!(binding.kind(), MyKind::Value(value) if value.0 == 1) && binding.id() == Value::kind_id()
     ));
   }
 }

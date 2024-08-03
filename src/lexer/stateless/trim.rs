@@ -69,10 +69,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     &self,
     text: &'text str,
     options: StatelessTrimOptions<&'state mut State, ErrAcc>,
-  ) -> TrimOutput<ErrAcc>
-  where
-    Kind: TokenKindIdProvider<TokenKind = Kind>,
-  {
+  ) -> TrimOutput<ErrAcc> {
     // there is no expectation when trimming, so the re-lex is meaningless.
     // use `()` as a mock re-lexable factory
     let mut re_lexable_factory = ();

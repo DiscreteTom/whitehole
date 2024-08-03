@@ -70,7 +70,7 @@
 //! # }
 //! #
 //! pub struct TokenKindIdBinding<TokenKindType> {
-//!   id: TokenKindId<TokenKindIdBinding<TokenKindType>>,
+//!   id: TokenKindId<TokenKindType>,
 //!   value: TokenKindType,
 //! };
 //!
@@ -109,7 +109,7 @@
 //! #   }
 //! # }
 //! # pub struct TokenKindIdBinding<TokenKindType> {
-//! #   id: TokenKindId<TokenKindIdBinding<TokenKindType>>,
+//! #   id: TokenKindId<TokenKindType>,
 //! #   value: TokenKindType,
 //! # };
 //! // this is the "token kind"
@@ -145,12 +145,12 @@
 //! // every sub token kind should have a unique id
 //! // bound with the type, not its value
 //! impl SubTokenKind<TokenKindIdBinding<MyKind>> for Identifier {
-//!   fn kind_id() -> TokenKindId<TokenKindIdBinding<MyKind>> {
+//!   fn kind_id() -> TokenKindId<MyKind> {
 //!     TokenKindId::new(0)
 //!   }
 //! }
 //! impl SubTokenKind<TokenKindIdBinding<MyKind>> for Number {
-//!   fn kind_id() -> TokenKindId<TokenKindIdBinding<MyKind>> {
+//!   fn kind_id() -> TokenKindId<MyKind> {
 //!     TokenKindId::new(1)
 //!   }
 //! }
@@ -194,11 +194,11 @@
 //!
 //! Here is the recommended order of reading the source code:
 //!
-//! - [`self::token`]
 //! - [`self::token_kind_id`]
 //! - [`self::sub_token_kind`]
-//! - [`self::mock`]
 //! - [`self::binding`]
+//! - [`self::mock`]
+//! - [`self::token`]
 //! - [`self::token_kind`]
 //!
 //! The [`token_kind`] macro will be tested in this file.
@@ -267,8 +267,7 @@ mod tests {
 
     // generated token kind id, as sub token kind.
     // make sure the id is for `TokenKindIdBinding` instead of `MyKind`
-    let v: Vec<&TokenKindId<TokenKindIdBinding<MyKind>>> =
-      vec![Unit::kind_id(), Unnamed::kind_id(), Named::kind_id()];
+    let v: Vec<&TokenKindId<MyKind>> = vec![Unit::kind_id(), Unnamed::kind_id(), Named::kind_id()];
     for (i, id) in v.iter().enumerate() {
       for (j, id2) in v.iter().enumerate() {
         if i == j {
@@ -281,15 +280,15 @@ mod tests {
 
     // sub token kind into token kind id
     assert_eq!(
-      <Unit as Into<&TokenKindId<TokenKindIdBinding<MyKind>>>>::into(Unit),
+      <Unit as Into<&TokenKindId<MyKind>>>::into(Unit),
       Unit::kind_id()
     );
     assert_eq!(
-      <Unnamed as Into<&TokenKindId<TokenKindIdBinding<MyKind>>>>::into(Unnamed(42)),
+      <Unnamed as Into<&TokenKindId<MyKind>>>::into(Unnamed(42)),
       Unnamed::kind_id()
     );
     assert_eq!(
-      <Named as Into<&TokenKindId<TokenKindIdBinding<MyKind>>>>::into(Named { name: 42 }),
+      <Named as Into<&TokenKindId<MyKind>>>::into(Named { name: 42 }),
       Named::kind_id()
     );
 

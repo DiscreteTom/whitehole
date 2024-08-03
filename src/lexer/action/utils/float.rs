@@ -476,7 +476,7 @@ mod tests {
   ) {
     let output = action.exec.as_immutable()(&ActionInput::new(s, 0, &()).unwrap()).unwrap();
     assert_float_literal_body(
-      (output.digested, output.kind.data),
+      (output.digested, output.binding.take().data),
       integer,
       fraction,
       exponent,

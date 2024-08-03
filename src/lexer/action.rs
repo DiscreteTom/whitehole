@@ -30,7 +30,7 @@ pub use output::*;
 pub use simple::*;
 pub use utils::*;
 
-use super::token::TokenKindId;
+use super::token::{TokenKindId, TokenKindIdBinding};
 use std::{collections::HashSet, rc::Rc};
 
 /// See [`Action::head`].
@@ -104,15 +104,19 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
 }
 
 /// [`Action::exec`] that won't mutate the action state.
-type ImmutableActionExec<Kind, State, ErrorType> =
-  Box<dyn Fn(&ActionInput<&State>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>;
+type ImmutableActionExec<Kind, State, ErrorType> = Box<
+  dyn Fn(&ActionInput<&State>) -> Option<ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>>,
+>;
 
 /// [`Action::exec`] that will mutate the action state.
-type MutableActionExec<Kind, State, ErrorType> =
-  Box<dyn Fn(&mut ActionInput<&mut State>) -> Option<ActionOutput<Kind, Option<ErrorType>>>>;
+type MutableActionExec<Kind, State, ErrorType> = Box<
+  dyn Fn(
+    &mut ActionInput<&mut State>,
+  ) -> Option<ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>>,
+>;
 
 /// See [`Action::exec`].
-pub enum ActionExec<Kind, State, ErrorType> {
+pub enum ActionExec<Kind: 'static, State, ErrorType> {
   Immutable(ImmutableActionExec<Kind, State, ErrorType>),
   Mutable(MutableActionExec<Kind, State, ErrorType>),
 }

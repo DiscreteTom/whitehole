@@ -7,7 +7,7 @@ use crate::{
   utils::OneOrMore,
 };
 
-impl<Kind, State, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, State, ErrorType> {
+impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// Define actions and bind them to the provided kind.
   /// # Examples
   /// ```
@@ -30,10 +30,7 @@ impl<Kind, State, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, State, Error
     actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
   ) -> Self
   where
-    ViaKind: SubTokenKind<TokenKind = TokenKindIdBinding<Kind>>
-      + Into<TokenKindIdBinding<Kind>>
-      + Clone
-      + 'static,
+    ViaKind: SubTokenKind<TokenKind = Kind> + Into<TokenKindIdBinding<Kind>> + Clone + 'static,
     State: 'static,
     ErrorType: 'static,
   {
@@ -65,10 +62,7 @@ impl<Kind, State, ErrorType> LexerBuilder<TokenKindIdBinding<Kind>, State, Error
     ) -> Action<MockTokenKind<()>, State, ErrorType>,
   ) -> Self
   where
-    ViaKind: SubTokenKind<TokenKind = TokenKindIdBinding<Kind>>
-      + Into<TokenKindIdBinding<Kind>>
-      + Clone
-      + 'static,
+    ViaKind: SubTokenKind<TokenKind = Kind> + Into<TokenKindIdBinding<Kind>> + Clone + 'static,
     State: 'static,
     ErrorType: 'static,
   {

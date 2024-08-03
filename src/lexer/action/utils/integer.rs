@@ -556,8 +556,8 @@ mod tests {
     ) {
       let res = action.exec.as_immutable()(&ActionInput::new(s, 0, &()).unwrap()).unwrap();
       assert_eq!(res.digested, 6);
-      assert_eq!(res.kind.data.separators, vec![1]);
-      assert_eq!(res.kind.data.value, expect_value);
+      assert_eq!(res.binding.kind().data.separators, vec![1]);
+      assert_eq!(res.binding.kind().data.value, expect_value);
     }
     let options_builder = |o: IntegerLiteralBodyOptions<(), ()>| {
       o.separator_with(|s| s.indexes_to_vec()).value_to_string()

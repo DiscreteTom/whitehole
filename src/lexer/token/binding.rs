@@ -1,7 +1,9 @@
 use super::{SubTokenKind, TokenKindId, TokenKindIdProvider};
 
 /// Bind the token kind value with an [`TokenKindId`].
-/// This is readonly to make sure the binding is not broken.
+///
+/// This is readonly to make sure the binding is not broken,
+/// you can use [`Self::take`] to take the value out.
 /// # Examples
 /// ```
 /// use whitehole::lexer::token::{token_kind, TokenKindIdBinding, TokenKindIdProvider, SubTokenKind};
@@ -23,18 +25,12 @@ use super::{SubTokenKind, TokenKindId, TokenKindIdProvider};
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TokenKindIdBinding<Kind: 'static> {
-  /// This is `TokenKindId<TokenKindIdBinding<Kind>>`
-  /// instead of `TokenKindId<Kind>`
-  /// because when using [`TokenKindIdBinding`] as the token kind
-  /// of an [`Action`](crate::lexer::action::Action),
-  /// the [`Action::kind`](crate::lexer::action::Action::kind)
-  /// should be `TokenKindId<TokenKindIdBinding<Kind>>`.
-  id: &'static TokenKindId<Self>,
-  value: Kind,
+  id: &'static TokenKindId<Kind>,
+  kind: Kind,
 }
 
 impl<Kind> TokenKindIdProvider for TokenKindIdBinding<Kind> {
-  type TokenKind = Self;
+  type TokenKind = Kind;
   #[inline]
   fn id(&self) -> &'static TokenKindId<Self::TokenKind> {
     &self.id
@@ -44,25 +40,23 @@ impl<Kind> TokenKindIdProvider for TokenKindIdBinding<Kind> {
 impl<Kind> TokenKindIdBinding<Kind> {
   /// Create a new binding from a value of a sub token kind.
   #[inline]
-  pub fn new<ViaKind: SubTokenKind<TokenKind = TokenKindIdBinding<Kind>> + Into<Kind>>(
-    value: ViaKind,
-  ) -> Self {
+  pub fn new<ViaKind: SubTokenKind<TokenKind = Kind> + Into<Kind>>(value: ViaKind) -> Self {
     Self {
-      value: value.into(),
+      kind: value.into(),
       id: ViaKind::kind_id(),
     }
   }
 
   /// Get the value of the token kind.
   #[inline]
-  pub const fn value(&self) -> &Kind {
-    &self.value
+  pub const fn kind(&self) -> &Kind {
+    &self.kind
   }
 
   /// Consume self and take the value out.
   #[inline]
   pub fn take(self) -> Kind {
-    self.value
+    self.kind
   }
 }
 
@@ -91,7 +85,7 @@ impl<Kind> TokenKindIdBinding<Kind> {
 /// # }
 /// ```
 pub trait DefaultTokenKindIdBinding<Kind>: Default {
-  fn default_kind_id() -> &'static TokenKindId<TokenKindIdBinding<Kind>>;
+  fn default_kind_id() -> &'static TokenKindId<Kind>;
 }
 
 impl<Kind: DefaultTokenKindIdBinding<Kind>> Default for TokenKindIdBinding<Kind> {
@@ -99,7 +93,7 @@ impl<Kind: DefaultTokenKindIdBinding<Kind>> Default for TokenKindIdBinding<Kind>
   fn default() -> Self {
     Self {
       id: Kind::default_kind_id(),
-      value: Kind::default(),
+      kind: Kind::default(),
     }
   }
 }
@@ -120,7 +114,7 @@ mod tests {
   fn token_kind_id_binding() {
     let binding = TokenKindIdBinding::new(A);
     assert_eq!(binding.id(), A::kind_id());
-    assert_eq!(binding.value(), &MyKind::A);
+    assert_eq!(binding.kind(), &MyKind::A);
     assert_eq!(binding.take(), MyKind::A);
   }
 

@@ -6,6 +6,7 @@ mod kind;
 pub use context::*;
 
 use super::{action_input_to_ref, input::ActionInput, output::ActionOutput, Action, ActionExec};
+use crate::lexer::token::TokenKindIdBinding;
 
 impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// Check the [`ActionInput`] before the action is executed.
@@ -174,7 +175,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
         AcceptedActionOutputContext<
           &ActionInput<&State>,
           // user could consume the old error, but not able to consume the kind
-          ActionOutput<&Kind, Option<ErrorType>>,
+          ActionOutput<&TokenKindIdBinding<Kind>, Option<ErrorType>>,
         >,
       ) -> Option<NewError>
       + 'static,
@@ -190,12 +191,12 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
             error: condition(AcceptedActionOutputContext {
               input: action_input_to_ref!(input, $to_mutable),
               output: ActionOutput {
-                kind: &output.kind,  // don't consume the kind
-                error: output.error, // but the error is consumable
+                binding: &output.binding, // don't consume the binding
+                error: output.error,      // but the error is consumable
                 digested: output.digested,
               },
             }),
-            kind: output.kind,
+            binding: output.binding,
             digested: output.digested,
           })
         })
@@ -245,7 +246,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
         Box::new(move |input| {
           $exec(input).map(|output| ActionOutput {
             error: Some(error.clone()),
-            kind: output.kind,
+            binding: output.binding,
             digested: output.digested,
           })
         })
@@ -286,7 +287,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
         AcceptedActionOutputContext<
           &ActionInput<&State>,
           // user should NOT mutate the output directly
-          &ActionOutput<Kind, Option<ErrorType>>,
+          &ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
         >,
       ) -> bool
       + 'static,
@@ -390,7 +391,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
           // user can mutate the input.state
           &mut ActionInput<&mut State>,
           // user should NOT mutate the output directly
-          &ActionOutput<Kind, Option<ErrorType>>,
+          &ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
         >,
       ) + 'static,
   ) -> Self
