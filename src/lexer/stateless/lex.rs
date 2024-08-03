@@ -1,8 +1,8 @@
 use super::{
-  exec::extract_token,
   head_map::{HeadMap, HeadMapActions},
   literal_map::LiteralMap,
   options::StatelessLexOptions,
+  utils::extract_token,
   StatelessLexer,
 };
 use crate::{
@@ -11,7 +11,7 @@ use crate::{
     fork::LexOptionsFork,
     output::LexOutput,
     re_lex::{ReLexContext, ReLexableFactory},
-    stateless::exec::{traverse_actions, traverse_actions_mut, update_state},
+    stateless::utils::{traverse_actions, traverse_actions_mut, update_state},
     token::{Range, Token, TokenKindId, TokenKindIdProvider},
   },
   utils::Accumulator,

@@ -1,5 +1,5 @@
 use super::{
-  exec::{traverse_actions_mut, update_state},
+  utils::{traverse_actions_mut, update_state},
   StatelessLexer, StatelessTrimOptions,
 };
 use crate::{

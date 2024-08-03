@@ -82,14 +82,14 @@
 //! - [`self::options`]
 //! - [`self::lex`]
 //! - [`self::trim`]
-//! - [`self::exec`]
+//! - [`self::utils`]
 
-mod exec;
 mod head_map;
 mod lex;
 mod literal_map;
 mod options;
 mod trim;
+mod utils;
 
 pub use options::*;
 
