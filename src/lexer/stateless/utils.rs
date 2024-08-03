@@ -34,8 +34,7 @@ where
     return (Some(res), None);
   }
 
-  // prevent unnecessary clone if there is no mutable actions
-  if actions.rest().len() == 0 {
+  if !backup_action_state(actions, input.state, re_lexable_factory) {
     return (None, None);
   }
 
@@ -43,12 +42,7 @@ where
   let mut state = input.state.clone();
 
   (
-    traverse_rest(
-      &mut input.clone_with(&mut state),
-      actions,
-      re_lex,
-      re_lexable_factory,
-    ),
+    traverse_rest(&mut input.clone_with(&mut state), actions, re_lex),
     Some(state),
   )
 }
@@ -75,7 +69,32 @@ where
     return Some(res);
   }
 
-  traverse_rest(input, actions, re_lex, re_lexable_factory)
+  if !backup_action_state(actions, input.state, re_lexable_factory) {
+    return None;
+  }
+
+  traverse_rest(input, actions, re_lex)
+}
+
+// TODO: better name?
+fn backup_action_state<
+  'text,
+  Kind,
+  ActionState,
+  ErrorType,
+  ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
+>(
+  actions: &HeadMapActions<Kind, ActionState, ErrorType>,
+  state: &ActionState,
+  re_lexable_factory: &mut ReLexableFactoryType,
+) -> bool {
+  // if actions.rest is not empty, the first action must be a mutable action
+  // so we should backup the action state here
+  let need_backup = actions.rest().len() != 0;
+  if need_backup {
+    re_lexable_factory.before_mutate_action_state(state);
+  }
+  need_backup
 }
 
 fn traverse_immutables<Kind, ActionState, ErrorType>(
@@ -105,27 +124,11 @@ fn traverse_immutables<Kind, ActionState, ErrorType>(
   None
 }
 
-fn traverse_rest<
-  'text,
-  Kind,
-  ActionState,
-  ErrorType,
-  ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
->(
+fn traverse_rest<'text, Kind, ActionState, ErrorType>(
   input: &mut ActionInput<&mut ActionState>,
   actions: &HeadMapActions<Kind, ActionState, ErrorType>,
   re_lex: &ReLexContext,
-  re_lexable_factory: &mut ReLexableFactoryType,
 ) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)> {
-  // if no mutable actions, prevent unnecessary clone of the action state
-  if actions.rest().len() == 0 {
-    return None;
-  }
-
-  // actions.rest is not empty, the first one must be a mutable action
-  // so we should backup the action state here
-  re_lexable_factory.before_mutate_action_state(input.state);
-
   for (i, action) in actions
     .rest()
     .iter()
