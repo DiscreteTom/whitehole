@@ -11,6 +11,8 @@ use super::re_lex::{ReLexableBuilder, ReLexableFactory};
 /// so that we can return different types in [`ReLexableFactory::into_re_lexable`]
 /// to avoid unnecessary allocations.
 pub trait LexOptionsFork<'text, Kind: 'static, ActionState, ErrorType> {
+  // this has to implement `Default` because the instance is not provided by the user
+  // and we have to create the instance by our own
   type ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType> + Default;
 }
 
