@@ -95,7 +95,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       ));
       // the literal map's muted map contains all the muted actions
       let actions = self.literal_map.muted_map().get(input.next());
-      let res = traverse_actions_mut(input, actions, &re_lex, &mut re_lexable_factory);
+      let res = traverse_actions_mut(input, actions, &re_lex, &mut re_lexable_factory, false);
       let (output, _action_index, muted) = break_loop_on_none!(res);
 
       debug_assert!(muted, "all actions should be muted when trimming");

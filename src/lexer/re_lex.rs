@@ -64,8 +64,8 @@ pub trait ReLexableFactory<'text, Kind: 'static, ActionState, ErrorType> {
   type StatelessReLexableType: Default;
   type ReLexableType;
 
-  /// This is used to backup the action state as needed.
-  fn before_mutate_action_state(&mut self, action_state: &ActionState);
+  /// This will be called only once before the first mutation of the action state.
+  fn backup_action_state(&mut self, action_state: &ActionState);
 
   fn into_stateless_re_lexable(
     self,
@@ -91,7 +91,7 @@ impl<'text, Kind: 'static, ActionState, ErrorType>
   type ReLexableType = ();
 
   #[inline]
-  fn before_mutate_action_state(&mut self, _action_state: &ActionState) {}
+  fn backup_action_state(&mut self, _action_state: &ActionState) {}
 
   #[inline]
   fn into_stateless_re_lexable(
@@ -116,10 +116,8 @@ pub struct StatelessReLexable<ActionState> {
   /// The action state before any mutation in the current lex.
   /// If [`None`], it means no mutation happened.
   ///
-  /// Even if the lexing is not re-lexable ([`Self::ctx`] is [`None`]),
-  /// the backup-ed action state may be useful by the caller,
-  /// e.g. peeking is a special case of fork, which needs to backup the action state before mutation,
-  /// but doesn't need the re-lex context.
+  /// This will always be [`None`] when peeking
+  /// because the original state is not mutated.
   pub action_state_bk: Option<ActionState>, // users can always mutate the action state directly so it is ok to expose it
   /// If [`Some`], it means the lex is re-lexable.
   pub ctx: Option<ReLexContext>, // ReLexContext's fields are private so its ok to expose it
@@ -191,7 +189,7 @@ impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
   type StatelessReLexableType = StatelessReLexable<ActionState>;
   type ReLexableType = ReLexable<'text, ActionState>;
 
-  fn before_mutate_action_state(&mut self, action_state: &ActionState) {
+  fn backup_action_state(&mut self, action_state: &ActionState) {
     // this should only be called once to prevent duplicated clone of the action state,
     // so the action state backup must be none
     debug_assert!(
@@ -255,7 +253,7 @@ mod tests {
   fn mock_re_lexable_factory() {
     let mut factory = ();
     let action_state = 0;
-    ReLexableFactory::<(), _, ()>::before_mutate_action_state(&mut factory, &action_state);
+    ReLexableFactory::<(), _, ()>::backup_action_state(&mut factory, &action_state);
     let stateless_re_lexable =
       ReLexableFactory::<(), i32, ()>::into_stateless_re_lexable(factory, 0, 2, 1);
     assert_eq!(stateless_re_lexable, ());
@@ -303,7 +301,7 @@ mod tests {
   fn re_lexable_builder() {
     let mut builder = ReLexableBuilder::default();
     let action_state = 0;
-    ReLexableFactory::<(), _, ()>::before_mutate_action_state(&mut builder, &action_state);
+    ReLexableFactory::<(), _, ()>::backup_action_state(&mut builder, &action_state);
     let stateless_re_lexable =
       ReLexableFactory::<(), i32, ()>::into_stateless_re_lexable(builder, 0, 2, 1);
     assert_eq!(
@@ -333,7 +331,7 @@ mod tests {
 
     let mut builder = ReLexableBuilder::default();
     let action_state = 0;
-    ReLexableFactory::<(), _, ()>::before_mutate_action_state(&mut builder, &action_state);
+    ReLexableFactory::<(), _, ()>::backup_action_state(&mut builder, &action_state);
     let stateless_re_lexable =
       ReLexableFactory::<(), i32, ()>::into_stateless_re_lexable(builder, 0, 2, 0);
     assert_eq!(
@@ -368,7 +366,7 @@ mod tests {
   fn re_lexable_builder_multi_call_to_mutate_action_state() {
     let mut builder = ReLexableBuilder::default();
     let action_state = 0;
-    ReLexableFactory::<(), _, ()>::before_mutate_action_state(&mut builder, &action_state);
-    ReLexableFactory::<(), _, ()>::before_mutate_action_state(&mut builder, &action_state);
+    ReLexableFactory::<(), _, ()>::backup_action_state(&mut builder, &action_state);
+    ReLexableFactory::<(), _, ()>::backup_action_state(&mut builder, &action_state);
   }
 }

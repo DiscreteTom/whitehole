@@ -12,17 +12,10 @@ use crate::{
 /// Return the output, the index of the accepted action and whether the action is muted.
 /// If no accepted action, return [`None`].
 /// If the action state is mutated during the traversal, return the new action state.
-pub(super) fn traverse_actions<
-  'text,
-  Kind,
-  ActionState,
-  ErrorType,
-  ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
->(
+pub(super) fn traverse_actions<'text, Kind, ActionState, ErrorType>(
   input: ActionInput<&ActionState>,
   actions: &HeadMapActions<Kind, ActionState, ErrorType>,
   re_lex: &ReLexContext,
-  re_lexable_factory: &mut ReLexableFactoryType,
 ) -> (
   Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)>,
   Option<ActionState>,
@@ -35,12 +28,17 @@ where
     return (Some(res), None);
   }
 
-  if !backup_action_state(actions, input.state, re_lexable_factory) {
+  // if actions.rest is empty, prevent unnecessary cloning of the state
+  if actions.rest().is_empty() {
     return (None, None);
   }
 
   // clone the state to construct mutable action input
   let mut state = input.state.clone();
+
+  // we don't need re-lexable factory to clone the state here
+  // because the `ActionState` is already `Clone`
+  // and it will always be cloned here
 
   (
     traverse_rest(&mut input.reload(&mut state), actions, re_lex),
@@ -62,6 +60,7 @@ pub(super) fn traverse_actions_mut<
   actions: &HeadMapActions<Kind, ActionState, ErrorType>,
   re_lex: &ReLexContext,
   re_lexable_factory: &mut ReLexableFactoryType,
+  peek: bool,
 ) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)>
 where
   Kind: TokenKindIdProvider<TokenKind = Kind>,
@@ -70,32 +69,19 @@ where
     return Some(res);
   }
 
-  if !backup_action_state(actions, input.state, re_lexable_factory) {
+  // if actions.rest is empty, prevent unnecessary cloning of the state
+  if actions.rest().is_empty() {
     return None;
   }
 
-  traverse_rest(&mut input, actions, re_lex)
-}
-
-// TODO: better name?
-fn backup_action_state<
-  'text,
-  Kind,
-  ActionState,
-  ErrorType,
-  ReLexableFactoryType: ReLexableFactory<'text, Kind, ActionState, ErrorType>,
->(
-  actions: &HeadMapActions<Kind, ActionState, ErrorType>,
-  state: &ActionState,
-  re_lexable_factory: &mut ReLexableFactoryType,
-) -> bool {
-  // if actions.rest is not empty, the first action must be a mutable action
-  // so we should backup the action state here
-  let need_backup = actions.rest().len() != 0;
-  if need_backup {
-    re_lexable_factory.before_mutate_action_state(state);
+  // when peek, we don't need to backup the action state
+  // because the original state is not mutated,
+  // so only backup when not peeking
+  if !peek {
+    re_lexable_factory.backup_action_state(input.state);
   }
-  need_backup
+
+  traverse_rest(&mut input, actions, re_lex)
 }
 
 fn traverse_immutables<Kind, ActionState, ErrorType>(

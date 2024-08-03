@@ -128,6 +128,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         literal,
         &options.base.re_lex,
         Fork::ReLexableFactoryType::default(),
+        false,
       )
     } else {
       // else, no expected literal
@@ -142,6 +143,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         options.action_state,
         &options.base.re_lex,
         Fork::ReLexableFactoryType::default(),
+        false,
       )
     }
   }
@@ -229,7 +231,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   {
     let mut digested = 0;
     let mut errors = options.base.errors_to;
-    let mut re_lexable_factory = Fork::ReLexableFactoryType::default();
+    let re_lexable_factory = Fork::ReLexableFactoryType::default();
     let mut new_action_state = None;
 
     if let Some(literal) = options.base.expectation.literal {
@@ -240,12 +242,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         let input_start = options.start + digested;
         let input = break_loop_on_none!(ActionInput::new(text, input_start, options.action_state));
         let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
-        let (res, action_state) = traverse_actions(
-          input,
-          actions,
-          &options.base.re_lex,
-          &mut re_lexable_factory,
-        );
+        let (res, action_state) = traverse_actions(input, actions, &options.base.re_lex);
         new_action_state = action_state;
         let (output, action_index, muted) = break_loop_on_none!(res);
 
@@ -279,6 +276,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
               literal,
               &options.base.re_lex,
               re_lexable_factory,
+              true,
             ),
             Some(action_state),
           );
@@ -294,12 +292,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
         let input_start = options.start + digested;
         let input = break_loop_on_none!(ActionInput::new(text, input_start, options.action_state));
         let actions = head_map.get(input.next());
-        let (res, action_state) = traverse_actions(
-          input,
-          actions,
-          &options.base.re_lex,
-          &mut re_lexable_factory,
-        );
+        let (res, action_state) = traverse_actions(input, actions, &options.base.re_lex);
         new_action_state = action_state;
         let (output, action_index, muted) = break_loop_on_none!(res);
 
@@ -331,6 +324,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
               &mut action_state,
               &options.base.re_lex,
               re_lexable_factory,
+              true,
             ),
             Some(action_state),
           );
@@ -396,6 +390,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     literal: &str,
     re_lex: &ReLexContext,
     mut re_lexable_factory: ReLexableFactoryType,
+    peek: bool,
   ) -> LexOutput<Token<Kind>, ErrAcc, ReLexableFactoryType::StatelessReLexableType>
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
@@ -404,7 +399,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       let input_start = start + digested;
       let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *action_state));
       let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
-      let res = traverse_actions_mut(input, actions, re_lex, &mut re_lexable_factory);
+      let res = traverse_actions_mut(input, actions, re_lex, &mut re_lexable_factory, peek);
       let (output, action_index, muted) = break_loop_on_none!(res);
 
       if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors) {
@@ -440,6 +435,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     action_state: &mut ActionState,
     re_lex: &ReLexContext,
     mut re_lexable_factory: ReLexableFactoryType,
+    peek: bool,
   ) -> LexOutput<Token<Kind>, ErrAcc, ReLexableFactoryType::StatelessReLexableType>
   where
     Kind: TokenKindIdProvider<TokenKind = Kind>,
@@ -448,7 +444,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
       let input_start = start + digested;
       let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *action_state));
       let actions = head_map.get(input.next());
-      let res = traverse_actions_mut(input, actions, re_lex, &mut re_lexable_factory);
+      let res = traverse_actions_mut(input, actions, re_lex, &mut re_lexable_factory, peek);
       let (output, action_index, muted) = break_loop_on_none!(res);
 
       if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors) {
