@@ -18,7 +18,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
   /// This function will create a new action state and return it.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessLexOptions};
+  /// # use whitehole::lexer::{action::exact, LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// let (output, action_state) = stateless.trim("123");
   /// ```
@@ -58,7 +58,7 @@ impl<Kind, ActionState, ErrorType> StatelessLexer<Kind, ActionState, ErrorType> 
     self.trim_with_options(text, options_builder(StatelessTrimOptions::new()))
   }
 
-  /// Lex with muted actions and the given [`StatelessLexOptions`].
+  /// Lex with muted actions and the given [`StatelessTrimOptions`].
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessTrimOptions};
