@@ -68,9 +68,11 @@
 //!
 //! ### Trim
 //!
+//! // TODO
+//!
 //! ## Caveats
 //!
-//! Be careful with stateless lexer.
+//! // TODO: Be careful with stateless lexer.
 //!
 //! ## For Developers
 //!
