@@ -117,7 +117,7 @@ fn traverse_rest<
   re_lex: &ReLexContext,
   re_lexable_factory: &mut ReLexableFactoryType,
 ) -> Option<(ActionOutput<Kind, Option<ErrorType>>, usize, bool)> {
-  // prevent unnecessary clone of the action state
+  // if no mutable actions, prevent unnecessary clone of the action state
   if actions.rest().len() == 0 {
     return None;
   }
