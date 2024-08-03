@@ -99,11 +99,15 @@ impl<'expect_literal, Kind: 'static, ErrAcc, Fork> LexOptions<'expect_literal, K
   }
 
   /// Set the error accumulator.
+  /// By default there is no error accumulator and the errors are discarded.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::options::LexOptions;
   /// # let options: LexOptions<(), Vec<()>, _> =
   /// LexOptions::new().errors_to(vec![]);
+  /// // shorthand
+  /// # let options: LexOptions<(), Vec<()>, _> =
+  /// LexOptions::new().errors_to_vec();
   /// ```
   #[inline]
   pub fn errors_to<NewErrAcc>(

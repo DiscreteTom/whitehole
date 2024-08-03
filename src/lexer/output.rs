@@ -9,6 +9,7 @@ pub struct LexOutput<TokenType, ErrAcc, ReLexableType> {
   /// of the lexing loop, this value is the total digested bytes in one lexing.
   pub digested: usize,
   /// If there are any errors during the lexing, they will be accumulated here.
+  /// See [`LexOptions::errors_to`](super::options::LexOptions::errors_to) for more information.
   pub errors: ErrAcc,
   /// If re-lex is disabled, this will always be `()`.
   ///
