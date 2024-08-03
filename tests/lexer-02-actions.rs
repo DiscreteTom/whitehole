@@ -111,7 +111,7 @@ fn action_decorators() {
   assert!(matches!(token.kind.value(), MyKind::D));
   assert_eq!(token.range.start, 2);
   assert_eq!(token.range.end, 3);
-  assert_eq!(lexer.action_state.reject, true);
+  assert_eq!(lexer.state.reject, true);
 
   // the third lex should be rejected
   let res = lexer.lex();

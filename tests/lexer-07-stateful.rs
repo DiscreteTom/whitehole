@@ -30,20 +30,20 @@ fn stateful_lexer() {
     .build("123123");
 
   // by default `state.reject` is `false`
-  assert_eq!(lexer.action_state.reject, false);
+  assert_eq!(lexer.state.reject, false);
 
   // the first lex should be accepted
   assert_ne!(lexer.lex().digested, 0);
 
   // and the action state will be changed
-  assert_eq!(lexer.action_state.reject, true);
+  assert_eq!(lexer.state.reject, true);
 
   // then the second lex should be rejected
   assert_eq!(lexer.lex().digested, 0);
 
-  // besides, you can mutate or set the action_state directly
-  lexer.action_state.reject = false;
-  assert_eq!(lexer.action_state.reject, false);
-  lexer.action_state = MyState { reject: true };
-  assert_eq!(lexer.action_state.reject, true);
+  // besides, you can mutate or set the state directly
+  lexer.state.reject = false;
+  assert_eq!(lexer.state.reject, false);
+  lexer.state = MyState { reject: true };
+  assert_eq!(lexer.state.reject, true);
 }

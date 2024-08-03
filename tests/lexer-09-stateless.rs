@@ -35,8 +35,8 @@ fn stateless_lexer() {
   assert!(matches!(output.0.token.unwrap().kind.value(), MyKind::A));
 
   // you can also manually provide the action state and other details
-  let mut action_state = ();
-  let output = stateless.lex_with("aaa", |o| o.start(1).action_state(&mut action_state));
+  let mut state = ();
+  let output = stateless.lex_with("aaa", |o| o.start(1).state(&mut state));
   assert!(matches!(output.token.unwrap().kind.value(), MyKind::A));
 }
 

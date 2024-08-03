@@ -41,10 +41,10 @@ fn peek_lexer() {
   // we can directly apply them to the lexer if the peek result is what we want
   let mut lexer = lexer.reload(" a");
   assert_eq!(lexer.state().digested(), 0);
-  let (output, new_action_state) = lexer.peek();
+  let (output, new_state) = lexer.peek();
   lexer.digest_with(
     output.digested,
-    new_action_state.unwrap_or_else(|| lexer.action_state.clone()), // TODO: prevent clone
+    new_state.unwrap_or_else(|| lexer.state.clone()), // TODO: prevent clone
   );
   assert_eq!(lexer.state().digested(), 2);
 

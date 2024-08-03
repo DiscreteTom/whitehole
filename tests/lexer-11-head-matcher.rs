@@ -51,7 +51,7 @@ fn lex_with_head() {
     MyKind::False
   ));
   // but the action for `True` is evaluated
-  assert!(lexer.action_state.evaluated);
+  assert!(lexer.state.evaluated);
 
   // now with head matcher
   let mut lexer = LexerBuilder::stateful::<MyState>()
@@ -75,7 +75,7 @@ fn lex_with_head() {
     MyKind::False
   ));
   // and the action for `True` is NOT evaluated
-  assert!(!lexer.action_state.evaluated);
+  assert!(!lexer.state.evaluated);
 
   // if an action has no head matcher
   // the action will always be evaluated
@@ -99,7 +99,7 @@ fn lex_with_head() {
     MyKind::False
   ));
   // but the action for `True` is evaluated
-  assert!(lexer.action_state.evaluated);
+  assert!(lexer.state.evaluated);
 
   // you can use `head_not` to exclude some characters
   let mut lexer = LexerBuilder::stateful::<MyState>()
@@ -115,7 +115,7 @@ fn lex_with_head() {
     MyKind::False
   ));
   // and the action for `True` is NOT evaluated
-  assert!(!lexer.action_state.evaluated);
+  assert!(!lexer.state.evaluated);
 
   // you can also use head_unknown to match any unknown characters
   let mut lexer = LexerBuilder::stateful::<MyState>()
@@ -131,7 +131,7 @@ fn lex_with_head() {
     MyKind::False
   ));
   // and the action for `True` is NOT evaluated
-  assert!(!lexer.action_state.evaluated);
+  assert!(!lexer.state.evaluated);
 
   // head matcher will take effect in lexing, expectational lexing,
   // peeking and trimming
@@ -163,5 +163,5 @@ fn utf8_head() {
     MyKind::False
   ));
   // and the action for `True` is NOT evaluated
-  assert!(!lexer.action_state.evaluated);
+  assert!(!lexer.state.evaluated);
 }
