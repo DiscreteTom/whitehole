@@ -27,9 +27,9 @@ fn action_orders() {
 
   // lexing will always emit `A`
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind.value(), MyKind::A));
+  assert!(matches!(token.binding.kind(), MyKind::A));
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind.value(), MyKind::A));
+  assert!(matches!(token.binding.kind(), MyKind::A));
 }
 
 // define action state which can be shared between actions
@@ -84,7 +84,7 @@ fn action_decorators() {
   // the first lex should be accepted but with error set
   let res = lexer.lex_with(|o| o.errors_to_vec());
   let token = res.token.unwrap();
-  assert!(matches!(token.kind.value(), MyKind::A));
+  assert!(matches!(token.binding.kind(), MyKind::A));
   assert!(matches!(
     res.errors[0],
     ("error", Range { start: 0, end: 1 })
@@ -102,13 +102,13 @@ fn action_decorators() {
 
   // the first lex should be accepted
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind.value(), MyKind::C));
+  assert!(matches!(token.binding.kind(), MyKind::C));
   assert_eq!(token.range.start, 0);
   assert_eq!(token.range.end, 1);
 
   // the second lex should be accepted and will change the state
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind.value(), MyKind::D));
+  assert!(matches!(token.binding.kind(), MyKind::D));
   assert_eq!(token.range.start, 2);
   assert_eq!(token.range.end, 3);
   assert_eq!(lexer.state.reject, true);

@@ -32,12 +32,12 @@ fn stateless_lexer() {
   // stateless lexer is useful if you only want to
   // lex the head of an input text, with the default action state
   let output = stateless.lex("aaa");
-  assert!(matches!(output.0.token.unwrap().kind.value(), MyKind::A));
+  assert!(matches!(output.0.token.unwrap().binding.kind(), MyKind::A));
 
   // you can also manually provide the action state and other details
   let mut state = ();
   let output = stateless.lex_with("aaa", |o| o.start(1).state(&mut state));
-  assert!(matches!(output.token.unwrap().kind.value(), MyKind::A));
+  assert!(matches!(output.token.unwrap().binding.kind(), MyKind::A));
 }
 
 #[test]

@@ -50,7 +50,7 @@ fn error_tokens() {
   // we can still get the peeked token, which also contains an error
   // but it is not muted
   let token = output.token.unwrap();
-  assert!(matches!(token.kind.value(), MyKind::A));
+  assert!(matches!(token.binding.kind(), MyKind::A));
   assert!(matches!(
     output.errors[1],
     ("end", Range { start: 1, end: 2 })
@@ -79,7 +79,7 @@ fn panic_mode() {
   lexer.digest(1);
   // now we can peek
   let (output, _) = lexer.peek();
-  assert!(matches!(output.token.unwrap().kind.value(), MyKind::A));
+  assert!(matches!(output.token.unwrap().binding.kind(), MyKind::A));
   assert_eq!(output.digested, 2);
 
   // further more, if you know what you are doing

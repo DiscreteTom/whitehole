@@ -38,7 +38,7 @@ fn expectation() {
   // by default, the lex will evaluate all actions in the order they are defined
   // so the lex should be accepted as `A`
   let token = lexer.lex().token.unwrap();
-  assert!(matches!(token.kind.value(), MyKind::A));
+  assert!(matches!(token.binding.kind(), MyKind::A));
 
   // but if we have an expected kind
   // the lex will only evaluate actions
@@ -46,7 +46,7 @@ fn expectation() {
   let mut lexer = lexer.reload("\ta");
   let res = lexer.lex_with(|o| o.expect(B::kind_id()));
   let token = res.token.unwrap();
-  assert!(matches!(token.kind.value(), MyKind::B));
+  assert!(matches!(token.binding.kind(), MyKind::B));
   assert_eq!(res.digested, 2); // the muted action was also evaluated and digested a byte
 
   // we can also expect a literal if the literal appears in `exact` or `word`
@@ -56,7 +56,7 @@ fn expectation() {
   assert!(token.is_none());
   assert_eq!(res.digested, 1); // the muted action is also evaluated and digested a byte
   let token = lexer.lex_with(|o| o.expect("a")).token.unwrap();
-  assert!(matches!(token.kind.value(), MyKind::A));
+  assert!(matches!(token.binding.kind(), MyKind::A));
 
   // or both the text and the kind are expected
   let mut lexer = lexer.reload("\ta");

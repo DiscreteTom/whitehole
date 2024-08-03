@@ -47,7 +47,7 @@ fn lex_with_head() {
     .build("false");
   // the lexed token should be `False`
   assert!(matches!(
-    lexer.lex().token.unwrap().kind.value(),
+    lexer.lex().token.unwrap().binding.kind(),
     MyKind::False
   ));
   // but the action for `True` is evaluated
@@ -71,7 +71,7 @@ fn lex_with_head() {
     .build("false");
   // the lexed token should be `False`
   assert!(matches!(
-    lexer.lex().token.unwrap().kind.value(),
+    lexer.lex().token.unwrap().binding.kind(),
     MyKind::False
   ));
   // and the action for `True` is NOT evaluated
@@ -95,7 +95,7 @@ fn lex_with_head() {
     .build("false");
   // the lexed token should be `False`
   assert!(matches!(
-    lexer.lex().token.unwrap().kind.value(),
+    lexer.lex().token.unwrap().binding.kind(),
     MyKind::False
   ));
   // but the action for `True` is evaluated
@@ -111,7 +111,7 @@ fn lex_with_head() {
     .build("false");
   // the lexed token should be `False`
   assert!(matches!(
-    lexer.lex().token.unwrap().kind.value(),
+    lexer.lex().token.unwrap().binding.kind(),
     MyKind::False
   ));
   // and the action for `True` is NOT evaluated
@@ -127,7 +127,7 @@ fn lex_with_head() {
     .build("false");
   // the lexed token should be `False`
   assert!(matches!(
-    lexer.lex().token.unwrap().kind.value(),
+    lexer.lex().token.unwrap().binding.kind(),
     MyKind::False
   ));
   // and the action for `True` is NOT evaluated
@@ -159,7 +159,7 @@ fn utf8_head() {
     .build("假");
   // the lexed token should be `False`
   assert!(matches!(
-    lexer.lex().token.unwrap().kind.value(),
+    lexer.lex().token.unwrap().binding.kind(),
     MyKind::False
   ));
   // and the action for `True` is NOT evaluated

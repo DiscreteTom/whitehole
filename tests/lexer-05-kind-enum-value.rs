@@ -1,7 +1,7 @@
 use regex::Regex;
 use whitehole::lexer::{
   action::{regex, simple_with_data, Action},
-  token::{token_kind, MockTokenKind, SubTokenKind, TokenKindIdProvider},
+  token::{token_kind, MockTokenKind, SubTokenKind, TokenKindIdBinding, TokenKindIdProvider},
   LexerBuilder,
 };
 
@@ -32,7 +32,7 @@ fn kind_enum_with_calculated_value() {
   // the lex should emit `A(123)`
   let token = lexer.lex().token.unwrap();
   // as you can see the `MyKind::A(usize)` enum is mutated to `MyKind::A(A)` by the `#[token_kind]` macro
-  assert!(matches!(token.kind.value(), MyKind::A(A(123))));
+  assert!(matches!(token.binding.kind(), MyKind::A(A(123))));
 }
 
 #[test]
@@ -44,19 +44,19 @@ fn kind_enum_with_const_value() {
     .define(A(66), regex(r"^b"))
     .build("aabb");
   assert!(matches!(
-    lexer.lex().token.unwrap().kind.value(),
+    lexer.lex().token.unwrap().binding.kind(),
     MyKind::A(A(42))
   )); // the first lex for 42
   assert!(matches!(
-    lexer.lex().token.unwrap().kind.value(),
+    lexer.lex().token.unwrap().binding.kind(),
     MyKind::A(A(42))
   )); // the second lex for 42
   assert!(matches!(
-    lexer.lex().token.unwrap().kind.value(),
+    lexer.lex().token.unwrap().binding.kind(),
     MyKind::A(A(66))
   )); // the first lex for 66
   assert!(matches!(
-    lexer.lex().token.unwrap().kind.value(),
+    lexer.lex().token.unwrap().binding.kind(),
     MyKind::A(A(66))
   )); // the second lex for 66
 }
@@ -68,8 +68,10 @@ fn carry_data_with_mock_token_kind() {
 
   // `MockTokenKind` can carry data, it implements `SubTokenKind` and `TokenKindIdProvider`,
   // and it will always have the same kind id
-  assert_eq!(MockTokenKind::new(123).id(), MockTokenKind::kind_id());
-  assert_eq!(MockTokenKind::new("123").id(), MockTokenKind::kind_id());
+  let v1: TokenKindIdBinding<MockTokenKind<i32>> = MockTokenKind::new(42).into();
+  let v2: TokenKindIdBinding<MockTokenKind<bool>> = MockTokenKind::new(true).into();
+  assert_eq!(v1.id(), MockTokenKind::kind_id());
+  assert_eq!(v2.id(), MockTokenKind::kind_id());
 
   // with this you can calculate data during the action is executed
   // instead of parsing the token's content in `Action::select`.
@@ -88,10 +90,10 @@ fn carry_data_with_mock_token_kind() {
   });
 
   // now convert the `MockTokenKind` to your token kind with `Action::select`
-  let action = action.select(|ctx| A(ctx.output.kind.data));
+  let action = action.select(|ctx| A(ctx.output.binding.take().data));
 
   // you can construct actions with `MockTokenKind` using `Action::data`
-  let action: Action<MockTokenKind<usize>> = action.data(|ctx| match ctx.output.kind.take() {
+  let action: Action<MockTokenKind<usize>> = action.data(|ctx| match ctx.output.binding.take() {
     MyKind::A(a) => a.0,
   });
 

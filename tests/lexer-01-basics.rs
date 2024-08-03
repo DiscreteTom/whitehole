@@ -70,8 +70,8 @@ fn lexer_basics() {
       token,
       Token {
         range: Range { start: 0, end: 1 },
-        kind
-      } if matches!(kind.value(), MyKind::A)
+        binding
+      } if matches!(binding.kind(), MyKind::A)
   ));
   // we don't store the token's content in the token itself,
   // you can get the content by using the token's range
@@ -85,8 +85,8 @@ fn lexer_basics() {
       token,
       Token {
         range: Range { start: 2, end: 3 },
-        kind
-      } if matches!(kind.value(), MyKind::BC)
+        binding
+      } if matches!(binding.kind(), MyKind::BC)
   ));
   assert_eq!(&text[token.range], "b");
 
@@ -96,8 +96,8 @@ fn lexer_basics() {
       token,
       Token {
         range: Range { start: 4, end: 5 },
-        kind
-      } if matches!(kind.value(), MyKind::BC)
+        binding
+      } if matches!(binding.kind(), MyKind::BC)
   ));
   assert_eq!(&text[token.range], "c");
 }

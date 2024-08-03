@@ -25,14 +25,14 @@ fn peek_lexer() {
   // we can peek the next token without updating the lexer's state,
   let (output, _) = lexer.peek();
   let token = output.token.unwrap();
-  assert!(matches!(token.kind.value(), MyKind::A));
+  assert!(matches!(token.binding.kind(), MyKind::A));
   assert_eq!(output.digested, 2); // the whitespace is also digested by the peek
   assert_eq!(lexer.state().digested(), 0); // but the lexer's state is not updated
 
   // now use `lex` to consume the token and the muted leading whitespace
   let res = lexer.lex();
   let token = res.token.unwrap();
-  assert!(matches!(token.kind.value(), MyKind::A));
+  assert!(matches!(token.binding.kind(), MyKind::A));
   assert_eq!(res.digested, 2);
 
   // however, peek-then-lex is not recommended
@@ -93,13 +93,13 @@ fn trim_lexer() {
 
   // for example, this peek will first ignore the whitespace then yield `A`
   let (output, _) = lexer.peek_with(|o| o.expect(A::kind_id()));
-  assert!(matches!(output.token.unwrap().kind.value(), MyKind::A));
+  assert!(matches!(output.token.unwrap().binding.kind(), MyKind::A));
   assert_eq!(output.digested, 2);
 
   // if then we do another peek with different expectation
   // the lexer will ignore the whitespace again
   let (output, _) = lexer.peek_with(|o| o.expect(B::kind_id()));
-  assert!(matches!(output.token.unwrap().kind.value(), MyKind::B));
+  assert!(matches!(output.token.unwrap().binding.kind(), MyKind::B));
   assert_eq!(output.digested, 2);
 
   // to prevent lexing the whitespaces multiple times
@@ -113,9 +113,9 @@ fn trim_lexer() {
 
   // now if we peek the lexer, the whitespaces won't be lexed again
   let (output, _) = lexer.peek_with(|o| o.expect(A::kind_id()));
-  assert!(matches!(output.token.unwrap().kind.value(), MyKind::A));
+  assert!(matches!(output.token.unwrap().binding.kind(), MyKind::A));
   assert_eq!(output.digested, 1); // only the 'a' is digested
   let (output, _) = lexer.peek_with(|o| o.expect(B::kind_id()));
-  assert!(matches!(output.token.unwrap().kind.value(), MyKind::B));
+  assert!(matches!(output.token.unwrap().binding.kind(), MyKind::B));
   assert_eq!(output.digested, 1); // only the 'a' is digested
 }
