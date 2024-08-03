@@ -192,6 +192,13 @@ impl<'text, Kind: 'static, ActionState: Clone, ErrorType>
   type ReLexableType = ReLexable<'text, ActionState>;
 
   fn before_mutate_action_state(&mut self, action_state: &ActionState) {
+    // this should only be called once to prevent duplicated clone of the action state,
+    // so the action state backup must be none
+    debug_assert!(
+      self.action_state_bk.is_none(),
+      "action state backup is already set"
+    );
+
     // backup the action state before the first mutation during one lexing loop
     self.action_state_bk = Some(action_state.clone());
   }
@@ -354,5 +361,14 @@ mod tests {
         state_bk: Some(lexer.state().clone())
       }
     );
+  }
+
+  #[test]
+  #[should_panic]
+  fn re_lexable_builder_multi_call_to_mutate_action_state() {
+    let mut builder = ReLexableBuilder::default();
+    let action_state = 0;
+    ReLexableFactory::<(), _, ()>::before_mutate_action_state(&mut builder, &action_state);
+    ReLexableFactory::<(), _, ()>::before_mutate_action_state(&mut builder, &action_state);
   }
 }
