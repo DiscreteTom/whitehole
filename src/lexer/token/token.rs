@@ -10,9 +10,9 @@ pub struct Token<Kind: 'static> {
   /// This can be used to index the input text.
   /// # Example
   /// ```
-  /// # use whitehole::lexer::token::Token;
+  /// # use whitehole::lexer::token::{Token, MockTokenKind};
   /// let token = Token {
-  ///   kind: (),
+  ///   binding: MockTokenKind::new(()).into(),
   ///   range: 0..5,
   /// };
   /// // index a string with the range

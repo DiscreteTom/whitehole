@@ -66,7 +66,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] and bind them to the default kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, LexerBuilder, token::{token_kind, TokenKindIdBinding}};
+  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Default, Clone)]
   /// # enum MyKind {
@@ -74,10 +74,10 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// #   Anonymous,
   /// # }
   /// # fn main() {
-  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>>::new();
+  /// # let mut builder = LexerBuilder::<MyKind>::new();
   /// // append a single action
   /// builder.ignore_default(whitespaces());
-  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>>::new();
+  /// # let mut builder = LexerBuilder::<MyKind>::new();
   /// // append multiple actions
   /// builder.ignore_default([whitespaces(), word("_")]);
   /// # }
@@ -97,15 +97,15 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] with a decorator and bind them to the default kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder, token::{token_kind, TokenKindIdBinding}};
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone, Default)]
   /// # enum MyKind { #[default] A }
   /// # fn main() {
-  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>>::new();
+  /// # let mut builder = LexerBuilder::<MyKind>::new();
   /// // append a single action
   /// builder.ignore_default_with(word("A"), |a| a.reject());
-  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>>::new();
+  /// # let mut builder = LexerBuilder::<MyKind>::new();
   /// // append multiple actions
   /// builder.ignore_default_with([word("A"), word("B")], |a| a.reject());
   /// # }

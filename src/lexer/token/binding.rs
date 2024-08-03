@@ -19,8 +19,8 @@ use super::{SubTokenKind, TokenKindId, TokenKindIdProvider};
 /// let b: TokenKindIdBinding<MyKind> = B.into();
 /// assert_eq!(a.id(), A::kind_id());
 /// assert_eq!(b.id(), B::kind_id());
-/// assert!(matches!(a.value(), MyKind::A));
-/// assert!(matches!(b.value(), MyKind::B));
+/// assert!(matches!(a.kind(), MyKind::A));
+/// assert!(matches!(b.kind(), MyKind::B));
 /// # }
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

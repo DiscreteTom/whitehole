@@ -144,12 +144,12 @@
 //!
 //! // every sub token kind should have a unique id
 //! // bound with the type, not its value
-//! impl SubTokenKind<TokenKindIdBinding<MyKind>> for Identifier {
+//! impl SubTokenKind<MyKind> for Identifier {
 //!   fn kind_id() -> TokenKindId<MyKind> {
 //!     TokenKindId::new(0)
 //!   }
 //! }
-//! impl SubTokenKind<TokenKindIdBinding<MyKind>> for Number {
+//! impl SubTokenKind<MyKind> for Number {
 //!   fn kind_id() -> TokenKindId<MyKind> {
 //!     TokenKindId::new(1)
 //!   }

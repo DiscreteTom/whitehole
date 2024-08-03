@@ -11,7 +11,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// ```
   /// use whitehole::lexer::{
   ///   action::{Action, exact},
-  ///   token::{TokenKindIdBinding, token_kind},
+  ///   token::token_kind,
   /// };
   ///
   /// #[token_kind]
@@ -19,7 +19,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// enum MyKind { A }
   ///
   /// # fn main() {
-  /// let action: Action<TokenKindIdBinding<MyKind>> = exact("A").bind(A);
+  /// let action: Action<MyKind> = exact("A").bind(A);
   /// # }
   /// ```
   pub fn bind<NewKind, ViaKind>(self, kind: ViaKind) -> Action<NewKind, State, ErrorType>
@@ -58,7 +58,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// ```
   /// use whitehole::lexer::{
   ///   action::{Action, exact},
-  ///   token::{TokenKindIdBinding, token_kind},
+  ///   token::token_kind,
   /// };
   ///
   /// #[token_kind]
@@ -66,7 +66,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// enum MyKind { #[default] Anonymous, A }
   ///
   /// # fn main() {
-  /// let action: Action<TokenKindIdBinding<MyKind>> = exact("A").bind_default();
+  /// let action: Action<MyKind> = exact("A").bind_default();
   /// # }
   /// ```
   pub fn bind_default<NewKind>(self) -> Action<NewKind, State, ErrorType>
@@ -105,7 +105,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// ```
   /// use whitehole::lexer::{
   ///   action::{Action, regex},
-  ///   token::{TokenKindIdBinding, token_kind},
+  ///   token::token_kind,
   /// };
   ///
   /// #[token_kind]
@@ -113,7 +113,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// enum MyKind { Num(i32) }
   ///
   /// # fn main() {
-  /// let action: Action<TokenKindIdBinding<MyKind>> = regex(r"^\d+")
+  /// let action: Action<MyKind> = regex(r"^\d+")
   ///   .select(|ctx| Num(ctx.content().parse().unwrap()));
   /// # }
   /// ```

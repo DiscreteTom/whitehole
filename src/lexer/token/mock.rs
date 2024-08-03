@@ -6,7 +6,7 @@ use std::mem::transmute;
 /// This is useful as a placeholder or data carrier.
 /// # Examples
 /// ```
-/// use whitehole::lexer::token::{MockTokenKind, SubTokenKind, TokenKindIdBinding};
+/// use whitehole::lexer::token::{MockTokenKind, SubTokenKind, TokenKindIdBinding, TokenKindIdProvider};
 /// let v1: TokenKindIdBinding<MockTokenKind<i32>> = MockTokenKind::new(42).into();
 /// let v2: TokenKindIdBinding<MockTokenKind<bool>> = MockTokenKind::new(true).into();
 /// assert_eq!(v1.id(), MockTokenKind::kind_id());

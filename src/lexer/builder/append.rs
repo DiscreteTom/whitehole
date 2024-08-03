@@ -56,7 +56,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// Append actions and bind them to the default kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, LexerBuilder, token::{token_kind, TokenKindIdBinding}};
+  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Default, Clone)]
   /// # enum MyKind {
@@ -64,10 +64,10 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// #   Anonymous,
   /// # }
   /// # fn main() {
-  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>>::new();
+  /// # let mut builder = LexerBuilder::<MyKind>::new();
   /// // append a single action
   /// builder.append_default(whitespaces());
-  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>>::new();
+  /// # let mut builder = LexerBuilder::<MyKind>::new();
   /// // append multiple actions
   /// builder.append_default([whitespaces(), word("_")]);
   /// # }
@@ -87,15 +87,15 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// Append actions with a decorator and bind them to the default kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder, token::{token_kind, TokenKindIdBinding}};
+  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone, Default)]
   /// # enum MyKind { #[default] A }
   /// # fn main() {
-  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>, (), _>::with_error();
+  /// # let mut builder = LexerBuilder::<MyKind, (), _>::with_error();
   /// // append a single action
   /// builder.append_default_with(word("A"), |a| a.error(123));
-  /// # let mut builder = LexerBuilder::<TokenKindIdBinding<MyKind>, (), _>::with_error();
+  /// # let mut builder = LexerBuilder::<MyKind, (), _>::with_error();
   /// // append multiple actions
   /// builder.append_default_with([word("A"), word("B")], |a| a.error(123));
   /// # }

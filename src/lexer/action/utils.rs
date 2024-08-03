@@ -107,13 +107,13 @@ pub fn chars_in_str<State, ErrorType>(
 /// The [`Action::head`] will be set automatically.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::{action::whitespaces, token::{TokenKindIdBinding, token_kind}};
+/// # use whitehole::lexer::{action::whitespaces, token::token_kind};
 /// # use whitehole::lexer::LexerBuilder;
 /// # #[token_kind]
 /// # #[derive(Default, Clone)]
 /// # enum MyKind { #[default] Anonymous }
 /// # fn main() {
-/// # let builder = LexerBuilder::<TokenKindIdBinding<MyKind>>::new();
+/// # let builder = LexerBuilder::<MyKind>::new();
 /// builder.ignore_default(whitespaces());
 /// # }
 /// ```
