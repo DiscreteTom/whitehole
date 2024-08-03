@@ -172,7 +172,7 @@
 //!
 //! Besides, creating sub token kind structs is also helpful for the lexer implementation:
 //! - In [`crate::lexer::action::Action::select`] we will use the sub token kind to ensure the action can only yield
-//! one kind of token. And we can get the token kind id without executing the action.
+//! one kind of token. And we can infer [`crate::lexer::action::Action::kind`] statically without executing the action.
 //! - In expectational lexing, we can use the sub token kind type to get the expected token kind id,
 //! without constructing a token kind value.
 //!
@@ -201,7 +201,7 @@
 //! - [`self::binding`]
 //! - [`self::token_kind`]
 //!
-//! The [`token_kind`] macro will be tested here.
+//! The [`token_kind`] macro will be tested in this file.
 
 mod binding;
 mod mock;
