@@ -44,7 +44,7 @@
 //! #   Identifier(String),
 //! #   Number(i32),
 //! # }
-//! fn get_id(kind: MyKind) -> usize {
+//! fn get_id(kind: &MyKind) -> usize {
 //!   match kind {
 //!     MyKind::Identifier(_) => 0,
 //!     MyKind::Number(_) => 1,
@@ -71,26 +71,26 @@
 //! #
 //! pub struct TokenKindIdBinding<TokenKindType> {
 //!   id: TokenKindId<TokenKindType>,
-//!   value: TokenKindType,
+//!   kind: TokenKindType,
 //! };
 //!
 //! // when creating `TokenKindIdBinding`, we have to make sure
-//! // the id and the value are bound correctly.
+//! // the id and the kind are bound correctly.
 //!
 //! // correct
 //! TokenKindIdBinding {
 //!   id: TokenKindId::new(0), // the id of `Identifier`
-//!   value: MyKind::Identifier("hello".to_string())
+//!   kind: MyKind::Identifier("hello".to_string())
 //! };
 //! TokenKindIdBinding {
 //!   id: TokenKindId::new(1), // the id of `Number`
-//!   value: MyKind::Number(0)
+//!   kind: MyKind::Number(0)
 //! };
 //!
 //! // wrong!
 //! TokenKindIdBinding {
 //!   id: TokenKindId::new(0), // the id of `Identifier`
-//!   value: MyKind::Number(0)
+//!   kind: MyKind::Number(0)
 //! };
 //! ```
 //!
@@ -110,7 +110,7 @@
 //! # }
 //! # pub struct TokenKindIdBinding<TokenKindType> {
 //! #   id: TokenKindId<TokenKindType>,
-//! #   value: TokenKindType,
+//! #   kind: TokenKindType,
 //! # };
 //! // this is the "token kind"
 //! pub enum MyKind {
@@ -158,12 +158,12 @@
 //! // from sub token kinds we can create the token kind id bindings
 //! impl Into<TokenKindIdBinding<MyKind>> for Identifier {
 //!   fn into(self) -> TokenKindIdBinding<MyKind> {
-//!     TokenKindIdBinding { id: Identifier::kind_id(), value: MyKind::Identifier(self) }
+//!     TokenKindIdBinding { id: Identifier::kind_id(), kind: MyKind::Identifier(self) }
 //!   }
 //! }
 //! impl Into<TokenKindIdBinding<MyKind>> for Number {
 //!   fn into(self) -> TokenKindIdBinding<MyKind> {
-//!     TokenKindIdBinding { id: Number::kind_id(), value: MyKind::Number(self) }
+//!     TokenKindIdBinding { id: Number::kind_id(), kind: MyKind::Number(self) }
 //!   }
 //! }
 //! ```
