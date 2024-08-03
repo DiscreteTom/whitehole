@@ -110,7 +110,8 @@ impl<Kind, ActionState, ErrorType> LiteralMap<Kind, ActionState, ErrorType> {
 mod tests {
   use super::*;
   use crate::lexer::{
-    action::{exact, regex},
+    action::{exact, regex, Action},
+    stateless::head_map::HeadMapActions,
     token::MockTokenKind,
   };
 
@@ -118,22 +119,22 @@ mod tests {
     regex(s)
   }
 
-  fn assert_actions_eq(
-    actions: &Vec<Rc<Action<MockTokenKind<()>>>>,
-    expected: Vec<Action<MockTokenKind<()>>>,
+  fn assert_immutable_actions_eq(
+    actions: &HeadMapActions<MockTokenKind<()>, (), ()>,
+    expected: Vec<Action<MockTokenKind<()>, (), ()>>,
   ) {
     assert_eq!(actions.len(), expected.len());
-    for i in 0..actions.len() {
-      assert_eq!(actions[i].kind(), expected[i].kind());
-      assert_eq!(actions[i].head(), expected[i].head());
-      assert_eq!(actions[i].literal(), expected[i].literal());
-      assert_eq!(actions[i].muted(), expected[i].muted());
+    for i in 0..actions.immutables().len() {
+      assert_eq!(actions.immutables()[i].kind(), expected[i].kind());
+      assert_eq!(actions.immutables()[i].head(), expected[i].head());
+      assert_eq!(actions.immutables()[i].literal(), expected[i].literal());
+      assert_eq!(actions.immutables()[i].muted(), expected[i].muted());
     }
   }
 
   #[test]
   fn test_literal_map() {
-    let actions: Vec<Rc<Action<MockTokenKind<()>>>> = vec![
+    let actions: Vec<GeneralAction<MockTokenKind<()>, (), ()>> = vec![
       exact("a"),                              // "a", not muted
       exact("a").mute(),                       // "a", muted
       r("a").unchecked_head_in(['a']),         // OneOf('a'), not muted
@@ -156,7 +157,7 @@ mod tests {
       r("b").mute(),                           // no head, muted
     ]
     .into_iter()
-    .map(Rc::new)
+    .map(|a| a.into_general())
     .collect();
 
     let lm = LiteralMap::new(
@@ -169,9 +170,8 @@ mod tests {
     assert_eq!(lm.known_map().len(), ["a", "b"].len());
 
     let literal_a_head_map = &lm.known_map().get("a").unwrap();
-    assert_eq!(literal_a_head_map.known_map().len(), ['a', 'b', 'c'].len());
-    assert_actions_eq(
-      literal_a_head_map.known_map().get(&'a').unwrap(),
+    assert_immutable_actions_eq(
+      literal_a_head_map.get('a'),
       vec![
         exact("a"),                              // "a", not muted
         exact("a").mute(),                       // "a", muted
@@ -182,8 +182,8 @@ mod tests {
         r("b").mute(),                           // no head, muted
       ],
     );
-    assert_actions_eq(
-      literal_a_head_map.known_map().get(&'b').unwrap(),
+    assert_immutable_actions_eq(
+      literal_a_head_map.get('b'),
       vec![
         r("a").unchecked_head_not(['c']).mute(), // Not('c'), muted
         r("a").mute(),                           // no head, muted
@@ -193,15 +193,15 @@ mod tests {
         r("b").mute(),                           // no head, muted
       ],
     );
-    assert_actions_eq(
-      literal_a_head_map.known_map().get(&'c').unwrap(),
+    assert_immutable_actions_eq(
+      literal_a_head_map.get('c'),
       vec![
         r("a").mute(), // no head, muted
         r("b").mute(), // no head, muted
       ],
     );
-    assert_actions_eq(
-      literal_a_head_map.unknown_fallback(),
+    assert_immutable_actions_eq(
+      literal_a_head_map.get('z'),
       vec![
         r("a").unchecked_head_not(['c']).mute(), // Not('c'), muted
         r("a").unchecked_head_unknown().mute(),  // Unknown, muted
@@ -214,9 +214,8 @@ mod tests {
     // literal_b_head_map should be similar to literal_a_head_map, skip
 
     let muted_map = &lm.muted_map();
-    assert_eq!(muted_map.known_map().len(), ['a', 'b', 'c'].len());
-    assert_actions_eq(
-      muted_map.known_map().get(&'a').unwrap(),
+    assert_immutable_actions_eq(
+      muted_map.get('a'),
       vec![
         exact("a").mute(),                       // "a", muted
         r("a").unchecked_head_in(['a']).mute(),  // OneOf('a'), muted
@@ -226,8 +225,8 @@ mod tests {
         r("b").mute(),                           // no head, muted
       ],
     );
-    assert_actions_eq(
-      muted_map.known_map().get(&'b').unwrap(),
+    assert_immutable_actions_eq(
+      muted_map.get('b'),
       vec![
         r("a").unchecked_head_not(['c']).mute(), // Not('c'), muted
         r("a").mute(),                           // no head, muted
@@ -237,15 +236,15 @@ mod tests {
         r("b").mute(),                           // no head, muted
       ],
     );
-    assert_actions_eq(
-      muted_map.known_map().get(&'c').unwrap(),
+    assert_immutable_actions_eq(
+      muted_map.get('c'),
       vec![
         r("a").mute(), // no head, muted
         r("b").mute(), // no head, muted
       ],
     );
-    assert_actions_eq(
-      muted_map.unknown_fallback(),
+    assert_immutable_actions_eq(
+      muted_map.get('z'),
       vec![
         r("a").unchecked_head_not(['c']).mute(), // Not('c'), muted
         r("a").unchecked_head_unknown().mute(),  // Unknown, muted
