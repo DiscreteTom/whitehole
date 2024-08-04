@@ -232,6 +232,30 @@ macro_rules! mut_input_to_ref {
 }
 pub(super) use mut_input_to_ref;
 
+/// Convert the content of [`ActionExec`] using the given macro.
+macro_rules! map_exec {
+  ($exec: expr, $macro_impl: ident) => {
+    match $exec {
+      ActionExec::Immutable(exec) => ActionExec::Immutable($macro_impl!(exec)),
+      ActionExec::Mutable(exec) => ActionExec::Mutable($macro_impl!(exec)),
+    }
+  };
+}
+pub(super) use map_exec;
+
+/// Convert the content of [`ActionExec`] using the given macro.
+/// The `macro_impl`'s second argument is a boolean indicating
+/// whether to convert the mutable action to immutable.
+macro_rules! map_exec_adapt_input {
+  ($exec: expr, $macro_impl: ident) => {
+    match $exec {
+      ActionExec::Immutable(exec) => ActionExec::Immutable($macro_impl!(exec, false)),
+      ActionExec::Mutable(exec) => ActionExec::Mutable($macro_impl!(exec, true)),
+    }
+  };
+}
+pub(super) use map_exec_adapt_input;
+
 // helpers for tests
 #[cfg(test)]
 impl<Kind, State, ErrorType> ActionExec<Kind, State, ErrorType> {

@@ -6,7 +6,23 @@ mod kind;
 pub use context::*;
 
 use super::{input::ActionInput, mut_input_to_ref, output::ActionOutput, Action, ActionExec};
-use crate::lexer::token::TokenKindIdBinding;
+use crate::lexer::{
+  action::{map_exec, map_exec_adapt_input},
+  token::TokenKindIdBinding,
+};
+
+/// Convert the content of [`ActionExec`] to [`ActionExec::Mutable`] using the given macro.
+/// The `macro_impl`'s second argument is a boolean indicating
+/// whether to convert the mutable action to immutable.
+macro_rules! map_exec_to_mut {
+  ($exec: expr, $macro_impl: ident) => {
+    match $exec {
+      // convert immutable to mutable
+      ActionExec::Immutable(exec) => ActionExec::Mutable($macro_impl!(exec, true)),
+      ActionExec::Mutable(exec) => ActionExec::Mutable($macro_impl!(exec, false)),
+    }
+  };
+}
 
 impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// Check the [`ActionInput`] before the action is executed.
@@ -40,9 +56,9 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     ErrorType: 'static,
   {
     macro_rules! impl_prevent {
-      ($exec: ident, $to_mutable: ident) => {
+      ($exec: ident, $mut_input_to_ref: ident) => {
         Box::new(move |input| {
-          if condition(mut_input_to_ref!(input, $to_mutable)) {
+          if condition(mut_input_to_ref!(input, $mut_input_to_ref)) {
             None
           } else {
             $exec(input)
@@ -51,10 +67,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       };
     }
 
-    self.exec = match self.exec {
-      ActionExec::Immutable(exec) => ActionExec::Immutable(impl_prevent!(exec, false)),
-      ActionExec::Mutable(exec) => ActionExec::Mutable(impl_prevent!(exec, true)),
-    };
+    self.exec = map_exec_adapt_input!(self.exec, impl_prevent);
     self
   }
 
@@ -89,19 +102,15 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     ErrorType: 'static,
   {
     macro_rules! impl_prepare {
-      ($exec: ident, $to_mutable: ident) => {
+      ($exec: ident, $mut_input_to_ref: ident) => {
         Box::new(move |input| {
           modifier(input);
-          $exec(mut_input_to_ref!(input, $to_mutable))
+          $exec(mut_input_to_ref!(input, $mut_input_to_ref))
         })
       };
     }
 
-    self.exec = match self.exec {
-      // convert immutable to mutable
-      ActionExec::Immutable(exec) => ActionExec::Mutable(impl_prepare!(exec, true)),
-      ActionExec::Mutable(exec) => ActionExec::Mutable(impl_prepare!(exec, false)),
-    };
+    self.exec = map_exec_to_mut!(self.exec, impl_prepare);
     self
   }
 
@@ -171,7 +180,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// ```
   pub fn check<NewError>(
     self,
-    condition: impl Fn(
+    factory: impl Fn(
         AcceptedActionOutputContext<
           &ActionInput<&State>,
           // user could consume the old error, but not able to consume the kind
@@ -185,11 +194,11 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     ErrorType: 'static,
   {
     macro_rules! impl_check {
-      ($exec: ident, $to_mutable: ident) => {
+      ($exec: ident, $mut_input_to_ref: ident) => {
         Box::new(move |input| {
           $exec(input).map(|output| ActionOutput {
-            error: condition(AcceptedActionOutputContext {
-              input: mut_input_to_ref!(input, $to_mutable),
+            error: factory(AcceptedActionOutputContext {
+              input: mut_input_to_ref!(input, $mut_input_to_ref),
               output: ActionOutput {
                 binding: &output.binding, // don't consume the binding
                 error: output.error,      // but the error is consumable
@@ -204,10 +213,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     }
 
     Action {
-      exec: match self.exec {
-        ActionExec::Immutable(exec) => ActionExec::Immutable(impl_check!(exec, false)),
-        ActionExec::Mutable(exec) => ActionExec::Mutable(impl_check!(exec, true)),
-      },
+      exec: map_exec_adapt_input!(self.exec, impl_check),
       muted: self.muted,
       head: self.head,
       kind: self.kind,
@@ -254,10 +260,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     }
 
     Action {
-      exec: match self.exec {
-        ActionExec::Immutable(exec) => ActionExec::Immutable(impl_error!(exec)),
-        ActionExec::Mutable(exec) => ActionExec::Mutable(impl_error!(exec)),
-      },
+      exec: map_exec!(self.exec, impl_error),
       muted: self.muted,
       head: self.head,
       kind: self.kind,
@@ -297,11 +300,11 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     ErrorType: 'static,
   {
     macro_rules! impl_reject_if {
-      ($exec: ident, $to_mutable: ident) => {
+      ($exec: ident, $mut_input_to_ref: ident) => {
         Box::new(move |input| {
           $exec(input).and_then(|output| {
             if condition(AcceptedActionOutputContext {
-              input: mut_input_to_ref!(input, $to_mutable),
+              input: mut_input_to_ref!(input, $mut_input_to_ref),
               output: &output,
             }) {
               None
@@ -313,10 +316,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       };
     }
 
-    self.exec = match self.exec {
-      ActionExec::Immutable(exec) => ActionExec::Immutable(impl_reject_if!(exec, false)),
-      ActionExec::Mutable(exec) => ActionExec::Mutable(impl_reject_if!(exec, true)),
-    };
+    self.exec = map_exec_adapt_input!(self.exec, impl_reject_if);
     self
   }
 
@@ -353,10 +353,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       };
     }
 
-    self.exec = match self.exec {
-      ActionExec::Immutable(exec) => ActionExec::Immutable(impl_reject!(exec)),
-      ActionExec::Mutable(exec) => ActionExec::Mutable(impl_reject!(exec)),
-    };
+    self.exec = map_exec!(self.exec, impl_reject);
     self
   }
   // `reject_if(|_| false)` is meaningless
@@ -400,12 +397,12 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     ErrorType: 'static,
   {
     macro_rules! impl_callback {
-      ($exec: ident, $to_mutable: ident) => {
+      ($exec: ident, $mut_input_to_ref: ident) => {
         Box::new(move |input| {
-          $exec(mut_input_to_ref!(input, $to_mutable)).map(|output| {
+          $exec(mut_input_to_ref!(input, $mut_input_to_ref)).map(|output| {
             cb(AcceptedActionOutputContext {
-              output: &output,
               input,
+              output: &output,
             });
             output
           })
@@ -413,11 +410,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       };
     }
 
-    self.exec = match self.exec {
-      // convert immutable to mutable
-      ActionExec::Immutable(exec) => ActionExec::Mutable(impl_callback!(exec, true)),
-      ActionExec::Mutable(exec) => ActionExec::Mutable(impl_callback!(exec, false)),
-    };
+    self.exec = map_exec_to_mut!(self.exec, impl_callback);
     self
   }
 }

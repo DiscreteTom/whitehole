@@ -1,6 +1,8 @@
 use super::AcceptedActionOutputContext;
 use crate::lexer::{
-  action::{mut_input_to_ref, Action, ActionExec, ActionInput, ActionOutput},
+  action::{
+    map_exec, map_exec_adapt_input, mut_input_to_ref, Action, ActionExec, ActionInput, ActionOutput,
+  },
   token::{DefaultTokenKindIdBinding, SubTokenKind, TokenKindIdBinding},
 };
 
@@ -46,10 +48,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       head: self.head,
       muted: self.muted,
       literal: self.literal,
-      exec: match self.exec {
-        ActionExec::Immutable(exec) => ActionExec::Immutable(impl_bind!(exec)),
-        ActionExec::Mutable(exec) => ActionExec::Mutable(impl_bind!(exec)),
-      },
+      exec: map_exec!(self.exec, impl_bind),
     }
   }
 
@@ -92,10 +91,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       head: self.head,
       muted: self.muted,
       literal: self.literal,
-      exec: match self.exec {
-        ActionExec::Immutable(exec) => ActionExec::Immutable(impl_bind_default!(exec)),
-        ActionExec::Mutable(exec) => ActionExec::Mutable(impl_bind_default!(exec)),
-      },
+      exec: map_exec!(self.exec, impl_bind_default),
     }
   }
 
@@ -135,12 +131,12 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     ErrorType: 'static,
   {
     macro_rules! impl_select {
-      ($exec: ident, $to_mutable: ident) => {
+      ($exec: ident, $mut_input_to_ref: ident) => {
         Box::new(move |input| {
           $exec(input).map(|output| {
             ActionOutput {
               binding: selector(AcceptedActionOutputContext {
-                input: mut_input_to_ref!(input, $to_mutable),
+                input: mut_input_to_ref!(input, $mut_input_to_ref),
                 // construct a new ActionOutput
                 output: ActionOutput {
                   // consume the original output.binding
@@ -164,10 +160,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       head: self.head,
       muted: self.muted,
       literal: self.literal,
-      exec: match self.exec {
-        ActionExec::Immutable(exec) => ActionExec::Immutable(impl_select!(exec, false)),
-        ActionExec::Mutable(exec) => ActionExec::Mutable(impl_select!(exec, true)),
-      },
+      exec: map_exec_adapt_input!(self.exec, impl_select),
     }
   }
 }
