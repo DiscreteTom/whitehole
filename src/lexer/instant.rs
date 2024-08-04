@@ -14,14 +14,15 @@ pub struct Instant<'text> {
 }
 
 impl<'text> Instant<'text> {
-  /// Create a new lexer state with the given text.
+  /// Create a new instance with the given text.
   /// [`Self::digested`] will be set to `0`.
+  /// If the text is empty, [`Self::trimmed`] will be set to `true`.
   #[inline]
   pub const fn new(text: &'text str) -> Self {
     Instant {
       text,
       digested: 0,
-      trimmed: text.len() == 0,
+      trimmed: text.is_empty(),
     }
   }
 
@@ -30,12 +31,13 @@ impl<'text> Instant<'text> {
   pub const fn text(&self) -> &'text str {
     self.text
   }
-  /// How many bytes are digested.
+  /// How many bytes are already digested.
   #[inline]
   pub const fn digested(&self) -> usize {
     self.digested
   }
-  /// Whether the text is trimmed.
+  /// Whether the rest of the text is already trimmed.
+  /// See [`Lexer::trim`](crate::lexer::Lexer::trim).
   #[inline]
   pub const fn trimmed(&self) -> bool {
     self.trimmed
@@ -48,8 +50,8 @@ impl<'text> Instant<'text> {
   }
 
   /// Digest `n` bytes.
-  /// The caller should ensure `n` is smaller than the rest text length.
-  /// `0` is allowed.
+  /// The caller MUST ensure `n` is smaller than the length of [`Self::rest`].
+  /// `0` is allowed but it won't change [`Self::trimmed`].
   #[inline]
   pub fn digest(&mut self, n: usize) {
     debug_assert!(
@@ -70,7 +72,7 @@ impl<'text> Instant<'text> {
   }
 
   /// Digest `n` bytes and set [`Self::trimmed`] to `true`.
-  /// The caller should ensure `n` is smaller than the rest text length.
+  /// The caller MUST ensure `n` is smaller than the length of [`Self::rest`].
   /// `0` is allowed.
   #[inline]
   pub fn trim(&mut self, n: usize) {
