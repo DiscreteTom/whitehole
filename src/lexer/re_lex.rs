@@ -3,12 +3,12 @@ use super::{instant::Instant, Lexer};
 /// With this struct you can retry a lex with different actions.
 ///
 /// This will be constructed by [`ForkEnabled`](crate::lexer::fork::ForkEnabled)
-/// (when lexing with [`LexOptions::fork`](crate::lexer::options::LexOptions::fork) enabled).
+/// (when lexing or peeking, with [`LexOptions::fork`](crate::lexer::options::LexOptions::fork) enabled).
 /// You should never construct this struct manually
 /// because whe [`StatelessLexer`](crate::lexer::stateless::StatelessLexer) will skip
-/// actions as needed and it is not guaranteed the fields of this struct are stable across versions.
+/// actions as needed and it is not guaranteed the memory layout of this struct are stable across versions.
 /// # Caveats
-/// Be careful with stateful lexers, because when actions are skipped your action state
+/// Be careful with stateful lexers, because when actions are skipped your lexer's state
 /// may be inconsistent with the original lexing.
 /// # Examples
 /// ```
