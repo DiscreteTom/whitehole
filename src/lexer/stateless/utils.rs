@@ -110,6 +110,7 @@ fn traverse_immutables<Kind, State, ErrorType>(
       })
   {
     if let Some(output) = action.exec()(input) {
+      debug_assert!(output.digested <= input.rest().len());
       // return once accepted action is found
       return Some((output, i, action.muted()));
     }
@@ -143,6 +144,7 @@ fn traverse_rest<'text, Kind, State, ErrorType>(
       GeneralAction::Immutable(action) => action.exec()(&input.as_ref()),
       GeneralAction::Mutable(action) => action.exec()(input),
     } {
+      debug_assert!(output.digested <= input.rest().len());
       // return once accepted action is found
       return Some((output, i + actions.immutables().len(), action.muted()));
     }
