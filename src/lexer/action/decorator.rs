@@ -27,9 +27,11 @@ macro_rules! map_exec_to_mut {
 impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// Check the [`ActionInput`] before the action is executed.
   /// Reject the action if the `condition` returns `true`.
+  ///
+  /// [`ActionInput::state`] is immutable in the `condition`.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -46,11 +48,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// );
   /// # }
   /// ```
-  pub fn prevent(
-    mut self,
-    // action state is immutable
-    condition: impl Fn(&ActionInput<&State>) -> bool + 'static,
-  ) -> Self
+  pub fn prevent(mut self, condition: impl Fn(&ActionInput<&State>) -> bool + 'static) -> Self
   where
     State: 'static,
     ErrorType: 'static,
@@ -72,10 +70,11 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   }
 
   /// Modify `State` before the action is executed.
-  /// This will set [`Self::may_mutate_state`] to `true`.
+  /// [`ActionInput::state`] is mutable in the `modifier`.
+  /// This will convert [`Self::exec`] to [`ActionExec::Mutable`].
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -92,11 +91,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// );
   /// # }
   /// ```
-  pub fn prepare(
-    mut self,
-    // action state is mutable
-    modifier: impl Fn(&mut ActionInput<&mut State>) + 'static,
-  ) -> Self
+  pub fn prepare(mut self, modifier: impl Fn(&mut ActionInput<&mut State>) + 'static) -> Self
   where
     State: 'static,
     ErrorType: 'static,
@@ -117,7 +112,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// Set [`Self::muted`] to `true`.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -138,7 +133,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// Set [`Self::muted`] to `false`.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -156,10 +151,14 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     self
   }
 
-  /// Set [`ActionOutput::error`] if the action is accepted.
+  /// Set [`ActionOutput::error`] by the `factory` if the action is accepted.
+  /// You can consume the old [`ActionOutput::error`] in the `factory`
+  /// but not the [`ActionOutput::binding`].
+  ///
+  /// [`ActionInput::state`] is immutable in the `factory`.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -183,7 +182,6 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     factory: impl Fn(
         AcceptedActionOutputContext<
           &ActionInput<&State>,
-          // user could consume the old error, but not able to consume the kind
           ActionOutput<&TokenKindIdBinding<Kind>, Option<ErrorType>>,
         >,
       ) -> Option<NewError>
@@ -221,10 +219,10 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     }
   }
 
-  /// Set [`ActionOutput::error`] if the action is accepted.
+  /// Set [`ActionOutput::error`] to a constant value if the action is accepted.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -268,19 +266,21 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     }
   }
 
-  /// Reject the action if the condition is met.
+  /// Reject the action if the `condition` is met.
+  ///
+  /// [`ActionInput::state`] is immutable in the `condition`.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # fn main() {
   /// # let mut builder = LexerBuilder::new();
-  /// builder.define(
+  /// builder.define_with(
   ///   A,
-  ///   regex(r"^\s+")
-  ///     .reject_if(|ctx| ctx.rest().len() > 0)
+  ///   regex(r"^\s+"),
+  ///   |a| a.reject_if(|ctx| ctx.rest().len() > 0)
   /// );
   /// # }
   /// ```
@@ -289,7 +289,6 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     condition: impl Fn(
         AcceptedActionOutputContext<
           &ActionInput<&State>,
-          // user should NOT mutate the output directly
           &ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
         >,
       ) -> bool
@@ -323,15 +322,16 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// Reject the action after execution.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # fn main() {
   /// # let mut builder = LexerBuilder::new();
-  /// builder.define(
+  /// builder.define_with(
   ///   A,
-  ///   regex(r"^\s+").reject()
+  ///   regex(r"^\s+"),
+  ///   |a| a.reject()
   /// );
   /// # }
   /// ```
@@ -361,10 +361,10 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
 
   /// Call the `cb` if the action is accepted.
   /// You can modify [`ActionInput::state`] in the `cb`.
-  /// This will set [`Self::may_mutate_state`] to `true`.
+  /// This will set [`Self::exec`] to [`ActionExec::Mutable`].
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -385,9 +385,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     mut self,
     cb: impl Fn(
         AcceptedActionOutputContext<
-          // user can mutate the input.state
           &mut ActionInput<&mut State>,
-          // user should NOT mutate the output directly
           &ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
         >,
       ) + 'static,

@@ -7,7 +7,7 @@ use crate::lexer::{
 };
 
 impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
-  /// Set the kind and the data binding for this action.
+  /// Set the binding for this action.
   /// Use this if your action can only yield a const token kind value.
   /// # Examples
   /// ```
@@ -18,10 +18,11 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   ///
   /// #[token_kind]
   /// #[derive(Clone, Debug)]
-  /// enum MyKind { A }
+  /// enum MyKind { A, B(i32) }
   ///
   /// # fn main() {
   /// let action: Action<MyKind> = exact("A").bind(A);
+  /// let action: Action<MyKind> = exact("A").bind(B(0));
   /// # }
   /// ```
   pub fn bind<NewKind, ViaKind>(self, kind: ViaKind) -> Action<NewKind, State, ErrorType>
@@ -57,7 +58,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// ```
   /// use whitehole::lexer::{
   ///   action::{Action, exact},
-  ///   token::token_kind,
+  ///   token::{token_kind, SubTokenKind},
   /// };
   ///
   /// #[token_kind]
@@ -66,6 +67,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   ///
   /// # fn main() {
   /// let action: Action<MyKind> = exact("A").bind_default();
+  /// assert_eq!(action.kind(), Anonymous::kind_id());
   /// # }
   /// ```
   pub fn bind_default<NewKind>(self) -> Action<NewKind, State, ErrorType>
@@ -95,8 +97,12 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     }
   }
 
-  /// Set the kind and the data binding for this action by the selector.
+  /// Set the kind and the data binding for this action by the `selector`.
   /// Use this if you need to calculate the kind based on the [`ActionInput`] and [`ActionOutput`].
+  ///
+  /// [`ActionInput::state`] is immutable in the `selector`.
+  /// You can consume the [`ActionOutput::binding`] in the `selector`
+  /// but not the [`ActionOutput::error`].
   /// # Examples
   /// ```
   /// use whitehole::lexer::{
@@ -117,9 +123,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     self,
     selector: impl Fn(
         AcceptedActionOutputContext<
-          // user can't mutate the input
           &ActionInput<&State>,
-          // output is consumed except the error
           ActionOutput<TokenKindIdBinding<Kind>, &Option<ErrorType>>,
         >,
       ) -> ViaKind

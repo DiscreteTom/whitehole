@@ -7,19 +7,21 @@ use crate::lexer::{
 impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// Set the kind to [`MockTokenKind`] and store the data in [`MockTokenKind::data`].
   /// Return a new action.
+  ///
+  /// [`ActionInput::state`] is immutable in the `factory`.
+  /// You can consume the [`ActionOutput::binding`] in the `factory`
+  /// but not the [`ActionOutput::error`].
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::action::{Action, simple};
+  /// # use whitehole::lexer::action::{Action, regex};
   /// # let action: Action<_> =
-  /// simple(|_| 1).data(|ctx| ctx.content().parse::<i32>());
+  /// regex(r"^\d+").data(|ctx| ctx.content().parse::<i32>());
   /// ```
   pub fn data<T>(
     self,
     factory: impl Fn(
         AcceptedActionOutputContext<
-          // user can't mutate the input
           &ActionInput<&State>,
-          // output is consumed except the error
           ActionOutput<TokenKindIdBinding<Kind>, &Option<ErrorType>>,
         >,
       ) -> T
