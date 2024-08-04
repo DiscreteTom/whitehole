@@ -14,9 +14,11 @@ pub use whitehole_helpers::exact_vec;
 /// ```
 /// # use whitehole::lexer::action::{Action, exact};
 /// # let action: Action<_> =
-/// exact("true"); // with a &str
+/// exact("true".to_string()); // using String
 /// # let action: Action<_> =
-/// exact(';'); // with a char
+/// exact("true"); // using &str
+/// # let action: Action<_> =
+/// exact(';'); // using char
 /// ```
 pub fn exact<State, ErrorType>(
   s: impl Into<String>,

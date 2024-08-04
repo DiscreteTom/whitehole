@@ -30,7 +30,7 @@ pub fn starts_with_word_boundary(rest: &str) -> bool {
     .next()
     // if next char exists, it can't be alphanumeric or `_`
     .map(|c| !c.is_alphanumeric() && c != '_')
-    // if no next char (EOF), it's ok
+    // if no next char (reach EOF), it's ok
     .unwrap_or(true)
 }
 
