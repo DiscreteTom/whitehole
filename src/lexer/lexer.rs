@@ -248,12 +248,14 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     output
   }
 
-  /// Digest the next `n` chars and set [`Self::state`].
+  /// Digest the next `n` chars and optionally set [`Self::state`].
   /// The caller should make sure `n` is smaller than the rest text length.
   #[inline]
-  pub fn digest_with(&mut self, n: usize, state: State) -> &mut Self {
+  pub fn digest_with(&mut self, n: usize, state: impl Into<Option<State>>) -> &mut Self {
     self.instant.digest(n);
-    self.state = state;
+    if let Some(state) = state.into() {
+      self.state = state;
+    }
     self
   }
 
