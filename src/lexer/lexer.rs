@@ -62,7 +62,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     text: &'text str,
   ) -> Self {
     Self {
-      state: state,
+      state,
       stateless,
       instant: Instant::new(text),
     }
