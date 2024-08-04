@@ -69,9 +69,9 @@ pub fn chars_in_range<State, ErrorType>(
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, charset};
-/// // match '0' or '9' greedily
+/// // match 'a' or 's' or 'd' greedily
 /// # let action: Action<_> =
-/// charset(['0', '9']);
+/// charset(['a', 's', 'd']);
 /// ```
 pub fn charset<State, ErrorType>(
   set: impl Into<HashSet<char>>,
@@ -90,9 +90,9 @@ pub fn charset<State, ErrorType>(
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, chars_in_str};
-/// // match '0' or '9' greedily
+/// // match 'a' or 's' or 'd' greedily
 /// # let action: Action<_> =
-/// chars_in_str("09");
+/// chars_in_str("asd");
 /// ```
 #[inline]
 pub fn chars_in_str<State, ErrorType>(
