@@ -2,10 +2,13 @@ use super::{input::ActionInput, Action, ActionExec, ActionOutput};
 use crate::lexer::token::{MockTokenKind, SubTokenKind};
 
 /// Accept a function that digests the rest of the input text and returns the number of digested bytes.
-/// You can't modify the action state in this function.
+/// You can't modify the [`ActionInput::state`] in this function.
 /// The function should return `0` if the action is rejected.
 ///
 /// It's recommended to set [`Action::head`] to optimize the lex performance.
+/// # Caveats
+/// The function's return value (how many bytes are digested)
+/// MUST be smaller than the length of [`ActionInput::rest`].
 /// # Examples
 /// ```
 /// use whitehole::lexer::action::{Action, simple};
@@ -13,7 +16,6 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 /// let a: Action<_> = simple(|input| input.rest().len());
 /// ```
 pub fn simple<State, ErrorType>(
-  // ActionInput is immutable so we can set `Action::may_mutate_state` to false.
   f: impl Fn(&ActionInput<&State>) -> usize + 'static,
 ) -> Action<MockTokenKind<()>, State, ErrorType> {
   Action {
@@ -42,6 +44,9 @@ pub fn simple<State, ErrorType>(
 /// later using [`Action::data`].
 ///
 /// It's recommended to set [`Action::head`] to optimize the lex performance.
+/// # Caveats
+/// The function's return value (how many bytes are digested)
+/// MUST be smaller than the length of [`ActionInput::rest`].
 /// # Examples
 /// ```
 /// use whitehole::lexer::token::MockTokenKind;
@@ -50,17 +55,15 @@ pub fn simple<State, ErrorType>(
 /// let a: Action<MockTokenKind<i32>> = simple_with_data(|input| Some((input.rest().len(), input.rest().parse().unwrap())));
 /// ```
 pub fn simple_with_data<State, ErrorType, T>(
-  // ActionInput is immutable so we can set `Action::may_mutate_state` to false.
   f: impl Fn(&ActionInput<&State>) -> Option<(usize, T)> + 'static,
 ) -> Action<MockTokenKind<T>, State, ErrorType> {
   Action {
-    exec: ActionExec::Immutable(Box::new(move |input| match f(input) {
-      Some((digested, data)) => Some(ActionOutput {
+    exec: ActionExec::Immutable(Box::new(move |input| {
+      f(input).map(|(digested, data)| ActionOutput {
         binding: MockTokenKind::new(data).into(),
         digested,
         error: None,
-      }),
-      _ => None,
+      })
     })),
     kind: MockTokenKind::kind_id(),
     head: None,
