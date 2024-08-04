@@ -222,8 +222,7 @@ impl<Kind: 'static, State, ErrorType> GeneralAction<Kind, State, ErrorType> {
 /// Usage:
 /// - `action_input_to_ref!(input, true)`: `&input.as_ref()`
 /// - `action_input_to_ref!(input, false)`: `input`
-macro_rules! action_input_to_ref {
-  // TODO: rename to `mut_input_to_ref`?
+macro_rules! mut_input_to_ref {
   ($input: ident, true) => {
     &$input.as_ref()
   };
@@ -231,7 +230,7 @@ macro_rules! action_input_to_ref {
     $input
   };
 }
-pub(super) use action_input_to_ref;
+pub(super) use mut_input_to_ref;
 
 // helpers for tests
 #[cfg(test)]

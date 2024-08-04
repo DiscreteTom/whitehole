@@ -1,6 +1,6 @@
 use super::AcceptedActionOutputContext;
 use crate::lexer::{
-  action::{action_input_to_ref, Action, ActionExec, ActionInput, ActionOutput},
+  action::{mut_input_to_ref, Action, ActionExec, ActionInput, ActionOutput},
   token::{MockTokenKind, SubTokenKind, TokenKindIdBinding},
 };
 
@@ -35,7 +35,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
           $exec(input).map(|output| ActionOutput {
             binding: MockTokenKind {
               data: factory(AcceptedActionOutputContext {
-                input: action_input_to_ref!(input, $to_mutable),
+                input: mut_input_to_ref!(input, $to_mutable),
                 // don't consume the error
                 output: ActionOutput {
                   binding: output.binding,

@@ -5,7 +5,7 @@ mod kind;
 
 pub use context::*;
 
-use super::{action_input_to_ref, input::ActionInput, output::ActionOutput, Action, ActionExec};
+use super::{input::ActionInput, mut_input_to_ref, output::ActionOutput, Action, ActionExec};
 use crate::lexer::token::TokenKindIdBinding;
 
 impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
@@ -42,7 +42,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     macro_rules! impl_prevent {
       ($exec: ident, $to_mutable: ident) => {
         Box::new(move |input| {
-          if condition(action_input_to_ref!(input, $to_mutable)) {
+          if condition(mut_input_to_ref!(input, $to_mutable)) {
             None
           } else {
             $exec(input)
@@ -92,7 +92,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       ($exec: ident, $to_mutable: ident) => {
         Box::new(move |input| {
           modifier(input);
-          $exec(action_input_to_ref!(input, $to_mutable))
+          $exec(mut_input_to_ref!(input, $to_mutable))
         })
       };
     }
@@ -189,7 +189,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
         Box::new(move |input| {
           $exec(input).map(|output| ActionOutput {
             error: condition(AcceptedActionOutputContext {
-              input: action_input_to_ref!(input, $to_mutable),
+              input: mut_input_to_ref!(input, $to_mutable),
               output: ActionOutput {
                 binding: &output.binding, // don't consume the binding
                 error: output.error,      // but the error is consumable
@@ -301,7 +301,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
         Box::new(move |input| {
           $exec(input).and_then(|output| {
             if condition(AcceptedActionOutputContext {
-              input: action_input_to_ref!(input, $to_mutable),
+              input: mut_input_to_ref!(input, $to_mutable),
               output: &output,
             }) {
               None
@@ -402,7 +402,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     macro_rules! impl_callback {
       ($exec: ident, $to_mutable: ident) => {
         Box::new(move |input| {
-          $exec(action_input_to_ref!(input, $to_mutable)).map(|output| {
+          $exec(mut_input_to_ref!(input, $to_mutable)).map(|output| {
             cb(AcceptedActionOutputContext {
               output: &output,
               input,

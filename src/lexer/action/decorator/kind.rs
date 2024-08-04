@@ -1,6 +1,6 @@
 use super::AcceptedActionOutputContext;
 use crate::lexer::{
-  action::{action_input_to_ref, Action, ActionExec, ActionInput, ActionOutput},
+  action::{mut_input_to_ref, Action, ActionExec, ActionInput, ActionOutput},
   token::{DefaultTokenKindIdBinding, SubTokenKind, TokenKindIdBinding},
 };
 
@@ -140,7 +140,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
           $exec(input).map(|output| {
             ActionOutput {
               binding: selector(AcceptedActionOutputContext {
-                input: action_input_to_ref!(input, $to_mutable),
+                input: mut_input_to_ref!(input, $to_mutable),
                 // construct a new ActionOutput
                 output: ActionOutput {
                   // consume the original output.binding
