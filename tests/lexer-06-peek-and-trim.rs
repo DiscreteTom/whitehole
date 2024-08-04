@@ -42,10 +42,7 @@ fn peek_lexer() {
   let mut lexer = lexer.reload(" a");
   assert_eq!(lexer.state().digested(), 0);
   let (output, new_state) = lexer.peek();
-  lexer.digest_with(
-    output.digested,
-    new_state.unwrap_or_else(|| lexer.state.clone()), // TODO: prevent clone
-  );
+  lexer.digest_with(output.digested, new_state);
   assert_eq!(lexer.state().digested(), 2);
 
   // as you can see, peek will clone the action state
