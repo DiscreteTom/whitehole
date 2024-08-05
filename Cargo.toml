@@ -14,3 +14,10 @@ repository = "https://github.com/DiscreteTom/whitehole"
 regex = { version = "1.9.4" }
 whitehole_macros = { path = "./macros" }
 whitehole_helpers = { path = "./helpers" }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "json_lexer"
+harness = false
