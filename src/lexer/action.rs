@@ -65,7 +65,7 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
   ///
   /// Every action must have this field set by [`Self::bind`],
   /// [`Self::bind_default`] or [`Self::select`].
-  // these method will ensure the integrity between the `Self::kind` and the `ActionOutput::kind`
+  /// These method will ensure the integrity between [`Self::kind`] and [`ActionOutput::binding`].
   #[inline]
   pub const fn kind(&self) -> &'static TokenKindId<Kind> {
     &self.kind
