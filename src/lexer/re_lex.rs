@@ -161,7 +161,7 @@ impl<'text, State: Clone> ReLexable<'text, State> {
             .stateless
             .state_bk
             .unwrap_or_else(|| lexer.state.clone()),
-          self.state_bk.unwrap_or_else(|| lexer.state().clone()),
+          self.state_bk.unwrap_or_else(|| lexer.instant().clone()),
         ),
         ctx,
       )
@@ -229,7 +229,7 @@ impl<'text, Kind: 'static, State: Clone, ErrorType> ReLexableFactory<'text, Kind
   ) -> Self::ReLexableType {
     Self::ReLexableType {
       stateless: stateless_re_lexable,
-      state_bk: (digested != 0).then(|| lexer.state().clone()),
+      state_bk: (digested != 0).then(|| lexer.instant().clone()),
     }
   }
 }
@@ -291,7 +291,7 @@ mod tests {
       .into_lexer(&LexerBuilder::<()>::stateful().build(""))
       .unwrap();
     assert_eq!(ctx, ReLexContext { start: 1, skip: 1 });
-    assert_eq!(lexer.state().digested(), 1);
+    assert_eq!(lexer.instant().digested(), 1);
     assert_eq!(lexer.state, 1);
   }
 
@@ -323,7 +323,7 @@ mod tests {
       re_lexable,
       ReLexable {
         stateless: stateless_re_lexable,
-        state_bk: Some(lexer.state().clone())
+        state_bk: Some(lexer.instant().clone())
       }
     );
 
@@ -354,7 +354,7 @@ mod tests {
       re_lexable,
       ReLexable {
         stateless: stateless_re_lexable,
-        state_bk: Some(lexer.state().clone())
+        state_bk: Some(lexer.instant().clone())
       }
     );
   }
