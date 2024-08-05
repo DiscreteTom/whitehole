@@ -76,7 +76,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   /// Get the lexer state.
   /// You are not allowed to mutate the lexer state directly.
   #[inline]
-  pub const fn state(&self) -> &Instant<'text> {
+  pub const fn instant(&self) -> &Instant<'text> {
     &self.instant
   }
 
