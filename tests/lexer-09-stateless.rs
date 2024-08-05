@@ -46,5 +46,5 @@ fn stateless_to_lexer() {
   // you can build a stateless lexer first, and then build a stateful lexer from it
   let stateless = LexerBuilder::<MyKind>::default().build_stateless();
   let lexer = Lexer::new(Rc::new(stateless), (), "123");
-  assert_eq!(lexer.state().text(), "123");
+  assert_eq!(lexer.instant().text(), "123");
 }

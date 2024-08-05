@@ -27,7 +27,7 @@ fn peek_lexer() {
   let token = output.token.unwrap();
   assert!(matches!(token.binding.kind(), MyKind::A));
   assert_eq!(output.digested, 2); // the whitespace is also digested by the peek
-  assert_eq!(lexer.state().digested(), 0); // but the lexer's state is not updated
+  assert_eq!(lexer.instant().digested(), 0); // but the lexer's state is not updated
 
   // now use `lex` to consume the token and the muted leading whitespace
   let res = lexer.lex();
@@ -40,10 +40,10 @@ fn peek_lexer() {
   // peek will return the mutated action state and how many chars are digested
   // we can directly apply them to the lexer if the peek result is what we want
   let mut lexer = lexer.reload(" a");
-  assert_eq!(lexer.state().digested(), 0);
+  assert_eq!(lexer.instant().digested(), 0);
   let (output, new_state) = lexer.peek();
   lexer.digest_with(output.digested, new_state);
-  assert_eq!(lexer.state().digested(), 2);
+  assert_eq!(lexer.instant().digested(), 2);
 
   // as you can see, peek will clone the action state
   // so there is still some overhead
@@ -72,7 +72,7 @@ fn peek_vs_clone() {
   let mut cloned = lexer.clone();
   cloned.lex();
 
-  assert_eq!(lexer.state().digested(), 0);
+  assert_eq!(lexer.instant().digested(), 0);
 }
 
 #[test]
@@ -104,8 +104,8 @@ fn trim_lexer() {
   // which will lex the lexer with all muted actions
   let res = lexer.trim(()).unwrap();
   assert_eq!(res.digested, 1); // only the whitespace is digested
-  assert_eq!(lexer.state().digested(), 1);
-  assert!(lexer.state().trimmed()); // lexer will also record whether it is already trimmed
+  assert_eq!(lexer.instant().digested(), 1);
+  assert!(lexer.instant().trimmed()); // lexer will also record whether it is already trimmed
   assert!(lexer.trim(()).is_none()); // trim the lexer again, the lexer is already trimmed, so it will return None
 
   // now if we peek the lexer, the whitespaces won't be lexed again
