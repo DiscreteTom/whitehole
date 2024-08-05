@@ -125,7 +125,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// # }
   /// ```
   #[inline]
-  pub const fn mute(mut self) -> Self {
+  pub fn mute(mut self) -> Self {
     self.muted = true;
     self
   }
@@ -146,7 +146,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// # }
   /// ```
   #[inline]
-  pub const fn unmute(mut self) -> Self {
+  pub fn unmute(mut self) -> Self {
     self.muted = false;
     self
   }

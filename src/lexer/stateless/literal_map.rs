@@ -1,6 +1,5 @@
-use crate::lexer::action::GeneralAction;
-
 use super::head_map::{HeadMap, KnownHeadChars};
+use crate::lexer::action::{RcActionExec, RcActionProps};
 use std::collections::HashMap;
 
 pub(super) struct LiteralMap<Kind: 'static, State, ErrorType> {
@@ -18,7 +17,13 @@ pub(super) struct LiteralMap<Kind: 'static, State, ErrorType> {
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`LiteralMap::new`].
 pub(super) struct KnownLiterals<Kind: 'static, State, ErrorType>(
-  HashMap<String, Vec<GeneralAction<Kind, State, ErrorType>>>,
+  HashMap<
+    String,
+    (
+      Vec<RcActionExec<Kind, State, ErrorType>>,
+      Vec<RcActionProps<Kind>>,
+    ),
+  >,
 );
 
 impl<Kind: 'static, State, ErrorType> Clone for KnownLiterals<Kind, State, ErrorType> {
@@ -37,13 +42,15 @@ impl<Kind, State, ErrorType> LiteralMap<Kind, State, ErrorType> {
   /// when filling the literal map with no-literal actions.
   #[inline] // there is only one call site, so mark this as inline
   pub fn collect_all_known(
-    actions: &Vec<GeneralAction<Kind, State, ErrorType>>,
+    props: &Vec<RcActionProps<Kind>>,
   ) -> KnownLiterals<Kind, State, ErrorType> {
     let mut res = HashMap::new();
 
-    for a in actions {
-      if let Some(literal) = a.literal() {
-        res.entry(literal.clone()).or_insert(Vec::new());
+    for p in props {
+      if let Some(literal) = p.literal() {
+        res
+          .entry(literal.clone())
+          .or_insert((Vec::new(), Vec::new()));
       }
     }
 
@@ -53,45 +60,52 @@ impl<Kind, State, ErrorType> LiteralMap<Kind, State, ErrorType> {
   /// Create a self with a subset of actions, a known literal map created by [`Self::collect_all_known`]
   /// and a known head map created by [`HeadMap::collect_all_known`].
   pub fn new(
-    actions: &Vec<GeneralAction<Kind, State, ErrorType>>,
+    execs: &Vec<RcActionExec<Kind, State, ErrorType>>,
+    props: &Vec<RcActionProps<Kind>>,
     known_map: KnownLiterals<Kind, State, ErrorType>,
     known_head_map: &KnownHeadChars<Kind, State, ErrorType>,
   ) -> Self {
     let mut known_map = known_map.0;
     // fill the action map
-    for a in actions {
-      // TODO: why the following line is not covered in the coverage report?
-      if a.muted() {
+    for (e, p) in execs.iter().zip(props.iter()) {
+      if p.muted() {
         // muted, expectation.literal will be ignored, add to all known literals
-        for vec in known_map.values_mut() {
-          vec.push(a.clone());
+        for (execs, props) in known_map.values_mut() {
+          execs.push(e.clone());
+          props.push(p.clone());
         }
         // ignore self.literal, just continue
         continue;
       }
 
       // else, not muted, check literal
-      if let Some(literal) = a.literal() {
+      if let Some(literal) = p.literal() {
         // SAFETY: the key must exist because we have collected all known chars in `collect_all_known`
         // and `KnownLiterals` ensures the known map is not modified before creating the literal map
-        unsafe { known_map.get_mut(literal).unwrap_unchecked() }.push(a.clone());
+        let (execs, props) = unsafe { known_map.get_mut(literal).unwrap_unchecked() };
+        execs.push(e.clone());
+        props.push(p.clone());
       }
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
 
+    let (muted_execs, muted_props) = execs
+      .iter()
+      .zip(props.iter())
+      .filter(|(_, p)| p.muted())
+      .map(|(e, p)| (e.clone(), p.clone()))
+      .unzip();
     Self {
       known_map: known_map
         .into_iter()
-        .map(|(literal, vec)| (literal, HeadMap::new(&vec, known_head_map.clone())))
+        .map(|(literal, (execs, props))| {
+          (
+            literal,
+            HeadMap::new(&execs, &props, known_head_map.clone()),
+          )
+        })
         .collect(),
-      muted_map: HeadMap::new(
-        &actions
-          .iter()
-          .filter(|a| a.muted())
-          .map(Clone::clone) // clone the Rc
-          .collect(),
-        known_head_map.clone(),
-      ),
+      muted_map: HeadMap::new(&muted_execs, &muted_props, known_head_map.clone()),
     }
   }
 

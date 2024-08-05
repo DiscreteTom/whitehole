@@ -1,7 +1,7 @@
 use super::head_map::HeadMapActions;
 use crate::{
   lexer::{
-    action::{ActionInput, ActionOutput, GeneralAction},
+    action::{ActionExecBase, ActionInput, ActionOutput},
     re_lex::{ReLexContext, ReLexableFactory},
     token::{Range, Token, TokenKindIdBinding},
   },
@@ -97,9 +97,10 @@ fn traverse_immutables<Kind, State, ErrorType>(
   usize,
   bool,
 )> {
-  for (i, action) in
+  for (i, exec) in
     actions
       .immutables()
+      .exec()
       .iter()
       .enumerate()
       .skip(if input.start() == re_lex.start {
@@ -109,10 +110,10 @@ fn traverse_immutables<Kind, State, ErrorType>(
         0
       })
   {
-    if let Some(output) = action.exec()(input) {
+    if let Some(output) = exec(input) {
       debug_assert!(output.digested <= input.rest().len());
       // return once accepted action is found
-      return Some((output, i, action.muted()));
+      return Some((output, i, actions.immutables().muted()[i]));
     }
   }
 
@@ -129,8 +130,9 @@ fn traverse_rest<'text, Kind, State, ErrorType>(
   usize,
   bool,
 )> {
-  for (i, action) in actions
+  for (i, exec) in actions
     .rest()
+    .exec()
     .iter()
     .enumerate()
     .skip(if input.start() == re_lex.start {
@@ -140,13 +142,17 @@ fn traverse_rest<'text, Kind, State, ErrorType>(
       0
     })
   {
-    if let Some(output) = match action {
-      GeneralAction::Immutable(action) => action.exec()(&input.as_ref()),
-      GeneralAction::Mutable(action) => action.exec()(input),
+    if let Some(output) = match exec {
+      ActionExecBase::Immutable(exec) => exec(&input.as_ref()),
+      ActionExecBase::Mutable(exec) => exec(input),
     } {
       debug_assert!(output.digested <= input.rest().len());
       // return once accepted action is found
-      return Some((output, i + actions.immutables().len(), action.muted()));
+      return Some((
+        output,
+        i + actions.immutables().len(),
+        actions.rest().muted()[i],
+      ));
     }
   }
 

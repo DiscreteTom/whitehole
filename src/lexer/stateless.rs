@@ -96,7 +96,7 @@ mod utils;
 pub use options::*;
 
 use super::{
-  action::{Action, GeneralAction},
+  action::{Action, RcActionExec, RcActionProps},
   token::TokenKindId,
 };
 use head_map::HeadMap;
@@ -123,57 +123,67 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// Create a new [`StatelessLexer`] from a list of actions.
   /// This function will pre-calculate some collections to optimize the runtime performance.
   pub fn new(actions: Vec<Action<Kind, State, ErrorType>>) -> Self {
-    let actions = actions.into_iter().map(|a| a.into_general()).collect();
+    // as per data oriented design, collect to 2 lists
+    let (execs, props) = actions.into_iter().map(|a| a.into_rc()).unzip();
 
     // known kinds => actions
-    let kinds_action_map = Self::init_kind_map(&actions);
+    let kinds_action_map = Self::init_kind_map(&execs, &props);
 
     // collect known chars/literals using all actions so we can re-use these map for all head/literal maps
-    let known_head_chars = HeadMap::collect_all_known(&actions);
-    let known_literals = LiteralMap::collect_all_known(&actions);
+    let known_head_chars = HeadMap::collect_all_known(&props);
+    let known_literals = LiteralMap::collect_all_known(&props);
 
     Self {
       kind_head_map: kinds_action_map
         .iter()
-        .map(|(k, v)| (*k, HeadMap::new(v, known_head_chars.clone())))
+        .map(|(k, (execs, props))| (*k, HeadMap::new(execs, props, known_head_chars.clone())))
         .collect(),
       kind_literal_map: kinds_action_map
         .iter()
-        .map(|(k, v)| {
+        .map(|(k, (execs, props))| {
           (
             *k,
-            LiteralMap::new(v, known_literals.clone(), &known_head_chars),
+            LiteralMap::new(execs, props, known_literals.clone(), &known_head_chars),
           )
         })
         .collect(),
-      literal_map: LiteralMap::new(&actions, known_literals, &known_head_chars),
-      head_map: HeadMap::new(&actions, known_head_chars),
+      literal_map: LiteralMap::new(&execs, &props, known_literals, &known_head_chars),
+      head_map: HeadMap::new(&execs, &props, known_head_chars),
     }
   }
 
   #[inline] // there is only one call site, so mark this as inline
   fn init_kind_map(
-    actions: &Vec<GeneralAction<Kind, State, ErrorType>>,
-  ) -> HashMap<&'static TokenKindId<Kind>, Vec<GeneralAction<Kind, State, ErrorType>>> {
+    execs: &Vec<RcActionExec<Kind, State, ErrorType>>,
+    props: &Vec<RcActionProps<Kind>>,
+  ) -> HashMap<
+    &'static TokenKindId<Kind>,
+    (
+      Vec<RcActionExec<Kind, State, ErrorType>>,
+      Vec<RcActionProps<Kind>>,
+    ),
+  > {
     let mut res = HashMap::new();
     // prepare kind map, add value for all known possible kinds
     // this has to be done before filling the map
     // because we need to iter over all possible kinds when filling the map
-    for a in actions {
-      res.entry(a.kind()).or_insert(Vec::new());
+    for p in props {
+      res.entry(p.kind()).or_insert((Vec::new(), Vec::new()));
     }
     // fill it
-    for a in actions {
-      // TODO: why the following line is not covered in the coverage report?
-      if a.muted() {
+    for (e, p) in execs.iter().zip(props.iter()) {
+      if p.muted() {
         // muted, add to all kinds
-        for (_, vec) in res.iter_mut() {
-          vec.push(a.clone());
+        for (_, (execs, props)) in res.iter_mut() {
+          execs.push(e.clone());
+          props.push(p.clone());
         }
       } else {
         // non-muted, only add to possible kinds
         // SAFETY: the entry is guaranteed to exist since we've collected all possible kinds
-        unsafe { res.get_mut(a.kind()).unwrap_unchecked() }.push(a.clone());
+        let (execs, props) = unsafe { res.get_mut(p.kind()).unwrap_unchecked() };
+        execs.push(e.clone());
+        props.push(p.clone());
       }
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`

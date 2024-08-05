@@ -1,13 +1,59 @@
-use crate::lexer::action::{GeneralAction, HeadMatcher, ImmutableAction};
+use crate::lexer::action::{HeadMatcher, ImmutableActionExec, RcActionExec, RcActionProps};
 use std::{collections::HashMap, rc::Rc};
+
+/// A layout optimized collection of [`Action`](crate::lexer::action::Action)s for runtime evaluation.
+/// As per data oriented design, we store
+/// [`Action::exec`](crate::lexer::action::Action::exec) and [`Action::muted`](crate::lexer::action::Action::muted)
+/// in separate lists, and discard all other fields to optimize cache performance.
+#[derive(Clone)]
+pub(super) struct RuntimeActions<Exec> {
+  exec: Vec<Exec>,
+  muted: Vec<bool>, // TODO: optimize with bit vec
+}
+
+impl<Exec> RuntimeActions<Exec> {
+  #[inline]
+  pub const fn new() -> Self {
+    Self {
+      exec: Vec::new(),
+      muted: Vec::new(),
+    }
+  }
+
+  // getters
+  #[inline]
+  pub const fn exec(&self) -> &Vec<Exec> {
+    &self.exec
+  }
+  #[inline]
+  pub const fn muted(&self) -> &Vec<bool> {
+    &self.muted
+  }
+
+  #[inline]
+  pub fn push(&mut self, exec: Exec, muted: bool) {
+    self.exec.push(exec);
+    self.muted.push(muted);
+  }
+
+  #[inline]
+  pub fn len(&self) -> usize {
+    self.exec.len()
+  }
+
+  #[inline]
+  pub fn is_empty(&self) -> bool {
+    self.exec.is_empty()
+  }
+}
 
 /// [`HeadMapActions`] consists of 2 parts:
 /// - [`Self::immutables`]: immutable actions, this should always be checked first.
 /// - [`Self::rest`]: immutable or mutable actions, this should be checked after [`Self::immutables`].
 /// If this is not empty, this must starts with a mutable action.
 pub(super) struct HeadMapActions<Kind: 'static, State, ErrorType> {
-  immutables: Vec<Rc<ImmutableAction<Kind, State, ErrorType>>>,
-  rest: Vec<GeneralAction<Kind, State, ErrorType>>,
+  immutables: RuntimeActions<Rc<ImmutableActionExec<Kind, State, ErrorType>>>,
+  rest: RuntimeActions<RcActionExec<Kind, State, ErrorType>>,
 }
 
 impl<Kind: 'static, State, ErrorType> Clone for HeadMapActions<Kind, State, ErrorType> {
@@ -22,38 +68,38 @@ impl<Kind: 'static, State, ErrorType> Clone for HeadMapActions<Kind, State, Erro
 
 impl<Kind, State, ErrorType> HeadMapActions<Kind, State, ErrorType> {
   #[inline]
-  pub const fn new() -> Self {
+  pub fn new() -> Self {
     Self {
-      immutables: Vec::new(),
-      rest: Vec::new(),
+      immutables: RuntimeActions::new(),
+      rest: RuntimeActions::new(),
     }
   }
 
-  #[inline]
-  pub fn push(&mut self, action: GeneralAction<Kind, State, ErrorType>) {
+  pub fn push(&mut self, exec: RcActionExec<Kind, State, ErrorType>, muted: bool) {
     if self.rest.len() == 0 {
       // no mutable actions yet, check if the action is immutable
-      match action {
-        GeneralAction::Immutable(immutable) => self.immutables.push(immutable),
-        GeneralAction::Mutable(_) => self.rest.push(action),
+      match exec {
+        RcActionExec::Immutable(exec) => self.immutables.push(exec, muted),
+        RcActionExec::Mutable(_) => self.rest.push(exec, muted),
       }
     } else {
       // mutable actions are already added, add the action to the rest
-      self.rest.push(action);
+      self.rest.push(exec, muted);
     }
   }
 
   // getters
   #[inline]
-  pub const fn immutables(&self) -> &Vec<Rc<ImmutableAction<Kind, State, ErrorType>>> {
+  pub const fn immutables(
+    &self,
+  ) -> &RuntimeActions<Rc<ImmutableActionExec<Kind, State, ErrorType>>> {
     &self.immutables
   }
   #[inline]
-  pub const fn rest(&self) -> &Vec<GeneralAction<Kind, State, ErrorType>> {
+  pub fn rest(&self) -> &RuntimeActions<RcActionExec<Kind, State, ErrorType>> {
     &self.rest
   }
 
-  // TODO: remove this function?
   #[inline]
   pub fn len(&self) -> usize {
     self.immutables.len() + self.rest.len()
@@ -90,12 +136,12 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
   /// with [`HeadMatcher::Not`] and [`HeadMatcher::Unknown`].
   #[inline] // there is only one call site, so mark this as inline
   pub fn collect_all_known(
-    actions: &Vec<GeneralAction<Kind, State, ErrorType>>,
+    props: &Vec<RcActionProps<Kind>>,
   ) -> KnownHeadChars<Kind, State, ErrorType> {
     let mut res = HashMap::new();
 
-    for a in actions {
-      if let Some(head) = a.head() {
+    for p in props {
+      if let Some(head) = p.head() {
         for c in match head {
           HeadMatcher::OneOf(set) | HeadMatcher::Not(set) => set,
           HeadMatcher::Unknown => continue,
@@ -110,7 +156,8 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
 
   /// Create a new instance with a subset of actions and a known char map created by [`Self::collect_all_known`].
   pub fn new(
-    actions: &Vec<GeneralAction<Kind, State, ErrorType>>,
+    execs: &Vec<RcActionExec<Kind, State, ErrorType>>,
+    props: &Vec<RcActionProps<Kind>>,
     known_map: KnownHeadChars<Kind, State, ErrorType>,
   ) -> Self {
     let mut res = Self {
@@ -119,17 +166,17 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
     };
 
     // fill the head map
-    for a in actions {
+    for (e, p) in execs.iter().zip(props.iter()) {
       // when lexing the lexer needs to check the head matcher no matter the action is muted or not
       // so we won't check if the action is muted here
-      if let Some(head) = a.head() {
+      if let Some(head) = p.head() {
         // TODO: why the following line is not covered in the coverage report?
         match head {
           HeadMatcher::OneOf(set) => {
             for c in set {
               // SAFETY: the key must exist because we have collected all known chars in `collect_all_known`
               // and `KnownHeadChars` ensures the known map is not modified before creating the head map
-              unsafe { res.known_map.get_mut(c).unwrap_unchecked() }.push(a.clone());
+              unsafe { res.known_map.get_mut(c).unwrap_unchecked() }.push(e.clone(), p.muted());
             }
           }
           HeadMatcher::Not(set) => {
@@ -137,22 +184,22 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
             for (c, vec) in res.known_map.iter_mut() {
               // e.g. if the head char is `'c'` which is not in `set`, add the action to the vec
               if !set.contains(c) {
-                vec.push(a.clone());
+                vec.push(e.clone(), p.muted());
               }
             }
-            res.unknown_fallback.push(a.clone());
+            res.unknown_fallback.push(e.clone(), p.muted());
           }
           HeadMatcher::Unknown => {
-            res.unknown_fallback.push(a.clone());
+            res.unknown_fallback.push(e.clone(), p.muted());
           }
         }
       } else {
         // no head matcher, add the action to all known chars
         for vec in res.known_map.values_mut() {
-          vec.push(a.clone());
+          vec.push(e.clone(), p.muted());
         }
         // and unknown fallback
-        res.unknown_fallback.push(a.clone());
+        res.unknown_fallback.push(e.clone(), p.muted());
       }
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`

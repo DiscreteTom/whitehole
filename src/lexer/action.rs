@@ -43,9 +43,9 @@ pub enum HeadMatcher {
   Unknown,
 }
 
-/// This is the common part of [`Action`], [`ImmutableAction`] and [`MutableAction`].
-/// See [`GeneralAction`] for more details.
 pub struct ActionBase<Kind: 'static, Exec> {
+  exec: Exec,
+
   /// See [`Self::kind`].
   kind: &'static TokenKindId<Kind>,
   /// See [`Self::literal`].
@@ -54,8 +54,6 @@ pub struct ActionBase<Kind: 'static, Exec> {
   head: Option<HeadMatcher>,
   /// See [`Self::muted`].
   muted: bool,
-
-  exec: Exec,
 }
 
 // getters
@@ -110,110 +108,54 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
 }
 
 /// [`Action::exec`] that won't mutate the action state.
-type ImmutableActionExec<Kind, State, ErrorType> = Box<
+pub type ImmutableActionExec<Kind, State, ErrorType> = Box<
   dyn Fn(&ActionInput<&State>) -> Option<ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>>,
 >;
 
 /// [`Action::exec`] that will mutate the action state.
-type MutableActionExec<Kind, State, ErrorType> = Box<
+pub type MutableActionExec<Kind, State, ErrorType> = Box<
   dyn Fn(
     &mut ActionInput<&mut State>,
   ) -> Option<ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>>,
 >;
 
-/// See [`Action::exec`].
-pub enum ActionExec<Kind: 'static, State, ErrorType> {
-  Immutable(ImmutableActionExec<Kind, State, ErrorType>),
-  Mutable(MutableActionExec<Kind, State, ErrorType>),
+#[derive(Clone)]
+pub enum ActionExecBase<ImmutableType, MutableType> {
+  Immutable(ImmutableType),
+  Mutable(MutableType),
 }
+
+/// See [`Action::exec`].
+pub type ActionExec<Kind, State, ErrorType> = ActionExecBase<
+  ImmutableActionExec<Kind, State, ErrorType>,
+  MutableActionExec<Kind, State, ErrorType>,
+>;
 
 /// To create this, use [`simple`](simple::simple), [`simple_with_data`](simple::simple_with_data)
 /// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
 pub type Action<Kind, State = (), ErrorType = ()> =
   ActionBase<Kind, ActionExec<Kind, State, ErrorType>>;
 
-pub(super) type ImmutableAction<Kind, State, ErrorType> =
-  ActionBase<Kind, ImmutableActionExec<Kind, State, ErrorType>>;
-pub(super) type MutableAction<Kind, State, ErrorType> =
-  ActionBase<Kind, MutableActionExec<Kind, State, ErrorType>>;
-
-/// Give [`Action`]s deterministic type and wrap them in [`Rc`] to make them clone-able.
-///
-/// When constructing a lexer using [`LexerBuilder`](crate::lexer::builder::LexerBuilder)
-/// users should use [`Action`] to represent
-/// both immutable and mutable actions, so that [`LexerBuilder`](crate::lexer::builder::LexerBuilder)
-/// can accept one or more actions in one method call.
-/// But when the lexer is built, to optimize the runtime performance,
-/// we should know the exact type of each action instead of using pattern matching
-/// to determine the type every time, and collect as many immutable actions as possible
-/// to optimize stateless lexer's performance.
-pub(super) enum GeneralAction<Kind: 'static, State, ErrorType> {
-  Immutable(Rc<ImmutableAction<Kind, State, ErrorType>>),
-  Mutable(Rc<MutableAction<Kind, State, ErrorType>>),
-}
-
-impl<Kind: 'static, State, ErrorType> Clone for GeneralAction<Kind, State, ErrorType> {
-  #[inline]
-  fn clone(&self) -> Self {
-    match self {
-      GeneralAction::Immutable(action) => GeneralAction::Immutable(action.clone()),
-      GeneralAction::Mutable(action) => GeneralAction::Mutable(action.clone()),
-    }
-  }
-}
+pub(super) type RcActionProps<Kind> = Rc<ActionBase<Kind, ()>>;
+pub(super) type RcActionExec<Kind, State, ErrorType> = ActionExecBase<
+  Rc<ImmutableActionExec<Kind, State, ErrorType>>,
+  Rc<MutableActionExec<Kind, State, ErrorType>>,
+>;
 
 impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
-  /// Convert [`Action`] into [`GeneralAction`].
   #[inline]
-  pub(super) fn into_general(self) -> GeneralAction<Kind, State, ErrorType> {
-    macro_rules! convert_action {
-      ($action: ident, $exec: expr) => {
-        Rc::new($action {
-          kind: self.kind,
-          literal: self.literal,
-          head: self.head,
-          muted: self.muted,
-          exec: $exec,
-        })
-      };
-    }
-
+  pub(super) fn into_rc(self) -> (RcActionExec<Kind, State, ErrorType>, RcActionProps<Kind>) {
+    let props = Rc::new(ActionBase {
+      kind: self.kind,
+      literal: self.literal,
+      head: self.head,
+      muted: self.muted,
+      exec: (),
+    });
     match self.exec {
-      ActionExec::Immutable(e) => GeneralAction::Immutable(convert_action!(ImmutableAction, e)),
-      ActionExec::Mutable(e) => GeneralAction::Mutable(convert_action!(MutableAction, e)),
+      ActionExec::Immutable(exec) => (RcActionExec::Immutable(Rc::new(exec)), props),
+      ActionExec::Mutable(exec) => (RcActionExec::Mutable(Rc::new(exec)), props),
     }
-  }
-}
-
-// re-export getters
-macro_rules! re_export {
-  ($self:expr, $name: ident) => {
-    match $self {
-      GeneralAction::Immutable(action) => action.$name(),
-      GeneralAction::Mutable(action) => action.$name(),
-    }
-  };
-}
-impl<Kind: 'static, State, ErrorType> GeneralAction<Kind, State, ErrorType> {
-  /// See [`Action::kind`].
-  #[inline]
-  pub fn kind(&self) -> &'static TokenKindId<Kind> {
-    re_export!(self, kind)
-  }
-  /// See [`Action::literal`].
-  #[inline]
-  pub fn literal(&self) -> &Option<String> {
-    re_export!(self, literal)
-  }
-  /// See [`Action::head`].
-  #[inline]
-  pub fn head(&self) -> &Option<HeadMatcher> {
-    re_export!(self, head)
-  }
-  /// See [`Action::muted`].
-  #[inline]
-  pub fn muted(&self) -> bool {
-    re_export!(self, muted)
   }
 }
 
@@ -263,7 +205,7 @@ impl<Kind, State, ErrorType> ActionExec<Kind, State, ErrorType> {
   /// This is only for testing.
   /// # Panics
   /// If the action is mutable.
-  pub(super) const fn as_immutable(&self) -> &ImmutableActionExec<Kind, State, ErrorType> {
+  pub(super) fn as_immutable(&self) -> &ImmutableActionExec<Kind, State, ErrorType> {
     match self {
       ActionExec::Immutable(exec) => exec,
       ActionExec::Mutable(_) => panic!("ActionExec is mutable"),
