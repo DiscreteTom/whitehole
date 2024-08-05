@@ -87,7 +87,7 @@ impl<'text, StateRef> ActionInput<'text, StateRef> {
 impl<'text, 'state, State> ActionInput<'text, &'state mut State> {
   /// Cast `ActionInput<&mut State>` to `ActionInput<&State>`
   #[inline]
-  pub fn as_ref<'this>(&'this self) -> ActionInput<'text, &'this State> {
+  pub(crate) fn as_ref<'this>(&'this self) -> ActionInput<'text, &'this State> {
     ActionInput {
       state: self.state,
       text: self.text,
