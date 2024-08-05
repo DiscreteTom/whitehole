@@ -219,10 +219,7 @@ mod tests {
   ) {
     assert_eq!(actions.len(), expected.len());
     for i in 0..actions.immutables().len() {
-      assert_eq!(actions.immutables()[i].kind(), expected[i].kind());
-      assert_eq!(actions.immutables()[i].head(), expected[i].head());
-      assert_eq!(actions.immutables()[i].literal(), expected[i].literal());
-      assert_eq!(actions.immutables()[i].muted(), expected[i].muted());
+      assert_eq!(actions.immutables().muted()[i], expected[i].muted());
     }
   }
 

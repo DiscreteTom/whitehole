@@ -222,30 +222,35 @@ mod tests {
     token::MockTokenKind,
   };
 
+  fn push_helper<K, S>(actions: &mut HeadMapActions<K, S, ()>, a: Action<K, S, ()>) {
+    let (exec, options) = a.into_rc();
+    actions.push(exec, options.muted());
+  }
+
   #[test]
   fn test_head_map_actions() {
     let mut actions: HeadMapActions<MockTokenKind<()>, i32, ()> = HeadMapActions::new();
     assert_eq!(actions.len(), 0);
 
-    actions.push(exact("a").into_general());
+    push_helper(&mut actions, exact("a"));
     assert_eq!(actions.len(), 1);
     assert_eq!(actions.immutables.len(), 1);
 
-    actions.push(exact("b").into_general());
+    push_helper(&mut actions, exact("b"));
     assert_eq!(actions.len(), 2);
     assert_eq!(actions.immutables.len(), 2);
 
-    actions.push(exact("c").prepare(|input| *input.state += 1).into_general());
+    push_helper(&mut actions, exact("c").prepare(|input| *input.state += 1));
     assert_eq!(actions.len(), 3);
     assert_eq!(actions.immutables.len(), 2);
     assert_eq!(actions.rest.len(), 1);
 
-    actions.push(exact("d").into_general());
+    push_helper(&mut actions, exact("d"));
     assert_eq!(actions.len(), 4);
     assert_eq!(actions.immutables.len(), 2);
     assert_eq!(actions.rest.len(), 2);
 
-    actions.push(exact("e").prepare(|input| *input.state += 1).into_general());
+    push_helper(&mut actions, exact("e").prepare(|input| *input.state += 1));
     assert_eq!(actions.len(), 5);
     assert_eq!(actions.immutables.len(), 2);
     assert_eq!(actions.rest.len(), 3);
@@ -257,16 +262,13 @@ mod tests {
   ) {
     assert_eq!(actions.len(), expected.len());
     for i in 0..actions.immutables.len() {
-      assert_eq!(actions.immutables[i].kind(), expected[i].kind());
-      assert_eq!(actions.immutables[i].head(), expected[i].head());
-      assert_eq!(actions.immutables[i].literal(), expected[i].literal());
-      assert_eq!(actions.immutables[i].muted(), expected[i].muted());
+      assert_eq!(actions.immutables.muted()[i], expected[i].muted());
     }
   }
 
   #[test]
   fn test_head_map() {
-    let actions: Vec<GeneralAction<MockTokenKind<()>, (), ()>> = vec![
+    let (execs, props) = vec![
       exact("a"),
       exact("aa"),
       exact("b"),
@@ -276,10 +278,10 @@ mod tests {
       regex("no_head"),
     ]
     .into_iter()
-    .map(|a| a.into_general())
-    .collect();
+    .map(|a| a.into_rc())
+    .unzip();
 
-    let hm = HeadMap::new(&actions, HeadMap::collect_all_known(&actions));
+    let hm = HeadMap::new(&execs, &props, HeadMap::collect_all_known(&props));
 
     // collect all known heads
     assert!(hm.known_map.contains_key(&'a'));

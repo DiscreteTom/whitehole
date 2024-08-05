@@ -139,16 +139,13 @@ mod tests {
   ) {
     assert_eq!(actions.len(), expected.len());
     for i in 0..actions.immutables().len() {
-      assert_eq!(actions.immutables()[i].kind(), expected[i].kind());
-      assert_eq!(actions.immutables()[i].head(), expected[i].head());
-      assert_eq!(actions.immutables()[i].literal(), expected[i].literal());
-      assert_eq!(actions.immutables()[i].muted(), expected[i].muted());
+      assert_eq!(actions.immutables().muted()[i], expected[i].muted());
     }
   }
 
   #[test]
   fn test_literal_map() {
-    let actions: Vec<GeneralAction<MockTokenKind<()>, (), ()>> = vec![
+    let (execs, props) = vec![
       exact("a"),                              // "a", not muted
       exact("a").mute(),                       // "a", muted
       r("a").unchecked_head_in(['a']),         // OneOf('a'), not muted
@@ -171,13 +168,14 @@ mod tests {
       r("b").mute(),                           // no head, muted
     ]
     .into_iter()
-    .map(|a| a.into_general())
-    .collect();
+    .map(|a| a.into_rc())
+    .unzip();
 
     let lm = LiteralMap::new(
-      &actions,
-      LiteralMap::collect_all_known(&actions),
-      &HeadMap::collect_all_known(&actions),
+      &execs,
+      &props,
+      LiteralMap::collect_all_known(&props),
+      &HeadMap::collect_all_known(&props),
     );
 
     // collect all literals
