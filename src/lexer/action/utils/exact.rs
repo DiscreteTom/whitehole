@@ -25,22 +25,21 @@ pub fn exact<State, ErrorType>(
 ) -> Action<MockTokenKind<()>, State, ErrorType> {
   let s: String = s.into();
   let head = s.chars().next().expect("empty string is not allowed");
-  let literal = Some(s.clone());
-  let mut a = simple(move |input| {
+  let literal = s.clone();
+  simple(move |input| {
     if input.rest().starts_with(&s) {
       s.len()
     } else {
       0
     }
   })
-  .unchecked_head_in([head]);
-  a.literal = literal;
-  a
+  .unchecked_head_in([head])
+  .unchecked_literal(literal)
 }
 
 /// Create an action for each char using [`exact`].
 ///
-/// The [`Action::head`] will be set automatically.
+/// [`Action::head`] and [`Action::literal`] will be set automatically.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, exact_chars, exact};
