@@ -66,9 +66,9 @@ pub fn exact_chars<State, ErrorType>(
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, unchecked_exact};
-/// # let action: Action<_> =
 /// // this will only check if the first char is 't' by head matcher
 /// // and digest 4 chars if it is
+/// # let action: Action<_> =
 /// unchecked_exact("true");
 /// ```
 pub fn unchecked_exact<State, ErrorType>(
@@ -80,6 +80,27 @@ pub fn unchecked_exact<State, ErrorType>(
   simple(move |_| len)
     .unchecked_head_in([head])
     .unchecked_literal(s)
+}
+
+/// Create an action for each char using [`unchecked_exact`].
+///
+/// [`Action::head`] and [`Action::literal`] will be set automatically.
+/// # Caveats
+/// You should only use this if you are sure the token is unique by its first char,
+/// and the content you are lexing is valid to your format.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{Action, unchecked_exact_chars};
+/// # let action: Action<_> =
+/// unchecked_exact_chars("+-*/");
+/// // equals to
+/// # let actions: Vec<Action<_>> =
+/// vec![unchecked_exact("+"), unchecked_exact("-"), unchecked_exact("*"), unchecked_exact("/")];
+/// ```
+pub fn unchecked_exact_chars<State, ErrorType>(
+  s: impl Into<String>,
+) -> Vec<Action<MockTokenKind<()>, State, ErrorType>> {
+  s.into().chars().map(|c| unchecked_exact(c)).collect()
 }
 
 #[cfg(test)]
@@ -203,5 +224,40 @@ mod tests {
   #[should_panic]
   fn action_utils_unchecked_exact_empty() {
     unchecked_exact::<(), ()>("");
+  }
+
+  #[test]
+  fn action_utils_unchecked_exact_chars() {
+    let actions: Vec<Action<_>> = unchecked_exact_chars("+-*/");
+    assert_accept(&actions[0], "+", 1);
+    assert_accept(&actions[1], "-", 1);
+    assert_accept(&actions[2], "*", 1);
+    assert_accept(&actions[3], "/", 1);
+    // no lookahead
+    assert_accept(&actions[0], "++", 1);
+    assert_accept(&actions[1], "--", 1);
+    // head matcher
+    assert!(matches!(
+      actions[0].head().as_ref().unwrap(),
+      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'+')
+    ));
+    assert!(matches!(
+      actions[1].head().as_ref().unwrap(),
+      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'-')
+    ));
+    assert!(matches!(
+      actions[2].head().as_ref().unwrap(),
+      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'*')
+    ));
+    assert!(matches!(
+      actions[3].head().as_ref().unwrap(),
+      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'/')
+    ));
+
+    // only the first char is checked by head matcher, not the action exec
+    assert_accept(&actions[0], "1", 1);
+    assert_accept(&actions[1], "1", 1);
+    assert_accept(&actions[2], "1", 1);
+    assert_accept(&actions[3], "1", 1);
   }
 }
