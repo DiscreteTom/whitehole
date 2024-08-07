@@ -55,6 +55,33 @@ pub fn exact_chars<State, ErrorType>(
   s.into().chars().map(|c| exact(c)).collect()
 }
 
+/// Match one string only by its first char instead of the whole string, ***NO LOOKAHEAD***.
+///
+/// [`Action::head`] and [`Action::literal`] will be set automatically.
+/// # Panics
+/// Panics if the string is empty.
+/// # Caveats
+/// You should only use this if you are sure the token is unique by its first char,
+/// and the content you are lexing is valid to your format.
+/// # Examples
+/// ```
+/// # use whitehole::lexer::action::{Action, unchecked_exact};
+/// # let action: Action<_> =
+/// // this will only check if the first char is 't' by head matcher
+/// // and digest 4 chars if it is
+/// unchecked_exact("true");
+/// ```
+pub fn unchecked_exact<State, ErrorType>(
+  s: impl Into<String>,
+) -> Action<MockTokenKind<()>, State, ErrorType> {
+  let s: String = s.into();
+  let head = s.chars().next().expect("empty string is not allowed");
+  let len = s.len();
+  simple(move |_| len)
+    .unchecked_head_in([head])
+    .unchecked_literal(s)
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -151,5 +178,30 @@ mod tests {
       actions[3].head().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'/')
     ));
+  }
+
+  #[test]
+  fn action_utils_unchecked_exact() {
+    let action: Action<MockTokenKind<()>> = unchecked_exact("ab");
+    assert_accept(&action, "ab", 2);
+    // no lookahead
+    assert_accept(&action, "abb", 2);
+    // head matcher
+    assert!(matches!(
+      action.head().as_ref().unwrap(),
+      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'a')
+    ));
+    // literal
+    assert_eq!(action.literal(), &Some("ab".into()));
+
+    // only the first char is checked by head matcher, not the action exec
+    assert_accept(&action, "aa", 2);
+    assert_accept(&action, "bb", 2);
+  }
+
+  #[test]
+  #[should_panic]
+  fn action_utils_unchecked_exact_empty() {
+    unchecked_exact::<(), ()>("");
   }
 }
