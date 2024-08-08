@@ -1,6 +1,6 @@
 use crate::{
   lexer::action::{HeadMatcher, ImmutableActionExec, RcActionExec, RcActionProps},
-  utils::{CharLookupTableBuilder, LookupTable},
+  utils::{CharLookupTableBuilder, OffsetLookupTable},
 };
 use std::rc::Rc;
 
@@ -118,7 +118,7 @@ impl<Kind, State, ErrorType> HeadMapActions<Kind, State, ErrorType> {
 
 pub(super) struct HeadMap<Kind: 'static, State, ErrorType> {
   /// Store actions for known chars.
-  known_map: LookupTable<HeadMapActions<Kind, State, ErrorType>>,
+  known_map: OffsetLookupTable<HeadMapActions<Kind, State, ErrorType>>,
   /// Store actions for unknown chars.
   unknown_fallback: HeadMapActions<Kind, State, ErrorType>,
 }
@@ -202,7 +202,7 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
         }
       } else {
         // no head matcher, add the action to all known chars
-        known_map.for_each_value_mut(|vec| {
+        known_map.for_each_entry_mut(|_, vec| {
           vec.push(e.clone(), p.muted());
         });
         // and unknown fallback
