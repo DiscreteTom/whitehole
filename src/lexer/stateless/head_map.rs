@@ -1,5 +1,8 @@
-use crate::lexer::action::{HeadMatcher, ImmutableActionExec, RcActionExec, RcActionProps};
-use std::{collections::HashMap, rc::Rc};
+use crate::{
+  lexer::action::{HeadMatcher, ImmutableActionExec, RcActionExec, RcActionProps},
+  utils::CharLookupBuilder,
+};
+use std::rc::Rc;
 
 /// A layout optimized collection of [`Action`](crate::lexer::action::Action)s for runtime evaluation.
 /// As per data oriented design, we store
@@ -56,6 +59,13 @@ pub(super) struct HeadMapActions<Kind: 'static, State, ErrorType> {
   rest: RuntimeActions<RcActionExec<Kind, State, ErrorType>>,
 }
 
+impl<Kind: 'static, State, ErrorType> Default for HeadMapActions<Kind, State, ErrorType> {
+  #[inline]
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl<Kind: 'static, State, ErrorType> Clone for HeadMapActions<Kind, State, ErrorType> {
   #[inline]
   fn clone(&self) -> Self {
@@ -108,7 +118,7 @@ impl<Kind, State, ErrorType> HeadMapActions<Kind, State, ErrorType> {
 
 pub(super) struct HeadMap<Kind: 'static, State, ErrorType> {
   /// Store actions for known chars.
-  known_map: HashMap<char, HeadMapActions<Kind, State, ErrorType>>,
+  known_map: CharLookupBuilder<HeadMapActions<Kind, State, ErrorType>>,
   /// Store actions for unknown chars.
   unknown_fallback: HeadMapActions<Kind, State, ErrorType>,
 }
@@ -117,7 +127,7 @@ pub(super) struct HeadMap<Kind: 'static, State, ErrorType> {
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`HeadMap::new`].
 pub(super) struct KnownHeadChars<Kind: 'static, State, ErrorType>(
-  HashMap<char, HeadMapActions<Kind, State, ErrorType>>,
+  CharLookupBuilder<HeadMapActions<Kind, State, ErrorType>>,
 );
 
 impl<Kind: 'static, State, ErrorType> Clone for KnownHeadChars<Kind, State, ErrorType> {
@@ -138,20 +148,19 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
   pub fn collect_all_known(
     props: &Vec<RcActionProps<Kind>>,
   ) -> KnownHeadChars<Kind, State, ErrorType> {
-    let mut res = HashMap::new();
-
+    let mut known_chars = Vec::with_capacity(props.len());
     for p in props {
       if let Some(head) = p.head() {
         for c in match head {
           HeadMatcher::OneOf(set) | HeadMatcher::Not(set) => set,
           HeadMatcher::Unknown => continue,
         } {
-          res.entry(*c).or_insert(HeadMapActions::new());
+          known_chars.push(*c);
         }
       }
     }
 
-    KnownHeadChars(res)
+    KnownHeadChars(CharLookupBuilder::new(&known_chars))
   }
 
   /// Create a new instance with a subset of actions and a known char map created by [`Self::collect_all_known`].
@@ -176,17 +185,17 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
             for c in set {
               // SAFETY: the key must exist because we have collected all known chars in `collect_all_known`
               // and `KnownHeadChars` ensures the known map is not modified before creating the head map
-              unsafe { res.known_map.get_mut(c).unwrap_unchecked() }.push(e.clone(), p.muted());
+              unsafe { res.known_map.get_unchecked_mut(*c) }.push(e.clone(), p.muted());
             }
           }
           HeadMatcher::Not(set) => {
             // e.g. the head matcher is `Not(['a', 'b'])`, the `set` is `['a', 'b']`
-            for (c, vec) in res.known_map.iter_mut() {
+            res.known_map.for_each_mut(|c, vec| {
               // e.g. if the head char is `'c'` which is not in `set`, add the action to the vec
-              if !set.contains(c) {
+              if !set.contains(&c) {
                 vec.push(e.clone(), p.muted());
               }
-            }
+            });
             res.unknown_fallback.push(e.clone(), p.muted());
           }
           HeadMatcher::Unknown => {
@@ -195,9 +204,9 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
         }
       } else {
         // no head matcher, add the action to all known chars
-        for vec in res.known_map.values_mut() {
+        res.known_map.for_each_value_mut(|vec| {
           vec.push(e.clone(), p.muted());
-        }
+        });
         // and unknown fallback
         res.unknown_fallback.push(e.clone(), p.muted());
       }
@@ -210,7 +219,11 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
   /// Get actions by the next char.
   #[inline]
   pub fn get(&self, next: char) -> &HeadMapActions<Kind, State, ErrorType> {
-    self.known_map.get(&next).unwrap_or(&self.unknown_fallback)
+    self
+      .known_map
+      .get(next)
+      .as_ref()
+      .unwrap_or(&self.unknown_fallback)
   }
 }
 
