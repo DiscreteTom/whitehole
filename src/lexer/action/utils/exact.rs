@@ -90,8 +90,8 @@ pub fn unchecked_exact<State, ErrorType>(
 /// and the content you are lexing is valid to your format.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::action::{Action, unchecked_exact_chars};
-/// # let action: Action<_> =
+/// # use whitehole::lexer::action::{Action, unchecked_exact_chars, unchecked_exact};
+/// # let action: Vec<Action<_>> =
 /// unchecked_exact_chars("+-*/");
 /// // equals to
 /// # let actions: Vec<Action<_>> =
