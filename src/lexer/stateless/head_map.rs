@@ -1,6 +1,6 @@
 use crate::{
   lexer::action::{HeadMatcher, ImmutableActionExec, RcActionExec, RcActionProps},
-  utils::CharLookupBuilder,
+  utils::{CharLookupTableBuilder, LookupTable},
 };
 use std::rc::Rc;
 
@@ -118,7 +118,7 @@ impl<Kind, State, ErrorType> HeadMapActions<Kind, State, ErrorType> {
 
 pub(super) struct HeadMap<Kind: 'static, State, ErrorType> {
   /// Store actions for known chars.
-  known_map: CharLookupBuilder<HeadMapActions<Kind, State, ErrorType>>,
+  known_map: LookupTable<HeadMapActions<Kind, State, ErrorType>>,
   /// Store actions for unknown chars.
   unknown_fallback: HeadMapActions<Kind, State, ErrorType>,
 }
@@ -127,7 +127,7 @@ pub(super) struct HeadMap<Kind: 'static, State, ErrorType> {
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`HeadMap::new`].
 pub(super) struct KnownHeadChars<Kind: 'static, State, ErrorType>(
-  CharLookupBuilder<HeadMapActions<Kind, State, ErrorType>>,
+  CharLookupTableBuilder<HeadMapActions<Kind, State, ErrorType>>,
 );
 
 impl<Kind: 'static, State, ErrorType> Clone for KnownHeadChars<Kind, State, ErrorType> {
@@ -160,7 +160,7 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
       }
     }
 
-    KnownHeadChars(CharLookupBuilder::new(&known_chars))
+    KnownHeadChars(CharLookupTableBuilder::new(&known_chars))
   }
 
   /// Create a new instance with a subset of actions and a known char map created by [`Self::collect_all_known`].
@@ -169,10 +169,8 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
     props: &Vec<RcActionProps<Kind>>,
     known_map: KnownHeadChars<Kind, State, ErrorType>,
   ) -> Self {
-    let mut res = Self {
-      known_map: known_map.0,
-      unknown_fallback: HeadMapActions::new(),
-    };
+    let mut unknown_fallback = HeadMapActions::new();
+    let mut known_map = known_map.0;
 
     // fill the head map
     for (e, p) in execs.iter().zip(props.iter()) {
@@ -185,35 +183,38 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
             for c in set {
               // SAFETY: the key must exist because we have collected all known chars in `collect_all_known`
               // and `KnownHeadChars` ensures the known map is not modified before creating the head map
-              unsafe { res.known_map.get_unchecked_mut(*c) }.push(e.clone(), p.muted());
+              unsafe { known_map.get_unchecked_mut(*c) }.push(e.clone(), p.muted());
             }
           }
           HeadMatcher::Not(set) => {
             // e.g. the head matcher is `Not(['a', 'b'])`, the `set` is `['a', 'b']`
-            res.known_map.for_each_mut(|c, vec| {
+            known_map.for_each_entry_mut(|c, vec| {
               // e.g. if the head char is `'c'` which is not in `set`, add the action to the vec
               if !set.contains(&c) {
                 vec.push(e.clone(), p.muted());
               }
             });
-            res.unknown_fallback.push(e.clone(), p.muted());
+            unknown_fallback.push(e.clone(), p.muted());
           }
           HeadMatcher::Unknown => {
-            res.unknown_fallback.push(e.clone(), p.muted());
+            unknown_fallback.push(e.clone(), p.muted());
           }
         }
       } else {
         // no head matcher, add the action to all known chars
-        res.known_map.for_each_value_mut(|vec| {
+        known_map.for_each_value_mut(|vec| {
           vec.push(e.clone(), p.muted());
         });
         // and unknown fallback
-        res.unknown_fallback.push(e.clone(), p.muted());
+        unknown_fallback.push(e.clone(), p.muted());
       }
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
 
-    res
+    Self {
+      known_map: known_map.build(),
+      unknown_fallback,
+    }
   }
 
   /// Get actions by the next char.
@@ -221,8 +222,7 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
   pub fn get(&self, next: char) -> &HeadMapActions<Kind, State, ErrorType> {
     self
       .known_map
-      .get(next)
-      .as_ref()
+      .get(next as usize)
       .unwrap_or(&self.unknown_fallback)
   }
 }
