@@ -93,9 +93,6 @@
 //! };
 //! ```
 //!
-//! As you can see, we want to get the id bound with a value of `MyKind`, and we get the id from [`TokenKindIdBinding`].
-//! Thus the [`TokenKindIdBinding`] is a [`TokenKindIdProvider`], `MyKind` is not.
-//!
 //! To achieve the strict binding between the token kind id and the token kind value,
 //! we will create structs for each enum variant and implement `Into<TokenKindIdBinding<MyKind>>` for them.
 //!

@@ -5,7 +5,7 @@ use super::{SubTokenKind, TokenKindId, TokenKindIdBinding};
 /// This is useful as a placeholder or data carrier.
 /// # Examples
 /// ```
-/// use whitehole::lexer::token::{MockTokenKind, SubTokenKind, TokenKindIdBinding, TokenKindIdProvider};
+/// use whitehole::lexer::token::{MockTokenKind, SubTokenKind, TokenKindIdBinding};
 ///
 /// let v1: TokenKindIdBinding<MockTokenKind<i32>> = MockTokenKind::new(42).into();
 /// let v2: TokenKindIdBinding<MockTokenKind<bool>> = MockTokenKind::new(true).into();
@@ -46,7 +46,6 @@ impl<T> Into<TokenKindIdBinding<MockTokenKind<T>>> for MockTokenKind<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::token::TokenKindIdProvider;
 
   #[test]
   fn mock_token_kind_new() {

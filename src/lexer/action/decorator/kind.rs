@@ -175,10 +175,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::{
-    action::{exact, regex},
-    token::TokenKindIdProvider,
-  };
+  use crate::lexer::action::{exact, regex};
   use whitehole_macros::_token_kind;
 
   #[_token_kind]
