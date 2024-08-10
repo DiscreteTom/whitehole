@@ -1,7 +1,7 @@
 use regex::Regex;
 use whitehole::lexer::{
   action::{regex, simple_with_data, Action},
-  token::{token_kind, MockTokenKind, SubTokenKind, TokenKindIdBinding, TokenKindIdProvider},
+  token::{token_kind, MockTokenKind, SubTokenKind, TokenKindIdBinding},
   LexerBuilder,
 };
 
@@ -66,7 +66,7 @@ fn carry_data_with_mock_token_kind() {
   // `MockTokenKind<()>` is the default action kind
   let _: Action<MockTokenKind<()>> = regex(r"^a");
 
-  // `MockTokenKind` can carry data, it implements `SubTokenKind` and `TokenKindIdProvider`,
+  // `MockTokenKind` can carry data, it implements `SubTokenKind`,
   // and it will always have the same kind id
   let v1: TokenKindIdBinding<MockTokenKind<i32>> = MockTokenKind::new(42).into();
   let v2: TokenKindIdBinding<MockTokenKind<bool>> = MockTokenKind::new(true).into();
