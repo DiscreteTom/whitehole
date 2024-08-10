@@ -29,6 +29,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   where
     ViaKind:
       SubTokenKind<TokenKind = NewKind> + Into<TokenKindIdBinding<NewKind>> + Clone + 'static,
+    Kind: 'static,
     State: 'static,
     ErrorType: 'static,
   {
@@ -73,6 +74,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   pub fn bind_default<NewKind>(self) -> Action<NewKind, State, ErrorType>
   where
     NewKind: DefaultTokenKindIdBinding<NewKind>,
+    Kind: 'static,
     State: 'static,
     ErrorType: 'static,
   {
@@ -131,6 +133,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   ) -> Action<NewKind, State, ErrorType>
   where
     ViaKind: Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKind = NewKind>,
+    Kind: 'static,
     State: 'static,
     ErrorType: 'static,
   {

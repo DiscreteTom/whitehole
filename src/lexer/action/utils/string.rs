@@ -34,7 +34,7 @@ pub fn string<
   ErrorType,
   Value: PartialStringBodyValue + 'static,
   CustomError: 'static,
-  BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone,
+  BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone + 'static,
 >(
   open: impl Into<OneOrMore<String>>,
   options: StringBodyOptions<Value, CustomError, BodyAcc>,

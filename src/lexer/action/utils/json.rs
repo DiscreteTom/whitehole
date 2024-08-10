@@ -69,7 +69,7 @@ pub fn string<
   ErrorType,
   Value: PartialStringBodyValue + 'static,
   CustomError: 'static,
-  BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone,
+  BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone + 'static,
 >(
   options: StringOptions<BodyAcc, CustomError>,
 ) -> Action<MockTokenKind<BodyAcc>, State, ErrorType> {
@@ -110,7 +110,7 @@ pub fn string_with<
   ErrorType,
   Value: PartialStringBodyValue + 'static,
   CustomError: 'static,
-  BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone,
+  BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone + 'static,
 >(
   options_builder: impl FnOnce(StringOptions<(), HexEscapeError>) -> StringOptions<BodyAcc, CustomError>,
 ) -> Action<MockTokenKind<BodyAcc>, State, ErrorType> {
@@ -200,10 +200,10 @@ impl<SepAcc, IntAcc, FracAcc, ExpAcc> NumberOptions<SepAcc, IntAcc, FracAcc, Exp
 pub fn number<
   State,
   ErrorType,
-  SepAcc: Accumulator<usize> + Clone,
-  IntAcc: Accumulator<char> + Clone,
-  FracAcc: Accumulator<char> + Clone,
-  ExpAcc: Accumulator<char> + Clone,
+  SepAcc: Accumulator<usize> + Clone + 'static,
+  IntAcc: Accumulator<char> + Clone + 'static,
+  FracAcc: Accumulator<char> + Clone + 'static,
+  ExpAcc: Accumulator<char> + Clone + 'static,
 >(
   options: NumberOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
 ) -> Action<MockTokenKind<FloatLiteralData<SepAcc, IntAcc, FracAcc, ExpAcc>>, State, ErrorType> {
@@ -236,10 +236,10 @@ pub fn number<
 pub fn number_with<
   State,
   ErrorType,
-  SepAcc: Accumulator<usize> + Clone,
-  IntAcc: Accumulator<char> + Clone,
-  FracAcc: Accumulator<char> + Clone,
-  ExpAcc: Accumulator<char> + Clone,
+  SepAcc: Accumulator<usize> + Clone + 'static,
+  IntAcc: Accumulator<char> + Clone + 'static,
+  FracAcc: Accumulator<char> + Clone + 'static,
+  ExpAcc: Accumulator<char> + Clone + 'static,
 >(
   options_builder: impl FnOnce(
     NumberOptions<(), (), (), ()>,

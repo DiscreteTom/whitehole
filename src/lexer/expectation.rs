@@ -1,9 +1,9 @@
 use super::token::{SubTokenKind, TokenKindId};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Expectation<'expect_literal, Kind: 'static> {
+pub struct Expectation<'expect_literal, Kind> {
   /// See [`Self::kind`].
-  pub kind: Option<&'static TokenKindId<Kind>>,
+  pub kind: Option<TokenKindId<Kind>>,
   /// See [`Self::literal`].
   pub literal: Option<&'expect_literal str>,
 }
@@ -15,11 +15,9 @@ impl<'expect_literal, Kind> Default for Expectation<'expect_literal, Kind> {
   }
 }
 
-impl<'expect_literal, Kind> From<&'static TokenKindId<Kind>>
-  for Expectation<'expect_literal, Kind>
-{
+impl<'expect_literal, Kind> From<TokenKindId<Kind>> for Expectation<'expect_literal, Kind> {
   #[inline]
-  fn from(id: &'static TokenKindId<Kind>) -> Self {
+  fn from(id: TokenKindId<Kind>) -> Self {
     Self::new().kind(id)
   }
 }
@@ -69,7 +67,7 @@ impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
   /// # }
   /// ```
   #[inline]
-  pub fn kind(mut self, kind: impl Into<&'static TokenKindId<Kind>>) -> Self {
+  pub fn kind(mut self, kind: impl Into<TokenKindId<Kind>>) -> Self {
     self.kind = Some(kind.into());
     self
   }

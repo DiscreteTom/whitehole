@@ -2,7 +2,7 @@ use super::head_map::{HeadMap, KnownHeadChars};
 use crate::lexer::action::{RcActionExec, RcActionProps};
 use std::collections::HashMap;
 
-pub(super) struct LiteralMap<Kind: 'static, State, ErrorType> {
+pub(super) struct LiteralMap<Kind, State, ErrorType> {
   /// The key of the map is the literal.
   /// Actions in the value should be either muted or have a matched [`Action::literal`].
   known_map: HashMap<String, HeadMap<Kind, State, ErrorType>>,
@@ -16,7 +16,7 @@ pub(super) struct LiteralMap<Kind: 'static, State, ErrorType> {
 /// A new-type to represent the return type of [`LiteralMap::collect_all_known`].
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`LiteralMap::new`].
-pub(super) struct KnownLiterals<Kind: 'static, State, ErrorType>(
+pub(super) struct KnownLiterals<Kind, State, ErrorType>(
   HashMap<
     String,
     (
@@ -26,7 +26,7 @@ pub(super) struct KnownLiterals<Kind: 'static, State, ErrorType>(
   >,
 );
 
-impl<Kind: 'static, State, ErrorType> Clone for KnownLiterals<Kind, State, ErrorType> {
+impl<Kind, State, ErrorType> Clone for KnownLiterals<Kind, State, ErrorType> {
   #[inline]
   fn clone(&self) -> Self {
     Self(self.0.clone())
@@ -129,7 +129,7 @@ mod tests {
     token::MockTokenKind,
   };
 
-  fn r<S: 'static, E>(s: &str) -> Action<MockTokenKind<()>, S, E> {
+  fn r<S, E>(s: &str) -> Action<MockTokenKind<()>, S, E> {
     regex(s)
   }
 

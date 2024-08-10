@@ -104,19 +104,19 @@ use literal_map::LiteralMap;
 use std::collections::HashMap;
 
 /// Stateless, immutable lexer.
-pub struct StatelessLexer<Kind: 'static, State = (), ErrorType = ()> {
+pub struct StatelessLexer<Kind, State = (), ErrorType = ()> {
   /// This is used to accelerate lexing by actions' head matcher when there is no expectation.
   /// This is pre-calculated to optimize the runtime performance.
   head_map: HeadMap<Kind, State, ErrorType>,
   /// This is used to accelerate expected lexing by the expected kind and actions' head matcher.
   /// This is pre-calculated to optimize the runtime performance.
-  kind_head_map: HashMap<&'static TokenKindId<Kind>, HeadMap<Kind, State, ErrorType>>,
+  kind_head_map: HashMap<TokenKindId<Kind>, HeadMap<Kind, State, ErrorType>>,
   /// This is used to accelerate expected lexing by the expected literal and actions' head matcher.
   /// This is pre-calculated to optimize the runtime performance.
   literal_map: LiteralMap<Kind, State, ErrorType>,
   /// This is used to accelerate expected lexing by the expected kind, the expected literal and actions' head matcher.
   /// This is pre-calculated to optimize the runtime performance.
-  kind_literal_map: HashMap<&'static TokenKindId<Kind>, LiteralMap<Kind, State, ErrorType>>,
+  kind_literal_map: HashMap<TokenKindId<Kind>, LiteralMap<Kind, State, ErrorType>>,
 }
 
 impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
@@ -157,7 +157,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     execs: &Vec<RcActionExec<Kind, State, ErrorType>>,
     props: &Vec<RcActionProps<Kind>>,
   ) -> HashMap<
-    &'static TokenKindId<Kind>,
+    TokenKindId<Kind>,
     (
       Vec<RcActionExec<Kind, State, ErrorType>>,
       Vec<RcActionProps<Kind>>,
@@ -181,7 +181,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
       } else {
         // non-muted, only add to possible kinds
         // SAFETY: the entry is guaranteed to exist since we've collected all possible kinds
-        let (execs, props) = unsafe { res.get_mut(p.kind()).unwrap_unchecked() };
+        let (execs, props) = unsafe { res.get_mut(&p.kind()).unwrap_unchecked() };
         execs.push(e.clone());
         props.push(p.clone());
       }
@@ -209,7 +209,7 @@ mod tests {
     B,
   }
 
-  fn r<S: 'static, E>(s: &str) -> Action<MockTokenKind<()>, S, E> {
+  fn r<S, E>(s: &str) -> Action<MockTokenKind<()>, S, E> {
     regex(s)
   }
 
@@ -296,7 +296,7 @@ mod tests {
 
     // kind_head_map
     assert_eq!(lexer.kind_head_map.len(), ['A', 'B'].len());
-    let kind_a_head_map = &lexer.kind_head_map[A::kind_id()];
+    let kind_a_head_map = &lexer.kind_head_map[&A::kind_id()];
     assert_immutable_actions_eq(
       &kind_a_head_map.get('a'),
       vec![
@@ -438,7 +438,7 @@ mod tests {
 
     // kind_literal_map
     assert_eq!(lexer.kind_literal_map.len(), ["A", "B"].len());
-    let kind_a_literal_map = &lexer.kind_literal_map[A::kind_id()];
+    let kind_a_literal_map = &lexer.kind_literal_map[&A::kind_id()];
     assert_immutable_actions_eq(
       &kind_a_literal_map.known_map()["a"].get('a'),
       vec![

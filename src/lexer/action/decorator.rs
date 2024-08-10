@@ -51,6 +51,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// ```
   pub fn prevent(mut self, condition: impl Fn(&ActionInput<&State>) -> bool + 'static) -> Self
   where
+    Kind: 'static,
     State: 'static,
     ErrorType: 'static,
   {
@@ -94,6 +95,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// ```
   pub fn prepare(mut self, modifier: impl Fn(&mut ActionInput<&mut State>) + 'static) -> Self
   where
+    Kind: 'static,
     State: 'static,
     ErrorType: 'static,
   {
@@ -189,6 +191,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       + 'static,
   ) -> Action<Kind, State, NewError>
   where
+    Kind: 'static,
     State: 'static,
     ErrorType: 'static,
   {
@@ -238,6 +241,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// ```
   pub fn error<NewError>(self, error: NewError) -> Action<Kind, State, NewError>
   where
+    Kind: 'static,
     State: 'static,
     ErrorType: 'static,
     NewError: Clone + 'static,
@@ -296,6 +300,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       + 'static,
   ) -> Self
   where
+    Kind: 'static,
     State: 'static,
     ErrorType: 'static,
   {
@@ -338,6 +343,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// ```
   pub fn reject(mut self) -> Self
   where
+    Kind: 'static,
     State: 'static,
     ErrorType: 'static,
   {
@@ -392,6 +398,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       ) + 'static,
   ) -> Self
   where
+    Kind: 'static,
     State: 'static,
     ErrorType: 'static,
   {

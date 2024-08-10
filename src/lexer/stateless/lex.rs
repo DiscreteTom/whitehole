@@ -331,7 +331,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
 
   fn get_literal_head_map(
     &self,
-    kind: Option<&'static TokenKindId<Kind>>,
+    kind: Option<TokenKindId<Kind>>,
     literal: &str,
   ) -> (
     &LiteralMap<Kind, State, ErrorType>,
@@ -350,10 +350,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     (literal_map, head_map)
   }
 
-  fn get_kind_head_map(
-    &self,
-    kind: Option<&'static TokenKindId<Kind>>,
-  ) -> &HeadMap<Kind, State, ErrorType> {
+  fn get_kind_head_map(&self, kind: Option<TokenKindId<Kind>>) -> &HeadMap<Kind, State, ErrorType> {
     kind.map_or(
       &self.head_map, // if no expected kind, use the head map with all actions
       |kind| {
@@ -454,7 +451,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
 
 fn done_with_token<
   'text,
-  Kind: 'static,
+  Kind,
   State,
   ErrorType,
   ErrAcc,
@@ -480,7 +477,7 @@ fn done_with_token<
   }
 }
 
-fn get_actions_by_literal_map<'this, Kind: 'static, State, StateRef, ErrorType>(
+fn get_actions_by_literal_map<'this, Kind, State, StateRef, ErrorType>(
   input: &ActionInput<StateRef>,
   literal: &str,
   literal_map: &'this LiteralMap<Kind, State, ErrorType>,

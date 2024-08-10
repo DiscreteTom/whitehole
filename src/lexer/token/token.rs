@@ -3,7 +3,7 @@ use super::TokenKindIdBinding;
 pub type Range = std::ops::Range<usize>;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Token<Kind: 'static> {
+pub struct Token<Kind> {
   /// The token kind value and the id of the token kind.
   pub binding: TokenKindIdBinding<Kind>,
   /// The byte range of the token in the input text.

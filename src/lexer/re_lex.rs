@@ -58,7 +58,7 @@ impl ReLexContext {
 /// These types already implement the [`ReLexableFactory`] trait:
 /// - `()` - no re-lexable will be created.
 /// - [`ReLexableBuilder`] - create re-lexable structs if possible.
-pub trait ReLexableFactory<'text, Kind: 'static, State, ErrorType> {
+pub trait ReLexableFactory<'text, Kind, State, ErrorType> {
   /// This should extends [`Default`] so when no token is emitted,
   /// the output can be created with a default value.
   type StatelessReLexableType: Default;
@@ -84,9 +84,7 @@ pub trait ReLexableFactory<'text, Kind: 'static, State, ErrorType> {
 }
 
 // mock re-lexable factory
-impl<'text, Kind: 'static, State, ErrorType> ReLexableFactory<'text, Kind, State, ErrorType>
-  for ()
-{
+impl<'text, Kind, State, ErrorType> ReLexableFactory<'text, Kind, State, ErrorType> for () {
   type StatelessReLexableType = ();
   type ReLexableType = ();
 
@@ -181,7 +179,7 @@ impl<State> Default for ReLexableBuilder<State> {
   }
 }
 
-impl<'text, Kind: 'static, State: Clone, ErrorType> ReLexableFactory<'text, Kind, State, ErrorType>
+impl<'text, Kind, State: Clone, ErrorType> ReLexableFactory<'text, Kind, State, ErrorType>
   for ReLexableBuilder<State>
 {
   type StatelessReLexableType = StatelessReLexable<State>;

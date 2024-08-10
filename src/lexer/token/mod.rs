@@ -1,6 +1,6 @@
 //! ## Design
 //!
-//! Usually when we want to write a lexer, we need to define "token kinds",
+//! Usually when you want to write a lexer, you need to define "token kinds",
 //! like `Identifier`, `Number`, etc.
 //! We can use enum to represent these kinds.
 //!
@@ -11,14 +11,14 @@
 //! }
 //! ```
 //!
-//! Besides, we may want to carry some data with different token kinds.
+//! Besides, you may want to carry some data with different token kinds.
 //! The data may be generated during the lexing process and stored in the token
-//! so we don't need to parse the token content again after lexing.
-//! An example is that if we want to lex a string literal with escape sequences,
-//! when the token is yielded we should already know the evaluated value of the string literal,
-//! we can store the value in the token, instead of parsing the literal content again.
+//! so you don't need to parse the token content again after lexing.
+//! An example is that if you want to lex a string literal with escape sequences,
+//! when the token is yielded you should already know the evaluated value of the string literal,
+//! you can store the value in the token, instead of parsing the literal content again.
 //! The data should be associated with the token kind,
-//! so we can use enum variants to represent them.
+//! so you can use enum variants to represent them.
 //!
 //! ```
 //! pub enum MyKind {
@@ -27,16 +27,14 @@
 //! }
 //! ```
 //!
-//! However, in rust we treat `Number(0)` and `Number(1)` as different values,
+//! However, in rust `Number(0)` and `Number(1)` are different values,
 //! but their token kinds are the same.
-//! To solve this problem, we can use a [`TokenKindId`] to identify different token kinds.
+//! To solve this problem, we define [`TokenKindId`] to identify different token kinds.
 //! `Number(0)` and `Number(1)` are different values but they have the same [`TokenKindId`].
-//! You can consider [`TokenKindId`] just like [`std::mem::Discriminant`],
-//! but the internal implementation shouldn't be relied upon by your application.
-//! In this documentation we assume the value of the [`TokenKindId`]
-//! is the index of the enum variant, so the [`TokenKindId`] is unique for each variant.
+//! The value of the [`TokenKindId`] is the index of the enum variant,
+//! so the [`TokenKindId`] is unique for each variant.
 //!
-//! We also need a way to get the token kind id from a token kind value.
+//! You also need a way to get the token kind id from a token kind value.
 //! An easy way is to use pattern matching like this:
 //!
 //! ```
@@ -44,10 +42,11 @@
 //! #   Identifier(String),
 //! #   Number(i32),
 //! # }
-//! fn get_id(kind: &MyKind) -> usize {
+//! pub struct TokenKindId(usize);
+//! fn get_id(kind: &MyKind) -> TokenKindId {
 //!   match kind {
-//!     MyKind::Identifier(_) => 0,
-//!     MyKind::Number(_) => 1,
+//!     MyKind::Identifier(_) => TokenKindId(0),
+//!     MyKind::Number(_) => TokenKindId(1),
 //!   }
 //! }
 //! ```
@@ -266,8 +265,7 @@ mod tests {
     assert_eq!(b.take(), MyKind::Named(Named { name: 42 }));
 
     // generated token kind id, as sub token kind.
-    // make sure the id is for `TokenKindIdBinding` instead of `MyKind`
-    let v: Vec<&TokenKindId<MyKind>> = vec![Unit::kind_id(), Unnamed::kind_id(), Named::kind_id()];
+    let v: Vec<TokenKindId<MyKind>> = vec![Unit::kind_id(), Unnamed::kind_id(), Named::kind_id()];
     for (i, id) in v.iter().enumerate() {
       for (j, id2) in v.iter().enumerate() {
         if i == j {
@@ -280,15 +278,15 @@ mod tests {
 
     // sub token kind into token kind id
     assert_eq!(
-      <Unit as Into<&TokenKindId<MyKind>>>::into(Unit),
+      <Unit as Into<TokenKindId<MyKind>>>::into(Unit),
       Unit::kind_id()
     );
     assert_eq!(
-      <Unnamed as Into<&TokenKindId<MyKind>>>::into(Unnamed(42)),
+      <Unnamed as Into<TokenKindId<MyKind>>>::into(Unnamed(42)),
       Unnamed::kind_id()
     );
     assert_eq!(
-      <Named as Into<&TokenKindId<MyKind>>>::into(Named { name: 42 }),
+      <Named as Into<TokenKindId<MyKind>>>::into(Named { name: 42 }),
       Named::kind_id()
     );
 

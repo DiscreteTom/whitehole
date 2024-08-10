@@ -10,14 +10,14 @@ use super::re_lex::{ReLexableBuilder, ReLexableFactory};
 /// to implement the [`fork`](crate::lexer::options::LexOptions::fork) feature
 /// so that we can return different types in [`ReLexableFactory::into_re_lexable`]
 /// to avoid unnecessary allocations.
-pub trait LexOptionsFork<'text, Kind: 'static, State, ErrorType> {
+pub trait LexOptionsFork<'text, Kind, State, ErrorType> {
   // this has to implement `Default` because the instance is not provided by the user
   // and we have to create the instance by our own
   type ReLexableFactoryType: ReLexableFactory<'text, Kind, State, ErrorType> + Default;
 }
 
 // the mock implementation of the fork feature
-impl<'text, Kind: 'static, State, ErrorType> LexOptionsFork<'text, Kind, State, ErrorType> for () {
+impl<'text, Kind, State, ErrorType> LexOptionsFork<'text, Kind, State, ErrorType> for () {
   type ReLexableFactoryType = ();
 }
 
@@ -27,7 +27,7 @@ impl<'text, Kind: 'static, State, ErrorType> LexOptionsFork<'text, Kind, State, 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ForkEnabled;
 
-impl<'text, Kind: 'static, State: Clone, ErrorType> LexOptionsFork<'text, Kind, State, ErrorType>
+impl<'text, Kind, State: Clone, ErrorType> LexOptionsFork<'text, Kind, State, ErrorType>
   for ForkEnabled
 {
   type ReLexableFactoryType = ReLexableBuilder<State>;

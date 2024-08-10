@@ -1,5 +1,4 @@
 use proc_macro::TokenStream;
-use proc_macro2::Span;
 use quote::{quote, ToTokens};
 use syn::{self, parse, Data, DeriveInput, Fields};
 
@@ -21,19 +20,19 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// pub struct A;
 /// impl Into<MyKind> for A { ... }
 /// impl Into<TokenKindIdBinding<MyKind>> for A { ... }
-/// impl Into<&'static TokenKindId<MyKind>> for A { ... }
+/// impl Into<TokenKindId<MyKind>> for A { ... }
 /// impl SubTokenKind for A { ... }
 ///
 /// pub struct B(pub i32);
 /// impl Into<MyKind> for B { ... }
 /// impl Into<TokenKindIdBinding<MyKind>> for B { ... }
-/// impl Into<&'static TokenKindId<MyKind>> for B { ... }
+/// impl Into<TokenKindId<MyKind>> for B { ... }
 /// impl SubTokenKind for B { ... }
 ///
 /// pub struct C { pub c: i32 }
 /// impl Into<MyKind> for C { ... }
 /// impl Into<TokenKindIdBinding<MyKind>> for C { ... }
-/// impl Into<&'static TokenKindId<MyKind>> for C { ... }
+/// impl Into<TokenKindId<MyKind>> for C { ... }
 /// impl SubTokenKind for C { ... }
 /// ```
 /// Besides, if the token kind derive `Default`:
@@ -185,41 +184,35 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
     });
 
     // impl SubTokenKind and Into<TokenKindId<MyKind>> for the generated struct
-    let mod_name = syn::Ident::new(&format!("_impl_sub_token_kind_{}", index), Span::call_site());
-    let token_kind_id_const = syn::Ident::new(&format!("_TOKEN_KIND_ID_{}", index), Span::call_site());
-    let sub_token_kind_name = syn::LitStr::new(&variant_name.to_string(), Span::call_site());
     gen.push(quote! {
-      // use a private mod to hide the constants
-      mod #mod_name {
-        use super::{#enum_name, #variant_name};
-        use #crate_name::lexer::token::{SubTokenKind, TokenKindId, TokenKindIdBinding};
-        const #token_kind_id_const: TokenKindId<#enum_name> = TokenKindId::new(#index, #sub_token_kind_name);
-        // impl SubTokenKind so users can get the kind id from the type instead of the value
-        impl SubTokenKind for #variant_name {
-          type TokenKind = #enum_name;
-          #[inline]
-          fn kind_id() -> &'static TokenKindId<Self::TokenKind> {
-            &#token_kind_id_const
-          }
+      // impl SubTokenKind so users can get the kind id from the type instead of the value
+      impl #crate_name::lexer::token::SubTokenKind for #variant_name {
+        type TokenKind = #enum_name;
+        #[inline]
+        fn kind_id() -> #crate_name::lexer::token::TokenKindId<Self::TokenKind> {
+          #crate_name::lexer::token::TokenKindId::new(#index)
         }
-        // impl Into<TokenKindId<MyKind>> for the generated struct
-        // this is helpful in expectational lexing, if users wants to provide the expected kind id
-        // they can just use the value (especially for unit variants)
-        impl Into<&'static TokenKindId<#enum_name>> for #variant_name {
-          #[inline]
-          fn into(self) -> &'static TokenKindId<#enum_name> {
-            &#token_kind_id_const
-          }
+      }
+      // impl Into<TokenKindId<MyKind>> for the generated struct
+      // this is helpful in expectational lexing, if users wants to provide the expected kind id
+      // they can just use the value (especially for unit variants)
+      impl Into<#crate_name::lexer::token::TokenKindId<#enum_name>> for #variant_name {
+        #[inline]
+        fn into(self) -> #crate_name::lexer::token::TokenKindId<#enum_name> {
+          #crate_name::lexer::token::TokenKindId::new(#index)
         }
       }
     });
 
     // if a variant is the default variant, we will impl DefaultTokenKindIdBinding for the enum
-    if variant_attrs.iter().any(|attr| attr.path.is_ident("default")) {
+    if variant_attrs
+      .iter()
+      .any(|attr| attr.path.is_ident("default"))
+    {
       gen.push(quote! {
         impl #crate_name::lexer::token::DefaultTokenKindIdBinding<#enum_name> for #enum_name {
           #[inline]
-          fn default_kind_id() -> &'static #crate_name::lexer::token::TokenKindId<#enum_name> {
+          fn default_kind_id() -> #crate_name::lexer::token::TokenKindId<#enum_name> {
             <#variant_name as #crate_name::lexer::token::SubTokenKind>::kind_id()
           }
         }

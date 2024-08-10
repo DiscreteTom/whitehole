@@ -54,19 +54,19 @@ impl<Exec> RuntimeActions<Exec> {
 /// - [`Self::immutables`]: immutable actions, this should always be checked first.
 /// - [`Self::rest`]: immutable or mutable actions, this should be checked after [`Self::immutables`].
 /// If this is not empty, this must starts with a mutable action.
-pub(super) struct HeadMapActions<Kind: 'static, State, ErrorType> {
+pub(super) struct HeadMapActions<Kind, State, ErrorType> {
   immutables: RuntimeActions<Rc<ImmutableActionExec<Kind, State, ErrorType>>>,
   rest: RuntimeActions<RcActionExec<Kind, State, ErrorType>>,
 }
 
-impl<Kind: 'static, State, ErrorType> Default for HeadMapActions<Kind, State, ErrorType> {
+impl<Kind, State, ErrorType> Default for HeadMapActions<Kind, State, ErrorType> {
   #[inline]
   fn default() -> Self {
     Self::new()
   }
 }
 
-impl<Kind: 'static, State, ErrorType> Clone for HeadMapActions<Kind, State, ErrorType> {
+impl<Kind, State, ErrorType> Clone for HeadMapActions<Kind, State, ErrorType> {
   #[inline]
   fn clone(&self) -> Self {
     Self {
@@ -116,7 +116,7 @@ impl<Kind, State, ErrorType> HeadMapActions<Kind, State, ErrorType> {
   }
 }
 
-pub(super) struct HeadMap<Kind: 'static, State, ErrorType> {
+pub(super) struct HeadMap<Kind, State, ErrorType> {
   /// Store actions for known chars.
   known_map: CharLookupTable<HeadMapActions<Kind, State, ErrorType>>,
   /// Store actions for unknown chars.
@@ -126,11 +126,11 @@ pub(super) struct HeadMap<Kind: 'static, State, ErrorType> {
 /// A new-type to represent the return type of [`HeadMap::collect_all_known`].
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`HeadMap::new`].
-pub(super) struct KnownHeadChars<Kind: 'static, State, ErrorType>(
+pub(super) struct KnownHeadChars<Kind, State, ErrorType>(
   CharLookupTableBuilder<HeadMapActions<Kind, State, ErrorType>>,
 );
 
-impl<Kind: 'static, State, ErrorType> Clone for KnownHeadChars<Kind, State, ErrorType> {
+impl<Kind, State, ErrorType> Clone for KnownHeadChars<Kind, State, ErrorType> {
   #[inline]
   fn clone(&self) -> Self {
     Self(self.0.clone())

@@ -43,11 +43,11 @@ pub enum HeadMatcher {
   Unknown,
 }
 
-pub struct ActionBase<Kind: 'static, Exec> {
+pub struct ActionBase<Kind, Exec> {
   exec: Exec,
 
   /// See [`Self::kind`].
-  kind: &'static TokenKindId<Kind>,
+  kind: TokenKindId<Kind>,
   /// See [`Self::literal`].
   literal: Option<String>,
   /// See [`Self::head`].
@@ -65,8 +65,8 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
   /// [`Self::bind_default`] or [`Self::select`].
   /// These method will ensure the integrity between [`Self::kind`] and [`ActionOutput::binding`].
   #[inline]
-  pub const fn kind(&self) -> &'static TokenKindId<Kind> {
-    &self.kind
+  pub const fn kind(&self) -> TokenKindId<Kind> {
+    self.kind
   }
 
   /// This is used to accelerate expectational lexing if an expected literal is provided,

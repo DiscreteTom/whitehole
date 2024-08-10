@@ -24,16 +24,16 @@ use super::{SubTokenKind, TokenKindId, TokenKindIdProvider};
 /// # }
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct TokenKindIdBinding<Kind: 'static> {
-  id: &'static TokenKindId<Kind>,
+pub struct TokenKindIdBinding<Kind> {
+  id: TokenKindId<Kind>,
   kind: Kind,
 }
 
 impl<Kind> TokenKindIdProvider for TokenKindIdBinding<Kind> {
   type TokenKind = Kind;
   #[inline]
-  fn id(&self) -> &'static TokenKindId<Self::TokenKind> {
-    &self.id
+  fn id(&self) -> TokenKindId<Self::TokenKind> {
+    self.id
   }
 }
 
@@ -84,8 +84,9 @@ impl<Kind> TokenKindIdBinding<Kind> {
 /// assert_eq!(TokenKindIdBinding::<MyKind>::default().take(), MyKind::A);
 /// # }
 /// ```
+// TODO: just use `Default` trait for `TokenKindId<Kind>`
 pub trait DefaultTokenKindIdBinding<Kind>: Default {
-  fn default_kind_id() -> &'static TokenKindId<Kind>;
+  fn default_kind_id() -> TokenKindId<Kind>;
 }
 
 impl<Kind: DefaultTokenKindIdBinding<Kind>> Default for TokenKindIdBinding<Kind> {

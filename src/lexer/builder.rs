@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 /// To create this, see [`Self::new`], [`Self::stateful`],
 /// [`Self::with_error`] and [`Self::stateful_with_error`].
-pub struct LexerBuilder<Kind: 'static, State = (), ErrorType = ()> {
+pub struct LexerBuilder<Kind, State = (), ErrorType = ()> {
   actions: Vec<Action<Kind, State, ErrorType>>,
 }
 
@@ -126,7 +126,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
     self.build_with(State::default(), text)
   }
 
-  fn map_actions<OldKind: 'static, NewKind>(
+  fn map_actions<OldKind, NewKind>(
     actions: impl Into<OneOrMore<Action<OldKind, State, ErrorType>>>,
     f: impl Fn(Action<OldKind, State, ErrorType>) -> Action<NewKind, State, ErrorType>,
   ) -> Vec<Action<NewKind, State, ErrorType>> {

@@ -1,7 +1,7 @@
 use super::{expectation::Expectation, fork::ForkEnabled, re_lex::ReLexContext};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LexOptions<'expect_literal, Kind: 'static, ErrAcc, Fork> {
+pub struct LexOptions<'expect_literal, Kind, ErrAcc, Fork> {
   /// See [`Self::expect`].
   pub expectation: Expectation<'expect_literal, Kind>,
   /// See [`Self::errors_to`].
@@ -12,7 +12,7 @@ pub struct LexOptions<'expect_literal, Kind: 'static, ErrAcc, Fork> {
   pub re_lex: ReLexContext,
 }
 
-impl<'expect_literal, Kind: 'static> LexOptions<'expect_literal, Kind, (), ()> {
+impl<'expect_literal, Kind> LexOptions<'expect_literal, Kind, (), ()> {
   /// Create a new instance with no expectation, no error accumulator, no re-lex context and fork disabled.
   #[inline]
   pub const fn new() -> Self {
@@ -25,7 +25,7 @@ impl<'expect_literal, Kind: 'static> LexOptions<'expect_literal, Kind, (), ()> {
   }
 }
 
-impl<'expect_literal, Kind: 'static> From<Expectation<'expect_literal, Kind>>
+impl<'expect_literal, Kind> From<Expectation<'expect_literal, Kind>>
   for LexOptions<'expect_literal, Kind, (), ()>
 {
   #[inline]
@@ -33,16 +33,14 @@ impl<'expect_literal, Kind: 'static> From<Expectation<'expect_literal, Kind>>
     Self::new().expect(expectation)
   }
 }
-impl<'expect_literal, Kind: 'static> From<ReLexContext>
-  for LexOptions<'expect_literal, Kind, (), ()>
-{
+impl<'expect_literal, Kind> From<ReLexContext> for LexOptions<'expect_literal, Kind, (), ()> {
   #[inline]
   fn from(re_lex: ReLexContext) -> Self {
     Self::new().re_lex(re_lex)
   }
 }
 
-impl<'expect_literal, Kind: 'static, ErrAcc, Fork> LexOptions<'expect_literal, Kind, ErrAcc, Fork> {
+impl<'expect_literal, Kind, ErrAcc, Fork> LexOptions<'expect_literal, Kind, ErrAcc, Fork> {
   /// Set the expectation to speed up the lexing.
   /// # Examples
   /// ```

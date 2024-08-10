@@ -28,6 +28,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       + 'static,
   ) -> Action<MockTokenKind<T>, State, ErrorType>
   where
+    Kind: 'static,
     State: 'static,
     ErrorType: 'static,
   {

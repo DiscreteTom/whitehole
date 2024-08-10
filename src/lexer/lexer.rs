@@ -31,7 +31,7 @@ use std::rc::Rc;
 /// some users may want to process errors after each lexing, and clear the container
 /// before next lexing to save memory; some users may want to store all errors
 /// in a container and process them later.
-pub struct Lexer<'text, Kind: 'static, State = (), ErrorType = ()> {
+pub struct Lexer<'text, Kind, State = (), ErrorType = ()> {
   /// You can mutate this directly if needed.
   pub state: State,
 
