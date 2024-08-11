@@ -3,6 +3,7 @@ use super::{
   instant::Instant,
   options::{LexOptions, TrimOptions},
   output::{LexOutput, TrimOutput},
+  snapshot::{PartialSnapshot, Snapshot},
   stateless::{StatelessLexOptions, StatelessLexer, StatelessTrimOptions},
   token::{Range, Token},
 };
@@ -108,6 +109,40 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     state: State,
   ) -> Lexer<'new_text, Kind, State, ErrorType> {
     Lexer::new(self.stateless, state, text)
+  }
+
+  /// Take a snapshot of the current state and instant.
+  #[inline]
+  pub fn snapshot(&self) -> Snapshot<'text, State>
+  where
+    State: Clone,
+  {
+    Snapshot {
+      state: self.state.clone(),
+      instant: self.instant.clone(),
+    }
+  }
+
+  /// Restore the state and instant from a snapshot.
+  #[inline]
+  pub fn restore(&mut self, snapshot: impl Into<PartialSnapshot<'text, State>>) {
+    let snapshot = snapshot.into();
+    if let Some(state) = snapshot.state {
+      self.state = state;
+    }
+    if let Some(instant) = snapshot.instant {
+      self.instant = instant;
+    }
+  }
+
+  /// Clone self with the provided snapshot.
+  #[inline]
+  pub fn clone_with_snapshot(&self, snapshot: Snapshot<'text, State>) -> Self {
+    Self {
+      stateless: self.stateless.clone(),
+      state: snapshot.state,
+      instant: snapshot.instant,
+    }
   }
 
   /// Peek the next token with the default options, without updating

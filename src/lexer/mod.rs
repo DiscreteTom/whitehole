@@ -5,6 +5,7 @@
 //! - [`self::token`]
 //! - [`self::action`]
 //! - [`self::instant`]
+//! - [`self::snapshot`]
 //! - [`self::expectation`]
 //! - [`self::re_lex`]
 //! - [`self::fork`]
@@ -25,6 +26,7 @@ pub mod options;
 pub mod output;
 pub mod position;
 pub mod re_lex;
+pub mod snapshot;
 pub mod stateless;
 pub mod token;
 
