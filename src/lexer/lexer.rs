@@ -96,11 +96,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   where
     State: Default,
   {
-    Lexer {
-      stateless: self.stateless,
-      instant: Instant::new(text),
-      state: State::default(),
-    }
+    self.reload_with(text, State::default())
   }
 
   /// Consume self, return a new lexer with the same actions, a new text and the given state.
