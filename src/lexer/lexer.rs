@@ -313,12 +313,16 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     self.digest_with(n, State::default())
   }
 
-  /// Lex with muted actions.
+  /// Lex with muted actions and the provided options.
   /// Returns [`None`] if the lexer is already trimmed.
-  pub fn trim<ErrAcc>(&mut self, err_acc: ErrAcc) -> Option<TrimOutput<ErrAcc>>
+  pub fn trim_with_options<ErrAcc>(
+    &mut self,
+    options: TrimOptions<ErrAcc>,
+  ) -> Option<TrimOutput<ErrAcc>>
   where
     ErrAcc: Accumulator<(ErrorType, Range)>,
   {
+    // return None if already trimmed
     if self.instant.trimmed() {
       return None;
     }
@@ -328,7 +332,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
       StatelessTrimOptions {
         start: self.instant.digested(),
         state: &mut self.state,
-        base: TrimOptions::new().errors_to(err_acc),
+        base: options,
       },
     );
 
@@ -336,7 +340,26 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
 
     Some(res)
   }
-  // TODO: add trim_with/trim_with_options
+
+  /// Lex with muted actions and the provided options.
+  /// Returns [`None`] if the lexer is already trimmed.
+  #[inline]
+  pub fn trim_with<ErrAcc>(
+    &mut self,
+    f: impl FnOnce(TrimOptions<()>) -> TrimOptions<ErrAcc>,
+  ) -> Option<TrimOutput<ErrAcc>>
+  where
+    ErrAcc: Accumulator<(ErrorType, Range)>,
+  {
+    self.trim_with_options(f(TrimOptions::new()))
+  }
+
+  /// Lex with muted actions and the default options.
+  /// Returns [`None`] if the lexer is already trimmed.
+  #[inline]
+  pub fn trim(&mut self) -> Option<TrimOutput<()>> {
+    self.trim_with_options(TrimOptions::new())
+  }
 
   #[inline]
   fn lex_with_stateless<'expect_literal, ErrAcc,Fork: LexOptionsFork<'text, Kind, State, ErrorType>>(
