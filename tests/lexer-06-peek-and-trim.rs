@@ -102,11 +102,11 @@ fn trim_lexer() {
   // to prevent lexing the whitespaces multiple times
   // we can first trim the lexer
   // which will lex the lexer with all muted actions
-  let res = lexer.trim(()).unwrap();
+  let res = lexer.trim().unwrap();
   assert_eq!(res.digested, 1); // only the whitespace is digested
   assert_eq!(lexer.instant().digested(), 1);
   assert!(lexer.instant().trimmed()); // lexer will also record whether it is already trimmed
-  assert!(lexer.trim(()).is_none()); // trim the lexer again, the lexer is already trimmed, so it will return None
+  assert!(lexer.trim().is_none()); // trim the lexer again, the lexer is already trimmed, so it will return None
 
   // now if we peek the lexer, the whitespaces won't be lexed again
   let (output, _) = lexer.peek_with(|o| o.expect(A::kind_id()));
