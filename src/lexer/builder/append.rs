@@ -24,6 +24,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// builder.append([word("A").bind(A), word("B").bind(B)]);
   /// # }
   /// ```
+  #[inline]
   pub fn append(mut self, actions: impl Into<OneOrMore<Action<Kind, State, ErrorType>>>) -> Self {
     self.actions.extend(actions.into().0);
     self
@@ -45,6 +46,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// builder.append_with([word("A").bind(A), word("B").bind(B)], |a| a.error(123));
   /// # }
   /// ```
+  #[inline]
   pub fn append_with(
     self,
     actions: impl Into<OneOrMore<Action<Kind, State, ErrorType>>>,
@@ -72,6 +74,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// builder.append_default([whitespaces(), word("_")]);
   /// # }
   /// ```
+  #[inline]
   pub fn append_default(
     self,
     actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
@@ -100,6 +103,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// builder.append_default_with([word("A"), word("B")], |a| a.error(123));
   /// # }
   /// ```
+  #[inline]
   pub fn append_default_with(
     self,
     actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,

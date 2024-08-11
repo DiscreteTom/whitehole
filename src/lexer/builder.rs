@@ -13,6 +13,7 @@ pub struct LexerBuilder<Kind, State = (), ErrorType = ()> {
 }
 
 impl<Kind, State, ErrorType> Default for LexerBuilder<Kind, State, ErrorType> {
+  #[inline]
   fn default() -> Self {
     Self {
       actions: Vec::new(),
@@ -36,6 +37,7 @@ impl<Kind> LexerBuilder<Kind> {
   /// LexerBuilder::<_, (), ()>::default();
   /// # builder.append(exact("a"));
   /// ```
+  #[inline]
   pub fn new() -> Self {
     Self::default()
   }
@@ -57,6 +59,7 @@ impl<Kind> LexerBuilder<Kind> {
   /// LexerBuilder::<_, MyState, ()>::default();
   /// # builder.append(exact("a"));
   /// ```
+  #[inline]
   pub fn stateful<State>() -> LexerBuilder<Kind, State> {
     LexerBuilder::default()
   }
@@ -78,6 +81,7 @@ impl<Kind, ErrorType> LexerBuilder<Kind, (), ErrorType> {
   /// LexerBuilder::<_, (), _>::default();
   /// # builder.append_with(exact("a"), |a| a.error(MyError));
   /// ```
+  #[inline]
   pub fn with_error() -> Self {
     Self::default()
   }
@@ -98,6 +102,7 @@ impl<Kind, ErrorType> LexerBuilder<Kind, (), ErrorType> {
   /// LexerBuilder::<_, MyState, _>::default();
   /// # builder.append_with(exact("a"), |a| a.error(MyError));
   /// ```
+  #[inline]
   pub fn stateful_with_error<State>() -> LexerBuilder<Kind, State, ErrorType> {
     LexerBuilder::default()
   }
@@ -105,12 +110,15 @@ impl<Kind, ErrorType> LexerBuilder<Kind, (), ErrorType> {
 
 impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   // TODO: move into `generate`?
+  /// Consume self, build a [`StatelessLexer`].
+  #[inline]
   pub fn build_stateless(self) -> StatelessLexer<Kind, State, ErrorType> {
-    // TODO: warning if action has no head matcher
-    // wrap actions with Rc, make them immutable and clone-able
+    // TODO: warning if action has no head matcher?
     StatelessLexer::new(self.actions)
   }
 
+  /// Consume self, build a [`Lexer`] with the provided `state` and `text`.
+  #[inline]
   pub fn build_with<'text>(
     self,
     state: State,
@@ -119,6 +127,8 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
     Lexer::new(Rc::new(self.build_stateless()), state, text)
   }
 
+  /// Consume self, build a [`Lexer`] with the provided `text` and the default `State`.
+  #[inline]
   pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, State, ErrorType>
   where
     State: Default,
@@ -126,6 +136,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
     self.build_with(State::default(), text)
   }
 
+  #[inline]
   fn map_actions<OldKind, NewKind>(
     actions: impl Into<OneOrMore<Action<OldKind, State, ErrorType>>>,
     f: impl Fn(Action<OldKind, State, ErrorType>) -> Action<NewKind, State, ErrorType>,

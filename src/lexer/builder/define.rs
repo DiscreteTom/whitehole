@@ -24,6 +24,7 @@ impl<Kind, State: 'static, ErrorType: 'static> LexerBuilder<Kind, State, ErrorTy
   /// builder.define(A, [word("A"), word("AA")]);
   /// # }
   /// ```
+  #[inline]
   pub fn define<ViaKind>(
     self,
     kind: ViaKind,
@@ -51,6 +52,7 @@ impl<Kind, State: 'static, ErrorType: 'static> LexerBuilder<Kind, State, ErrorTy
   /// builder.define_with(A, [word("A"), word("B")], |a| a.error(123));
   /// # }
   /// ```
+  #[inline]
   pub fn define_with<ViaKind>(
     self,
     kind: ViaKind,

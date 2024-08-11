@@ -24,6 +24,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// builder.ignore([word("A").bind(A), word("B").bind(B)]);
   /// # }
   /// ```
+  #[inline]
   pub fn ignore(self, actions: impl Into<OneOrMore<Action<Kind, State, ErrorType>>>) -> Self {
     self.append(Self::map_actions(actions, |a| a.mute()))
   }
@@ -44,6 +45,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// builder.ignore_with([word("A").bind(A), word("B").bind(B)], |a| a.reject());
   /// # }
   /// ```
+  #[inline]
   pub fn ignore_with(
     self,
     actions: impl Into<OneOrMore<Action<Kind, State, ErrorType>>>,
@@ -71,6 +73,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// builder.ignore_default([whitespaces(), word("_")]);
   /// # }
   /// ```
+  #[inline]
   pub fn ignore_default(
     self,
     actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
@@ -99,6 +102,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// builder.ignore_default_with([word("A"), word("B")], |a| a.reject());
   /// # }
   /// ```
+  #[inline]
   pub fn ignore_default_with(
     self,
     actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
