@@ -116,7 +116,7 @@ pub struct StatelessReLexable<State> {
   ///
   /// This will always be [`None`] when peeking
   /// because the original state is not mutated.
-  pub state_bk: Option<State>, // users can always mutate the action state directly so it is ok to expose it
+  pub state: Option<State>, // users can always mutate the action state directly so it is ok to expose it
   /// If [`Some`], it means the lex is re-lexable.
   pub ctx: Option<ReLexContext>, // ReLexContext's fields are private so its ok to expose it
 }
@@ -125,7 +125,7 @@ impl<State> Default for StatelessReLexable<State> {
   #[inline]
   fn default() -> Self {
     Self {
-      state_bk: None,
+      state: None,
       ctx: None,
     }
   }
@@ -137,7 +137,7 @@ pub struct ReLexable<'text, State> {
   /// The backup-ed lexer state before it is mutated.
   /// If [`None`], it means the current lex digest 0 bytes.
   /// This is private to prevent caller from mutating the lexer state directly.
-  state_bk: Option<Instant<'text>>,
+  instant: Option<Instant<'text>>,
   // TODO: add a ref of the lexer as a guard to prevent caller from mutating the lexer
   // before applying this re-lexable?
 }
@@ -155,11 +155,8 @@ impl<'text, State: Clone> ReLexable<'text, State> {
       (
         Lexer::from_re_lexable(
           lexer.stateless().clone(),
-          self
-            .stateless
-            .state_bk
-            .unwrap_or_else(|| lexer.state.clone()),
-          self.state_bk.unwrap_or_else(|| lexer.instant().clone()),
+          self.stateless.state.unwrap_or_else(|| lexer.state.clone()),
+          self.instant.unwrap_or_else(|| lexer.instant().clone()),
         ),
         ctx,
       )
@@ -168,14 +165,14 @@ impl<'text, State: Clone> ReLexable<'text, State> {
 }
 
 pub struct ReLexableBuilder<State> {
-  /// See [`StatelessReLexable::state_bk`].
-  state_bk: Option<State>,
+  /// See [`StatelessReLexable::state`].
+  state: Option<State>,
 }
 
 impl<State> Default for ReLexableBuilder<State> {
   #[inline]
   fn default() -> Self {
-    Self { state_bk: None }
+    Self { state: None }
   }
 }
 
@@ -188,13 +185,10 @@ impl<'text, Kind, State: Clone, ErrorType> ReLexableFactory<'text, Kind, State, 
   fn backup_state(&mut self, state: &State) {
     // this should only be called once to prevent duplicated clone of the action state,
     // so the action state backup must be none
-    debug_assert!(
-      self.state_bk.is_none(),
-      "action state backup is already set"
-    );
+    debug_assert!(self.state.is_none(), "action state backup is already set");
 
     // backup the action state before the first mutation during one lexing loop
-    self.state_bk = Some(state.clone());
+    self.state = Some(state.clone());
   }
 
   fn into_stateless_re_lexable(
@@ -204,7 +198,7 @@ impl<'text, Kind, State: Clone, ErrorType> ReLexableFactory<'text, Kind, State, 
     action_index: usize,
   ) -> Self::StatelessReLexableType {
     Self::StatelessReLexableType {
-      state_bk: self.state_bk,
+      state: self.state,
       ctx: if action_index < actions_len - 1 {
         // current action is not the last one
         // so the lex is re-lex-able
@@ -227,7 +221,7 @@ impl<'text, Kind, State: Clone, ErrorType> ReLexableFactory<'text, Kind, State, 
   ) -> Self::ReLexableType {
     Self::ReLexableType {
       stateless: stateless_re_lexable,
-      state_bk: (digested != 0).then(|| lexer.instant().clone()),
+      instant: (digested != 0).then(|| lexer.instant().clone()),
     }
   }
 }
@@ -265,7 +259,7 @@ mod tests {
     assert_eq!(
       builder,
       StatelessReLexable {
-        state_bk: None,
+        state: None,
         ctx: None
       }
     );
@@ -275,10 +269,10 @@ mod tests {
   fn test_re_lexable() {
     let re_lexable = ReLexable {
       stateless: StatelessReLexable {
-        state_bk: Some(1),
+        state: Some(1),
         ctx: Some(ReLexContext { start: 1, skip: 1 }),
       },
-      state_bk: {
+      instant: {
         let mut s = Instant::new("123");
         s.digest(1);
         s
@@ -303,7 +297,7 @@ mod tests {
     assert_eq!(
       stateless_re_lexable,
       StatelessReLexable {
-        state_bk: Some(0),
+        state: Some(0),
         ctx: None
       }
     );
@@ -313,7 +307,7 @@ mod tests {
       re_lexable,
       ReLexable {
         stateless: stateless_re_lexable.clone(),
-        state_bk: None
+        instant: None
       }
     );
     let re_lexable = ReLexableBuilder::build_re_lexable(stateless_re_lexable.clone(), 1, &lexer);
@@ -321,7 +315,7 @@ mod tests {
       re_lexable,
       ReLexable {
         stateless: stateless_re_lexable,
-        state_bk: Some(lexer.instant().clone())
+        instant: Some(lexer.instant().clone())
       }
     );
 
@@ -333,7 +327,7 @@ mod tests {
     assert_eq!(
       stateless_re_lexable,
       StatelessReLexable {
-        state_bk: Some(0),
+        state: Some(0),
         ctx: Some(ReLexContext { start: 0, skip: 1 })
       }
     );
@@ -344,7 +338,7 @@ mod tests {
       re_lexable,
       ReLexable {
         stateless: stateless_re_lexable.clone(),
-        state_bk: None
+        instant: None
       }
     );
     let re_lexable = ReLexableBuilder::build_re_lexable(stateless_re_lexable.clone(), 1, &lexer);
@@ -352,7 +346,7 @@ mod tests {
       re_lexable,
       ReLexable {
         stateless: stateless_re_lexable,
-        state_bk: Some(lexer.instant().clone())
+        instant: Some(lexer.instant().clone())
       }
     );
   }
