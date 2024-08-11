@@ -2,7 +2,7 @@ use super::LexerBuilder;
 use crate::{
   lexer::{
     action::Action,
-    token::{DefaultTokenKindIdBinding, MockTokenKind},
+    token::{DefaultTokenKindId, MockTokenKind},
   },
   utils::OneOrMore,
 };
@@ -26,7 +26,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// ```
   pub fn ignore(self, actions: impl Into<OneOrMore<Action<Kind, State, ErrorType>>>) -> Self
   where
-    Kind: 'static,
+    Kind: 'static, // TODO: remove bound
     State: 'static,
     ErrorType: 'static,
   {
@@ -87,7 +87,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
     actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
   ) -> Self
   where
-    Kind: DefaultTokenKindIdBinding<Kind> + 'static,
+    Kind: DefaultTokenKindId<Kind> + Default + 'static,
     State: 'static,
     ErrorType: 'static,
   {
@@ -116,7 +116,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
     decorator: F,
   ) -> Self
   where
-    Kind: DefaultTokenKindIdBinding<Kind> + 'static,
+    Kind: DefaultTokenKindId<Kind> + Default + 'static,
     State: 'static,
     ErrorType: 'static,
     F: Fn(

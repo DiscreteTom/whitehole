@@ -49,7 +49,7 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// ```
 /// the macro will also generate:
 /// ```no_run
-/// impl DefaultTokenKindIdBinding<MyKind> for MyKind { ... }
+/// impl DefaultTokenKindId<MyKind> for MyKind { ... }
 /// ```
 /// # Limitations
 /// Generics are not supported yet.
@@ -210,7 +210,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
       .any(|attr| attr.path.is_ident("default"))
     {
       gen.push(quote! {
-        impl #crate_name::lexer::token::DefaultTokenKindIdBinding<#enum_name> for #enum_name {
+        impl #crate_name::lexer::token::DefaultTokenKindId<#enum_name> for #enum_name {
           #[inline]
           fn default_kind_id() -> #crate_name::lexer::token::TokenKindId<#enum_name> {
             <#variant_name as #crate_name::lexer::token::SubTokenKind>::kind_id()

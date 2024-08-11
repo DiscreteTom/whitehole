@@ -2,7 +2,7 @@ use super::LexerBuilder;
 use crate::{
   lexer::{
     action::Action,
-    token::{DefaultTokenKindIdBinding, MockTokenKind},
+    token::{DefaultTokenKindId, MockTokenKind},
   },
   utils::OneOrMore,
 };
@@ -77,7 +77,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
     actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
   ) -> Self
   where
-    Kind: DefaultTokenKindIdBinding<Kind>,
+    Kind: DefaultTokenKindId<Kind> + Default,
     State: 'static,
     ErrorType: 'static,
   {
@@ -108,7 +108,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
     ) -> Action<MockTokenKind<()>, State, ErrorType>,
   ) -> Self
   where
-    Kind: DefaultTokenKindIdBinding<Kind>,
+    Kind: DefaultTokenKindId<Kind> + Default,
     State: 'static,
     ErrorType: 'static,
   {

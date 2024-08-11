@@ -1,4 +1,4 @@
-use super::{SubTokenKind, TokenKindId};
+use super::{DefaultTokenKindId, SubTokenKind, TokenKindId};
 
 /// Bind the token kind value with an [`TokenKindId`].
 ///
@@ -59,36 +59,7 @@ impl<Kind> TokenKindIdBinding<Kind> {
   }
 }
 
-/// Implement this trait for the token kind enum to provide the default token kind id binding.
-/// This can be auto implemented by the [`token_kind`](crate::lexer::token::token_kind) macro.
-/// # Examples
-/// ```
-/// use whitehole::lexer::token::{
-///   token_kind, TokenKindIdBinding, SubTokenKind, DefaultTokenKindIdBinding,
-/// };
-///
-/// #[token_kind]
-/// #[derive(Default, Debug, PartialEq, Eq)]
-/// enum MyKind {
-///   #[default]
-///   A
-/// }
-///
-/// # fn main() {
-/// assert_eq!(MyKind::default_kind_id(), A::kind_id());
-/// assert_eq!(MyKind::default(), MyKind::A);
-///
-/// // besides, `Default` will be implemented for `TokenKindIdBinding<MyKind>`
-/// assert_eq!(TokenKindIdBinding::<MyKind>::default().id(), A::kind_id());
-/// assert_eq!(TokenKindIdBinding::<MyKind>::default().take(), MyKind::A);
-/// # }
-/// ```
-// TODO: just use `Default` trait for `TokenKindId<Kind>`
-pub trait DefaultTokenKindIdBinding<Kind>: Default {
-  fn default_kind_id() -> TokenKindId<Kind>;
-}
-
-impl<Kind: DefaultTokenKindIdBinding<Kind>> Default for TokenKindIdBinding<Kind> {
+impl<Kind: DefaultTokenKindId<Kind> + Default> Default for TokenKindIdBinding<Kind> {
   #[inline]
   fn default() -> Self {
     Self {
@@ -120,9 +91,6 @@ mod tests {
 
   #[test]
   fn default_token_kind_id_binding() {
-    assert_eq!(MyKind::default_kind_id(), A::kind_id());
-    assert_eq!(MyKind::default(), MyKind::A);
-
     let binding = TokenKindIdBinding::<MyKind>::default();
     assert_eq!(binding.id(), MyKind::default_kind_id());
     assert_eq!(binding.take(), MyKind::default());

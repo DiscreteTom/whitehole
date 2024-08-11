@@ -101,6 +101,38 @@ impl<Kind> Hash for TokenKindId<Kind> {
   }
 }
 
+/// Implement this trait for the token kind enum to provide the default token kind id.
+/// This can be auto implemented by the [`token_kind`](crate::lexer::token::token_kind) macro.
+/// # Examples
+/// ```
+/// use whitehole::lexer::token::{
+///   token_kind, TokenKindIdBinding, SubTokenKind, DefaultTokenKindIdBinding,
+/// };
+///
+/// #[token_kind]
+/// #[derive(Default, Debug, PartialEq, Eq)]
+/// enum MyKind {
+///   #[default]
+///   A
+/// }
+///
+/// # fn main() {
+/// assert_eq!(MyKind::default_kind_id(), A::kind_id());
+/// assert_eq!(MyKind::default(), MyKind::A);
+/// # }
+/// ```
+/// # Design
+/// We can't replace this with [`Default`] because otherwise
+/// users have to `impl Default for TokenKindId<MyKind>` manually,
+/// but [`Default`] and [`TokenKindId`] are both foreign names for user's crate.
+///
+/// We can't just `impl<T> Default for TokenKindId<T>` either
+/// because the default token kind id's value is not always `0`.
+pub trait DefaultTokenKindId<Kind> {
+  // TODO: use type instead of generic parameter
+  fn default_kind_id() -> TokenKindId<Kind>;
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -109,9 +141,11 @@ mod tests {
   use whitehole_macros::_token_kind;
 
   #[_token_kind]
-  #[derive(Debug)]
+  #[derive(Debug, Default)]
   enum MyKind {
     A,
+    #[default]
+    B,
   }
 
   #[test]
@@ -160,5 +194,11 @@ mod tests {
       format!("{:?}", A::kind_id()),
       "TokenKindId<whitehole::lexer::token::token_kind_id::tests::MyKind>(0)"
     );
+  }
+
+  #[test]
+  fn default_token_kind_id() {
+    // default token kind id is not always 0
+    assert_eq!(MyKind::default_kind_id(), B::kind_id());
   }
 }

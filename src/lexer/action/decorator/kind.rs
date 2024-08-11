@@ -3,7 +3,7 @@ use crate::lexer::{
   action::{
     map_exec, map_exec_adapt_input, mut_input_to_ref, Action, ActionExec, ActionInput, ActionOutput,
   },
-  token::{DefaultTokenKindIdBinding, SubTokenKind, TokenKindIdBinding},
+  token::{DefaultTokenKindId, SubTokenKind, TokenKindIdBinding},
 };
 
 impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
@@ -73,7 +73,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// ```
   pub fn bind_default<NewKind>(self) -> Action<NewKind, State, ErrorType>
   where
-    NewKind: DefaultTokenKindIdBinding<NewKind>,
+    NewKind: DefaultTokenKindId<NewKind> + Default,
     Kind: 'static,
     State: 'static,
     ErrorType: 'static,
