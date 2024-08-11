@@ -52,8 +52,8 @@ pub trait ForkOutputFactory<'text, Kind, State, ErrorType> {
     action_index: usize,
   ) -> Self::StatelessForkOutputType;
 
-  /// This should be called before [`Lexer::state`] is mutated
-  /// to ensure the fork output has the state before the mutation.
+  /// This should be called before [`Lexer::instant`] is mutated
+  /// to ensure the fork output has the instant before the mutation.
   fn build_fork_output(
     stateless: Self::StatelessForkOutputType,
     digested: usize,
@@ -123,7 +123,7 @@ pub struct ForkOutput<'text, State> {
   /// during the lex.
   /// But since these fields might be [`None`], you should use this as soon as possible,
   /// before you further mutate the lexer.
-  /// If you want to store this for later use, you should use [`PartialSnapshot::into_snapshot`]
+  /// If you want to store this for later use, you should use [`PartialSnapshot::into_full`]
   /// to ensure the snapshot is complete.
   pub snapshot: PartialSnapshot<'text, State>,
   // TODO: add a ref of the lexer as a guard to prevent caller from mutating the lexer
