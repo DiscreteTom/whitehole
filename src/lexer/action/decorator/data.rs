@@ -4,7 +4,7 @@ use crate::lexer::{
   token::{MockTokenKind, SubTokenKind, TokenKindIdBinding},
 };
 
-impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
+impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, ErrorType> {
   /// Set the kind to [`MockTokenKind`] and store the data in [`MockTokenKind::data`].
   /// Return a new action.
   ///
@@ -26,12 +26,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
         >,
       ) -> T
       + 'static,
-  ) -> Action<MockTokenKind<T>, State, ErrorType>
-  where
-    Kind: 'static,
-    State: 'static,
-    ErrorType: 'static,
-  {
+  ) -> Action<MockTokenKind<T>, State, ErrorType> {
     macro_rules! impl_data {
       ($exec: ident, $mut_input_to_ref: ident) => {
         Box::new(move |input| {
@@ -65,7 +60,9 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   }
 }
 
-impl<Data, State, ErrorType> Action<MockTokenKind<Data>, State, ErrorType> {
+impl<Data: 'static, State: 'static, ErrorType: 'static>
+  Action<MockTokenKind<Data>, State, ErrorType>
+{
   /// Map the data of the kind to another data, stored in [`MockTokenKind::data`].
   /// Return a new action.
   /// # Examples
@@ -77,12 +74,7 @@ impl<Data, State, ErrorType> Action<MockTokenKind<Data>, State, ErrorType> {
   pub fn map<NewData>(
     self,
     transformer: impl Fn(Data) -> NewData + 'static,
-  ) -> Action<MockTokenKind<NewData>, State, ErrorType>
-  where
-    Data: 'static,
-    State: 'static,
-    ErrorType: 'static,
-  {
+  ) -> Action<MockTokenKind<NewData>, State, ErrorType> {
     self.data(move |ctx| transformer(ctx.output.binding.take().data))
   }
 }

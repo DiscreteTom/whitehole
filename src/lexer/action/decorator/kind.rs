@@ -6,7 +6,7 @@ use crate::lexer::{
   token::{DefaultTokenKindId, SubTokenKind, TokenKindIdBinding},
 };
 
-impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
+impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, ErrorType> {
   /// Set the binding for this action.
   /// Use this if your action can only yield a const token kind value.
   /// # Examples
@@ -29,9 +29,6 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   where
     ViaKind:
       SubTokenKind<TokenKind = NewKind> + Into<TokenKindIdBinding<NewKind>> + Clone + 'static,
-    Kind: 'static,
-    State: 'static,
-    ErrorType: 'static,
   {
     macro_rules! impl_bind {
       ($exec: ident) => {
@@ -74,9 +71,6 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   pub fn bind_default<NewKind>(self) -> Action<NewKind, State, ErrorType>
   where
     NewKind: DefaultTokenKindId<NewKind> + Default,
-    Kind: 'static,
-    State: 'static,
-    ErrorType: 'static,
   {
     macro_rules! impl_bind_default {
       ($exec: ident) => {
@@ -133,9 +127,6 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   ) -> Action<NewKind, State, ErrorType>
   where
     ViaKind: Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKind = NewKind>,
-    Kind: 'static,
-    State: 'static,
-    ErrorType: 'static,
   {
     macro_rules! impl_select {
       ($exec: ident, $mut_input_to_ref: ident) => {

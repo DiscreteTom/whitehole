@@ -25,93 +25,8 @@ macro_rules! map_exec_to_mut {
   };
 }
 
+// simple decorators that doesn't require generic bounds
 impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
-  /// Check the [`ActionInput`] before the action is executed.
-  /// Reject the action if the `condition` returns `true`.
-  ///
-  /// [`ActionInput::state`] is immutable in the `condition`.
-  /// # Examples
-  /// ```
-  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
-  /// # #[token_kind]
-  /// # #[derive(Clone)]
-  /// # enum MyKind { A }
-  /// # #[derive(Clone, Default)]
-  /// # struct MyState {
-  /// #   pub reject: bool,
-  /// # }
-  /// # fn main() {
-  /// # let mut builder = LexerBuilder::stateful::<MyState>();
-  /// builder.define_with(
-  ///   A,
-  ///   regex(r"^\s+"),
-  ///   |a| a.prevent(|input| input.state.reject)
-  /// );
-  /// # }
-  /// ```
-  pub fn prevent(mut self, condition: impl Fn(&ActionInput<&State>) -> bool + 'static) -> Self
-  where
-    Kind: 'static,
-    State: 'static,
-    ErrorType: 'static,
-  {
-    macro_rules! impl_prevent {
-      ($exec: ident, $mut_input_to_ref: ident) => {
-        Box::new(move |input| {
-          if condition(mut_input_to_ref!(input, $mut_input_to_ref)) {
-            None
-          } else {
-            $exec(input)
-          }
-        })
-      };
-    }
-
-    self.exec = map_exec_adapt_input!(self.exec, impl_prevent);
-    self
-  }
-
-  /// Modify `State` before the action is executed.
-  /// [`ActionInput::state`] is mutable in the `modifier`.
-  /// This will convert [`Self::exec`] to [`ActionExec::Mutable`].
-  /// # Examples
-  /// ```
-  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
-  /// # #[token_kind]
-  /// # #[derive(Clone)]
-  /// # enum MyKind { A }
-  /// # #[derive(Clone, Default)]
-  /// # struct MyState {
-  /// #   pub value: i32,
-  /// # }
-  /// # fn main() {
-  /// # let mut builder = LexerBuilder::stateful::<MyState>();
-  /// builder.define_with(
-  ///   A,
-  ///   regex(r"^\s+"),
-  ///   |a| a.prepare(|input| input.state.value += 1)
-  /// );
-  /// # }
-  /// ```
-  pub fn prepare(mut self, modifier: impl Fn(&mut ActionInput<&mut State>) + 'static) -> Self
-  where
-    Kind: 'static,
-    State: 'static,
-    ErrorType: 'static,
-  {
-    macro_rules! impl_prepare {
-      ($exec: ident, $mut_input_to_ref: ident) => {
-        Box::new(move |input| {
-          modifier(input);
-          $exec(mut_input_to_ref!(input, $mut_input_to_ref))
-        })
-      };
-    }
-
-    self.exec = map_exec_to_mut!(self.exec, impl_prepare);
-    self
-  }
-
   /// Set [`Self::muted`] to `true`.
   /// # Examples
   /// ```
@@ -153,6 +68,86 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
     self.muted = false;
     self
   }
+}
+
+// these decorators will use `Box` to construct new action exec
+// so `Kind/State/ErrorType` must be `'static`
+impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, ErrorType> {
+  /// Check the [`ActionInput`] before the action is executed.
+  /// Reject the action if the `condition` returns `true`.
+  ///
+  /// [`ActionInput::state`] is immutable in the `condition`.
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
+  /// # #[token_kind]
+  /// # #[derive(Clone)]
+  /// # enum MyKind { A }
+  /// # #[derive(Clone, Default)]
+  /// # struct MyState {
+  /// #   pub reject: bool,
+  /// # }
+  /// # fn main() {
+  /// # let mut builder = LexerBuilder::stateful::<MyState>();
+  /// builder.define_with(
+  ///   A,
+  ///   regex(r"^\s+"),
+  ///   |a| a.prevent(|input| input.state.reject)
+  /// );
+  /// # }
+  /// ```
+  pub fn prevent(mut self, condition: impl Fn(&ActionInput<&State>) -> bool + 'static) -> Self {
+    macro_rules! impl_prevent {
+      ($exec: ident, $mut_input_to_ref: ident) => {
+        Box::new(move |input| {
+          if condition(mut_input_to_ref!(input, $mut_input_to_ref)) {
+            None
+          } else {
+            $exec(input)
+          }
+        })
+      };
+    }
+
+    self.exec = map_exec_adapt_input!(self.exec, impl_prevent);
+    self
+  }
+
+  /// Modify `State` before the action is executed.
+  /// [`ActionInput::state`] is mutable in the `modifier`.
+  /// This will convert [`Self::exec`] to [`ActionExec::Mutable`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
+  /// # #[token_kind]
+  /// # #[derive(Clone)]
+  /// # enum MyKind { A }
+  /// # #[derive(Clone, Default)]
+  /// # struct MyState {
+  /// #   pub value: i32,
+  /// # }
+  /// # fn main() {
+  /// # let mut builder = LexerBuilder::stateful::<MyState>();
+  /// builder.define_with(
+  ///   A,
+  ///   regex(r"^\s+"),
+  ///   |a| a.prepare(|input| input.state.value += 1)
+  /// );
+  /// # }
+  /// ```
+  pub fn prepare(mut self, modifier: impl Fn(&mut ActionInput<&mut State>) + 'static) -> Self {
+    macro_rules! impl_prepare {
+      ($exec: ident, $mut_input_to_ref: ident) => {
+        Box::new(move |input| {
+          modifier(input);
+          $exec(mut_input_to_ref!(input, $mut_input_to_ref))
+        })
+      };
+    }
+
+    self.exec = map_exec_to_mut!(self.exec, impl_prepare);
+    self
+  }
 
   /// Set [`ActionOutput::error`] by the `factory` if the action is accepted.
   /// You can consume the old [`ActionOutput::error`] in the `factory`
@@ -189,12 +184,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
         >,
       ) -> Option<NewError>
       + 'static,
-  ) -> Action<Kind, State, NewError>
-  where
-    Kind: 'static,
-    State: 'static,
-    ErrorType: 'static,
-  {
+  ) -> Action<Kind, State, NewError> {
     macro_rules! impl_check {
       ($exec: ident, $mut_input_to_ref: ident) => {
         Box::new(move |input| {
@@ -241,9 +231,6 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// ```
   pub fn error<NewError>(self, error: NewError) -> Action<Kind, State, NewError>
   where
-    Kind: 'static,
-    State: 'static,
-    ErrorType: 'static,
     NewError: Clone + 'static,
   {
     // to optimize the runtime performance,
@@ -298,12 +285,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
         >,
       ) -> bool
       + 'static,
-  ) -> Self
-  where
-    Kind: 'static,
-    State: 'static,
-    ErrorType: 'static,
-  {
+  ) -> Self {
     macro_rules! impl_reject_if {
       ($exec: ident, $mut_input_to_ref: ident) => {
         Box::new(move |input| {
@@ -341,12 +323,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
   /// );
   /// # }
   /// ```
-  pub fn reject(mut self) -> Self
-  where
-    Kind: 'static,
-    State: 'static,
-    ErrorType: 'static,
-  {
+  pub fn reject(mut self) -> Self {
     // to optimize the runtime performance,
     // don't just use `reject_if(|_| true)`
     // to prevent constructing the context
@@ -396,12 +373,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
           &ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
         >,
       ) + 'static,
-  ) -> Self
-  where
-    Kind: 'static,
-    State: 'static,
-    ErrorType: 'static,
-  {
+  ) -> Self {
     macro_rules! impl_callback {
       ($exec: ident, $mut_input_to_ref: ident) => {
         Box::new(move |input| {
