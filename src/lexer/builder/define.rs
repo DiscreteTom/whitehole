@@ -7,7 +7,7 @@ use crate::{
   utils::OneOrMore,
 };
 
-impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
+impl<Kind, State: 'static, ErrorType: 'static> LexerBuilder<Kind, State, ErrorType> {
   /// Define actions and bind them to the provided kind.
   /// # Examples
   /// ```
@@ -31,8 +31,6 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   ) -> Self
   where
     ViaKind: SubTokenKind<TokenKind = Kind> + Into<TokenKindIdBinding<Kind>> + Clone + 'static,
-    State: 'static,
-    ErrorType: 'static,
   {
     self.append(Self::map_actions(actions, |a| a.bind(kind.clone())))
   }
@@ -63,8 +61,6 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   ) -> Self
   where
     ViaKind: SubTokenKind<TokenKind = Kind> + Into<TokenKindIdBinding<Kind>> + Clone + 'static,
-    State: 'static,
-    ErrorType: 'static,
   {
     self.define(kind, Self::map_actions(actions, decorator))
   }
