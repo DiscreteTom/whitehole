@@ -326,3 +326,36 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     }
   }
 }
+
+/// A helper trait to convert common types into a lexer.
+pub trait IntoLexer<Kind, State, ErrorType>: Sized {
+  /// Consume self, build a [`Lexer`] with the provided `state` and `text`.
+  fn into_lexer_with(self, state: State, text: &str) -> Lexer<Kind, State, ErrorType>;
+
+  /// Consume self, build a [`Lexer`] with the provided `text` and the default `State`.
+  #[inline]
+  fn into_lexer(self, text: &str) -> Lexer<Kind, State, ErrorType>
+  where
+    State: Default,
+  {
+    self.into_lexer_with(State::default(), text)
+  }
+}
+
+impl<Kind, State, ErrorType> IntoLexer<Kind, State, ErrorType>
+  for Rc<StatelessLexer<Kind, State, ErrorType>>
+{
+  #[inline]
+  fn into_lexer_with(self, state: State, text: &str) -> Lexer<Kind, State, ErrorType> {
+    Lexer::new(self, state, text)
+  }
+}
+
+impl<Kind, State, ErrorType> IntoLexer<Kind, State, ErrorType>
+  for StatelessLexer<Kind, State, ErrorType>
+{
+  #[inline]
+  fn into_lexer_with(self, state: State, text: &str) -> Lexer<Kind, State, ErrorType> {
+    Rc::new(self).into_lexer_with(state, text)
+  }
+}

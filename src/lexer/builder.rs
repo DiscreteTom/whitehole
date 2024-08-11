@@ -2,9 +2,8 @@ mod append;
 mod define;
 mod ignore;
 
-use super::{action::Action, stateless::StatelessLexer, Lexer};
+use super::{action::Action, lexer::IntoLexer, stateless::StatelessLexer, Lexer};
 use crate::utils::OneOrMore;
-use std::rc::Rc;
 
 /// To create this, see [`Self::new`], [`Self::stateful`],
 /// [`Self::with_error`] and [`Self::stateful_with_error`].
@@ -117,23 +116,23 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
     StatelessLexer::new(self.actions)
   }
 
-  /// Consume self, build a [`Lexer`] with the provided `state` and `text`.
+  /// Alias of [`Self::into_lexer_with`].
   #[inline]
   pub fn build_with<'text>(
     self,
     state: State,
     text: &'text str,
   ) -> Lexer<'text, Kind, State, ErrorType> {
-    Lexer::new(Rc::new(self.build_stateless()), state, text)
+    self.into_lexer_with(state, text)
   }
 
-  /// Consume self, build a [`Lexer`] with the provided `text` and the default `State`.
+  /// Alias of [`Self::into_lexer`].
   #[inline]
   pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, State, ErrorType>
   where
     State: Default,
   {
-    self.build_with(State::default(), text)
+    self.into_lexer(text)
   }
 
   #[inline]
@@ -142,5 +141,14 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
     f: impl Fn(Action<OldKind, State, ErrorType>) -> Action<NewKind, State, ErrorType>,
   ) -> Vec<Action<NewKind, State, ErrorType>> {
     actions.into().0.into_iter().map(f).collect()
+  }
+}
+
+impl<Kind, State, ErrorType> IntoLexer<Kind, State, ErrorType>
+  for LexerBuilder<Kind, State, ErrorType>
+{
+  #[inline]
+  fn into_lexer_with(self, state: State, text: &str) -> Lexer<Kind, State, ErrorType> {
+    self.build_stateless().into_lexer_with(state, text)
   }
 }
