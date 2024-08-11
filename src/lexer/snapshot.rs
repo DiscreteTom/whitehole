@@ -23,7 +23,7 @@ impl<'text, State> Snapshot<'text, State> {
 
 /// Partial [`Snapshot`].
 ///
-/// This can be turned into a full [`Snapshot`] by [`Self::into_snapshot`].
+/// This can be turned into a full [`Snapshot`] by [`Self::into_full`].
 ///
 /// You can construct this manually because
 /// you shouldn't modify [`Self::instant`] directly.
@@ -53,7 +53,7 @@ impl<'text, State> PartialSnapshot<'text, State> {
   /// Consume self, build a full [`Snapshot`].
   /// This will clone [`Lexer::state`] and/or [`Lexer::instant`] if they are [`None`].
   #[inline]
-  pub fn into_snapshot<Kind, ErrorType>(
+  pub fn into_full<Kind, ErrorType>(
     self,
     lexer: &Lexer<'text, Kind, State, ErrorType>,
   ) -> Snapshot<'text, State>
