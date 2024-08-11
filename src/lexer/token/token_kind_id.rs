@@ -106,7 +106,7 @@ impl<Kind> Hash for TokenKindId<Kind> {
 /// # Examples
 /// ```
 /// use whitehole::lexer::token::{
-///   token_kind, TokenKindIdBinding, SubTokenKind, DefaultTokenKindIdBinding,
+///   token_kind, TokenKindIdBinding, SubTokenKind, DefaultTokenKindId,
 /// };
 ///
 /// #[token_kind]
