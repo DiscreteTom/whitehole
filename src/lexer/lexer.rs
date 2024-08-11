@@ -82,7 +82,11 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   /// Clone self with a new state.
   #[inline]
   pub fn clone_with(&self, state: State) -> Self {
-    Self::new(self.stateless.clone(), state, self.instant.text())
+    Self {
+      stateless: self.stateless.clone(),
+      instant: self.instant.clone(),
+      state,
+    }
   }
 
   /// Consume self, return a new lexer with the same actions and a new text.
