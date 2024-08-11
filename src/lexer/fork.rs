@@ -1,4 +1,4 @@
-use super::{instant::Instant, re_lex::ReLexContext, Lexer};
+use super::{re_lex::ReLexContext, snapshot::PartialSnapshot, Lexer};
 
 /// See [`LexOptions::fork`](crate::lexer::options::LexOptions::fork).
 ///
@@ -111,35 +111,23 @@ impl<State> Default for StatelessForkOutput<State> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ForkOutput<'text, State> {
-  pub stateless: StatelessForkOutput<State>,
-  /// The backup-ed lexer state before it is mutated.
-  /// If [`None`], it means the current lex digest 0 bytes.
-  /// This is private to prevent caller from mutating the lexer state directly.
-  instant: Option<Instant<'text>>,
-  // TODO: add a ref of the lexer as a guard to prevent caller from mutating the lexer
-  // before applying this re-lexable?
-}
-
-impl<'text, State: Clone> ForkOutput<'text, State> {
-  /// Consume self, try to build a lexer with the state before previous lexing.
-  /// Return [`None`] if the lex is not re-lexable.
+  /// If [`Some`], it means the lex is re-lexable.
+  pub ctx: Option<ReLexContext>, // ReLexContext's fields are private so its ok to expose it
+  /// The snapshot of the lexer before the lex.
+  /// - If [`PartialSnapshot::state`] is [`None`], it means no mutation happened.
+  /// - If [`PartialSnapshot::instant`] is [`None`], it means the lex digested 0 bytes.
   ///
-  /// See [`ReLexContext`] for more details.
-  pub fn into_lexer<Kind, ErrorType>(
-    self,
-    lexer: &Lexer<'text, Kind, State, ErrorType>,
-  ) -> Option<(Lexer<'text, Kind, State, ErrorType>, ReLexContext)> {
-    self.stateless.ctx.map(|ctx| {
-      (
-        Lexer::from_re_lexable(
-          lexer.stateless().clone(),
-          self.stateless.state.unwrap_or_else(|| lexer.state.clone()),
-          self.instant.unwrap_or_else(|| lexer.instant().clone()),
-        ),
-        ctx,
-      )
-    })
-  }
+  /// You can use [`Lexer::restore`] or [`Lexer::clone_with_snapshot`] to apply this snapshot.
+  /// # Caveats
+  /// To prevent unnecessary allocations, we only clone the state and the instant if they are mutated
+  /// during the lex.
+  /// But since these fields might be [`None`], you should use this as soon as possible,
+  /// before you further mutate the lexer.
+  /// If you want to store this for later use, you should use [`PartialSnapshot::into_snapshot`]
+  /// to ensure the snapshot is complete.
+  pub snapshot: PartialSnapshot<'text, State>,
+  // TODO: add a ref of the lexer as a guard to prevent caller from mutating the lexer
+  // before applying the partial snapshot?
 }
 
 pub struct ForkOutputBuilder<State> {
@@ -160,6 +148,7 @@ impl<'text, Kind, State: Clone, ErrorType> ForkOutputFactory<'text, Kind, State,
   type StatelessForkOutputType = StatelessForkOutput<State>;
   type ForkOutputType = ForkOutput<'text, State>;
 
+  #[inline]
   fn backup_state(&mut self, state: &State) {
     // this should only be called once to prevent duplicated clone of the state,
     // so the state backup must be none
@@ -198,8 +187,11 @@ impl<'text, Kind, State: Clone, ErrorType> ForkOutputFactory<'text, Kind, State,
     lexer: &Lexer<'text, Kind, State, ErrorType>,
   ) -> Self::ForkOutputType {
     Self::ForkOutputType {
-      stateless: stateless_re_lexable,
-      instant: (digested != 0).then(|| lexer.instant().clone()),
+      ctx: stateless_re_lexable.ctx,
+      snapshot: PartialSnapshot {
+        state: stateless_re_lexable.state,
+        instant: (digested != 0).then(|| lexer.instant().clone()),
+      },
     }
   }
 }

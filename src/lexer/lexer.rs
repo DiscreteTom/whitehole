@@ -357,18 +357,6 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
       },
     )
   }
-
-  pub(crate) fn from_re_lexable(
-    stateless: Rc<StatelessLexer<Kind, State, ErrorType>>,
-    state: State,
-    instant: Instant<'text>,
-  ) -> Self {
-    Lexer {
-      stateless,
-      instant,
-      state,
-    }
-  }
 }
 
 /// A helper trait to convert common types into a lexer.

@@ -23,9 +23,11 @@
 /// let output = lexer.lex_with(|o| o.fork());
 /// assert_eq!(&text[output.token.unwrap().range], ">>");
 ///
-/// // since we enabled `fork`, the lexer will return a re-lexable.
-/// // we can try to transform the re-lexable into a lexer and a re-lex context
-/// let (mut lexer, context) = output.fork.into_lexer(&lexer).unwrap();
+/// // since we enabled `fork`, the lexer might return a re-lex context.
+/// // if the lex is re-lexable, the context will be Some.
+/// let context = output.fork.ctx.unwrap();
+/// // we can restore the lexer to the state before the last lex
+/// lexer.restore(output.fork.snapshot);
 ///
 /// // lex with the re-lex context to retry the lex,
 /// // but skip `exact(">>")` when lexing ">>"
