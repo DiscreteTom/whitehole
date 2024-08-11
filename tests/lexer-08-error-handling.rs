@@ -75,7 +75,7 @@ fn panic_mode() {
   assert_eq!(output.digested, 0);
 
   // enter panic mode, digest 1 char directly and try again
-  // this will reset the lexer's action state, unless you provide a new action state
+  // this will reset the lexer's state, unless you provide a new state
   lexer.digest(1);
   // now we can peek
   let (output, _) = lexer.peek();
@@ -83,5 +83,5 @@ fn panic_mode() {
   assert_eq!(output.digested, 2);
 
   // further more, if you know what you are doing
-  // you can take more chars and manually set the action state
+  // you can take more chars and manually set the state
 }

@@ -16,7 +16,7 @@ enum MyKind {
 
 #[test]
 fn stateless_lexer() {
-  // `Lexer` is stateful, it keep tracks of the lexer state (digested, text, etc) and the action state.
+  // `Lexer` is stateful, it keep tracks of the lexer state (digested, text, etc) and the state.
   // we can use `builder.build_stateless` to get a stateless lexer
   LexerBuilder::<MyKind>::default().build_stateless();
 
@@ -30,11 +30,11 @@ fn stateless_lexer() {
   let stateless = lexer.stateless().clone();
 
   // stateless lexer is useful if you only want to
-  // lex the head of an input text, with the default action state
+  // lex the head of an input text, with the default state
   let output = stateless.lex("aaa");
   assert!(matches!(output.0.token.unwrap().binding.kind(), MyKind::A));
 
-  // you can also manually provide the action state and other details
+  // you can also manually provide the state and other details
   let mut state = ();
   let output = stateless.lex_with("aaa", |o| o.start(1).state(&mut state));
   assert!(matches!(output.token.unwrap().binding.kind(), MyKind::A));

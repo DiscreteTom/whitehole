@@ -9,7 +9,7 @@ enum MyKind {
   A,
 }
 
-// define your custom action state
+// define your custom state
 #[derive(Default, Clone)]
 struct MyState {
   reject: bool,
@@ -20,7 +20,7 @@ fn stateful_lexer() {
   let mut lexer = LexerBuilder::stateful::<MyState>()
     .define_with(A, regex("^123"), |a| {
       a
-        // access lexer's action state by `input.state`.
+        // access lexer's state by `input.state`.
         // in this example we reject the action if the state's `reject` field is `true`.
         .prevent(|input| input.state.reject)
         // if the action is accepted, set the state's `reject` field to `true`.
@@ -35,7 +35,7 @@ fn stateful_lexer() {
   // the first lex should be accepted
   assert_ne!(lexer.lex().digested, 0);
 
-  // and the action state will be changed
+  // and the state will be changed
   assert_eq!(lexer.state.reject, true);
 
   // then the second lex should be rejected

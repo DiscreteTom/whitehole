@@ -39,7 +39,7 @@ fn lex_with_head() {
     .define_with(
       True,
       regex(r"^true"),
-      // mutate the action state when the action is evaluated
+      // mutate the state when the action is evaluated
       // no matter if it's accepted or rejected
       |a| a.prepare(|input| input.state.evaluated = true),
     )
@@ -56,7 +56,7 @@ fn lex_with_head() {
   // now with head matcher
   let mut lexer = LexerBuilder::stateful::<MyState>()
     .define_with(True, regex(r"^true"), |a| {
-      // mutate the action state when the action is evaluated
+      // mutate the state when the action is evaluated
       // no matter if it's accepted or rejected
       a.prepare(|input| input.state.evaluated = true)
         // only evaluate this action if the first character is `t`
@@ -84,7 +84,7 @@ fn lex_with_head() {
       True,
       // no head matcher for this action
       regex(r"^true"),
-      // mutate the action state when the action is evaluated
+      // mutate the state when the action is evaluated
       // no matter if it's accepted or rejected
       |a| a.prepare(|input| input.state.evaluated = true),
     )

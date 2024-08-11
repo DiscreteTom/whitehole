@@ -32,7 +32,7 @@ fn action_orders() {
   assert!(matches!(token.binding.kind(), MyKind::A));
 }
 
-// define action state which can be shared between actions
+// define state which can be shared between actions
 #[derive(Default, Clone)]
 struct MyState {
   reject: bool,
@@ -69,7 +69,7 @@ fn action_decorators() {
     .define_with(
       D,
       // use `then` to run a callback if this action is accepted
-      // this is usually used to modify lexer's action state
+      // this is usually used to modify lexer's state
       regex(r"^d"),
       |a| {
         a.callback(|ctx| {

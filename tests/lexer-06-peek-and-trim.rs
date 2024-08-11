@@ -37,7 +37,7 @@ fn peek_lexer() {
 
   // however, peek-then-lex is not recommended
   // because actions will be evaluated twice.
-  // peek will return the mutated action state and how many chars are digested
+  // peek will return the mutated state and how many chars are digested
   // we can directly apply them to the lexer if the peek result is what we want
   let mut lexer = lexer.reload(" a");
   assert_eq!(lexer.instant().digested(), 0);
@@ -45,7 +45,7 @@ fn peek_lexer() {
   lexer.digest_with(output.digested, new_state);
   assert_eq!(lexer.instant().digested(), 2);
 
-  // as you can see, peek will clone the action state
+  // as you can see, peek will clone the state
   // so there is still some overhead
 
   // another thing to mention is that
