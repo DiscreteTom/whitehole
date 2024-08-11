@@ -128,9 +128,8 @@ impl<Kind> Hash for TokenKindId<Kind> {
 ///
 /// We can't just `impl<T> Default for TokenKindId<T>` either
 /// because the default token kind id's value is not always `0`.
-pub trait DefaultTokenKindId<Kind> {
-  // TODO: use type instead of generic parameter
-  fn default_kind_id() -> TokenKindId<Kind>;
+pub trait DefaultTokenKindId: Sized {
+  fn default_kind_id() -> TokenKindId<Self>;
 }
 
 #[cfg(test)]

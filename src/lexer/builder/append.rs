@@ -77,7 +77,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
     actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
   ) -> Self
   where
-    Kind: DefaultTokenKindId<Kind> + Default,
+    Kind: DefaultTokenKindId + Default,
     State: 'static,
     ErrorType: 'static,
   {
@@ -108,7 +108,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
     ) -> Action<MockTokenKind<()>, State, ErrorType>,
   ) -> Self
   where
-    Kind: DefaultTokenKindId<Kind> + Default,
+    Kind: DefaultTokenKindId + Default,
     State: 'static,
     ErrorType: 'static,
   {

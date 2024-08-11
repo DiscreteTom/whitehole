@@ -59,7 +59,7 @@ impl<Kind> TokenKindIdBinding<Kind> {
   }
 }
 
-impl<Kind: DefaultTokenKindId<Kind> + Default> Default for TokenKindIdBinding<Kind> {
+impl<Kind: DefaultTokenKindId + Default> Default for TokenKindIdBinding<Kind> {
   #[inline]
   fn default() -> Self {
     Self {

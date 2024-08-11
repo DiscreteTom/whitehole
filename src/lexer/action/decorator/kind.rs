@@ -70,7 +70,7 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
   /// ```
   pub fn bind_default<NewKind>(self) -> Action<NewKind, State, ErrorType>
   where
-    NewKind: DefaultTokenKindId<NewKind> + Default,
+    NewKind: DefaultTokenKindId + Default,
   {
     macro_rules! impl_bind_default {
       ($exec: ident) => {
