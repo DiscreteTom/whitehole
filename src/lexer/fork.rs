@@ -204,21 +204,21 @@ mod tests {
   use crate::lexer::LexerBuilder;
 
   #[test]
-  fn mock_re_lexable_factory() {
+  fn mock_fork_output_factory() {
     let mut factory = ();
     let state = 0;
     ForkOutputFactory::<(), _, ()>::backup_state(&mut factory, &state);
-    let stateless_re_lexable =
+    let stateless_fork_output =
       ForkOutputFactory::<(), i32, ()>::into_stateless_fork_output(factory, 0, 2, 1);
-    assert_eq!(stateless_re_lexable, ());
+    assert_eq!(stateless_fork_output, ());
     let lexer = LexerBuilder::<()>::new().build("");
-    let re_lexable =
-      <() as ForkOutputFactory<_, _, _>>::build_fork_output(stateless_re_lexable, 0, &lexer);
-    assert_eq!(re_lexable, ());
+    let fork_output =
+      <() as ForkOutputFactory<_, _, _>>::build_fork_output(stateless_fork_output, 0, &lexer);
+    assert_eq!(fork_output, ());
   }
 
   #[test]
-  fn test_stateless_re_lexable() {
+  fn test_stateless_fork_output() {
     let builder = StatelessForkOutput::<()>::default();
     assert_eq!(
       builder,
@@ -230,66 +230,52 @@ mod tests {
   }
 
   #[test]
-  fn test_re_lexable() {
-    let re_lexable = ForkOutput {
-      stateless: StatelessForkOutput {
-        state: Some(1),
-        ctx: Some(ReLexContext { start: 1, skip: 1 }),
-      },
-      instant: {
-        let mut s = Instant::new("123");
-        s.digest(1);
-        s
-      }
-      .into(),
-    };
-    let (lexer, ctx) = re_lexable
-      .into_lexer(&LexerBuilder::<()>::stateful().build(""))
-      .unwrap();
-    assert_eq!(ctx, ReLexContext { start: 1, skip: 1 });
-    assert_eq!(lexer.instant().digested(), 1);
-    assert_eq!(lexer.state, 1);
-  }
-
-  #[test]
-  fn re_lexable_builder() {
+  fn fork_output_builder() {
     let mut builder = ForkOutputBuilder::default();
     let state = 0;
     ForkOutputFactory::<(), _, ()>::backup_state(&mut builder, &state);
-    let stateless_re_lexable =
+    let stateless_fork_output =
       ForkOutputFactory::<(), i32, ()>::into_stateless_fork_output(builder, 0, 2, 1);
     assert_eq!(
-      stateless_re_lexable,
+      stateless_fork_output,
       StatelessForkOutput {
         state: Some(0),
         ctx: None
       }
     );
     let lexer = LexerBuilder::<(), _>::stateful().build("");
-    let re_lexable = ForkOutputBuilder::build_fork_output(stateless_re_lexable.clone(), 0, &lexer);
+    let fork_output =
+      ForkOutputBuilder::build_fork_output(stateless_fork_output.clone(), 0, &lexer);
     assert_eq!(
-      re_lexable,
+      fork_output,
       ForkOutput {
-        stateless: stateless_re_lexable.clone(),
-        instant: None
+        ctx: None,
+        snapshot: PartialSnapshot {
+          state: Some(0),
+          instant: None
+        }
       }
     );
-    let re_lexable = ForkOutputBuilder::build_fork_output(stateless_re_lexable.clone(), 1, &lexer);
+    let fork_output =
+      ForkOutputBuilder::build_fork_output(stateless_fork_output.clone(), 1, &lexer);
     assert_eq!(
-      re_lexable,
+      fork_output,
       ForkOutput {
-        stateless: stateless_re_lexable,
-        instant: Some(lexer.instant().clone())
+        ctx: None,
+        snapshot: PartialSnapshot {
+          state: Some(0),
+          instant: Some(lexer.instant().clone())
+        }
       }
     );
 
     let mut builder = ForkOutputBuilder::default();
     let state = 0;
     ForkOutputFactory::<(), _, ()>::backup_state(&mut builder, &state);
-    let stateless_re_lexable =
+    let stateless_fork_output =
       ForkOutputFactory::<(), i32, ()>::into_stateless_fork_output(builder, 0, 2, 0);
     assert_eq!(
-      stateless_re_lexable,
+      stateless_fork_output,
       StatelessForkOutput {
         state: Some(0),
         ctx: Some(ReLexContext { start: 0, skip: 1 })
@@ -297,27 +283,35 @@ mod tests {
     );
     let mut lexer = LexerBuilder::<(), _>::stateful().build("");
     lexer.state = 1;
-    let re_lexable = ForkOutputBuilder::build_fork_output(stateless_re_lexable.clone(), 0, &lexer);
+    let fork_output =
+      ForkOutputBuilder::build_fork_output(stateless_fork_output.clone(), 0, &lexer);
     assert_eq!(
-      re_lexable,
+      fork_output,
       ForkOutput {
-        stateless: stateless_re_lexable.clone(),
-        instant: None
+        ctx: Some(ReLexContext { start: 0, skip: 1 }),
+        snapshot: PartialSnapshot {
+          state: Some(0),
+          instant: None
+        }
       }
     );
-    let re_lexable = ForkOutputBuilder::build_fork_output(stateless_re_lexable.clone(), 1, &lexer);
+    let fork_output =
+      ForkOutputBuilder::build_fork_output(stateless_fork_output.clone(), 1, &lexer);
     assert_eq!(
-      re_lexable,
+      fork_output,
       ForkOutput {
-        stateless: stateless_re_lexable,
-        instant: Some(lexer.instant().clone())
+        ctx: Some(ReLexContext { start: 0, skip: 1 }),
+        snapshot: PartialSnapshot {
+          state: Some(0),
+          instant: Some(lexer.instant().clone())
+        }
       }
     );
   }
 
   #[test]
   #[should_panic]
-  fn re_lexable_builder_multi_call_to_mutate_state() {
+  fn fork_output_builder_multi_call_to_mutate_state() {
     let mut builder = ForkOutputBuilder::default();
     let state = 0;
     ForkOutputFactory::<(), _, ()>::backup_state(&mut builder, &state);
