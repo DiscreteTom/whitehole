@@ -1,5 +1,5 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LexOutput<TokenType, ErrAcc, ReLexableType> {
+pub struct LexOutput<TokenType, ErrAcc, ForkOutputType> {
   /// If all actions are rejected, this will be [`None`].
   pub token: Option<TokenType>,
   /// How many bytes are digested in this lexing.
@@ -19,7 +19,7 @@ pub struct LexOutput<TokenType, ErrAcc, ReLexableType> {
   /// to continue a lex.
   ///
   /// See [`ReLexContext`](crate::lexer::re_lex::ReLexContext) for more information.
-  pub re_lexable: ReLexableType,
+  pub fork: ForkOutputType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

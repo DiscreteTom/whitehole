@@ -1,9 +1,8 @@
 use super::{
-  fork::LexOptionsFork,
+  fork::{ForkOutputFactory, LexOptionsFork},
   instant::Instant,
   options::{LexOptions, TrimOptions},
   output::{LexOutput, TrimOutput},
-  re_lex::ReLexableFactory,
   stateless::{StatelessLexOptions, StatelessLexer, StatelessTrimOptions},
   token::{Range, Token},
 };
@@ -134,7 +133,14 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     options_builder: impl FnOnce(
       LexOptions<'expect_literal, Kind, (), ()>,
     ) -> LexOptions<'expect_literal, Kind, ErrAcc, Fork>,
-  ) -> (LexOutput<Token<Kind>, ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::ReLexableType>, Option<State>)
+  ) -> (
+    LexOutput<
+      Token<Kind>,
+      ErrAcc,
+      <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
+    >,
+    Option<State>,
+  )
   where
     State: Clone,
     ErrAcc: Accumulator<(ErrorType, Range)>,
@@ -146,10 +152,21 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   /// [`Self::state`] and [`Self::state`].
   ///
   /// [`Self::state`] will be cloned and returned.
-  pub fn peek_with_options<'expect_literal, ErrAcc, Fork: LexOptionsFork<'text, Kind, State, ErrorType>>(
+  pub fn peek_with_options<
+    'expect_literal,
+    ErrAcc,
+    Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
+  >(
     &self,
     options: impl Into<LexOptions<'expect_literal, Kind, ErrAcc, Fork>>,
-  ) -> (LexOutput<Token<Kind>, ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::ReLexableType>, Option<State>)
+  ) -> (
+    LexOutput<
+      Token<Kind>,
+      ErrAcc,
+      <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
+    >,
+    Option<State>,
+  )
   where
     State: Clone,
     ErrAcc: Accumulator<(ErrorType, Range)>,
@@ -167,11 +184,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     let output = LexOutput {
       digested: output.digested,
       token: output.token,
-      re_lexable: Fork::ReLexableFactoryType::build_re_lexable(
-        output.re_lexable,
-        output.digested,
-        self,
-      ),
+      fork: Fork::OutputFactoryType::build_fork_output(output.fork, output.digested, self),
       errors: output.errors,
     };
 
@@ -198,7 +211,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   ) -> LexOutput<
     Token<Kind>,
     ErrAcc,
-    <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::ReLexableType,
+    <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
   >
   where
     ErrAcc: Accumulator<(ErrorType, Range)> + Default,
@@ -218,7 +231,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   ) -> LexOutput<
     Token<Kind>,
     ErrAcc,
-    <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::ReLexableType,
+    <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
   >
   where
     ErrAcc: Accumulator<(ErrorType, Range)> + Default,
@@ -234,11 +247,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     let output = LexOutput {
       digested: output.digested,
       token: output.token,
-      re_lexable: Fork::ReLexableFactoryType::build_re_lexable(
-        output.re_lexable,
-        output.digested,
-        &self,
-      ),
+      fork: Fork::OutputFactoryType::build_fork_output(output.fork, output.digested, &self),
       errors: output.errors,
     };
 
@@ -300,7 +309,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     instant: &Instant<'text>,
     state: &mut State,
     options: LexOptions<'expect_literal, Kind, ErrAcc,Fork>,
-  ) -> LexOutput<Token<Kind>,ErrAcc, <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::StatelessReLexableType>
+  ) -> LexOutput<Token<Kind>,ErrAcc, <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::StatelessForkOutputType>
   where
     ErrAcc:Accumulator<(ErrorType, Range)>,
   {

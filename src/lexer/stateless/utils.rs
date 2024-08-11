@@ -2,7 +2,8 @@ use super::head_map::HeadMapActions;
 use crate::{
   lexer::{
     action::{ActionExecBase, ActionInput, ActionOutput},
-    re_lex::{ReLexContext, ReLexableFactory},
+    fork::ForkOutputFactory,
+    re_lex::ReLexContext,
     token::{Range, Token, TokenKindIdBinding},
   },
   utils::Accumulator,
@@ -57,12 +58,12 @@ pub(super) fn traverse_actions_mut<
   Kind,
   State,
   ErrorType,
-  ReLexableFactoryType: ReLexableFactory<'text, Kind, State, ErrorType>,
+  ForkOutputFactoryType: ForkOutputFactory<'text, Kind, State, ErrorType>,
 >(
   mut input: ActionInput<&mut State>,
   actions: &HeadMapActions<Kind, State, ErrorType>,
   re_lex: &ReLexContext,
-  re_lexable_factory: &mut ReLexableFactoryType,
+  fork_output_factory: &mut ForkOutputFactoryType,
   peek: bool,
 ) -> Option<(
   ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
@@ -82,7 +83,7 @@ pub(super) fn traverse_actions_mut<
   // because the original state is not mutated,
   // so only backup when not peeking
   if !peek {
-    re_lexable_factory.backup_state(input.state);
+    fork_output_factory.backup_state(input.state);
   }
 
   traverse_rest(&mut input, actions, re_lex)

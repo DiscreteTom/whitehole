@@ -8,9 +8,9 @@ use super::{
 use crate::{
   lexer::{
     action::{ActionInput, ActionOutput},
-    fork::LexOptionsFork,
+    fork::{ForkOutputFactory, LexOptionsFork},
     output::LexOutput,
-    re_lex::{ReLexContext, ReLexableFactory},
+    re_lex::ReLexContext,
     stateless::utils::{traverse_actions, traverse_actions_mut, update_state},
     token::{Range, Token, TokenKindId, TokenKindIdBinding},
   },
@@ -71,7 +71,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   ) -> LexOutput<
     Token<Kind>,
     ErrAcc,
-    <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::StatelessReLexableType
+    <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::StatelessForkOutputType
   >
   where
     State: 'state,
@@ -103,7 +103,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   ) -> LexOutput<
     Token<Kind>,
     ErrAcc,
-    <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::StatelessReLexableType
+    <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::StatelessForkOutputType
   >
   {
     if let Some(literal) = options.base.expectation.literal {
@@ -120,7 +120,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
         options.state,
         literal,
         &options.base.re_lex,
-        Fork::ReLexableFactoryType::default(),
+        Fork::OutputFactoryType::default(),
         false,
       )
     } else {
@@ -135,7 +135,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
         text,
         options.state,
         &options.base.re_lex,
-        Fork::ReLexableFactoryType::default(),
+        Fork::OutputFactoryType::default(),
         false,
       )
     }
@@ -177,7 +177,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     LexOutput<
       Token<Kind>,
       ErrAcc,
-      <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::StatelessReLexableType
+      <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::StatelessForkOutputType
     >,
     Option<State>
   )
@@ -213,7 +213,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     LexOutput<
       Token<Kind>,
       ErrAcc,
-      <Fork::ReLexableFactoryType as ReLexableFactory<'text, Kind, State, ErrorType>>::StatelessReLexableType
+      <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::StatelessForkOutputType
     >,
     Option<State>
   )
@@ -222,7 +222,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   {
     let mut digested = 0;
     let mut errors = options.base.errors_to;
-    let re_lexable_factory = Fork::ReLexableFactoryType::default();
+    let re_lexable_factory = Fork::OutputFactoryType::default();
     let mut new_state = None;
 
     if let Some(literal) = options.base.expectation.literal {
@@ -365,7 +365,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   fn lex_mut_with_literal<
     'text,
     ErrAcc: Accumulator<(ErrorType, Range)>,
-    ReLexableFactoryType: ReLexableFactory<'text, Kind, State, ErrorType>,
+    ForkOutputFactoryType: ForkOutputFactory<'text, Kind, State, ErrorType>,
   >(
     &self,
     literal_map: &LiteralMap<Kind, State, ErrorType>,
@@ -377,21 +377,21 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     state: &mut State,
     literal: &str,
     re_lex: &ReLexContext,
-    mut re_lexable_factory: ReLexableFactoryType,
+    mut fork_output_factory: ForkOutputFactoryType,
     peek: bool,
-  ) -> LexOutput<Token<Kind>, ErrAcc, ReLexableFactoryType::StatelessReLexableType> {
+  ) -> LexOutput<Token<Kind>, ErrAcc, ForkOutputFactoryType::StatelessForkOutputType> {
     loop {
       let input_start = start + digested;
       let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state));
       let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
-      let res = traverse_actions_mut(input, actions, re_lex, &mut re_lexable_factory, peek);
+      let res = traverse_actions_mut(input, actions, re_lex, &mut fork_output_factory, peek);
       let (output, action_index, muted) = break_loop_on_none!(res);
 
       if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors) {
         return done_with_token(
           digested,
           token,
-          re_lexable_factory,
+          fork_output_factory,
           input_start,
           actions.len(),
           action_index,
@@ -409,7 +409,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   fn lex_mut_without_literal<
     'text,
     ErrAcc: Accumulator<(ErrorType, Range)>,
-    ReLexableFactoryType: ReLexableFactory<'text, Kind, State, ErrorType>,
+    ForkOutputFactoryType: ForkOutputFactory<'text, Kind, State, ErrorType>,
   >(
     &self,
     head_map: &HeadMap<Kind, State, ErrorType>,
@@ -419,21 +419,21 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     text: &'text str,
     state: &mut State,
     re_lex: &ReLexContext,
-    mut re_lexable_factory: ReLexableFactoryType,
+    mut fork_output_factory: ForkOutputFactoryType,
     peek: bool,
-  ) -> LexOutput<Token<Kind>, ErrAcc, ReLexableFactoryType::StatelessReLexableType> {
+  ) -> LexOutput<Token<Kind>, ErrAcc, ForkOutputFactoryType::StatelessForkOutputType> {
     loop {
       let input_start = start + digested;
       let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state));
       let actions = head_map.get(input.next());
-      let res = traverse_actions_mut(input, actions, re_lex, &mut re_lexable_factory, peek);
+      let res = traverse_actions_mut(input, actions, re_lex, &mut fork_output_factory, peek);
       let (output, action_index, muted) = break_loop_on_none!(res);
 
       if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors) {
         return done_with_token(
           digested,
           token,
-          re_lexable_factory,
+          fork_output_factory,
           input_start,
           actions.len(),
           action_index,
@@ -455,24 +455,20 @@ fn done_with_token<
   State,
   ErrorType,
   ErrAcc,
-  ReLexableFactoryType: ReLexableFactory<'text, Kind, State, ErrorType>,
+  ForkOutputFactoryType: ForkOutputFactory<'text, Kind, State, ErrorType>,
 >(
   digested: usize,
   token: Token<Kind>,
-  re_lexable_factory: ReLexableFactoryType,
+  fork_output_factory: ForkOutputFactoryType,
   input_start: usize,
   actions_len: usize,
   action_index: usize,
   errors: ErrAcc,
-) -> LexOutput<Token<Kind>, ErrAcc, ReLexableFactoryType::StatelessReLexableType> {
+) -> LexOutput<Token<Kind>, ErrAcc, ForkOutputFactoryType::StatelessForkOutputType> {
   LexOutput {
     digested,
     token: Some(token),
-    re_lexable: re_lexable_factory.into_stateless_re_lexable(
-      input_start,
-      actions_len,
-      action_index,
-    ),
+    fork: fork_output_factory.into_stateless_fork_output(input_start, actions_len, action_index),
     errors,
   }
 }
@@ -509,14 +505,14 @@ fn process_output<Kind, ErrorType, ErrAcc: Accumulator<(ErrorType, Range)>>(
 }
 
 #[inline]
-fn done_without_token<TokenType, ErrAcc, ReLexableType: Default>(
+fn done_without_token<TokenType, ErrAcc, ForkOutputType: Default>(
   digested: usize,
   errors: ErrAcc,
-) -> LexOutput<TokenType, ErrAcc, ReLexableType> {
+) -> LexOutput<TokenType, ErrAcc, ForkOutputType> {
   LexOutput {
     digested,
     token: None,
-    re_lexable: ReLexableType::default(),
+    fork: ForkOutputType::default(),
     errors,
   }
 }
