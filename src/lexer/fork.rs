@@ -55,7 +55,7 @@ pub trait ForkOutputFactory<'text, Kind, State, ErrorType> {
   /// This should be called before [`Lexer::state`] is mutated
   /// to ensure the fork output has the state before the mutation.
   fn build_fork_output(
-    stateless_re_lexable: Self::StatelessForkOutputType,
+    stateless: Self::StatelessForkOutputType,
     digested: usize,
     lexer: &Lexer<'text, Kind, State, ErrorType>,
   ) -> Self::ForkOutputType;
@@ -80,7 +80,7 @@ impl<'text, Kind, State, ErrorType> ForkOutputFactory<'text, Kind, State, ErrorT
 
   #[inline]
   fn build_fork_output(
-    _stateless_re_lexable: Self::StatelessForkOutputType,
+    _stateless: Self::StatelessForkOutputType,
     _digested: usize,
     _lexer: &Lexer<'text, Kind, State, ErrorType>,
   ) -> Self::ForkOutputType {
@@ -158,6 +158,7 @@ impl<'text, Kind, State: Clone, ErrorType> ForkOutputFactory<'text, Kind, State,
     self.state = Some(state.clone());
   }
 
+  #[inline]
   fn into_stateless_fork_output(
     self,
     start: usize,
@@ -181,15 +182,16 @@ impl<'text, Kind, State: Clone, ErrorType> ForkOutputFactory<'text, Kind, State,
     }
   }
 
+  #[inline]
   fn build_fork_output(
-    stateless_re_lexable: Self::StatelessForkOutputType,
+    stateless: Self::StatelessForkOutputType,
     digested: usize,
     lexer: &Lexer<'text, Kind, State, ErrorType>,
   ) -> Self::ForkOutputType {
     Self::ForkOutputType {
-      ctx: stateless_re_lexable.ctx,
+      ctx: stateless.ctx,
       snapshot: PartialSnapshot {
-        state: stateless_re_lexable.state,
+        state: stateless.state,
         instant: (digested != 0).then(|| lexer.instant().clone()),
       },
     }
