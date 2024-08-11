@@ -35,7 +35,7 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// impl Into<TokenKindId<MyKind>> for C { ... }
 /// impl SubTokenKind for C { ... }
 /// ```
-/// Besides, if the token kind derive `Default`:
+/// Besides, if the token kind derive [`Default`]:
 /// ```
 /// use whitehole_macros::token_kind;
 /// #[token_kind]
