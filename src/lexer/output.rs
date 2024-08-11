@@ -11,7 +11,7 @@ pub struct LexOutput<TokenType, ErrAcc, ForkOutputType> {
   /// If there are any errors during the lexing, they will be accumulated here.
   /// See [`LexOptions::errors_to`](super::options::LexOptions::errors_to) for more information.
   pub errors: ErrAcc,
-  /// If re-lex is disabled, this will always be `()`.
+  /// If fork is disabled, this will always be `()`.
   ///
   /// This *might* be [`Some`] only if the [`LexOptions::fork`](super::options::LexOptions::fork)
   /// is enabled.

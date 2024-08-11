@@ -11,9 +11,9 @@ use crate::{
 };
 
 impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
-  /// Lex with muted actions, the default action state and the default options.
+  /// Lex with muted actions, the default state and the default options.
   ///
-  /// This function will create a new action state and return it.
+  /// This function will create a new state and return it.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
@@ -65,10 +65,10 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     text: &'text str,
     options: StatelessTrimOptions<&'state mut State, ErrAcc>,
   ) -> TrimOutput<ErrAcc> {
-    // there is no expectation when trimming, so the re-lex is meaningless.
-    // use `()` as a mock re-lexable factory
+    // there is no expectation when trimming, so the fork is meaningless.
+    // use `()` as a mock fork output factory
     let mut re_lexable_factory = ();
-    // since the mock re-lexable factory will never yield a re-lex context,
+    // since the mock fork output factory will never yield a fork output,
     // use the default re-lex context as a placeholder
     let re_lex = ReLexContext::default();
 

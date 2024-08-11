@@ -23,7 +23,7 @@ impl<StateRef, Base> StatelessOptions<StateRef, Base> {
     self
   }
 
-  /// Set the action state.
+  /// Set the state.
   /// This is usually `&mut State`.
   /// For peek, this is `&State`.
   #[inline]
@@ -41,7 +41,7 @@ pub type StatelessLexOptions<'expect_literal, Kind, StateRef, ErrAcc, Fork> =
   StatelessOptions<StateRef, LexOptions<'expect_literal, Kind, ErrAcc, Fork>>;
 
 impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), ()> {
-  /// Create a new instance with `0` as the start index and no action state.
+  /// Create a new instance with `0` as the start index and no state.
   #[inline]
   pub const fn new() -> Self {
     Self {
@@ -118,7 +118,7 @@ impl<'expect_literal, Kind, StateRef, ErrAcc, Fork>
 pub type StatelessTrimOptions<StateRef, ErrAcc> = StatelessOptions<StateRef, TrimOptions<ErrAcc>>;
 
 impl StatelessTrimOptions<(), ()> {
-  /// Create a new instance with `0` as the start index and no action state.
+  /// Create a new instance with `0` as the start index and no state.
   #[inline]
   pub const fn new() -> Self {
     Self {

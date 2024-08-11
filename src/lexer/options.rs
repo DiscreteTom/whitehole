@@ -133,7 +133,7 @@ impl<'expect_literal, Kind, ErrAcc, Fork> LexOptions<'expect_literal, Kind, ErrA
   }
 
   /// If set, and the lexing is re-lexable (the accepted action is not the last candidate action),
-  /// the [`LexOutput::re_lex`](crate::lexer::output::LexOutput::re_lexable) will be `Some`.
+  /// the [`LexOutput::fork`](crate::lexer::output::LexOutput::fork) will be `Some`.
   ///
   /// See [`ReLexContext`] for more details.
   #[inline]

@@ -34,15 +34,15 @@ impl<'text, Kind, State: Clone, ErrorType> LexOptionsFork<'text, Kind, State, Er
 }
 
 /// These types already implement the [`ForkOutputFactory`] trait:
-/// - `()` - no re-lexable will be created.
-/// - [`ForkOutputBuilder`] - create re-lexable structs if possible.
+/// - `()` - no fork output will be created.
+/// - [`ForkOutputBuilder`] - create fork output structs if possible.
 pub trait ForkOutputFactory<'text, Kind, State, ErrorType> {
   /// This should extends [`Default`] so when no token is emitted,
   /// the output can be created with a default value.
   type StatelessForkOutputType: Default;
   type ForkOutputType;
 
-  /// This will be called only once before the first mutation of the action state.
+  /// This will be called only once before the first mutation of the state.
   fn backup_state(&mut self, state: &State);
 
   fn into_stateless_fork_output(
@@ -53,7 +53,7 @@ pub trait ForkOutputFactory<'text, Kind, State, ErrorType> {
   ) -> Self::StatelessForkOutputType;
 
   /// This should be called before [`Lexer::state`] is mutated
-  /// to ensure the re-lexable has the state before the mutation.
+  /// to ensure the fork output has the state before the mutation.
   fn build_fork_output(
     stateless_re_lexable: Self::StatelessForkOutputType,
     digested: usize,
@@ -61,7 +61,7 @@ pub trait ForkOutputFactory<'text, Kind, State, ErrorType> {
   ) -> Self::ForkOutputType;
 }
 
-// mock re-lexable factory
+// mock fork output factory
 impl<'text, Kind, State, ErrorType> ForkOutputFactory<'text, Kind, State, ErrorType> for () {
   type StatelessForkOutputType = ();
   type ForkOutputType = ();
@@ -89,12 +89,12 @@ impl<'text, Kind, State, ErrorType> ForkOutputFactory<'text, Kind, State, ErrorT
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StatelessForkOutput<State> {
-  /// The action state before any mutation in the current lex.
+  /// The state before any mutation in the current lex.
   /// If [`None`], it means no mutation happened.
   ///
   /// This will always be [`None`] when peeking
   /// because the original state is not mutated.
-  pub state: Option<State>, // users can always mutate the action state directly so it is ok to expose it
+  pub state: Option<State>, // users can always mutate the state directly so it is ok to expose it
   /// If [`Some`], it means the lex is re-lexable.
   pub ctx: Option<ReLexContext>, // ReLexContext's fields are private so its ok to expose it
 }
@@ -161,11 +161,11 @@ impl<'text, Kind, State: Clone, ErrorType> ForkOutputFactory<'text, Kind, State,
   type ForkOutputType = ForkOutput<'text, State>;
 
   fn backup_state(&mut self, state: &State) {
-    // this should only be called once to prevent duplicated clone of the action state,
-    // so the action state backup must be none
-    debug_assert!(self.state.is_none(), "action state backup is already set");
+    // this should only be called once to prevent duplicated clone of the state,
+    // so the state backup must be none
+    debug_assert!(self.state.is_none(), "state backup is already set");
 
-    // backup the action state before the first mutation during one lexing loop
+    // backup the state before the first mutation during one lexing loop
     self.state = Some(state.clone());
   }
 

@@ -21,9 +21,9 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   const INVALID_EXPECTED_KIND: &'static str = "no action is defined for the expected kind";
   const INVALID_EXPECTED_LITERAL: &'static str = "no action is defined for the expected literal";
 
-  /// Lex from the start of the input text with the default action state and options.
+  /// Lex from the start of the input text with the default state and options.
   ///
-  /// This function will create a new action state and return it.
+  /// This function will create a new state and return it.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
@@ -253,7 +253,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
           );
         }
 
-        // if action state is mutated, continue with mutable lexing
+        // if state is mutated, continue with mutable lexing
         if let Some(mut state) = new_state {
           return (
             self.lex_mut_with_literal(
@@ -303,7 +303,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
           );
         }
 
-        // if action state is mutated, continue with mutable lexing
+        // if state is mutated, continue with mutable lexing
         if let Some(mut state) = new_state {
           return (
             self.lex_mut_without_literal(

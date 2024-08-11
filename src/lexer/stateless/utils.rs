@@ -12,7 +12,7 @@ use crate::{
 /// Traverse all actions with an immutable input to find the first accepted action.
 /// Return the output, the index of the accepted action and whether the action is muted.
 /// If no accepted action, return [`None`].
-/// If the action state is mutated during the traversal, return the new action state.
+/// If the state is mutated during the traversal, return the new state.
 pub(super) fn traverse_actions<'text, Kind, State, ErrorType>(
   input: ActionInput<&State>,
   actions: &HeadMapActions<Kind, State, ErrorType>,
@@ -40,9 +40,9 @@ where
   // clone the state to construct mutable action input
   let mut state = input.state.clone();
 
-  // we don't need re-lexable factory to clone the state here
+  // we don't need fork output factory to clone the state here
   // because the `State` is already `Clone`
-  // and it will always be cloned here
+  // and it's been already cloned in `state`
 
   (
     traverse_rest(&mut input.reload(&mut state), actions, re_lex),
@@ -79,7 +79,7 @@ pub(super) fn traverse_actions_mut<
     return None;
   }
 
-  // when peek, we don't need to backup the action state
+  // when peek, we don't need to backup the state
   // because the original state is not mutated,
   // so only backup when not peeking
   if !peek {

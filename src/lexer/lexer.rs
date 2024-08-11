@@ -9,9 +9,9 @@ use super::{
 use crate::utils::Accumulator;
 use std::rc::Rc;
 
-/// This is the "stateful" lexer, it manages 2 states: the [`LexerState`] and the `State`.
-/// The [`LexerState`] is responsible to manage the text and the position of the lexer.
-/// The `State` is provided by you can be accessed by immutable [`Action`](crate::lexer::action::Action)s
+/// This is the "stateful" lexer, it manages the [`Instant`] and the `State`.
+/// The [`Instant`] is responsible to manage the text and the progress of the lexer.
+/// The `State` is provided by you and can be accessed by [`Action`](crate::lexer::action::Action)s
 /// to realize stateful lexing.
 ///
 /// If you want a stateless experience, you can use [`StatelessLexer`].
@@ -51,7 +51,7 @@ impl<'text, Kind, State: Clone, ErrorType> Clone for Lexer<'text, Kind, State, E
 }
 
 impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
-  /// Create a new lexer with the given stateless lexer, action state and text.
+  /// Create a new lexer with the given stateless lexer, state and text.
   /// For most cases you should use [`LexerBuilder`](crate::lexer::LexerBuilder)
   /// to create a lexer.
   #[inline]
@@ -79,7 +79,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     &self.instant
   }
 
-  /// Clone self with a new action state.
+  /// Clone self with a new state.
   #[inline]
   pub fn clone_with(&self, state: State) -> Self {
     Self::new(self.stateless.clone(), state, self.instant.text())
@@ -99,7 +99,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     }
   }
 
-  /// Consume self, return a new lexer with the same actions, a new text and the given action state.
+  /// Consume self, return a new lexer with the same actions, a new text and the given state.
   /// [`Self::state`] will be reset to default.
   #[inline]
   pub fn reload_with<'new_text>(

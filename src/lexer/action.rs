@@ -108,12 +108,12 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
   }
 }
 
-/// [`Action::exec`] that won't mutate the action state.
+/// [`Action::exec`] that won't mutate the state.
 pub type ImmutableActionExec<Kind, State, ErrorType> = Box<
   dyn Fn(&ActionInput<&State>) -> Option<ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>>,
 >;
 
-/// [`Action::exec`] that will mutate the action state.
+/// [`Action::exec`] that will mutate the state.
 pub type MutableActionExec<Kind, State, ErrorType> = Box<
   dyn Fn(
     &mut ActionInput<&mut State>,

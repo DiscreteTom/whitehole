@@ -1,6 +1,6 @@
 //! ## Design
 //!
-//! [`StatelessLexer`] doesn't hold lexer states or action states.
+//! [`StatelessLexer`] doesn't hold text, progress or states.
 //! It is just a collection of immutable [`Action`]s, and it is immutable itself.
 //! You can wrap it
 //! with [`Rc`] to make it clone-able and re-use it across multiple lexers.
@@ -8,7 +8,7 @@
 //! The [`StatelessLexer`] implements all the core lexing features,
 //! including expectation, fork, etc. If you
 //! want a stateless experience, you can use the [`StatelessLexer`] directly,
-//! but you may need to manage the lexer states and action states manually.
+//! but you may need to manage the text, progress and states manually.
 //!
 //! ## The Lexing Process
 //!
