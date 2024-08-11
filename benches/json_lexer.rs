@@ -6,9 +6,10 @@ use whitehole::lexer::{
     json::{boundaries, number_with, string_with},
     whitespaces, FloatLiteralData, HexEscapeError, PartialStringBody,
   },
+  lexer::IntoLexer,
   stateless::StatelessLexer,
   token::token_kind,
-  Lexer, LexerBuilder,
+  LexerBuilder,
 };
 
 #[token_kind]
@@ -45,8 +46,8 @@ fn build_lexer() -> StatelessLexer<JsonTokenKind> {
     .build_stateless()
 }
 
-fn lex_json(stateless: Rc<StatelessLexer<JsonTokenKind>>, s: &str) {
-  let mut lexer = Lexer::new(stateless, (), s);
+fn lex_json(stateless: &Rc<StatelessLexer<JsonTokenKind>>, s: &str) {
+  let mut lexer = stateless.clone().into_lexer(s);
 
   loop {
     let output = lexer.lex();
@@ -76,9 +77,9 @@ fn bench_lex(c: &mut Criterion) {
 
   c.bench_function("json_lexer: lex 3 json", |b| {
     b.iter(|| {
-      lex_json(stateless.clone(), &citm_catalog);
-      lex_json(stateless.clone(), &twitter);
-      lex_json(stateless.clone(), &canada);
+      lex_json(&stateless, &citm_catalog);
+      lex_json(&stateless, &twitter);
+      lex_json(&stateless, &canada);
     })
   });
 }
