@@ -1,9 +1,11 @@
 mod debug;
 mod mock;
+mod setter;
 mod string;
 mod vec;
 
 pub use debug::*;
+pub use setter::*;
 
 /// Accumulate values.
 ///
