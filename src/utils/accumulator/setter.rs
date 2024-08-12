@@ -1,60 +1,61 @@
 use super::DebugAccumulator;
-use std::marker::PhantomData;
 
-pub struct AccumulatorSetter<C, R, V, Acc> {
+pub struct AccumulatorSetter<C> {
   closure: C,
-  /// Record the return type of the closure.
-  _r: PhantomData<R>,
-  /// Record the value type to accumulate.
-  _e: PhantomData<V>,
-  /// Record the accumulator type.
-  _a: PhantomData<Acc>,
 }
 
-impl<C, R, E, Acc> AccumulatorSetter<C, R, E, Acc> {
+impl<C> AccumulatorSetter<C> {
   #[inline]
   pub const fn new(closure: C) -> Self {
-    Self {
-      closure,
-      _r: PhantomData,
-      _e: PhantomData,
-      _a: PhantomData,
-    }
+    Self { closure }
   }
 }
 
-impl<C: FnOnce(Acc) -> R, R, E, Acc> AccumulatorSetter<C, R, E, Acc> {
+impl<C> AccumulatorSetter<C> {
   /// Set a custom accumulator.
   #[inline]
-  pub fn to(self, acc: Acc) -> R {
+  pub fn to<R, Acc>(self, acc: Acc) -> R
+  where
+    C: FnOnce(Acc) -> R,
+  {
     (self.closure)(acc)
   }
-}
 
-impl<C: FnOnce(()) -> R, R, E> AccumulatorSetter<C, R, E, ()> {
-  /// Set the accumulator to `()`
-  /// (discard all values).
+  /// Set the accumulator to `()` (discard all values).
   #[inline]
-  pub fn to_mock(self) -> R {
+  pub fn to_mock<R>(self) -> R
+  where
+    C: FnOnce(()) -> R,
+  {
     self.to(())
   }
-}
 
-impl<C: FnOnce(Vec<E>) -> R, R, E> AccumulatorSetter<C, R, E, Vec<E>> {
-  /// Accumulate values into a vector.
-  /// # Caveats
-  /// Creating a new vector each time may be inefficient.
-  /// This should only be used for testing or debugging.
+  /// Accumulate values into a new vector.
+  /// # Performance
+  /// Creating a new vector each time is inefficient.
+  /// This should only be used for fast prototyping.
+  ///
+  /// In production if you want to collect values into a vector,
+  /// to prevent unnecessary allocations and de-allocations,
+  /// you should provision the capacity using [`Vec::with_capacity`]
+  /// and re-use the vector as much as possible with [`Self::to`].
   #[inline]
-  pub fn to_vec(self) -> R {
+  pub fn to_vec<V, R>(self) -> R
+  where
+    C: FnOnce(Vec<V>) -> R,
+  {
     self.to(vec![])
   }
-}
 
-impl<C: FnOnce(DebugAccumulator) -> R, R, E> AccumulatorSetter<C, R, E, DebugAccumulator> {
-  /// Print the values to stdout.
+  /// Print the values to stdout (for debugging).
+  ///
+  /// Since [`DebugAccumulator`] is not a container,
+  /// no allocation will be made.
   #[inline]
-  pub fn to_stdout(self) -> R {
+  pub fn to_stdout<R>(self) -> R
+  where
+    C: FnOnce(DebugAccumulator) -> R,
+  {
     self.to(DebugAccumulator)
   }
 }
