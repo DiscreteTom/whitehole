@@ -1,4 +1,5 @@
 use super::{expectation::Expectation, fork::ForkEnabled, re_lex::ReLexContext};
+use crate::utils::AccumulatorSetter;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LexOptions<'expect_literal, Kind, ErrAcc, Fork> {
@@ -108,39 +109,33 @@ impl<'expect_literal, Kind, ErrAcc, Fork> LexOptions<'expect_literal, Kind, ErrA
   }
 
   /// Set the error accumulator.
-  /// By default there is no error accumulator and the errors are discarded.
+  /// By default error accumulator is `()` and all errors will be discarded.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::options::LexOptions;
-  /// # let options: LexOptions<(), Vec<()>, _> =
-  /// LexOptions::new().errors_to(vec![]);
-  /// // shorthand
-  /// # let options: LexOptions<(), Vec<()>, _> =
-  /// LexOptions::new().errors_to_vec();
+  /// # use whitehole::lexer::{options::LexOptions, LexerBuilder};
+  /// // print errors to stdout (for debugging)
+  /// # let options: LexOptions<(), Vec<()>, _> = LexOptions::new();
+  /// options.errors().to_stdout();
+  ///
+  /// // if you want to collect errors in a vector,
+  /// // you should provision the capacity
+  /// // and re-use the vector to prevent unnecessary allocations
+  /// let mut errors = Vec::with_capacity(16);
+  /// # let mut lexer = LexerBuilder::new().build("");
+  /// lexer.lex_with(|o| o.errors().to(&mut errors));
+  /// errors.clear();
+  /// lexer.lex_with(|o| o.errors().to(&mut errors));
   /// ```
   #[inline]
-  pub fn errors_to<NewErrAcc>(
+  pub fn errors<Acc>(
     self,
-    acc: NewErrAcc,
-  ) -> LexOptions<'expect_literal, Kind, NewErrAcc, Fork> {
-    LexOptions {
+  ) -> AccumulatorSetter<impl FnOnce(Acc) -> LexOptions<'expect_literal, Kind, Acc, Fork>> {
+    AccumulatorSetter::new(move |acc| LexOptions {
       expectation: self.expectation,
       errors_to: acc,
       fork: self.fork,
       re_lex: self.re_lex,
-    }
-  }
-
-  /// Collect the errors into a vector.
-  /// # Examples
-  /// ```
-  /// # use whitehole::lexer::options::LexOptions;
-  /// # let options: LexOptions<(), Vec<()>, _> =
-  /// LexOptions::new().errors_to_vec();
-  /// ```
-  #[inline]
-  pub fn errors_to_vec<E>(self) -> LexOptions<'expect_literal, Kind, Vec<E>, Fork> {
-    self.errors_to(Vec::new())
+    })
   }
 
   /// If set, and the lex is re-lexable (the accepted action is not the last candidate action),
