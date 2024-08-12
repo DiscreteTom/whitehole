@@ -249,7 +249,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
   >
   where
-    ErrAcc: Accumulator<(ErrorType, Range)> + Default,
+    ErrAcc: Accumulator<(ErrorType, Range)>,
   {
     self.lex_with_options(options_builder(LexOptions::new()))
   }
@@ -269,7 +269,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
   >
   where
-    ErrAcc: Accumulator<(ErrorType, Range)> + Default,
+    ErrAcc: Accumulator<(ErrorType, Range)>,
   {
     let output = Self::lex_with_stateless(
       &self.stateless,
