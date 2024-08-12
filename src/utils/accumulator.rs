@@ -36,6 +36,13 @@ impl Accumulator<String> for String {
     self.push_str(&c);
   }
 }
+impl Accumulator<&str> for String {
+  #[inline]
+  fn update(&mut self, c: &str) {
+    self.push_str(c);
+  }
+}
+
 
 #[cfg(test)]
 mod tests {
