@@ -6,9 +6,9 @@ pub struct LexOptions<'expect_literal, Kind, ErrAcc, Fork> {
   pub expectation: Expectation<'expect_literal, Kind>,
   /// See [`Self::errors_to`].
   pub errors_to: ErrAcc,
-  /// See [`LexOptions::fork()`].
+  /// See [`Self::fork`].
   pub fork: Fork,
-  /// See [`LexOptions::re_lex()`].
+  /// See [`Self::re_lex`].
   pub re_lex: ReLexContext,
 }
 
@@ -82,8 +82,19 @@ impl<'expect_literal, Kind, ErrAcc, Fork> LexOptions<'expect_literal, Kind, ErrA
   /// enum MyKind { A }
   ///
   /// # fn main() {
-  /// // expect both kind and literal
   /// # let options = LexOptions::new();
+  ///
+  /// // with a kind
+  /// # let options =
+  /// options.expect_with(|e| e.kind(A::kind_id()));
+  /// # let options =
+  /// options.expect_with(|e| e.kind(A));
+  ///
+  /// // with a literal
+  /// # let options =
+  /// options.expect_with(|e| e.literal("literal"));
+  ///
+  /// // expect both kind and literal
   /// options.expect_with(|e| e.kind(A).literal("literal"));
   /// # }
   /// ```
@@ -132,8 +143,9 @@ impl<'expect_literal, Kind, ErrAcc, Fork> LexOptions<'expect_literal, Kind, ErrA
     self.errors_to(Vec::new())
   }
 
-  /// If set, and the lexing is re-lexable (the accepted action is not the last candidate action),
-  /// the [`LexOutput::fork`](crate::lexer::output::LexOutput::fork) will be `Some`.
+  /// If set, and the lex is re-lexable (the accepted action is not the last candidate action),
+  /// you can use [`LexOutput::fork`](crate::lexer::output::LexOutput::fork)
+  /// to re-try the lex with different actions.
   ///
   /// See [`ReLexContext`] for more details.
   #[inline]
