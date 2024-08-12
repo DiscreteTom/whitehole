@@ -1,6 +1,9 @@
+mod debug;
 mod mock;
 mod string;
 mod vec;
+
+pub use debug::*;
 
 /// Accumulate values.
 ///
