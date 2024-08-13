@@ -1,7 +1,4 @@
-use super::{
-  offset::OffsetLookupTable,
-  option::{Lookup, OptionLookupTable},
-};
+use super::{lookup::Lookup, offset::OffsetLookupTable, option::OptionLookupTable};
 
 pub(crate) type CharLookupTable<V> = OffsetLookupTable<OptionLookupTable<V>>;
 

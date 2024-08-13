@@ -2,7 +2,7 @@ use crate::{
   lexer::action::{HeadMatcher, ImmutableActionExec, RcActionExec, RcActionProps},
   utils::lookup::{
     char::{CharLookupTable, CharLookupTableBuilder},
-    option::Lookup,
+    lookup::Lookup,
   },
 };
 use std::rc::Rc;
