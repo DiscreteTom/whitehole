@@ -26,3 +26,17 @@ impl<Acc: Accumulator<T>, T> Accumulator<T> for &mut Acc {
     <Acc as Accumulator<T>>::update(*self, c);
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_accumulator_ref() {
+    let acc_ref = &mut vec![];
+    acc_ref.update(1);
+    acc_ref.update(2);
+    acc_ref.update(3);
+    assert_eq!(acc_ref, &vec![1, 2, 3]);
+  }
+}

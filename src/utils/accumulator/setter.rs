@@ -33,3 +33,16 @@ impl<C> AccumulatorSetter<C> {
     self.to(DebugAccumulator)
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_accumulator_setter() {
+    // ensure the return type
+    let _setter: DebugAccumulator = AccumulatorSetter::new(|x| x).to_stdout();
+
+    assert_eq!(AccumulatorSetter::new(|x| x).to(()), ());
+  }
+}
