@@ -13,7 +13,7 @@ pub struct ActionOutput<BindingType, OptionErrorType> {
   pub digested: usize,
   /// If [`Some`], the action is still accepted (not rejected),
   /// and the error will be collected by
-  /// [`LexOutput::errors`](crate::lexer::output::LexOutput::errors).
+  /// [`LexOptions::errors`](crate::lexer::options::LexOptions::errors).
   ///
   /// This is often `Option<ErrorType>` but might be `&Option<ErrorType>`
   /// in action's decorators.

@@ -151,7 +151,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   /// If `State` is mutated in the lexing process,
   /// [`Self::state`] will be cloned and returned.
   #[inline]
-  pub fn peek(&self) -> (LexOutput<Token<Kind>, (), ()>, Option<State>)
+  pub fn peek(&self) -> (LexOutput<Token<Kind>, ()>, Option<State>)
   where
     State: Clone,
   {
@@ -171,7 +171,6 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   ) -> (
     LexOutput<
       Token<Kind>,
-      ErrAcc,
       <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
     >,
     Option<State>,
@@ -197,7 +196,6 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   ) -> (
     LexOutput<
       Token<Kind>,
-      ErrAcc,
       <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
     >,
     Option<State>,
@@ -220,7 +218,6 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
       digested: output.digested,
       token: output.token,
       fork: Fork::OutputFactoryType::build_fork_output(output.fork, output.digested, self),
-      errors: output.errors,
     };
 
     (output, new_state)
@@ -231,7 +228,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   /// Try to yield the next token with the default options.
   /// [`Self::state`] and [`Self::state`] will be updated.
   #[inline]
-  pub fn lex(&mut self) -> LexOutput<Token<Kind>, (), ()> {
+  pub fn lex(&mut self) -> LexOutput<Token<Kind>, ()> {
     self.lex_with_options(LexOptions::new())
   }
 
@@ -245,7 +242,6 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     ) -> LexOptions<'expect_literal, Kind, ErrAcc, Fork>,
   ) -> LexOutput<
     Token<Kind>,
-    ErrAcc,
     <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
   >
   where
@@ -265,7 +261,6 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     options: impl Into<LexOptions<'expect_literal, Kind, ErrAcc, Fork>>,
   ) -> LexOutput<
     Token<Kind>,
-    ErrAcc,
     <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
   >
   where
@@ -283,7 +278,6 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
       digested: output.digested,
       token: output.token,
       fork: Fork::OutputFactoryType::build_fork_output(output.fork, output.digested, &self),
-      errors: output.errors,
     };
 
     // update state
@@ -315,10 +309,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
 
   /// Lex with muted actions and the provided options.
   /// Returns [`None`] if the lexer is already trimmed.
-  pub fn trim_with_options<ErrAcc>(
-    &mut self,
-    options: TrimOptions<ErrAcc>,
-  ) -> Option<TrimOutput<ErrAcc>>
+  pub fn trim_with_options<ErrAcc>(&mut self, options: TrimOptions<ErrAcc>) -> Option<TrimOutput>
   where
     ErrAcc: Accumulator<(ErrorType, Range)>,
   {
@@ -347,7 +338,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   pub fn trim_with<ErrAcc>(
     &mut self,
     f: impl FnOnce(TrimOptions<()>) -> TrimOptions<ErrAcc>,
-  ) -> Option<TrimOutput<ErrAcc>>
+  ) -> Option<TrimOutput>
   where
     ErrAcc: Accumulator<(ErrorType, Range)>,
   {
@@ -357,7 +348,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   /// Lex with muted actions and the default options.
   /// Returns [`None`] if the lexer is already trimmed.
   #[inline]
-  pub fn trim(&mut self) -> Option<TrimOutput<()>> {
+  pub fn trim(&mut self) -> Option<TrimOutput> {
     self.trim_with_options(TrimOptions::new())
   }
 
@@ -367,7 +358,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     instant: &Instant<'text>,
     state: &mut State,
     options: LexOptions<'expect_literal, Kind, ErrAcc,Fork>,
-  ) -> LexOutput<Token<Kind>,ErrAcc, <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::StatelessForkOutputType>
+  ) -> LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::StatelessForkOutputType>
   where
     ErrAcc:Accumulator<(ErrorType, Range)>,
   {

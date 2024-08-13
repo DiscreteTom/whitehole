@@ -21,7 +21,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// let (output, state) = stateless.trim("123");
   /// ```
   #[inline]
-  pub fn trim<'text>(&self, text: &'text str) -> (TrimOutput<()>, State)
+  pub fn trim<'text>(&self, text: &'text str) -> (TrimOutput, State)
   where
     State: Default,
   {
@@ -44,7 +44,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     options_builder: impl FnOnce(
       StatelessTrimOptions<(), ()>,
     ) -> StatelessTrimOptions<&'state mut State, ErrAcc>,
-  ) -> TrimOutput<ErrAcc>
+  ) -> TrimOutput
   where
     State: 'state,
   {
@@ -64,7 +64,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     &self,
     text: &'text str,
     options: StatelessTrimOptions<&'state mut State, ErrAcc>,
-  ) -> TrimOutput<ErrAcc> {
+  ) -> TrimOutput {
     // there is no expectation when trimming, so the fork is meaningless.
     // use `()` as a mock fork output factory
     let mut re_lexable_factory = ();
@@ -95,6 +95,6 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     }
 
     // no more input or no accepted actions
-    TrimOutput { digested, errors }
+    TrimOutput { digested }
   }
 }
