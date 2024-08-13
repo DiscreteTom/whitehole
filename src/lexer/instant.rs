@@ -146,4 +146,14 @@ mod tests {
     let mut state = Instant::new("123");
     state.trim(4);
   }
+
+  #[test]
+  fn test_rest() {
+    let mut state = Instant::new("123");
+    assert_eq!(state.rest(), "123");
+    state.digest(0);
+    assert_eq!(state.rest(), "123");
+    state.digest(1);
+    assert_eq!(state.rest(), "23");
+  }
 }

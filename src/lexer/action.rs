@@ -249,6 +249,7 @@ mod tests {
     assert_eq!(action.kind(), A::kind_id());
     assert!(action.head().is_none());
     assert!(action.literal().is_none());
+    assert!(action.exec().as_immutable()(&ActionInput::new("1", 0, &()).unwrap()).is_none())
   }
 
   #[test]
