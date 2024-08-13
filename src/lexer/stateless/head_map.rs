@@ -1,6 +1,9 @@
 use crate::{
   lexer::action::{HeadMatcher, ImmutableActionExec, RcActionExec, RcActionProps},
-  utils::{CharLookupTable, CharLookupTableBuilder, Lookup},
+  utils::lookup::{
+    char::{CharLookupTable, CharLookupTableBuilder},
+    option::Lookup,
+  },
 };
 use std::rc::Rc;
 

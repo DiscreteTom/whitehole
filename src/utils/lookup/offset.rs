@@ -1,4 +1,4 @@
-use super::Lookup;
+use super::option::Lookup;
 
 /// A lookup table wrapper that treat the first `n` values as empty.
 /// This will record the offset `n` and prevent access to the first `n` values.
