@@ -73,7 +73,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     let re_lex = ReLexContext::default();
 
     let mut digested = 0;
-    let mut errors = options.base.errors_to;
+    let mut errors = options.base.errors;
 
     loop {
       let input_start = options.start + digested;

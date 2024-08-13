@@ -5,8 +5,8 @@ use crate::utils::AccumulatorSetter;
 pub struct LexOptions<'expect_literal, Kind, ErrAcc, Fork> {
   /// See [`Self::expect`].
   pub expectation: Expectation<'expect_literal, Kind>,
-  /// See [`Self::errors_to`].
-  pub errors_to: ErrAcc,
+  /// See [`Self::errors`].
+  pub errors: ErrAcc,
   /// See [`Self::fork`].
   pub fork: Fork,
   /// See [`Self::re_lex`].
@@ -19,7 +19,7 @@ impl<'expect_literal, Kind> LexOptions<'expect_literal, Kind, (), ()> {
   pub const fn new() -> Self {
     Self {
       expectation: Expectation::new(),
-      errors_to: (),
+      errors: (),
       fork: (),
       re_lex: ReLexContext::new(),
     }
@@ -127,12 +127,13 @@ impl<'expect_literal, Kind, ErrAcc, Fork> LexOptions<'expect_literal, Kind, ErrA
   /// lexer.lex_with(|o| o.errors().to(&mut errors));
   /// ```
   #[inline]
-  pub fn errors<Acc>(
+  pub fn errors<NewErrAcc>(
     self,
-  ) -> AccumulatorSetter<impl FnOnce(Acc) -> LexOptions<'expect_literal, Kind, Acc, Fork>> {
+  ) -> AccumulatorSetter<impl FnOnce(NewErrAcc) -> LexOptions<'expect_literal, Kind, NewErrAcc, Fork>>
+  {
     AccumulatorSetter::new(move |acc| LexOptions {
       expectation: self.expectation,
-      errors_to: acc,
+      errors: acc,
       fork: self.fork,
       re_lex: self.re_lex,
     })
@@ -147,7 +148,7 @@ impl<'expect_literal, Kind, ErrAcc, Fork> LexOptions<'expect_literal, Kind, ErrA
   pub fn fork(self) -> LexOptions<'expect_literal, Kind, ErrAcc, ForkEnabled> {
     LexOptions {
       expectation: self.expectation,
-      errors_to: self.errors_to,
+      errors: self.errors,
       fork: ForkEnabled,
       re_lex: self.re_lex,
     }
@@ -165,41 +166,42 @@ impl<'expect_literal, Kind, ErrAcc, Fork> LexOptions<'expect_literal, Kind, ErrA
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TrimOptions<ErrAcc> {
-  /// See [`Self::errors_to`]
-  pub errors_to: ErrAcc,
+  /// See [`Self::errors`]
+  pub errors: ErrAcc,
 }
 
 impl TrimOptions<()> {
   /// Create a new instance with no error accumulator.
   #[inline]
   pub const fn new() -> Self {
-    Self { errors_to: () }
+    Self { errors: () }
   }
 }
 
 impl<ErrAcc> TrimOptions<ErrAcc> {
   /// Set the error accumulator.
+  /// By default error accumulator is `()` and all errors will be discarded.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::options::TrimOptions;
-  /// # let options: TrimOptions<Vec<()>> =
-  /// TrimOptions::new().errors_to(vec![]);
+  /// # use whitehole::lexer::{options::TrimOptions, LexerBuilder};
+  /// // print errors to stdout (for debugging)
+  /// # let options: TrimOptions<(), Vec<()>, _> = TrimOptions::new();
+  /// options.errors().to_stdout();
+  ///
+  /// // if you want to collect errors in a vector,
+  /// // you should provision the capacity
+  /// // and re-use the vector to prevent unnecessary allocations
+  /// let mut errors = Vec::with_capacity(16);
+  /// # let mut lexer = LexerBuilder::new().build("");
+  /// lexer.trim_with(|o| o.errors().to(&mut errors));
+  /// errors.clear();
+  /// lexer.trim_with(|o| o.errors().to(&mut errors));
   /// ```
   #[inline]
-  pub fn errors_to<NewErrAcc>(self, acc: NewErrAcc) -> TrimOptions<NewErrAcc> {
-    TrimOptions { errors_to: acc }
-  }
-
-  /// Collect the errors into a vector.
-  /// # Examples
-  /// ```
-  /// # use whitehole::lexer::options::TrimOptions;
-  /// # let options: TrimOptions<Vec<()>> =
-  /// TrimOptions::new().errors_to_vec();
-  /// ```
-  #[inline]
-  pub fn errors_to_vec<E>(self) -> TrimOptions<Vec<E>> {
-    self.errors_to(Vec::new()) // TODO: use a trait for `errors_to`
+  pub fn errors<NewErrAcc>(
+    self,
+  ) -> AccumulatorSetter<impl FnOnce(NewErrAcc) -> TrimOptions<NewErrAcc>> {
+    AccumulatorSetter::new(move |acc| TrimOptions { errors: acc })
   }
 }
 
@@ -214,7 +216,7 @@ mod tests {
       options,
       LexOptions {
         expectation: Expectation::new(),
-        errors_to: (),
+        errors: (),
         fork: (),
         re_lex: ReLexContext::new(),
       }
@@ -225,18 +227,19 @@ mod tests {
       options,
       LexOptions {
         expectation: Expectation::new().literal("literal"),
-        errors_to: (),
+        errors: (),
         fork: (),
         re_lex: ReLexContext::new(),
       }
     );
 
-    let options: LexOptions<(), Vec<()>, _> = options.errors_to_vec();
+    let mut errors = vec![];
+    let options: LexOptions<(), &mut Vec<()>, _> = options.errors().to(&mut errors);
     assert_eq!(
       options,
       LexOptions {
         expectation: Expectation::new().literal("literal"),
-        errors_to: vec![],
+        errors: &mut vec![],
         fork: (),
         re_lex: ReLexContext::new(),
       }
@@ -247,7 +250,7 @@ mod tests {
       options,
       LexOptions {
         expectation: Expectation::new().literal("literal"),
-        errors_to: vec![],
+        errors: &mut vec![],
         fork: ForkEnabled,
         re_lex: ReLexContext::new(),
       }
@@ -258,7 +261,7 @@ mod tests {
       options,
       LexOptions {
         expectation: Expectation::new().literal("literal"),
-        errors_to: vec![],
+        errors: &mut vec![],
         fork: ForkEnabled,
         re_lex: ReLexContext { start: 1, skip: 1 },
       }
@@ -270,7 +273,7 @@ mod tests {
       options,
       LexOptions {
         expectation: Expectation::new().literal("literal"),
-        errors_to: (),
+        errors: (),
         fork: (),
         re_lex: ReLexContext::new(),
       }
@@ -280,7 +283,7 @@ mod tests {
       options,
       LexOptions {
         expectation: Expectation::new(),
-        errors_to: (),
+        errors: (),
         fork: (),
         re_lex: ReLexContext { start: 1, skip: 1 },
       }
@@ -290,9 +293,15 @@ mod tests {
   #[test]
   fn trim_options() {
     let options = TrimOptions::new();
-    assert_eq!(options, TrimOptions { errors_to: () });
+    assert_eq!(options, TrimOptions { errors: () });
 
-    let options: TrimOptions<Vec<()>> = options.errors_to_vec();
-    assert_eq!(options, TrimOptions { errors_to: vec![] });
+    let mut errors = vec![];
+    let options: TrimOptions<&mut Vec<()>> = options.errors().to(&mut errors);
+    assert_eq!(
+      options,
+      TrimOptions {
+        errors: &mut vec![]
+      }
+    );
   }
 }

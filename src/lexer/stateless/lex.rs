@@ -114,7 +114,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
         literal_map,
         head_map,
         0,
-        options.base.errors_to,
+        options.base.errors,
         options.start,
         text,
         options.state,
@@ -130,7 +130,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
       self.lex_mut_without_literal(
         head_map,
         0,
-        options.base.errors_to,
+        options.base.errors,
         options.start,
         text,
         options.state,
@@ -221,7 +221,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     State: Clone
   {
     let mut digested = 0;
-    let mut errors = options.base.errors_to;
+    let mut errors = options.base.errors;
     let re_lexable_factory = Fork::OutputFactoryType::default();
     let mut new_state = None;
 
