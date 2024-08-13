@@ -78,7 +78,7 @@ impl<'expect_literal, Kind, ErrAcc, Fork> LexOptions<'expect_literal, Kind, ErrA
   /// # Examples
   /// ```
   /// # use whitehole::lexer::options::LexOptions;
-  /// # use whitehole::lexer::token::token_kind;
+  /// # use whitehole::lexer::token::{token_kind, SubTokenKind};
   /// #[token_kind]
   /// enum MyKind { A }
   ///
@@ -112,16 +112,16 @@ impl<'expect_literal, Kind, ErrAcc, Fork> LexOptions<'expect_literal, Kind, ErrA
   /// By default error accumulator is `()` and all errors will be discarded.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{options::LexOptions, LexerBuilder};
+  /// # use whitehole::lexer::{options::LexOptions, LexerBuilder, Lexer, token::MockTokenKind};
   /// // print errors to stdout (for debugging)
-  /// # let options: LexOptions<(), Vec<()>, _> = LexOptions::new();
+  /// # let options: LexOptions<(), _, _> = LexOptions::new();
   /// options.errors().to_stdout();
   ///
   /// // if you want to collect errors in a vector,
   /// // you should provision the capacity
   /// // and re-use the vector to prevent unnecessary allocations
   /// let mut errors = Vec::with_capacity(16);
-  /// # let mut lexer = LexerBuilder::new().build("");
+  /// # let mut lexer: Lexer<MockTokenKind<()>> = LexerBuilder::new().build("");
   /// lexer.lex_with(|o| o.errors().to(&mut errors));
   /// errors.clear();
   /// lexer.lex_with(|o| o.errors().to(&mut errors));
@@ -183,16 +183,16 @@ impl<ErrAcc> TrimOptions<ErrAcc> {
   /// By default error accumulator is `()` and all errors will be discarded.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{options::TrimOptions, LexerBuilder};
+  /// # use whitehole::lexer::{options::TrimOptions, LexerBuilder, Lexer, token::MockTokenKind};
   /// // print errors to stdout (for debugging)
-  /// # let options: TrimOptions<(), Vec<()>, _> = TrimOptions::new();
+  /// # let options = TrimOptions::new();
   /// options.errors().to_stdout();
   ///
   /// // if you want to collect errors in a vector,
   /// // you should provision the capacity
   /// // and re-use the vector to prevent unnecessary allocations
   /// let mut errors = Vec::with_capacity(16);
-  /// # let mut lexer = LexerBuilder::new().build("");
+  /// # let mut lexer: Lexer<MockTokenKind<()>> = LexerBuilder::new().build("");
   /// lexer.trim_with(|o| o.errors().to(&mut errors));
   /// errors.clear();
   /// lexer.trim_with(|o| o.errors().to(&mut errors));
