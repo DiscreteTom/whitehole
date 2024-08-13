@@ -39,22 +39,17 @@ fn error_tokens() {
     .build(" a");
 
   // when `lex`, `peek` or `trim`, we can get error tokens from the output
-  let (output, _) = lexer.peek_with(|o| o.errors_to_vec());
+  let mut errors = vec![];
+  let (output, _) = lexer.peek_with(|o| o.errors().to(&mut errors));
   // even if the whitespace is muted, it contains an error.
   // errors will be collected with its range and error value
-  assert_eq!(output.errors.len(), 2);
-  assert!(matches!(
-    output.errors[0],
-    ("ignored", Range { start: 0, end: 1 })
-  ));
+  assert_eq!(errors.len(), 2);
+  assert!(matches!(errors[0], ("ignored", Range { start: 0, end: 1 })));
   // we can still get the peeked token, which also contains an error
   // but it is not muted
   let token = output.token.unwrap();
   assert!(matches!(token.binding.kind(), MyKind::A));
-  assert!(matches!(
-    output.errors[1],
-    ("end", Range { start: 1, end: 2 })
-  ));
+  assert!(matches!(errors[1], ("end", Range { start: 1, end: 2 })));
 }
 
 #[test]

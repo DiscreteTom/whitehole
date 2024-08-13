@@ -82,20 +82,19 @@ fn action_decorators() {
     .build("a b c");
 
   // the first lex should be accepted but with error set
-  let res = lexer.lex_with(|o| o.errors_to_vec());
+  let mut errors = vec![];
+  let res = lexer.lex_with(|o| o.errors().to(&mut errors));
   let token = res.token.unwrap();
   assert!(matches!(token.binding.kind(), MyKind::A));
-  assert!(matches!(
-    res.errors[0],
-    ("error", Range { start: 0, end: 1 })
-  ));
   assert_eq!(res.digested, 1);
+  assert!(matches!(errors[0], ("error", Range { start: 0, end: 1 })));
 
   // the second lex should be rejected but still digest some characters
-  let res = lexer.lex_with(|o| o.errors_to_vec());
+  errors.clear();
+  let res = lexer.lex_with(|o| o.errors().to(&mut errors));
   assert!(matches!(res.token, None));
   assert_eq!(res.digested, 1); // digest one whitespace
-  assert_eq!(res.errors.len(), 0); // no new error
+  assert_eq!(errors.len(), 0); // no new error
 
   // create a new lexer with the same actions and a new input
   let mut lexer = lexer.reload("c d c");
