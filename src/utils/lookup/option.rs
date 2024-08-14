@@ -41,3 +41,33 @@ impl<V> Lookup for OptionLookupTable<V> {
       .unwrap_unchecked()
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_option_lookup_table() {
+    let mut table = OptionLookupTable::new(3);
+    assert_eq!(table.get(0), None);
+    assert_eq!(table.get(1), None);
+    assert_eq!(table.get(2), None);
+
+    unsafe {
+      *table.get_option_unchecked_mut(0) = Some(1);
+      *table.get_option_unchecked_mut(2) = Some(2);
+    }
+
+    assert_eq!(table.get(0), Some(&1));
+    assert_eq!(table.get(1), None);
+    assert_eq!(table.get(2), Some(&2));
+
+    unsafe {
+      *table.get_unchecked_mut(0) = 3;
+      *table.get_unchecked_mut(2) = 4;
+
+      assert_eq!(table.get(0), Some(&3));
+      assert_eq!(table.get(2), Some(&4));
+    }
+  }
+}

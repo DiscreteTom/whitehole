@@ -37,3 +37,37 @@ impl<Table: Lookup> Lookup for OffsetLookupTable<Table> {
     self.table.get_unchecked_mut(key - self.offset)
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::utils::lookup::option::OptionLookupTable;
+
+  #[test]
+  fn test_offset_lookup_table() {
+    let mut option = OptionLookupTable::new(3);
+    unsafe {
+      *option.get_option_unchecked_mut(0) = Some(0);
+      *option.get_option_unchecked_mut(2) = Some(0);
+    }
+    let mut table = OffsetLookupTable::new(3, option);
+    assert_eq!(table.get(0), None);
+    assert_eq!(table.get(1), None);
+    assert_eq!(table.get(2), None);
+    assert_eq!(table.get(3), Some(&0));
+    assert_eq!(table.get(4), None);
+    assert_eq!(table.get(5), Some(&0));
+
+    unsafe {
+      *table.get_unchecked_mut(3) = 1;
+      *table.get_unchecked_mut(5) = 2;
+    }
+
+    assert_eq!(table.get(0), None);
+    assert_eq!(table.get(1), None);
+    assert_eq!(table.get(2), None);
+    assert_eq!(table.get(3), Some(&1));
+    assert_eq!(table.get(4), None);
+    assert_eq!(table.get(5), Some(&2));
+  }
+}

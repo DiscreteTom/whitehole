@@ -85,3 +85,37 @@ impl<V> CharLookupTableBuilder<V> {
     self.table
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_empty_char_lookup_table_builder() {
+    let builder = CharLookupTableBuilder::<u8>::new(&[]);
+    assert_eq!(builder.table.get(0), None);
+  }
+
+  #[test]
+  fn test_char_lookup_table_builder() {
+    // unordered, duplicated keys
+    let keys = ['a', 'b', 'a', 'c'];
+    let mut builder = CharLookupTableBuilder::new(&keys);
+
+    builder.for_each_entry_mut(|k, v| *v = k);
+
+    assert_eq!(builder.table.get('a' as usize), Some(&'a'));
+    assert_eq!(builder.table.get('b' as usize), Some(&'b'));
+    assert_eq!(builder.table.get('c' as usize), Some(&'c'));
+
+    unsafe {
+      *builder.get_unchecked_mut('a') = 'd';
+      *builder.get_unchecked_mut('b') = 'e';
+      *builder.get_unchecked_mut('c') = 'f';
+    }
+
+    assert_eq!(builder.table.get('a' as usize), Some(&'d'));
+    assert_eq!(builder.table.get('b' as usize), Some(&'e'));
+    assert_eq!(builder.table.get('c' as usize), Some(&'f'));
+  }
+}
