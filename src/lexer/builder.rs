@@ -122,11 +122,37 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
     &self.actions
   }
 
+  /// Check if all actions have the head matcher set. See [`Action::head`].
+  ///
+  /// Return [`Err`] with no-head-matcher action indexes.
+  /// # Examples
+  /// This should be used after all actions are appended, before build.
+  /// ```
+  /// # use whitehole::lexer::{LexerBuilder, action::exact};
+  /// LexerBuilder::new()
+  ///   .append(exact("a"))
+  ///   .ensure_head_matcher()
+  ///   .unwrap()
+  ///   .build("a");
+  /// ```
+  pub fn ensure_head_matcher(self) -> Result<Self, (Vec<usize>, Self)> {
+    let mut invalid = vec![];
+    for (i, a) in self.actions.iter().enumerate() {
+      if a.head().is_none() {
+        invalid.push(i);
+      }
+    }
+    if invalid.is_empty() {
+      Ok(self)
+    } else {
+      Err((invalid, self))
+    }
+  }
+
   // TODO: add a module `generate` to speed up the build process? store action index & lookup tables.
   /// Consume self, build a [`StatelessLexer`].
   #[inline]
   pub fn build_stateless(self) -> StatelessLexer<Kind, State, ErrorType> {
-    // TODO: warning if action has no head matcher?
     StatelessLexer::new(self.actions)
   }
 
