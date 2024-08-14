@@ -111,7 +111,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     Lexer::new(self.stateless, state, text)
   }
 
-  /// Take a snapshot of the current state and instant.
+  /// Take a snapshot of the current [`Self::state`] and [`Self::instant`].
   #[inline]
   pub fn snapshot(&self) -> Snapshot<'text, State>
   where
@@ -123,7 +123,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     }
   }
 
-  /// Restore the state and instant from a snapshot.
+  /// Restore [`Self::state`] and [`Self::instant`] from a [`PartialSnapshot`].
   #[inline]
   pub fn restore(&mut self, snapshot: impl Into<PartialSnapshot<'text, State>>) {
     let snapshot = snapshot.into();
@@ -135,7 +135,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     }
   }
 
-  /// Clone self with the provided snapshot.
+  /// Clone self with the provided [`Snapshot`].
   #[inline]
   pub fn clone_with_snapshot(&self, snapshot: Snapshot<'text, State>) -> Self {
     Self {

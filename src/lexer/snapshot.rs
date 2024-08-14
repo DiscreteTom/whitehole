@@ -9,12 +9,15 @@ use super::{instant::Instant, Lexer};
 /// you shouldn't modify [`Self::instant`] directly.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Snapshot<'text, State> {
+  /// See [`Lexer::state`].
   pub state: State,
+  /// See [`Self::instant`].
   pub(super) instant: Instant<'text>,
 }
 
 impl<'text, State> Snapshot<'text, State> {
-  /// Get the instant of the snapshot.
+  /// Get the [`Lexer::instant`] in the [`Snapshot`].
+  /// You can't modify this manually.
   #[inline]
   pub const fn instant(&self) -> &Instant<'text> {
     &self.instant
@@ -31,11 +34,13 @@ impl<'text, State> Snapshot<'text, State> {
 ///
 /// This can be turned into a full [`Snapshot`] by [`Self::into_full`].
 ///
-/// You can construct this manually because
+/// You can't construct this manually because
 /// you shouldn't modify [`Self::instant`] directly.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PartialSnapshot<'text, State> {
+  /// See [`Lexer::state`].
   pub state: Option<State>,
+  /// See [`Self::instant`].
   pub(super) instant: Option<Instant<'text>>,
 }
 
@@ -50,14 +55,16 @@ impl<'text, State> From<Snapshot<'text, State>> for PartialSnapshot<'text, State
 }
 
 impl<'text, State> PartialSnapshot<'text, State> {
-  /// Get the instant of the partial snapshot.
+  /// Get the [`Lexer::instant`] in the [`PartialSnapshot`].
+  /// You can't modify this manually.
   #[inline]
   pub const fn instant(&self) -> &Option<Instant<'text>> {
     &self.instant
   }
 
   /// Consume self, build a full [`Snapshot`].
-  /// This will clone [`Lexer::state`] and/or [`Lexer::instant`] if they are [`None`].
+  /// This will clone [`Lexer::state`] and/or [`Lexer::instant`]
+  /// if [`Self::state`] and/or [`Self::instant`] are [`None`].
   #[inline]
   pub fn into_full<Kind, ErrorType>(
     self,
