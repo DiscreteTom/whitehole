@@ -17,8 +17,16 @@ impl<V> CharLookupTableBuilder<V> {
   where
     V: Default,
   {
-    let min = *raw_keys.iter().min().unwrap_or(&'\0') as usize;
-    let max = *raw_keys.iter().max().unwrap_or(&'\0') as usize;
+    if raw_keys.is_empty() {
+      return Self {
+        keys: Vec::new(),
+        table: CharLookupTable::new(0, OptionLookupTable::new(0)),
+      };
+    }
+
+    // SAFETY: `raw_keys` is not empty, so `min` and `max` are safe to unwrap.
+    let min = *unsafe { raw_keys.iter().min().unwrap_unchecked() } as usize;
+    let max = *unsafe { raw_keys.iter().max().unwrap_unchecked() } as usize;
     let size = max - min + 1;
     let mut table = OptionLookupTable::new(size);
 
