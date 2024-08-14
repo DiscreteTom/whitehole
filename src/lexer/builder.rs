@@ -21,7 +21,8 @@ impl<Kind, State, ErrorType> Default for LexerBuilder<Kind, State, ErrorType> {
 }
 
 impl<Kind> LexerBuilder<Kind> {
-  /// Create a new lexer builder, set `State` and `ErrorType` to `()`.
+  /// Create a new lexer builder, set `State` and `ErrorType` to `()`,
+  /// auto infer `Kind` from the provided actions.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{LexerBuilder, action::exact};
@@ -42,11 +43,14 @@ impl<Kind> LexerBuilder<Kind> {
   }
 
   /// Create a new lexer builder with the provided `State`,
-  /// set `ErrorType` to `()`.
+  /// set `ErrorType` to `()`, auto infer `Kind` from the provided actions.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{LexerBuilder, action::exact};
   /// # struct MyState;
+  /// # let mut builder: LexerBuilder<_, MyState> =
+  /// LexerBuilder::stateful();
+  /// # builder.append(exact("a"));
   /// # let mut builder =
   /// LexerBuilder::stateful::<MyState>();
   /// # builder.append(exact("a"));
@@ -66,7 +70,7 @@ impl<Kind> LexerBuilder<Kind> {
 
 impl<Kind, ErrorType> LexerBuilder<Kind, (), ErrorType> {
   /// Create a new lexer builder, set `State` to `()`,
-  /// infer `ErrorType` from the provided actions.
+  /// auto infer `Kind` and `ErrorType` from the provided actions.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{LexerBuilder, action::exact};
@@ -86,13 +90,16 @@ impl<Kind, ErrorType> LexerBuilder<Kind, (), ErrorType> {
   }
 
   /// Create a new lexer builder with the provided `State`,
-  /// infer `ErrorType` from the provided actions.
+  /// auto infer `Kind` and `ErrorType` from the provided actions.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{LexerBuilder, action::exact};
+  /// # use whitehole::lexer::{LexerBuilder, action::exact, token::MockTokenKind};
   /// # struct MyState;
   /// # #[derive(Clone)]
   /// # struct MyError;
+  /// # let mut builder: LexerBuilder<_, MyState, _> =
+  /// LexerBuilder::stateful_with_error();
+  /// # builder.append_with(exact("a"), |a| a.error(MyError));
   /// # let mut builder =
   /// LexerBuilder::stateful_with_error::<MyState>();
   /// # builder.append_with(exact("a"), |a| a.error(MyError));
@@ -108,7 +115,7 @@ impl<Kind, ErrorType> LexerBuilder<Kind, (), ErrorType> {
 }
 
 impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
-  // TODO: move into `generate`?
+  // TODO: add a module `generate` to speed up the build process? store action index & lookup tables.
   /// Consume self, build a [`StatelessLexer`].
   #[inline]
   pub fn build_stateless(self) -> StatelessLexer<Kind, State, ErrorType> {
