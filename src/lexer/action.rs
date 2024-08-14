@@ -296,5 +296,19 @@ mod tests {
       ),
       "ActionBase { exec: ActionExecBase::Immutable(...), kind: TokenKindId<whitehole::lexer::action::tests::MyKind>(0), literal: Some(\"123\"), head: Some(OneOf({'a'})), muted: true }"
     );
+
+    assert_eq!(
+      format!(
+        "{:?}",
+        Action::<_> {
+          exec: ActionExec::Mutable(Box::new(|_| None)),
+          kind: A::kind_id(),
+          head: Some(HeadMatcher::OneOf(HashSet::from(['a']))),
+          muted: true,
+          literal: Some("123".into()),
+        }
+      ),
+      "ActionBase { exec: ActionExecBase::Mutable(...), kind: TokenKindId<whitehole::lexer::action::tests::MyKind>(0), literal: Some(\"123\"), head: Some(OneOf({'a'})), muted: true }"
+    );
   }
 }
