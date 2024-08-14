@@ -79,3 +79,35 @@ impl<'text, State> PartialSnapshot<'text, State> {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use crate::lexer::{token::MockTokenKind, LexerBuilder};
+
+  use super::*;
+
+  #[test]
+  fn test_snapshot() {
+    assert_eq!(
+      Snapshot {
+        state: (),
+        instant: Instant::new("")
+      }
+      .instant(),
+      &Instant::new("")
+    );
+  }
+
+  #[test]
+  fn test_partial_snapshot() {
+    let partial: PartialSnapshot<()> = PartialSnapshot {
+      state: None,
+      instant: None,
+    };
+    assert_eq!(partial.instant(), &None);
+
+    let snapshot = partial.into_full(&LexerBuilder::<MockTokenKind<()>>::new().build("123"));
+    assert_eq!(snapshot.state, ());
+    assert_eq!(snapshot.instant(), &Instant::new("123"));
+  }
+}
