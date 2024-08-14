@@ -31,7 +31,11 @@ pub use simple::*;
 pub use utils::*;
 
 use super::token::{TokenKindId, TokenKindIdBinding};
-use std::{collections::HashSet, rc::Rc};
+use std::{
+  collections::HashSet,
+  fmt::{self, Debug},
+  rc::Rc,
+};
 
 /// See [`Action::head`].
 #[derive(PartialEq, Debug, Clone)]
@@ -43,6 +47,7 @@ pub enum HeadMatcher {
   Unknown,
 }
 
+#[derive(Debug)]
 pub struct ActionBase<Kind, Exec> {
   exec: Exec,
 
@@ -124,6 +129,15 @@ pub type MutableActionExec<Kind, State, ErrorType> = Box<
 pub enum ActionExecBase<ImmutableType, MutableType> {
   Immutable(ImmutableType),
   Mutable(MutableType),
+}
+
+impl<ImmutableType, MutableType> Debug for ActionExecBase<ImmutableType, MutableType> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    match self {
+      Self::Immutable(_) => write!(f, "ActionExecBase::Immutable(...)"),
+      Self::Mutable(_) => write!(f, "ActionExecBase::Mutable(...)"),
+    }
+  }
 }
 
 /// See [`Action::exec`].
@@ -265,5 +279,22 @@ mod tests {
     assert_eq!(action.kind(), A::kind_id());
     assert!(matches!(action.head(), Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['a'])));
     assert_eq!(action.literal(), &Some("123".into()));
+  }
+
+  #[test]
+  fn format_action() {
+    assert_eq!(
+      format!(
+        "{:?}",
+        Action::<_> {
+          exec: ActionExec::Immutable(Box::new(|_| None)),
+          kind: A::kind_id(),
+          head: Some(HeadMatcher::OneOf(HashSet::from(['a']))),
+          muted: true,
+          literal: Some("123".into()),
+        }
+      ),
+      "ActionBase { exec: ActionExecBase::Immutable(...), kind: TokenKindId<whitehole::lexer::action::tests::MyKind>(0), literal: Some(\"123\"), head: Some(OneOf({'a'})), muted: true }"
+    );
   }
 }
