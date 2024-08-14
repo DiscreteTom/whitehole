@@ -115,6 +115,12 @@ impl<Kind, ErrorType> LexerBuilder<Kind, (), ErrorType> {
 }
 
 impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
+  /// Get the actions appended to this instance.
+  #[inline]
+  pub fn actions(&self) -> &[Action<Kind, State, ErrorType>] {
+    &self.actions
+  }
+
   // TODO: add a module `generate` to speed up the build process? store action index & lookup tables.
   /// Consume self, build a [`StatelessLexer`].
   #[inline]
