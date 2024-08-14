@@ -7,6 +7,7 @@ use crate::utils::OneOrMore;
 
 /// To create this, see [`Self::new`], [`Self::stateful`],
 /// [`Self::with_error`] and [`Self::stateful_with_error`].
+#[derive(Debug)]
 pub struct LexerBuilder<Kind, State = (), ErrorType = ()> {
   actions: Vec<Action<Kind, State, ErrorType>>,
 }
