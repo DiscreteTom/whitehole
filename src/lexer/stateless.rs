@@ -2,8 +2,8 @@
 //!
 //! [`StatelessLexer`] doesn't hold text, progress or states.
 //! It is just a collection of immutable [`Action`]s, and it is immutable itself.
-//! You can wrap it
-//! with [`Rc`] to make it clone-able and re-use it across multiple lexers.
+//! You can wrap it with [`Rc`](std::rc::Rc) to make it clone-able
+//! and re-use it across multiple (stateful) lexers.
 //!
 //! The [`StatelessLexer`] implements all the core lexing features,
 //! including expectation, fork, etc. If you
@@ -31,7 +31,7 @@
 //! For example,
 //! in one iteration of the lexing loop,
 //! if the first character of the rest of the input text is `'a'`
-//! only actions accepting `'a'` as the first character will be executed.
+//! then only actions accepting `'a'` as the first character will be executed.
 //!
 //! If an action has no head matcher, it will be executed no matter what the first character is.
 //! So it is recommended to add a head matcher to all actions to make the lexer faster.
@@ -68,11 +68,14 @@
 //!
 //! ### Trim
 //!
-//! // TODO
+//! When trimming, all non-muted actions are skipped, only muted actions will be executed.
+//! Then the lexer will skip actions by the head matcher just like the case without expectation
+//! during the lexing loop.
 //!
 //! ## Caveats
 //!
-//! // TODO: Be careful with stateless lexer.
+//! Be careful if you lexer is stateful. Since in every lexing the evaluated actions
+//! are different, you may need to manage the states carefully to avoid inconsistency.
 //!
 //! ## For Developers
 //!
