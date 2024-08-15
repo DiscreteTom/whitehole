@@ -192,3 +192,56 @@ impl<Kind, State, ErrorType> IntoLexer<Kind, State, ErrorType>
     self.build_stateless().into_lexer_with(state, text)
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::lexer::{
+    action::{exact, regex},
+    token::MockTokenKind,
+  };
+
+  #[test]
+  fn test_lexer_builder_constructors() {
+    // ensure the return type is correct
+    let _: LexerBuilder<MockTokenKind<()>, i32, i32> = LexerBuilder::default().append(exact("a"));
+    let _: LexerBuilder<MockTokenKind<()>> = LexerBuilder::new().append(exact("a"));
+    let _: LexerBuilder<MockTokenKind<()>, i32> = LexerBuilder::stateful().append(exact("a"));
+    let _: LexerBuilder<MockTokenKind<()>, (), i32> = LexerBuilder::with_error().append(exact("a"));
+    let _: LexerBuilder<MockTokenKind<()>, i32, i32> =
+      LexerBuilder::stateful_with_error().append(exact("a"));
+  }
+
+  #[test]
+  fn test_lexer_builder_actions() {
+    let builder = LexerBuilder::new().append(exact("a"));
+    assert_eq!(builder.actions().len(), 1);
+  }
+
+  #[test]
+  fn test_lexer_builder_ensure_head_matcher() {
+    let (invalid, _) = LexerBuilder::new()
+      .append([regex("a"), exact("a"), regex("a")])
+      .ensure_head_matcher()
+      .unwrap_err();
+    assert_eq!(invalid, vec![0, 2]);
+
+    LexerBuilder::new()
+      .append(exact("a"))
+      .ensure_head_matcher()
+      .unwrap();
+  }
+
+  #[test]
+  fn test_build() {
+    let builder_factory = || LexerBuilder::stateful::<i32>().append(exact("a"));
+
+    let lexer = builder_factory().build_with(1, "123");
+    assert_eq!(lexer.state, 1);
+    assert_eq!(lexer.instant().text(), "123");
+
+    let lexer = builder_factory().build("123");
+    assert_eq!(lexer.state, 0);
+    assert_eq!(lexer.instant().text(), "123");
+  }
+}
