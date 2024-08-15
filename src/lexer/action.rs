@@ -158,6 +158,8 @@ pub(super) type RcActionExec<Kind, State, ErrorType> = ActionExecBase<
 >;
 
 impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
+  /// Break this instance into two parts and wrap them in [`Rc`].
+  /// Return [`RcActionExec`] and [`RcActionProps`].
   #[inline]
   pub(super) fn into_rc(self) -> (RcActionExec<Kind, State, ErrorType>, RcActionProps<Kind>) {
     let props = Rc::new(ActionBase {
