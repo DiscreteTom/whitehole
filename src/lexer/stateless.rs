@@ -124,7 +124,13 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// This function will pre-calculate some collections to optimize the runtime performance.
   pub fn new(actions: Vec<Action<Kind, State, ErrorType>>) -> Self {
     // as per data oriented design, convert actions into 2 lists to optimize iteration efficiency (optimize CPU cache hit)
-    let (execs, props) = actions.into_iter().map(Action::into_rc).unzip();
+    let mut execs = Vec::with_capacity(actions.len());
+    let mut props = Vec::with_capacity(actions.len());
+    for a in actions {
+      let (e, p) = a.into_rc();
+      execs.push(e);
+      props.push(p);
+    }
 
     // known kinds => actions
     let kinds_action_map = Self::init_kind_map(&execs, &props);
