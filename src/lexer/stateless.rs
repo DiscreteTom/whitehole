@@ -151,7 +151,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     Vec<RcActionExec<Kind, State, ErrorType>>,
     Vec<RcActionProps<Kind>>,
   )> {
-    let mut table = OptionLookupTable::with_keys(
+    let mut res = OptionLookupTable::with_keys(
       &props.iter().map(|p| p.kind().value()).collect::<Vec<_>>(),
       // in most cases there is only one action for each kind
       || (Vec::with_capacity(1), Vec::with_capacity(1)),
@@ -160,23 +160,21 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     for (e, p) in execs.iter().zip(props.iter()) {
       if p.muted() {
         // muted, add to all kinds
-        for d in table.data_mut() {
-          if let Some((execs, props)) = d {
-            execs.push(e.clone());
-            props.push(p.clone());
-          }
-        }
+        res.for_each_value_mut(|(execs, props)| {
+          execs.push(e.clone());
+          props.push(p.clone());
+        });
       } else {
         // non-muted, only add to possible kinds
         // SAFETY: `p.kind().value()` is guaranteed to be in the range of `0..=max`
-        let (execs, props) = unsafe { table.get_unchecked_mut(p.kind().value()) };
+        let (execs, props) = unsafe { res.get_unchecked_mut(p.kind().value()) };
         execs.push(e.clone());
         props.push(p.clone());
       }
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
 
-    table
+    res
   }
 }
 

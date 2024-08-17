@@ -63,9 +63,10 @@ impl<V> OptionLookupTable<V> {
     }
   }
 
-  #[inline]
-  pub fn data_mut(&mut self) -> &mut [Option<V>] {
-    &mut self.data
+  pub fn for_each_value_mut(&mut self, mut f: impl FnMut(&mut V)) {
+    for v in &mut self.data {
+      v.as_mut().map(|v| f(v));
+    }
   }
 }
 
