@@ -4,8 +4,9 @@ use std::collections::HashMap;
 
 pub(super) struct LiteralMap<Kind, State, ErrorType> {
   /// The key of the map is the literal.
-  /// Actions in the value should be either muted or have a matched [`Action::literal`].
-  known_map: HashMap<String, HeadMap<Kind, State, ErrorType>>,
+  /// Actions in the value should be either muted or have a matched
+  /// [`Action::literal`](crate::lexer::action::Action::literal)
+  known_map: HashMap<String, HeadMap<Kind, State, ErrorType>>, // TODO: optimize using lookup table
   /// When the rest of the input text doesn't starts with the expected literal,
   /// only muted actions will be checked.
   muted_map: HeadMap<Kind, State, ErrorType>,
