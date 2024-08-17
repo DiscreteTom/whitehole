@@ -23,6 +23,18 @@ impl<V> OptionLookupTable<V> {
   pub unsafe fn get_option_unchecked_mut(&mut self, key: usize) -> &mut Option<V> {
     self.data.get_unchecked_mut(key)
   }
+
+  // TODO: remove this
+  #[inline]
+  pub fn data(&self) -> &[Option<V>] {
+    &self.data
+  }
+
+  // TODO: remove this
+  #[inline]
+  pub fn data_mut(&mut self) -> &mut [Option<V>] {
+    &mut self.data
+  }
 }
 
 impl<V> Lookup for OptionLookupTable<V> {
