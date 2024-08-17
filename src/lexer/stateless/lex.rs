@@ -14,7 +14,7 @@ use crate::{
     stateless::utils::{traverse_actions, traverse_actions_mut, update_state},
     token::{Range, Token, TokenKindId, TokenKindIdBinding},
   },
-  utils::Accumulator,
+  utils::{lookup::lookup::Lookup, Accumulator},
 };
 
 impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
@@ -334,7 +334,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     let literal_map = kind.map_or(&self.literal_map, |kind| {
       self
         .kind_literal_map
-        .get(&kind)
+        .get(kind.value())
         .expect(Self::INVALID_EXPECTED_KIND)
     });
     let head_map = literal_map
@@ -350,7 +350,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
       |kind| {
         self
           .kind_head_map
-          .get(&kind)
+          .get(kind.value())
           .expect(Self::INVALID_EXPECTED_KIND)
       },
     )

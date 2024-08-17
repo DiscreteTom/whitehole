@@ -98,13 +98,10 @@ mod utils;
 
 pub use options::*;
 
-use super::{
-  action::{Action, RcActionExec, RcActionProps},
-  token::TokenKindId,
-};
+use super::action::{Action, RcActionExec, RcActionProps};
+use crate::utils::lookup::{lookup::Lookup, option::OptionLookupTable};
 use head_map::HeadMap;
 use literal_map::LiteralMap;
-use std::collections::HashMap;
 
 /// Stateless, immutable lexer.
 pub struct StatelessLexer<Kind, State = (), ErrorType = ()> {
@@ -113,21 +110,21 @@ pub struct StatelessLexer<Kind, State = (), ErrorType = ()> {
   head_map: HeadMap<Kind, State, ErrorType>,
   /// This is used to accelerate expected lexing by the expected kind and actions' head matcher.
   /// This is pre-calculated to optimize the runtime performance.
-  kind_head_map: HashMap<TokenKindId<Kind>, HeadMap<Kind, State, ErrorType>>,
+  kind_head_map: OptionLookupTable<HeadMap<Kind, State, ErrorType>>,
   /// This is used to accelerate expected lexing by the expected literal and actions' head matcher.
   /// This is pre-calculated to optimize the runtime performance.
   literal_map: LiteralMap<Kind, State, ErrorType>,
   /// This is used to accelerate expected lexing by the expected kind, the expected literal and actions' head matcher.
   /// This is pre-calculated to optimize the runtime performance.
-  kind_literal_map: HashMap<TokenKindId<Kind>, LiteralMap<Kind, State, ErrorType>>,
+  kind_literal_map: OptionLookupTable<LiteralMap<Kind, State, ErrorType>>,
 }
 
 impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// Create a new [`StatelessLexer`] from a list of actions.
   /// This function will pre-calculate some collections to optimize the runtime performance.
   pub fn new(actions: Vec<Action<Kind, State, ErrorType>>) -> Self {
-    // as per data oriented design, collect to 2 lists
-    let (execs, props) = actions.into_iter().map(|a| a.into_rc()).unzip();
+    // as per data oriented design, convert actions into 2 lists to optimize iteration efficiency (optimize CPU cache hit)
+    let (execs, props) = actions.into_iter().map(Action::into_rc).unzip();
 
     // known kinds => actions
     let kinds_action_map = Self::init_kind_map(&execs, &props);
@@ -138,60 +135,48 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
 
     Self {
       kind_head_map: kinds_action_map
-        .iter()
-        .map(|(k, (execs, props))| (*k, HeadMap::new(execs, props, known_head_chars.clone())))
-        .collect(),
-      kind_literal_map: kinds_action_map
-        .iter()
-        .map(|(k, (execs, props))| {
-          (
-            *k,
-            LiteralMap::new(execs, props, known_literals.clone(), &known_head_chars),
-          )
-        })
-        .collect(),
+        .map(|(execs, props)| HeadMap::new(execs, props, known_head_chars.clone())),
+      kind_literal_map: kinds_action_map.map(|(execs, props)| {
+        LiteralMap::new(execs, props, known_literals.clone(), &known_head_chars)
+      }),
       literal_map: LiteralMap::new(&execs, &props, known_literals, &known_head_chars),
       head_map: HeadMap::new(&execs, &props, known_head_chars),
     }
   }
 
-  #[inline] // there is only one call site, so mark this as inline
   fn init_kind_map(
     execs: &Vec<RcActionExec<Kind, State, ErrorType>>,
     props: &Vec<RcActionProps<Kind>>,
-  ) -> HashMap<
-    TokenKindId<Kind>,
-    (
-      Vec<RcActionExec<Kind, State, ErrorType>>,
-      Vec<RcActionProps<Kind>>,
-    ),
-  > {
-    let mut res = HashMap::new();
-    // prepare kind map, add value for all known possible kinds
-    // this has to be done before filling the map
-    // because we need to iter over all possible kinds when filling the map
-    for p in props {
-      res.entry(p.kind()).or_insert((Vec::new(), Vec::new()));
-    }
-    // fill it
+  ) -> OptionLookupTable<(
+    Vec<RcActionExec<Kind, State, ErrorType>>,
+    Vec<RcActionProps<Kind>>,
+  )> {
+    let mut table = OptionLookupTable::with_keys(
+      &props.iter().map(|p| p.kind().value()).collect::<Vec<_>>(),
+      // in most cases there is only one action for each kind
+      || (Vec::with_capacity(1), Vec::with_capacity(1)),
+    );
+
     for (e, p) in execs.iter().zip(props.iter()) {
       if p.muted() {
         // muted, add to all kinds
-        for (_, (execs, props)) in res.iter_mut() {
-          execs.push(e.clone());
-          props.push(p.clone());
+        for d in table.data_mut() {
+          if let Some((execs, props)) = d {
+            execs.push(e.clone());
+            props.push(p.clone());
+          }
         }
       } else {
         // non-muted, only add to possible kinds
-        // SAFETY: the entry is guaranteed to exist since we've collected all possible kinds
-        let (execs, props) = unsafe { res.get_mut(&p.kind()).unwrap_unchecked() };
+        // SAFETY: `p.kind().value()` is guaranteed to be in the range of `0..=max`
+        let (execs, props) = unsafe { table.get_unchecked_mut(p.kind().value()) };
         execs.push(e.clone());
         props.push(p.clone());
       }
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
 
-    res
+    table
   }
 }
 
@@ -298,8 +283,7 @@ mod tests {
     );
 
     // kind_head_map
-    assert_eq!(lexer.kind_head_map.len(), ['A', 'B'].len());
-    let kind_a_head_map = &lexer.kind_head_map[&A::kind_id()];
+    let kind_a_head_map = lexer.kind_head_map.get(A::kind_id().value()).unwrap();
     assert_immutable_actions_eq(
       &kind_a_head_map.get('a'),
       vec![
@@ -440,8 +424,7 @@ mod tests {
     // literal_b_muted_head_map should be similar to literal_a_muted_head_map, skip
 
     // kind_literal_map
-    assert_eq!(lexer.kind_literal_map.len(), ["A", "B"].len());
-    let kind_a_literal_map = &lexer.kind_literal_map[&A::kind_id()];
+    let kind_a_literal_map = lexer.kind_literal_map.get(A::kind_id().value()).unwrap();
     assert_immutable_actions_eq(
       &kind_a_literal_map.known_map()["a"].get('a'),
       vec![
