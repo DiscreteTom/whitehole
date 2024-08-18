@@ -2,7 +2,9 @@
 pub struct ActionOutput<BindingType, OptionErrorType> {
   /// The [`Token::binding`](crate::lexer::token::Token::binding)
   /// that is created by this action.
-  /// Usually this is [`TokenKindIdBinding`](crate::lexer::token::TokenKindIdBinding).
+  /// This is often [`TokenKindIdBinding<Kind>`](crate::lexer::token::TokenKindIdBinding)
+  /// but might be `&TokenKindIdBinding<Kind>`
+  /// in some action decorators' contexts.
   pub binding: BindingType,
   /// How many bytes are digested by this action.
   /// # Caveats
@@ -15,7 +17,7 @@ pub struct ActionOutput<BindingType, OptionErrorType> {
   /// and the error will be collected by
   /// [`LexOptions::errors`](crate::lexer::options::LexOptions::errors).
   ///
-  /// This is often `Option<ErrorType>` but might be `&Option<ErrorType>`
-  /// in action's decorators.
+  /// This is often [`Option<ErrorType>`] but might be `&Option<ErrorType>`
+  /// in some action decorators' contexts.
   pub error: OptionErrorType,
 }
