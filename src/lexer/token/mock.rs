@@ -1,4 +1,4 @@
-use super::{SubTokenKind, TokenKindIdBinding};
+use super::SubTokenKind;
 
 /// This implements [`SubTokenKind`] and `Into<TokenKindIdBinding<MockTokenKind<T>>>`
 /// and only has one possible token kind id value.
@@ -32,16 +32,10 @@ impl<T> SubTokenKind for MockTokenKind<T> {
   const VARIANT_INDEX: usize = 0;
 }
 
-impl<T> Into<TokenKindIdBinding<MockTokenKind<T>>> for MockTokenKind<T> {
-  #[inline]
-  fn into(self) -> TokenKindIdBinding<MockTokenKind<T>> {
-    TokenKindIdBinding::new(self)
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::lexer::token::TokenKindIdBinding;
 
   #[test]
   fn mock_token_kind_new() {

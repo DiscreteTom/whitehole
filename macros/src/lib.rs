@@ -19,19 +19,16 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// pub enum MyKind { A, B(B), C(C) }
 /// pub struct A;
 /// impl Into<MyKind> for A { ... }
-/// impl Into<TokenKindIdBinding<MyKind>> for A { ... }
 /// impl Into<TokenKindId<MyKind>> for A { ... }
 /// impl SubTokenKind for A { ... }
 ///
 /// pub struct B(pub i32);
 /// impl Into<MyKind> for B { ... }
-/// impl Into<TokenKindIdBinding<MyKind>> for B { ... }
 /// impl Into<TokenKindId<MyKind>> for B { ... }
 /// impl SubTokenKind for B { ... }
 ///
 /// pub struct C { pub c: i32 }
 /// impl Into<MyKind> for C { ... }
-/// impl Into<TokenKindIdBinding<MyKind>> for C { ... }
 /// impl Into<TokenKindId<MyKind>> for C { ... }
 /// impl SubTokenKind for C { ... }
 /// ```
@@ -171,17 +168,6 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
         });
       }
     }
-
-    // impl Into<TokenKindIdBinding<MyKind>> for the generated structs
-    // this is required by `Action::select`
-    gen.push(quote! {
-      impl Into<#crate_name::lexer::token::TokenKindIdBinding<#enum_name>> for #variant_name {
-        #[inline]
-        fn into(self) -> #crate_name::lexer::token::TokenKindIdBinding<#enum_name> {
-          #crate_name::lexer::token::TokenKindIdBinding::new(self)
-        }
-      }
-    });
 
     // impl SubTokenKind and Into<TokenKindId<MyKind>> for the generated struct
     gen.push(quote! {
