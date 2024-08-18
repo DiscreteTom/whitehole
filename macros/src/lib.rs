@@ -19,17 +19,14 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// pub enum MyKind { A, B(B), C(C) }
 /// pub struct A;
 /// impl Into<MyKind> for A { ... }
-/// impl Into<TokenKindId<MyKind>> for A { ... }
 /// impl SubTokenKind for A { ... }
 ///
 /// pub struct B(pub i32);
 /// impl Into<MyKind> for B { ... }
-/// impl Into<TokenKindId<MyKind>> for B { ... }
 /// impl SubTokenKind for B { ... }
 ///
 /// pub struct C { pub c: i32 }
 /// impl Into<MyKind> for C { ... }
-/// impl Into<TokenKindId<MyKind>> for C { ... }
 /// impl SubTokenKind for C { ... }
 /// ```
 /// Besides, if the token kind derive [`Default`]:
@@ -169,21 +166,12 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
       }
     }
 
-    // impl SubTokenKind and Into<TokenKindId<MyKind>> for the generated struct
+    // impl SubTokenKind for the generated struct
     gen.push(quote! {
       // impl SubTokenKind so users can get the kind id from the type instead of the value
       impl #crate_name::lexer::token::SubTokenKind for #variant_name {
         type TokenKind = #enum_name;
         const VARIANT_INDEX: usize = #index;
-      }
-      // impl Into<TokenKindId<MyKind>> for the generated struct
-      // this is helpful in expectational lexing, if users wants to provide the expected kind id
-      // they can just use the value (especially for unit variants)
-      impl Into<#crate_name::lexer::token::TokenKindId<#enum_name>> for #variant_name {
-        #[inline]
-        fn into(self) -> #crate_name::lexer::token::TokenKindId<#enum_name> {
-          <#variant_name as #crate_name::lexer::token::SubTokenKind>::kind_id()
-        }
       }
     });
 

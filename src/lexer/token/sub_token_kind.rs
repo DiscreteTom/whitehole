@@ -32,3 +32,12 @@ pub trait SubTokenKind {
     TokenKindId::new(Self::VARIANT_INDEX)
   }
 }
+
+// this is helpful in expectational lexing, if users wants to provide the expected kind id
+// they can just use the value (especially for unit variants)
+impl<Kind, SubKind: SubTokenKind<TokenKind = Kind>> From<SubKind> for TokenKindId<Kind> {
+  #[inline]
+  fn from(_: SubKind) -> Self {
+    SubKind::kind_id()
+  }
+}
