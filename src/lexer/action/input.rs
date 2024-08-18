@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub struct ActionInput<'text, StateRef> {
-  /// An reference of the `State`.
+  /// A reference of the `State`.
   ///
   /// This is public, so if this is `&mut State` then you can mutate this directly.
   ///
@@ -24,6 +24,7 @@ impl<'text, StateRef> ActionInput<'text, StateRef> {
   /// # Panics
   /// This method panics if the [`start`](Self::start) is out of bounds of
   /// [`text`](Self::text).
+  #[inline]
   pub fn new(text: &'text str, start: usize, state: StateRef) -> Option<Self> {
     let rest = &text[start..];
 
@@ -84,10 +85,10 @@ impl<'text, StateRef> ActionInput<'text, StateRef> {
   }
 }
 
-impl<'text, 'state, State> ActionInput<'text, &'state mut State> {
-  /// Cast `ActionInput<&mut State>` to `ActionInput<&State>`
+impl<'text, State> ActionInput<'text, &'_ mut State> {
+  /// Convert `ActionInput<&mut State>` to `ActionInput<&State>`
   #[inline]
-  pub(crate) fn as_ref<'this>(&'this self) -> ActionInput<'text, &'this State> {
+  pub(crate) fn as_ref(&self) -> ActionInput<'text, &State> {
     ActionInput {
       state: self.state,
       text: self.text,
