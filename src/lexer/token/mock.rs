@@ -1,7 +1,8 @@
 use super::SubTokenKind;
 
-/// This implements [`SubTokenKind`] and `Into<TokenKindIdBinding<MockTokenKind<T>>>`
-/// and only has one possible token kind id value.
+/// This implements [`SubTokenKind`]
+/// and the [`TokenKindId::value`](crate::lexer::token::TokenKindId::value)
+/// will always be `0`.
 /// This is useful as a placeholder or data carrier.
 /// # Examples
 /// ```
