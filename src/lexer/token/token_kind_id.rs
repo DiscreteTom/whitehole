@@ -45,7 +45,7 @@ use std::{
 /// `TypeId` is not.
 /// - Currently `TypeId` use 128 bits to represent the type, which is too large for our purpose.
 /// ## Others
-/// By using `usize` as the id, we can use this as the index of a lookup table.
+/// By using [`usize`] as the id, we can use this as the index of a lookup table.
 /// And it is small enough to be passed around by value.
 pub struct TokenKindId<Kind> {
   value: usize,
