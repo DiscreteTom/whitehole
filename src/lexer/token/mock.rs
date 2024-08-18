@@ -1,4 +1,4 @@
-use super::{SubTokenKind, TokenKindId, TokenKindIdBinding};
+use super::{SubTokenKind, TokenKindIdBinding};
 
 /// This implements [`SubTokenKind`] and `Into<TokenKindIdBinding<MockTokenKind<T>>>`
 /// and only has one possible token kind id value.
@@ -29,11 +29,7 @@ impl<T> MockTokenKind<T> {
 
 impl<T> SubTokenKind for MockTokenKind<T> {
   type TokenKind = Self;
-  #[inline]
-  fn kind_id() -> TokenKindId<Self::TokenKind> {
-    // the only possible token kind id value
-    TokenKindId::new(0)
-  }
+  const VARIANT_INDEX: usize = 0;
 }
 
 impl<T> Into<TokenKindIdBinding<MockTokenKind<T>>> for MockTokenKind<T> {

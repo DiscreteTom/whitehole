@@ -53,10 +53,10 @@ pub struct TokenKindId<Kind> {
 }
 
 impl<Kind> TokenKindId<Kind> {
-  /// You should NEVER call this function directly.
-  /// This function should only be used in the [`token_kind`](super::token_kind) macro.
+  /// This is internal to prevent users from creating the id directly.
+  /// All the ids should be created by [`SubTokenKind::kind_id`](super::SubTokenKind::kind_id).
   #[inline]
-  pub const fn new(value: usize) -> Self {
+  pub(super) const fn new(value: usize) -> Self {
     Self {
       value,
       __: PhantomData,

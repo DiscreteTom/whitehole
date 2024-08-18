@@ -24,6 +24,11 @@ use super::TokenKindId;
 /// ```
 pub trait SubTokenKind {
   type TokenKind;
+  const VARIANT_INDEX: usize;
+
   /// Return the kind id of this sub token kind.
-  fn kind_id() -> TokenKindId<Self::TokenKind>;
+  #[inline]
+  fn kind_id() -> TokenKindId<Self::TokenKind> {
+    TokenKindId::new(Self::VARIANT_INDEX)
+  }
 }

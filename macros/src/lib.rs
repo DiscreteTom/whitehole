@@ -188,10 +188,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
       // impl SubTokenKind so users can get the kind id from the type instead of the value
       impl #crate_name::lexer::token::SubTokenKind for #variant_name {
         type TokenKind = #enum_name;
-        #[inline]
-        fn kind_id() -> #crate_name::lexer::token::TokenKindId<Self::TokenKind> {
-          #crate_name::lexer::token::TokenKindId::new(#index)
-        }
+        const VARIANT_INDEX: usize = #index;
       }
       // impl Into<TokenKindId<MyKind>> for the generated struct
       // this is helpful in expectational lexing, if users wants to provide the expected kind id
@@ -199,7 +196,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
       impl Into<#crate_name::lexer::token::TokenKindId<#enum_name>> for #variant_name {
         #[inline]
         fn into(self) -> #crate_name::lexer::token::TokenKindId<#enum_name> {
-          #crate_name::lexer::token::TokenKindId::new(#index)
+          <#variant_name as #crate_name::lexer::token::SubTokenKind>::kind_id()
         }
       }
     });
