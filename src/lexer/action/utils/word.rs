@@ -45,7 +45,7 @@ pub fn starts_with_word_boundary(rest: &str) -> bool {
 #[inline]
 pub fn no_word_boundary_in_rest<State, ErrorType>(
   ctx: AcceptedActionOutputContext<
-    &ActionInput<&State>,
+    &mut ActionInput<&mut State>,
     &ActionOutput<TokenKindIdBinding<MockTokenKind<()>>, Option<ErrorType>>,
   >,
 ) -> bool {
@@ -80,14 +80,14 @@ mod tests {
 
   fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
-      action.exec.as_immutable()(&ActionInput::new(text, 0, &()).unwrap())
+      (action.exec.raw)(&mut ActionInput::new(text, 0, &mut ()).unwrap())
         .unwrap()
         .digested,
       expected
     );
   }
   fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
-    assert!(action.exec.as_immutable()(&ActionInput::new(text, 0, &()).unwrap()).is_none());
+    assert!((action.exec.raw)(&mut ActionInput::new(text, 0, &mut ()).unwrap()).is_none());
   }
 
   #[should_panic]

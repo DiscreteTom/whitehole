@@ -16,17 +16,17 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 /// let a: Action<_> = simple(|input| input.rest().len());
 /// ```
 pub fn simple<State, ErrorType>(
-  f: impl Fn(&ActionInput<&State>) -> usize + 'static,
+  f: impl Fn(&mut ActionInput<&mut State>) -> usize + 'static,
 ) -> Action<MockTokenKind<()>, State, ErrorType> {
   Action {
-    exec: ActionExec::Immutable(Box::new(move |input| match f(input) {
+    exec: ActionExec::new(move |input| match f(input) {
       0 => None,
       digested => Some(ActionOutput {
         binding: MockTokenKind::new(()).into(),
         digested,
         error: None,
       }),
-    })),
+    }),
     kind: MockTokenKind::kind_id(),
     head: None,
     muted: false,
@@ -55,16 +55,16 @@ pub fn simple<State, ErrorType>(
 /// let a: Action<MockTokenKind<i32>> = simple_with_data(|input| Some((input.rest().len(), input.rest().parse().unwrap())));
 /// ```
 pub fn simple_with_data<State, ErrorType, T>(
-  f: impl Fn(&ActionInput<&State>) -> Option<(usize, T)> + 'static,
+  f: impl Fn(&mut ActionInput<&mut State>) -> Option<(usize, T)> + 'static,
 ) -> Action<MockTokenKind<T>, State, ErrorType> {
   Action {
-    exec: ActionExec::Immutable(Box::new(move |input| {
+    exec: ActionExec::new(move |input| {
       f(input).map(|(digested, data)| ActionOutput {
         binding: MockTokenKind::new(data).into(),
         digested,
         error: None,
       })
-    })),
+    }),
     kind: MockTokenKind::kind_id(),
     head: None,
     muted: false,
@@ -80,9 +80,9 @@ mod tests {
   #[test]
   fn simple_accept_all() {
     assert!(matches!(
-      simple::<_, ()>(|input| input.text().len())
-        .exec
-        .as_immutable()(&ActionInput::new("123", 0, &()).unwrap())
+      (simple::<_, ()>(|input| input.text().len()).exec.raw)(
+        &mut ActionInput::new("123", 0, &mut ()).unwrap()
+      )
       .unwrap()
       .digested,
       3
@@ -92,9 +92,9 @@ mod tests {
   #[test]
   fn simple_accept_rest() {
     assert!(matches!(
-      simple::<_, ()>(|input| input.rest().len())
-        .exec
-        .as_immutable()(&ActionInput::new("123", 1, &()).unwrap())
+      (simple::<_, ()>(|input| input.rest().len()).exec.raw)(
+        &mut ActionInput::new("123", 1, &mut ()).unwrap()
+      )
       .unwrap()
       .digested,
       2
@@ -104,7 +104,7 @@ mod tests {
   #[test]
   fn simple_reject_on_0() {
     assert!(matches!(
-      simple::<_, ()>(|_| 0).exec.as_immutable()(&ActionInput::new("123", 0, &()).unwrap()),
+      (simple::<_, ()>(|_| 0).exec.raw)(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
       None
     ));
   }
@@ -113,7 +113,7 @@ mod tests {
   fn simple_option_with_data_accept() {
     let action: Action<MockTokenKind<u32>> =
       simple_with_data(|input| Some((input.text().len(), 123)));
-    let output = action.exec.as_immutable()(&ActionInput::new("123", 0, &()).unwrap());
+    let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut ()).unwrap());
     assert!(matches!(
       output,
       Some(ActionOutput {
@@ -127,7 +127,7 @@ mod tests {
   #[test]
   fn simple_option_with_data_accept_0() {
     let action: Action<MockTokenKind<u32>> = simple_with_data(|_| Some((0, 123)));
-    let output = action.exec.as_immutable()(&ActionInput::new("123", 0, &()).unwrap());
+    let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut ()).unwrap());
     assert!(matches!(
       output,
       Some(ActionOutput {
@@ -141,7 +141,7 @@ mod tests {
   #[test]
   fn simple_option_with_data_reject() {
     let action: Action<MockTokenKind<u32>> = simple_with_data(|_| None);
-    let output = action.exec.as_immutable()(&ActionInput::new("123", 0, &()).unwrap());
+    let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut ()).unwrap());
     assert!(matches!(output, None));
   }
 }

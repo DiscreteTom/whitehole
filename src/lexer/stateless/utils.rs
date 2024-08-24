@@ -1,129 +1,18 @@
 use super::head_map::HeadMapActions;
 use crate::{
   lexer::{
-    action::{ActionExecBase, ActionInput, ActionOutput},
-    fork::ForkOutputFactory,
+    action::{ActionInput, ActionOutput},
     re_lex::ReLexContext,
     token::{Range, Token, TokenKindIdBinding},
   },
   utils::Accumulator,
 };
 
-/// Traverse all actions with an immutable input to find the first accepted action.
-/// Return the output, the index of the accepted action and whether the action is muted.
-/// If no accepted action, return [`None`].
-/// If the state is mutated during the traversal, return the new state.
-pub(super) fn traverse_actions<'text, Kind, State, ErrorType>(
-  input: ActionInput<&State>,
-  actions: &HeadMapActions<Kind, State, ErrorType>,
-  re_lex: &ReLexContext,
-) -> (
-  Option<(
-    ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
-    usize,
-    bool,
-  )>,
-  Option<State>,
-)
-where
-  State: Clone,
-{
-  if let Some(res) = traverse_immutables(&input, actions, re_lex) {
-    return (Some(res), None);
-  }
-
-  // if actions.rest is empty, prevent unnecessary cloning of the state
-  if actions.rest().is_empty() {
-    return (None, None);
-  }
-
-  // clone the state to construct mutable action input
-  let mut state = input.state.clone();
-
-  // we don't need fork output factory to clone the state here
-  // because the `State` is already `Clone`
-  // and it's been already cloned in `state`
-
-  (
-    traverse_rest(&mut input.reload(&mut state), actions, re_lex),
-    Some(state),
-  )
-}
-
 /// Traverse all actions with a mutable input to find the first accepted action.
 /// Return the output, the index of the accepted action and whether the action is muted.
 /// If no accepted action, return [`None`].
-pub(super) fn traverse_actions_mut<
-  'text,
-  Kind,
-  State,
-  ErrorType,
-  ForkOutputFactoryType: ForkOutputFactory<'text, Kind, State, ErrorType>,
->(
+pub(super) fn traverse_actions<'text, Kind, State, ErrorType>(
   mut input: ActionInput<&mut State>,
-  actions: &HeadMapActions<Kind, State, ErrorType>,
-  re_lex: &ReLexContext,
-  fork_output_factory: &mut ForkOutputFactoryType,
-  peek: bool,
-) -> Option<(
-  ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
-  usize,
-  bool,
-)> {
-  if let Some(res) = traverse_immutables(&input.as_ref(), actions, re_lex) {
-    return Some(res);
-  }
-
-  // if actions.rest is empty, prevent unnecessary cloning of the state
-  if actions.rest().is_empty() {
-    return None;
-  }
-
-  // when peek, we don't need to backup the state
-  // because the original state is not mutated,
-  // so only backup when not peeking
-  if !peek {
-    fork_output_factory.backup_state(input.state);
-  }
-
-  traverse_rest(&mut input, actions, re_lex)
-}
-
-fn traverse_immutables<Kind, State, ErrorType>(
-  input: &ActionInput<&State>,
-  actions: &HeadMapActions<Kind, State, ErrorType>,
-  re_lex: &ReLexContext,
-) -> Option<(
-  ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
-  usize,
-  bool,
-)> {
-  for (i, exec) in
-    actions
-      .immutables()
-      .exec()
-      .iter()
-      .enumerate()
-      .skip(if input.start() == re_lex.start {
-        // SAFETY: it is ok that if `skip` is larger than `immutables.len()`
-        re_lex.skip
-      } else {
-        0
-      })
-  {
-    if let Some(output) = exec(input) {
-      debug_assert!(output.digested <= input.rest().len());
-      // return once accepted action is found
-      return Some((output, i, actions.immutables().muted()[i]));
-    }
-  }
-
-  // no accepted action
-  None
-}
-
-fn traverse_rest<'text, Kind, State, ErrorType>(
-  input: &mut ActionInput<&mut State>,
   actions: &HeadMapActions<Kind, State, ErrorType>,
   re_lex: &ReLexContext,
 ) -> Option<(
@@ -132,28 +21,20 @@ fn traverse_rest<'text, Kind, State, ErrorType>(
   bool,
 )> {
   for (i, exec) in actions
-    .rest()
     .exec()
     .iter()
     .enumerate()
     .skip(if input.start() == re_lex.start {
-      // prevent subtraction overflow, e.g. skip is 0
-      re_lex.skip.saturating_sub(actions.immutables().len())
+      // SAFETY: it is ok that if `skip` is larger than `actions.len()`
+      re_lex.skip
     } else {
       0
     })
   {
-    if let Some(output) = match exec {
-      ActionExecBase::Immutable(exec) => exec(&input.as_ref()),
-      ActionExecBase::Mutable(exec) => exec(input),
-    } {
+    if let Some(output) = (exec.raw)(&mut input) {
       debug_assert!(output.digested <= input.rest().len());
       // return once accepted action is found
-      return Some((
-        output,
-        i + actions.immutables().len(),
-        actions.rest().muted()[i],
-      ));
+      return Some((output, i, actions.muted()[i]));
     }
   }
 

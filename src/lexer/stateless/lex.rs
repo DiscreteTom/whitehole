@@ -11,7 +11,7 @@ use crate::{
     fork::{ForkOutputFactory, LexOptionsFork},
     output::LexOutput,
     re_lex::ReLexContext,
-    stateless::utils::{traverse_actions, traverse_actions_mut, update_state},
+    stateless::utils::{traverse_actions, update_state},
     token::{Range, Token, TokenKindId, TokenKindIdBinding},
   },
   utils::{lookup::lookup::Lookup, Accumulator},
@@ -216,111 +216,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   where
     State: Clone
   {
-    let mut digested = 0;
-    let mut errors = options.base.errors;
-    let re_lexable_factory = Fork::OutputFactoryType::default();
-    let mut new_state = None;
-
-    if let Some(literal) = options.base.expectation.literal {
-      let (literal_map, head_map) =
-        self.get_literal_head_map(options.base.expectation.kind, literal);
-
-      loop {
-        let input_start = options.start + digested;
-        let input = break_loop_on_none!(ActionInput::new(text, input_start, options.state));
-        let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
-        let (res, state) = traverse_actions(input, actions, &options.base.re_lex);
-        new_state = state;
-        let (output, action_index, muted) = break_loop_on_none!(res);
-
-        if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors)
-        {
-          return (
-            done_with_token(
-              digested,
-              token,
-              re_lexable_factory,
-              input_start,
-              actions.len(),
-              action_index,
-            ),
-            new_state,
-          );
-        }
-
-        // if state is mutated, continue with mutable lexing
-        if let Some(mut state) = new_state {
-          return (
-            self.lex_mut_with_literal(
-              literal_map,
-              head_map,
-              digested,
-              errors,
-              options.start,
-              text,
-              &mut state,
-              literal,
-              &options.base.re_lex,
-              re_lexable_factory,
-              true,
-            ),
-            Some(state),
-          );
-        }
-
-        // else, muted, continue
-      }
-    } else {
-      // else, no expected literal
-      let head_map = self.get_kind_head_map(options.base.expectation.kind);
-
-      loop {
-        let input_start = options.start + digested;
-        let input = break_loop_on_none!(ActionInput::new(text, input_start, options.state));
-        let actions = head_map.get(input.next());
-        let (res, state) = traverse_actions(input, actions, &options.base.re_lex);
-        new_state = state;
-        let (output, action_index, muted) = break_loop_on_none!(res);
-
-        if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors)
-        {
-          return (
-            done_with_token(
-              digested,
-              token,
-              re_lexable_factory,
-              input_start,
-              actions.len(),
-              action_index,
-            ),
-            new_state,
-          );
-        }
-
-        // if state is mutated, continue with mutable lexing
-        if let Some(mut state) = new_state {
-          return (
-            self.lex_mut_without_literal(
-              head_map,
-              digested,
-              errors,
-              options.start,
-              text,
-              &mut state,
-              &options.base.re_lex,
-              re_lexable_factory,
-              true,
-            ),
-            Some(state),
-          );
-        }
-
-        // else, muted, continue
-      }
-    }
-
-    // no more input or no accepted actions
-    return (done_without_token(digested), new_state);
+    todo!()
   }
 
   fn get_literal_head_map(
@@ -378,7 +274,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
       let input_start = start + digested;
       let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state));
       let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
-      let res = traverse_actions_mut(input, actions, re_lex, &mut fork_output_factory, peek);
+      let res = traverse_actions(input, actions, re_lex);
       let (output, action_index, muted) = break_loop_on_none!(res);
 
       if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors) {
@@ -419,7 +315,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
       let input_start = start + digested;
       let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state));
       let actions = head_map.get(input.next());
-      let res = traverse_actions_mut(input, actions, re_lex, &mut fork_output_factory, peek);
+      let res = traverse_actions(input, actions, re_lex);
       let (output, action_index, muted) = break_loop_on_none!(res);
 
       if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors) {

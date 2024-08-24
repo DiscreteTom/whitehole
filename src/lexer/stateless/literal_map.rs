@@ -139,8 +139,8 @@ mod tests {
     expected: Vec<Action<MockTokenKind<()>, (), ()>>,
   ) {
     assert_eq!(actions.len(), expected.len());
-    for i in 0..actions.immutables().len() {
-      assert_eq!(actions.immutables().muted()[i], expected[i].muted());
+    for i in 0..actions.len() {
+      assert_eq!(actions.muted()[i], expected[i].muted());
     }
   }
 

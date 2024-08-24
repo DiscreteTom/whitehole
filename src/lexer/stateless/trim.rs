@@ -1,11 +1,11 @@
-use super::{
-  utils::{traverse_actions_mut, update_state},
-  StatelessLexer, StatelessTrimOptions,
-};
+use super::{utils::update_state, StatelessLexer, StatelessTrimOptions};
 use crate::{
   lexer::{
-    action::ActionInput, output::TrimOutput, re_lex::ReLexContext,
-    stateless::utils::break_loop_on_none, token::Range,
+    action::ActionInput,
+    output::TrimOutput,
+    re_lex::ReLexContext,
+    stateless::utils::{break_loop_on_none, traverse_actions},
+    token::Range,
   },
   utils::Accumulator,
 };
@@ -80,7 +80,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
       let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *options.state));
       // the literal map's muted map contains all the muted actions
       let actions = self.literal_map.muted_map().get(input.next());
-      let res = traverse_actions_mut(input, actions, &re_lex, &mut re_lexable_factory, false);
+      let res = traverse_actions(input, actions, &re_lex);
       let (output, _action_index, muted) = break_loop_on_none!(res);
 
       debug_assert!(muted, "all actions should be muted when trimming");

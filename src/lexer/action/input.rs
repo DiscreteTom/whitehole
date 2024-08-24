@@ -71,32 +71,6 @@ impl<'text, StateRef> ActionInput<'text, StateRef> {
   pub const fn next(&self) -> char {
     self.next
   }
-
-  /// Consume self, return a new instance with a new `StateRef`.
-  #[inline]
-  pub(crate) fn reload<NewStateRef>(self, s: NewStateRef) -> ActionInput<'text, NewStateRef> {
-    ActionInput {
-      state: s,
-      text: self.text,
-      start: self.start,
-      rest: self.rest,
-      next: self.next,
-    }
-  }
-}
-
-impl<'text, State> ActionInput<'text, &'_ mut State> {
-  /// Convert `ActionInput<&mut State>` to `ActionInput<&State>`
-  #[inline]
-  pub(crate) fn as_ref(&self) -> ActionInput<'text, &State> {
-    ActionInput {
-      state: self.state,
-      text: self.text,
-      start: self.start,
-      rest: self.rest,
-      next: self.next,
-    }
-  }
 }
 
 #[cfg(test)]
@@ -134,17 +108,5 @@ mod tests {
   fn action_input_out_of_text() {
     let mut state = ();
     ActionInput::new("123", 4, &mut state);
-  }
-
-  #[test]
-  fn action_input_reload() {
-    let mut state = ();
-    let input = ActionInput::new("123", 1, &mut state).unwrap();
-    let mut state = 123;
-    let input = input.reload(&mut state);
-    assert_eq!(input.text(), "123");
-    assert_eq!(input.start(), 1);
-    assert_eq!(input.rest(), "23");
-    assert_eq!(input.next(), '2');
   }
 }

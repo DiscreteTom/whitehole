@@ -49,6 +49,7 @@ pub enum HeadMatcher {
 
 #[derive(Debug)]
 pub struct ActionBase<Kind, Exec> {
+  // TODO: better name. e.g. digester?
   exec: Exec,
 
   /// See [`Self::kind`].
@@ -118,54 +119,47 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
   }
 }
 
-/// [`Action::exec`] that won't mutate the state.
-pub type ImmutableActionExec<Kind, State, ErrorType> = Box<
-  dyn Fn(&ActionInput<&State>) -> Option<ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>>,
->;
-
-/// [`Action::exec`] that do mutate the state.
-pub type MutableActionExec<Kind, State, ErrorType> = Box<
-  dyn Fn(
-    &mut ActionInput<&mut State>,
-  ) -> Option<ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>>,
->;
-
-#[derive(Clone)]
-pub enum ActionExecBase<ImmutableType, MutableType> {
-  Immutable(ImmutableType),
-  Mutable(MutableType),
+/// The [`Action::exec`].
+/// This is a new-type for `Box<dyn Fn(...) -> ...>` and implements [`Debug`].
+pub struct ActionExec<Kind, State, ErrorType> {
+  pub(crate) raw: Box<
+    dyn Fn(
+      &mut ActionInput<&mut State>,
+    ) -> Option<ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>>,
+  >,
 }
 
-impl<ImmutableType, MutableType> Debug for ActionExecBase<ImmutableType, MutableType> {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    match self {
-      Self::Immutable(_) => write!(f, "ActionExecBase::Immutable(...)"),
-      Self::Mutable(_) => write!(f, "ActionExecBase::Mutable(...)"),
-    }
+impl<Kind, State, ErrorType> ActionExec<Kind, State, ErrorType> {
+  #[inline]
+  pub(crate) fn new(
+    raw: impl Fn(
+        &mut ActionInput<&mut State>,
+      ) -> Option<ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>>
+      + 'static,
+  ) -> Self {
+    Self { raw: Box::new(raw) }
   }
 }
 
-/// The `Action::exec`.
-pub type ActionExec<Kind, State, ErrorType> = ActionExecBase<
-  ImmutableActionExec<Kind, State, ErrorType>,
-  MutableActionExec<Kind, State, ErrorType>,
->;
+impl<Kind, State, ErrorType> Debug for ActionExec<Kind, State, ErrorType> {
+  #[inline]
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "ActionExec(...)")
+  }
+}
 
 /// To create this, use [`simple`](simple::simple), [`simple_with_data`](simple::simple_with_data)
 /// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
 pub type Action<Kind, State = (), ErrorType = ()> =
   ActionBase<Kind, ActionExec<Kind, State, ErrorType>>;
 
-/// Action's attributes without `Action::exec`, wrapped in an [`Rc`].
+/// Action's attributes without [`Action::exec`], wrapped in an [`Rc`].
 pub(super) type RcActionProps<Kind> = Rc<ActionBase<Kind, ()>>;
-/// `Action::exec` wrapped in an [`Rc`] to make it clone-able.
-pub(super) type RcActionExec<Kind, State, ErrorType> = ActionExecBase<
-  Rc<ImmutableActionExec<Kind, State, ErrorType>>,
-  Rc<MutableActionExec<Kind, State, ErrorType>>,
->;
+/// [`Action::exec`] wrapped in an [`Rc`] to make it clone-able.
+pub(super) type RcActionExec<Kind, State, ErrorType> = Rc<ActionExec<Kind, State, ErrorType>>;
 
 impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
-  /// Break this instance into two parts and wrap them in [`Rc`].
+  /// Break self into two parts and wrap them in [`Rc`].
   /// Return [`RcActionExec`] and [`RcActionProps`].
   #[inline]
   pub(super) fn into_rc(self) -> (RcActionExec<Kind, State, ErrorType>, RcActionProps<Kind>) {
@@ -176,77 +170,7 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
       muted: self.muted,
       exec: (),
     });
-    (
-      match self.exec {
-        ActionExec::Immutable(exec) => RcActionExec::Immutable(Rc::new(exec)),
-        ActionExec::Mutable(exec) => RcActionExec::Mutable(Rc::new(exec)),
-      },
-      props,
-    )
-  }
-}
-
-/// Conditionally convert [`ActionInput<&mut State>`] to [`ActionInput<&State>`].
-///
-/// Usage:
-/// - `mut_input_to_ref!(input, true)`: `&input.as_ref()`
-/// - `mut_input_to_ref!(input, false)`: `input`
-macro_rules! mut_input_to_ref {
-  ($input: ident, true) => {
-    &$input.as_ref()
-  };
-  ($input: ident, false) => {
-    $input
-  };
-}
-pub(super) use mut_input_to_ref;
-
-/// Convert the content of [`ActionExec`] using the given macro.
-macro_rules! map_exec {
-  ($exec: expr, $macro_impl: ident) => {
-    match $exec {
-      ActionExec::Immutable(exec) => ActionExec::Immutable($macro_impl!(exec)),
-      ActionExec::Mutable(exec) => ActionExec::Mutable($macro_impl!(exec)),
-    }
-  };
-}
-pub(super) use map_exec;
-
-/// Convert the content of [`ActionExec`] using the given macro.
-/// The `macro_impl`'s second argument is a boolean indicating
-/// whether to convert the mutable input to immutable.
-macro_rules! map_exec_adapt_input {
-  ($exec: expr, $macro_impl: ident) => {
-    match $exec {
-      ActionExec::Immutable(exec) => ActionExec::Immutable($macro_impl!(exec, false)),
-      ActionExec::Mutable(exec) => ActionExec::Mutable($macro_impl!(exec, true)),
-    }
-  };
-}
-pub(super) use map_exec_adapt_input;
-
-// helpers for tests
-#[cfg(test)]
-impl<Kind, State, ErrorType> ActionExec<Kind, State, ErrorType> {
-  /// Try to convert [`ActionExec`] into [`ImmutableActionExec`].
-  /// This is only for testing.
-  /// # Panics
-  /// If the action is mutable.
-  pub(super) fn as_immutable(&self) -> &ImmutableActionExec<Kind, State, ErrorType> {
-    match self {
-      ActionExec::Immutable(exec) => exec,
-      ActionExec::Mutable(_) => panic!("ActionExec is mutable"),
-    }
-  }
-  /// Try to convert [`ActionExec`] into [`MutableActionExec`].
-  /// This is only for testing.
-  /// # Panics
-  /// If the action is immutable.
-  pub(super) fn as_mutable(&self) -> &MutableActionExec<Kind, State, ErrorType> {
-    match self {
-      ActionExec::Immutable(_) => panic!("ActionExec is immutable"),
-      ActionExec::Mutable(exec) => exec,
-    }
+    (Rc::new(self.exec), props)
   }
 }
 
@@ -265,7 +189,7 @@ mod tests {
   #[test]
   fn action_getters_default() {
     let action: Action<_> = Action {
-      exec: ActionExec::Immutable(Box::new(|_| None)),
+      exec: ActionExec::new(|_| None),
       kind: A::kind_id(),
       head: None,
       muted: false,
@@ -275,13 +199,13 @@ mod tests {
     assert_eq!(action.kind(), A::kind_id());
     assert!(action.head().is_none());
     assert!(action.literal().is_none());
-    assert!(action.exec().as_immutable()(&ActionInput::new("1", 0, &()).unwrap()).is_none())
+    assert!((action.exec().raw)(&mut ActionInput::new("1", 0, &mut ()).unwrap()).is_none())
   }
 
   #[test]
   fn action_getters() {
     let action: Action<_> = Action {
-      exec: ActionExec::Immutable(Box::new(|_| None)),
+      exec: ActionExec::new(|_| None),
       kind: A::kind_id(),
       head: Some(HeadMatcher::OneOf(HashSet::from(['a']))),
       muted: true,
@@ -291,6 +215,7 @@ mod tests {
     assert_eq!(action.kind(), A::kind_id());
     assert!(matches!(action.head(), Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['a'])));
     assert_eq!(action.literal(), &Some("123".into()));
+    assert!((action.exec().raw)(&mut ActionInput::new("1", 0, &mut ()).unwrap()).is_none())
   }
 
   #[test]
@@ -299,28 +224,14 @@ mod tests {
       format!(
         "{:?}",
         Action::<_> {
-          exec: ActionExec::Immutable(Box::new(|_| None)),
+          exec: ActionExec::new(|_| None),
           kind: A::kind_id(),
           head: Some(HeadMatcher::OneOf(HashSet::from(['a']))),
           muted: true,
           literal: Some("123".into()),
         }
       ),
-      "ActionBase { exec: ActionExecBase::Immutable(...), kind: TokenKindId<whitehole::lexer::action::tests::MyKind>(0), literal: Some(\"123\"), head: Some(OneOf({'a'})), muted: true }"
-    );
-
-    assert_eq!(
-      format!(
-        "{:?}",
-        Action::<_> {
-          exec: ActionExec::Mutable(Box::new(|_| None)),
-          kind: A::kind_id(),
-          head: Some(HeadMatcher::OneOf(HashSet::from(['a']))),
-          muted: true,
-          literal: Some("123".into()),
-        }
-      ),
-      "ActionBase { exec: ActionExecBase::Mutable(...), kind: TokenKindId<whitehole::lexer::action::tests::MyKind>(0), literal: Some(\"123\"), head: Some(OneOf({'a'})), muted: true }"
+      "ActionBase { exec: ActionExec(...), kind: TokenKindId<whitehole::lexer::action::tests::MyKind>(0), literal: Some(\"123\"), head: Some(OneOf({'a'})), muted: true }"
     );
   }
 }

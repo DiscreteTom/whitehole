@@ -190,14 +190,14 @@ mod tests {
 
   fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
-      action.exec.as_immutable()(&ActionInput::new(text, 0, &()).unwrap())
+      (action.exec.raw)(&mut ActionInput::new(text, 0, &mut ()).unwrap())
         .unwrap()
         .digested,
       expected
     );
   }
   fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
-    assert!(action.exec.as_immutable()(&ActionInput::new(text, 0, &()).unwrap()).is_none());
+    assert!((action.exec.raw)(&mut ActionInput::new(text, 0, &mut ()).unwrap()).is_none());
   }
 
   #[test]

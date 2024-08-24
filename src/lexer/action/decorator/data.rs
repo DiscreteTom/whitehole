@@ -1,6 +1,6 @@
 use super::AcceptedActionOutputContext;
 use crate::lexer::{
-  action::{map_exec_adapt_input, mut_input_to_ref, Action, ActionExec, ActionInput, ActionOutput},
+  action::{Action, ActionExec, ActionInput, ActionOutput},
   token::{MockTokenKind, SubTokenKind, TokenKindIdBinding},
 };
 
@@ -8,7 +8,6 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
   /// Set the kind to [`MockTokenKind`] and store the data in [`MockTokenKind::data`].
   /// Return a new action.
   ///
-  /// [`ActionInput::state`] is immutable in the `factory`.
   /// You can consume the [`ActionOutput::binding`] in the `factory`
   /// but not the [`ActionOutput::error`].
   /// # Examples
@@ -21,37 +20,32 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
     self,
     factory: impl Fn(
         AcceptedActionOutputContext<
-          &ActionInput<&State>,
+          &mut ActionInput<&mut State>,
           ActionOutput<TokenKindIdBinding<Kind>, &Option<ErrorType>>,
         >,
       ) -> T
       + 'static,
   ) -> Action<MockTokenKind<T>, State, ErrorType> {
-    macro_rules! impl_data {
-      ($exec: ident, $mut_input_to_ref: ident) => {
-        Box::new(move |input| {
-          $exec(input).map(|output| ActionOutput {
-            binding: MockTokenKind {
-              data: factory(AcceptedActionOutputContext {
-                input: mut_input_to_ref!(input, $mut_input_to_ref),
-                // don't consume the error
-                output: ActionOutput {
-                  binding: output.binding,
-                  digested: output.digested,
-                  error: &output.error,
-                },
-              }),
-            }
-            .into(),
-            digested: output.digested,
-            error: output.error,
-          })
-        })
-      };
-    }
-
+    let exec = self.exec.raw;
     Action {
-      exec: map_exec_adapt_input!(self.exec, impl_data),
+      exec: ActionExec::new(move |input| {
+        exec(input).map(|output| ActionOutput {
+          binding: MockTokenKind {
+            data: factory(AcceptedActionOutputContext {
+              input,
+              // don't consume the error
+              output: ActionOutput {
+                binding: output.binding,
+                digested: output.digested,
+                error: &output.error,
+              },
+            }),
+          }
+          .into(),
+          digested: output.digested,
+          error: output.error,
+        })
+      }),
       muted: self.muted,
       head: self.head,
       kind: MockTokenKind::kind_id(),
@@ -90,7 +84,7 @@ mod tests {
       // ensure output.binding can be consumed
       .data(|ctx| ctx.output.binding.take().data);
     assert!(matches!(
-      action.exec.as_immutable()(&mut ActionInput::new("A", 0, &()).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
       Some(ActionOutput {
         binding,
         digested: 1,
@@ -106,7 +100,7 @@ mod tests {
       .map(|data| Box::new(data))
       .prepare(|input| *input.state += 1);
     assert!(matches!(
-      action.exec.as_mutable()(&mut ActionInput::new("A", 0, &mut 123).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("A", 0, &mut 123).unwrap()),
       Some(ActionOutput {
         binding,
         digested: 1,

@@ -40,8 +40,6 @@ macro_rules! impl_ctx {
 
 // ActionInput won't be consumed.
 // ActionOutput won't be modified directly in the context.
-impl_ctx!(&ActionInput<'text, StateRef>, ActionOutput<Kind, OptionErrorType>);
-impl_ctx!(&ActionInput<'text, StateRef>, &ActionOutput<Kind, OptionErrorType>);
 impl_ctx!(&mut ActionInput<'text, StateRef>, ActionOutput<Kind, OptionErrorType>);
 impl_ctx!(&mut ActionInput<'text, StateRef>, &ActionOutput<Kind, OptionErrorType>);
 
@@ -65,24 +63,10 @@ mod tests {
   fn accepted_action_decorator_context() {
     // ensure the methods are working
 
-    // &input and output
-    AcceptedActionOutputContext {
-      input: &create_input(),
-      output: create_output(),
-    }
-    .end();
-
     // &mut input and output
     AcceptedActionOutputContext {
       input: &mut create_input(),
       output: create_output(),
-    }
-    .end();
-
-    // &input and &output
-    AcceptedActionOutputContext {
-      input: &create_input(),
-      output: &create_output(),
     }
     .end();
 
@@ -96,7 +80,7 @@ mod tests {
     // ensure the value is correct
     assert_eq!(
       AcceptedActionOutputContext {
-        input: &create_input(),
+        input: &mut create_input(),
         output: create_output(),
       }
       .end(),
@@ -104,7 +88,7 @@ mod tests {
     );
     assert_eq!(
       AcceptedActionOutputContext {
-        input: &create_input(),
+        input: &mut create_input(),
         output: create_output(),
       }
       .content(),
@@ -112,7 +96,7 @@ mod tests {
     );
     assert_eq!(
       AcceptedActionOutputContext {
-        input: &create_input(),
+        input: &mut create_input(),
         output: create_output(),
       }
       .rest(),

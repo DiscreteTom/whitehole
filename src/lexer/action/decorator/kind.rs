@@ -1,8 +1,6 @@
 use super::AcceptedActionOutputContext;
 use crate::lexer::{
-  action::{
-    map_exec, map_exec_adapt_input, mut_input_to_ref, Action, ActionExec, ActionInput, ActionOutput,
-  },
+  action::{Action, ActionExec, ActionInput, ActionOutput},
   token::{DefaultTokenKindId, SubTokenKind, TokenKindIdBinding},
 };
 
@@ -30,24 +28,19 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
     ViaKind:
       SubTokenKind<TokenKind = NewKind> + Into<TokenKindIdBinding<NewKind>> + Clone + 'static,
   {
-    macro_rules! impl_bind {
-      ($exec: ident) => {
-        Box::new(move |input| {
-          $exec(input).map(|output| ActionOutput {
-            binding: kind.clone().into(),
-            digested: output.digested,
-            error: output.error,
-          })
-        })
-      };
-    }
-
+    let exec = self.exec.raw;
     Action {
       kind: ViaKind::kind_id(),
       head: self.head,
       muted: self.muted,
       literal: self.literal,
-      exec: map_exec!(self.exec, impl_bind),
+      exec: ActionExec::new(move |input| {
+        exec(input).map(|output| ActionOutput {
+          binding: kind.clone().into(),
+          digested: output.digested,
+          error: output.error,
+        })
+      }),
     }
   }
 
@@ -72,24 +65,19 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
   where
     NewKind: DefaultTokenKindId + Default,
   {
-    macro_rules! impl_bind_default {
-      ($exec: ident) => {
-        Box::new(move |input| {
-          $exec(input).map(|output| ActionOutput {
-            binding: TokenKindIdBinding::default(),
-            digested: output.digested,
-            error: output.error,
-          })
-        })
-      };
-    }
-
+    let exec = self.exec.raw;
     Action {
       kind: NewKind::default_kind_id(),
       head: self.head,
       muted: self.muted,
       literal: self.literal,
-      exec: map_exec!(self.exec, impl_bind_default),
+      exec: ActionExec::new(move |input| {
+        exec(input).map(|output| ActionOutput {
+          binding: TokenKindIdBinding::default(),
+          digested: output.digested,
+          error: output.error,
+        })
+      }),
     }
   }
 
@@ -119,7 +107,7 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
     self,
     selector: impl Fn(
         AcceptedActionOutputContext<
-          &ActionInput<&State>,
+          &mut ActionInput<&mut State>,
           ActionOutput<TokenKindIdBinding<Kind>, &Option<ErrorType>>,
         >,
       ) -> ViaKind
@@ -128,37 +116,32 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
   where
     ViaKind: Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKind = NewKind>,
   {
-    macro_rules! impl_select {
-      ($exec: ident, $mut_input_to_ref: ident) => {
-        Box::new(move |input| {
-          $exec(input).map(|output| {
-            ActionOutput {
-              binding: selector(AcceptedActionOutputContext {
-                input: mut_input_to_ref!(input, $mut_input_to_ref),
-                // construct a new ActionOutput
-                output: ActionOutput {
-                  // consume the original output.binding
-                  binding: output.binding,
-                  digested: output.digested,
-                  // but don't consume the error
-                  error: &output.error,
-                },
-              })
-              .into(),
-              digested: output.digested,
-              error: output.error,
-            }
-          })
-        })
-      };
-    }
-
+    let exec = self.exec.raw;
     Action {
       kind: ViaKind::kind_id(),
       head: self.head,
       muted: self.muted,
       literal: self.literal,
-      exec: map_exec_adapt_input!(self.exec, impl_select),
+      exec: ActionExec::new(move |input| {
+        exec(input).map(|output| {
+          ActionOutput {
+            binding: selector(AcceptedActionOutputContext {
+              input,
+              // construct a new ActionOutput
+              output: ActionOutput {
+                // consume the original output.binding
+                binding: output.binding,
+                digested: output.digested,
+                // but don't consume the error
+                error: &output.error,
+              },
+            })
+            .into(),
+            digested: output.digested,
+            error: output.error,
+          }
+        })
+      }),
     }
   }
 }
@@ -182,7 +165,7 @@ mod tests {
     let action: Action<_> = exact("A").bind(A);
     assert_eq!(action.kind, A::kind_id());
     assert!(matches!(
-      action.exec.as_immutable()(& ActionInput::new("A", 0, & ()).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
       Some(ActionOutput {
         binding,
         digested: 1,
@@ -196,7 +179,7 @@ mod tests {
     let action: Action<_> = exact("A").bind_default();
     assert_eq!(action.kind, MyKind::default_kind_id());
     assert!(matches!(
-      action.exec.as_immutable()(& ActionInput::new("A", 0, & ()).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
       Some(ActionOutput {
         binding,
         digested: 1,
@@ -211,7 +194,7 @@ mod tests {
       Action::from(regex(r"^\d+")).select(|ctx| Value(ctx.content().parse().unwrap()));
     assert_eq!(action.kind, Value::kind_id());
     assert!(matches!(
-      action.exec.as_immutable()(& ActionInput::new("1", 0, & ()).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("1", 0, &mut ()).unwrap()),
       Some(ActionOutput {
         binding,
         digested: 1,

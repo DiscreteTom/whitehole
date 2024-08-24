@@ -76,7 +76,7 @@ mod tests {
   ) -> Option<
     ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>, Option<()>>,
   > {
-    action.exec.as_immutable()(&ActionInput::new(text, 0, &()).unwrap())
+    (action.exec.raw)(&mut ActionInput::new(text, 0, &mut ()).unwrap())
   }
 
   fn validate_output(

@@ -1,11 +1,10 @@
 use crate::{
-  lexer::action::{HeadMatcher, ImmutableActionExec, RcActionExec, RcActionProps},
+  lexer::action::{HeadMatcher, RcActionExec, RcActionProps},
   utils::lookup::{
     char::{CharLookupTable, CharLookupTableBuilder},
     lookup::Lookup,
   },
 };
-use std::rc::Rc;
 
 /// A layout optimized collection of [`Action`](crate::lexer::action::Action)s for runtime evaluation.
 /// As per data oriented design, we store
@@ -15,6 +14,13 @@ use std::rc::Rc;
 pub(super) struct RuntimeActions<Exec> {
   exec: Vec<Exec>,
   muted: Vec<bool>, // TODO: optimize with bit vec
+}
+
+impl<Exec> Default for RuntimeActions<Exec> {
+  #[inline]
+  fn default() -> Self {
+    Self::new()
+  }
 }
 
 impl<Exec> RuntimeActions<Exec> {
@@ -46,78 +52,10 @@ impl<Exec> RuntimeActions<Exec> {
   pub fn len(&self) -> usize {
     self.exec.len()
   }
-
-  #[inline]
-  pub fn is_empty(&self) -> bool {
-    self.exec.is_empty()
-  }
 }
 
-/// [`HeadMapActions`] consists of 2 parts:
-/// - [`Self::immutables`]: immutable actions, this should always be checked first.
-/// - [`Self::rest`]: immutable or mutable actions, this should be checked after [`Self::immutables`].
-/// If this is not empty, this must starts with a mutable action.
-pub(super) struct HeadMapActions<Kind, State, ErrorType> {
-  immutables: RuntimeActions<Rc<ImmutableActionExec<Kind, State, ErrorType>>>,
-  rest: RuntimeActions<RcActionExec<Kind, State, ErrorType>>,
-}
-
-impl<Kind, State, ErrorType> Default for HeadMapActions<Kind, State, ErrorType> {
-  #[inline]
-  fn default() -> Self {
-    Self::new()
-  }
-}
-
-impl<Kind, State, ErrorType> Clone for HeadMapActions<Kind, State, ErrorType> {
-  #[inline]
-  fn clone(&self) -> Self {
-    Self {
-      immutables: self.immutables.clone(),
-      rest: self.rest.clone(),
-    }
-  }
-}
-
-impl<Kind, State, ErrorType> HeadMapActions<Kind, State, ErrorType> {
-  #[inline]
-  pub fn new() -> Self {
-    Self {
-      immutables: RuntimeActions::new(),
-      rest: RuntimeActions::new(),
-    }
-  }
-
-  pub fn push(&mut self, exec: RcActionExec<Kind, State, ErrorType>, muted: bool) {
-    if self.rest.len() == 0 {
-      // no mutable actions yet, check if the action is immutable
-      match exec {
-        RcActionExec::Immutable(exec) => self.immutables.push(exec, muted),
-        RcActionExec::Mutable(_) => self.rest.push(exec, muted),
-      }
-    } else {
-      // mutable actions are already added, add the action to the rest
-      self.rest.push(exec, muted);
-    }
-  }
-
-  // getters
-  #[inline]
-  pub const fn immutables(
-    &self,
-  ) -> &RuntimeActions<Rc<ImmutableActionExec<Kind, State, ErrorType>>> {
-    &self.immutables
-  }
-  #[inline]
-  pub fn rest(&self) -> &RuntimeActions<RcActionExec<Kind, State, ErrorType>> {
-    &self.rest
-  }
-
-  #[inline]
-  pub fn len(&self) -> usize {
-    self.immutables.len() + self.rest.len()
-  }
-}
+pub(super) type HeadMapActions<Kind, State, ErrorType> =
+  RuntimeActions<RcActionExec<Kind, State, ErrorType>>;
 
 pub(super) struct HeadMap<Kind, State, ErrorType> {
   /// Store actions for known chars.
