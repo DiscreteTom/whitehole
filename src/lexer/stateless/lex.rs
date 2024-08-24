@@ -60,17 +60,17 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     &self,
     text: &'text str,
     options_builder: impl FnOnce(
-      StatelessLexOptions<'expect_literal,Kind, (), (), ()>,
+      StatelessLexOptions<'expect_literal, Kind, (), (), ()>,
     ) -> StatelessLexOptions<
       'expect_literal,
       Kind,
       &'state mut State,
       ErrAcc,
       Fork,
-    >
+    >,
   ) -> LexOutput<
     Token<Kind>,
-    <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::StatelessForkOutputType
+    <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
   >
   where
     State: 'state,
@@ -101,9 +101,8 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     options: StatelessLexOptions<'expect_literal, Kind, &'state mut State, ErrAcc, Fork>,
   ) -> LexOutput<
     Token<Kind>,
-    <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::StatelessForkOutputType
-  >
-  {
+    <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
+  > {
     if let Some(literal) = options.base.expectation.literal {
       let (literal_map, head_map) =
         self.get_literal_head_map(options.base.expectation.kind, literal);
@@ -161,20 +160,20 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     &self,
     text: &'text str,
     options_builder: impl FnOnce(
-      StatelessLexOptions<'expect_literal,Kind, (), (), ()>,
+      StatelessLexOptions<'expect_literal, Kind, (), (), ()>,
     ) -> StatelessLexOptions<
       'expect_literal,
       Kind,
       &'state State,
       ErrAcc,
       Fork,
-    >
+    >,
   ) -> (
     LexOutput<
       Token<Kind>,
-      <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::StatelessForkOutputType
+      <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
     >,
-    State
+    State,
   )
   where
     State: Clone + 'state,
@@ -207,12 +206,12 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   ) -> (
     LexOutput<
       Token<Kind>,
-      <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::StatelessForkOutputType
+      <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
     >,
-    State
+    State,
   )
   where
-    State: Clone
+    State: Clone,
   {
     let mut state = options.state.clone();
     let output = self.lex_with_options(text, options.state(&mut state));
@@ -268,7 +267,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     literal: &str,
     re_lex: &ReLexContext,
     fork_output_factory: ForkOutputFactoryType,
-  ) -> LexOutput<Token<Kind>, ForkOutputFactoryType::StatelessForkOutputType> {
+  ) -> LexOutput<Token<Kind>, ForkOutputFactoryType::ForkOutputType> {
     loop {
       let input_start = start + digested;
       let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state));
@@ -308,7 +307,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     state: &mut State,
     re_lex: &ReLexContext,
     fork_output_factory: ForkOutputFactoryType,
-  ) -> LexOutput<Token<Kind>, ForkOutputFactoryType::StatelessForkOutputType> {
+  ) -> LexOutput<Token<Kind>, ForkOutputFactoryType::ForkOutputType> {
     loop {
       let input_start = start + digested;
       let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state));
@@ -348,11 +347,11 @@ fn done_with_token<
   input_start: usize,
   actions_len: usize,
   action_index: usize,
-) -> LexOutput<Token<Kind>, ForkOutputFactoryType::StatelessForkOutputType> {
+) -> LexOutput<Token<Kind>, ForkOutputFactoryType::ForkOutputType> {
   LexOutput {
     digested,
     token: Some(token),
-    fork: fork_output_factory.into_stateless_fork_output(input_start, actions_len, action_index),
+    fork: fork_output_factory.into_fork_output(input_start, actions_len, action_index),
   }
 }
 

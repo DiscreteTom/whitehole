@@ -19,15 +19,18 @@
 ///   .ignore(regex(".").unchecked_head_unknown())
 ///   .build(text);
 ///
+/// // take a snapshot of the lexer before lexing
+/// let snapshot = lexer.snapshot();
+///
 /// // the first lex will emit `>>`, which is not what we want
 /// let output = lexer.lex_with(|o| o.fork());
 /// assert_eq!(&text[output.token.unwrap().range], ">>");
 ///
 /// // since we enabled `fork`, the lexer might return a re-lex context.
 /// // if the lex is re-lexable, the context will be Some.
-/// let context = output.fork.ctx.unwrap();
+/// let context = output.fork.unwrap();
 /// // we can restore the lexer to the state before the last lex
-/// lexer.restore(output.fork.snapshot);
+/// lexer.restore(snapshot);
 ///
 /// // lex with the re-lex context to retry the lex,
 /// // but skip `exact(">>")` when lexing ">>"

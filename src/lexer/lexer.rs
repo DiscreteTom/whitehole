@@ -3,7 +3,7 @@ use super::{
   instant::Instant,
   options::{LexOptions, TrimOptions},
   output::{LexOutput, TrimOutput},
-  snapshot::{PartialSnapshot, Snapshot},
+  snapshot::Snapshot,
   stateless::{StatelessLexOptions, StatelessLexer, StatelessTrimOptions},
   token::{Range, Token},
 };
@@ -124,16 +124,11 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     }
   }
 
-  /// Restore [`Self::state`] and [`Self::instant`] from a [`PartialSnapshot`].
+  /// Restore [`Self::state`] and [`Self::instant`] from a [`Snapshot`].
   #[inline]
-  pub fn restore(&mut self, snapshot: impl Into<PartialSnapshot<'text, State>>) {
-    let snapshot = snapshot.into();
-    if let Some(state) = snapshot.state {
-      self.state = state;
-    }
-    if let Some(instant) = snapshot.instant {
-      self.instant = instant;
-    }
+  pub fn restore(&mut self, snapshot: Snapshot<'text, State>) {
+    self.state = snapshot.state;
+    self.instant = snapshot.instant;
   }
 
   /// Clone self with the provided [`Snapshot`].
@@ -213,16 +208,9 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
       },
     );
 
-    // TODO: prevent re-constructing the output?
-    let output = LexOutput {
-      digested: output.digested,
-      token: output.token,
-      fork: Fork::OutputFactoryType::build_fork_output(output.fork, output.digested, self),
-    };
+    // don't update lexer state
 
     (output, new_state)
-
-    // don't update lexer state
   }
 
   /// Try to yield the next token with the default options.
@@ -272,13 +260,6 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
       &mut self.state,
       options.into(),
     );
-
-    // TODO: prevent re-constructing the output?
-    let output = LexOutput {
-      digested: output.digested,
-      token: output.token,
-      fork: Fork::OutputFactoryType::build_fork_output(output.fork, output.digested, &self),
-    };
 
     // update state
     self.instant.digest(output.digested);
@@ -353,14 +334,21 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   }
 
   #[inline]
-  fn lex_with_stateless<'expect_literal, ErrAcc,Fork: LexOptionsFork<'text, Kind, State, ErrorType>>(
+  fn lex_with_stateless<
+    'expect_literal,
+    ErrAcc,
+    Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
+  >(
     stateless: &Rc<StatelessLexer<Kind, State, ErrorType>>,
     instant: &Instant<'text>,
     state: &mut State,
-    options: LexOptions<'expect_literal, Kind, ErrAcc,Fork>,
-  ) -> LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::StatelessForkOutputType>
+    options: LexOptions<'expect_literal, Kind, ErrAcc, Fork>,
+  ) -> LexOutput<
+    Token<Kind>,
+    <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
+  >
   where
-    ErrAcc:Accumulator<(ErrorType, Range)>,
+    ErrAcc: Accumulator<(ErrorType, Range)>,
   {
     stateless.lex_with_options(
       instant.text(),
