@@ -27,7 +27,11 @@ pub(super) fn traverse_actions<'text, Kind, State>(
     if let Some(output) = (exec.raw)(&mut input) {
       debug_assert!(output.digested <= input.rest().len());
       // return once accepted action is found
-      return Some((output, i, actions.muted()[i]));
+      return Some((output, i, unsafe {
+        // SAFETY: `actions.exec` and `actions.muted` have the same length
+        // so `i` is a valid index for `actions.muted`
+        *actions.muted().get_unchecked(i)
+      }));
     }
   }
 
