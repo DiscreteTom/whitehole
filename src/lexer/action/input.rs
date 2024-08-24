@@ -1,8 +1,7 @@
 #[derive(Debug)]
 pub struct ActionInput<'text, StateRef> {
-  /// A reference of the `State`.
-  ///
-  /// This is public, so if this is `&mut State` then you can mutate this directly.
+  /// This is often `&mut State`.
+  /// This is public, so you can mutate the `State` directly.
   ///
   /// With the `State`, you can construct stateful lexers,
   /// while actions remain stateless and clone-able.
