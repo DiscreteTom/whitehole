@@ -310,11 +310,11 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
   /// builder.define_with(
   ///   A,
   ///   regex(r"^\s+"),
-  ///   |a| a.callback(|ctx| ctx.input.state.value += 1)
+  ///   |a| a.then(|ctx| ctx.input.state.value += 1)
   /// );
   /// # }
   /// ```
-  pub fn callback(
+  pub fn then(
     mut self,
     cb: impl Fn(
         AcceptedActionOutputContext<
@@ -493,7 +493,7 @@ mod tests {
   fn action_callback() {
     // ensure callback can update the state
     let mut state = MyState { value: 0 };
-    let action: Action<_, MyState, ()> = exact("a").callback(
+    let action: Action<_, MyState, ()> = exact("a").then(
       |ctx: AcceptedActionOutputContext<&mut ActionInput<&mut MyState>, _>| {
         ctx.input.state.value += 1
       },
@@ -506,7 +506,7 @@ mod tests {
     assert_eq!(state.value, 1);
 
     // callback for mutable action
-    let action = action.callback(|ctx| ctx.input.state.value += 1);
+    let action = action.then(|ctx| ctx.input.state.value += 1);
     state.value = 0;
     assert!(matches!(
       (action.exec.raw)(&mut ActionInput::new("a", 0, &mut state).unwrap()),
