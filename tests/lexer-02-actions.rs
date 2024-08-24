@@ -72,7 +72,7 @@ fn action_decorators() {
       // this is usually used to modify lexer's state
       regex(r"^d"),
       |a| {
-        a.callback(|ctx| {
+        a.then(|ctx| {
           ctx.input.state.reject = true;
         })
         // yes you can apply multi decorators to an action

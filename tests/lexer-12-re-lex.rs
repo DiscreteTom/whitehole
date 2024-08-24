@@ -36,8 +36,11 @@ fn re_lex() {
     ])
     .build(text);
 
+  // take a snapshot before lexing
+  let snapshot = lexer.snapshot();
+
   // lex, but with `fork` enabled, so that the lexer will
-  // check if this lex is re-lexable, and backup some states before mutation
+  // check if this lex is re-lexable
   let output = lexer.lex_with(|o| o.fork());
   // the first lex will emit `>>`, which is not what we expected
   assert_eq!(&text[output.token.unwrap().range], ">>");
@@ -46,8 +49,8 @@ fn re_lex() {
   // you may want to re-lex the lexer, continue lexing from the last evaluated action.
   // luckily, the output contains the state before the last lex,
   // and a re-lex context to tell the lexer to skip the evaluated actions.
-  let context = output.fork.ctx.unwrap(); // if this is none, then the lex is not re-lexable
-  lexer.restore(output.fork.snapshot); // restore the lexer to the state before the last lex
+  let context = output.fork.unwrap(); // if this is none, then the lex is not re-lexable
+  lexer.restore(snapshot); // restore the lexer to the state before the last lex
 
   // provide the re-lex context to the new lexer when lex.
   // we also enable `fork` so that the lexer will check if this lex is re-lexable
@@ -55,7 +58,7 @@ fn re_lex() {
   // now the lexer will emit `>`
   assert_eq!(&text[output.token.unwrap().range], ">");
   // and there is no next action to re-lex, the re_lexable should be None
-  assert!(output.fork.ctx.is_none());
+  assert!(output.fork.is_none());
 
   // besides, it is a best practice to trim the lexer before lex with fork enabled
   // so that muted actions won't be evaluated again
@@ -64,25 +67,4 @@ fn re_lex() {
   // it doesn't require a specific kind or literal to expect,
   // but it is more expensive (the lexer will be cloned),
   // so use it wisely, e.g. when expectational lexing is not available.
-}
-
-#[test]
-fn partial_snapshot() {
-  let text = "Option<Option<()>>";
-  let mut lexer = LexerBuilder::new()
-    .ignore_default([whitespaces(), exact("Option"), exact("()"), exact("<")])
-    .append([exact(">>").bind(ShiftRight), exact(">").bind(RightAngle)])
-    .build(text);
-  let output = lexer.lex_with(|o| o.fork());
-
-  // to prevent unnecessary cloning, the forked lex will only clone the state or instant if they are mutated.
-  // in our case, the state is not mutated, the instant is mutated.
-  assert!(output.fork.snapshot.state.is_none());
-  assert!(output.fork.snapshot.instant().is_some());
-
-  // this is a partial snapshot and should be used as soon as possible, before you further mutate the lexer.
-  // if you want to store the snapshot for later use, you should convert it to a full snapshot.
-  let snapshot = output.fork.snapshot.into_full(&lexer);
-  // the full snapshot can also be used in `lexer.restore`
-  lexer.restore(snapshot);
 }
