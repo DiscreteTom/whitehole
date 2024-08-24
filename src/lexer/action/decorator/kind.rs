@@ -4,7 +4,7 @@ use crate::lexer::{
   token::{DefaultTokenKindId, SubTokenKind, TokenKindIdBinding},
 };
 
-impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, ErrorType> {
+impl<Kind: 'static, State: 'static> Action<Kind, State> {
   /// Set the binding for this action.
   /// Use this if your action can only yield a const token kind value.
   /// # Examples
@@ -23,7 +23,7 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
   /// let action: Action<MyKind> = exact("A").bind(B(0));
   /// # }
   /// ```
-  pub fn bind<NewKind, ViaKind>(self, kind: ViaKind) -> Action<NewKind, State, ErrorType>
+  pub fn bind<NewKind, ViaKind>(self, kind: ViaKind) -> Action<NewKind, State>
   where
     ViaKind:
       SubTokenKind<TokenKind = NewKind> + Into<TokenKindIdBinding<NewKind>> + Clone + 'static,
@@ -38,7 +38,6 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
         exec(input).map(|output| ActionOutput {
           binding: kind.clone().into(),
           digested: output.digested,
-          error: output.error,
         })
       }),
     }
@@ -61,7 +60,7 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
   /// assert_eq!(action.kind(), Anonymous::kind_id());
   /// # }
   /// ```
-  pub fn bind_default<NewKind>(self) -> Action<NewKind, State, ErrorType>
+  pub fn bind_default<NewKind>(self) -> Action<NewKind, State>
   where
     NewKind: DefaultTokenKindId + Default,
   {
@@ -75,7 +74,6 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
         exec(input).map(|output| ActionOutput {
           binding: TokenKindIdBinding::default(),
           digested: output.digested,
-          error: output.error,
         })
       }),
     }
@@ -108,11 +106,11 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
     selector: impl Fn(
         AcceptedActionOutputContext<
           &mut ActionInput<&mut State>,
-          ActionOutput<TokenKindIdBinding<Kind>, &Option<ErrorType>>,
+          ActionOutput<TokenKindIdBinding<Kind>>,
         >,
       ) -> ViaKind
       + 'static,
-  ) -> Action<NewKind, State, ErrorType>
+  ) -> Action<NewKind, State>
   where
     ViaKind: Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKind = NewKind>,
   {
@@ -123,23 +121,9 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
       muted: self.muted,
       literal: self.literal,
       exec: ActionExec::new(move |input| {
-        exec(input).map(|output| {
-          ActionOutput {
-            binding: selector(AcceptedActionOutputContext {
-              input,
-              // construct a new ActionOutput
-              output: ActionOutput {
-                // consume the original output.binding
-                binding: output.binding,
-                digested: output.digested,
-                // but don't consume the error
-                error: &output.error,
-              },
-            })
-            .into(),
-            digested: output.digested,
-            error: output.error,
-          }
+        exec(input).map(|output| ActionOutput {
+          digested: output.digested,
+          binding: selector(AcceptedActionOutputContext { input, output }).into(),
         })
       }),
     }
@@ -169,7 +153,6 @@ mod tests {
       Some(ActionOutput {
         binding,
         digested: 1,
-        error: None
       }) if matches!(binding.kind(), MyKind::A) && binding.id() == A::kind_id()
     ));
   }
@@ -183,7 +166,6 @@ mod tests {
       Some(ActionOutput {
         binding,
         digested: 1,
-        error: None
       }) if matches!(binding.kind(), MyKind::A) && binding.id() == MyKind::default_kind_id()
     ));
   }
@@ -198,7 +180,6 @@ mod tests {
       Some(ActionOutput {
         binding,
         digested: 1,
-        error: None
       }) if matches!(binding.kind(), MyKind::Value(value) if value.0 == 1) && binding.id() == Value::kind_id()
     ));
   }

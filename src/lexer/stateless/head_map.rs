@@ -11,19 +11,19 @@ use crate::{
 /// [`Action::exec`](crate::lexer::action::Action::exec) and [`Action::muted`](crate::lexer::action::Action::muted)
 /// in separate lists, and discard all other fields to optimize cache performance.
 #[derive(Debug)]
-pub(super) struct RuntimeActions<Kind, State, ErrorType> {
-  execs: Vec<RcActionExec<Kind, State, ErrorType>>,
+pub(super) struct RuntimeActions<Kind, State> {
+  execs: Vec<RcActionExec<Kind, State>>,
   muted: Vec<bool>, // TODO: optimize with bit vec
 }
 
-impl<Kind, State, ErrorType> Default for RuntimeActions<Kind, State, ErrorType> {
+impl<Kind, State> Default for RuntimeActions<Kind, State> {
   #[inline]
   fn default() -> Self {
     Self::new()
   }
 }
 
-impl<Kind, State, ErrorType> Clone for RuntimeActions<Kind, State, ErrorType> {
+impl<Kind, State> Clone for RuntimeActions<Kind, State> {
   #[inline]
   fn clone(&self) -> Self {
     Self {
@@ -33,7 +33,7 @@ impl<Kind, State, ErrorType> Clone for RuntimeActions<Kind, State, ErrorType> {
   }
 }
 
-impl<Kind, State, ErrorType> RuntimeActions<Kind, State, ErrorType> {
+impl<Kind, State> RuntimeActions<Kind, State> {
   #[inline]
   pub const fn new() -> Self {
     Self {
@@ -46,7 +46,7 @@ impl<Kind, State, ErrorType> RuntimeActions<Kind, State, ErrorType> {
 
   // getters
   #[inline]
-  pub const fn execs(&self) -> &Vec<RcActionExec<Kind, State, ErrorType>> {
+  pub const fn execs(&self) -> &Vec<RcActionExec<Kind, State>> {
     &self.execs
   }
   #[inline]
@@ -55,7 +55,7 @@ impl<Kind, State, ErrorType> RuntimeActions<Kind, State, ErrorType> {
   }
 
   #[inline]
-  pub fn push(&mut self, exec: RcActionExec<Kind, State, ErrorType>, muted: bool) {
+  pub fn push(&mut self, exec: RcActionExec<Kind, State>, muted: bool) {
     self.execs.push(exec);
     self.muted.push(muted);
   }
@@ -67,28 +67,26 @@ impl<Kind, State, ErrorType> RuntimeActions<Kind, State, ErrorType> {
 }
 
 #[derive(Debug)]
-pub(super) struct HeadMap<Kind, State, ErrorType> {
+pub(super) struct HeadMap<Kind, State> {
   /// Store actions for known chars.
-  known_map: CharLookupTable<RuntimeActions<Kind, State, ErrorType>>,
+  known_map: CharLookupTable<RuntimeActions<Kind, State>>,
   /// Store actions for unknown chars.
-  unknown_fallback: RuntimeActions<Kind, State, ErrorType>,
+  unknown_fallback: RuntimeActions<Kind, State>,
 }
 
 /// A new-type to represent the return type of [`HeadMap::collect_all_known`].
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`HeadMap::new`].
-pub(super) struct KnownHeadChars<Kind, State, ErrorType>(
-  CharLookupTableBuilder<RuntimeActions<Kind, State, ErrorType>>,
-);
+pub(super) struct KnownHeadChars<Kind, State>(CharLookupTableBuilder<RuntimeActions<Kind, State>>);
 
-impl<Kind, State, ErrorType> Clone for KnownHeadChars<Kind, State, ErrorType> {
+impl<Kind, State> Clone for KnownHeadChars<Kind, State> {
   #[inline]
   fn clone(&self) -> Self {
     Self(self.0.clone())
   }
 }
 
-impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
+impl<Kind, State> HeadMap<Kind, State> {
   /// Collect all known head chars from all actions instead of a subset of actions to make sure
   /// 'known' has a consistent meaning across all head maps in a stateless lexer
   /// (otherwise maybe only a subset of chars are known for a subset of actions,
@@ -96,9 +94,7 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
   /// This must be done before creating a head map because we need to iter over all known chars when filling the head map
   /// with [`HeadMatcher::Not`] and [`HeadMatcher::Unknown`].
   #[inline] // there is only one call site, so mark this as inline
-  pub fn collect_all_known(
-    props: &Vec<RcActionProps<Kind>>,
-  ) -> KnownHeadChars<Kind, State, ErrorType> {
+  pub fn collect_all_known(props: &Vec<RcActionProps<Kind>>) -> KnownHeadChars<Kind, State> {
     let mut known_chars = Vec::with_capacity(props.len());
     for p in props {
       if let Some(head) = p.head() {
@@ -116,9 +112,9 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
 
   /// Create a new instance with a subset of actions and a known char map created by [`Self::collect_all_known`].
   pub fn new(
-    execs: &Vec<RcActionExec<Kind, State, ErrorType>>,
+    execs: &Vec<RcActionExec<Kind, State>>,
     props: &Vec<RcActionProps<Kind>>,
-    known_map: KnownHeadChars<Kind, State, ErrorType>,
+    known_map: KnownHeadChars<Kind, State>,
   ) -> Self {
     let mut unknown_fallback = RuntimeActions::new();
     let mut known_map = known_map.0;
@@ -170,7 +166,7 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
 
   /// Get actions by the next char.
   #[inline]
-  pub fn get(&self, next: char) -> &RuntimeActions<Kind, State, ErrorType> {
+  pub fn get(&self, next: char) -> &RuntimeActions<Kind, State> {
     self
       .known_map
       .get(next as usize)

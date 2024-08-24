@@ -5,9 +5,8 @@ use super::{
   output::{LexOutput, TrimOutput},
   snapshot::Snapshot,
   stateless::{StatelessLexOptions, StatelessLexer, StatelessTrimOptions},
-  token::{Range, Token},
+  token::Token,
 };
-use crate::utils::Accumulator;
 use std::rc::Rc;
 
 /// This is the "stateful" lexer, it manages the [`Instant`] and the `State`.
@@ -32,16 +31,16 @@ use std::rc::Rc;
 /// before next lexing to save memory; some users may want to store all errors
 /// in a container and process them later.
 #[derive(Debug)]
-pub struct Lexer<'text, Kind, State = (), ErrorType = ()> {
+pub struct Lexer<'text, Kind, State = ()> {
   /// You can mutate this directly if needed.
   pub state: State,
 
   // use Rc so that this is clone-able
-  stateless: Rc<StatelessLexer<Kind, State, ErrorType>>,
+  stateless: Rc<StatelessLexer<Kind, State>>,
   instant: Instant<'text>,
 }
 
-impl<'text, Kind, State: Clone, ErrorType> Clone for Lexer<'text, Kind, State, ErrorType> {
+impl<'text, Kind, State: Clone> Clone for Lexer<'text, Kind, State> {
   #[inline]
   fn clone(&self) -> Self {
     Self {
@@ -52,13 +51,13 @@ impl<'text, Kind, State: Clone, ErrorType> Clone for Lexer<'text, Kind, State, E
   }
 }
 
-impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
+impl<'text, Kind, State> Lexer<'text, Kind, State> {
   /// Create a new lexer with the given stateless lexer, state and text.
   /// For most cases you should use [`LexerBuilder`](crate::lexer::LexerBuilder)
   /// to create a lexer.
   #[inline]
   pub const fn new(
-    stateless: Rc<StatelessLexer<Kind, State, ErrorType>>,
+    stateless: Rc<StatelessLexer<Kind, State>>,
     state: State,
     text: &'text str,
   ) -> Self {
@@ -71,7 +70,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
 
   /// Get the stateless lexer.
   #[inline]
-  pub const fn stateless(&self) -> &Rc<StatelessLexer<Kind, State, ErrorType>> {
+  pub const fn stateless(&self) -> &Rc<StatelessLexer<Kind, State>> {
     &self.stateless
   }
   /// Get the lexer state.
@@ -94,7 +93,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   /// Consume self, return a new lexer with the same actions and a new text.
   /// [`Self::state`] and [`Self::state`] will be reset to default.
   #[inline]
-  pub fn reload<'new_text>(self, text: &'new_text str) -> Lexer<'new_text, Kind, State, ErrorType>
+  pub fn reload<'new_text>(self, text: &'new_text str) -> Lexer<'new_text, Kind, State>
   where
     State: Default,
   {
@@ -108,7 +107,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
     self,
     text: &'new_text str,
     state: State,
-  ) -> Lexer<'new_text, Kind, State, ErrorType> {
+  ) -> Lexer<'new_text, Kind, State> {
     Lexer::new(self.stateless, state, text)
   }
 
@@ -158,21 +157,17 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   ///
   /// [`Self::state`] will be cloned and returned.
   #[inline]
-  pub fn peek_with<'expect_literal, ErrAcc, Fork: LexOptionsFork<'text, Kind, State, ErrorType>>(
+  pub fn peek_with<'expect_literal, Fork: LexOptionsFork>(
     &self,
     options_builder: impl FnOnce(
-      LexOptions<'expect_literal, Kind, (), ()>,
-    ) -> LexOptions<'expect_literal, Kind, ErrAcc, Fork>,
+      LexOptions<'expect_literal, Kind, ()>,
+    ) -> LexOptions<'expect_literal, Kind, Fork>,
   ) -> (
-    LexOutput<
-      Token<Kind>,
-      <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
-    >,
+    LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType>,
     State,
   )
   where
     State: Clone,
-    ErrAcc: Accumulator<(ErrorType, Range)>,
   {
     self.peek_with_options(options_builder(LexOptions::new()))
   }
@@ -181,23 +176,15 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   /// [`Self::state`] and [`Self::state`].
   ///
   /// [`Self::state`] will be cloned and returned.
-  pub fn peek_with_options<
-    'expect_literal,
-    ErrAcc,
-    Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
-  >(
+  pub fn peek_with_options<'expect_literal, Fork: LexOptionsFork>(
     &self,
-    options: impl Into<LexOptions<'expect_literal, Kind, ErrAcc, Fork>>,
+    options: impl Into<LexOptions<'expect_literal, Kind, Fork>>,
   ) -> (
-    LexOutput<
-      Token<Kind>,
-      <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
-    >,
+    LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType>,
     State,
   )
   where
     State: Clone,
-    ErrAcc: Accumulator<(ErrorType, Range)>,
   {
     let (output, new_state) = self.stateless.peek_with_options(
       self.instant.text(),
@@ -223,37 +210,21 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   /// Try to yield the next token with custom options.
   /// [`Self::state`] and [`Self::state`] will be updated.
   #[inline]
-  pub fn lex_with<'expect_literal, ErrAcc, Fork: LexOptionsFork<'text, Kind, State, ErrorType>>(
+  pub fn lex_with<'expect_literal, Fork: LexOptionsFork>(
     &mut self,
     options_builder: impl FnOnce(
-      LexOptions<'expect_literal, Kind, (), ()>,
-    ) -> LexOptions<'expect_literal, Kind, ErrAcc, Fork>,
-  ) -> LexOutput<
-    Token<Kind>,
-    <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
-  >
-  where
-    ErrAcc: Accumulator<(ErrorType, Range)>,
-  {
+      LexOptions<'expect_literal, Kind, ()>,
+    ) -> LexOptions<'expect_literal, Kind, Fork>,
+  ) -> LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType> {
     self.lex_with_options(options_builder(LexOptions::new()))
   }
 
   /// Try to yield the next token with custom options.
   /// [`Self::state`] and [`Self::state`] will be updated.
-  pub fn lex_with_options<
-    'expect_literal,
-    ErrAcc,
-    Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
-  >(
+  pub fn lex_with_options<'expect_literal, Fork: LexOptionsFork>(
     &mut self,
-    options: impl Into<LexOptions<'expect_literal, Kind, ErrAcc, Fork>>,
-  ) -> LexOutput<
-    Token<Kind>,
-    <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
-  >
-  where
-    ErrAcc: Accumulator<(ErrorType, Range)>,
-  {
+    options: impl Into<LexOptions<'expect_literal, Kind, Fork>>,
+  ) -> LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType> {
     let output = Self::lex_with_stateless(
       &self.stateless,
       &self.instant,
@@ -290,10 +261,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
 
   /// Lex with muted actions and the provided options.
   /// Returns [`None`] if the lexer is already trimmed.
-  pub fn trim_with_options<ErrAcc>(&mut self, options: TrimOptions<ErrAcc>) -> Option<TrimOutput>
-  where
-    ErrAcc: Accumulator<(ErrorType, Range)>,
-  {
+  pub fn trim_with_options(&mut self, options: TrimOptions) -> Option<TrimOutput> {
     // return None if already trimmed
     if self.instant.trimmed() {
       return None;
@@ -316,40 +284,24 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   /// Lex with muted actions and the provided options.
   /// Returns [`None`] if the lexer is already trimmed.
   #[inline]
-  pub fn trim_with<ErrAcc>(
-    &mut self,
-    f: impl FnOnce(TrimOptions<()>) -> TrimOptions<ErrAcc>,
-  ) -> Option<TrimOutput>
-  where
-    ErrAcc: Accumulator<(ErrorType, Range)>,
-  {
-    self.trim_with_options(f(TrimOptions::new()))
+  pub fn trim_with(&mut self, f: impl FnOnce(TrimOptions) -> TrimOptions) -> Option<TrimOutput> {
+    self.trim_with_options(f(TrimOptions))
   }
 
   /// Lex with muted actions and the default options.
   /// Returns [`None`] if the lexer is already trimmed.
   #[inline]
   pub fn trim(&mut self) -> Option<TrimOutput> {
-    self.trim_with_options(TrimOptions::new())
+    self.trim_with_options(TrimOptions)
   }
 
   #[inline]
-  fn lex_with_stateless<
-    'expect_literal,
-    ErrAcc,
-    Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
-  >(
-    stateless: &Rc<StatelessLexer<Kind, State, ErrorType>>,
+  fn lex_with_stateless<'expect_literal, Fork: LexOptionsFork>(
+    stateless: &Rc<StatelessLexer<Kind, State>>,
     instant: &Instant<'text>,
     state: &mut State,
-    options: LexOptions<'expect_literal, Kind, ErrAcc, Fork>,
-  ) -> LexOutput<
-    Token<Kind>,
-    <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
-  >
-  where
-    ErrAcc: Accumulator<(ErrorType, Range)>,
-  {
+    options: LexOptions<'expect_literal, Kind, Fork>,
+  ) -> LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType> {
     stateless.lex_with_options(
       instant.text(),
       StatelessLexOptions {
@@ -362,13 +314,13 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
 }
 
 /// A helper trait to convert common types into a lexer.
-pub trait IntoLexer<Kind, State, ErrorType>: Sized {
+pub trait IntoLexer<Kind, State>: Sized {
   /// Consume self, build a [`Lexer`] with the provided `state` and `text`.
-  fn into_lexer_with(self, state: State, text: &str) -> Lexer<Kind, State, ErrorType>;
+  fn into_lexer_with(self, state: State, text: &str) -> Lexer<Kind, State>;
 
   /// Consume self, build a [`Lexer`] with the provided `text` and the default `State`.
   #[inline]
-  fn into_lexer(self, text: &str) -> Lexer<Kind, State, ErrorType>
+  fn into_lexer(self, text: &str) -> Lexer<Kind, State>
   where
     State: Default,
   {
@@ -376,20 +328,16 @@ pub trait IntoLexer<Kind, State, ErrorType>: Sized {
   }
 }
 
-impl<Kind, State, ErrorType> IntoLexer<Kind, State, ErrorType>
-  for Rc<StatelessLexer<Kind, State, ErrorType>>
-{
+impl<Kind, State> IntoLexer<Kind, State> for Rc<StatelessLexer<Kind, State>> {
   #[inline]
-  fn into_lexer_with(self, state: State, text: &str) -> Lexer<Kind, State, ErrorType> {
+  fn into_lexer_with(self, state: State, text: &str) -> Lexer<Kind, State> {
     Lexer::new(self, state, text)
   }
 }
 
-impl<Kind, State, ErrorType> IntoLexer<Kind, State, ErrorType>
-  for StatelessLexer<Kind, State, ErrorType>
-{
+impl<Kind, State> IntoLexer<Kind, State> for StatelessLexer<Kind, State> {
   #[inline]
-  fn into_lexer_with(self, state: State, text: &str) -> Lexer<Kind, State, ErrorType> {
+  fn into_lexer_with(self, state: State, text: &str) -> Lexer<Kind, State> {
     Rc::new(self).into_lexer_with(state, text)
   }
 }

@@ -121,27 +121,22 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
 /// The [`Action::exec`].
 /// This is a new-type for `Box<dyn Fn(...) -> ...>` and implements [`Debug`]
 /// so that [`Action`] can be [`Debug`] too.
-pub struct ActionExec<Kind, State, ErrorType> {
-  pub(crate) raw: Box<
-    dyn Fn(
-      &mut ActionInput<&mut State>,
-    ) -> Option<ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>>,
-  >,
+pub struct ActionExec<Kind, State> {
+  pub(crate) raw:
+    Box<dyn Fn(&mut ActionInput<&mut State>) -> Option<ActionOutput<TokenKindIdBinding<Kind>>>>,
 }
 
-impl<Kind, State, ErrorType> ActionExec<Kind, State, ErrorType> {
+impl<Kind, State> ActionExec<Kind, State> {
   #[inline]
   pub(crate) fn new(
-    raw: impl Fn(
-        &mut ActionInput<&mut State>,
-      ) -> Option<ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>>
+    raw: impl Fn(&mut ActionInput<&mut State>) -> Option<ActionOutput<TokenKindIdBinding<Kind>>>
       + 'static,
   ) -> Self {
     Self { raw: Box::new(raw) }
   }
 }
 
-impl<Kind, State, ErrorType> Debug for ActionExec<Kind, State, ErrorType> {
+impl<Kind, State> Debug for ActionExec<Kind, State> {
   #[inline]
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     write!(f, "ActionExec(...)")
@@ -150,19 +145,18 @@ impl<Kind, State, ErrorType> Debug for ActionExec<Kind, State, ErrorType> {
 
 /// To create this, use [`simple`](simple::simple), [`simple_with_data`](simple::simple_with_data)
 /// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
-pub type Action<Kind, State = (), ErrorType = ()> =
-  ActionBase<Kind, ActionExec<Kind, State, ErrorType>>;
+pub type Action<Kind, State = ()> = ActionBase<Kind, ActionExec<Kind, State>>;
 
 /// Action's attributes without [`Action::exec`], wrapped in an [`Rc`].
 pub(super) type RcActionProps<Kind> = Rc<ActionBase<Kind, ()>>;
 /// [`Action::exec`] wrapped in an [`Rc`] to make it clone-able.
-pub(super) type RcActionExec<Kind, State, ErrorType> = Rc<ActionExec<Kind, State, ErrorType>>;
+pub(super) type RcActionExec<Kind, State> = Rc<ActionExec<Kind, State>>;
 
-impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
+impl<Kind, State> Action<Kind, State> {
   /// Break self into two parts and wrap them in [`Rc`].
   /// Return [`RcActionExec`] and [`RcActionProps`].
   #[inline]
-  pub(super) fn into_rc(self) -> (RcActionExec<Kind, State, ErrorType>, RcActionProps<Kind>) {
+  pub(super) fn into_rc(self) -> (RcActionExec<Kind, State>, RcActionProps<Kind>) {
     let props = Rc::new(ActionBase {
       kind: self.kind,
       literal: self.literal,

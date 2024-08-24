@@ -7,7 +7,7 @@ use crate::{
   utils::OneOrMore,
 };
 
-impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
+impl<Kind, State> LexerBuilder<Kind, State> {
   /// Append actions to the builder.
   /// # Examples
   /// ```
@@ -25,7 +25,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// # }
   /// ```
   #[inline]
-  pub fn append(mut self, actions: impl Into<OneOrMore<Action<Kind, State, ErrorType>>>) -> Self {
+  pub fn append(mut self, actions: impl Into<OneOrMore<Action<Kind, State>>>) -> Self {
     self.actions.extend(actions.into().0);
     self
   }
@@ -49,8 +49,8 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   #[inline]
   pub fn append_with(
     self,
-    actions: impl Into<OneOrMore<Action<Kind, State, ErrorType>>>,
-    decorator: impl Fn(Action<Kind, State, ErrorType>) -> Action<Kind, State, ErrorType>,
+    actions: impl Into<OneOrMore<Action<Kind, State>>>,
+    decorator: impl Fn(Action<Kind, State>) -> Action<Kind, State>,
   ) -> Self {
     self.append(Self::map_actions(actions, decorator))
   }
@@ -77,12 +77,11 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   #[inline]
   pub fn append_default(
     self,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State>>>,
   ) -> Self
   where
     Kind: DefaultTokenKindId + Default,
     State: 'static,
-    ErrorType: 'static,
   {
     self.append(Self::map_actions(actions, |a| a.bind_default()))
   }
@@ -106,15 +105,12 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   #[inline]
   pub fn append_default_with(
     self,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
-    decorator: impl Fn(
-      Action<MockTokenKind<()>, State, ErrorType>,
-    ) -> Action<MockTokenKind<()>, State, ErrorType>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State>>>,
+    decorator: impl Fn(Action<MockTokenKind<()>, State>) -> Action<MockTokenKind<()>, State>,
   ) -> Self
   where
     Kind: DefaultTokenKindId + Default,
     State: 'static,
-    ErrorType: 'static,
   {
     self.append_default(Self::map_actions(actions, decorator))
   }

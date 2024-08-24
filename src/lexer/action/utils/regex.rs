@@ -19,7 +19,7 @@ use regex::Regex;
 /// use whitehole::lexer::action::{Action, regex};
 /// let a: Action<_> = regex(r"^\d+");
 /// ```
-pub fn regex<State, ErrorType>(re: &str) -> Action<MockTokenKind<()>, State, ErrorType> {
+pub fn regex<State>(re: &str) -> Action<MockTokenKind<()>, State> {
   Regex::new(re)
     .map(|re| simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
     .expect("invalid regex")

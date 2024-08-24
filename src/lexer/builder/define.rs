@@ -7,7 +7,7 @@ use crate::{
   utils::OneOrMore,
 };
 
-impl<Kind, State: 'static, ErrorType: 'static> LexerBuilder<Kind, State, ErrorType> {
+impl<Kind, State: 'static> LexerBuilder<Kind, State> {
   /// Define actions and bind them to the provided kind.
   /// # Examples
   /// ```
@@ -28,7 +28,7 @@ impl<Kind, State: 'static, ErrorType: 'static> LexerBuilder<Kind, State, ErrorTy
   pub fn define<ViaKind>(
     self,
     kind: ViaKind,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State>>>,
   ) -> Self
   where
     ViaKind: SubTokenKind<TokenKind = Kind> + Into<TokenKindIdBinding<Kind>> + Clone + 'static,
@@ -56,10 +56,8 @@ impl<Kind, State: 'static, ErrorType: 'static> LexerBuilder<Kind, State, ErrorTy
   pub fn define_with<ViaKind>(
     self,
     kind: ViaKind,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
-    decorator: impl Fn(
-      Action<MockTokenKind<()>, State, ErrorType>,
-    ) -> Action<MockTokenKind<()>, State, ErrorType>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State>>>,
+    decorator: impl Fn(Action<MockTokenKind<()>, State>) -> Action<MockTokenKind<()>, State>,
   ) -> Self
   where
     ViaKind: SubTokenKind<TokenKind = Kind> + Into<TokenKindIdBinding<Kind>> + Clone + 'static,

@@ -7,7 +7,7 @@ use crate::{
   utils::OneOrMore,
 };
 
-impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
+impl<Kind, State> LexerBuilder<Kind, State> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`].
   /// # Examples
   /// ```
@@ -25,7 +25,7 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   /// # }
   /// ```
   #[inline]
-  pub fn ignore(self, actions: impl Into<OneOrMore<Action<Kind, State, ErrorType>>>) -> Self {
+  pub fn ignore(self, actions: impl Into<OneOrMore<Action<Kind, State>>>) -> Self {
     self.append(Self::map_actions(actions, |a| a.mute()))
   }
 
@@ -48,8 +48,8 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   #[inline]
   pub fn ignore_with(
     self,
-    actions: impl Into<OneOrMore<Action<Kind, State, ErrorType>>>,
-    decorator: impl Fn(Action<Kind, State, ErrorType>) -> Action<Kind, State, ErrorType>,
+    actions: impl Into<OneOrMore<Action<Kind, State>>>,
+    decorator: impl Fn(Action<Kind, State>) -> Action<Kind, State>,
   ) -> Self {
     self.ignore(Self::map_actions(actions, decorator))
   }
@@ -76,12 +76,11 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   #[inline]
   pub fn ignore_default(
     self,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State>>>,
   ) -> Self
   where
     Kind: DefaultTokenKindId + Default,
     State: 'static,
-    ErrorType: 'static,
   {
     self.ignore(Self::map_actions(actions, |a| a.bind_default()))
   }
@@ -105,15 +104,12 @@ impl<Kind, State, ErrorType> LexerBuilder<Kind, State, ErrorType> {
   #[inline]
   pub fn ignore_default_with(
     self,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, ErrorType>>>,
-    decorator: impl Fn(
-      Action<MockTokenKind<()>, State, ErrorType>,
-    ) -> Action<MockTokenKind<()>, State, ErrorType>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State>>>,
+    decorator: impl Fn(Action<MockTokenKind<()>, State>) -> Action<MockTokenKind<()>, State>,
   ) -> Self
   where
     Kind: DefaultTokenKindId + Default,
     State: 'static,
-    ErrorType: 'static,
   {
     self.ignore_default(Self::map_actions(actions, decorator))
   }

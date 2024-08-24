@@ -1,6 +1,6 @@
 use crate::lexer::action::Action;
 
-impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
+impl<Kind, State> Action<Kind, State> {
   /// Set [`Action::literal`].
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   ///
@@ -33,7 +33,7 @@ mod tests {
 
   #[test]
   fn action_literal() {
-    let action: Action<_, (), ()> = simple(|_| 4);
+    let action: Action<_, ()> = simple(|_| 4);
     assert_eq!(action.literal(), &None);
 
     let action = action.unchecked_literal("abc");

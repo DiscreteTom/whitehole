@@ -1,25 +1,18 @@
 use super::head_map::RuntimeActions;
-use crate::{
-  lexer::{
-    action::{ActionInput, ActionOutput},
-    re_lex::ReLexContext,
-    token::{Range, Token, TokenKindIdBinding},
-  },
-  utils::Accumulator,
+use crate::lexer::{
+  action::{ActionInput, ActionOutput},
+  re_lex::ReLexContext,
+  token::{Range, Token, TokenKindIdBinding},
 };
 
 /// Traverse all actions with a mutable input to find the first accepted action.
 /// Return the output, the index of the accepted action and whether the action is muted.
 /// If no accepted action, return [`None`].
-pub(super) fn traverse_actions<'text, Kind, State, ErrorType>(
+pub(super) fn traverse_actions<'text, Kind, State>(
   mut input: ActionInput<&mut State>,
-  actions: &RuntimeActions<Kind, State, ErrorType>,
+  actions: &RuntimeActions<Kind, State>,
   re_lex: &ReLexContext,
-) -> Option<(
-  ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
-  usize,
-  bool,
-)> {
+) -> Option<(ActionOutput<TokenKindIdBinding<Kind>>, usize, bool)> {
   for (i, exec) in actions
     .execs()
     .iter()
@@ -40,22 +33,6 @@ pub(super) fn traverse_actions<'text, Kind, State, ErrorType>(
 
   // no accepted action
   None
-}
-
-pub(super) fn update_state<ErrorType, ErrAcc: Accumulator<(ErrorType, Range)>>(
-  output_digested: usize,
-  error: Option<ErrorType>,
-  start: usize,
-  digested: &mut usize,
-  errors: &mut ErrAcc,
-) {
-  // update digested, no matter the output is muted or not
-  *digested += output_digested;
-
-  // collect errors if any
-  if let Some(err) = error {
-    errors.update((err, create_range(start, output_digested)));
-  }
 }
 
 /// Return the token if not muted, otherwise return [`None`].

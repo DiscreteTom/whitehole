@@ -15,16 +15,15 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 /// // accept all rest characters
 /// let a: Action<_> = simple(|input| input.rest().len());
 /// ```
-pub fn simple<State, ErrorType>(
+pub fn simple<State>(
   f: impl Fn(&mut ActionInput<&mut State>) -> usize + 'static,
-) -> Action<MockTokenKind<()>, State, ErrorType> {
+) -> Action<MockTokenKind<()>, State> {
   Action {
     exec: ActionExec::new(move |input| match f(input) {
       0 => None,
       digested => Some(ActionOutput {
         binding: MockTokenKind::new(()).into(),
         digested,
-        error: None,
       }),
     }),
     kind: MockTokenKind::kind_id(),
@@ -54,15 +53,14 @@ pub fn simple<State, ErrorType>(
 /// // accept all rest characters and parse them into an integer
 /// let a: Action<MockTokenKind<i32>> = simple_with_data(|input| Some((input.rest().len(), input.rest().parse().unwrap())));
 /// ```
-pub fn simple_with_data<State, ErrorType, T>(
+pub fn simple_with_data<State, T>(
   f: impl Fn(&mut ActionInput<&mut State>) -> Option<(usize, T)> + 'static,
-) -> Action<MockTokenKind<T>, State, ErrorType> {
+) -> Action<MockTokenKind<T>, State> {
   Action {
     exec: ActionExec::new(move |input| {
       f(input).map(|(digested, data)| ActionOutput {
         binding: MockTokenKind::new(data).into(),
         digested,
-        error: None,
       })
     }),
     kind: MockTokenKind::kind_id(),
@@ -80,7 +78,7 @@ mod tests {
   #[test]
   fn simple_accept_all() {
     assert!(matches!(
-      (simple::<_, ()>(|input| input.text().len()).exec.raw)(
+      (simple(|input| input.text().len()).exec.raw)(
         &mut ActionInput::new("123", 0, &mut ()).unwrap()
       )
       .unwrap()
@@ -92,7 +90,7 @@ mod tests {
   #[test]
   fn simple_accept_rest() {
     assert!(matches!(
-      (simple::<_, ()>(|input| input.rest().len()).exec.raw)(
+      (simple(|input| input.rest().len()).exec.raw)(
         &mut ActionInput::new("123", 1, &mut ()).unwrap()
       )
       .unwrap()
@@ -104,7 +102,7 @@ mod tests {
   #[test]
   fn simple_reject_on_0() {
     assert!(matches!(
-      (simple::<_, ()>(|_| 0).exec.raw)(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+      (simple(|_| 0).exec.raw)(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
       None
     ));
   }
@@ -119,7 +117,6 @@ mod tests {
       Some(ActionOutput {
         binding,
         digested: 3,
-        error: None
       }) if binding.kind().data == 123
     ));
   }
@@ -133,7 +130,6 @@ mod tests {
       Some(ActionOutput {
         binding,
         digested: 0,
-        error: None
       }) if binding.kind().data == 123
     ));
   }

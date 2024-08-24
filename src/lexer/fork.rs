@@ -10,14 +10,14 @@ use super::re_lex::ReLexContext;
 /// to implement the [`fork`](crate::lexer::options::LexOptions::fork) feature
 /// so that we can return different types in [`ForkOutputFactory::into_fork_output`]
 /// to avoid unnecessary allocations.
-pub trait LexOptionsFork<'text, Kind, State, ErrorType> {
+pub trait LexOptionsFork {
   // this has to implement `Default` because the instance is not provided by the user
   // and we have to create the instance by our own
-  type OutputFactoryType: ForkOutputFactory<'text, Kind, State, ErrorType> + Default;
+  type OutputFactoryType: ForkOutputFactory + Default;
 }
 
 // the mock implementation of the fork feature
-impl<'text, Kind, State, ErrorType> LexOptionsFork<'text, Kind, State, ErrorType> for () {
+impl LexOptionsFork for () {
   type OutputFactoryType = ();
 }
 
@@ -27,14 +27,14 @@ impl<'text, Kind, State, ErrorType> LexOptionsFork<'text, Kind, State, ErrorType
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ForkEnabled;
 
-impl<'text, Kind, State, ErrorType> LexOptionsFork<'text, Kind, State, ErrorType> for ForkEnabled {
+impl LexOptionsFork for ForkEnabled {
   type OutputFactoryType = ForkOutputBuilder;
 }
 
 /// These types already implement the [`ForkOutputFactory`] trait:
 /// - `()` - no fork output will be created.
 /// - [`ForkOutputBuilder`] - create fork output structs if possible.
-pub trait ForkOutputFactory<'text, Kind, State, ErrorType> {
+pub trait ForkOutputFactory {
   /// This should extends [`Default`] so when no token is emitted,
   /// the output can be created with a default value.
   type ForkOutputType: Default;
@@ -48,7 +48,7 @@ pub trait ForkOutputFactory<'text, Kind, State, ErrorType> {
 }
 
 // mock fork output factory
-impl<'text, Kind, State, ErrorType> ForkOutputFactory<'text, Kind, State, ErrorType> for () {
+impl ForkOutputFactory for () {
   type ForkOutputType = ();
 
   #[inline]
@@ -64,9 +64,7 @@ impl<'text, Kind, State, ErrorType> ForkOutputFactory<'text, Kind, State, ErrorT
 #[derive(Default, Debug)]
 pub struct ForkOutputBuilder;
 
-impl<'text, Kind, State, ErrorType> ForkOutputFactory<'text, Kind, State, ErrorType>
-  for ForkOutputBuilder
-{
+impl ForkOutputFactory for ForkOutputBuilder {
   type ForkOutputType = Option<ReLexContext>;
 
   #[inline]
@@ -99,7 +97,7 @@ mod tests {
   fn mock_fork_output_factory() {
     let factory = ();
     let stateless_fork_output =
-      ForkOutputFactory::<(), i32, ()>::into_fork_output(factory, 0, 2, 1);
+      ForkOutputFactory::into_fork_output(factory, 0, 2, 1);
     assert_eq!(stateless_fork_output, ());
   }
 
@@ -107,12 +105,12 @@ mod tests {
   fn fork_output_builder() {
     let builder = ForkOutputBuilder::default();
     let stateless_fork_output =
-      ForkOutputFactory::<(), i32, ()>::into_fork_output(builder, 0, 2, 1);
+      ForkOutputFactory::into_fork_output(builder, 0, 2, 1);
     assert_eq!(stateless_fork_output, None);
 
     let builder = ForkOutputBuilder::default();
     let stateless_fork_output =
-      ForkOutputFactory::<(), i32, ()>::into_fork_output(builder, 0, 2, 0);
+      ForkOutputFactory::into_fork_output(builder, 0, 2, 0);
     assert_eq!(
       stateless_fork_output,
       Some(ReLexContext { start: 0, skip: 1 })

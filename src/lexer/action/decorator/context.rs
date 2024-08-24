@@ -14,7 +14,7 @@ pub struct AcceptedActionOutputContext<InputType, OutputType> {
 
 macro_rules! impl_ctx {
   ($input:ty, $output:ty) => {
-    impl<'text, Kind, StateRef, OptionErrorType> AcceptedActionOutputContext<$input, $output> {
+    impl<'text, Kind, StateRef> AcceptedActionOutputContext<$input, $output> {
       /// The [`Range::end`](crate::lexer::token::Range) of the token that this action will emit.
       #[inline]
       pub fn end(&self) -> usize {
@@ -40,8 +40,8 @@ macro_rules! impl_ctx {
 
 // ActionInput won't be consumed.
 // ActionOutput won't be modified directly in the context.
-impl_ctx!(&mut ActionInput<'text, StateRef>, ActionOutput<Kind, OptionErrorType>);
-impl_ctx!(&mut ActionInput<'text, StateRef>, &ActionOutput<Kind, OptionErrorType>);
+impl_ctx!(&mut ActionInput<'text, StateRef>, ActionOutput<Kind>);
+impl_ctx!(&mut ActionInput<'text, StateRef>, &ActionOutput<Kind>);
 
 #[cfg(test)]
 mod tests {
@@ -51,11 +51,10 @@ mod tests {
   fn create_input() -> ActionInput<'static, ()> {
     ActionInput::new("123", 1, ()).unwrap()
   }
-  fn create_output() -> ActionOutput<MockTokenKind<()>, Option<()>> {
+  fn create_output() -> ActionOutput<MockTokenKind<()>> {
     ActionOutput {
       binding: MockTokenKind::new(()).into(),
       digested: 1,
-      error: None::<()>,
     }
   }
 

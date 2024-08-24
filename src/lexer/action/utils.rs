@@ -27,9 +27,9 @@ use std::{collections::HashSet, ops::RangeInclusive};
 /// # let action: Action<_> =
 /// chars(|ch| ch.is_ascii_digit());
 /// ```
-pub fn chars<State, ErrorType>(
+pub fn chars<State>(
   condition: impl Fn(char) -> bool + 'static,
-) -> Action<MockTokenKind<()>, State, ErrorType> {
+) -> Action<MockTokenKind<()>, State> {
   simple(move |input| {
     let mut digested = 0;
     for ch in input.rest().chars() {
@@ -52,9 +52,9 @@ pub fn chars<State, ErrorType>(
 /// # let action: Action<_> =
 /// chars_in_range('0'..='9');
 /// ```
-pub fn chars_in_range<State, ErrorType>(
+pub fn chars_in_range<State>(
   range: impl Into<RangeInclusive<char>>,
-) -> Action<MockTokenKind<()>, State, ErrorType> {
+) -> Action<MockTokenKind<()>, State> {
   let range = range.into();
   {
     let range = range.clone();
@@ -73,9 +73,7 @@ pub fn chars_in_range<State, ErrorType>(
 /// # let action: Action<_> =
 /// charset(['a', 's', 'd']);
 /// ```
-pub fn charset<State, ErrorType>(
-  set: impl Into<HashSet<char>>,
-) -> Action<MockTokenKind<()>, State, ErrorType> {
+pub fn charset<State>(set: impl Into<HashSet<char>>) -> Action<MockTokenKind<()>, State> {
   let set = set.into();
   {
     let set = set.clone();
@@ -95,9 +93,7 @@ pub fn charset<State, ErrorType>(
 /// chars_in_str("asd");
 /// ```
 #[inline]
-pub fn chars_in_str<State, ErrorType>(
-  s: impl Into<String>,
-) -> Action<MockTokenKind<()>, State, ErrorType> {
+pub fn chars_in_str<State>(s: impl Into<String>) -> Action<MockTokenKind<()>, State> {
   charset(s.into().chars().collect::<HashSet<_>>())
 }
 
@@ -117,7 +113,7 @@ pub fn chars_in_str<State, ErrorType>(
 /// builder.ignore_default(whitespaces());
 /// # }
 /// ```
-pub fn whitespaces<State, ErrorType>() -> Action<MockTokenKind<()>, State, ErrorType> {
+pub fn whitespaces<State>() -> Action<MockTokenKind<()>, State> {
   chars(|ch| ch.is_whitespace())
     // 0009..000D    ; White_Space # Cc   [5] <control-0009>..<control-000D>
     // 0020          ; White_Space # Zs       SPACE
@@ -158,10 +154,10 @@ pub fn whitespaces<State, ErrorType>() -> Action<MockTokenKind<()>, State, Error
 /// # let action: Action<_> =
 /// comment("<!--", "-->");
 /// ```
-pub fn comment<State, ErrorType>(
+pub fn comment<State>(
   open: impl Into<String>,
   close: impl Into<String>,
-) -> Action<MockTokenKind<()>, State, ErrorType> {
+) -> Action<MockTokenKind<()>, State> {
   let open: String = open.into();
   let close: String = close.into();
   let first = open.chars().next().expect("open is empty");

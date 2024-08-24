@@ -1,11 +1,8 @@
-use crate::{
-  lexer::{
-    expectation::Expectation,
-    fork::ForkEnabled,
-    options::{LexOptions, TrimOptions},
-    re_lex::ReLexContext,
-  },
-  utils::AccumulatorSetter,
+use crate::lexer::{
+  expectation::Expectation,
+  fork::ForkEnabled,
+  options::{LexOptions, TrimOptions},
+  re_lex::ReLexContext,
 };
 
 /// Add [`Self::start`] and [`Self::state`] to the `Base` options.
@@ -40,10 +37,10 @@ impl<StateRef, Base> StatelessOptions<StateRef, Base> {
 }
 
 /// Add [`StatelessLexOptions::start`] and [`StatelessLexOptions::state`] to [`LexOptions`].
-pub type StatelessLexOptions<'expect_literal, Kind, StateRef, ErrAcc, Fork> =
-  StatelessOptions<StateRef, LexOptions<'expect_literal, Kind, ErrAcc, Fork>>;
+pub type StatelessLexOptions<'expect_literal, Kind, StateRef, Fork> =
+  StatelessOptions<StateRef, LexOptions<'expect_literal, Kind, Fork>>;
 
-impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), ()> {
+impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), ()> {
   /// Create a new instance with `0` as the start index and no state.
   #[inline]
   pub const fn new() -> Self {
@@ -59,8 +56,8 @@ impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), (
 // re-export from `LexOptions`
 // but with `StatelessLexOptions` as the return type
 // instead of `LexOptions`
-impl<'expect_literal, Kind, StateRef, ErrAcc, Fork>
-  StatelessLexOptions<'expect_literal, Kind, StateRef, ErrAcc, Fork>
+impl<'expect_literal, Kind, StateRef, Fork>
+  StatelessLexOptions<'expect_literal, Kind, StateRef, Fork>
 {
   /// See [`LexOptions::expect`].
   #[inline]
@@ -77,22 +74,10 @@ impl<'expect_literal, Kind, StateRef, ErrAcc, Fork>
     self.base.expectation = f(Expectation::default());
     self
   }
-  /// See [`LexOptions::errors`].
-  #[inline]
-  pub fn errors<NewErrAcc>(
-    self,
-  ) -> AccumulatorSetter<
-    impl FnOnce(NewErrAcc) -> StatelessLexOptions<'expect_literal, Kind, StateRef, NewErrAcc, Fork>,
-  > {
-    AccumulatorSetter::new(move |acc| StatelessLexOptions {
-      start: self.start,
-      state: self.state,
-      base: self.base.errors().to(acc),
-    })
-  }
+
   /// See [`LexOptions::fork`].
   #[inline]
-  pub fn fork(self) -> StatelessLexOptions<'expect_literal, Kind, StateRef, ErrAcc, ForkEnabled> {
+  pub fn fork(self) -> StatelessLexOptions<'expect_literal, Kind, StateRef, ForkEnabled> {
     StatelessLexOptions {
       start: self.start,
       state: self.state,
@@ -108,9 +93,9 @@ impl<'expect_literal, Kind, StateRef, ErrAcc, Fork>
 }
 
 /// Add [`StatelessTrimOptions::start`] and [`StatelessTrimOptions::state`] to [`TrimOptions`].
-pub type StatelessTrimOptions<StateRef, ErrAcc> = StatelessOptions<StateRef, TrimOptions<ErrAcc>>;
+pub type StatelessTrimOptions<StateRef> = StatelessOptions<StateRef, TrimOptions>;
 
-impl StatelessTrimOptions<(), ()> {
+impl StatelessTrimOptions<()> {
   /// Create a new instance with `0` as the start index and no state.
   #[inline]
   pub const fn new() -> Self {
@@ -118,25 +103,8 @@ impl StatelessTrimOptions<(), ()> {
       start: 0,
       // use `()` as a placeholder, user should use `self.state` to set this
       state: (),
-      base: TrimOptions::new(),
+      base: TrimOptions,
     }
-  }
-}
-
-// re-export from `TrimOptions`
-// but with `StatelessTrimOptions` as the return type
-// instead of `TrimOptions`
-impl<StateRef, ErrAcc> StatelessTrimOptions<StateRef, ErrAcc> {
-  /// See [`TrimOptions::errors`].
-  #[inline]
-  pub fn errors<NewErrAcc>(
-    self,
-  ) -> AccumulatorSetter<impl FnOnce(NewErrAcc) -> StatelessTrimOptions<StateRef, NewErrAcc>> {
-    AccumulatorSetter::new(move |acc| StatelessTrimOptions {
-      start: self.start,
-      state: self.state,
-      base: self.base.errors().to(acc),
-    })
   }
 }
 
@@ -171,7 +139,7 @@ mod tests {
     let options = StatelessLexOptions::new();
     assert_eq!(options.start, 0);
     assert_eq!(options.state, ());
-    assert_eq!(options.base, LexOptions::<(), _, _>::new());
+    assert_eq!(options.base, LexOptions::<(), _>::new());
 
     let options = options.expect(Expectation::default());
     assert_eq!(options.start, 0);
@@ -189,13 +157,7 @@ mod tests {
       LexOptions::new().expect_with(|e| e.literal("a"))
     );
 
-    let mut errors: Vec<()> = vec![];
-    let options = options.expect_with(|e| e).errors().to(&mut errors);
-    assert_eq!(options.start, 0);
-    assert_eq!(options.state, ());
-    assert_eq!(options.base, LexOptions::new().errors().to(&mut vec![]));
-
-    let options = options.errors().to(()).fork();
+    let options = options.fork();
     assert_eq!(options.start, 0);
     assert_eq!(options.state, ());
     assert_eq!(options.base, LexOptions::new().fork());
@@ -216,17 +178,6 @@ mod tests {
     let options = StatelessTrimOptions::new();
     assert_eq!(options.start, 0);
     assert_eq!(options.state, ());
-    assert_eq!(options.base, TrimOptions::new());
-
-    let mut errors: Vec<()> = vec![];
-    let options = StatelessTrimOptions::new().errors().to(&mut errors);
-    assert_eq!(options.start, 0);
-    assert_eq!(options.state, ());
-    assert_eq!(options.base, TrimOptions::new().errors().to(&mut vec![]));
-
-    let options = StatelessTrimOptions::new().errors().to(&mut errors);
-    assert_eq!(options.start, 0);
-    assert_eq!(options.state, ());
-    assert_eq!(options.base, TrimOptions::new().errors().to(&mut vec![]));
+    assert_eq!(options.base, TrimOptions);
   }
 }

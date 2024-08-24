@@ -1,16 +1,12 @@
-use super::{utils::update_state, StatelessLexer, StatelessTrimOptions};
-use crate::{
-  lexer::{
-    action::ActionInput,
-    output::TrimOutput,
-    re_lex::ReLexContext,
-    stateless::utils::{break_loop_on_none, traverse_actions},
-    token::Range,
-  },
-  utils::Accumulator,
+use super::{StatelessLexer, StatelessTrimOptions};
+use crate::lexer::{
+  action::ActionInput,
+  output::TrimOutput,
+  re_lex::ReLexContext,
+  stateless::utils::{break_loop_on_none, traverse_actions},
 };
 
-impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
+impl<Kind, State> StatelessLexer<Kind, State> {
   /// Lex with muted actions, the default state and the default options.
   ///
   /// This function will create a new state and return it.
@@ -38,12 +34,10 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// stateless.trim_with("123", |o| o.state(&mut state));
   /// ```
   #[inline]
-  pub fn trim_with<'text, 'state, ErrAcc: Accumulator<(ErrorType, Range)>>(
+  pub fn trim_with<'text, 'state>(
     &self,
     text: &'text str,
-    options_builder: impl FnOnce(
-      StatelessTrimOptions<(), ()>,
-    ) -> StatelessTrimOptions<&'state mut State, ErrAcc>,
+    options_builder: impl FnOnce(StatelessTrimOptions<()>) -> StatelessTrimOptions<&'state mut State>,
   ) -> TrimOutput
   where
     State: 'state,
@@ -60,17 +54,16 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// let options = StatelessTrimOptions::new().state(&mut state);
   /// stateless.trim_with_options("123", options);
   /// ```
-  pub fn trim_with_options<'text, 'state, ErrAcc: Accumulator<(ErrorType, Range)>>(
+  pub fn trim_with_options<'text, 'state>(
     &self,
     text: &'text str,
-    options: StatelessTrimOptions<&'state mut State, ErrAcc>,
+    options: StatelessTrimOptions<&'state mut State>,
   ) -> TrimOutput {
     // there is no expectation when trimming, so the fork is meaningless.
     // use the default re-lex context as a placeholder
     let re_lex = ReLexContext::default();
 
     let mut digested = 0;
-    let mut errors = options.base.errors;
 
     loop {
       let input_start = options.start + digested;
@@ -82,13 +75,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
 
       debug_assert!(muted, "all actions should be muted when trimming");
 
-      update_state(
-        output.digested,
-        output.error,
-        input_start,
-        &mut digested,
-        &mut errors,
-      );
+      digested += output.digested;
     }
 
     // no more input or no accepted actions

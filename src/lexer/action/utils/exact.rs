@@ -20,9 +20,7 @@ pub use whitehole_helpers::exact_vec;
 /// # let action: Action<_> =
 /// exact(';'); // using char
 /// ```
-pub fn exact<State, ErrorType>(
-  s: impl Into<String>,
-) -> Action<MockTokenKind<()>, State, ErrorType> {
+pub fn exact<State>(s: impl Into<String>) -> Action<MockTokenKind<()>, State> {
   let s: String = s.into();
   let head = s.chars().next().expect("empty string is not allowed");
   let literal = s.clone();
@@ -49,9 +47,7 @@ pub fn exact<State, ErrorType>(
 /// # let actions: Vec<Action<_>> =
 /// vec![exact("+"), exact("-"), exact("*"), exact("/"), exact("("), exact(")")];
 /// ```
-pub fn exact_chars<State, ErrorType>(
-  s: impl Into<String>,
-) -> Vec<Action<MockTokenKind<()>, State, ErrorType>> {
+pub fn exact_chars<State>(s: impl Into<String>) -> Vec<Action<MockTokenKind<()>, State>> {
   s.into().chars().map(|c| exact(c)).collect()
 }
 
@@ -71,9 +67,7 @@ pub fn exact_chars<State, ErrorType>(
 /// # let action: Action<_> =
 /// unchecked_exact("true");
 /// ```
-pub fn unchecked_exact<State, ErrorType>(
-  s: impl Into<String>,
-) -> Action<MockTokenKind<()>, State, ErrorType> {
+pub fn unchecked_exact<State>(s: impl Into<String>) -> Action<MockTokenKind<()>, State> {
   let s: String = s.into();
   let head = s.chars().next().expect("empty string is not allowed");
   let len = s.len();
@@ -97,9 +91,7 @@ pub fn unchecked_exact<State, ErrorType>(
 /// # let actions: Vec<Action<_>> =
 /// vec![unchecked_exact("+"), unchecked_exact("-"), unchecked_exact("*"), unchecked_exact("/")];
 /// ```
-pub fn unchecked_exact_chars<State, ErrorType>(
-  s: impl Into<String>,
-) -> Vec<Action<MockTokenKind<()>, State, ErrorType>> {
+pub fn unchecked_exact_chars<State>(s: impl Into<String>) -> Vec<Action<MockTokenKind<()>, State>> {
   s.into().chars().map(|c| unchecked_exact(c)).collect()
 }
 
@@ -124,7 +116,7 @@ mod tests {
   #[should_panic]
   #[test]
   fn action_utils_exact_empty() {
-    exact::<(), ()>("");
+    exact::<()>("");
   }
 
   #[test]
@@ -219,7 +211,7 @@ mod tests {
   #[test]
   #[should_panic]
   fn action_utils_unchecked_exact_empty() {
-    unchecked_exact::<(), ()>("");
+    unchecked_exact::<()>("");
   }
 
   #[test]

@@ -10,7 +10,7 @@ use super::{input::ActionInput, output::ActionOutput, Action, ActionExec};
 use crate::lexer::token::TokenKindIdBinding;
 
 // simple decorators that doesn't require generic bounds
-impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
+impl<Kind, State> Action<Kind, State> {
   /// Set [`Self::muted`] to `true`.
   /// # Examples
   /// ```
@@ -55,8 +55,8 @@ impl<Kind, State, ErrorType> Action<Kind, State, ErrorType> {
 }
 
 // these decorators will use `Box` to construct new action exec
-// so `Kind/State/ErrorType` must be `'static`
-impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, ErrorType> {
+// so `Kind/State/Heap` must be `'static`
+impl<Kind: 'static, State: 'static> Action<Kind, State> {
   /// Check the [`ActionInput`] before the action is executed.
   /// Reject the action if the `condition` returns `true`.
   /// # Examples
@@ -124,103 +124,6 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
     self
   }
 
-  /// Set [`ActionOutput::error`] by the `factory` if the action is accepted.
-  /// You can consume the old [`ActionOutput::error`] in the `factory`
-  /// but not the [`ActionOutput::binding`].
-  /// # Examples
-  /// ```
-  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
-  /// # #[token_kind]
-  /// # #[derive(Clone)]
-  /// # enum MyKind { A }
-  /// # fn main() {
-  /// # let mut builder = LexerBuilder::with_error();
-  /// builder.define_with(
-  ///   A,
-  ///   regex(r"^\s+"),
-  ///   |a| a.check(|ctx| {
-  ///     if ctx.rest().len() > 0 {
-  ///       Some("error")
-  ///     } else {
-  ///       None
-  ///     }
-  ///   })
-  /// );
-  /// # }
-  /// ```
-  pub fn check<NewError>(
-    self,
-    factory: impl Fn(
-        AcceptedActionOutputContext<
-          &mut ActionInput<&mut State>,
-          ActionOutput<&TokenKindIdBinding<Kind>, Option<ErrorType>>,
-        >,
-      ) -> Option<NewError>
-      + 'static,
-  ) -> Action<Kind, State, NewError> {
-    let exec = self.exec.raw;
-    Action {
-      exec: ActionExec::new(move |input| {
-        exec(input).map(|output| ActionOutput {
-          error: factory(AcceptedActionOutputContext {
-            input,
-            output: ActionOutput {
-              binding: &output.binding, // don't consume the binding
-              error: output.error,      // but the error is consumable
-              digested: output.digested,
-            },
-          }),
-          binding: output.binding,
-          digested: output.digested,
-        })
-      }),
-      muted: self.muted,
-      head: self.head,
-      kind: self.kind,
-      literal: self.literal,
-    }
-  }
-
-  /// Set [`ActionOutput::error`] to a constant value if the action is accepted.
-  /// # Examples
-  /// ```
-  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
-  /// # #[token_kind]
-  /// # #[derive(Clone)]
-  /// # enum MyKind { A }
-  /// # fn main() {
-  /// # let mut builder = LexerBuilder::with_error();
-  /// builder.define_with(
-  ///   A,
-  ///   regex(r"^\s+"),
-  ///   |a| a.error("error")
-  /// );
-  /// # }
-  /// ```
-  pub fn error<NewError>(self, error: NewError) -> Action<Kind, State, NewError>
-  where
-    NewError: Clone + 'static,
-  {
-    // to optimize the runtime performance,
-    // don't just use `check(|_| Some(error.clone()))`
-    // to prevent constructing the context
-
-    let exec = self.exec.raw;
-    Action {
-      exec: ActionExec::new(move |input| {
-        exec(input).map(|output| ActionOutput {
-          error: Some(error.clone()),
-          binding: output.binding,
-          digested: output.digested,
-        })
-      }),
-      muted: self.muted,
-      head: self.head,
-      kind: self.kind,
-      literal: self.literal,
-    }
-  }
-
   /// Reject the action if the `condition` is met.
   /// # Examples
   /// ```
@@ -242,7 +145,7 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
     condition: impl Fn(
         AcceptedActionOutputContext<
           &mut ActionInput<&mut State>,
-          &ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
+          &ActionOutput<TokenKindIdBinding<Kind>>,
         >,
       ) -> bool
       + 'static,
@@ -319,7 +222,7 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
     cb: impl Fn(
         AcceptedActionOutputContext<
           &mut ActionInput<&mut State>,
-          &ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
+          &ActionOutput<TokenKindIdBinding<Kind>>,
         >,
       ) + 'static,
   ) -> Self {
@@ -408,51 +311,10 @@ mod tests {
   }
 
   #[test]
-  fn action_check() {
-    let action = exact("a").check(
-      |ctx: AcceptedActionOutputContext<_, ActionOutput<_, Option<&str>>>| {
-        if ctx.rest().len() > 0 {
-          Some("error")
-        } else {
-          None
-        }
-      },
-    );
-
-    assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
-      Some(ActionOutput { error: None, .. })
-    ));
-    assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("aa", 0, &mut ()).unwrap()),
-      Some(ActionOutput {
-        error: Some("error"),
-        ..
-      })
-    ));
-  }
-
-  #[test]
-  fn action_error() {
-    let action = exact::<_, &str>("a").error("error");
-
-    assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
-      Some(ActionOutput {
-        error: Some("error"),
-        ..
-      })
-    ));
-  }
-
-  #[test]
   fn action_reject_if() {
     let action: Action<_> = exact("a").reject_if(|ctx| ctx.rest().len() > 0);
 
-    assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
-      Some(ActionOutput { error: None, .. })
-    ));
+    assert!((action.exec.raw)(&mut ActionInput::new("a", 0, &mut ()).unwrap()).is_some());
     assert!(matches!(
       (action.exec.raw)(&mut ActionInput::new("aa", 0, &mut ()).unwrap()),
       None
@@ -493,7 +355,7 @@ mod tests {
   fn action_callback() {
     // ensure callback can update the state
     let mut state = MyState { value: 0 };
-    let action: Action<_, MyState, ()> = exact("a").then(
+    let action: Action<_, MyState> = exact("a").then(
       |ctx: AcceptedActionOutputContext<&mut ActionInput<&mut MyState>, _>| {
         ctx.input.state.value += 1
       },

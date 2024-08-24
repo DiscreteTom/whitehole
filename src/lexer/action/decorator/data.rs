@@ -4,7 +4,7 @@ use crate::lexer::{
   token::{MockTokenKind, SubTokenKind, TokenKindIdBinding},
 };
 
-impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, ErrorType> {
+impl<Kind: 'static, State: 'static> Action<Kind, State> {
   /// Set the kind to [`MockTokenKind`] and store the data in [`MockTokenKind::data`].
   /// Return a new action.
   ///
@@ -21,29 +21,20 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
     factory: impl Fn(
         AcceptedActionOutputContext<
           &mut ActionInput<&mut State>,
-          ActionOutput<TokenKindIdBinding<Kind>, &Option<ErrorType>>,
+          ActionOutput<TokenKindIdBinding<Kind>>,
         >,
       ) -> T
       + 'static,
-  ) -> Action<MockTokenKind<T>, State, ErrorType> {
+  ) -> Action<MockTokenKind<T>, State> {
     let exec = self.exec.raw;
     Action {
       exec: ActionExec::new(move |input| {
         exec(input).map(|output| ActionOutput {
+          digested: output.digested,
           binding: MockTokenKind {
-            data: factory(AcceptedActionOutputContext {
-              input,
-              // don't consume the error
-              output: ActionOutput {
-                binding: output.binding,
-                digested: output.digested,
-                error: &output.error,
-              },
-            }),
+            data: factory(AcceptedActionOutputContext { input, output }),
           }
           .into(),
-          digested: output.digested,
-          error: output.error,
         })
       }),
       muted: self.muted,
@@ -54,9 +45,7 @@ impl<Kind: 'static, State: 'static, ErrorType: 'static> Action<Kind, State, Erro
   }
 }
 
-impl<Data: 'static, State: 'static, ErrorType: 'static>
-  Action<MockTokenKind<Data>, State, ErrorType>
-{
+impl<Data: 'static, State: 'static> Action<MockTokenKind<Data>, State> {
   /// Map the data of the kind to another data, stored in [`MockTokenKind::data`].
   /// Return a new action.
   /// # Examples
@@ -68,7 +57,7 @@ impl<Data: 'static, State: 'static, ErrorType: 'static>
   pub fn map<NewData>(
     self,
     transformer: impl Fn(Data) -> NewData + 'static,
-  ) -> Action<MockTokenKind<NewData>, State, ErrorType> {
+  ) -> Action<MockTokenKind<NewData>, State> {
     self.data(move |ctx| transformer(ctx.output.binding.take().data))
   }
 }
@@ -88,7 +77,6 @@ mod tests {
       Some(ActionOutput {
         binding,
         digested: 1,
-        error: None
       }) if *binding.kind().data == 1
     ));
   }
@@ -104,7 +92,6 @@ mod tests {
       Some(ActionOutput {
         binding,
         digested: 1,
-        error: None
       }) if **binding.kind().data == 1
     ));
   }

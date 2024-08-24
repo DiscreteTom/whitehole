@@ -105,25 +105,25 @@ use literal_map::LiteralMap;
 
 /// Stateless, immutable lexer.
 #[derive(Debug)]
-pub struct StatelessLexer<Kind, State = (), ErrorType = ()> {
+pub struct StatelessLexer<Kind, State = ()> {
   /// This is used to accelerate lexing by actions' head matcher when there is no expectation.
   /// This is pre-calculated to optimize the runtime performance.
-  head_map: HeadMap<Kind, State, ErrorType>,
+  head_map: HeadMap<Kind, State>,
   /// This is used to accelerate expected lexing by the expected kind and actions' head matcher.
   /// This is pre-calculated to optimize the runtime performance.
-  kind_head_map: OptionLookupTable<HeadMap<Kind, State, ErrorType>>,
+  kind_head_map: OptionLookupTable<HeadMap<Kind, State>>,
   /// This is used to accelerate expected lexing by the expected literal and actions' head matcher.
   /// This is pre-calculated to optimize the runtime performance.
-  literal_map: LiteralMap<Kind, State, ErrorType>,
+  literal_map: LiteralMap<Kind, State>,
   /// This is used to accelerate expected lexing by the expected kind, the expected literal and actions' head matcher.
   /// This is pre-calculated to optimize the runtime performance.
-  kind_literal_map: OptionLookupTable<LiteralMap<Kind, State, ErrorType>>,
+  kind_literal_map: OptionLookupTable<LiteralMap<Kind, State>>,
 }
 
-impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
+impl<Kind, State> StatelessLexer<Kind, State> {
   /// Create a new [`StatelessLexer`] from a list of actions.
   /// This function will pre-calculate some collections to optimize the runtime performance.
-  pub fn new(actions: Vec<Action<Kind, State, ErrorType>>) -> Self {
+  pub fn new(actions: Vec<Action<Kind, State>>) -> Self {
     // as per data oriented design, convert actions into 2 lists to optimize iteration efficiency (optimize CPU cache hit)
     let mut execs = Vec::with_capacity(actions.len());
     let mut props = Vec::with_capacity(actions.len());
@@ -152,12 +152,9 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   }
 
   fn init_kind_map(
-    execs: &Vec<RcActionExec<Kind, State, ErrorType>>,
+    execs: &Vec<RcActionExec<Kind, State>>,
     props: &Vec<RcActionProps<Kind>>,
-  ) -> OptionLookupTable<(
-    Vec<RcActionExec<Kind, State, ErrorType>>,
-    Vec<RcActionProps<Kind>>,
-  )> {
+  ) -> OptionLookupTable<(Vec<RcActionExec<Kind, State>>, Vec<RcActionProps<Kind>>)> {
     let mut res = OptionLookupTable::with_keys(
       &props.iter().map(|p| p.kind().value()).collect::<Vec<_>>(),
       // in most cases there is only one action for each kind
@@ -202,13 +199,13 @@ mod tests {
     B,
   }
 
-  fn r<S, E>(s: &str) -> Action<MockTokenKind<()>, S, E> {
+  fn r<S>(s: &str) -> Action<MockTokenKind<()>, S> {
     regex(s)
   }
 
   fn assert_immutable_actions_eq(
-    actions: &RuntimeActions<MyKind, (), ()>,
-    expected: Vec<Action<MyKind, (), ()>>,
+    actions: &RuntimeActions<MyKind, ()>,
+    expected: Vec<Action<MyKind, ()>>,
   ) {
     assert_eq!(actions.len(), expected.len());
     for i in 0..actions.len() {

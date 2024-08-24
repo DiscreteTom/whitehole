@@ -31,14 +31,13 @@ use std::collections::HashSet;
 // TODO: comments
 pub fn string<
   State,
-  ErrorType,
   Value: PartialStringBodyValue + 'static,
   CustomError: 'static,
   BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone + 'static,
 >(
   open: impl Into<OneOrMore<String>>,
   options: StringBodyOptions<Value, CustomError, BodyAcc>,
-) -> Action<MockTokenKind<BodyAcc>, State, ErrorType> {
+) -> Action<MockTokenKind<BodyAcc>, State> {
   let open: Vec<String> = open.into().0;
   let head: HashSet<_> = open
     .iter()
@@ -71,21 +70,16 @@ mod tests {
   };
 
   fn exec_action(
-    action: &Action<MockTokenKind<Vec<PartialStringBody<String, ()>>>, (), ()>,
+    action: &Action<MockTokenKind<Vec<PartialStringBody<String, ()>>>, ()>,
     text: &str,
-  ) -> Option<
-    ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>, Option<()>>,
-  > {
+  ) -> Option<ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>>>
+  {
     (action.exec.raw)(&mut ActionInput::new(text, 0, &mut ()).unwrap())
   }
 
   fn validate_output(
-    output: ActionOutput<
-      TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>,
-      Option<()>,
-    >,
-  ) -> ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>, Option<()>>
-  {
+    output: ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>>,
+  ) -> ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>> {
     // ensure at least one partial string body (the unterminated error)
     assert!(output.binding.kind().data.len() > 0);
 
@@ -108,11 +102,10 @@ mod tests {
   }
 
   fn assert_accept_all(
-    action: &Action<MockTokenKind<Vec<PartialStringBody<String, ()>>>, (), ()>,
+    action: &Action<MockTokenKind<Vec<PartialStringBody<String, ()>>>, ()>,
     text: &str,
     value: &str,
-  ) -> ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>, Option<()>>
-  {
+  ) -> ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>> {
     let output = exec_action(action, text).unwrap();
     assert_eq!(output.digested, text.len());
     assert_eq!(

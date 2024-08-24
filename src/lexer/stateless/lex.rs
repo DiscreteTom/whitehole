@@ -11,13 +11,13 @@ use crate::{
     fork::{ForkOutputFactory, LexOptionsFork},
     output::LexOutput,
     re_lex::ReLexContext,
-    stateless::utils::{traverse_actions, update_state},
-    token::{Range, Token, TokenKindId, TokenKindIdBinding},
+    stateless::utils::traverse_actions,
+    token::{Token, TokenKindId, TokenKindIdBinding},
   },
-  utils::{lookup::lookup::Lookup, Accumulator},
+  utils::lookup::lookup::Lookup,
 };
 
-impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
+impl<Kind, State> StatelessLexer<Kind, State> {
   const INVALID_EXPECTED_KIND: &'static str = "no action is defined for the expected kind";
   const INVALID_EXPECTED_LITERAL: &'static str = "no action is defined for the expected literal";
 
@@ -50,28 +50,13 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// stateless.lex_with("123", |o| o.state(&mut state));
   /// ```
   #[inline]
-  pub fn lex_with<
-    'text,
-    'expect_literal,
-    'state,
-    ErrAcc: Accumulator<(ErrorType, Range)>,
-    Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
-  >(
+  pub fn lex_with<'text, 'state, Fork: LexOptionsFork>(
     &self,
     text: &'text str,
     options_builder: impl FnOnce(
-      StatelessLexOptions<'expect_literal, Kind, (), (), ()>,
-    ) -> StatelessLexOptions<
-      'expect_literal,
-      Kind,
-      &'state mut State,
-      ErrAcc,
-      Fork,
-    >,
-  ) -> LexOutput<
-    Token<Kind>,
-    <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
-  >
+      StatelessLexOptions<Kind, (), ()>,
+    ) -> StatelessLexOptions<Kind, &'state mut State, Fork>,
+  ) -> LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType>
   where
     State: 'state,
   {
@@ -89,20 +74,11 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// let options = StatelessLexOptions::new().state(&mut state);
   /// stateless.lex_with_options("123", options);
   /// ```
-  pub fn lex_with_options<
-    'text,
-    'expect_literal,
-    'state,
-    ErrAcc: Accumulator<(ErrorType, Range)>,
-    Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
-  >(
+  pub fn lex_with_options<'text, Fork: LexOptionsFork>(
     &self,
     text: &'text str,
-    options: StatelessLexOptions<'expect_literal, Kind, &'state mut State, ErrAcc, Fork>,
-  ) -> LexOutput<
-    Token<Kind>,
-    <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
-  > {
+    options: StatelessLexOptions<Kind, &mut State, Fork>,
+  ) -> LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType> {
     if let Some(literal) = options.base.expectation.literal {
       let (literal_map, head_map) =
         self.get_literal_head_map(options.base.expectation.kind, literal);
@@ -111,7 +87,6 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
         literal_map,
         head_map,
         0,
-        options.base.errors,
         options.start,
         text,
         options.state,
@@ -126,7 +101,6 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
       self.lex_without_literal(
         head_map,
         0,
-        options.base.errors,
         options.start,
         text,
         options.state,
@@ -150,29 +124,14 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// let (output, mutated_state) = stateless.peek_with("123", |o| o.state(&state));
   /// ```
   #[inline]
-  pub fn peek_with<
-    'text,
-    'expect_literal,
-    'state,
-    ErrAcc: Accumulator<(ErrorType, Range)>,
-    Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
-  >(
+  pub fn peek_with<'text, 'state, Fork: LexOptionsFork>(
     &self,
     text: &'text str,
     options_builder: impl FnOnce(
-      StatelessLexOptions<'expect_literal, Kind, (), (), ()>,
-    ) -> StatelessLexOptions<
-      'expect_literal,
-      Kind,
-      &'state State,
-      ErrAcc,
-      Fork,
-    >,
+      StatelessLexOptions<Kind, (), ()>,
+    ) -> StatelessLexOptions<Kind, &'state State, Fork>,
   ) -> (
-    LexOutput<
-      Token<Kind>,
-      <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
-    >,
+    LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType>,
     State,
   )
   where
@@ -193,21 +152,12 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   /// let options = StatelessLexOptions::new().state(&state);
   /// let (output, mutated_state) = stateless.peek_with_options("123", options);
   /// ```
-  pub fn peek_with_options<
-    'text,
-    'expect_literal,
-    'state,
-    ErrAcc: Accumulator<(ErrorType, Range)>,
-    Fork: LexOptionsFork<'text, Kind, State, ErrorType>,
-  >(
+  pub fn peek_with_options<'text, Fork: LexOptionsFork>(
     &self,
     text: &'text str,
-    options: StatelessLexOptions<'expect_literal, Kind, &'state State, ErrAcc, Fork>,
+    options: StatelessLexOptions<Kind, &State, Fork>,
   ) -> (
-    LexOutput<
-      Token<Kind>,
-      <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
-    >,
+    LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType>,
     State,
   )
   where
@@ -222,10 +172,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     &self,
     kind: Option<TokenKindId<Kind>>,
     literal: &str,
-  ) -> (
-    &LiteralMap<Kind, State, ErrorType>,
-    &HeadMap<Kind, State, ErrorType>,
-  ) {
+  ) -> (&LiteralMap<Kind, State>, &HeadMap<Kind, State>) {
     let literal_map = kind.map_or(&self.literal_map, |kind| {
       self
         .kind_literal_map
@@ -239,7 +186,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     (literal_map, head_map)
   }
 
-  fn get_kind_head_map(&self, kind: Option<TokenKindId<Kind>>) -> &HeadMap<Kind, State, ErrorType> {
+  fn get_kind_head_map(&self, kind: Option<TokenKindId<Kind>>) -> &HeadMap<Kind, State> {
     kind.map_or(
       &self.head_map, // if no expected kind, use the head map with all actions
       |kind| {
@@ -251,16 +198,11 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     )
   }
 
-  fn lex_with_literal<
-    'text,
-    ErrAcc: Accumulator<(ErrorType, Range)>,
-    ForkOutputFactoryType: ForkOutputFactory<'text, Kind, State, ErrorType>,
-  >(
+  fn lex_with_literal<'text, ForkOutputFactoryType: ForkOutputFactory>(
     &self,
-    literal_map: &LiteralMap<Kind, State, ErrorType>,
-    head_map: &HeadMap<Kind, State, ErrorType>,
+    literal_map: &LiteralMap<Kind, State>,
+    head_map: &HeadMap<Kind, State>,
     mut digested: usize,
-    mut errors: ErrAcc,
     start: usize,
     text: &'text str,
     state: &mut State,
@@ -270,12 +212,12 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   ) -> LexOutput<Token<Kind>, ForkOutputFactoryType::ForkOutputType> {
     loop {
       let input_start = start + digested;
-      let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state));
+      let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state,));
       let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
       let res = traverse_actions(input, actions, re_lex);
       let (output, action_index, muted) = break_loop_on_none!(res);
 
-      if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors) {
+      if let Some(token) = process_output(output, muted, input_start, &mut digested) {
         return done_with_token(
           digested,
           token,
@@ -293,15 +235,10 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     return done_without_token(digested);
   }
 
-  fn lex_without_literal<
-    'text,
-    ErrAcc: Accumulator<(ErrorType, Range)>,
-    ForkOutputFactoryType: ForkOutputFactory<'text, Kind, State, ErrorType>,
-  >(
+  fn lex_without_literal<'text, ForkOutputFactoryType: ForkOutputFactory>(
     &self,
-    head_map: &HeadMap<Kind, State, ErrorType>,
+    head_map: &HeadMap<Kind, State>,
     mut digested: usize,
-    mut errors: ErrAcc,
     start: usize,
     text: &'text str,
     state: &mut State,
@@ -310,12 +247,12 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   ) -> LexOutput<Token<Kind>, ForkOutputFactoryType::ForkOutputType> {
     loop {
       let input_start = start + digested;
-      let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state));
+      let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state,));
       let actions = head_map.get(input.next());
       let res = traverse_actions(input, actions, re_lex);
       let (output, action_index, muted) = break_loop_on_none!(res);
 
-      if let Some(token) = process_output(output, muted, input_start, &mut digested, &mut errors) {
+      if let Some(token) = process_output(output, muted, input_start, &mut digested) {
         return done_with_token(
           digested,
           token,
@@ -334,13 +271,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
   }
 }
 
-fn done_with_token<
-  'text,
-  Kind,
-  State,
-  ErrorType,
-  ForkOutputFactoryType: ForkOutputFactory<'text, Kind, State, ErrorType>,
->(
+fn done_with_token<'text, Kind, ForkOutputFactoryType: ForkOutputFactory>(
   digested: usize,
   token: Token<Kind>,
   fork_output_factory: ForkOutputFactoryType,
@@ -355,12 +286,12 @@ fn done_with_token<
   }
 }
 
-fn get_actions_by_literal_map<'this, Kind, State, StateRef, ErrorType>(
+fn get_actions_by_literal_map<'this, Kind, State, StateRef>(
   input: &ActionInput<StateRef>,
   literal: &str,
-  literal_map: &'this LiteralMap<Kind, State, ErrorType>,
-  head_map: &'this HeadMap<Kind, State, ErrorType>,
-) -> &'this RuntimeActions<Kind, State, ErrorType> {
+  literal_map: &'this LiteralMap<Kind, State>,
+  head_map: &'this HeadMap<Kind, State>,
+) -> &'this RuntimeActions<Kind, State> {
   {
     if !input.rest().starts_with(literal) {
       // prefix mismatch, only execute muted actions
@@ -375,14 +306,13 @@ fn get_actions_by_literal_map<'this, Kind, State, StateRef, ErrorType>(
 
 /// Process the output, update the digested, collect errors, and emit token if not muted.
 /// Return the token if not muted, otherwise return [`None`].
-fn process_output<Kind, ErrorType, ErrAcc: Accumulator<(ErrorType, Range)>>(
-  output: ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
+fn process_output<Kind>(
+  output: ActionOutput<TokenKindIdBinding<Kind>>,
   muted: bool,
   start: usize,
   digested: &mut usize,
-  errors: &mut ErrAcc,
 ) -> Option<Token<Kind>> {
-  update_state(output.digested, output.error, start, digested, errors);
+  *digested += output.digested;
   extract_token(output.binding, output.digested, muted, start)
 }
 
