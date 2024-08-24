@@ -149,10 +149,9 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   /// Peek the next token with the default options, without updating
   /// [`Self::state`] and [`Self::state`].
   ///
-  /// If `State` is mutated in the lexing process,
   /// [`Self::state`] will be cloned and returned.
   #[inline]
-  pub fn peek(&self) -> (LexOutput<Token<Kind>, ()>, Option<State>)
+  pub fn peek(&self) -> (LexOutput<Token<Kind>, ()>, State)
   where
     State: Clone,
   {
@@ -162,7 +161,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
   /// Peek the next token with custom options, without updating
   /// [`Self::state`] and [`Self::state`].
   ///
-  /// If `State` is mutated in the lexing process,
+  /// [`Self::state`] will be cloned and returned.
   #[inline]
   pub fn peek_with<'expect_literal, ErrAcc, Fork: LexOptionsFork<'text, Kind, State, ErrorType>>(
     &self,
@@ -174,7 +173,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
       Token<Kind>,
       <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
     >,
-    Option<State>,
+    State,
   )
   where
     State: Clone,
@@ -199,7 +198,7 @@ impl<'text, Kind, State, ErrorType> Lexer<'text, Kind, State, ErrorType> {
       Token<Kind>,
       <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::ForkOutputType,
     >,
-    Option<State>,
+    State,
   )
   where
     State: Clone,

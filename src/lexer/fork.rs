@@ -42,9 +42,6 @@ pub trait ForkOutputFactory<'text, Kind, State, ErrorType> {
   type StatelessForkOutputType: Default;
   type ForkOutputType;
 
-  /// This will be called only once before the first mutation of the state.
-  fn backup_state(&mut self, state: &State);
-
   fn into_stateless_fork_output(
     self,
     start: usize,
@@ -65,9 +62,6 @@ pub trait ForkOutputFactory<'text, Kind, State, ErrorType> {
 impl<'text, Kind, State, ErrorType> ForkOutputFactory<'text, Kind, State, ErrorType> for () {
   type StatelessForkOutputType = ();
   type ForkOutputType = ();
-
-  #[inline]
-  fn backup_state(&mut self, _state: &State) {}
 
   #[inline]
   fn into_stateless_fork_output(
@@ -149,16 +143,6 @@ impl<'text, Kind, State: Clone, ErrorType> ForkOutputFactory<'text, Kind, State,
   type ForkOutputType = ForkOutput<'text, State>;
 
   #[inline]
-  fn backup_state(&mut self, state: &State) {
-    // this should only be called once to prevent duplicated clone of the state,
-    // so the state backup must be none
-    debug_assert!(self.state.is_none(), "state backup is already set");
-
-    // backup the state before the first mutation during one lexing loop
-    self.state = Some(state.clone());
-  }
-
-  #[inline]
   fn into_stateless_fork_output(
     self,
     start: usize,
@@ -205,9 +189,7 @@ mod tests {
 
   #[test]
   fn mock_fork_output_factory() {
-    let mut factory = ();
-    let state = 0;
-    ForkOutputFactory::<(), _, ()>::backup_state(&mut factory, &state);
+    let factory = ();
     let stateless_fork_output =
       ForkOutputFactory::<(), i32, ()>::into_stateless_fork_output(factory, 0, 2, 1);
     assert_eq!(stateless_fork_output, ());
@@ -231,9 +213,7 @@ mod tests {
 
   #[test]
   fn fork_output_builder() {
-    let mut builder = ForkOutputBuilder::default();
-    let state = 0;
-    ForkOutputFactory::<(), _, ()>::backup_state(&mut builder, &state);
+    let builder = ForkOutputBuilder::default();
     let stateless_fork_output =
       ForkOutputFactory::<(), i32, ()>::into_stateless_fork_output(builder, 0, 2, 1);
     assert_eq!(
@@ -269,9 +249,7 @@ mod tests {
       }
     );
 
-    let mut builder = ForkOutputBuilder::default();
-    let state = 0;
-    ForkOutputFactory::<(), _, ()>::backup_state(&mut builder, &state);
+    let builder = ForkOutputBuilder::default();
     let stateless_fork_output =
       ForkOutputFactory::<(), i32, ()>::into_stateless_fork_output(builder, 0, 2, 0);
     assert_eq!(
@@ -307,14 +285,5 @@ mod tests {
         }
       }
     );
-  }
-
-  #[test]
-  #[should_panic]
-  fn fork_output_builder_multi_call_to_mutate_state() {
-    let mut builder = ForkOutputBuilder::default();
-    let state = 0;
-    ForkOutputFactory::<(), _, ()>::backup_state(&mut builder, &state);
-    ForkOutputFactory::<(), _, ()>::backup_state(&mut builder, &state);
   }
 }

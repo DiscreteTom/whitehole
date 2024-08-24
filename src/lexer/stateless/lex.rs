@@ -108,7 +108,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
       let (literal_map, head_map) =
         self.get_literal_head_map(options.base.expectation.kind, literal);
 
-      self.lex_mut_with_literal(
+      self.lex_with_literal(
         literal_map,
         head_map,
         0,
@@ -119,13 +119,12 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
         literal,
         &options.base.re_lex,
         Fork::OutputFactoryType::default(),
-        false,
       )
     } else {
       // else, no expected literal
       let head_map = self.get_kind_head_map(options.base.expectation.kind);
 
-      self.lex_mut_without_literal(
+      self.lex_without_literal(
         head_map,
         0,
         options.base.errors,
@@ -134,7 +133,6 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
         options.state,
         &options.base.re_lex,
         Fork::OutputFactoryType::default(),
-        false,
       )
     }
   }
@@ -176,7 +174,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
       Token<Kind>,
       <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::StatelessForkOutputType
     >,
-    Option<State>
+    State
   )
   where
     State: Clone + 'state,
@@ -211,12 +209,50 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
       Token<Kind>,
       <Fork::OutputFactoryType as ForkOutputFactory<'text, Kind, State, ErrorType>>::StatelessForkOutputType
     >,
-    Option<State>
+    State
   )
   where
     State: Clone
   {
-    todo!()
+    let mut state = options.state.clone();
+
+    if let Some(literal) = options.base.expectation.literal {
+      let (literal_map, head_map) =
+        self.get_literal_head_map(options.base.expectation.kind, literal);
+
+      (
+        self.lex_with_literal(
+          literal_map,
+          head_map,
+          0,
+          options.base.errors,
+          options.start,
+          text,
+          &mut state,
+          literal,
+          &options.base.re_lex,
+          Fork::OutputFactoryType::default(),
+        ),
+        state,
+      )
+    } else {
+      // else, no expected literal
+      let head_map = self.get_kind_head_map(options.base.expectation.kind);
+
+      (
+        self.lex_without_literal(
+          head_map,
+          0,
+          options.base.errors,
+          options.start,
+          text,
+          &mut state,
+          &options.base.re_lex,
+          Fork::OutputFactoryType::default(),
+        ),
+        state,
+      )
+    }
   }
 
   fn get_literal_head_map(
@@ -252,7 +288,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     )
   }
 
-  fn lex_mut_with_literal<
+  fn lex_with_literal<
     'text,
     ErrAcc: Accumulator<(ErrorType, Range)>,
     ForkOutputFactoryType: ForkOutputFactory<'text, Kind, State, ErrorType>,
@@ -267,8 +303,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     state: &mut State,
     literal: &str,
     re_lex: &ReLexContext,
-    mut fork_output_factory: ForkOutputFactoryType,
-    peek: bool,
+    fork_output_factory: ForkOutputFactoryType,
   ) -> LexOutput<Token<Kind>, ForkOutputFactoryType::StatelessForkOutputType> {
     loop {
       let input_start = start + digested;
@@ -295,7 +330,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     return done_without_token(digested);
   }
 
-  fn lex_mut_without_literal<
+  fn lex_without_literal<
     'text,
     ErrAcc: Accumulator<(ErrorType, Range)>,
     ForkOutputFactoryType: ForkOutputFactory<'text, Kind, State, ErrorType>,
@@ -308,8 +343,7 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     text: &'text str,
     state: &mut State,
     re_lex: &ReLexContext,
-    mut fork_output_factory: ForkOutputFactoryType,
-    peek: bool,
+    fork_output_factory: ForkOutputFactoryType,
   ) -> LexOutput<Token<Kind>, ForkOutputFactoryType::StatelessForkOutputType> {
     loop {
       let input_start = start + digested;
