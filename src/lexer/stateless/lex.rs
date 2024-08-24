@@ -215,44 +215,8 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     State: Clone
   {
     let mut state = options.state.clone();
-
-    if let Some(literal) = options.base.expectation.literal {
-      let (literal_map, head_map) =
-        self.get_literal_head_map(options.base.expectation.kind, literal);
-
-      (
-        self.lex_with_literal(
-          literal_map,
-          head_map,
-          0,
-          options.base.errors,
-          options.start,
-          text,
-          &mut state,
-          literal,
-          &options.base.re_lex,
-          Fork::OutputFactoryType::default(),
-        ),
-        state,
-      )
-    } else {
-      // else, no expected literal
-      let head_map = self.get_kind_head_map(options.base.expectation.kind);
-
-      (
-        self.lex_without_literal(
-          head_map,
-          0,
-          options.base.errors,
-          options.start,
-          text,
-          &mut state,
-          &options.base.re_lex,
-          Fork::OutputFactoryType::default(),
-        ),
-        state,
-      )
-    }
+    let output = self.lex_with_options(text, options.state(&mut state));
+    (output, state)
   }
 
   fn get_literal_head_map(
