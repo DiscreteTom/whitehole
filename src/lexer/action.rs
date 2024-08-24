@@ -49,7 +49,6 @@ pub enum HeadMatcher {
 
 #[derive(Debug)]
 pub struct ActionBase<Kind, Exec> {
-  // TODO: better name. e.g. digester?
   exec: Exec,
 
   /// See [`Self::kind`].
@@ -120,7 +119,8 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
 }
 
 /// The [`Action::exec`].
-/// This is a new-type for `Box<dyn Fn(...) -> ...>` and implements [`Debug`].
+/// This is a new-type for `Box<dyn Fn(...) -> ...>` and implements [`Debug`]
+/// so that [`Action`] can be [`Debug`] too.
 pub struct ActionExec<Kind, State, ErrorType> {
   pub(crate) raw: Box<
     dyn Fn(
