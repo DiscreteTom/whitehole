@@ -66,9 +66,6 @@ impl<Kind, State, ErrorType> StatelessLexer<Kind, State, ErrorType> {
     options: StatelessTrimOptions<&'state mut State, ErrAcc>,
   ) -> TrimOutput {
     // there is no expectation when trimming, so the fork is meaningless.
-    // use `()` as a mock fork output factory
-    let mut re_lexable_factory = ();
-    // since the mock fork output factory will never yield a fork output,
     // use the default re-lex context as a placeholder
     let re_lex = ReLexContext::default();
 
