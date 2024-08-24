@@ -10,32 +10,44 @@ use crate::{
 /// As per data oriented design, we store
 /// [`Action::exec`](crate::lexer::action::Action::exec) and [`Action::muted`](crate::lexer::action::Action::muted)
 /// in separate lists, and discard all other fields to optimize cache performance.
-#[derive(Clone)]
-pub(super) struct RuntimeActions<Exec> {
-  exec: Vec<Exec>,
+#[derive(Debug)]
+pub(super) struct RuntimeActions<Kind, State, ErrorType> {
+  execs: Vec<RcActionExec<Kind, State, ErrorType>>,
   muted: Vec<bool>, // TODO: optimize with bit vec
 }
 
-impl<Exec> Default for RuntimeActions<Exec> {
+impl<Kind, State, ErrorType> Default for RuntimeActions<Kind, State, ErrorType> {
   #[inline]
   fn default() -> Self {
     Self::new()
   }
 }
 
-impl<Exec> RuntimeActions<Exec> {
+impl<Kind, State, ErrorType> Clone for RuntimeActions<Kind, State, ErrorType> {
+  #[inline]
+  fn clone(&self) -> Self {
+    Self {
+      execs: self.execs.clone(),
+      muted: self.muted.clone(),
+    }
+  }
+}
+
+impl<Kind, State, ErrorType> RuntimeActions<Kind, State, ErrorType> {
   #[inline]
   pub const fn new() -> Self {
     Self {
-      exec: Vec::new(),
+      // in head map maybe every head only has one action, so we don't need to pre-allocate memory
+      // TODO: maybe allocate one?
+      execs: Vec::new(),
       muted: Vec::new(),
     }
   }
 
   // getters
   #[inline]
-  pub const fn exec(&self) -> &Vec<Exec> {
-    &self.exec
+  pub const fn execs(&self) -> &Vec<RcActionExec<Kind, State, ErrorType>> {
+    &self.execs
   }
   #[inline]
   pub const fn muted(&self) -> &Vec<bool> {
@@ -43,32 +55,30 @@ impl<Exec> RuntimeActions<Exec> {
   }
 
   #[inline]
-  pub fn push(&mut self, exec: Exec, muted: bool) {
-    self.exec.push(exec);
+  pub fn push(&mut self, exec: RcActionExec<Kind, State, ErrorType>, muted: bool) {
+    self.execs.push(exec);
     self.muted.push(muted);
   }
 
   #[inline]
   pub fn len(&self) -> usize {
-    self.exec.len()
+    self.execs.len()
   }
 }
 
-pub(super) type HeadMapActions<Kind, State, ErrorType> =
-  RuntimeActions<RcActionExec<Kind, State, ErrorType>>;
-
+#[derive(Debug)]
 pub(super) struct HeadMap<Kind, State, ErrorType> {
   /// Store actions for known chars.
-  known_map: CharLookupTable<HeadMapActions<Kind, State, ErrorType>>,
+  known_map: CharLookupTable<RuntimeActions<Kind, State, ErrorType>>,
   /// Store actions for unknown chars.
-  unknown_fallback: HeadMapActions<Kind, State, ErrorType>,
+  unknown_fallback: RuntimeActions<Kind, State, ErrorType>,
 }
 
 /// A new-type to represent the return type of [`HeadMap::collect_all_known`].
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`HeadMap::new`].
 pub(super) struct KnownHeadChars<Kind, State, ErrorType>(
-  CharLookupTableBuilder<HeadMapActions<Kind, State, ErrorType>>,
+  CharLookupTableBuilder<RuntimeActions<Kind, State, ErrorType>>,
 );
 
 impl<Kind, State, ErrorType> Clone for KnownHeadChars<Kind, State, ErrorType> {
@@ -110,7 +120,7 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
     props: &Vec<RcActionProps<Kind>>,
     known_map: KnownHeadChars<Kind, State, ErrorType>,
   ) -> Self {
-    let mut unknown_fallback = HeadMapActions::new();
+    let mut unknown_fallback = RuntimeActions::new();
     let mut known_map = known_map.0;
 
     // fill the head map
@@ -160,7 +170,7 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
 
   /// Get actions by the next char.
   #[inline]
-  pub fn get(&self, next: char) -> &HeadMapActions<Kind, State, ErrorType> {
+  pub fn get(&self, next: char) -> &RuntimeActions<Kind, State, ErrorType> {
     self
       .known_map
       .get(next as usize)
@@ -176,14 +186,14 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
 //     token::MockTokenKind,
 //   };
 
-//   fn push_helper<K, S>(actions: &mut HeadMapActions<K, S, ()>, a: Action<K, S, ()>) {
+//   fn push_helper<K, S>(actions: &mut RuntimeActions<K, S, ()>, a: Action<K, S, ()>) {
 //     let (exec, options) = a.into_rc();
 //     actions.push(exec, options.muted());
 //   }
 
 //   #[test]
 //   fn test_head_map_actions() {
-//     let mut actions: HeadMapActions<MockTokenKind<()>, i32, ()> = HeadMapActions::new();
+//     let mut actions: RuntimeActions<MockTokenKind<()>, i32, ()> = RuntimeActions::new();
 //     assert_eq!(actions.len(), 0);
 
 //     push_helper(&mut actions, exact("a"));
@@ -211,7 +221,7 @@ impl<Kind, State, ErrorType> HeadMap<Kind, State, ErrorType> {
 //   }
 
 //   fn assert_immutable_actions_eq(
-//     actions: &HeadMapActions<MockTokenKind<()>, (), ()>,
+//     actions: &RuntimeActions<MockTokenKind<()>, (), ()>,
 //     expected: Vec<Action<MockTokenKind<()>, (), ()>>,
 //   ) {
 //     assert_eq!(actions.len(), expected.len());

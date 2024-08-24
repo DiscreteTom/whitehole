@@ -2,11 +2,12 @@ use super::head_map::{HeadMap, KnownHeadChars};
 use crate::lexer::action::{RcActionExec, RcActionProps};
 use std::collections::HashMap;
 
+#[derive(Debug)]
 pub(super) struct LiteralMap<Kind, State, ErrorType> {
   /// The key of the map is the literal.
   /// Actions in the value should be either muted or have a matched
   /// [`Action::literal`](crate::lexer::action::Action::literal)
-  known_map: HashMap<String, HeadMap<Kind, State, ErrorType>>, // TODO: optimize using lookup table
+  known_map: HashMap<String, HeadMap<Kind, State, ErrorType>>, // TODO: optimize using lookup table if the literal's first char is unique
   /// When the rest of the input text doesn't starts with the expected literal,
   /// only muted actions will be checked.
   muted_map: HeadMap<Kind, State, ErrorType>,
@@ -126,7 +127,7 @@ mod tests {
   use super::*;
   use crate::lexer::{
     action::{exact, regex, Action},
-    stateless::head_map::HeadMapActions,
+    stateless::head_map::RuntimeActions,
     token::MockTokenKind,
   };
 
@@ -135,7 +136,7 @@ mod tests {
   }
 
   fn assert_immutable_actions_eq(
-    actions: &HeadMapActions<MockTokenKind<()>, (), ()>,
+    actions: &RuntimeActions<MockTokenKind<()>, (), ()>,
     expected: Vec<Action<MockTokenKind<()>, (), ()>>,
   ) {
     assert_eq!(actions.len(), expected.len());

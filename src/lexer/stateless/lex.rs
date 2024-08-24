@@ -1,5 +1,5 @@
 use super::{
-  head_map::{HeadMap, HeadMapActions},
+  head_map::{HeadMap, RuntimeActions},
   literal_map::LiteralMap,
   options::StatelessLexOptions,
   utils::{break_loop_on_none, extract_token},
@@ -363,7 +363,7 @@ fn get_actions_by_literal_map<'this, Kind, State, StateRef, ErrorType>(
   literal: &str,
   literal_map: &'this LiteralMap<Kind, State, ErrorType>,
   head_map: &'this HeadMap<Kind, State, ErrorType>,
-) -> &'this HeadMapActions<Kind, State, ErrorType> {
+) -> &'this RuntimeActions<Kind, State, ErrorType> {
   {
     if !input.rest().starts_with(literal) {
       // prefix mismatch, only execute muted actions

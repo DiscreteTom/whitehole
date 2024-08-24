@@ -104,6 +104,7 @@ use head_map::HeadMap;
 use literal_map::LiteralMap;
 
 /// Stateless, immutable lexer.
+#[derive(Debug)]
 pub struct StatelessLexer<Kind, State = (), ErrorType = ()> {
   /// This is used to accelerate lexing by actions' head matcher when there is no expectation.
   /// This is pre-calculated to optimize the runtime performance.
@@ -191,7 +192,7 @@ mod tests {
     action::{exact, regex},
     token::{MockTokenKind, SubTokenKind},
   };
-  use head_map::HeadMapActions;
+  use head_map::RuntimeActions;
   use whitehole_macros::_token_kind;
 
   #[_token_kind]
@@ -206,7 +207,7 @@ mod tests {
   }
 
   fn assert_immutable_actions_eq(
-    actions: &HeadMapActions<MyKind, (), ()>,
+    actions: &RuntimeActions<MyKind, (), ()>,
     expected: Vec<Action<MyKind, (), ()>>,
   ) {
     assert_eq!(actions.len(), expected.len());

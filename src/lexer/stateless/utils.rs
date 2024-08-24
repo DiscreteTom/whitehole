@@ -1,4 +1,4 @@
-use super::head_map::HeadMapActions;
+use super::head_map::RuntimeActions;
 use crate::{
   lexer::{
     action::{ActionInput, ActionOutput},
@@ -13,7 +13,7 @@ use crate::{
 /// If no accepted action, return [`None`].
 pub(super) fn traverse_actions<'text, Kind, State, ErrorType>(
   mut input: ActionInput<&mut State>,
-  actions: &HeadMapActions<Kind, State, ErrorType>,
+  actions: &RuntimeActions<Kind, State, ErrorType>,
   re_lex: &ReLexContext,
 ) -> Option<(
   ActionOutput<TokenKindIdBinding<Kind>, Option<ErrorType>>,
@@ -21,7 +21,7 @@ pub(super) fn traverse_actions<'text, Kind, State, ErrorType>(
   bool,
 )> {
   for (i, exec) in actions
-    .exec()
+    .execs()
     .iter()
     .enumerate()
     .skip(if input.start() == re_lex.start {
