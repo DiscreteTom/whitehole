@@ -38,6 +38,8 @@ pub(super) fn traverse_actions<Kind, State, Heap>(
   None
 }
 
+/// Break the loop if the value is [`None`],
+/// otherwise return the value.
 macro_rules! break_loop_on_none {
   ($e:expr) => {
     match $e {
@@ -47,5 +49,31 @@ macro_rules! break_loop_on_none {
   };
 }
 pub(super) use break_loop_on_none;
+
+/// Prepare the input for lexing.
+/// Break the loop if the input is [`None`],
+macro_rules! prepare_input {
+  ($start:expr, $digested:expr, $text:expr, $state:expr, $heap:expr) => {
+    break_loop_on_none!(ActionInput::new(
+      $text,
+      $start + $digested,
+      &mut *$state,
+      &mut *$heap
+    ))
+  };
+}
+pub(super) use prepare_input;
+
+/// Lex with the given input and actions.
+/// Break the loop if the output is [`None`],
+/// otherwise update the `digested` length and return the lex result.
+macro_rules! lex {
+  ($input:expr, $actions:expr, $re_lex:expr, $digested:expr) => {{
+    let res = break_loop_on_none!(traverse_actions(&mut $input, $actions, $re_lex));
+    $digested += res.0.digested;
+    res
+  }};
+}
+pub(super) use lex;
 
 // TODO: add tests

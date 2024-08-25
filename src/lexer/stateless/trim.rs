@@ -3,7 +3,7 @@ use crate::lexer::{
   action::ActionInput,
   output::TrimOutput,
   re_lex::ReLexContext,
-  stateless::utils::{break_loop_on_none, traverse_actions},
+  stateless::utils::{break_loop_on_none, lex, prepare_input, traverse_actions},
 };
 
 impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
@@ -77,21 +77,12 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
     let mut digested = 0;
 
     loop {
-      let input_start = options.start + digested;
-      let mut input = break_loop_on_none!(ActionInput::new(
-        text,
-        input_start,
-        &mut *options.state,
-        &mut *options.heap
-      ));
+      let mut input = prepare_input!(options.start, digested, text, options.state, options.heap);
       // the literal map's muted map contains all the muted actions
       let actions = self.literal_map.muted_map().get(input.next());
-      let res = traverse_actions(&mut input, actions, &re_lex);
-      let (output, _action_index, muted) = break_loop_on_none!(res);
+      let (_output, _action_index, muted) = lex!(input, actions, &re_lex, digested);
 
       debug_assert!(muted, "all actions should be muted when trimming");
-
-      digested += output.digested;
     }
 
     // no more input or no accepted actions

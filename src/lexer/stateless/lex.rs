@@ -2,7 +2,7 @@ use super::{
   head_map::{HeadMap, RuntimeActions},
   literal_map::LiteralMap,
   options::StatelessLexOptions,
-  utils::break_loop_on_none,
+  utils::{break_loop_on_none, lex, prepare_input},
   StatelessLexer,
 };
 use crate::{
@@ -227,21 +227,16 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
     fork_output_factory: ForkOutputFactoryType,
   ) -> LexOutput<Token<Kind>, ForkOutputFactoryType::ForkOutputType> {
     loop {
-      let input_start = start + digested;
-      let mut input =
-        break_loop_on_none!(ActionInput::new(text, input_start, &mut *state, &mut *heap));
+      let mut input = prepare_input!(start, digested, text, state, heap);
       let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
-      let res = traverse_actions(&mut input, actions, re_lex);
-      let (output, action_index, muted) = break_loop_on_none!(res);
-
-      digested += output.digested;
+      let (output, action_index, muted) = lex!(input, actions, re_lex, digested);
 
       if !muted {
         return done_with_token(
           digested,
-          create_token(input, output),
+          create_token(&input, output),
           fork_output_factory,
-          input_start,
+          input.start(),
           actions.len(),
           action_index,
         );
@@ -266,21 +261,16 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
     fork_output_factory: ForkOutputFactoryType,
   ) -> LexOutput<Token<Kind>, ForkOutputFactoryType::ForkOutputType> {
     loop {
-      let input_start = start + digested;
-      let mut input =
-        break_loop_on_none!(ActionInput::new(text, input_start, &mut *state, &mut *heap));
+      let mut input = prepare_input!(start, digested, text, state, heap);
       let actions = head_map.get(input.next());
-      let res = traverse_actions(&mut input, actions, re_lex);
-      let (output, action_index, muted) = break_loop_on_none!(res);
-
-      digested += output.digested;
+      let (output, action_index, muted) = lex!(input, actions, re_lex, digested);
 
       if !muted {
         return done_with_token(
           digested,
-          create_token(input, output),
+          create_token(&input, output),
           fork_output_factory,
-          input_start,
+          input.start(),
           actions.len(),
           action_index,
         );
@@ -295,7 +285,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
 }
 
 fn create_token<Kind, State, Heap>(
-  input: ActionInput<&mut State, &mut Heap>,
+  input: &ActionInput<&mut State, &mut Heap>,
   output: ActionOutput<Kind>,
 ) -> Token<Kind> {
   Token {
