@@ -7,7 +7,7 @@ use crate::{
   utils::OneOrMore,
 };
 
-impl<Kind, State> LexerBuilder<Kind, State> {
+impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`].
   /// # Examples
   /// ```
@@ -25,7 +25,7 @@ impl<Kind, State> LexerBuilder<Kind, State> {
   /// # }
   /// ```
   #[inline]
-  pub fn ignore(self, actions: impl Into<OneOrMore<Action<Kind, State>>>) -> Self {
+  pub fn ignore(self, actions: impl Into<OneOrMore<Action<Kind, State, Heap>>>) -> Self {
     self.append(Self::map_actions(actions, |a| a.mute()))
   }
 
@@ -48,8 +48,8 @@ impl<Kind, State> LexerBuilder<Kind, State> {
   #[inline]
   pub fn ignore_with(
     self,
-    actions: impl Into<OneOrMore<Action<Kind, State>>>,
-    decorator: impl Fn(Action<Kind, State>) -> Action<Kind, State>,
+    actions: impl Into<OneOrMore<Action<Kind, State, Heap>>>,
+    decorator: impl Fn(Action<Kind, State, Heap>) -> Action<Kind, State, Heap>,
   ) -> Self {
     self.ignore(Self::map_actions(actions, decorator))
   }
@@ -76,11 +76,12 @@ impl<Kind, State> LexerBuilder<Kind, State> {
   #[inline]
   pub fn ignore_default(
     self,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, Heap>>>,
   ) -> Self
   where
     Kind: DefaultTokenKindId + Default,
     State: 'static,
+    Heap: 'static,
   {
     self.ignore(Self::map_actions(actions, |a| a.bind_default()))
   }
@@ -104,12 +105,13 @@ impl<Kind, State> LexerBuilder<Kind, State> {
   #[inline]
   pub fn ignore_default_with(
     self,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State>>>,
-    decorator: impl Fn(Action<MockTokenKind<()>, State>) -> Action<MockTokenKind<()>, State>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, Heap>>>,
+    decorator: impl Fn(Action<MockTokenKind<()>, State, Heap>) -> Action<MockTokenKind<()>, State, Heap>,
   ) -> Self
   where
     Kind: DefaultTokenKindId + Default,
     State: 'static,
+    Heap: 'static,
   {
     self.ignore_default(Self::map_actions(actions, decorator))
   }

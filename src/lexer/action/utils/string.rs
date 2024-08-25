@@ -31,13 +31,14 @@ use std::collections::HashSet;
 // TODO: comments
 pub fn string<
   State,
+  Heap,
   Value: PartialStringBodyValue + 'static,
   CustomError: 'static,
   BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone + 'static,
 >(
   open: impl Into<OneOrMore<String>>,
   options: StringBodyOptions<Value, CustomError, BodyAcc>,
-) -> Action<MockTokenKind<BodyAcc>, State> {
+) -> Action<MockTokenKind<BodyAcc>, State, Heap> {
   let open: Vec<String> = open.into().0;
   let head: HashSet<_> = open
     .iter()
@@ -74,7 +75,7 @@ mod tests {
     text: &str,
   ) -> Option<ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>>>
   {
-    (action.exec.raw)(&mut ActionInput::new(text, 0, &mut ()).unwrap())
+    (action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut()).unwrap())
   }
 
   fn validate_output(

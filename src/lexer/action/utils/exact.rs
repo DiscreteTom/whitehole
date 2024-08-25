@@ -20,7 +20,7 @@ pub use whitehole_helpers::exact_vec;
 /// # let action: Action<_> =
 /// exact(';'); // using char
 /// ```
-pub fn exact<State>(s: impl Into<String>) -> Action<MockTokenKind<()>, State> {
+pub fn exact<State, Heap>(s: impl Into<String>) -> Action<MockTokenKind<()>, State, Heap> {
   let s: String = s.into();
   let head = s.chars().next().expect("empty string is not allowed");
   let literal = s.clone();
@@ -47,7 +47,9 @@ pub fn exact<State>(s: impl Into<String>) -> Action<MockTokenKind<()>, State> {
 /// # let actions: Vec<Action<_>> =
 /// vec![exact("+"), exact("-"), exact("*"), exact("/"), exact("("), exact(")")];
 /// ```
-pub fn exact_chars<State>(s: impl Into<String>) -> Vec<Action<MockTokenKind<()>, State>> {
+pub fn exact_chars<State, Heap>(
+  s: impl Into<String>,
+) -> Vec<Action<MockTokenKind<()>, State, Heap>> {
   s.into().chars().map(|c| exact(c)).collect()
 }
 
@@ -67,7 +69,9 @@ pub fn exact_chars<State>(s: impl Into<String>) -> Vec<Action<MockTokenKind<()>,
 /// # let action: Action<_> =
 /// unchecked_exact("true");
 /// ```
-pub fn unchecked_exact<State>(s: impl Into<String>) -> Action<MockTokenKind<()>, State> {
+pub fn unchecked_exact<State, Heap>(
+  s: impl Into<String>,
+) -> Action<MockTokenKind<()>, State, Heap> {
   let s: String = s.into();
   let head = s.chars().next().expect("empty string is not allowed");
   let len = s.len();
@@ -91,7 +95,9 @@ pub fn unchecked_exact<State>(s: impl Into<String>) -> Action<MockTokenKind<()>,
 /// # let actions: Vec<Action<_>> =
 /// vec![unchecked_exact("+"), unchecked_exact("-"), unchecked_exact("*"), unchecked_exact("/")];
 /// ```
-pub fn unchecked_exact_chars<State>(s: impl Into<String>) -> Vec<Action<MockTokenKind<()>, State>> {
+pub fn unchecked_exact_chars<State, Heap>(
+  s: impl Into<String>,
+) -> Vec<Action<MockTokenKind<()>, State, Heap>> {
   s.into().chars().map(|c| unchecked_exact(c)).collect()
 }
 
@@ -103,20 +109,20 @@ mod tests {
 
   fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
-      (action.exec.raw)(&mut ActionInput::new(text, 0, &mut ()).unwrap())
+      (action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut ()).unwrap())
         .unwrap()
         .digested,
       expected
     );
   }
   fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
-    assert!((action.exec.raw)(&mut ActionInput::new(text, 0, &mut ()).unwrap()).is_none());
+    assert!((action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut ()).unwrap()).is_none());
   }
 
   #[should_panic]
   #[test]
   fn action_utils_exact_empty() {
-    exact::<()>("");
+    exact::<(), ()>("");
   }
 
   #[test]
@@ -211,7 +217,7 @@ mod tests {
   #[test]
   #[should_panic]
   fn action_utils_unchecked_exact_empty() {
-    unchecked_exact::<()>("");
+    unchecked_exact::<(), ()>("");
   }
 
   #[test]

@@ -6,7 +6,7 @@ use crate::lexer::{
   stateless::utils::{break_loop_on_none, traverse_actions},
 };
 
-impl<Kind, State> StatelessLexer<Kind, State> {
+impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// Lex with muted actions, the default state and the default options.
   ///
   /// This function will create a new state and return it.
@@ -17,12 +17,18 @@ impl<Kind, State> StatelessLexer<Kind, State> {
   /// let (output, state) = stateless.trim("123");
   /// ```
   #[inline]
-  pub fn trim<'text>(&self, text: &'text str) -> (TrimOutput, State)
+  pub fn trim<'text>(&self, text: &'text str) -> (TrimOutput, State, Heap)
   where
     State: Default,
+    Heap: Default,
   {
     let mut state = State::default();
-    (self.trim_with(text, |o| o.state(&mut state)), state)
+    let mut heap = Heap::default();
+    (
+      self.trim_with(text, |o| o.state(&mut state).heap(&mut heap)),
+      state,
+      heap,
+    )
   }
 
   /// Lex with muted actions and the given options builder.
@@ -34,13 +40,16 @@ impl<Kind, State> StatelessLexer<Kind, State> {
   /// stateless.trim_with("123", |o| o.state(&mut state));
   /// ```
   #[inline]
-  pub fn trim_with<'text, 'state>(
+  pub fn trim_with<'text, 'state, 'heap>(
     &self,
     text: &'text str,
-    options_builder: impl FnOnce(StatelessTrimOptions<()>) -> StatelessTrimOptions<&'state mut State>,
+    options_builder: impl FnOnce(
+      StatelessTrimOptions<(), ()>,
+    ) -> StatelessTrimOptions<&'state mut State, &'heap mut Heap>,
   ) -> TrimOutput
   where
     State: 'state,
+    Heap: 'heap,
   {
     self.trim_with_options(text, options_builder(StatelessTrimOptions::new()))
   }
@@ -54,10 +63,10 @@ impl<Kind, State> StatelessLexer<Kind, State> {
   /// let options = StatelessTrimOptions::new().state(&mut state);
   /// stateless.trim_with_options("123", options);
   /// ```
-  pub fn trim_with_options<'text, 'state>(
+  pub fn trim_with_options<'text>(
     &self,
     text: &'text str,
-    options: StatelessTrimOptions<&'state mut State>,
+    options: StatelessTrimOptions<&mut State, &mut Heap>,
   ) -> TrimOutput {
     // there is no expectation when trimming, so the fork is meaningless.
     // use the default re-lex context as a placeholder
@@ -67,7 +76,12 @@ impl<Kind, State> StatelessLexer<Kind, State> {
 
     loop {
       let input_start = options.start + digested;
-      let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *options.state));
+      let input = break_loop_on_none!(ActionInput::new(
+        text,
+        input_start,
+        &mut *options.state,
+        &mut *options.heap
+      ));
       // the literal map's muted map contains all the muted actions
       let actions = self.literal_map.muted_map().get(input.next());
       let res = traverse_actions(input, actions, &re_lex);

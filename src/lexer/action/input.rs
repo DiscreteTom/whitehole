@@ -1,11 +1,28 @@
 #[derive(Debug)]
-pub struct ActionInput<'text, StateRef> {
+pub struct ActionInput<'text, StateRef, HeapRef> {
   /// This is often `&mut State`.
   /// This is public, so you can mutate the `State` directly.
   ///
   /// With the `State`, you can construct stateful lexers,
   /// while actions remain stateless and clone-able.
+  ///
+  /// All vars that control the flow of the lexing loop should be stored here.
+  /// This should be small and cheap to clone (maybe just a bunch of integers or booleans).
+  /// If a var is just a resource (e.g. a chunk of memory, a channel, etc),
+  /// it should be stored in [`Self::heap`].
   pub state: StateRef,
+  /// This is often `&mut Heap`.
+  /// This is public, so you can mutate this directly.
+  ///
+  /// With the `Heap`, you can re-use allocated memory
+  /// across actions and lexing loops.
+  ///
+  /// All vars that doesn't count as a state should be stored here.
+  /// If a var is used to control the flow of the lexing loop,
+  /// it should be treated as a state and stored in [`Self::state`].
+  /// If a var is just a resource (e.g. a chunk of memory, a channel, etc),
+  /// it should be stored here.
+  pub heap: HeapRef,
 
   /// See [`Self::text`].
   text: &'text str,
@@ -17,14 +34,14 @@ pub struct ActionInput<'text, StateRef> {
   next: char,
 }
 
-impl<'text, StateRef> ActionInput<'text, StateRef> {
+impl<'text, StateRef, HeapRef> ActionInput<'text, StateRef, HeapRef> {
   /// Return [`None`] if the [`start`](Self::start) is equal to the length of
   /// [`text`](Self::text).
   /// # Panics
   /// This method panics if the [`start`](Self::start) is out of bounds of
   /// [`text`](Self::text).
   #[inline]
-  pub fn new(text: &'text str, start: usize, state: StateRef) -> Option<Self> {
+  pub fn new(text: &'text str, start: usize, state: StateRef, heap: HeapRef) -> Option<Self> {
     let rest = &text[start..];
 
     rest.chars().next().map(|next| Self {
@@ -33,6 +50,7 @@ impl<'text, StateRef> ActionInput<'text, StateRef> {
       rest,
       next,
       state,
+      heap,
     })
   }
 
@@ -79,7 +97,8 @@ mod tests {
   #[test]
   fn action_input_at_start() {
     let mut state = ();
-    let input = ActionInput::new("123", 0, &mut state).unwrap();
+    let mut heap = ();
+    let input = ActionInput::new("123", 0, &mut state, &mut heap).unwrap();
     assert_eq!(input.text(), "123");
     assert_eq!(input.start(), 0);
     assert_eq!(input.rest(), "123");
@@ -89,7 +108,8 @@ mod tests {
   #[test]
   fn action_input_in_the_middle() {
     let mut state = ();
-    let input = ActionInput::new("123", 1, &mut state).unwrap();
+    let mut heap = ();
+    let input = ActionInput::new("123", 1, &mut state, &mut heap).unwrap();
     assert_eq!(input.text(), "123");
     assert_eq!(input.start(), 1);
     assert_eq!(input.rest(), "23");
@@ -99,13 +119,13 @@ mod tests {
   #[test]
   fn action_input_no_rest() {
     let mut state = ();
-    assert!(ActionInput::new("123", 3, &mut state).is_none());
+    assert!(ActionInput::new("123", 3, &mut state, &mut ()).is_none());
   }
 
   #[test]
   #[should_panic]
   fn action_input_out_of_text() {
     let mut state = ();
-    ActionInput::new("123", 4, &mut state);
+    ActionInput::new("123", 4, &mut state, &mut ());
   }
 }

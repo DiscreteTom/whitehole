@@ -121,22 +121,25 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
 /// The [`Action::exec`].
 /// This is a new-type for `Box<dyn Fn(...) -> ...>` and implements [`Debug`]
 /// so that [`Action`] can be [`Debug`] too.
-pub struct ActionExec<Kind, State> {
-  pub(crate) raw:
-    Box<dyn Fn(&mut ActionInput<&mut State>) -> Option<ActionOutput<TokenKindIdBinding<Kind>>>>,
+pub struct ActionExec<Kind, State, Heap> {
+  pub(crate) raw: Box<
+    dyn Fn(
+      &mut ActionInput<&mut State, &mut Heap>,
+    ) -> Option<ActionOutput<TokenKindIdBinding<Kind>>>,
+  >,
 }
 
-impl<Kind, State> ActionExec<Kind, State> {
+impl<Kind, State, Heap> ActionExec<Kind, State, Heap> {
   #[inline]
   pub(crate) fn new(
-    raw: impl Fn(&mut ActionInput<&mut State>) -> Option<ActionOutput<TokenKindIdBinding<Kind>>>
+    raw: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<TokenKindIdBinding<Kind>>>
       + 'static,
   ) -> Self {
     Self { raw: Box::new(raw) }
   }
 }
 
-impl<Kind, State> Debug for ActionExec<Kind, State> {
+impl<Kind, State, Heap> Debug for ActionExec<Kind, State, Heap> {
   #[inline]
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     write!(f, "ActionExec(...)")
@@ -145,18 +148,18 @@ impl<Kind, State> Debug for ActionExec<Kind, State> {
 
 /// To create this, use [`simple`](simple::simple), [`simple_with_data`](simple::simple_with_data)
 /// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
-pub type Action<Kind, State = ()> = ActionBase<Kind, ActionExec<Kind, State>>;
+pub type Action<Kind, State = (), Heap = ()> = ActionBase<Kind, ActionExec<Kind, State, Heap>>;
 
 /// Action's attributes without [`Action::exec`], wrapped in an [`Rc`].
 pub(super) type RcActionProps<Kind> = Rc<ActionBase<Kind, ()>>;
 /// [`Action::exec`] wrapped in an [`Rc`] to make it clone-able.
-pub(super) type RcActionExec<Kind, State> = Rc<ActionExec<Kind, State>>;
+pub(super) type RcActionExec<Kind, State, Heap> = Rc<ActionExec<Kind, State, Heap>>;
 
-impl<Kind, State> Action<Kind, State> {
+impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// Break self into two parts and wrap them in [`Rc`].
   /// Return [`RcActionExec`] and [`RcActionProps`].
   #[inline]
-  pub(super) fn into_rc(self) -> (RcActionExec<Kind, State>, RcActionProps<Kind>) {
+  pub(super) fn into_rc(self) -> (RcActionExec<Kind, State, Heap>, RcActionProps<Kind>) {
     let props = Rc::new(ActionBase {
       kind: self.kind,
       literal: self.literal,
@@ -193,7 +196,7 @@ mod tests {
     assert_eq!(action.kind(), A::kind_id());
     assert!(action.head().is_none());
     assert!(action.literal().is_none());
-    assert!((action.exec().raw)(&mut ActionInput::new("1", 0, &mut ()).unwrap()).is_none())
+    assert!((action.exec().raw)(&mut ActionInput::new("1", 0, &mut (), &mut ()).unwrap()).is_none())
   }
 
   #[test]
@@ -209,7 +212,7 @@ mod tests {
     assert_eq!(action.kind(), A::kind_id());
     assert!(matches!(action.head(), Some(HeadMatcher::OneOf(set)) if set == &HashSet::from(['a'])));
     assert_eq!(action.literal(), &Some("123".into()));
-    assert!((action.exec().raw)(&mut ActionInput::new("1", 0, &mut ()).unwrap()).is_none())
+    assert!((action.exec().raw)(&mut ActionInput::new("1", 0, &mut (), &mut ()).unwrap()).is_none())
   }
 
   #[test]

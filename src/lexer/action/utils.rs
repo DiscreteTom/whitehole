@@ -27,9 +27,9 @@ use std::{collections::HashSet, ops::RangeInclusive};
 /// # let action: Action<_> =
 /// chars(|ch| ch.is_ascii_digit());
 /// ```
-pub fn chars<State>(
+pub fn chars<State, Heap>(
   condition: impl Fn(char) -> bool + 'static,
-) -> Action<MockTokenKind<()>, State> {
+) -> Action<MockTokenKind<()>, State, Heap> {
   simple(move |input| {
     let mut digested = 0;
     for ch in input.rest().chars() {
@@ -52,9 +52,9 @@ pub fn chars<State>(
 /// # let action: Action<_> =
 /// chars_in_range('0'..='9');
 /// ```
-pub fn chars_in_range<State>(
+pub fn chars_in_range<State, Heap>(
   range: impl Into<RangeInclusive<char>>,
-) -> Action<MockTokenKind<()>, State> {
+) -> Action<MockTokenKind<()>, State, Heap> {
   let range = range.into();
   {
     let range = range.clone();
@@ -73,7 +73,9 @@ pub fn chars_in_range<State>(
 /// # let action: Action<_> =
 /// charset(['a', 's', 'd']);
 /// ```
-pub fn charset<State>(set: impl Into<HashSet<char>>) -> Action<MockTokenKind<()>, State> {
+pub fn charset<State, Heap>(
+  set: impl Into<HashSet<char>>,
+) -> Action<MockTokenKind<()>, State, Heap> {
   let set = set.into();
   {
     let set = set.clone();
@@ -93,7 +95,7 @@ pub fn charset<State>(set: impl Into<HashSet<char>>) -> Action<MockTokenKind<()>
 /// chars_in_str("asd");
 /// ```
 #[inline]
-pub fn chars_in_str<State>(s: impl Into<String>) -> Action<MockTokenKind<()>, State> {
+pub fn chars_in_str<State, Heap>(s: impl Into<String>) -> Action<MockTokenKind<()>, State, Heap> {
   charset(s.into().chars().collect::<HashSet<_>>())
 }
 
@@ -113,7 +115,7 @@ pub fn chars_in_str<State>(s: impl Into<String>) -> Action<MockTokenKind<()>, St
 /// builder.ignore_default(whitespaces());
 /// # }
 /// ```
-pub fn whitespaces<State>() -> Action<MockTokenKind<()>, State> {
+pub fn whitespaces<State, Heap>() -> Action<MockTokenKind<()>, State, Heap> {
   chars(|ch| ch.is_whitespace())
     // 0009..000D    ; White_Space # Cc   [5] <control-0009>..<control-000D>
     // 0020          ; White_Space # Zs       SPACE
@@ -154,10 +156,10 @@ pub fn whitespaces<State>() -> Action<MockTokenKind<()>, State> {
 /// # let action: Action<_> =
 /// comment("<!--", "-->");
 /// ```
-pub fn comment<State>(
+pub fn comment<State, Heap>(
   open: impl Into<String>,
   close: impl Into<String>,
-) -> Action<MockTokenKind<()>, State> {
+) -> Action<MockTokenKind<()>, State, Heap> {
   let open: String = open.into();
   let close: String = close.into();
   let first = open.chars().next().expect("open is empty");
@@ -186,14 +188,14 @@ mod tests {
 
   fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
-      (action.exec.raw)(&mut ActionInput::new(text, 0, &mut ()).unwrap())
+      (action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut ()).unwrap())
         .unwrap()
         .digested,
       expected
     );
   }
   fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
-    assert!((action.exec.raw)(&mut ActionInput::new(text, 0, &mut ()).unwrap()).is_none());
+    assert!((action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut ()).unwrap()).is_none());
   }
 
   #[test]

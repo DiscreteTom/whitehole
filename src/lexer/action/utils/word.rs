@@ -43,9 +43,9 @@ pub fn starts_with_word_boundary(rest: &str) -> bool {
 /// exact("hello").reject_if(no_word_boundary_in_rest);
 /// ```
 #[inline]
-pub fn no_word_boundary_in_rest<State>(
+pub fn no_word_boundary_in_rest<State, Heap>(
   ctx: AcceptedActionOutputContext<
-    &mut ActionInput<&mut State>,
+    &mut ActionInput<&mut State, &mut Heap>,
     &ActionOutput<TokenKindIdBinding<MockTokenKind<()>>>,
   >,
 ) -> bool {
@@ -66,7 +66,9 @@ pub fn no_word_boundary_in_rest<State>(
 /// word("import");
 /// ```
 #[inline]
-pub fn word<State: 'static>(s: impl Into<String>) -> Action<MockTokenKind<()>, State> {
+pub fn word<State: 'static, Heap: 'static>(
+  s: impl Into<String>,
+) -> Action<MockTokenKind<()>, State, Heap> {
   exact(s).reject_if(no_word_boundary_in_rest)
 }
 
@@ -78,20 +80,20 @@ mod tests {
 
   fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
-      (action.exec.raw)(&mut ActionInput::new(text, 0, &mut (),).unwrap())
+      (action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut()).unwrap())
         .unwrap()
         .digested,
       expected
     );
   }
   fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
-    assert!((action.exec.raw)(&mut ActionInput::new(text, 0, &mut (),).unwrap()).is_none());
+    assert!((action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut()).unwrap()).is_none());
   }
 
   #[should_panic]
   #[test]
   fn action_utils_word_empty() {
-    word::<()>("");
+    word::<(), ()>("");
   }
 
   #[test]

@@ -7,15 +7,17 @@ use crate::lexer::{
 
 /// Add [`Self::start`] and [`Self::state`] to the `Base` options.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct StatelessOptions<StateRef, Base> {
+pub struct StatelessOptions<StateRef, HeapRef, Base> {
   /// See [`Self::start`].
   pub start: usize,
   /// See [`Self::state`].
   pub state: StateRef,
+  /// See [`Self::heap`].
+  pub heap: HeapRef,
   pub base: Base,
 }
 
-impl<StateRef, Base> StatelessOptions<StateRef, Base> {
+impl<StateRef, HeapRef, Base> StatelessOptions<StateRef, HeapRef, Base> {
   /// The start index of the text to lex.
   #[inline]
   pub const fn start(mut self, start: usize) -> Self {
@@ -27,20 +29,36 @@ impl<StateRef, Base> StatelessOptions<StateRef, Base> {
   /// This is usually `&mut State`.
   /// For peek, this is `&State`.
   #[inline]
-  pub fn state<NewStateRef>(self, state: NewStateRef) -> StatelessOptions<NewStateRef, Base> {
+  pub fn state<NewStateRef>(
+    self,
+    state: NewStateRef,
+  ) -> StatelessOptions<NewStateRef, HeapRef, Base> {
     StatelessOptions {
       start: self.start,
       state,
+      heap: self.heap,
+      base: self.base,
+    }
+  }
+
+  /// Set the heap.
+  /// This is `&mut Heap`.
+  #[inline]
+  pub fn heap<NewHeapRef>(self, heap: NewHeapRef) -> StatelessOptions<StateRef, NewHeapRef, Base> {
+    StatelessOptions {
+      start: self.start,
+      state: self.state,
+      heap,
       base: self.base,
     }
   }
 }
 
 /// Add [`StatelessLexOptions::start`] and [`StatelessLexOptions::state`] to [`LexOptions`].
-pub type StatelessLexOptions<'expect_literal, Kind, StateRef, Fork> =
-  StatelessOptions<StateRef, LexOptions<'expect_literal, Kind, Fork>>;
+pub type StatelessLexOptions<'expect_literal, Kind, StateRef, HeapRef, Fork> =
+  StatelessOptions<StateRef, HeapRef, LexOptions<'expect_literal, Kind, Fork>>;
 
-impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), ()> {
+impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), ()> {
   /// Create a new instance with `0` as the start index and no state.
   #[inline]
   pub const fn new() -> Self {
@@ -48,6 +66,8 @@ impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), ()> {
       start: 0,
       // use `()` as a placeholder, users should use `self.state` to set this
       state: (),
+      // use `()` as a placeholder, users should use `self.heap` to set this
+      heap: (),
       base: LexOptions::new(),
     }
   }
@@ -56,8 +76,8 @@ impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), ()> {
 // re-export from `LexOptions`
 // but with `StatelessLexOptions` as the return type
 // instead of `LexOptions`
-impl<'expect_literal, Kind, StateRef, Fork>
-  StatelessLexOptions<'expect_literal, Kind, StateRef, Fork>
+impl<'expect_literal, Kind, StateRef, HeapRef, Fork>
+  StatelessLexOptions<'expect_literal, Kind, StateRef, HeapRef, Fork>
 {
   /// See [`LexOptions::expect`].
   #[inline]
@@ -77,10 +97,11 @@ impl<'expect_literal, Kind, StateRef, Fork>
 
   /// See [`LexOptions::fork`].
   #[inline]
-  pub fn fork(self) -> StatelessLexOptions<'expect_literal, Kind, StateRef, ForkEnabled> {
+  pub fn fork(self) -> StatelessLexOptions<'expect_literal, Kind, StateRef, HeapRef, ForkEnabled> {
     StatelessLexOptions {
       start: self.start,
       state: self.state,
+      heap: self.heap,
       base: self.base.fork(),
     }
   }
@@ -93,9 +114,9 @@ impl<'expect_literal, Kind, StateRef, Fork>
 }
 
 /// Add [`StatelessTrimOptions::start`] and [`StatelessTrimOptions::state`] to [`TrimOptions`].
-pub type StatelessTrimOptions<StateRef> = StatelessOptions<StateRef, TrimOptions>;
+pub type StatelessTrimOptions<StateRef, Heap> = StatelessOptions<StateRef, Heap, TrimOptions>;
 
-impl StatelessTrimOptions<()> {
+impl StatelessTrimOptions<(), ()> {
   /// Create a new instance with `0` as the start index and no state.
   #[inline]
   pub const fn new() -> Self {
@@ -103,6 +124,8 @@ impl StatelessTrimOptions<()> {
       start: 0,
       // use `()` as a placeholder, user should use `self.state` to set this
       state: (),
+      // use `()` as a placeholder, user should use `self.heap` to set this
+      heap: (),
       base: TrimOptions,
     }
   }
@@ -117,6 +140,7 @@ mod tests {
     let options = StatelessOptions {
       start: 0,
       state: (),
+      heap: (),
       base: (),
     };
     assert_eq!(options.start, 0);

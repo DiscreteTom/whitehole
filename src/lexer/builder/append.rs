@@ -7,7 +7,7 @@ use crate::{
   utils::OneOrMore,
 };
 
-impl<Kind, State> LexerBuilder<Kind, State> {
+impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
   /// Append actions to the builder.
   /// # Examples
   /// ```
@@ -25,7 +25,7 @@ impl<Kind, State> LexerBuilder<Kind, State> {
   /// # }
   /// ```
   #[inline]
-  pub fn append(mut self, actions: impl Into<OneOrMore<Action<Kind, State>>>) -> Self {
+  pub fn append(mut self, actions: impl Into<OneOrMore<Action<Kind, State, Heap>>>) -> Self {
     self.actions.extend(actions.into().0);
     self
   }
@@ -49,8 +49,8 @@ impl<Kind, State> LexerBuilder<Kind, State> {
   #[inline]
   pub fn append_with(
     self,
-    actions: impl Into<OneOrMore<Action<Kind, State>>>,
-    decorator: impl Fn(Action<Kind, State>) -> Action<Kind, State>,
+    actions: impl Into<OneOrMore<Action<Kind, State, Heap>>>,
+    decorator: impl Fn(Action<Kind, State, Heap>) -> Action<Kind, State, Heap>,
   ) -> Self {
     self.append(Self::map_actions(actions, decorator))
   }
@@ -77,11 +77,12 @@ impl<Kind, State> LexerBuilder<Kind, State> {
   #[inline]
   pub fn append_default(
     self,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State>>>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, Heap>>>,
   ) -> Self
   where
     Kind: DefaultTokenKindId + Default,
     State: 'static,
+    Heap: 'static,
   {
     self.append(Self::map_actions(actions, |a| a.bind_default()))
   }
@@ -105,12 +106,13 @@ impl<Kind, State> LexerBuilder<Kind, State> {
   #[inline]
   pub fn append_default_with(
     self,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State>>>,
-    decorator: impl Fn(Action<MockTokenKind<()>, State>) -> Action<MockTokenKind<()>, State>,
+    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, Heap>>>,
+    decorator: impl Fn(Action<MockTokenKind<()>, State, Heap>) -> Action<MockTokenKind<()>, State, Heap>,
   ) -> Self
   where
     Kind: DefaultTokenKindId + Default,
     State: 'static,
+    Heap: 'static,
   {
     self.append_default(Self::map_actions(actions, decorator))
   }

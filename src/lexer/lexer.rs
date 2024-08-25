@@ -31,38 +31,48 @@ use std::rc::Rc;
 /// before next lexing to save memory; some users may want to store all errors
 /// in a container and process them later.
 #[derive(Debug)]
-pub struct Lexer<'text, Kind, State = ()> {
+pub struct Lexer<'text, Kind, State = (), Heap = ()> {
   /// You can mutate this directly if needed.
   pub state: State,
+  /// You can mutate this directly if needed.
+  pub heap: Heap,
 
   // use Rc so that this is clone-able
-  stateless: Rc<StatelessLexer<Kind, State>>,
+  stateless: Rc<StatelessLexer<Kind, State, Heap>>,
   instant: Instant<'text>,
 }
 
-impl<'text, Kind, State: Clone> Clone for Lexer<'text, Kind, State> {
+impl<'text, Kind, State: Clone, Heap: Clone> Clone for Lexer<'text, Kind, State, Heap> {
+  /// Clone the lexer, including [`Self::state`] and [`Self::heap`].
+  /// # Performance
+  /// Cloning the `Heap` might be expensive, you should use [`Lexer::snapshot`] to just clone the state,
+  /// and re-use one `heap` as much as possible.
+  /// If you want to prevent users from cloning [`Self::heap`], don't implement [`Clone`] for `Heap`.
   #[inline]
   fn clone(&self) -> Self {
     Self {
       state: self.state.clone(),
+      heap: self.heap.clone(),
       stateless: self.stateless.clone(),
       instant: self.instant.clone(),
     }
   }
 }
 
-impl<'text, Kind, State> Lexer<'text, Kind, State> {
+impl<'text, Kind, State, Heap> Lexer<'text, Kind, State, Heap> {
   /// Create a new lexer with the given stateless lexer, state and text.
   /// For most cases you should use [`LexerBuilder`](crate::lexer::LexerBuilder)
   /// to create a lexer.
   #[inline]
   pub const fn new(
-    stateless: Rc<StatelessLexer<Kind, State>>,
+    stateless: Rc<StatelessLexer<Kind, State, Heap>>,
     state: State,
+    heap: Heap,
     text: &'text str,
   ) -> Self {
     Self {
       state,
+      heap,
       stateless,
       instant: Instant::new(text),
     }
@@ -70,7 +80,7 @@ impl<'text, Kind, State> Lexer<'text, Kind, State> {
 
   /// Get the stateless lexer.
   #[inline]
-  pub const fn stateless(&self) -> &Rc<StatelessLexer<Kind, State>> {
+  pub const fn stateless(&self) -> &Rc<StatelessLexer<Kind, State, Heap>> {
     &self.stateless
   }
   /// Get the lexer state.
@@ -80,20 +90,10 @@ impl<'text, Kind, State> Lexer<'text, Kind, State> {
     &self.instant
   }
 
-  /// Clone self with a new state.
-  #[inline]
-  pub fn clone_with(&self, state: State) -> Self {
-    Self {
-      stateless: self.stateless.clone(),
-      instant: self.instant.clone(),
-      state,
-    }
-  }
-
   /// Consume self, return a new lexer with the same actions and a new text.
-  /// [`Self::state`] and [`Self::state`] will be reset to default.
+  /// [`Self::instant`] and [`Self::state`] will be reset to default.
   #[inline]
-  pub fn reload<'new_text>(self, text: &'new_text str) -> Lexer<'new_text, Kind, State>
+  pub fn reload<'new_text>(self, text: &'new_text str) -> Lexer<'new_text, Kind, State, Heap>
   where
     State: Default,
   {
@@ -101,14 +101,13 @@ impl<'text, Kind, State> Lexer<'text, Kind, State> {
   }
 
   /// Consume self, return a new lexer with the same actions, a new text and the given state.
-  /// [`Self::state`] will be reset to default.
   #[inline]
   pub fn reload_with<'new_text>(
     self,
     text: &'new_text str,
     state: State,
-  ) -> Lexer<'new_text, Kind, State> {
-    Lexer::new(self.stateless, state, text)
+  ) -> Lexer<'new_text, Kind, State, Heap> {
+    Lexer::new(self.stateless, state, self.heap, text)
   }
 
   /// Take a snapshot of the current [`Self::state`] and [`Self::instant`].
@@ -130,22 +129,12 @@ impl<'text, Kind, State> Lexer<'text, Kind, State> {
     self.instant = snapshot.instant;
   }
 
-  /// Clone self with the provided [`Snapshot`].
-  #[inline]
-  pub fn clone_with_snapshot(&self, snapshot: Snapshot<'text, State>) -> Self {
-    Self {
-      stateless: self.stateless.clone(),
-      state: snapshot.state,
-      instant: snapshot.instant,
-    }
-  }
-
   /// Peek the next token with the default options, without updating
   /// [`Self::state`] and [`Self::state`].
   ///
   /// [`Self::state`] will be cloned and returned.
   #[inline]
-  pub fn peek(&self) -> (LexOutput<Token<Kind>, ()>, State)
+  pub fn peek(&mut self) -> (LexOutput<Token<Kind>, ()>, State)
   where
     State: Clone,
   {
@@ -158,7 +147,7 @@ impl<'text, Kind, State> Lexer<'text, Kind, State> {
   /// [`Self::state`] will be cloned and returned.
   #[inline]
   pub fn peek_with<'expect_literal, Fork: LexOptionsFork>(
-    &self,
+    &mut self,
     options_builder: impl FnOnce(
       LexOptions<'expect_literal, Kind, ()>,
     ) -> LexOptions<'expect_literal, Kind, Fork>,
@@ -177,7 +166,7 @@ impl<'text, Kind, State> Lexer<'text, Kind, State> {
   ///
   /// [`Self::state`] will be cloned and returned.
   pub fn peek_with_options<'expect_literal, Fork: LexOptionsFork>(
-    &self,
+    &mut self,
     options: impl Into<LexOptions<'expect_literal, Kind, Fork>>,
   ) -> (
     LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType>,
@@ -191,6 +180,7 @@ impl<'text, Kind, State> Lexer<'text, Kind, State> {
       StatelessLexOptions {
         start: self.instant.digested(),
         state: &self.state,
+        heap: &mut self.heap,
         base: options.into(),
       },
     );
@@ -225,11 +215,16 @@ impl<'text, Kind, State> Lexer<'text, Kind, State> {
     &mut self,
     options: impl Into<LexOptions<'expect_literal, Kind, Fork>>,
   ) -> LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType> {
-    let output = Self::lex_with_stateless(
-      &self.stateless,
-      &self.instant,
-      &mut self.state,
-      options.into(),
+    let options = options.into();
+
+    let output = self.stateless.lex_with_options(
+      self.instant.text(),
+      StatelessLexOptions {
+        start: self.instant.digested(),
+        state: &mut self.state,
+        heap: &mut self.heap,
+        base: options,
+      },
     );
 
     // update state
@@ -272,6 +267,7 @@ impl<'text, Kind, State> Lexer<'text, Kind, State> {
       StatelessTrimOptions {
         start: self.instant.digested(),
         state: &mut self.state,
+        heap: &mut self.heap,
         base: options,
       },
     );
@@ -294,50 +290,34 @@ impl<'text, Kind, State> Lexer<'text, Kind, State> {
   pub fn trim(&mut self) -> Option<TrimOutput> {
     self.trim_with_options(TrimOptions)
   }
-
-  #[inline]
-  fn lex_with_stateless<'expect_literal, Fork: LexOptionsFork>(
-    stateless: &Rc<StatelessLexer<Kind, State>>,
-    instant: &Instant<'text>,
-    state: &mut State,
-    options: LexOptions<'expect_literal, Kind, Fork>,
-  ) -> LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType> {
-    stateless.lex_with_options(
-      instant.text(),
-      StatelessLexOptions {
-        start: instant.digested(),
-        state,
-        base: options,
-      },
-    )
-  }
 }
 
 /// A helper trait to convert common types into a lexer.
-pub trait IntoLexer<Kind, State>: Sized {
+pub trait IntoLexer<Kind, State, Heap>: Sized {
   /// Consume self, build a [`Lexer`] with the provided `state` and `text`.
-  fn into_lexer_with(self, state: State, text: &str) -> Lexer<Kind, State>;
+  fn into_lexer_with(self, state: State, heap: Heap, text: &str) -> Lexer<Kind, State, Heap>;
 
-  /// Consume self, build a [`Lexer`] with the provided `text` and the default `State`.
+  /// Consume self, build a [`Lexer`] with the provided `text` and the default `State` and `Heap`.
   #[inline]
-  fn into_lexer(self, text: &str) -> Lexer<Kind, State>
+  fn into_lexer(self, text: &str) -> Lexer<Kind, State, Heap>
   where
     State: Default,
+    Heap: Default,
   {
-    self.into_lexer_with(State::default(), text)
+    self.into_lexer_with(State::default(), Heap::default(), text)
   }
 }
 
-impl<Kind, State> IntoLexer<Kind, State> for Rc<StatelessLexer<Kind, State>> {
+impl<Kind, State, Heap> IntoLexer<Kind, State, Heap> for Rc<StatelessLexer<Kind, State, Heap>> {
   #[inline]
-  fn into_lexer_with(self, state: State, text: &str) -> Lexer<Kind, State> {
-    Lexer::new(self, state, text)
+  fn into_lexer_with(self, state: State, heap: Heap, text: &str) -> Lexer<Kind, State, Heap> {
+    Lexer::new(self, state, heap, text)
   }
 }
 
-impl<Kind, State> IntoLexer<Kind, State> for StatelessLexer<Kind, State> {
+impl<Kind, State, Heap> IntoLexer<Kind, State, Heap> for StatelessLexer<Kind, State, Heap> {
   #[inline]
-  fn into_lexer_with(self, state: State, text: &str) -> Lexer<Kind, State> {
-    Rc::new(self).into_lexer_with(state, text)
+  fn into_lexer_with(self, state: State, heap: Heap, text: &str) -> Lexer<Kind, State, Heap> {
+    Rc::new(self).into_lexer_with(state, heap, text)
   }
 }

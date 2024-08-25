@@ -10,7 +10,7 @@ use super::{input::ActionInput, output::ActionOutput, Action, ActionExec};
 use crate::lexer::token::TokenKindIdBinding;
 
 // simple decorators that doesn't require generic bounds
-impl<Kind, State> Action<Kind, State> {
+impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// Set [`Self::muted`] to `true`.
   /// # Examples
   /// ```
@@ -56,7 +56,7 @@ impl<Kind, State> Action<Kind, State> {
 
 // these decorators will use `Box` to construct new action exec
 // so `Kind/State/Heap` must be `'static`
-impl<Kind: 'static, State: 'static> Action<Kind, State> {
+impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// Check the [`ActionInput`] before the action is executed.
   /// Reject the action if the `condition` returns `true`.
   /// # Examples
@@ -80,7 +80,7 @@ impl<Kind: 'static, State: 'static> Action<Kind, State> {
   /// ```
   pub fn prevent(
     mut self,
-    condition: impl Fn(&mut ActionInput<&mut State>) -> bool + 'static,
+    condition: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> bool + 'static,
   ) -> Self {
     let exec = self.exec.raw;
     self.exec = ActionExec::new(
@@ -115,7 +115,10 @@ impl<Kind: 'static, State: 'static> Action<Kind, State> {
   /// );
   /// # }
   /// ```
-  pub fn prepare(mut self, modifier: impl Fn(&mut ActionInput<&mut State>) + 'static) -> Self {
+  pub fn prepare(
+    mut self,
+    modifier: impl Fn(&mut ActionInput<&mut State, &mut Heap>) + 'static,
+  ) -> Self {
     let exec = self.exec.raw;
     self.exec = ActionExec::new(move |input| {
       modifier(input);
@@ -144,7 +147,7 @@ impl<Kind: 'static, State: 'static> Action<Kind, State> {
     mut self,
     condition: impl Fn(
         AcceptedActionOutputContext<
-          &mut ActionInput<&mut State>,
+          &mut ActionInput<&mut State, &mut Heap>,
           &ActionOutput<TokenKindIdBinding<Kind>>,
         >,
       ) -> bool
@@ -221,7 +224,7 @@ impl<Kind: 'static, State: 'static> Action<Kind, State> {
     mut self,
     cb: impl Fn(
         AcceptedActionOutputContext<
-          &mut ActionInput<&mut State>,
+          &mut ActionInput<&mut State, &mut Heap>,
           &ActionOutput<TokenKindIdBinding<Kind>>,
         >,
       ) + 'static,
@@ -262,23 +265,23 @@ mod tests {
     let mut state = MyState { value: 0 };
     let action: Action<_, _> = exact("a")
       // modify the state before the action is executed
-      .prepare(|input: &mut ActionInput<&mut MyState>| input.state.value += 1)
+      .prepare(|input: &mut ActionInput<&mut MyState, &mut ()>| input.state.value += 1)
       // prevent the action if the rest is empty
       .prevent(|input| input.rest().len() == 1);
 
     // the first exec, state will be changed, digest all chars
-    let output = (action.exec.raw)(&mut ActionInput::new("aa", 0, &mut state).unwrap());
+    let output = (action.exec.raw)(&mut ActionInput::new("aa", 0, &mut state, &mut ()).unwrap());
     assert!(matches!(output, Some(ActionOutput { digested: 1, .. })));
     assert_eq!(state.value, 1);
 
     // the second exec, the action is prevented, so the state is not updated
-    let output = (action.exec.raw)(&mut ActionInput::new("aa", 1, &mut state).unwrap());
+    let output = (action.exec.raw)(&mut ActionInput::new("aa", 1, &mut state, &mut ()).unwrap());
     assert!(matches!(output, None));
     assert_eq!(state.value, 1); // the state is not updated
 
     // prevent for immutable action
     let action: Action<_> = exact("a").prevent(|_| true);
-    assert!((action.exec.raw)(&mut ActionInput::new("a", 0, &mut ()).unwrap()).is_none());
+    assert!((action.exec.raw)(&mut ActionInput::new("a", 0, &mut (), &mut ()).unwrap()).is_none());
   }
 
   #[test]
@@ -286,17 +289,17 @@ mod tests {
     let mut state = MyState { value: 0 };
     let action: Action<_, _> = exact("a")
       // modify the state before the action is executed
-      .prepare(|input: &mut ActionInput<&mut MyState>| input.state.value += 1);
+      .prepare(|input: &mut ActionInput<&mut MyState, &mut ()>| input.state.value += 1);
 
     // the action is rejected, but the state is still updated
-    let output = (action.exec.raw)(&mut ActionInput::new("b", 0, &mut state).unwrap());
+    let output = (action.exec.raw)(&mut ActionInput::new("b", 0, &mut state, &mut ()).unwrap());
     assert!(matches!(output, None));
     assert_eq!(state.value, 1);
 
     // prepare for mutable action
     let action = action.prepare(|input| input.state.value += 1);
     state.value = 0;
-    let output = (action.exec.raw)(&mut ActionInput::new("b", 0, &mut state).unwrap());
+    let output = (action.exec.raw)(&mut ActionInput::new("b", 0, &mut state, &mut ()).unwrap());
     assert!(matches!(output, None));
     assert_eq!(state.value, 2);
   }
@@ -314,9 +317,9 @@ mod tests {
   fn action_reject_if() {
     let action: Action<_> = exact("a").reject_if(|ctx| ctx.rest().len() > 0);
 
-    assert!((action.exec.raw)(&mut ActionInput::new("a", 0, &mut ()).unwrap()).is_some());
+    assert!((action.exec.raw)(&mut ActionInput::new("a", 0, &mut (), &mut ()).unwrap()).is_some());
     assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("aa", 0, &mut ()).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("aa", 0, &mut (), &mut ()).unwrap()),
       None
     ));
 
@@ -326,7 +329,7 @@ mod tests {
       .reject_if(|ctx| ctx.rest().len() > 0);
     let mut state = 0;
     assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("a ", 0, &mut state).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("a ", 0, &mut state, &mut ()).unwrap()),
       None
     ));
     assert_eq!(state, 1);
@@ -337,7 +340,7 @@ mod tests {
     let rejected_action: Action<_> = exact("a").reject();
 
     assert!(matches!(
-      (rejected_action.exec.raw)(&mut ActionInput::new("a", 0, &mut ()).unwrap()),
+      (rejected_action.exec.raw)(&mut ActionInput::new("a", 0, &mut (), &mut ()).unwrap()),
       None
     ));
 
@@ -345,7 +348,7 @@ mod tests {
     let action: Action<_, i32> = exact("a").prepare(|input| *input.state += 1).reject();
     let mut state = 0;
     assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("a ", 0, &mut state).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("a ", 0, &mut state, &mut ()).unwrap()),
       None
     ));
     assert_eq!(state, 1);
@@ -356,13 +359,13 @@ mod tests {
     // ensure callback can update the state
     let mut state = MyState { value: 0 };
     let action: Action<_, MyState> = exact("a").then(
-      |ctx: AcceptedActionOutputContext<&mut ActionInput<&mut MyState>, _>| {
+      |ctx: AcceptedActionOutputContext<&mut ActionInput<&mut MyState, &mut ()>, _>| {
         ctx.input.state.value += 1
       },
     );
 
     assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("a", 0, &mut state).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("a", 0, &mut state, &mut ()).unwrap()),
       Some(ActionOutput { .. })
     ));
     assert_eq!(state.value, 1);
@@ -371,7 +374,7 @@ mod tests {
     let action = action.then(|ctx| ctx.input.state.value += 1);
     state.value = 0;
     assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("a", 0, &mut state).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("a", 0, &mut state, &mut ()).unwrap()),
       Some(ActionOutput { .. })
     ));
     assert_eq!(state.value, 2);

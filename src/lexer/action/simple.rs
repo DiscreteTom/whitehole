@@ -15,9 +15,9 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 /// // accept all rest characters
 /// let a: Action<_> = simple(|input| input.rest().len());
 /// ```
-pub fn simple<State>(
-  f: impl Fn(&mut ActionInput<&mut State>) -> usize + 'static,
-) -> Action<MockTokenKind<()>, State> {
+pub fn simple<State, Heap>(
+  f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> usize + 'static,
+) -> Action<MockTokenKind<()>, State, Heap> {
   Action {
     exec: ActionExec::new(move |input| match f(input) {
       0 => None,
@@ -53,9 +53,9 @@ pub fn simple<State>(
 /// // accept all rest characters and parse them into an integer
 /// let a: Action<MockTokenKind<i32>> = simple_with_data(|input| Some((input.rest().len(), input.rest().parse().unwrap())));
 /// ```
-pub fn simple_with_data<State, T>(
-  f: impl Fn(&mut ActionInput<&mut State>) -> Option<(usize, T)> + 'static,
-) -> Action<MockTokenKind<T>, State> {
+pub fn simple_with_data<State, Heap, T>(
+  f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<(usize, T)> + 'static,
+) -> Action<MockTokenKind<T>, State, Heap> {
   Action {
     exec: ActionExec::new(move |input| {
       f(input).map(|(digested, data)| ActionOutput {
@@ -79,7 +79,7 @@ mod tests {
   fn simple_accept_all() {
     assert!(matches!(
       (simple(|input| input.text().len()).exec.raw)(
-        &mut ActionInput::new("123", 0, &mut ()).unwrap()
+        &mut ActionInput::new("123", 0, &mut (), &mut ()).unwrap()
       )
       .unwrap()
       .digested,
@@ -91,7 +91,7 @@ mod tests {
   fn simple_accept_rest() {
     assert!(matches!(
       (simple(|input| input.rest().len()).exec.raw)(
-        &mut ActionInput::new("123", 1, &mut ()).unwrap()
+        &mut ActionInput::new("123", 1, &mut (), &mut ()).unwrap()
       )
       .unwrap()
       .digested,
@@ -102,7 +102,7 @@ mod tests {
   #[test]
   fn simple_reject_on_0() {
     assert!(matches!(
-      (simple(|_| 0).exec.raw)(&mut ActionInput::new("123", 0, &mut ()).unwrap()),
+      (simple(|_| 0).exec.raw)(&mut ActionInput::new("123", 0, &mut (), &mut ()).unwrap()),
       None
     ));
   }
@@ -111,7 +111,7 @@ mod tests {
   fn simple_option_with_data_accept() {
     let action: Action<MockTokenKind<u32>> =
       simple_with_data(|input| Some((input.text().len(), 123)));
-    let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut ()).unwrap());
+    let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut (), &mut ()).unwrap());
     assert!(matches!(
       output,
       Some(ActionOutput {
@@ -124,7 +124,7 @@ mod tests {
   #[test]
   fn simple_option_with_data_accept_0() {
     let action: Action<MockTokenKind<u32>> = simple_with_data(|_| Some((0, 123)));
-    let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut ()).unwrap());
+    let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut (), &mut ()).unwrap());
     assert!(matches!(
       output,
       Some(ActionOutput {
@@ -137,7 +137,7 @@ mod tests {
   #[test]
   fn simple_option_with_data_reject() {
     let action: Action<MockTokenKind<u32>> = simple_with_data(|_| None);
-    let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut ()).unwrap());
+    let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut (), &mut ()).unwrap());
     assert!(matches!(output, None));
   }
 }

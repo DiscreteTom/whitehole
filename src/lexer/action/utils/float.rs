@@ -232,6 +232,7 @@ pub fn float_literal_body_with_options<
 /// so its caveat also applies here.
 pub fn float_literal_with<
   State,
+  Heap,
   SepAcc: NumericSeparatorAccumulator + Clone + 'static,
   IntAcc: Accumulator<char> + Clone + 'static,
   FracAcc: Accumulator<char> + Clone + 'static,
@@ -240,7 +241,7 @@ pub fn float_literal_with<
   options_builder: impl FnOnce(
     FloatLiteralOptions<(), (), (), ()>,
   ) -> FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
-) -> Action<MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>, State> {
+) -> Action<MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>, State, Heap> {
   float_literal_with_options(options_builder(FloatLiteralOptions::new()))
 }
 
@@ -257,13 +258,14 @@ pub fn float_literal_with<
 /// so its caveat also applies here.
 pub fn float_literal_with_options<
   State,
+  Heap,
   SepAcc: NumericSeparatorAccumulator + Clone + 'static,
   IntAcc: Accumulator<char> + Clone + 'static,
   FracAcc: Accumulator<char> + Clone + 'static,
   ExpAcc: Accumulator<char> + Clone + 'static,
 >(
   options: FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
-) -> Action<MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>, State> {
+) -> Action<MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>, State, Heap> {
   // head for integer part
   let mut heads = HashSet::from(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
 
@@ -460,7 +462,7 @@ mod tests {
   }
 
   fn assert_reject<T>(action: &Action<T>, s: &str) {
-    assert!((action.exec.raw)(&mut ActionInput::new(s, 0, &mut ()).unwrap()).is_none())
+    assert!((action.exec.raw)(&mut ActionInput::new(s, 0, &mut (), &mut ()).unwrap()).is_none())
   }
 
   fn assert_accept(
@@ -470,7 +472,7 @@ mod tests {
     fraction: Option<(usize, &str, Vec<usize>)>,
     exponent: Option<(usize, &str, usize, Vec<usize>)>,
   ) {
-    let output = (action.exec.raw)(&mut ActionInput::new(s, 0, &mut ()).unwrap()).unwrap();
+    let output = (action.exec.raw)(&mut ActionInput::new(s, 0, &mut (), &mut ()).unwrap()).unwrap();
     assert_float_literal_body(
       (output.digested, output.binding.take().data),
       integer,

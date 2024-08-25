@@ -305,13 +305,14 @@ macro_rules! generate_integer_literal_functions {
     #[inline]
     pub fn $action_fn_name_with<
       State,
+      Heap,
       SepAcc: NumericSeparatorAccumulator + Clone + 'static,
       ValueAcc: Accumulator<char> + Clone + 'static,
     >(
       options_builder: impl FnOnce(
         IntegerLiteralBodyOptions<(), ()>,
       ) -> IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
-    ) -> Action<MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, State> {
+    ) -> Action<MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, State, Heap> {
       $action_fn_name_with_options(options_builder(IntegerLiteralBodyOptions::new()))
     }
 
@@ -338,11 +339,12 @@ macro_rules! generate_integer_literal_functions {
     /// For decimal integer literals, if the first char is a separator, the action will be rejected.
     pub fn $action_fn_name_with_options<
       State,
+      Heap,
       SepAcc: NumericSeparatorAccumulator + Clone + 'static,
       ValueAcc: Accumulator<char> + Clone + 'static,
     >(
       options: IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
-    ) -> Action<MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, State> {
+    ) -> Action<MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, State, Heap> {
       let prefix = $prefix;
 
       if prefix.len() == 0 {
@@ -542,7 +544,7 @@ mod tests {
   }
 
   fn assert_reject(action: Action<MockTokenKind<IntegerLiteralData<(), ()>>>, s: &str) {
-    assert!((action.exec.raw)(&mut ActionInput::new(s, 0, &mut ()).unwrap()).is_none());
+    assert!((action.exec.raw)(&mut ActionInput::new(s, 0, &mut (), &mut ()).unwrap()).is_none());
   }
 
   #[test]
@@ -552,7 +554,7 @@ mod tests {
       s: &str,
       expect_value: &str,
     ) {
-      let res = (action.exec.raw)(&mut ActionInput::new(s, 0, &mut ()).unwrap()).unwrap();
+      let res = (action.exec.raw)(&mut ActionInput::new(s, 0, &mut (), &mut ()).unwrap()).unwrap();
       assert_eq!(res.digested, 6);
       assert_eq!(res.binding.kind().data.separators, vec![1]);
       assert_eq!(res.binding.kind().data.value, expect_value);
@@ -663,7 +665,7 @@ mod tests {
       .unchecked_head_in(['0'])
     };
     assert_eq!(
-      (action_factory().exec.raw)(&mut ActionInput::new("0B101n", 0, &mut ()).unwrap())
+      (action_factory().exec.raw)(&mut ActionInput::new("0B101n", 0, &mut (), &mut ()).unwrap())
         .unwrap()
         .digested,
       6

@@ -4,7 +4,7 @@ use crate::lexer::{
   token::{DefaultTokenKindId, SubTokenKind, TokenKindIdBinding},
 };
 
-impl<Kind: 'static, State: 'static> Action<Kind, State> {
+impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// Set the binding for this action.
   /// Use this if your action can only yield a const token kind value.
   /// # Examples
@@ -23,7 +23,7 @@ impl<Kind: 'static, State: 'static> Action<Kind, State> {
   /// let action: Action<MyKind> = exact("A").bind(B(0));
   /// # }
   /// ```
-  pub fn bind<NewKind, ViaKind>(self, kind: ViaKind) -> Action<NewKind, State>
+  pub fn bind<NewKind, ViaKind>(self, kind: ViaKind) -> Action<NewKind, State, Heap>
   where
     ViaKind:
       SubTokenKind<TokenKind = NewKind> + Into<TokenKindIdBinding<NewKind>> + Clone + 'static,
@@ -60,7 +60,7 @@ impl<Kind: 'static, State: 'static> Action<Kind, State> {
   /// assert_eq!(action.kind(), Anonymous::kind_id());
   /// # }
   /// ```
-  pub fn bind_default<NewKind>(self) -> Action<NewKind, State>
+  pub fn bind_default<NewKind>(self) -> Action<NewKind, State, Heap>
   where
     NewKind: DefaultTokenKindId + Default,
   {
@@ -105,12 +105,12 @@ impl<Kind: 'static, State: 'static> Action<Kind, State> {
     self,
     selector: impl Fn(
         AcceptedActionOutputContext<
-          &mut ActionInput<&mut State>,
+          &mut ActionInput<&mut State, &mut Heap>,
           ActionOutput<TokenKindIdBinding<Kind>>,
         >,
       ) -> ViaKind
       + 'static,
-  ) -> Action<NewKind, State>
+  ) -> Action<NewKind, State, Heap>
   where
     ViaKind: Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKind = NewKind>,
   {
@@ -149,7 +149,7 @@ mod tests {
     let action: Action<_> = exact("A").bind(A);
     assert_eq!(action.kind, A::kind_id());
     assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("A", 0, &mut (), &mut ()).unwrap()),
       Some(ActionOutput {
         binding,
         digested: 1,
@@ -162,7 +162,7 @@ mod tests {
     let action: Action<_> = exact("A").bind_default();
     assert_eq!(action.kind, MyKind::default_kind_id());
     assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("A", 0, &mut (), &mut ()).unwrap()),
       Some(ActionOutput {
         binding,
         digested: 1,
@@ -176,7 +176,7 @@ mod tests {
       Action::from(regex(r"^\d+")).select(|ctx| Value(ctx.content().parse().unwrap()));
     assert_eq!(action.kind, Value::kind_id());
     assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("1", 0, &mut ()).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("1", 0, &mut (), &mut ()).unwrap()),
       Some(ActionOutput {
         binding,
         digested: 1,

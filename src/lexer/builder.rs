@@ -7,11 +7,11 @@ use crate::utils::OneOrMore;
 
 /// To create this, see [`Self::new`] and [`Self::stateful`].
 #[derive(Debug)]
-pub struct LexerBuilder<Kind, State = ()> {
-  actions: Vec<Action<Kind, State>>,
+pub struct LexerBuilder<Kind, State = (), Heap = ()> {
+  actions: Vec<Action<Kind, State, Heap>>,
 }
 
-impl<Kind, State> Default for LexerBuilder<Kind, State> {
+impl<Kind, State, Heap> Default for LexerBuilder<Kind, State, Heap> {
   #[inline]
   fn default() -> Self {
     Self {
@@ -68,10 +68,10 @@ impl<Kind> LexerBuilder<Kind> {
   }
 }
 
-impl<Kind, State> LexerBuilder<Kind, State> {
+impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
   /// Get the actions appended to this instance.
   #[inline]
-  pub fn actions(&self) -> &[Action<Kind, State>] {
+  pub fn actions(&self) -> &[Action<Kind, State, Heap>] {
     &self.actions
   }
 
@@ -105,38 +105,44 @@ impl<Kind, State> LexerBuilder<Kind, State> {
   // TODO: add a module `generate` to speed up the build process? store action index & lookup tables.
   /// Consume self, build a [`StatelessLexer`].
   #[inline]
-  pub fn build_stateless(self) -> StatelessLexer<Kind, State> {
+  pub fn build_stateless(self) -> StatelessLexer<Kind, State, Heap> {
     StatelessLexer::new(self.actions)
   }
 
   /// Alias of [`Self::into_lexer_with`].
   #[inline]
-  pub fn build_with<'text>(self, state: State, text: &'text str) -> Lexer<'text, Kind, State> {
-    self.into_lexer_with(state, text)
+  pub fn build_with<'text>(
+    self,
+    state: State,
+    heap: Heap,
+    text: &'text str,
+  ) -> Lexer<'text, Kind, State, Heap> {
+    self.into_lexer_with(state, heap, text)
   }
 
   /// Alias of [`Self::into_lexer`].
   #[inline]
-  pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, State>
+  pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, State, Heap>
   where
     State: Default,
+    Heap: Default,
   {
     self.into_lexer(text)
   }
 
   #[inline]
   fn map_actions<OldKind, NewKind>(
-    actions: impl Into<OneOrMore<Action<OldKind, State>>>,
-    f: impl Fn(Action<OldKind, State>) -> Action<NewKind, State>,
-  ) -> Vec<Action<NewKind, State>> {
+    actions: impl Into<OneOrMore<Action<OldKind, State, Heap>>>,
+    f: impl Fn(Action<OldKind, State, Heap>) -> Action<NewKind, State, Heap>,
+  ) -> Vec<Action<NewKind, State, Heap>> {
     actions.into().0.into_iter().map(f).collect()
   }
 }
 
-impl<Kind, State> IntoLexer<Kind, State> for LexerBuilder<Kind, State> {
+impl<Kind, State, Heap> IntoLexer<Kind, State, Heap> for LexerBuilder<Kind, State, Heap> {
   #[inline]
-  fn into_lexer_with(self, state: State, text: &str) -> Lexer<Kind, State> {
-    self.build_stateless().into_lexer_with(state, text)
+  fn into_lexer_with(self, state: State, heap: Heap, text: &str) -> Lexer<Kind, State, Heap> {
+    self.build_stateless().into_lexer_with(state, heap, text)
   }
 }
 
@@ -180,7 +186,7 @@ mod tests {
   fn test_build() {
     let builder_factory = || LexerBuilder::stateful::<i32>().append(exact("a"));
 
-    let lexer = builder_factory().build_with(1, "123");
+    let lexer = builder_factory().build_with(1, (), "123");
     assert_eq!(lexer.state, 1);
     assert_eq!(lexer.instant().text(), "123");
 

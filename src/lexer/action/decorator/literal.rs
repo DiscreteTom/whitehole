@@ -1,6 +1,6 @@
 use crate::lexer::action::Action;
 
-impl<Kind, State> Action<Kind, State> {
+impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// Set [`Action::literal`].
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   ///

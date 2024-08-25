@@ -19,7 +19,7 @@ use regex::Regex;
 /// use whitehole::lexer::action::{Action, regex};
 /// let a: Action<_> = regex(r"^\d+");
 /// ```
-pub fn regex<State>(re: &str) -> Action<MockTokenKind<()>, State> {
+pub fn regex<State, Heap>(re: &str) -> Action<MockTokenKind<()>, State, Heap> {
   Regex::new(re)
     .map(|re| simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
     .expect("invalid regex")
@@ -38,7 +38,7 @@ mod tests {
   fn match_at_start() {
     let action: Action<_> = regex(r"^\d+");
     assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("123", 0, &mut ()).unwrap())
+      (action.exec.raw)(&mut ActionInput::new("123", 0, &mut (), &mut()).unwrap())
         .unwrap()
         .digested,
       3
@@ -49,7 +49,7 @@ mod tests {
   fn match_at_middle() {
     let action: Action<_> = regex(r"^\d+");
     assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("abc123", 3, &mut ()).unwrap())
+      (action.exec.raw)(&mut ActionInput::new("abc123", 3, &mut (), &mut()).unwrap())
         .unwrap()
         .digested,
       3

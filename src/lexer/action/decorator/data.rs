@@ -4,7 +4,7 @@ use crate::lexer::{
   token::{MockTokenKind, SubTokenKind, TokenKindIdBinding},
 };
 
-impl<Kind: 'static, State: 'static> Action<Kind, State> {
+impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// Set the kind to [`MockTokenKind`] and store the data in [`MockTokenKind::data`].
   /// Return a new action.
   ///
@@ -20,12 +20,12 @@ impl<Kind: 'static, State: 'static> Action<Kind, State> {
     self,
     factory: impl Fn(
         AcceptedActionOutputContext<
-          &mut ActionInput<&mut State>,
+          &mut ActionInput<&mut State, &mut Heap>,
           ActionOutput<TokenKindIdBinding<Kind>>,
         >,
       ) -> T
       + 'static,
-  ) -> Action<MockTokenKind<T>, State> {
+  ) -> Action<MockTokenKind<T>, State, Heap> {
     let exec = self.exec.raw;
     Action {
       exec: ActionExec::new(move |input| {
@@ -45,7 +45,7 @@ impl<Kind: 'static, State: 'static> Action<Kind, State> {
   }
 }
 
-impl<Data: 'static, State: 'static> Action<MockTokenKind<Data>, State> {
+impl<Data: 'static, State: 'static, Heap: 'static> Action<MockTokenKind<Data>, State, Heap> {
   /// Map the data of the kind to another data, stored in [`MockTokenKind::data`].
   /// Return a new action.
   /// # Examples
@@ -57,7 +57,7 @@ impl<Data: 'static, State: 'static> Action<MockTokenKind<Data>, State> {
   pub fn map<NewData>(
     self,
     transformer: impl Fn(Data) -> NewData + 'static,
-  ) -> Action<MockTokenKind<NewData>, State> {
+  ) -> Action<MockTokenKind<NewData>, State, Heap> {
     self.data(move |ctx| transformer(ctx.output.binding.take().data))
   }
 }
@@ -73,7 +73,7 @@ mod tests {
       // ensure output.binding can be consumed
       .data(|ctx| ctx.output.binding.take().data);
     assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("A", 0, &mut ()).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("A", 0, &mut (), &mut()).unwrap()),
       Some(ActionOutput {
         binding,
         digested: 1,
@@ -88,7 +88,7 @@ mod tests {
       .map(|data| Box::new(data))
       .prepare(|input| *input.state += 1);
     assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("A", 0, &mut 123).unwrap()),
+      (action.exec.raw)(&mut ActionInput::new("A", 0, &mut 123, &mut ()).unwrap()),
       Some(ActionOutput {
         binding,
         digested: 1,

@@ -3,14 +3,14 @@ use crate::lexer::action::{RcActionExec, RcActionProps};
 use std::collections::HashMap;
 
 #[derive(Debug)]
-pub(super) struct LiteralMap<Kind, State> {
+pub(super) struct LiteralMap<Kind, State, Heap> {
   /// The key of the map is the literal.
   /// Actions in the value should be either muted or have a matched
   /// [`Action::literal`](crate::lexer::action::Action::literal)
-  known_map: HashMap<String, HeadMap<Kind, State>>, // TODO: optimize using lookup table if the literal's first char is unique
+  known_map: HashMap<String, HeadMap<Kind, State, Heap>>, // TODO: optimize using lookup table if the literal's first char is unique
   /// When the rest of the input text doesn't starts with the expected literal,
   /// only muted actions will be checked.
-  muted_map: HeadMap<Kind, State>,
+  muted_map: HeadMap<Kind, State, Heap>,
   // for literal map there is no unknown_fallback because we don't check
   // actions with mismatched/unknown literals (should panic)
 }
@@ -18,18 +18,24 @@ pub(super) struct LiteralMap<Kind, State> {
 /// A new-type to represent the return type of [`LiteralMap::collect_all_known`].
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`LiteralMap::new`].
-pub(super) struct KnownLiterals<Kind, State>(
-  HashMap<String, (Vec<RcActionExec<Kind, State>>, Vec<RcActionProps<Kind>>)>,
+pub(super) struct KnownLiterals<Kind, State, Heap>(
+  HashMap<
+    String,
+    (
+      Vec<RcActionExec<Kind, State, Heap>>,
+      Vec<RcActionProps<Kind>>,
+    ),
+  >,
 );
 
-impl<Kind, State> Clone for KnownLiterals<Kind, State> {
+impl<Kind, State, Heap> Clone for KnownLiterals<Kind, State, Heap> {
   #[inline]
   fn clone(&self) -> Self {
     Self(self.0.clone())
   }
 }
 
-impl<Kind, State> LiteralMap<Kind, State> {
+impl<Kind, State, Heap> LiteralMap<Kind, State, Heap> {
   /// Collect all known literals from all actions instead of a subset of actions to make sure
   /// 'known' as a consistent meaning across all literal maps in a stateless lexer
   /// (otherwise maybe only a subset of literals are known for a subset of actions,
@@ -37,7 +43,7 @@ impl<Kind, State> LiteralMap<Kind, State> {
   /// This must be done before creating a literal map because we need to iter over all known literals
   /// when filling the literal map with no-literal actions.
   #[inline] // there is only one call site, so mark this as inline
-  pub fn collect_all_known(props: &Vec<RcActionProps<Kind>>) -> KnownLiterals<Kind, State> {
+  pub fn collect_all_known(props: &Vec<RcActionProps<Kind>>) -> KnownLiterals<Kind, State, Heap> {
     let mut res = HashMap::new();
 
     for p in props {
@@ -54,10 +60,10 @@ impl<Kind, State> LiteralMap<Kind, State> {
   /// Create a self with a subset of actions, a known literal map created by [`Self::collect_all_known`]
   /// and a known head map created by [`HeadMap::collect_all_known`].
   pub fn new(
-    execs: &Vec<RcActionExec<Kind, State>>,
+    execs: &Vec<RcActionExec<Kind, State, Heap>>,
     props: &Vec<RcActionProps<Kind>>,
-    known_map: KnownLiterals<Kind, State>,
-    known_head_map: &KnownHeadChars<Kind, State>,
+    known_map: KnownLiterals<Kind, State, Heap>,
+    known_head_map: &KnownHeadChars<Kind, State, Heap>,
   ) -> Self {
     let mut known_map = known_map.0;
     // fill the action map
@@ -104,12 +110,12 @@ impl<Kind, State> LiteralMap<Kind, State> {
   }
 
   #[inline]
-  pub const fn known_map(&self) -> &HashMap<String, HeadMap<Kind, State>> {
+  pub const fn known_map(&self) -> &HashMap<String, HeadMap<Kind, State, Heap>> {
     &self.known_map
   }
 
   #[inline]
-  pub const fn muted_map(&self) -> &HeadMap<Kind, State> {
+  pub const fn muted_map(&self) -> &HeadMap<Kind, State, Heap> {
     &self.muted_map
   }
 }
@@ -128,7 +134,7 @@ mod tests {
   }
 
   fn assert_immutable_actions_eq(
-    actions: &RuntimeActions<MockTokenKind<()>, ()>,
+    actions: &RuntimeActions<MockTokenKind<()>, (), ()>,
     expected: Vec<Action<MockTokenKind<()>, ()>>,
   ) {
     assert_eq!(actions.len(), expected.len());
