@@ -1,6 +1,6 @@
 use super::AcceptedActionOutputContext;
 use crate::lexer::{
-  action::{Action, ActionExec, ActionInput, ActionOutput},
+  action::{Action, ActionInput, ActionOutput},
   token::{DefaultTokenKindId, SubTokenKind, TokenKindIdBinding},
 };
 
@@ -23,24 +23,18 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// let action: Action<MyKind> = exact("A").bind(B(0));
   /// # }
   /// ```
+  #[inline]
   pub fn bind<NewKind, ViaKind>(self, kind: ViaKind) -> Action<NewKind, State, Heap>
   where
     ViaKind:
       SubTokenKind<TokenKind = NewKind> + Into<TokenKindIdBinding<NewKind>> + Clone + 'static,
   {
-    let exec = self.exec.raw;
-    Action {
-      kind: ViaKind::kind_id(),
-      head: self.head,
-      muted: self.muted,
-      literal: self.literal,
-      exec: ActionExec::new(move |input| {
-        exec(input).map(|output| ActionOutput {
-          binding: kind.clone().into(),
-          digested: output.digested,
-        })
-      }),
-    }
+    self.map_exec_new(ViaKind::kind_id(), move |exec, input| {
+      exec(input).map(|output| ActionOutput {
+        binding: kind.clone().into(),
+        digested: output.digested,
+      })
+    })
   }
 
   /// Set the kind to the default for this action.
@@ -60,31 +54,23 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// assert_eq!(action.kind(), Anonymous::kind_id());
   /// # }
   /// ```
+  #[inline]
   pub fn bind_default<NewKind>(self) -> Action<NewKind, State, Heap>
   where
     NewKind: DefaultTokenKindId + Default,
   {
-    let exec = self.exec.raw;
-    Action {
-      kind: NewKind::default_kind_id(),
-      head: self.head,
-      muted: self.muted,
-      literal: self.literal,
-      exec: ActionExec::new(move |input| {
-        exec(input).map(|output| ActionOutput {
-          binding: TokenKindIdBinding::default(),
-          digested: output.digested,
-        })
-      }),
-    }
+    self.map_exec_new(NewKind::default_kind_id(), move |exec, input| {
+      exec(input).map(|output| ActionOutput {
+        binding: TokenKindIdBinding::default(),
+        digested: output.digested,
+      })
+    })
   }
 
-  /// Set the kind and the data binding for this action by the `selector`.
+  /// Set the binding for this action by the `selector`.
   /// Use this if you need to calculate the kind based on the [`ActionInput`] and [`ActionOutput`].
   ///
-  /// [`ActionInput::state`] is immutable in the `selector`.
-  /// You can consume the [`ActionOutput::binding`] in the `selector`
-  /// but not the [`ActionOutput::error`].
+  /// You can consume the original [`ActionOutput`] in the `selector`.
   /// # Examples
   /// ```
   /// use whitehole::lexer::{
@@ -101,32 +87,23 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   ///   .select(|ctx| Num(ctx.content().parse().unwrap()));
   /// # }
   /// ```
+  #[inline]
   pub fn select<NewKind, ViaKind>(
     self,
     selector: impl Fn(
-        AcceptedActionOutputContext<
-          &mut ActionInput<&mut State, &mut Heap>,
-          ActionOutput<Kind>,
-        >,
+        AcceptedActionOutputContext<&mut ActionInput<&mut State, &mut Heap>, ActionOutput<Kind>>,
       ) -> ViaKind
       + 'static,
   ) -> Action<NewKind, State, Heap>
   where
     ViaKind: Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKind = NewKind>,
   {
-    let exec = self.exec.raw;
-    Action {
-      kind: ViaKind::kind_id(),
-      head: self.head,
-      muted: self.muted,
-      literal: self.literal,
-      exec: ActionExec::new(move |input| {
-        exec(input).map(|output| ActionOutput {
-          digested: output.digested,
-          binding: selector(AcceptedActionOutputContext { input, output }).into(),
-        })
-      }),
-    }
+    self.map_exec_new(ViaKind::kind_id(), move |exec, input| {
+      exec(input).map(|output| ActionOutput {
+        digested: output.digested,
+        binding: selector(AcceptedActionOutputContext { input, output }).into(),
+      })
+    })
   }
 }
 

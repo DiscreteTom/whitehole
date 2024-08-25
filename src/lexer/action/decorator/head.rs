@@ -1,8 +1,9 @@
-use crate::lexer::action::{Action, HeadMatcher};
+use crate::lexer::action::{echo_with, Action, HeadMatcher};
 use std::{collections::HashSet, ops::RangeInclusive};
 
 impl<Kind, State, Heap> Action<Kind, State, Heap> {
-  /// Set [`Action::head`] to [`OneOf`](HeadMatcher::OneOf).
+  /// Set [`Action::head`] to [`HeadMatcher::OneOf`].
+  /// # Caveats
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
@@ -17,12 +18,12 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// ```
   #[inline]
   pub fn unchecked_head_in(mut self, char_set: impl Into<HashSet<char>>) -> Self {
-    self.head = Some(HeadMatcher::OneOf(char_set.into()));
-    self
+    echo_with!(self, self.head = Some(HeadMatcher::OneOf(char_set.into())))
   }
 
-  /// Set [`Action::head`] to [`OneOf`](HeadMatcher::OneOf)
+  /// Set [`Action::head`] to [`HeadMatcher::OneOf`]
   /// with the given range.
+  /// # Caveats
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
@@ -39,7 +40,8 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
     self.unchecked_head_in(range.into().into_iter().collect::<HashSet<_>>())
   }
 
-  /// Set [`Action::head`] to [`Not`](HeadMatcher::Not).
+  /// Set [`Action::head`] to [`HeadMatcher::Not`].
+  /// # Caveats
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
@@ -54,11 +56,11 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// ```
   #[inline]
   pub fn unchecked_head_not(mut self, char_set: impl Into<HashSet<char>>) -> Self {
-    self.head = Some(HeadMatcher::Not(char_set.into()));
-    self
+    echo_with!(self, self.head = Some(HeadMatcher::Not(char_set.into())))
   }
 
-  /// Set [`Action::head`] to [`Unknown`](HeadMatcher::Unknown).
+  /// Set [`Action::head`] to [`HeadMatcher::Unknown`].
+  /// # Caveats
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
@@ -73,8 +75,7 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// ```
   #[inline]
   pub fn unchecked_head_unknown(mut self) -> Self {
-    self.head = Some(HeadMatcher::Unknown);
-    self
+    echo_with!(self, self.head = Some(HeadMatcher::Unknown))
   }
 }
 

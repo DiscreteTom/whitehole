@@ -118,12 +118,14 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
   }
 }
 
+type RawActionExec<Kind, State, Heap> =
+  Box<dyn Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<Kind>>>;
+
 /// The [`Action::exec`].
 /// This is a new-type for `Box<dyn Fn(...) -> ...>` and implements [`Debug`]
 /// so that [`Action`] can be [`Debug`] too.
 pub struct ActionExec<Kind, State, Heap> {
-  pub(crate) raw:
-    Box<dyn Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<Kind>>>,
+  pub(crate) raw: RawActionExec<Kind, State, Heap>,
 }
 
 impl<Kind, State, Heap> ActionExec<Kind, State, Heap> {

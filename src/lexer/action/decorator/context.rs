@@ -4,8 +4,7 @@ use crate::lexer::action::{ActionInput, ActionOutput};
 /// in action decorators when the action is accepted.
 #[derive(Debug, Clone)]
 pub struct AcceptedActionOutputContext<InputType, OutputType> {
-  /// The [`ActionInput`]. Might be `&ActionInput` or `&mut ActionInput`,
-  /// depends on the specific action decorator you are using.
+  /// An mutable reference of [`ActionInput`].
   pub input: InputType,
   /// The [`ActionOutput`]. Might also be `&ActionOutput`,
   /// depends on the specific action decorator you are using.
@@ -34,6 +33,8 @@ macro_rules! impl_ctx {
         // we don't cache this slice since it might not be used frequently
         &self.input.text()[self.end()..]
       }
+
+      // TODO: add method `range`
     }
   };
 }

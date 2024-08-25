@@ -1,6 +1,6 @@
 use super::AcceptedActionOutputContext;
 use crate::lexer::{
-  action::{Action, ActionExec, ActionInput, ActionOutput},
+  action::{Action, ActionInput, ActionOutput},
   token::{MockTokenKind, SubTokenKind},
 };
 
@@ -8,14 +8,14 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// Set the kind to [`MockTokenKind`] and store the data in [`MockTokenKind::data`].
   /// Return a new action.
   ///
-  /// You can consume the [`ActionOutput::binding`] in the `factory`
-  /// but not the [`ActionOutput::error`].
+  /// You can consume the original [`ActionOutput`] in the `factory`.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::action::{Action, regex};
   /// # let action: Action<_> =
   /// regex(r"^\d+").data(|ctx| ctx.content().parse::<i32>());
   /// ```
+  #[inline]
   pub fn data<T>(
     self,
     factory: impl Fn(
@@ -23,22 +23,15 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
       ) -> T
       + 'static,
   ) -> Action<MockTokenKind<T>, State, Heap> {
-    let exec = self.exec.raw;
-    Action {
-      exec: ActionExec::new(move |input| {
-        exec(input).map(|output| ActionOutput {
-          digested: output.digested,
-          binding: MockTokenKind {
-            data: factory(AcceptedActionOutputContext { input, output }),
-          }
-          .into(),
-        })
-      }),
-      muted: self.muted,
-      head: self.head,
-      kind: MockTokenKind::kind_id(),
-      literal: self.literal,
-    }
+    self.map_exec_new(MockTokenKind::kind_id(), move |exec, input| {
+      exec(input).map(|output| ActionOutput {
+        digested: output.digested,
+        binding: MockTokenKind {
+          data: factory(AcceptedActionOutputContext { input, output }),
+        }
+        .into(),
+      })
+    })
   }
 }
 
@@ -51,6 +44,7 @@ impl<Data: 'static, State: 'static, Heap: 'static> Action<MockTokenKind<Data>, S
   /// # let action: Action<_> =
   /// simple_with_data(|_| Some((1, "data"))).map(|data| data.to_string());
   /// ```
+  #[inline]
   pub fn map<NewData>(
     self,
     transformer: impl Fn(Data) -> NewData + 'static,

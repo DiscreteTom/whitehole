@@ -6,7 +6,17 @@ mod literal;
 
 pub use context::*;
 
-use super::{input::ActionInput, output::ActionOutput, Action, ActionExec};
+use super::{input::ActionInput, output::ActionOutput, Action, ActionExec, RawActionExec};
+use crate::lexer::token::TokenKindId;
+
+/// Apply a statement and return `self`.
+macro_rules! echo_with {
+  ($self:expr, $s:stmt) => {{
+    $s
+    $self
+  }};
+}
+pub(super) use echo_with;
 
 // simple decorators that doesn't require generic bounds
 impl<Kind, State, Heap> Action<Kind, State, Heap> {
@@ -27,8 +37,7 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// ```
   #[inline]
   pub fn mute(mut self) -> Self {
-    self.muted = true;
-    self
+    echo_with!(self, self.muted = true)
   }
 
   /// Set [`Self::muted`] to `false`.
@@ -48,14 +57,51 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// ```
   #[inline]
   pub fn unmute(mut self) -> Self {
-    self.muted = false;
-    self
+    echo_with!(self, self.muted = false)
   }
 }
 
 // these decorators will use `Box` to construct new action exec
 // so `Kind/State/Heap` must be `'static`
 impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
+  /// Apply a function to [`Action::exec`] and return the modified `self`.
+  #[inline]
+  fn map_exec(
+    mut self,
+    f: impl Fn(
+        &RawActionExec<Kind, State, Heap>,
+        &mut ActionInput<&mut State, &mut Heap>,
+      ) -> Option<ActionOutput<Kind>>
+      + 'static,
+  ) -> Self {
+    echo_with!(self, {
+      let exec = self.exec.raw;
+      self.exec = ActionExec::new(move |input| f(&exec, input));
+    })
+  }
+
+  /// Apply a function to [`Action::exec`] and return a new [`Action`]
+  /// with a different `Kind`.
+  #[inline]
+  fn map_exec_new<NewKind>(
+    self,
+    kind: TokenKindId<NewKind>,
+    f: impl Fn(
+        &RawActionExec<Kind, State, Heap>,
+        &mut ActionInput<&mut State, &mut Heap>,
+      ) -> Option<ActionOutput<NewKind>>
+      + 'static,
+  ) -> Action<NewKind, State, Heap> {
+    let exec = self.exec.raw;
+    Action {
+      exec: ActionExec::new(move |input| f(&exec, input)),
+      muted: self.muted,
+      head: self.head,
+      kind,
+      literal: self.literal,
+    }
+  }
+
   /// Check the [`ActionInput`] before the action is executed.
   /// Reject the action if the `condition` returns `true`.
   /// # Examples
@@ -77,24 +123,23 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// );
   /// # }
   /// ```
+  #[inline]
   pub fn prevent(
-    mut self,
+    self,
     condition: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> bool + 'static,
   ) -> Self {
-    let exec = self.exec.raw;
-    self.exec = ActionExec::new(
-      move |input| {
+    self.map_exec(
+      move |exec, input| {
         if condition(input) {
           None
         } else {
           exec(input)
         }
       },
-    );
-    self
+    )
   }
 
-  /// Modify `State` before the action is executed.
+  /// Modify `State` and `Heap` before the action is executed.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
@@ -114,19 +159,18 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// );
   /// # }
   /// ```
+  #[inline]
   pub fn prepare(
-    mut self,
+    self,
     modifier: impl Fn(&mut ActionInput<&mut State, &mut Heap>) + 'static,
   ) -> Self {
-    let exec = self.exec.raw;
-    self.exec = ActionExec::new(move |input| {
+    self.map_exec(move |exec, input| {
       modifier(input);
       exec(input)
-    });
-    self
+    })
   }
 
-  /// Reject the action if the `condition` is met.
+  /// Reject the action if the `condition` returns `true`.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
@@ -142,15 +186,15 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// );
   /// # }
   /// ```
+  #[inline]
   pub fn reject_if(
-    mut self,
+    self,
     condition: impl Fn(
         AcceptedActionOutputContext<&mut ActionInput<&mut State, &mut Heap>, &ActionOutput<Kind>>,
       ) -> bool
       + 'static,
   ) -> Self {
-    let exec = self.exec.raw;
-    self.exec = ActionExec::new(move |input| {
+    self.map_exec(move |exec, input| {
       exec(input).and_then(|output| {
         if condition(AcceptedActionOutputContext {
           input,
@@ -161,8 +205,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
           output.into()
         }
       })
-    });
-    self
+    })
   }
 
   /// Reject the action after execution.
@@ -181,17 +224,16 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// );
   /// # }
   /// ```
-  pub fn reject(mut self) -> Self {
+  #[inline]
+  pub fn reject(self) -> Self {
     // to optimize the runtime performance,
     // don't just use `reject_if(|_| true)`
     // to prevent constructing the context
 
-    let exec = self.exec.raw;
-    self.exec = ActionExec::new(move |input| {
+    self.map_exec(move |exec, input| {
       exec(input);
       None
-    });
-    self
+    })
   }
   // `reject_if(|_| false)` is meaningless
   // so there is no method like `un_reject`
@@ -216,13 +258,13 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// );
   /// # }
   /// ```
+  #[inline]
   pub fn then(
-    mut self,
+    self,
     cb: impl Fn(AcceptedActionOutputContext<&mut ActionInput<&mut State, &mut Heap>, &ActionOutput<Kind>>)
       + 'static,
   ) -> Self {
-    let exec = self.exec.raw;
-    self.exec = ActionExec::new(move |input| {
+    self.map_exec(move |exec, input| {
       exec(input).map(|output| {
         cb(AcceptedActionOutputContext {
           input,
@@ -230,8 +272,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
         });
         output
       })
-    });
-    self
+    })
   }
 }
 
