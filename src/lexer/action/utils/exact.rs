@@ -47,6 +47,7 @@ pub fn exact<State, Heap>(s: impl Into<String>) -> Action<MockTokenKind<()>, Sta
 /// # let actions: Vec<Action<_>> =
 /// vec![exact("+"), exact("-"), exact("*"), exact("/"), exact("("), exact(")")];
 /// ```
+#[inline]
 pub fn exact_chars<State, Heap>(
   s: impl Into<String>,
 ) -> Vec<Action<MockTokenKind<()>, State, Heap>> {
@@ -95,6 +96,7 @@ pub fn unchecked_exact<State, Heap>(
 /// # let actions: Vec<Action<_>> =
 /// vec![unchecked_exact("+"), unchecked_exact("-"), unchecked_exact("*"), unchecked_exact("/")];
 /// ```
+#[inline]
 pub fn unchecked_exact_chars<State, Heap>(
   s: impl Into<String>,
 ) -> Vec<Action<MockTokenKind<()>, State, Heap>> {
