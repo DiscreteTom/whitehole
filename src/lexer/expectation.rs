@@ -1,29 +1,29 @@
 use super::token::{SubTokenKind, TokenKindId};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Expectation<'expect_literal, Kind> {
+pub struct Expectation<'literal, Kind> {
   /// See [`Self::kind`].
   pub kind: Option<TokenKindId<Kind>>,
   /// See [`Self::literal`].
-  pub literal: Option<&'expect_literal str>,
+  pub literal: Option<&'literal str>,
 }
 
-impl<'expect_literal, Kind> Default for Expectation<'expect_literal, Kind> {
+impl<'literal, Kind> Default for Expectation<'literal, Kind> {
   #[inline]
   fn default() -> Self {
     Self::new()
   }
 }
 
-impl<'expect_literal, Kind> From<TokenKindId<Kind>> for Expectation<'expect_literal, Kind> {
+impl<'literal, Kind> From<TokenKindId<Kind>> for Expectation<'literal, Kind> {
   #[inline]
   fn from(id: TokenKindId<Kind>) -> Self {
     Self::new().kind(id)
   }
 }
 
-impl<'expect_literal, Kind, ViaKind: SubTokenKind<TokenKind = Kind>> From<ViaKind>
-  for Expectation<'expect_literal, Kind>
+impl<'literal, Kind, ViaKind: SubTokenKind<TokenKind = Kind>> From<ViaKind>
+  for Expectation<'literal, Kind>
 {
   #[inline]
   fn from(_: ViaKind) -> Self {
@@ -31,14 +31,14 @@ impl<'expect_literal, Kind, ViaKind: SubTokenKind<TokenKind = Kind>> From<ViaKin
   }
 }
 
-impl<'expect_literal, Kind> From<&'expect_literal str> for Expectation<'expect_literal, Kind> {
+impl<'literal, Kind> From<&'literal str> for Expectation<'literal, Kind> {
   #[inline]
-  fn from(text: &'expect_literal str) -> Self {
+  fn from(text: &'literal str) -> Self {
     Self::new().literal(text)
   }
 }
 
-impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
+impl<'literal, Kind> Expectation<'literal, Kind> {
   /// Create a new [`Expectation`] with no expected [`kind`](Self::kind) and no expected [`literal`](Self::literal).
   #[inline]
   pub const fn new() -> Self {
@@ -90,7 +90,7 @@ impl<'expect_literal, Kind> Expectation<'expect_literal, Kind> {
   /// expectation.literal(&String::from("import"));
   /// ```
   #[inline]
-  pub const fn literal(mut self, text: &'expect_literal str) -> Self {
+  pub const fn literal(mut self, text: &'literal str) -> Self {
     self.literal = Some(text);
     self
   }

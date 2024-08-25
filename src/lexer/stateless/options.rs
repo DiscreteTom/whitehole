@@ -55,10 +55,10 @@ impl<StateRef, HeapRef, Base> StatelessOptions<StateRef, HeapRef, Base> {
 }
 
 /// Add [`StatelessLexOptions::start`] and [`StatelessLexOptions::state`] to [`LexOptions`].
-pub type StatelessLexOptions<'expect_literal, Kind, StateRef, HeapRef, Fork> =
-  StatelessOptions<StateRef, HeapRef, LexOptions<'expect_literal, Kind, Fork>>;
+pub type StatelessLexOptions<'literal, Kind, StateRef, HeapRef, Fork> =
+  StatelessOptions<StateRef, HeapRef, LexOptions<'literal, Kind, Fork>>;
 
-impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), ()> {
+impl<'literal, Kind> StatelessLexOptions<'literal, Kind, (), (), ()> {
   /// Create a new instance with `0` as the start index and no state.
   #[inline]
   pub const fn new() -> Self {
@@ -76,12 +76,12 @@ impl<'expect_literal, Kind> StatelessLexOptions<'expect_literal, Kind, (), (), (
 // re-export from `LexOptions`
 // but with `StatelessLexOptions` as the return type
 // instead of `LexOptions`
-impl<'expect_literal, Kind, StateRef, HeapRef, Fork>
-  StatelessLexOptions<'expect_literal, Kind, StateRef, HeapRef, Fork>
+impl<'literal, Kind, StateRef, HeapRef, Fork>
+  StatelessLexOptions<'literal, Kind, StateRef, HeapRef, Fork>
 {
   /// See [`LexOptions::expect`].
   #[inline]
-  pub fn expect(mut self, expectation: impl Into<Expectation<'expect_literal, Kind>>) -> Self {
+  pub fn expect(mut self, expectation: impl Into<Expectation<'literal, Kind>>) -> Self {
     self.base.expectation = expectation.into();
     self
   }
@@ -89,7 +89,7 @@ impl<'expect_literal, Kind, StateRef, HeapRef, Fork>
   #[inline]
   pub fn expect_with(
     mut self,
-    f: impl FnOnce(Expectation<'expect_literal, Kind>) -> Expectation<'expect_literal, Kind>,
+    f: impl FnOnce(Expectation<'literal, Kind>) -> Expectation<'literal, Kind>,
   ) -> Self {
     self.base.expectation = f(Expectation::default());
     self
@@ -97,7 +97,7 @@ impl<'expect_literal, Kind, StateRef, HeapRef, Fork>
 
   /// See [`LexOptions::fork`].
   #[inline]
-  pub fn fork(self) -> StatelessLexOptions<'expect_literal, Kind, StateRef, HeapRef, ForkEnabled> {
+  pub fn fork(self) -> StatelessLexOptions<'literal, Kind, StateRef, HeapRef, ForkEnabled> {
     StatelessLexOptions {
       start: self.start,
       state: self.state,

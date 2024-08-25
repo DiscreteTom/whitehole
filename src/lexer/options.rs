@@ -1,16 +1,16 @@
 use super::{expectation::Expectation, fork::ForkEnabled, re_lex::ReLexContext};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LexOptions<'expect_literal, Kind, Fork> {
+pub struct LexOptions<'literal, Kind, Fork> {
   /// See [`Self::expect`].
-  pub expectation: Expectation<'expect_literal, Kind>,
+  pub expectation: Expectation<'literal, Kind>,
   /// See [`Self::fork`].
   pub fork: Fork,
   /// See [`Self::re_lex`].
   pub re_lex: ReLexContext,
 }
 
-impl<'expect_literal, Kind> LexOptions<'expect_literal, Kind, ()> {
+impl<'literal, Kind> LexOptions<'literal, Kind, ()> {
   /// Create a new instance with no expectation, no error accumulator, no re-lex context and fork disabled.
   #[inline]
   pub const fn new() -> Self {
@@ -22,22 +22,20 @@ impl<'expect_literal, Kind> LexOptions<'expect_literal, Kind, ()> {
   }
 }
 
-impl<'expect_literal, Kind> From<Expectation<'expect_literal, Kind>>
-  for LexOptions<'expect_literal, Kind, ()>
-{
+impl<'literal, Kind> From<Expectation<'literal, Kind>> for LexOptions<'literal, Kind, ()> {
   #[inline]
-  fn from(expectation: Expectation<'expect_literal, Kind>) -> Self {
+  fn from(expectation: Expectation<'literal, Kind>) -> Self {
     Self::new().expect(expectation)
   }
 }
-impl<'expect_literal, Kind> From<ReLexContext> for LexOptions<'expect_literal, Kind, ()> {
+impl<'literal, Kind> From<ReLexContext> for LexOptions<'literal, Kind, ()> {
   #[inline]
   fn from(re_lex: ReLexContext) -> Self {
     Self::new().re_lex(re_lex)
   }
 }
 
-impl<'expect_literal, Kind, Fork> LexOptions<'expect_literal, Kind, Fork> {
+impl<'literal, Kind, Fork> LexOptions<'literal, Kind, Fork> {
   /// Set the expectation to speed up the lexing.
   /// # Examples
   /// ```
@@ -65,7 +63,7 @@ impl<'expect_literal, Kind, Fork> LexOptions<'expect_literal, Kind, Fork> {
   /// # }
   /// ```
   #[inline]
-  pub fn expect(mut self, expectation: impl Into<Expectation<'expect_literal, Kind>>) -> Self {
+  pub fn expect(mut self, expectation: impl Into<Expectation<'literal, Kind>>) -> Self {
     self.expectation = expectation.into();
     self
   }
@@ -98,7 +96,7 @@ impl<'expect_literal, Kind, Fork> LexOptions<'expect_literal, Kind, Fork> {
   #[inline]
   pub fn expect_with(
     mut self,
-    f: impl FnOnce(Expectation<'expect_literal, Kind>) -> Expectation<'expect_literal, Kind>,
+    f: impl FnOnce(Expectation<'literal, Kind>) -> Expectation<'literal, Kind>,
   ) -> Self {
     self.expectation = f(Expectation::default());
     self
@@ -110,7 +108,7 @@ impl<'expect_literal, Kind, Fork> LexOptions<'expect_literal, Kind, Fork> {
   ///
   /// See [`ReLexContext`] for more details.
   #[inline]
-  pub fn fork(self) -> LexOptions<'expect_literal, Kind, ForkEnabled> {
+  pub fn fork(self) -> LexOptions<'literal, Kind, ForkEnabled> {
     LexOptions {
       expectation: self.expectation,
       fork: ForkEnabled,

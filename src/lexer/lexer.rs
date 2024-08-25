@@ -146,11 +146,9 @@ impl<'text, Kind, State, Heap> Lexer<'text, Kind, State, Heap> {
   ///
   /// [`Self::state`] will be cloned and returned.
   #[inline]
-  pub fn peek_with<'expect_literal, Fork: LexOptionsFork>(
+  pub fn peek_with<'literal, Fork: LexOptionsFork>(
     &mut self,
-    options_builder: impl FnOnce(
-      LexOptions<'expect_literal, Kind, ()>,
-    ) -> LexOptions<'expect_literal, Kind, Fork>,
+    options_builder: impl FnOnce(LexOptions<'literal, Kind, ()>) -> LexOptions<'literal, Kind, Fork>,
   ) -> (
     LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType>,
     State,
@@ -165,9 +163,9 @@ impl<'text, Kind, State, Heap> Lexer<'text, Kind, State, Heap> {
   /// [`Self::state`] and [`Self::state`].
   ///
   /// [`Self::state`] will be cloned and returned.
-  pub fn peek_with_options<'expect_literal, Fork: LexOptionsFork>(
+  pub fn peek_with_options<'literal, Fork: LexOptionsFork>(
     &mut self,
-    options: impl Into<LexOptions<'expect_literal, Kind, Fork>>,
+    options: impl Into<LexOptions<'literal, Kind, Fork>>,
   ) -> (
     LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType>,
     State,
@@ -200,20 +198,18 @@ impl<'text, Kind, State, Heap> Lexer<'text, Kind, State, Heap> {
   /// Try to yield the next token with custom options.
   /// [`Self::state`] and [`Self::state`] will be updated.
   #[inline]
-  pub fn lex_with<'expect_literal, Fork: LexOptionsFork>(
+  pub fn lex_with<'literal, Fork: LexOptionsFork>(
     &mut self,
-    options_builder: impl FnOnce(
-      LexOptions<'expect_literal, Kind, ()>,
-    ) -> LexOptions<'expect_literal, Kind, Fork>,
+    options_builder: impl FnOnce(LexOptions<'literal, Kind, ()>) -> LexOptions<'literal, Kind, Fork>,
   ) -> LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType> {
     self.lex_with_options(options_builder(LexOptions::new()))
   }
 
   /// Try to yield the next token with custom options.
   /// [`Self::state`] and [`Self::state`] will be updated.
-  pub fn lex_with_options<'expect_literal, Fork: LexOptionsFork>(
+  pub fn lex_with_options<'literal, Fork: LexOptionsFork>(
     &mut self,
-    options: impl Into<LexOptions<'expect_literal, Kind, Fork>>,
+    options: impl Into<LexOptions<'literal, Kind, Fork>>,
   ) -> LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType> {
     let options = options.into();
 
