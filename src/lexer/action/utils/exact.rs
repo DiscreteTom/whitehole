@@ -3,7 +3,7 @@ use crate::lexer::{
   token::MockTokenKind,
 };
 
-pub use whitehole_helpers::exact_vec;
+pub use whitehole_helpers::{exact_vec, unchecked_exact_vec};
 
 /// Match one string exactly, ***NO LOOKAHEAD***.
 ///
