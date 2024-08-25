@@ -24,6 +24,7 @@ pub use whitehole_helpers::word_vec;
 /// assert!(!starts_with_word_boundary("_"));
 /// assert!(!starts_with_word_boundary("我"));
 /// ```
+#[inline]
 pub fn starts_with_word_boundary(rest: &str) -> bool {
   rest
     .chars()
