@@ -10,7 +10,6 @@ use crate::{
     action::{ActionInput, ActionOutput},
     fork::{ForkOutputFactory, LexOptionsFork},
     output::LexOutput,
-    re_lex::ReLexContext,
     stateless::utils::traverse_actions,
     token::{Token, TokenKindId},
   },
@@ -89,36 +88,57 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
     text: &str,
     options: StatelessLexOptions<Kind, &mut State, &mut Heap, Fork>,
   ) -> LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType> {
+    let mut digested = 0;
+
+    macro_rules! lex_with_actions {
+      ($actions_getter:ident) => {
+        loop {
+          let mut input =
+            prepare_input!(options.start, digested, text, options.state, options.heap);
+          let actions = $actions_getter!(input);
+          let (output, action_index, muted) = lex!(input, actions, &options.base.re_lex, digested);
+
+          if !muted {
+            return done_with_token(
+              digested,
+              create_token(&input, output),
+              Fork::OutputFactoryType::default(),
+              input.start(),
+              actions.len(),
+              action_index,
+            );
+          }
+
+          // else, muted, continue
+        }
+
+        // no more input or no accepted actions
+        return done_without_token(digested);
+      };
+    }
+
     if let Some(literal) = options.base.expectation.literal {
       let (literal_map, head_map) =
         self.get_literal_head_map(options.base.expectation.kind, literal);
 
-      self.lex_with_literal(
-        literal_map,
-        head_map,
-        0,
-        options.start,
-        text,
-        options.state,
-        options.heap,
-        literal,
-        &options.base.re_lex,
-        Fork::OutputFactoryType::default(),
-      )
+      macro_rules! actions_getter_with_literal {
+        ($input:expr) => {
+          get_actions_by_literal_map(&$input, literal, literal_map, head_map)
+        };
+      }
+
+      lex_with_actions!(actions_getter_with_literal);
     } else {
       // else, no expected literal
       let head_map = self.get_kind_head_map(options.base.expectation.kind);
 
-      self.lex_without_literal(
-        head_map,
-        0,
-        options.start,
-        text,
-        options.state,
-        options.heap,
-        &options.base.re_lex,
-        Fork::OutputFactoryType::default(),
-      )
+      macro_rules! actions_getter_without_literal {
+        ($input:expr) => {
+          head_map.get($input.next())
+        };
+      }
+
+      lex_with_actions!(actions_getter_without_literal);
     }
   }
 
@@ -211,76 +231,6 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
           .expect(Self::INVALID_EXPECTED_KIND)
       },
     )
-  }
-
-  fn lex_with_literal<ForkOutputFactoryType: ForkOutputFactory>(
-    &self,
-    literal_map: &LiteralMap<Kind, State, Heap>,
-    head_map: &HeadMap<Kind, State, Heap>,
-    mut digested: usize,
-    start: usize,
-    text: &str,
-    state: &mut State,
-    heap: &mut Heap,
-    literal: &str,
-    re_lex: &ReLexContext,
-    fork_output_factory: ForkOutputFactoryType,
-  ) -> LexOutput<Token<Kind>, ForkOutputFactoryType::ForkOutputType> {
-    loop {
-      let mut input = prepare_input!(start, digested, text, state, heap);
-      let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
-      let (output, action_index, muted) = lex!(input, actions, re_lex, digested);
-
-      if !muted {
-        return done_with_token(
-          digested,
-          create_token(&input, output),
-          fork_output_factory,
-          input.start(),
-          actions.len(),
-          action_index,
-        );
-      }
-
-      // else, muted, continue
-    }
-
-    // no more input or no accepted actions
-    return done_without_token(digested);
-  }
-
-  fn lex_without_literal<ForkOutputFactoryType: ForkOutputFactory>(
-    &self,
-    head_map: &HeadMap<Kind, State, Heap>,
-    mut digested: usize,
-    start: usize,
-    text: &str,
-    state: &mut State,
-    heap: &mut Heap,
-    re_lex: &ReLexContext,
-    fork_output_factory: ForkOutputFactoryType,
-  ) -> LexOutput<Token<Kind>, ForkOutputFactoryType::ForkOutputType> {
-    loop {
-      let mut input = prepare_input!(start, digested, text, state, heap);
-      let actions = head_map.get(input.next());
-      let (output, action_index, muted) = lex!(input, actions, re_lex, digested);
-
-      if !muted {
-        return done_with_token(
-          digested,
-          create_token(&input, output),
-          fork_output_factory,
-          input.start(),
-          actions.len(),
-          action_index,
-        );
-      }
-
-      // else, muted, continue
-    }
-
-    // no more input or no accepted actions
-    return done_without_token(digested);
   }
 }
 
