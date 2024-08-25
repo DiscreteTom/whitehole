@@ -30,7 +30,7 @@ pub use output::*;
 pub use simple::*;
 pub use utils::*;
 
-use super::token::{TokenKindId, TokenKindIdBinding};
+use super::token::TokenKindId;
 use std::{
   collections::HashSet,
   fmt::{self, Debug},
@@ -122,18 +122,14 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
 /// This is a new-type for `Box<dyn Fn(...) -> ...>` and implements [`Debug`]
 /// so that [`Action`] can be [`Debug`] too.
 pub struct ActionExec<Kind, State, Heap> {
-  pub(crate) raw: Box<
-    dyn Fn(
-      &mut ActionInput<&mut State, &mut Heap>,
-    ) -> Option<ActionOutput<TokenKindIdBinding<Kind>>>,
-  >,
+  pub(crate) raw:
+    Box<dyn Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<Kind>>>,
 }
 
 impl<Kind, State, Heap> ActionExec<Kind, State, Heap> {
   #[inline]
   pub(crate) fn new(
-    raw: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<TokenKindIdBinding<Kind>>>
-      + 'static,
+    raw: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<Kind>> + 'static,
   ) -> Self {
     Self { raw: Box::new(raw) }
   }

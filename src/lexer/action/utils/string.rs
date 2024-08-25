@@ -65,22 +65,18 @@ pub fn string<
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::{
-    action::{ActionInput, ActionOutput, HeadMatcher},
-    token::TokenKindIdBinding,
-  };
+  use crate::lexer::action::{ActionInput, ActionOutput, HeadMatcher};
 
   fn exec_action(
     action: &Action<MockTokenKind<Vec<PartialStringBody<String, ()>>>, ()>,
     text: &str,
-  ) -> Option<ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>>>
-  {
-    (action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut()).unwrap())
+  ) -> Option<ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>>> {
+    (action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut ()).unwrap())
   }
 
   fn validate_output(
-    output: ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>>,
-  ) -> ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>> {
+    output: ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>>,
+  ) -> ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>> {
     // ensure at least one partial string body (the unterminated error)
     assert!(output.binding.kind().data.len() > 0);
 
@@ -106,7 +102,7 @@ mod tests {
     action: &Action<MockTokenKind<Vec<PartialStringBody<String, ()>>>, ()>,
     text: &str,
     value: &str,
-  ) -> ActionOutput<TokenKindIdBinding<MockTokenKind<Vec<PartialStringBody<String, ()>>>>> {
+  ) -> ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>> {
     let output = exec_action(action, text).unwrap();
     assert_eq!(output.digested, text.len());
     assert_eq!(

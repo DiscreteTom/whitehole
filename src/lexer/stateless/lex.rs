@@ -12,7 +12,7 @@ use crate::{
     output::LexOutput,
     re_lex::ReLexContext,
     stateless::utils::traverse_actions,
-    token::{Token, TokenKindId, TokenKindIdBinding},
+    token::{Token, TokenKindId},
   },
   utils::lookup::lookup::Lookup,
 };
@@ -321,7 +321,7 @@ fn get_actions_by_literal_map<'this, Kind, State, Heap>(
 /// Process the output, update the digested, collect errors, and emit token if not muted.
 /// Return the token if not muted, otherwise return [`None`].
 fn process_output<Kind>(
-  output: ActionOutput<TokenKindIdBinding<Kind>>,
+  output: ActionOutput<Kind>,
   muted: bool,
   start: usize,
   digested: &mut usize,

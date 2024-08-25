@@ -1,7 +1,7 @@
 use super::exact;
 use crate::lexer::{
   action::{AcceptedActionOutputContext, Action, ActionInput, ActionOutput},
-  token::{MockTokenKind, TokenKindIdBinding},
+  token::MockTokenKind,
 };
 
 pub use whitehole_helpers::word_vec;
@@ -46,7 +46,7 @@ pub fn starts_with_word_boundary(rest: &str) -> bool {
 pub fn no_word_boundary_in_rest<State, Heap>(
   ctx: AcceptedActionOutputContext<
     &mut ActionInput<&mut State, &mut Heap>,
-    &ActionOutput<TokenKindIdBinding<MockTokenKind<()>>>,
+    &ActionOutput<MockTokenKind<()>>,
   >,
 ) -> bool {
   !starts_with_word_boundary(ctx.rest())
@@ -80,14 +80,14 @@ mod tests {
 
   fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
     assert_eq!(
-      (action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut()).unwrap())
+      (action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut ()).unwrap())
         .unwrap()
         .digested,
       expected
     );
   }
   fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
-    assert!((action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut()).unwrap()).is_none());
+    assert!((action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut ()).unwrap()).is_none());
   }
 
   #[should_panic]

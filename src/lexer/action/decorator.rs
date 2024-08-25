@@ -7,7 +7,6 @@ mod literal;
 pub use context::*;
 
 use super::{input::ActionInput, output::ActionOutput, Action, ActionExec};
-use crate::lexer::token::TokenKindIdBinding;
 
 // simple decorators that doesn't require generic bounds
 impl<Kind, State, Heap> Action<Kind, State, Heap> {
@@ -146,10 +145,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   pub fn reject_if(
     mut self,
     condition: impl Fn(
-        AcceptedActionOutputContext<
-          &mut ActionInput<&mut State, &mut Heap>,
-          &ActionOutput<TokenKindIdBinding<Kind>>,
-        >,
+        AcceptedActionOutputContext<&mut ActionInput<&mut State, &mut Heap>, &ActionOutput<Kind>>,
       ) -> bool
       + 'static,
   ) -> Self {
@@ -222,12 +218,8 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// ```
   pub fn then(
     mut self,
-    cb: impl Fn(
-        AcceptedActionOutputContext<
-          &mut ActionInput<&mut State, &mut Heap>,
-          &ActionOutput<TokenKindIdBinding<Kind>>,
-        >,
-      ) + 'static,
+    cb: impl Fn(AcceptedActionOutputContext<&mut ActionInput<&mut State, &mut Heap>, &ActionOutput<Kind>>)
+      + 'static,
   ) -> Self {
     let exec = self.exec.raw;
     self.exec = ActionExec::new(move |input| {

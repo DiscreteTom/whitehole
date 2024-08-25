@@ -12,7 +12,7 @@ pub(super) fn traverse_actions<'text, Kind, State, Heap>(
   mut input: ActionInput<&mut State, &mut Heap>,
   actions: &RuntimeActions<Kind, State, Heap>,
   re_lex: &ReLexContext,
-) -> Option<(ActionOutput<TokenKindIdBinding<Kind>>, usize, bool)> {
+) -> Option<(ActionOutput<Kind>, usize, bool)> {
   for (i, exec) in actions
     .execs()
     .iter()

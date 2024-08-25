@@ -106,7 +106,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
     selector: impl Fn(
         AcceptedActionOutputContext<
           &mut ActionInput<&mut State, &mut Heap>,
-          ActionOutput<TokenKindIdBinding<Kind>>,
+          ActionOutput<Kind>,
         >,
       ) -> ViaKind
       + 'static,

@@ -1,7 +1,7 @@
 use super::AcceptedActionOutputContext;
 use crate::lexer::{
   action::{Action, ActionExec, ActionInput, ActionOutput},
-  token::{MockTokenKind, SubTokenKind, TokenKindIdBinding},
+  token::{MockTokenKind, SubTokenKind},
 };
 
 impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
@@ -19,10 +19,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   pub fn data<T>(
     self,
     factory: impl Fn(
-        AcceptedActionOutputContext<
-          &mut ActionInput<&mut State, &mut Heap>,
-          ActionOutput<TokenKindIdBinding<Kind>>,
-        >,
+        AcceptedActionOutputContext<&mut ActionInput<&mut State, &mut Heap>, ActionOutput<Kind>>,
       ) -> T
       + 'static,
   ) -> Action<MockTokenKind<T>, State, Heap> {
