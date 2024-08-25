@@ -157,4 +157,22 @@ mod tests {
     let mut state = ();
     ActionInput::new("123", 4, &mut state, &mut ());
   }
+
+  #[test]
+  fn action_input_range_unchecked() {
+    let mut state = ();
+    let mut heap = ();
+    let input = ActionInput::new("123", 1, &mut state, &mut heap).unwrap();
+    assert_eq!(input.range_unchecked(2), Range { start: 1, end: 3 });
+    assert_eq!(input.range_unchecked(3), Range { start: 1, end: 4 });
+  }
+
+  #[test]
+  fn action_input_range() {
+    let mut state = ();
+    let mut heap = ();
+    let input = ActionInput::new("123", 1, &mut state, &mut heap).unwrap();
+    assert_eq!(input.range(2), Some(Range { start: 1, end: 3 }));
+    assert_eq!(input.range(3), None);
+  }
 }
