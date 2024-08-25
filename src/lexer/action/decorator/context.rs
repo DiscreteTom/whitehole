@@ -1,4 +1,7 @@
-use crate::lexer::action::{ActionInput, ActionOutput};
+use crate::lexer::{
+  action::{ActionInput, ActionOutput},
+  token::Range,
+};
 
 /// This struct provides the [`ActionInput`] and [`ActionOutput`]
 /// in action decorators when the action is accepted.
@@ -14,17 +17,23 @@ pub struct AcceptedActionOutputContext<InputType, OutputType> {
 macro_rules! impl_ctx {
   ($input:ty, $output:ty) => {
     impl<'text, Kind, StateRef, HeapRef> AcceptedActionOutputContext<$input, $output> {
-      /// The [`Range::end`](crate::lexer::token::Range) of the token that this action will emit.
+      /// The end of [`Token::range`](crate::lexer::token::Token::range) that this action will emit.
       #[inline]
       pub fn end(&self) -> usize {
         self.input.start() + self.output.digested
+      }
+
+      /// The [`Token::range`](crate::lexer::token::Token::range) that this action will emit.
+      #[inline]
+      pub fn range(&self) -> Range {
+        self.input.start()..self.end()
       }
 
       /// The text content of the token that this action will emit.
       #[inline]
       pub fn content(&self) -> &'text str {
         // we don't cache this slice since it might not be used frequently
-        &self.input.text()[self.input.start()..self.end()]
+        &self.input.text()[self.range()]
       }
 
       /// The rest of the input text after this action is accepted.
@@ -33,8 +42,6 @@ macro_rules! impl_ctx {
         // we don't cache this slice since it might not be used frequently
         &self.input.text()[self.end()..]
       }
-
-      // TODO: add method `range`
     }
   };
 }
