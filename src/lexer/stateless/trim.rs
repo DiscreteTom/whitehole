@@ -9,12 +9,12 @@ use crate::lexer::{
 impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// Lex with muted actions, the default state and the default options.
   ///
-  /// This function will create a new state and return it.
+  /// This function will create a new state and a new heap and return them.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
-  /// let (output, state) = stateless.trim("123");
+  /// let (output, state, heap) = stateless.trim("123");
   /// ```
   #[inline]
   pub fn trim<'text>(&self, text: &'text str) -> (TrimOutput, State, Heap)
@@ -37,7 +37,8 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// # let mut state = ();
-  /// stateless.trim_with("123", |o| o.state(&mut state));
+  /// # let mut heap = ();
+  /// stateless.trim_with("123", |o| o.state(&mut state).heap(&mut heap));
   /// ```
   #[inline]
   pub fn trim_with<'text, 'state, 'heap>(
@@ -60,7 +61,8 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessTrimOptions};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// # let mut state = ();
-  /// let options = StatelessTrimOptions::new().state(&mut state);
+  /// # let mut heap = ();
+  /// let options = StatelessTrimOptions::new().state(&mut state).heap(&mut heap);
   /// stateless.trim_with_options("123", options);
   /// ```
   pub fn trim_with_options<'text>(

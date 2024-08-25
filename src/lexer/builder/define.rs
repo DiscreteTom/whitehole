@@ -44,12 +44,12 @@ impl<Kind, State: 'static, Heap: 'static> LexerBuilder<Kind, State, Heap> {
   /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
   /// # fn main() {
-  /// # let mut builder = LexerBuilder::with_error();
+  /// # let mut builder = LexerBuilder::new();
   /// // append a single action
-  /// builder.define_with(A, word("A"), |a| a.error(123));
-  /// # let mut builder = LexerBuilder::with_error();
+  /// builder.define_with(A, word("A"), |a| a.reject());
+  /// # let mut builder = LexerBuilder::new();
   /// // append multiple actions
-  /// builder.define_with(A, [word("A"), word("B")], |a| a.error(123));
+  /// builder.define_with(A, [word("A"), word("B")], |a| a.reject());
   /// # }
   /// ```
   #[inline]

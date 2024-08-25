@@ -181,7 +181,8 @@ mod tests {
       LexOptions::new().expect_with(|e| e.literal("a"))
     );
 
-    let options = options.fork();
+    let options: StatelessOptions<(), (), LexOptions<(), ForkEnabled>> =
+      StatelessLexOptions::new().fork();
     assert_eq!(options.start, 0);
     assert_eq!(options.state, ());
     assert_eq!(options.base, LexOptions::new().fork());

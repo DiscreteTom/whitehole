@@ -23,12 +23,12 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
 
   /// Lex from the start of the input text with the default state and options.
   ///
-  /// This function will create a new state and return it.
+  /// This function will create a new state and a new heap and return them.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("1")).build_stateless();
-  /// let (output, state) = stateless.lex("123");
+  /// let (output, state, heap) = stateless.lex("123");
   /// ```
   // TODO: remove `'text` lifetime
   #[inline]
@@ -54,7 +54,8 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// # let mut state = ();
-  /// stateless.lex_with("123", |o| o.state(&mut state));
+  /// # let mut heap = ();
+  /// stateless.lex_with("123", |o| o.state(&mut state).heap(&mut heap));
   /// ```
   #[inline]
   pub fn lex_with<'text, 'state, 'heap, Fork: LexOptionsFork>(
@@ -80,7 +81,8 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessLexOptions};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// # let mut state = ();
-  /// let options = StatelessLexOptions::new().state(&mut state);
+  /// # let mut heap = ();
+  /// let options = StatelessLexOptions::new().state(&mut state).heap(&mut heap);
   /// stateless.lex_with_options("123", options);
   /// ```
   pub fn lex_with_options<'text, Fork: LexOptionsFork>(
@@ -132,7 +134,8 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// # use whitehole::lexer::{action::exact, LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// # let state = ();
-  /// let (output, mutated_state) = stateless.peek_with("123", |o| o.state(&state));
+  /// # let mut heap = ();
+  /// let (output, mutated_state) = stateless.peek_with("123", |o| o.state(&state).heap(&mut heap));
   /// ```
   #[inline]
   pub fn peek_with<'text, 'state, 'heap, Fork: LexOptionsFork>(
@@ -161,7 +164,8 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessLexOptions};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// # let state = ();
-  /// let options = StatelessLexOptions::new().state(&state);
+  /// # let mut heap = ();
+  /// let options = StatelessLexOptions::new().state(&state).heap(&mut heap);
   /// let (output, mutated_state) = stateless.peek_with_options("123", options);
   /// ```
   pub fn peek_with_options<'text, Fork: LexOptionsFork>(

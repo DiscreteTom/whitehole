@@ -38,12 +38,12 @@ impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
   /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
   /// # fn main() {
-  /// # let mut builder = LexerBuilder::with_error();
+  /// # let mut builder = LexerBuilder::new();
   /// // append a single action
-  /// builder.append_with(word("A").bind(A), |a| a.error(123));
-  /// # let mut builder = LexerBuilder::with_error();
+  /// builder.append_with(word("A").bind(A), |a| a.reject());
+  /// # let mut builder = LexerBuilder::new();
   /// // append multiple actions
-  /// builder.append_with([word("A").bind(A), word("B").bind(B)], |a| a.error(123));
+  /// builder.append_with([word("A").bind(A), word("B").bind(B)], |a| a.reject());
   /// # }
   /// ```
   #[inline]
@@ -95,12 +95,12 @@ impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
   /// # #[derive(Clone, Default)]
   /// # enum MyKind { #[default] A }
   /// # fn main() {
-  /// # let mut builder = LexerBuilder::<MyKind, (), _>::with_error();
+  /// # let mut builder: LexerBuilder<MyKind> = LexerBuilder::new();
   /// // append a single action
-  /// builder.append_default_with(word("A"), |a| a.error(123));
-  /// # let mut builder = LexerBuilder::<MyKind, (), _>::with_error();
+  /// builder.append_default_with(word("A"), |a| a.reject());
+  /// # let mut builder: LexerBuilder<MyKind> = LexerBuilder::new();
   /// // append multiple actions
-  /// builder.append_default_with([word("A"), word("B")], |a| a.error(123));
+  /// builder.append_default_with([word("A"), word("B")], |a| a.reject());
   /// # }
   /// ```
   #[inline]
