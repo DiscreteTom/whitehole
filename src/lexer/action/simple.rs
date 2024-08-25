@@ -2,7 +2,6 @@ use super::{input::ActionInput, Action, ActionExec, ActionOutput};
 use crate::lexer::token::{MockTokenKind, SubTokenKind};
 
 /// Accept a function that digests the rest of the input text and returns the number of digested bytes.
-/// You can't modify the [`ActionInput::state`] in this function.
 /// The function should return `0` if the action is rejected.
 ///
 /// It's recommended to set [`Action::head`] to optimize the lex performance.
@@ -15,6 +14,7 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 /// // accept all rest characters
 /// let a: Action<_> = simple(|input| input.rest().len());
 /// ```
+#[inline]
 pub fn simple<State, Heap>(
   f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> usize + 'static,
 ) -> Action<MockTokenKind<()>, State, Heap> {
@@ -36,7 +36,7 @@ pub fn simple<State, Heap>(
 /// Provide a function that digests the rest of the input text and
 /// returns the number of digested bytes and the data.
 /// `0` is ***allowed*** as an accepted number of digested bytes.
-/// Return `None` if the action is rejected.
+/// Return [`None`] if the action is rejected.
 ///
 /// This is useful if you can directly yield the data in the function,
 /// instead of parsing the [`content`](super::AcceptedActionOutputContext::content)
@@ -53,6 +53,7 @@ pub fn simple<State, Heap>(
 /// // accept all rest characters and parse them into an integer
 /// let a: Action<MockTokenKind<i32>> = simple_with_data(|input| Some((input.rest().len(), input.rest().parse().unwrap())));
 /// ```
+#[inline]
 pub fn simple_with_data<State, Heap, T>(
   f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<(usize, T)> + 'static,
 ) -> Action<MockTokenKind<T>, State, Heap> {
