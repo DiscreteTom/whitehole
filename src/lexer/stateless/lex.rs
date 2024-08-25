@@ -30,9 +30,8 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// # let stateless = LexerBuilder::new().append(exact("1")).build_stateless();
   /// let (output, state, heap) = stateless.lex("123");
   /// ```
-  // TODO: remove `'text` lifetime
   #[inline]
-  pub fn lex<'text>(&self, text: &'text str) -> (LexOutput<Token<Kind>, ()>, State, Heap)
+  pub fn lex(&self, text: &str) -> (LexOutput<Token<Kind>, ()>, State, Heap)
   where
     State: Default,
     Heap: Default,
@@ -58,9 +57,9 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// stateless.lex_with("123", |o| o.state(&mut state).heap(&mut heap));
   /// ```
   #[inline]
-  pub fn lex_with<'text, 'state, 'heap, Fork: LexOptionsFork>(
+  pub fn lex_with<'state, 'heap, Fork: LexOptionsFork>(
     &self,
-    text: &'text str,
+    text: &str,
     options_builder: impl FnOnce(
       StatelessLexOptions<Kind, (), (), ()>,
     )
@@ -85,9 +84,9 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// let options = StatelessLexOptions::new().state(&mut state).heap(&mut heap);
   /// stateless.lex_with_options("123", options);
   /// ```
-  pub fn lex_with_options<'text, Fork: LexOptionsFork>(
+  pub fn lex_with_options<Fork: LexOptionsFork>(
     &self,
-    text: &'text str,
+    text: &str,
     options: StatelessLexOptions<Kind, &mut State, &mut Heap, Fork>,
   ) -> LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType> {
     if let Some(literal) = options.base.expectation.literal {
@@ -138,9 +137,9 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// let (output, mutated_state) = stateless.peek_with("123", |o| o.state(&state).heap(&mut heap));
   /// ```
   #[inline]
-  pub fn peek_with<'text, 'state, 'heap, Fork: LexOptionsFork>(
+  pub fn peek_with<'state, 'heap, Fork: LexOptionsFork>(
     &self,
-    text: &'text str,
+    text: &str,
     options_builder: impl FnOnce(
       StatelessLexOptions<Kind, (), (), ()>,
     ) -> StatelessLexOptions<Kind, &'state State, &'heap mut Heap, Fork>,
@@ -168,9 +167,9 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// let options = StatelessLexOptions::new().state(&state).heap(&mut heap);
   /// let (output, mutated_state) = stateless.peek_with_options("123", options);
   /// ```
-  pub fn peek_with_options<'text, Fork: LexOptionsFork>(
+  pub fn peek_with_options<Fork: LexOptionsFork>(
     &self,
-    text: &'text str,
+    text: &str,
     options: StatelessLexOptions<Kind, &State, &mut Heap, Fork>,
   ) -> (
     LexOutput<Token<Kind>, <Fork::OutputFactoryType as ForkOutputFactory>::ForkOutputType>,
@@ -214,13 +213,13 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
     )
   }
 
-  fn lex_with_literal<'text, ForkOutputFactoryType: ForkOutputFactory>(
+  fn lex_with_literal<ForkOutputFactoryType: ForkOutputFactory>(
     &self,
     literal_map: &LiteralMap<Kind, State, Heap>,
     head_map: &HeadMap<Kind, State, Heap>,
     mut digested: usize,
     start: usize,
-    text: &'text str,
+    text: &str,
     state: &mut State,
     heap: &mut Heap,
     literal: &str,
@@ -252,12 +251,12 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
     return done_without_token(digested);
   }
 
-  fn lex_without_literal<'text, ForkOutputFactoryType: ForkOutputFactory>(
+  fn lex_without_literal<ForkOutputFactoryType: ForkOutputFactory>(
     &self,
     head_map: &HeadMap<Kind, State, Heap>,
     mut digested: usize,
     start: usize,
-    text: &'text str,
+    text: &str,
     state: &mut State,
     heap: &mut Heap,
     re_lex: &ReLexContext,
@@ -289,7 +288,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   }
 }
 
-fn done_with_token<'text, Kind, ForkOutputFactoryType: ForkOutputFactory>(
+fn done_with_token<Kind, ForkOutputFactoryType: ForkOutputFactory>(
   digested: usize,
   token: Token<Kind>,
   fork_output_factory: ForkOutputFactoryType,

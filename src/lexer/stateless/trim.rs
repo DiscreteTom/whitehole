@@ -17,7 +17,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// let (output, state, heap) = stateless.trim("123");
   /// ```
   #[inline]
-  pub fn trim<'text>(&self, text: &'text str) -> (TrimOutput, State, Heap)
+  pub fn trim(&self, text: &str) -> (TrimOutput, State, Heap)
   where
     State: Default,
     Heap: Default,
@@ -41,9 +41,9 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// stateless.trim_with("123", |o| o.state(&mut state).heap(&mut heap));
   /// ```
   #[inline]
-  pub fn trim_with<'text, 'state, 'heap>(
+  pub fn trim_with<'state, 'heap>(
     &self,
-    text: &'text str,
+    text: &str,
     options_builder: impl FnOnce(
       StatelessTrimOptions<(), ()>,
     ) -> StatelessTrimOptions<&'state mut State, &'heap mut Heap>,
@@ -65,9 +65,9 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// let options = StatelessTrimOptions::new().state(&mut state).heap(&mut heap);
   /// stateless.trim_with_options("123", options);
   /// ```
-  pub fn trim_with_options<'text>(
+  pub fn trim_with_options(
     &self,
-    text: &'text str,
+    text: &str,
     options: StatelessTrimOptions<&mut State, &mut Heap>,
   ) -> TrimOutput {
     // there is no expectation when trimming, so the fork is meaningless.

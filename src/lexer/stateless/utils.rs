@@ -8,7 +8,7 @@ use crate::lexer::{
 /// Traverse all actions with a mutable input to find the first accepted action.
 /// Return the output, the index of the accepted action and whether the action is muted.
 /// If no accepted action, return [`None`].
-pub(super) fn traverse_actions<'text, Kind, State, Heap>(
+pub(super) fn traverse_actions<Kind, State, Heap>(
   mut input: ActionInput<&mut State, &mut Heap>,
   actions: &RuntimeActions<Kind, State, Heap>,
   re_lex: &ReLexContext,

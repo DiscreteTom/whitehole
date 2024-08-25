@@ -93,7 +93,7 @@ impl<'text, Kind, State, Heap> Lexer<'text, Kind, State, Heap> {
   /// Consume self, return a new lexer with the same actions and a new text.
   /// [`Self::instant`] and [`Self::state`] will be reset to default.
   #[inline]
-  pub fn reload<'new_text>(self, text: &'new_text str) -> Lexer<'new_text, Kind, State, Heap>
+  pub fn reload(self, text: &str) -> Lexer<Kind, State, Heap>
   where
     State: Default,
   {
@@ -102,11 +102,7 @@ impl<'text, Kind, State, Heap> Lexer<'text, Kind, State, Heap> {
 
   /// Consume self, return a new lexer with the same actions, a new text and the given state.
   #[inline]
-  pub fn reload_with<'new_text>(
-    self,
-    text: &'new_text str,
-    state: State,
-  ) -> Lexer<'new_text, Kind, State, Heap> {
+  pub fn reload_with(self, text: &str, state: State) -> Lexer<Kind, State, Heap> {
     Lexer::new(self.stateless, state, self.heap, text)
   }
 

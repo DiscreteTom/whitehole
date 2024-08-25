@@ -122,7 +122,7 @@ impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
 
   /// Alias of [`Self::into_lexer`].
   #[inline]
-  pub fn build<'text>(self, text: &'text str) -> Lexer<'text, Kind, State, Heap>
+  pub fn build(self, text: &str) -> Lexer<Kind, State, Heap>
   where
     State: Default,
     Heap: Default,
