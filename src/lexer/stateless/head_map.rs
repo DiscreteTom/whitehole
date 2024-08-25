@@ -35,7 +35,7 @@ impl<Kind, State, Heap> Clone for RuntimeActions<Kind, State, Heap> {
 
 impl<Kind, State, Heap> RuntimeActions<Kind, State, Heap> {
   #[inline]
-  pub const fn new() -> Self {
+  pub fn new() -> Self {
     Self {
       // in head map maybe every head only has one action, so we don't need to pre-allocate memory
       // TODO: maybe allocate one?
@@ -46,7 +46,7 @@ impl<Kind, State, Heap> RuntimeActions<Kind, State, Heap> {
 
   // getters
   #[inline]
-  pub const fn execs(&self) -> &Vec<RcActionExec<Kind, State, Heap>> {
+  pub fn execs(&self) -> &Vec<RcActionExec<Kind, State, Heap>> {
     &self.execs
   }
   #[inline]

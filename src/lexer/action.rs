@@ -122,13 +122,14 @@ type RawActionExec<Kind, State, Heap> =
   Box<dyn Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<Kind>>>;
 
 /// The [`Action::exec`].
-/// This is a new-type for `Box<dyn Fn(...) -> ...>` and implements [`Debug`]
+/// This is a new-type for the inner type and implements [`Debug`]
 /// so that [`Action`] can be [`Debug`] too.
-pub struct ActionExec<Kind, State, Heap> {
-  pub(crate) raw: RawActionExec<Kind, State, Heap>,
+#[derive(Clone)]
+pub struct ActionExec<Raw> {
+  pub(crate) raw: Raw,
 }
 
-impl<Kind, State, Heap> ActionExec<Kind, State, Heap> {
+impl<Kind, State, Heap> ActionExec<RawActionExec<Kind, State, Heap>> {
   #[inline]
   pub(crate) fn new(
     raw: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<Kind>> + 'static,
@@ -137,7 +138,7 @@ impl<Kind, State, Heap> ActionExec<Kind, State, Heap> {
   }
 }
 
-impl<Kind, State, Heap> Debug for ActionExec<Kind, State, Heap> {
+impl<Raw> Debug for ActionExec<Raw> {
   #[inline]
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     write!(f, "ActionExec(...)")
@@ -146,12 +147,14 @@ impl<Kind, State, Heap> Debug for ActionExec<Kind, State, Heap> {
 
 /// To create this, use [`simple`](simple::simple), [`simple_with_data`](simple::simple_with_data)
 /// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
-pub type Action<Kind, State = (), Heap = ()> = ActionBase<Kind, ActionExec<Kind, State, Heap>>;
+pub type Action<Kind, State = (), Heap = ()> =
+  ActionBase<Kind, ActionExec<RawActionExec<Kind, State, Heap>>>;
 
 /// Action's attributes without [`Action::exec`], wrapped in an [`Rc`].
 pub(super) type RcActionProps<Kind> = Rc<ActionBase<Kind, ()>>;
 /// [`Action::exec`] wrapped in an [`Rc`] to make it clone-able.
-pub(super) type RcActionExec<Kind, State, Heap> = Rc<ActionExec<Kind, State, Heap>>;
+pub(super) type RcActionExec<Kind, State, Heap> =
+  ActionExec<Rc<dyn Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<Kind>>>>;
 
 impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// Break self into two parts and wrap them in [`Rc`].
@@ -165,7 +168,13 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
       muted: self.muted,
       exec: (),
     });
-    (Rc::new(self.exec), props)
+    (
+      // perf: convert Box to Rc, instead of wrap the Box in Rc
+      ActionExec {
+        raw: self.exec.raw.into(),
+      },
+      props,
+    )
   }
 }
 
