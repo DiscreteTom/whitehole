@@ -2,7 +2,7 @@ use super::{
   head_map::{HeadMap, RuntimeActions},
   literal_map::LiteralMap,
   options::StatelessLexOptions,
-  utils::{break_loop_on_none, extract_token},
+  utils::break_loop_on_none,
   StatelessLexer,
 };
 use crate::{
@@ -228,15 +228,18 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   ) -> LexOutput<Token<Kind>, ForkOutputFactoryType::ForkOutputType> {
     loop {
       let input_start = start + digested;
-      let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state, &mut *heap));
+      let mut input =
+        break_loop_on_none!(ActionInput::new(text, input_start, &mut *state, &mut *heap));
       let actions = get_actions_by_literal_map(&input, literal, literal_map, head_map);
-      let res = traverse_actions(input, actions, re_lex);
+      let res = traverse_actions(&mut input, actions, re_lex);
       let (output, action_index, muted) = break_loop_on_none!(res);
 
-      if let Some(token) = process_output(output, muted, input_start, &mut digested) {
+      digested += output.digested;
+
+      if !muted {
         return done_with_token(
           digested,
-          token,
+          create_token(input, output),
           fork_output_factory,
           input_start,
           actions.len(),
@@ -264,15 +267,18 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   ) -> LexOutput<Token<Kind>, ForkOutputFactoryType::ForkOutputType> {
     loop {
       let input_start = start + digested;
-      let input = break_loop_on_none!(ActionInput::new(text, input_start, &mut *state, &mut *heap));
+      let mut input =
+        break_loop_on_none!(ActionInput::new(text, input_start, &mut *state, &mut *heap));
       let actions = head_map.get(input.next());
-      let res = traverse_actions(input, actions, re_lex);
+      let res = traverse_actions(&mut input, actions, re_lex);
       let (output, action_index, muted) = break_loop_on_none!(res);
 
-      if let Some(token) = process_output(output, muted, input_start, &mut digested) {
+      digested += output.digested;
+
+      if !muted {
         return done_with_token(
           digested,
-          token,
+          create_token(input, output),
           fork_output_factory,
           input_start,
           actions.len(),
@@ -285,6 +291,17 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
 
     // no more input or no accepted actions
     return done_without_token(digested);
+  }
+}
+
+fn create_token<Kind, State, Heap>(
+  input: ActionInput<&mut State, &mut Heap>,
+  output: ActionOutput<Kind>,
+) -> Token<Kind> {
+  Token {
+    binding: output.binding,
+    // user is responsible to ensure the digested length is valid
+    range: input.range_unchecked(output.digested),
   }
 }
 
@@ -319,18 +336,6 @@ fn get_actions_by_literal_map<'this, Kind, State, Heap>(
     }
   }
   .get(input.next())
-}
-
-/// Process the output, update the digested, collect errors, and emit token if not muted.
-/// Return the token if not muted, otherwise return [`None`].
-fn process_output<Kind>(
-  output: ActionOutput<Kind>,
-  muted: bool,
-  start: usize,
-  digested: &mut usize,
-) -> Option<Token<Kind>> {
-  *digested += output.digested;
-  extract_token(output.binding, output.digested, muted, start)
 }
 
 #[inline]

@@ -1,3 +1,5 @@
+use crate::lexer::token::Range;
+
 #[derive(Debug)]
 pub struct ActionInput<'text, StateRef, HeapRef> {
   /// This is often `&mut State`.
@@ -87,6 +89,33 @@ impl<'text, StateRef, HeapRef> ActionInput<'text, StateRef, HeapRef> {
   #[inline]
   pub const fn next(&self) -> char {
     self.next
+  }
+
+  /// A helper method to create a [`Range`] from [`Self::start`](Self::start) and
+  /// the `digested` length.
+  /// # Safety
+  /// This method won't check if the `digested` length is
+  /// greater than the length of [`Self::rest`].
+  /// For a safer version, use [`Self::range`].
+  #[inline]
+  pub const fn range_unchecked(&self, digested: usize) -> Range {
+    Range {
+      start: self.start,
+      end: self.start + digested,
+    }
+  }
+
+  /// A helper method to create a [`Range`] from [`Self::start`](Self::start) and
+  /// the `digested` length.
+  ///
+  /// Return [`None`] if the `digested` length is greater than the length of [`Self::rest`].
+  #[inline]
+  pub const fn range(&self, digested: usize) -> Option<Range> {
+    if digested > self.rest.len() {
+      None
+    } else {
+      Some(self.range_unchecked(digested))
+    }
   }
 }
 

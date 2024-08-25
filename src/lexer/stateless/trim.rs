@@ -78,7 +78,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
 
     loop {
       let input_start = options.start + digested;
-      let input = break_loop_on_none!(ActionInput::new(
+      let mut input = break_loop_on_none!(ActionInput::new(
         text,
         input_start,
         &mut *options.state,
@@ -86,7 +86,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
       ));
       // the literal map's muted map contains all the muted actions
       let actions = self.literal_map.muted_map().get(input.next());
-      let res = traverse_actions(input, actions, &re_lex);
+      let res = traverse_actions(&mut input, actions, &re_lex);
       let (output, _action_index, muted) = break_loop_on_none!(res);
 
       debug_assert!(muted, "all actions should be muted when trimming");

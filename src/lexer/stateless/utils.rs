@@ -2,14 +2,13 @@ use super::head_map::RuntimeActions;
 use crate::lexer::{
   action::{ActionInput, ActionOutput},
   re_lex::ReLexContext,
-  token::{Range, Token, TokenKindIdBinding},
 };
 
 /// Traverse all actions with a mutable input to find the first accepted action.
 /// Return the output, the index of the accepted action and whether the action is muted.
 /// If no accepted action, return [`None`].
 pub(super) fn traverse_actions<Kind, State, Heap>(
-  mut input: ActionInput<&mut State, &mut Heap>,
+  input: &mut ActionInput<&mut State, &mut Heap>,
   actions: &RuntimeActions<Kind, State, Heap>,
   re_lex: &ReLexContext,
 ) -> Option<(ActionOutput<Kind>, usize, bool)> {
@@ -24,7 +23,7 @@ pub(super) fn traverse_actions<Kind, State, Heap>(
       0
     })
   {
-    if let Some(output) = (exec.raw)(&mut input) {
+    if let Some(output) = (exec.raw)(input) {
       debug_assert!(output.digested <= input.rest().len());
       // return once accepted action is found
       return Some((output, i, unsafe {
@@ -37,38 +36,6 @@ pub(super) fn traverse_actions<Kind, State, Heap>(
 
   // no accepted action
   None
-}
-
-/// Return the token if not muted, otherwise return [`None`].
-#[inline]
-pub(super) fn extract_token<Kind>(
-  binding: TokenKindIdBinding<Kind>,
-  output_digested: usize,
-  muted: bool,
-  start: usize,
-) -> Option<Token<Kind>> {
-  // if not muted, emit token
-  (!muted).then(|| create_token(binding, start, output_digested))
-}
-
-#[inline]
-const fn create_token<Kind>(
-  binding: TokenKindIdBinding<Kind>,
-  start: usize,
-  digested: usize,
-) -> Token<Kind> {
-  Token {
-    binding,
-    range: create_range(start, digested),
-  }
-}
-
-#[inline]
-const fn create_range(start: usize, digested: usize) -> Range {
-  Range {
-    start,
-    end: start + digested,
-  }
 }
 
 macro_rules! break_loop_on_none {
