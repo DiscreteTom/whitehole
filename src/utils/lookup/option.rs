@@ -1,9 +1,24 @@
 use super::lookup::Lookup;
+use std::fmt::{self, Debug};
 
 /// A lookup table that not all keys are used.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub(crate) struct OptionLookupTable<V> {
   data: Vec<Option<V>>,
+}
+
+impl<V: Debug> Debug for OptionLookupTable<V> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.debug_map()
+      .entries(
+        self
+          .data
+          .iter()
+          .enumerate()
+          .filter_map(|(i, v)| v.as_ref().map(|v| (i, v))),
+      )
+      .finish()
+  }
 }
 
 impl<V> OptionLookupTable<V> {
@@ -114,5 +129,16 @@ mod tests {
       assert_eq!(table.get(0), Some(&3));
       assert_eq!(table.get(2), Some(&4));
     }
+  }
+
+  #[test]
+  fn test_option_lookup_table_debug() {
+    let mut table = OptionLookupTable::new(3);
+    unsafe {
+      *table.get_option_unchecked_mut(0) = Some(1);
+      *table.get_option_unchecked_mut(2) = Some(2);
+    }
+
+    assert_eq!(format!("{:?}", table), "{0: 1, 2: 2}");
   }
 }
