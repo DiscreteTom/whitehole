@@ -26,6 +26,11 @@ impl<Table: Lookup> Lookup for OffsetLookupTable<Table> {
     }
   }
 
+  #[inline]
+  fn len(&self) -> usize {
+    self.offset + self.table.len()
+  }
+
   /// Return the mutable reference to the value associated with the key.
   /// # Safety
   /// This method is unsafe because it doesn't check whether the key is out of range

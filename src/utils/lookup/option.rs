@@ -94,6 +94,11 @@ impl<V> Lookup for OptionLookupTable<V> {
   }
 
   #[inline]
+  fn len(&self) -> usize {
+    self.data.len()
+  }
+
+  #[inline]
   unsafe fn get_unchecked_mut(&mut self, key: usize) -> &mut Self::Value {
     self
       .get_option_unchecked_mut(key)
