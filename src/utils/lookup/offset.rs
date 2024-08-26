@@ -9,7 +9,8 @@ pub(crate) struct OffsetLookupTable<Table> {
 }
 
 impl<Table> OffsetLookupTable<Table> {
-  pub fn new(offset: usize, table: Table) -> Self {
+  #[inline]
+  pub const fn new(offset: usize, table: Table) -> Self {
     Self { offset, table }
   }
 }
