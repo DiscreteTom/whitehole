@@ -1,7 +1,7 @@
 use crate::{
   lexer::action::{HeadMatcher, RcActionExec, RcActionProps},
   utils::lookup::{
-    char::{CharLookupTable, CharLookupTableBuilder},
+    char::{SparseCharLookupTable, SparseCharLookupTableBuilder},
     lookup::Lookup,
   },
 };
@@ -69,7 +69,7 @@ impl<Kind, State, Heap> RuntimeActions<Kind, State, Heap> {
 #[derive(Debug)]
 pub(super) struct HeadMap<Kind, State, Heap> {
   /// Store actions for known chars.
-  known_map: CharLookupTable<RuntimeActions<Kind, State, Heap>>,
+  known_map: SparseCharLookupTable<RuntimeActions<Kind, State, Heap>>,
   /// Store actions for unknown chars.
   unknown_fallback: RuntimeActions<Kind, State, Heap>,
 }
@@ -78,7 +78,7 @@ pub(super) struct HeadMap<Kind, State, Heap> {
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`HeadMap::new`].
 pub(super) struct KnownHeadChars<Kind, State, Heap>(
-  CharLookupTableBuilder<RuntimeActions<Kind, State, Heap>>,
+  SparseCharLookupTableBuilder<RuntimeActions<Kind, State, Heap>>,
 );
 
 impl<Kind, State, Heap> Clone for KnownHeadChars<Kind, State, Heap> {
@@ -109,7 +109,7 @@ impl<Kind, State, Heap> HeadMap<Kind, State, Heap> {
       }
     }
 
-    KnownHeadChars(CharLookupTableBuilder::new(&known_chars))
+    KnownHeadChars(SparseCharLookupTableBuilder::new(known_chars))
   }
 
   /// Create a new instance with a subset of actions and a known char map created by [`Self::collect_all_known`].
