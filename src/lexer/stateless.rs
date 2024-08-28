@@ -142,8 +142,8 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
 
     Self {
       kind_head_map: kinds_action_map
-        .map(|(execs, props)| HeadMap::new(execs, props, known_head_chars.clone())),
-      kind_literal_map: kinds_action_map.map(|(execs, props)| {
+        .map_ref(|(execs, props)| HeadMap::new(execs, props, known_head_chars.clone())),
+      kind_literal_map: kinds_action_map.map_ref(|(execs, props)| {
         LiteralMap::new(execs, props, known_literals.clone(), &known_head_chars)
       }),
       literal_map: LiteralMap::new(&execs, &props, known_literals, &known_head_chars),

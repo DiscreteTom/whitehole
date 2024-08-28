@@ -9,6 +9,7 @@ pub(crate) struct OptionLookupTable<V> {
 
 impl<V: Debug> Debug for OptionLookupTable<V> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    // format as a map instead of a list
     f.debug_map()
       .entries(
         self
@@ -68,7 +69,8 @@ impl<V> OptionLookupTable<V> {
     self.data.get_unchecked_mut(key)
   }
 
-  pub fn map<R>(&self, mapper: impl Fn(&V) -> R) -> OptionLookupTable<R> {
+  /// Map the values to another type and return a new instance.
+  pub fn map_ref<R>(&self, mapper: impl Fn(&V) -> R) -> OptionLookupTable<R> {
     OptionLookupTable {
       data: self
         .data
@@ -78,6 +80,7 @@ impl<V> OptionLookupTable<V> {
     }
   }
 
+  /// Apply the function to each value.
   pub fn for_each_value_mut(&mut self, mut f: impl FnMut(&mut V)) {
     for v in &mut self.data {
       v.as_mut().map(|v| f(v));
