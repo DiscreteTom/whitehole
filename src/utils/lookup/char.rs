@@ -134,21 +134,20 @@ impl<V> SparseCharLookupTableBuilder<V> {
     let mut keys = Vec::with_capacity(raw_keys.len());
 
     // SAFETY: `raw_keys` is not empty, so `get(0)` is safe to be unchecked
-    let mut last = *unsafe { raw_keys.get_unchecked(0) };
-    let mut start = 0;
+    let mut last_traversed_char = *unsafe { raw_keys.get_unchecked(0) };
+    let mut next_cluster_start_idx = 0;
     for (i, c) in raw_keys.iter().enumerate() {
-      if (*c as usize) - (last as usize) > 128 {
-        // SAFETY: `start..i` is guaranteed to be in the range of `0..raw_keys.len()`.
-        let slice = unsafe { raw_keys.get_unchecked(start..i) };
+      if (*c as usize) - (last_traversed_char as usize) > 128 {
+        // SAFETY: `next_cluster_start_idx..i` is guaranteed to be in the range of `0..raw_keys.len()`.
+        let slice = unsafe { raw_keys.get_unchecked(next_cluster_start_idx..i) };
         tables.push(Self::new_char_lookup_table(slice, &mut keys));
-
-        last = *c; // TODO: this should be out of `if`
-        start = i;
+        next_cluster_start_idx = i;
       }
+      last_traversed_char = *c;
     }
     // the last table
-    // SAFETY: `start..` is guaranteed to be in the range of `0..raw_keys.len()`.
-    let slice = unsafe { raw_keys.get_unchecked(start..) };
+    // SAFETY: `next_cluster_start_idx..` is guaranteed to be in the range of `0..raw_keys.len()`.
+    let slice = unsafe { raw_keys.get_unchecked(next_cluster_start_idx..) };
     tables.push(Self::new_char_lookup_table(slice, &mut keys));
 
     Self {
