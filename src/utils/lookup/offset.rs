@@ -1,7 +1,8 @@
 use super::lookup::Lookup;
 
-/// A lookup table wrapper that treat the first `n` values as empty.
+/// A lookup table wrapper that won't allocate for the first `n` values to save memory.
 /// This will record the offset `n` and prevent access to the first `n` values.
+/// This is useful if your lookup table is sparse and not starting from 0.
 #[derive(Debug, Clone)]
 pub(crate) struct OffsetLookupTable<Table> {
   offset: usize,
@@ -9,17 +10,20 @@ pub(crate) struct OffsetLookupTable<Table> {
 }
 
 impl<Table> OffsetLookupTable<Table> {
+  /// Create a new instance with the given offset and table.
   #[inline]
   pub const fn new(offset: usize, table: Table) -> Self {
     Self { offset, table }
   }
 }
+// TODO: impl additional methods for OffsetLookupTable<OptionLookupTable>, e.g. `with_keys`?
 
 impl<Table: Lookup> Lookup for OffsetLookupTable<Table> {
   type Value = Table::Value;
 
   #[inline]
   fn get(&self, key: usize) -> Option<&Self::Value> {
+    // check key first to prevent underflow
     if key < self.offset {
       None
     } else {
@@ -29,6 +33,7 @@ impl<Table: Lookup> Lookup for OffsetLookupTable<Table> {
 
   #[inline]
   fn len(&self) -> usize {
+    // the first `n` values are not accessible but still counted
     self.offset + self.table.len()
   }
 

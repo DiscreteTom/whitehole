@@ -6,8 +6,31 @@ use std::hint::unreachable_unchecked;
 /// to wrap the [`OptionLookupTable`] to reduce memory usage.
 pub(crate) type CharLookupTable<V> = OffsetLookupTable<OptionLookupTable<V>>;
 
+/// In a lexer the range of known characters may be sparse.
+/// E.g. in rust the smallest whitespace character is `0x0009` and the largest is `0x2029`.
+/// If you use the [`CharLookupTable`] directly, it will allocate a lot of memory for unused characters.
+///
+/// However, known characters are usually clustered in smaller ranges.
+/// E.g. in rust, whitespace characters can be divided into two ranges: `0x0009..=0x0085` and `0x200E..=0x2029`.
+/// If we store each range in a separate [`CharLookupTable`], we can save a lot of memory
+/// and speed up the building process.
+///
+/// In this struct we will split known characters into multiple [`CharLookupTable`]s.
+/// Currently the algorithm is simple: sort all known characters and traverse them
+/// (we don't even need to deduplicate them),
+/// if the difference between two adjacent characters is greater than 128,
+/// we split the before and after characters into two clusters.
+///
+/// Why 128? That's the range of ASCII characters, so we can ensure that
+/// ASCII characters are stored in the same [`CharLookupTable`], and if the known characters only
+/// contain ASCII characters, we only need one [`CharLookupTable`].
 #[derive(Debug, Clone)]
 pub(crate) struct SparseCharLookupTable<V> {
+  /// The lookup tables for each cluster of characters.
+  /// The clusters are ordered by its character range, from small to large,
+  /// no overlap between clusters.
+  ///
+  /// E.g. `[0x0009..=0x0085, 0x200E..=0x2029]`.
   tables: Vec<CharLookupTable<V>>,
 }
 
@@ -16,6 +39,7 @@ impl<V> Lookup for SparseCharLookupTable<V> {
 
   #[inline]
   fn get(&self, key: usize) -> Option<&Self::Value> {
+    // TODO: do we need binary search here?
     for table in &self.tables {
       if key < table.len() {
         return table.get(key);
@@ -29,8 +53,15 @@ impl<V> Lookup for SparseCharLookupTable<V> {
     self.tables.last().map_or(0, |table| table.len())
   }
 
+  /// Return the mutable reference to the value associated with the key.
+  /// # Safety
+  /// This method is unsafe because it doesn't check whether the key is out of range
+  /// or not found.
+  /// # Panics
+  /// Panics if the key is smaller than the minimum present key.
   #[inline]
   unsafe fn get_unchecked_mut(&mut self, key: usize) -> &mut Self::Value {
+    // TODO: do we need binary search here?
     for table in &mut self.tables {
       if key < table.len() {
         return table.get_unchecked_mut(key);
@@ -44,16 +75,18 @@ impl<V> Lookup for SparseCharLookupTable<V> {
 pub(crate) struct SparseCharLookupTableBuilder<V> {
   table: SparseCharLookupTable<V>,
   /// Deduplicated keys, ordered.
-  keys: Vec<char>,
+  keys: Vec<char>, // TODO: store in a `Vec<Vec<char>>`, prevent using `get` in `for_each` to optimize performance.
 }
 
 impl<V> SparseCharLookupTableBuilder<V> {
-  /// Caveats
+  /// # Caveats
   /// The caller must ensure that `raw_keys` is sorted and not empty.
   fn new_char_lookup_table(raw_keys: &[char], keys: &mut Vec<char>) -> CharLookupTable<V>
   where
     V: Default,
   {
+    // TODO: add debug_assert
+
     // SAFETY: `raw_keys` is not empty, so `min` and `max` are safe to be unchecked
     let min = *unsafe { raw_keys.get_unchecked(0) } as usize;
     let max = *unsafe { raw_keys.get_unchecked(raw_keys.len() - 1) } as usize;
@@ -65,7 +98,8 @@ impl<V> SparseCharLookupTableBuilder<V> {
       let d = unsafe { table.get_option_unchecked_mut(*k as usize - min) };
       if d.is_none() {
         *d = Some(V::default());
-        keys.push(*k); // keys are ensured to be unique/deduplicated.
+        // by doing this, keys are ensured to be unique/deduplicated.
+        keys.push(*k);
       }
     }
 
@@ -87,7 +121,7 @@ impl<V> SparseCharLookupTableBuilder<V> {
 
     raw_keys.sort();
 
-    // there will be at least one table
+    // there will be at least one table, so pre-allocate memory for it.
     let mut tables = Vec::with_capacity(1);
     // pre-allocate memory for keys with the same size as `raw_keys`. (assume no duplicated keys)
     // `keys.len()` will be less than or equal to `raw_keys.len()`.
@@ -95,19 +129,21 @@ impl<V> SparseCharLookupTableBuilder<V> {
     // if the keys are sparse.
     let mut keys = Vec::with_capacity(raw_keys.len());
 
-    // SAFETY: `raw_keys` is not empty, so `last` is safe to be unchecked
+    // SAFETY: `raw_keys` is not empty, so `get(0)` is safe to be unchecked
     let mut last = *unsafe { raw_keys.get_unchecked(0) };
     let mut start = 0;
     for (i, c) in raw_keys.iter().enumerate() {
       if (*c as usize) - (last as usize) > 128 {
+        // SAFETY: `start..i` is guaranteed to be in the range of `0..raw_keys.len()`.
         let slice = unsafe { raw_keys.get_unchecked(start..i) };
         tables.push(Self::new_char_lookup_table(slice, &mut keys));
 
-        last = *c;
+        last = *c; // TODO: this should be out of `if`
         start = i;
       }
     }
     // the last table
+    // SAFETY: `start..` is guaranteed to be in the range of `0..raw_keys.len()`.
     let slice = unsafe { raw_keys.get_unchecked(start..) };
     tables.push(Self::new_char_lookup_table(slice, &mut keys));
 
@@ -118,10 +154,11 @@ impl<V> SparseCharLookupTableBuilder<V> {
   }
 
   /// Apply the function to each entry in the lookup table.
-  /// The traversal is unordered.
+  /// The traversal is ordered.
   pub fn for_each_entry_mut(&mut self, mut f: impl FnMut(char, &mut V)) {
     for k in &self.keys {
       // SAFETY: `k` is guaranteed to be a key of `self.table`
+      // TODO: don't use `SparseCharLookupTable::get_unchecked_mut` here, access its `tables` directly.
       let d = unsafe { self.table.get_unchecked_mut(*k as usize) };
       f(*k, d);
     }
