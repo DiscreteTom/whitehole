@@ -91,7 +91,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
     let mut digested = 0;
 
     macro_rules! lex_with_actions {
-      ($actions_getter:ident) => {
+      ($actions_getter:ident, $output_validator:ident) => {
         loop {
           let mut input =
             prepare_input!(options.start, digested, text, options.state, options.heap);
@@ -99,6 +99,8 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
           let (output, action_index, muted) = lex!(input, actions, &options.base.re_lex, digested);
 
           if !muted {
+            $output_validator!(output);
+
             return done_with_token(
               digested,
               create_token(&input, output),
@@ -117,6 +119,17 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
       };
     }
 
+    macro_rules! validate_expected_kind {
+      ($output:expr) => {
+        debug_assert!(options
+          .base
+          .expectation
+          .kind
+          .map(|id| id == $output.binding.id())
+          .unwrap_or(true));
+      };
+    }
+
     if let Some(literal) = options.base.expectation.literal {
       let (literal_map, head_map) =
         self.get_literal_head_map(options.base.expectation.kind, literal);
@@ -127,7 +140,20 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
         };
       }
 
-      lex_with_actions!(actions_getter_with_literal);
+      macro_rules! validate_expected_kind_and_literal {
+        ($output:expr) => {
+          // we've already checked if the `input.rest()` starts with the `literal`
+          // in `get_actions_by_literal_map`
+          // so we only need to check whether the digested length is right
+          debug_assert_eq!($output.digested, literal.len());
+          validate_expected_kind!($output);
+        };
+      }
+
+      lex_with_actions!(
+        actions_getter_with_literal,
+        validate_expected_kind_and_literal
+      );
     } else {
       // else, no expected literal
       let head_map = self.get_kind_head_map(options.base.expectation.kind);
@@ -138,7 +164,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
         };
       }
 
-      lex_with_actions!(actions_getter_without_literal);
+      lex_with_actions!(actions_getter_without_literal, validate_expected_kind);
     }
   }
 
