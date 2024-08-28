@@ -57,6 +57,8 @@ impl<V> Lookup for SparseCharLookupTable<V> {
   /// # Safety
   /// This method is unsafe because it doesn't check whether the key is out of range
   /// or not found.
+  ///
+  /// [`debug_assert`] is used to check if the key is in range and valid.
   /// # Panics
   /// Panics if the key is smaller than the minimum present key.
   #[inline]
@@ -67,6 +69,7 @@ impl<V> Lookup for SparseCharLookupTable<V> {
         return table.get_unchecked_mut(key);
       }
     }
+    debug_assert!(false, "key is out of range");
     unreachable_unchecked()
   }
 }
@@ -85,7 +88,8 @@ impl<V> SparseCharLookupTableBuilder<V> {
   where
     V: Default,
   {
-    // TODO: add debug_assert
+    debug_assert!(raw_keys.len() > 0);
+    debug_assert!(raw_keys.windows(2).all(|w| w[0] <= w[1]));
 
     // SAFETY: `raw_keys` is not empty, so `min` and `max` are safe to be unchecked
     let min = *unsafe { raw_keys.get_unchecked(0) } as usize;

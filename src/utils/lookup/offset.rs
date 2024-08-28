@@ -41,10 +41,13 @@ impl<Table: Lookup> Lookup for OffsetLookupTable<Table> {
   /// # Safety
   /// This method is unsafe because it doesn't check whether the key is out of range
   /// or not found.
+  ///
+  /// [`debug_assert`] is used to check if the key is in range and valid.
   /// # Panics
   /// Panics if the key is smaller than [`Self::offset`].
   #[inline]
   unsafe fn get_unchecked_mut(&mut self, key: usize) -> &mut Self::Value {
+    debug_assert!(key >= self.offset);
     self.table.get_unchecked_mut(key - self.offset)
   }
 }

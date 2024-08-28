@@ -66,6 +66,7 @@ impl<V> OptionLookupTable<V> {
   /// or not found.
   #[inline]
   pub unsafe fn get_option_unchecked_mut(&mut self, key: usize) -> &mut Option<V> {
+    debug_assert!(key < self.data.len());
     self.data.get_unchecked_mut(key)
   }
 
@@ -103,10 +104,9 @@ impl<V> Lookup for OptionLookupTable<V> {
 
   #[inline]
   unsafe fn get_unchecked_mut(&mut self, key: usize) -> &mut Self::Value {
-    self
-      .get_option_unchecked_mut(key)
-      .as_mut()
-      .unwrap_unchecked()
+    let v = self.get_option_unchecked_mut(key).as_mut();
+    debug_assert!(v.is_some());
+    v.unwrap_unchecked()
   }
 }
 
