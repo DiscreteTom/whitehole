@@ -78,18 +78,25 @@ impl<V> Lookup for SparseCharLookupTable<V> {
 pub(crate) struct SparseCharLookupTableBuilder<V> {
   table: SparseCharLookupTable<V>,
   /// Deduplicated keys, ordered.
-  keys: Vec<char>, // TODO: store in a `Vec<Vec<char>>`, prevent using `get` in `for_each` to optimize performance.
+  /// One [`Vec`] for each cluster of characters.
+  keys: Vec<Vec<char>>,
 }
 
 impl<V> SparseCharLookupTableBuilder<V> {
   /// # Caveats
   /// The caller must ensure that `raw_keys` is sorted and not empty.
-  fn new_char_lookup_table(raw_keys: &[char], keys: &mut Vec<char>) -> CharLookupTable<V>
+  fn new_char_lookup_table(raw_keys: &[char]) -> (CharLookupTable<V>, Vec<char>)
   where
     V: Default,
   {
     debug_assert!(raw_keys.len() > 0);
     debug_assert!(raw_keys.windows(2).all(|w| w[0] <= w[1]));
+
+    // pre-allocate memory for keys with the same size as `raw_keys`. (assume no duplicated keys)
+    // `keys.len()` will be less than or equal to `raw_keys.len()`.
+    // don't use `size` as the capacity because it may be much larger than `raw_keys.len()`
+    // if the keys are sparse.
+    let mut keys = Vec::with_capacity(raw_keys.len());
 
     // SAFETY: `raw_keys` is not empty, so `min` and `max` are safe to be unchecked
     let min = *unsafe { raw_keys.get_unchecked(0) } as usize;
@@ -102,12 +109,12 @@ impl<V> SparseCharLookupTableBuilder<V> {
       let d = unsafe { table.get_option_unchecked_mut(*k as usize - min) };
       if d.is_none() {
         *d = Some(V::default());
-        // by doing this, keys are ensured to be unique/deduplicated.
+        // by doing this, keys are ensured to be unique/deduplicated and ordered.
         keys.push(*k);
       }
     }
 
-    CharLookupTable::new(min, table)
+    (CharLookupTable::new(min, table), keys)
   }
 
   /// Create a new instance with the given keys.
@@ -127,11 +134,7 @@ impl<V> SparseCharLookupTableBuilder<V> {
 
     // there will be at least one table, so pre-allocate memory for it.
     let mut tables = Vec::with_capacity(1);
-    // pre-allocate memory for keys with the same size as `raw_keys`. (assume no duplicated keys)
-    // `keys.len()` will be less than or equal to `raw_keys.len()`.
-    // don't use `size` as the capacity because it may be much larger than `raw_keys.len()`
-    // if the keys are sparse.
-    let mut keys = Vec::with_capacity(raw_keys.len());
+    let mut keys = Vec::with_capacity(1);
 
     // SAFETY: `raw_keys` is not empty, so `get(0)` is safe to be unchecked
     let mut last_traversed_char = *unsafe { raw_keys.get_unchecked(0) };
@@ -140,15 +143,20 @@ impl<V> SparseCharLookupTableBuilder<V> {
       if (*c as usize) - (last_traversed_char as usize) > 128 {
         // SAFETY: `next_cluster_start_idx..i` is guaranteed to be in the range of `0..raw_keys.len()`.
         let slice = unsafe { raw_keys.get_unchecked(next_cluster_start_idx..i) };
-        tables.push(Self::new_char_lookup_table(slice, &mut keys));
+        let (table, ks) = Self::new_char_lookup_table(slice);
+        tables.push(table);
+        keys.push(ks);
         next_cluster_start_idx = i;
       }
+      // TODO: add a test to ensure the clustering is right
       last_traversed_char = *c;
     }
     // the last table
     // SAFETY: `next_cluster_start_idx..` is guaranteed to be in the range of `0..raw_keys.len()`.
     let slice = unsafe { raw_keys.get_unchecked(next_cluster_start_idx..) };
-    tables.push(Self::new_char_lookup_table(slice, &mut keys));
+    let (table, ks) = Self::new_char_lookup_table(slice);
+    tables.push(table);
+    keys.push(ks);
 
     Self {
       keys,
@@ -159,11 +167,12 @@ impl<V> SparseCharLookupTableBuilder<V> {
   /// Apply the function to each entry in the lookup table.
   /// The traversal is ordered.
   pub fn for_each_entry_mut(&mut self, mut f: impl FnMut(char, &mut V)) {
-    for k in &self.keys {
-      // SAFETY: `k` is guaranteed to be a key of `self.table`
-      // TODO: don't use `SparseCharLookupTable::get_unchecked_mut` here, access its `tables` directly.
-      let d = unsafe { self.table.get_unchecked_mut(*k as usize) };
-      f(*k, d);
+    for (keys, table) in self.keys.iter().zip(self.table.tables.iter_mut()) {
+      for k in keys {
+        // SAFETY: `k` is guaranteed to be a key of `table`
+        let d = unsafe { table.get_unchecked_mut(*k as usize) };
+        f(*k, d);
+      }
     }
   }
 
