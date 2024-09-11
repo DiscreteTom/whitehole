@@ -70,6 +70,19 @@ impl<V> OptionLookupTable<V> {
     self.data.get_unchecked_mut(key)
   }
 
+  /// Return the mutable reference to the value associated with the key.
+  /// # Safety
+  /// This method is unsafe because it doesn't check whether the key is out of range
+  /// or not found.
+  ///
+  /// [`debug_assert`] is used to check if the key is in range and valid.
+  #[inline]
+  pub unsafe fn get_unchecked_mut(&mut self, key: usize) -> &mut V {
+    let v = self.get_option_unchecked_mut(key).as_mut();
+    debug_assert!(v.is_some());
+    v.unwrap_unchecked()
+  }
+
   /// Map the values to another type and return a new instance.
   pub fn map_ref<R>(&self, mapper: impl Fn(&V) -> R) -> OptionLookupTable<R> {
     OptionLookupTable {
@@ -100,13 +113,6 @@ impl<V> Lookup for OptionLookupTable<V> {
   #[inline]
   fn len(&self) -> usize {
     self.data.len()
-  }
-
-  #[inline]
-  unsafe fn get_unchecked_mut(&mut self, key: usize) -> &mut Self::Value {
-    let v = self.get_option_unchecked_mut(key).as_mut();
-    debug_assert!(v.is_some());
-    v.unwrap_unchecked()
   }
 }
 

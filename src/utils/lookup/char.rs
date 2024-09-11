@@ -34,6 +34,28 @@ pub(crate) struct SparseCharLookupTable<V> {
   tables: Vec<CharLookupTable<V>>,
 }
 
+impl<V> SparseCharLookupTable<V> {
+  /// Return the mutable reference to the value associated with the key.
+  /// # Safety
+  /// This method is unsafe because it doesn't check whether the key is out of range
+  /// or not found.
+  ///
+  /// [`debug_assert`] is used to check if the key is in range and valid.
+  /// # Panics
+  /// Panics if the key is smaller than the minimum present key.
+  #[inline]
+  pub unsafe fn get_unchecked_mut(&mut self, key: usize) -> &mut V {
+    // TODO: do we need binary search here?
+    for table in &mut self.tables {
+      if key < table.len() {
+        return table.get_unchecked_mut(key);
+      }
+    }
+    debug_assert!(false, "key is out of range");
+    unreachable_unchecked()
+  }
+}
+
 impl<V> Lookup for SparseCharLookupTable<V> {
   type Value = V;
 
@@ -51,26 +73,6 @@ impl<V> Lookup for SparseCharLookupTable<V> {
   #[inline]
   fn len(&self) -> usize {
     self.tables.last().map_or(0, |table| table.len())
-  }
-
-  /// Return the mutable reference to the value associated with the key.
-  /// # Safety
-  /// This method is unsafe because it doesn't check whether the key is out of range
-  /// or not found.
-  ///
-  /// [`debug_assert`] is used to check if the key is in range and valid.
-  /// # Panics
-  /// Panics if the key is smaller than the minimum present key.
-  #[inline]
-  unsafe fn get_unchecked_mut(&mut self, key: usize) -> &mut Self::Value {
-    // TODO: do we need binary search here?
-    for table in &mut self.tables {
-      if key < table.len() {
-        return table.get_unchecked_mut(key);
-      }
-    }
-    debug_assert!(false, "key is out of range");
-    unreachable_unchecked()
   }
 }
 
