@@ -38,7 +38,7 @@ impl<V> OptionLookupTable<V> {
   /// We use a key slice as the parameter, so the caller
   /// doesn't need to deduplicate keys
   /// (checking duplication in a lookup table is often more efficient).
-  pub fn with_keys<Item>(
+  pub fn with_keys_complex<Item>(
     items: &[Item],
     calc_key: impl Fn(&Item) -> usize,
     factory: impl Fn() -> V,
@@ -61,6 +61,27 @@ impl<V> OptionLookupTable<V> {
       if d.is_none() {
         *d = Some(factory());
         on_unique_key(i);
+      }
+    }
+
+    res
+  }
+
+  pub fn with_keys(keys: impl Iterator<Item = usize> + Clone, factory: impl Fn() -> V) -> Self {
+    let size = keys
+      .clone()
+      .max()
+      // size = max + 1
+      .map(|v| v + 1)
+      // if the slice is empty, the size is 0
+      .unwrap_or(0);
+    let mut res = Self::new(size);
+
+    for k in keys {
+      // SAFETY: `k` is guaranteed to be in the range of `0..size`.
+      let d = unsafe { res.get_option_unchecked_mut(k) };
+      if d.is_none() {
+        *d = Some(factory());
       }
     }
 

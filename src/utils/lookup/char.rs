@@ -102,7 +102,7 @@ impl<V> SparseCharLookupTableBuilder<V> {
 
     // SAFETY: `raw_keys` is not empty, so `min` and `max` are safe to be unchecked
     let min = *unsafe { raw_keys.get_unchecked(0) } as usize;
-    let table = OptionLookupTable::with_keys(
+    let table = OptionLookupTable::with_keys_complex(
       raw_keys,
       |k| *k as usize - min,
       V::default,
