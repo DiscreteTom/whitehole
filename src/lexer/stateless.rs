@@ -159,12 +159,13 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
     Vec<RcActionProps<Kind>>,
   )> {
     let mut res = OptionLookupTable::with_keys(
-      &props.iter().map(|p| p.kind().value()).collect::<Vec<_>>(),
+      props.iter().map(|p| p.kind().value()),
       // in most cases there is only one action for each kind
       || (Vec::with_capacity(1), Vec::with_capacity(1)),
     );
 
-    for (e, p) in execs.iter().zip(props.iter()) {
+    for (i, p) in props.iter().enumerate() {
+      let e = unsafe { execs.get_unchecked(i) };
       if p.muted() {
         // muted, add to all kinds
         res.for_each_value_mut(|(execs, props)| {

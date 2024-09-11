@@ -38,20 +38,16 @@ impl<V> OptionLookupTable<V> {
   /// We use a key slice as the parameter, so the caller
   /// doesn't need to deduplicate keys
   /// (checking duplication in a lookup table is often more efficient).
-  pub fn with_keys(keys: &[usize], factory: impl Fn() -> V) -> Self {
-    // ensure the `keys` are not empty
-    if keys.is_empty() {
+  pub fn with_keys(keys: impl Iterator<Item = usize> + Clone, factory: impl Fn() -> V) -> Self {
+    let Some(max) = keys.clone().max() else {
       return Self::new(0);
-    }
-
-    // SAFETY: `keys` is not empty, so the `max` is safe to unwrap.
-    let max = *unsafe { keys.iter().max().unwrap_unchecked() };
+    };
     let size = max + 1;
     let mut res = Self::new(size);
 
     for k in keys {
       // SAFETY: `k` is guaranteed to be in the range of `0..=max`.
-      let d = unsafe { res.get_option_unchecked_mut(*k) };
+      let d = unsafe { res.get_option_unchecked_mut(k) };
       if d.is_none() {
         *d = Some(factory());
       }
