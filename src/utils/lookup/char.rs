@@ -102,19 +102,13 @@ impl<V> SparseCharLookupTableBuilder<V> {
 
     // SAFETY: `raw_keys` is not empty, so `min` and `max` are safe to be unchecked
     let min = *unsafe { raw_keys.get_unchecked(0) } as usize;
-    let max = *unsafe { raw_keys.get_unchecked(raw_keys.len() - 1) } as usize;
-    let size = max - min + 1;
-    let mut table = OptionLookupTable::new(size);
-
-    for k in raw_keys {
-      // SAFETY: `k` is guaranteed to be in the range of `min..=max`.
-      let d = unsafe { table.get_option_unchecked_mut(*k as usize - min) };
-      if d.is_none() {
-        *d = Some(V::default());
-        // by doing this, keys are ensured to be unique/deduplicated and ordered.
-        keys.push(*k);
-      }
-    }
+    let table = OptionLookupTable::with_keys(
+      raw_keys,
+      |k| *k as usize - min,
+      V::default,
+      // by doing this, keys are ensured to be unique/deduplicated and ordered.
+      |k| keys.push(*k),
+    );
 
     (CharLookupTable::new(min, table), keys)
   }
