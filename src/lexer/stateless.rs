@@ -99,7 +99,7 @@ mod utils;
 pub use options::*;
 
 use super::action::{Action, RcActionExec, RcActionProps};
-use crate::utils::lookup::{lookup::Lookup, option::OptionLookupTable};
+use crate::utils::lookup::option::OptionLookupTable;
 use head_map::HeadMap;
 use literal_map::LiteralMap;
 
@@ -188,9 +188,12 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::{
-    action::{exact, regex},
-    token::{MockTokenKind, SubTokenKind},
+  use crate::{
+    lexer::{
+      action::{exact, regex},
+      token::{MockTokenKind, SubTokenKind},
+    },
+    utils::lookup::lookup::Lookup,
   };
   use head_map::RuntimeActions;
   use whitehole_macros::_token_kind;
