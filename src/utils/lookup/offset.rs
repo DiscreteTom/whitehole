@@ -60,11 +60,7 @@ mod tests {
 
   #[test]
   fn test_offset_lookup_table() {
-    let mut option = OptionLookupTable::new(3);
-    unsafe {
-      *option.get_option_unchecked_mut(0) = Some(0);
-      *option.get_option_unchecked_mut(2) = Some(0);
-    }
+    let option = OptionLookupTable::with_keys([0, 2].iter().map(|i| *i), || 0);
     let mut table = OffsetLookupTable::new(3, option);
     assert_eq!(table.get(0), None);
     assert_eq!(table.get(1), None);

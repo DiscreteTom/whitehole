@@ -25,10 +25,22 @@ impl<V: Debug> Debug for OptionLookupTable<V> {
 impl<V> OptionLookupTable<V> {
   /// Create a new instance with the given size.
   /// Init all values to [`None`].
-  pub fn new(size: usize) -> Self {
+  fn init_with_size(size: usize) -> Self {
     let mut data = Vec::with_capacity(size);
     data.resize_with(size, || None);
     Self { data }
+  }
+
+  /// Create a new instance with the given keys.
+  /// Init all values to [`None`].
+  fn init_with_keys(keys: impl Iterator<Item = usize>) -> Self {
+    let size = keys
+      .max()
+      // size = max + 1
+      .map(|v| v + 1)
+      // if the slice is empty, the size is 0
+      .unwrap_or(0);
+    Self::init_with_size(size)
   }
 
   /// Create a new instance with the given `keys`.
@@ -44,15 +56,7 @@ impl<V> OptionLookupTable<V> {
     factory: impl Fn() -> V,
     mut on_unique_key: impl FnMut(&Item),
   ) -> Self {
-    let size = items
-      .iter()
-      .map(|k| calc_key(k))
-      .max()
-      // size = max + 1
-      .map(|v| v + 1)
-      // if the slice is empty, the size is 0
-      .unwrap_or(0);
-    let mut res = Self::new(size);
+    let mut res = Self::init_with_keys(items.iter().map(|k| calc_key(k)));
 
     for i in items {
       let k = calc_key(i);
@@ -68,14 +72,7 @@ impl<V> OptionLookupTable<V> {
   }
 
   pub fn with_keys(keys: impl Iterator<Item = usize> + Clone, factory: impl Fn() -> V) -> Self {
-    let size = keys
-      .clone()
-      .max()
-      // size = max + 1
-      .map(|v| v + 1)
-      // if the slice is empty, the size is 0
-      .unwrap_or(0);
-    let mut res = Self::new(size);
+    let mut res = Self::init_with_keys(keys.clone());
 
     for k in keys {
       // SAFETY: `k` is guaranteed to be in the range of `0..size`.
@@ -150,7 +147,7 @@ mod tests {
 
   #[test]
   fn test_option_lookup_table() {
-    let mut table = OptionLookupTable::new(3);
+    let mut table = OptionLookupTable::init_with_size(3);
     assert_eq!(table.get(0), None);
     assert_eq!(table.get(1), None);
     assert_eq!(table.get(2), None);
@@ -175,7 +172,7 @@ mod tests {
 
   #[test]
   fn test_option_lookup_table_debug() {
-    let mut table = OptionLookupTable::new(3);
+    let mut table = OptionLookupTable::init_with_size(3);
     unsafe {
       *table.get_option_unchecked_mut(0) = Some(1);
       *table.get_option_unchecked_mut(2) = Some(2);
