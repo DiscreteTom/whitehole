@@ -48,10 +48,33 @@ impl<V> OptionLookupTable<V> {
   /// # Safety
   /// This method is unsafe because it doesn't check whether the key is out of range
   /// or not found.
+  ///
+  /// [`debug_assert`] is used to check if the key is in range and valid.
   #[inline]
   unsafe fn get_option_unchecked_mut(&mut self, key: usize) -> &mut Option<V> {
     debug_assert!(key < self.data.len());
     self.data.get_unchecked_mut(key)
+  }
+
+  /// Create a new instance with the given `keys`.
+  /// `keys` can be empty, unordered or duplicated.
+  /// Values are initialized with the provided `factory` if its key is present.
+  /// # Design
+  /// We use a key iterator as the parameter, so the caller doesn't need to
+  /// allocate a slice for the keys or deduplicate keys
+  /// (checking duplication in a lookup table is often more efficient).
+  pub fn with_keys(keys: impl Iterator<Item = usize> + Clone, factory: impl Fn() -> V) -> Self {
+    let mut res = Self::init_with_keys(keys.clone());
+
+    for k in keys {
+      // SAFETY: `k` is guaranteed to be in the range of `0..size`.
+      let d = unsafe { res.get_option_unchecked_mut(k) };
+      if d.is_none() {
+        *d = Some(factory());
+      }
+    }
+
+    res
   }
 
   /// Create a new instance with the given `keys`.
@@ -76,20 +99,6 @@ impl<V> OptionLookupTable<V> {
       if d.is_none() {
         *d = Some(factory());
         on_unique_key(i);
-      }
-    }
-
-    res
-  }
-
-  pub fn with_keys(keys: impl Iterator<Item = usize> + Clone, factory: impl Fn() -> V) -> Self {
-    let mut res = Self::init_with_keys(keys.clone());
-
-    for k in keys {
-      // SAFETY: `k` is guaranteed to be in the range of `0..size`.
-      let d = unsafe { res.get_option_unchecked_mut(k) };
-      if d.is_none() {
-        *d = Some(factory());
       }
     }
 
