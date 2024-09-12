@@ -34,13 +34,14 @@ impl<V> OptionLookupTable<V> {
   /// Create a new instance with the given keys.
   /// Init all values to [`None`].
   fn init_with_keys(keys: impl Iterator<Item = usize>) -> Self {
-    let size = keys
-      .max()
-      // size = max + 1
-      .map(|v| v + 1)
-      // if the slice is empty, the size is 0
-      .unwrap_or(0);
-    Self::init_with_size(size)
+    Self::init_with_size(
+      keys
+        .max()
+        // size = max + 1
+        .map(|v| v + 1)
+        // if the slice is empty, the size is 0
+        .unwrap_or(0),
+    )
   }
 
   /// Return the mutable reference to the value associated with the key.
