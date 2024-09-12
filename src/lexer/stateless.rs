@@ -168,7 +168,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
       let e = unsafe { execs.get_unchecked(i) };
       if p.muted() {
         // muted, add to all kinds
-        res.for_each_value_mut(|(execs, props)| {
+        res.values_mut().for_each(|(execs, props)| {
           execs.push(e.clone());
           props.push(p.clone());
         });

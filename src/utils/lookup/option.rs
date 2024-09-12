@@ -193,13 +193,6 @@ impl<V> OptionLookupTable<V> {
         .collect(),
     }
   }
-
-  /// Apply the function to each value.
-  pub fn for_each_value_mut(&mut self, mut f: impl FnMut(&mut V)) {
-    for v in &mut self.data {
-      v.as_mut().map(|v| f(v));
-    }
-  }
 }
 
 impl<V> Lookup for OptionLookupTable<V> {
