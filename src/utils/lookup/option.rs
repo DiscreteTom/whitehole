@@ -29,7 +29,7 @@ impl<V: Debug> Debug for OptionLookupTable<V> {
 impl<V> OptionLookupTable<V> {
   /// Create a new instance with the given size.
   /// Init all values to [`None`].
-  fn init_with_size(size: usize) -> Self {
+  pub fn with_size(size: usize) -> Self {
     let mut data = Vec::with_capacity(size);
     data.resize_with(size, || None);
     Self { data }
@@ -37,8 +37,8 @@ impl<V> OptionLookupTable<V> {
 
   /// Create a new instance with the given keys.
   /// Init all values to [`None`].
-  fn init_with_keys(keys: impl Iterator<Item = usize>) -> Self {
-    Self::init_with_size(
+  pub fn with_keys(keys: impl Iterator<Item = usize>) -> Self {
+    Self::with_size(
       keys
         .max()
         // size = max + 1
@@ -67,8 +67,11 @@ impl<V> OptionLookupTable<V> {
   /// We use a key iterator as the parameter, so the caller doesn't need to
   /// allocate a slice for the keys or deduplicate keys
   /// (checking duplication in a lookup table is often more efficient).
-  pub fn with_keys(keys: impl Iterator<Item = usize> + Clone, factory: impl Fn() -> V) -> Self {
-    let mut res = Self::init_with_keys(keys.clone());
+  pub fn with_keys_fill(
+    keys: impl Iterator<Item = usize> + Clone,
+    factory: impl Fn() -> V,
+  ) -> Self {
+    let mut res = Self::with_keys(keys.clone());
 
     for k in keys {
       // SAFETY: `k` is guaranteed to be in the range of `0..size`.
@@ -215,7 +218,7 @@ mod tests {
 
   #[test]
   fn test_option_lookup_table() {
-    let mut table = OptionLookupTable::init_with_size(3);
+    let mut table = OptionLookupTable::with_size(3);
     assert_eq!(table.get(0), None);
     assert_eq!(table.get(1), None);
     assert_eq!(table.get(2), None);
@@ -240,7 +243,7 @@ mod tests {
 
   #[test]
   fn test_option_lookup_table_debug() {
-    let mut table = OptionLookupTable::init_with_size(3);
+    let mut table = OptionLookupTable::with_size(3);
     unsafe {
       *table.get_option_unchecked_mut(0) = Some(1);
       *table.get_option_unchecked_mut(2) = Some(2);

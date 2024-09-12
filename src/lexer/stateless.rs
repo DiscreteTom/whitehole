@@ -158,7 +158,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
     Vec<RcActionExec<Kind, State, Heap>>,
     Vec<RcActionProps<Kind>>,
   )> {
-    let mut res = OptionLookupTable::with_keys(
+    let mut res = OptionLookupTable::with_keys_fill(
       props.iter().map(|p| p.kind().value()),
       // in most cases there is only one action for each kind
       || (Vec::with_capacity(1), Vec::with_capacity(1)),
