@@ -29,6 +29,7 @@ impl<V: Debug> Debug for OptionLookupTable<V> {
 impl<V> OptionLookupTable<V> {
   /// Create a new instance with the given size.
   /// Init all values to [`None`].
+  #[inline]
   pub fn with_size(size: usize) -> Self {
     let mut data = Vec::with_capacity(size);
     data.resize_with(size, || None);
@@ -36,8 +37,11 @@ impl<V> OptionLookupTable<V> {
   }
 
   /// Create a new instance with the given keys.
+  /// `keys` can be empty, unordered or duplicated.
   /// Init all values to [`None`].
-  pub fn with_keys(keys: impl Iterator<Item = usize>) -> Self {
+  // TODO: come up with a better name and make this public?
+  #[inline]
+  fn with_keys_none(keys: impl Iterator<Item = usize>) -> Self {
     Self::with_size(
       keys
         .max()
@@ -46,6 +50,100 @@ impl<V> OptionLookupTable<V> {
         // if the slice is empty, the size is 0
         .unwrap_or(0),
     )
+  }
+
+  /// Create a new instance with the given `keys`.
+  /// `keys` can be empty, unordered or duplicated.
+  /// Values are initialized with cloned `value` if its key is present.
+  /// # Design
+  /// We use a key iterator as the parameter, so the caller doesn't need to
+  /// allocate a slice for the keys or deduplicate keys
+  /// (checking duplication in a lookup table is often more efficient).
+  #[inline]
+  pub fn with_keys(keys: impl Iterator<Item = usize> + Clone, value: V) -> Self
+  where
+    V: Clone,
+  {
+    Self::with_keys_init(keys, || value.clone())
+  }
+
+  /// Create a new instance with the given `keys`.
+  /// `keys` can be empty, unordered or duplicated.
+  /// Values are initialized with the provided `factory` if its key is present.
+  /// # Design
+  /// We use a key iterator as the parameter, so the caller doesn't need to
+  /// allocate a slice for the keys or deduplicate keys
+  /// (checking duplication in a lookup table is often more efficient).
+  #[inline]
+  pub fn with_keys_init(
+    keys: impl Iterator<Item = usize> + Clone,
+    factory: impl FnMut() -> V,
+  ) -> Self {
+    let mut res = Self::with_keys_none(keys.clone());
+    unsafe { res.init_unchecked_with(keys, factory) }
+    res
+  }
+
+  /// Init [`None`] values with the given `keys`.
+  /// `keys` can be empty, unordered or duplicated.
+  /// Duplicated keys will only initialize the value at most once.
+  /// If the value is already [`Some`], it will NOT be overwritten.
+  /// Values are initialized with the provided `factory` if its key is present.
+  /// # Safety
+  /// This method is unsafe because it doesn't check whether the keys are out of range.
+  /// # Design
+  /// We use a key iterator as the parameter, so the caller doesn't need to
+  /// allocate a slice for the keys or deduplicate keys
+  /// (checking duplication in a lookup table is often more efficient).
+  #[inline]
+  pub unsafe fn init_unchecked(&mut self, keys: impl Iterator<Item = usize>, value: V)
+  where
+    V: Clone,
+  {
+    self.init_unchecked_with(keys, || value.clone());
+  }
+
+  /// Init [`None`] values with the given `keys`.
+  /// `keys` can be empty, unordered or duplicated.
+  /// Duplicated keys will only initialize the value at most once.
+  /// If the value is already [`Some`], it will NOT be overwritten.
+  /// Values are initialized with the provided `factory` if its key is present.
+  /// # Safety
+  /// This method is unsafe because it doesn't check whether the keys are out of range.
+  /// # Design
+  /// We use a key iterator as the parameter, so the caller doesn't need to
+  /// allocate a slice for the keys or deduplicate keys
+  /// (checking duplication in a lookup table is often more efficient).
+  pub unsafe fn init_unchecked_with(
+    &mut self,
+    keys: impl Iterator<Item = usize>,
+    mut factory: impl FnMut() -> V,
+  ) {
+    for k in keys {
+      // SAFETY: `k` is guaranteed to be in the range of `0..size`.
+      let d = self.get_option_unchecked_mut(k);
+      if d.is_none() {
+        *d = Some(factory());
+      }
+    }
+  }
+
+  /// Return an iterator over the non-[`None`] key-value pairs.
+  #[inline]
+  pub fn iter(&self) -> Iter<V> {
+    Iter::new(self)
+  }
+
+  /// Return an iterator over the keys with non-[`None`] values.
+  #[inline]
+  pub fn keys(&self) -> Keys<V> {
+    Keys::new(self)
+  }
+
+  /// Return an iterator over the non-[`None`] values.
+  #[inline]
+  pub fn values(&self) -> Values<V> {
+    Values::new(self)
   }
 
   /// Return the mutable reference to the value associated with the key.
@@ -58,45 +156,6 @@ impl<V> OptionLookupTable<V> {
   unsafe fn get_option_unchecked_mut(&mut self, key: usize) -> &mut Option<V> {
     debug_assert!(key < self.data.len());
     self.data.get_unchecked_mut(key)
-  }
-
-  /// Create a new instance with the given `keys`.
-  /// `keys` can be empty, unordered or duplicated.
-  /// Values are initialized with the provided `factory` if its key is present.
-  /// # Design
-  /// We use a key iterator as the parameter, so the caller doesn't need to
-  /// allocate a slice for the keys or deduplicate keys
-  /// (checking duplication in a lookup table is often more efficient).
-  pub fn with_keys_fill(
-    keys: impl Iterator<Item = usize> + Clone,
-    factory: impl Fn() -> V,
-  ) -> Self {
-    let mut res = Self::with_keys(keys.clone());
-
-    for k in keys {
-      // SAFETY: `k` is guaranteed to be in the range of `0..size`.
-      let d = unsafe { res.get_option_unchecked_mut(k) };
-      if d.is_none() {
-        *d = Some(factory());
-      }
-    }
-
-    res
-  }
-
-  /// Return an iterator over the non-[`None`] key-value pairs.
-  pub fn iter(&self) -> Iter<V> {
-    Iter::new(self)
-  }
-
-  /// Return an iterator over the keys with non-[`None`] values.
-  pub fn keys(&self) -> Keys<V> {
-    Keys::new(self)
-  }
-
-  /// Return an iterator over the non-[`None`] values.
-  pub fn values(&self) -> Values<V> {
-    Values::new(self)
   }
 
   /// Return the mutable reference to the value associated with the key.

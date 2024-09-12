@@ -60,7 +60,7 @@ mod tests {
 
   #[test]
   fn test_offset_lookup_table() {
-    let option = OptionLookupTable::with_keys_fill([0, 2].iter().map(|i| *i), || 0);
+    let option = OptionLookupTable::with_keys_init([0, 2].iter().map(|i| *i), || 0);
     let mut table = OffsetLookupTable::new(3, option);
     assert_eq!(table.get(0), None);
     assert_eq!(table.get(1), None);
