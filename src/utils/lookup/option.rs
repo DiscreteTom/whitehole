@@ -146,7 +146,8 @@ impl<V> Lookup for OptionLookupTable<V> {
 }
 
 /// See [`OptionLookupTable::iter`].
-pub(crate) struct Iter<'a, V> {
+#[derive(Clone, Debug)]
+pub struct Iter<'a, V> {
   iter: FlatMap<
     Enumerate<slice::Iter<'a, Option<V>>>,
     Option<(usize, &'a V)>,
@@ -155,7 +156,8 @@ pub(crate) struct Iter<'a, V> {
 }
 
 impl<'a, V> Iter<'a, V> {
-  pub fn new(table: &'a OptionLookupTable<V>) -> Self {
+  #[inline]
+  fn new(table: &'a OptionLookupTable<V>) -> Self {
     fn mapper<V>((k, v): (usize, &Option<V>)) -> Option<(usize, &V)> {
       v.as_ref().map(|v| (k, v))
     }
@@ -167,18 +169,22 @@ impl<'a, V> Iter<'a, V> {
 
 impl<'a, V> Iterator for Iter<'a, V> {
   type Item = (usize, &'a V);
+
+  #[inline]
   fn next(&mut self) -> Option<Self::Item> {
     self.iter.next()
   }
 }
 
 /// See [`OptionLookupTable::keys`].
-pub(crate) struct Keys<'a, V> {
+#[derive(Clone, Debug)]
+pub struct Keys<'a, V> {
   iter: Iter<'a, V>,
 }
 
 impl<'a, V> Keys<'a, V> {
-  pub fn new(table: &'a OptionLookupTable<V>) -> Self {
+  #[inline]
+  fn new(table: &'a OptionLookupTable<V>) -> Self {
     Self {
       iter: Iter::new(table),
     }
@@ -187,18 +193,22 @@ impl<'a, V> Keys<'a, V> {
 
 impl<'a, V> Iterator for Keys<'a, V> {
   type Item = usize;
+
+  #[inline]
   fn next(&mut self) -> Option<Self::Item> {
     self.iter.next().map(|(k, _)| k)
   }
 }
 
 /// See [`OptionLookupTable::values`].
-pub(crate) struct Values<'a, V> {
+#[derive(Clone, Debug)]
+pub struct Values<'a, V> {
   iter: Iter<'a, V>,
 }
 
 impl<'a, V> Values<'a, V> {
-  pub fn new(table: &'a OptionLookupTable<V>) -> Self {
+  #[inline]
+  fn new(table: &'a OptionLookupTable<V>) -> Self {
     Self {
       iter: Iter::new(table),
     }
@@ -207,6 +217,8 @@ impl<'a, V> Values<'a, V> {
 
 impl<'a, V> Iterator for Values<'a, V> {
   type Item = &'a V;
+
+  #[inline]
   fn next(&mut self) -> Option<Self::Item> {
     self.iter.next().map(|(_, v)| v)
   }
