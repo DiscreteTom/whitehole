@@ -183,8 +183,8 @@ impl<V> OptionLookupTable<V> {
     v.unwrap_unchecked()
   }
 
-  /// Map the values to another type and return a new instance.
-  pub fn map_ref<R>(&self, mapper: impl Fn(&V) -> R) -> OptionLookupTable<R> {
+  /// Create a new instance with the same size and values mapped by the provided function.
+  pub fn map_to_new<R>(&self, mapper: impl Fn(&V) -> R) -> OptionLookupTable<R> {
     OptionLookupTable {
       data: self
         .data
