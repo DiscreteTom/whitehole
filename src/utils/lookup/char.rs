@@ -94,21 +94,16 @@ impl<V> SparseCharLookupTableBuilder<V> {
     debug_assert!(raw_keys.len() > 0);
     debug_assert!(raw_keys.windows(2).all(|w| w[0] <= w[1]));
 
-    // pre-allocate memory for keys with the same size as `raw_keys`. (assume no duplicated keys)
-    // `keys.len()` will be less than or equal to `raw_keys.len()`.
-    // don't use `size` as the capacity because it may be much larger than `raw_keys.len()`
-    // if the keys are sparse.
-    let mut keys = Vec::with_capacity(raw_keys.len());
-
     // SAFETY: `raw_keys` is not empty, so `min` and `max` are safe to be unchecked
     let min = *unsafe { raw_keys.get_unchecked(0) } as usize;
-    let table = OptionLookupTable::with_keys_complex(
-      raw_keys,
-      |k| *k as usize - min,
-      V::default,
-      // by doing this, keys are ensured to be unique/deduplicated and ordered.
-      |k| keys.push(*k),
-    );
+    let table =
+      OptionLookupTable::with_keys(raw_keys.iter().map(|k| *k as usize - min), V::default);
+
+    // by doing this, keys are ensured to be unique/deduplicated and ordered.
+    let keys = table
+      .keys()
+      .map(|k| unsafe { char::from_u32_unchecked((k + min) as u32) })
+      .collect::<Vec<_>>();
 
     (CharLookupTable::new(min, table), keys)
   }

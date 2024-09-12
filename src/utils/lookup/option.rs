@@ -1,5 +1,9 @@
 use super::lookup::Lookup;
-use std::fmt::{self, Debug};
+use std::{
+  fmt::{self, Debug},
+  iter::{Enumerate, FlatMap},
+  slice,
+};
 
 /// A lookup table that not all keys are used.
 #[derive(Clone)]
@@ -77,32 +81,19 @@ impl<V> OptionLookupTable<V> {
     res
   }
 
-  /// Create a new instance with the given `keys`.
-  /// `keys` can be empty, unordered or duplicated.
-  /// Values are initialized with the provided `factory` if its key is present.
-  /// # Design
-  /// We use a key slice as the parameter, so the caller
-  /// doesn't need to deduplicate keys
-  /// (checking duplication in a lookup table is often more efficient).
-  pub fn with_keys_complex<Item>(
-    items: &[Item],
-    calc_key: impl Fn(&Item) -> usize,
-    factory: impl Fn() -> V,
-    mut on_unique_key: impl FnMut(&Item),
-  ) -> Self {
-    let mut res = Self::init_with_keys(items.iter().map(|k| calc_key(k)));
+  /// Return an iterator over the non-[`None`] key-value pairs.
+  pub fn iter(&self) -> Iter<V> {
+    Iter::new(self)
+  }
 
-    for i in items {
-      let k = calc_key(i);
-      // SAFETY: `k` is guaranteed to be in the range of `0..size`.
-      let d = unsafe { res.get_option_unchecked_mut(k) };
-      if d.is_none() {
-        *d = Some(factory());
-        on_unique_key(i);
-      }
-    }
+  /// Return an iterator over the keys with non-[`None`] values.
+  pub fn keys(&self) -> Keys<V> {
+    Keys::new(self)
+  }
 
-    res
+  /// Return an iterator over the non-[`None`] values.
+  pub fn values(&self) -> Values<V> {
+    Values::new(self)
   }
 
   /// Return the mutable reference to the value associated with the key.
@@ -148,6 +139,73 @@ impl<V> Lookup for OptionLookupTable<V> {
   #[inline]
   fn len(&self) -> usize {
     self.data.len()
+  }
+}
+
+/// See [`OptionLookupTable::iter`].
+pub(crate) struct Iter<'a, V> {
+  iter: FlatMap<
+    Enumerate<slice::Iter<'a, Option<V>>>,
+    Option<(usize, &'a V)>,
+    fn((usize, &Option<V>)) -> Option<(usize, &V)>,
+  >,
+}
+
+impl<'a, V> Iter<'a, V> {
+  pub fn new(table: &'a OptionLookupTable<V>) -> Self {
+    fn mapper<V>((k, v): (usize, &Option<V>)) -> Option<(usize, &V)> {
+      v.as_ref().map(|v| (k, v))
+    }
+    Self {
+      iter: table.data.iter().enumerate().flat_map(mapper),
+    }
+  }
+}
+
+impl<'a, V> Iterator for Iter<'a, V> {
+  type Item = (usize, &'a V);
+  fn next(&mut self) -> Option<Self::Item> {
+    self.iter.next()
+  }
+}
+
+/// See [`OptionLookupTable::keys`].
+pub(crate) struct Keys<'a, V> {
+  iter: Iter<'a, V>,
+}
+
+impl<'a, V> Keys<'a, V> {
+  pub fn new(table: &'a OptionLookupTable<V>) -> Self {
+    Self {
+      iter: Iter::new(table),
+    }
+  }
+}
+
+impl<'a, V> Iterator for Keys<'a, V> {
+  type Item = usize;
+  fn next(&mut self) -> Option<Self::Item> {
+    self.iter.next().map(|(k, _)| k)
+  }
+}
+
+/// See [`OptionLookupTable::values`].
+pub(crate) struct Values<'a, V> {
+  iter: Iter<'a, V>,
+}
+
+impl<'a, V> Values<'a, V> {
+  pub fn new(table: &'a OptionLookupTable<V>) -> Self {
+    Self {
+      iter: Iter::new(table),
+    }
+  }
+}
+
+impl<'a, V> Iterator for Values<'a, V> {
+  type Item = &'a V;
+  fn next(&mut self) -> Option<Self::Item> {
+    self.iter.next().map(|(_, v)| v)
   }
 }
 
