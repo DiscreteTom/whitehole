@@ -7,7 +7,7 @@ use std::{
 
 /// A lookup table that not all keys are used.
 #[derive(Clone)]
-pub(crate) struct OptionLookupTable<V> {
+pub struct OptionLookupTable<V> {
   data: Vec<Option<V>>,
 }
 
