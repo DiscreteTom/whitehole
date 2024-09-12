@@ -4,7 +4,7 @@ use super::lookup::Lookup;
 /// This will record the offset `n` and prevent access to the first `n` values.
 /// This is useful if your lookup table is sparse and starts far from 0.
 #[derive(Debug, Clone)]
-pub(crate) struct OffsetLookupTable<Table> {
+pub struct OffsetLookupTable<Table> {
   offset: usize,
   table: Table,
 }

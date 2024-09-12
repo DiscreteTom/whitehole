@@ -4,7 +4,7 @@ use std::hint::unreachable_unchecked;
 /// Not every character is used in the lookup table, so we use [`OptionLookupTable`] to store values.
 /// Since the range of characters is big and only a few characters are used, we use [`OffsetLookupTable`]
 /// to wrap the [`OptionLookupTable`] to reduce memory usage.
-pub(crate) type CharLookupTable<V> = OffsetLookupTable<OptionLookupTable<V>>;
+pub type CharLookupTable<V> = OffsetLookupTable<OptionLookupTable<V>>;
 
 /// In a lexer the range of known characters may be sparse.
 /// E.g. in rust the smallest whitespace character is `0x0009` and the largest is `0x2029`.
@@ -25,7 +25,7 @@ pub(crate) type CharLookupTable<V> = OffsetLookupTable<OptionLookupTable<V>>;
 /// ASCII characters are stored in the same [`CharLookupTable`], and if the known characters only
 /// contain ASCII characters, we only need one [`CharLookupTable`].
 #[derive(Debug, Clone)]
-pub(crate) struct SparseCharLookupTable<V> {
+pub struct SparseCharLookupTable<V> {
   /// The lookup tables for each cluster of characters.
   /// The clusters are ordered by its character range, from small to large,
   /// no overlap between clusters.
@@ -67,7 +67,7 @@ impl<V> Lookup for SparseCharLookupTable<V> {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct SparseCharLookupTableBuilder<V> {
+pub struct SparseCharLookupTableBuilder<V> {
   table: SparseCharLookupTable<V>,
   /// Deduplicated keys, ordered.
   /// One [`Vec`] for each cluster of characters.

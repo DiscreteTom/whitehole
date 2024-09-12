@@ -18,7 +18,7 @@
 //!
 //! // TODO: maybe publish this mod as a separate crate?
 
-pub(crate) mod char;
-pub(crate) mod lookup;
-pub(crate) mod offset;
-pub(crate) mod option;
+pub mod char;
+pub mod lookup;
+pub mod offset;
+pub mod option;
