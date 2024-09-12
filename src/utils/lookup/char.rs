@@ -1,5 +1,4 @@
 use super::{lookup::Lookup, offset::OffsetLookupTable, option::OptionLookupTable};
-use std::hint::unreachable_unchecked;
 
 /// Not every character is used in the lookup table, so we use [`OptionLookupTable`] to store values.
 /// Since the range of characters is big and only a few characters are used, we use [`OffsetLookupTable`]
@@ -40,12 +39,11 @@ impl<V> Lookup for SparseCharLookupTable<V> {
   #[inline]
   fn get(&self, key: usize) -> Option<&Self::Value> {
     // TODO: do we need binary search here?
-    for table in &self.tables {
-      if key < table.len() {
-        return table.get(key);
-      }
-    }
-    None
+    self
+      .tables
+      .iter()
+      .find(|table| key < table.len())
+      .and_then(|table| table.get(key))
   }
 
   #[inline]
@@ -55,14 +53,15 @@ impl<V> Lookup for SparseCharLookupTable<V> {
 
   #[inline]
   unsafe fn get_unchecked_mut(&mut self, key: usize) -> &mut Self::Value {
+    debug_assert!(key < self.len());
+
     // TODO: do we need binary search here?
-    for table in &mut self.tables {
-      if key < table.len() {
-        return table.get_unchecked_mut(key);
-      }
-    }
-    debug_assert!(false, "key is out of range");
-    unreachable_unchecked()
+    self
+      .tables
+      .iter_mut()
+      .find(|table| key < table.len())
+      .unwrap_unchecked()
+      .get_unchecked_mut(key)
   }
 }
 
