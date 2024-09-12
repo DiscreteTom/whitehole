@@ -146,6 +146,18 @@ impl<V> OptionLookupTable<V> {
     Values::new(self)
   }
 
+  /// Return a mutable iterator over the non-[`None`] key-value pairs.
+  #[inline]
+  pub fn iter_mut(&mut self) -> IterMut<V> {
+    IterMut::new(self)
+  }
+
+  /// Return a mutable iterator over the non-[`None`] values.
+  #[inline]
+  pub fn values_mut(&mut self) -> ValuesMut<V> {
+    ValuesMut::new(self)
+  }
+
   /// Return the mutable reference to the value associated with the key.
   /// # Safety
   /// This method is unsafe because it doesn't check whether the key is out of range
@@ -276,6 +288,61 @@ impl<'a, V> Values<'a, V> {
 
 impl<'a, V> Iterator for Values<'a, V> {
   type Item = &'a V;
+
+  #[inline]
+  fn next(&mut self) -> Option<Self::Item> {
+    self.iter.next().map(|(_, v)| v)
+  }
+}
+
+/// See [`OptionLookupTable::iter_mut`].
+#[derive(Debug)]
+pub struct IterMut<'a, V> {
+  iter: FlatMap<
+    Enumerate<slice::IterMut<'a, Option<V>>>,
+    Option<(usize, &'a mut V)>,
+    fn((usize, &mut Option<V>)) -> Option<(usize, &mut V)>,
+  >,
+}
+
+impl<'a, V> IterMut<'a, V> {
+  #[inline]
+  fn new(table: &'a mut OptionLookupTable<V>) -> Self {
+    fn mapper<V>((k, v): (usize, &mut Option<V>)) -> Option<(usize, &mut V)> {
+      v.as_mut().map(|v| (k, v))
+    }
+    Self {
+      iter: table.data.iter_mut().enumerate().flat_map(mapper),
+    }
+  }
+}
+
+impl<'a, V> Iterator for IterMut<'a, V> {
+  type Item = (usize, &'a mut V);
+
+  #[inline]
+  fn next(&mut self) -> Option<Self::Item> {
+    self.iter.next()
+  }
+}
+
+/// See [`OptionLookupTable::values_mut`].
+#[derive(Debug)]
+pub struct ValuesMut<'a, V> {
+  iter: IterMut<'a, V>,
+}
+
+impl<'a, V> ValuesMut<'a, V> {
+  #[inline]
+  fn new(table: &'a mut OptionLookupTable<V>) -> Self {
+    Self {
+      iter: IterMut::new(table),
+    }
+  }
+}
+
+impl<'a, V> Iterator for ValuesMut<'a, V> {
+  type Item = &'a mut V;
 
   #[inline]
   fn next(&mut self) -> Option<Self::Item> {
