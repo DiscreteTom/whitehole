@@ -99,7 +99,7 @@ mod utils;
 pub use options::*;
 
 use super::action::{Action, RcActionExec, RcActionProps};
-use crate::utils::lookup::option::OptionLookupTable;
+use crate::utils::lookup::{lookup::Lookup, option::OptionLookupTable};
 use head_map::HeadMap;
 use literal_map::LiteralMap;
 

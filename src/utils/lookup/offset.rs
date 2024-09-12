@@ -1,8 +1,8 @@
-use super::{lookup::Lookup, option::OptionLookupTable};
+use super::lookup::Lookup;
 
 /// A lookup table wrapper that won't allocate for the first `n` values to save memory.
 /// This will record the offset `n` and prevent access to the first `n` values.
-/// This is useful if your lookup table is sparse and not starting from 0.
+/// This is useful if your lookup table is sparse and starts far from 0.
 #[derive(Debug, Clone)]
 pub(crate) struct OffsetLookupTable<Table> {
   offset: usize,
@@ -14,22 +14,6 @@ impl<Table> OffsetLookupTable<Table> {
   #[inline]
   pub const fn new(offset: usize, table: Table) -> Self {
     Self { offset, table }
-  }
-}
-
-impl<V> OffsetLookupTable<OptionLookupTable<V>> {
-  /// Return the mutable reference to the value associated with the key.
-  /// # Safety
-  /// This method is unsafe because it doesn't check whether the key is out of range
-  /// or not found.
-  ///
-  /// [`debug_assert`] is used to check if the key is in range and valid.
-  /// # Panics
-  /// Panics if the key is smaller than [`Self::offset`].
-  #[inline]
-  pub unsafe fn get_unchecked_mut(&mut self, key: usize) -> &mut V {
-    debug_assert!(key >= self.offset);
-    self.table.get_unchecked_mut(key - self.offset)
   }
 }
 
@@ -50,6 +34,12 @@ impl<Table: Lookup> Lookup for OffsetLookupTable<Table> {
   fn len(&self) -> usize {
     // the first `n` values are not accessible but still counted
     self.offset + self.table.len()
+  }
+
+  #[inline]
+  unsafe fn get_unchecked_mut(&mut self, key: usize) -> &mut Table::Value {
+    debug_assert!(key >= self.offset);
+    self.table.get_unchecked_mut(key - self.offset)
   }
 }
 

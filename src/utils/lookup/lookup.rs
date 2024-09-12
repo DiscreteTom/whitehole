@@ -11,4 +11,12 @@ pub(crate) trait Lookup {
   /// If a `key` is equal to or greater than the length,
   /// [`Lookup::get`] will always return [`None`].
   fn len(&self) -> usize;
+
+  /// Return the mutable reference to the value associated with the key.
+  /// # Safety
+  /// This method is unsafe because it doesn't check whether the key is out of range
+  /// or not found.
+  ///
+  /// [`debug_assert`] is used to check if the key is in range and valid.
+  unsafe fn get_unchecked_mut(&mut self, key: usize) -> &mut Self::Value;
 }

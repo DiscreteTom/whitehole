@@ -15,6 +15,8 @@
 //! - [`self::option`]
 //! - [`self::offset`]
 //! - [`self::char`]
+//!
+//! // TODO: maybe publish this mod as a separate crate?
 
 pub(crate) mod char;
 pub(crate) mod lookup;
