@@ -2,14 +2,14 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use std::{fs::read_to_string, rc::Rc};
 use whitehole::lexer::{
   action::{
-    exact,
+    chars, exact,
     json::{boundaries, number_with, string_with},
-    whitespaces, FloatLiteralData, HexEscapeError, PartialStringBody,
+    FloatLiteralData, HexEscapeError, PartialStringBody,
   },
-  lexer::IntoLexer,
+  builder::LexerBuilder,
   stateless::StatelessLexer,
   token::token_kind,
-  LexerBuilder,
+  IntoLexer,
 };
 
 #[token_kind]
@@ -26,7 +26,7 @@ enum JsonTokenKind {
 
 fn build_lexer() -> StatelessLexer<JsonTokenKind> {
   LexerBuilder::new()
-    .ignore_default(whitespaces())
+    .ignore_default(chars(|c| matches!(c, ' ' | '\n' | '\r' | '\t')))
     .append_default(boundaries())
     .define(True, exact("true"))
     .define(False, exact("false"))
@@ -63,7 +63,7 @@ fn lex_json(stateless: &Rc<StatelessLexer<JsonTokenKind>>, s: &str) {
 }
 
 fn bench_build(c: &mut Criterion) {
-  c.bench_function("json_lexer: build", |b| b.iter(|| build_lexer()));
+  c.bench_function("json_lexer: build", |b| b.iter(build_lexer));
 }
 
 fn bench_lex(c: &mut Criterion) {
