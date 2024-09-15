@@ -1,6 +1,6 @@
-//! ## For Developers
+//! ## Getting Started
 //!
-//! Here is the recommended order of reading the source code:
+//! Here is the recommended order of learning this module:
 //!
 //! - [`self::token`]
 //! - [`self::action`]

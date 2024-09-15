@@ -7,9 +7,9 @@
 //! Users can also share their actions with others by publishing them as a library,
 //! or build higher-level libraries to generate actions.
 //!
-//! ## For Developers
+//! ## Getting Started
 //!
-//! Here is the recommended order of reading the source code:
+//! Here is the recommended order of learning this module:
 //!
 //! - [`self::input`]
 //! - [`self::output`]

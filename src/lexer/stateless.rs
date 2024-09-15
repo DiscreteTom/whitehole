@@ -77,9 +77,9 @@
 //! Be careful if you lexer is stateful. Since in every lexing the evaluated actions
 //! are different, you may need to manage the states carefully to avoid inconsistency.
 //!
-//! ## For Developers
+//! ## Getting Started
 //!
-//! Here is the recommended order of reading the source code:
+//! Here is the recommended order of learning this module:
 //!
 //! - [`self::head_map`]
 //! - [`self::literal_map`]

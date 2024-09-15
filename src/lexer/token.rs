@@ -186,9 +186,9 @@
 //!
 //! Thats all you need to do, neat!
 //!
-//! ## For Developers
+//! ## Getting Started
 //!
-//! Here is the recommended order of reading the source code:
+//! Here is the recommended order of learning this module:
 //!
 //! - [`self::token_kind_id`]
 //! - [`self::sub_token_kind`]
@@ -196,8 +196,6 @@
 //! - [`self::mock`]
 //! - [`self`]
 //! - [`self::token_kind`]
-//!
-//! The [`token_kind`] macro will be tested in this file.
 
 mod binding;
 mod mock;
