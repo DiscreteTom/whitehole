@@ -2,7 +2,7 @@
 //!
 //! Usually when you want to write a lexer, you need to define "token kinds",
 //! like `Identifier`, `Number`, etc.
-//! We can use enum to represent these kinds.
+//! You can use enum to represent these kinds.
 //!
 //! ```
 //! pub enum MyKind {
@@ -68,12 +68,12 @@
 //! #   Number(i32),
 //! # }
 //! #
-//! pub struct TokenKindIdBinding<TokenKindType> {
-//!   id: TokenKindId<TokenKindType>,
-//!   kind: TokenKindType,
+//! pub struct TokenKindIdBinding<Kind> {
+//!   id: TokenKindId<Kind>,
+//!   kind: Kind,
 //! };
 //!
-//! // when creating `TokenKindIdBinding`, we have to make sure
+//! // when creating `TokenKindIdBinding`, you have to make sure
 //! // the id and the kind are bound correctly.
 //!
 //! // correct
@@ -134,18 +134,21 @@
 //!   }
 //! }
 //!
-//! pub trait SubTokenKind<Kind> {
-//!   fn kind_id() -> TokenKindId<Kind>;
+//! pub trait SubTokenKind {
+//!   type TokenKind;
+//!   fn kind_id() -> TokenKindId<Self::TokenKind>;
 //! }
 //!
 //! // every sub token kind should have a unique id
 //! // bound with the type, not its value
-//! impl SubTokenKind<MyKind> for Identifier {
+//! impl SubTokenKind for Identifier {
+//!   type TokenKind = MyKind;
 //!   fn kind_id() -> TokenKindId<MyKind> {
 //!     TokenKindId::new(0)
 //!   }
 //! }
-//! impl SubTokenKind<MyKind> for Number {
+//! impl SubTokenKind for Number {
+//!   type TokenKind = MyKind;
 //!   fn kind_id() -> TokenKindId<MyKind> {
 //!     TokenKindId::new(1)
 //!   }
@@ -169,7 +172,7 @@
 //! Besides, creating sub token kind structs is also helpful for the lexer implementation:
 //! - In [`crate::lexer::action::Action::select`] we will use the sub token kind to ensure the action can only yield
 //!   one kind of token. And we can infer [`crate::lexer::action::Action::kind`] statically without executing the action.
-//! - In expectational lexing, we can use the sub token kind type to get the expected token kind id,
+//! - In expectational lexing, you can use the sub token kind type to get the expected token kind id,
 //!   without constructing a token kind value.
 //!
 //! To simplify all above, you can use the macro [`token_kind`] to transform the enum.
