@@ -30,7 +30,7 @@ pub use output::*;
 pub use simple::*;
 pub use utils::*;
 
-use super::token::TokenKindId;
+use crate::kind::KindId;
 use std::{
   collections::HashSet,
   fmt::{self, Debug},
@@ -52,7 +52,7 @@ pub struct ActionBase<Kind, Exec> {
   exec: Exec,
 
   /// See [`Self::kind`].
-  kind: TokenKindId<Kind>,
+  kind: KindId<Kind>,
   /// See [`Self::literal`].
   literal: Option<String>,
   /// See [`Self::head`].
@@ -71,7 +71,7 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
   /// [`Self::bind_default`] or [`Self::select`].
   /// These methods will ensure the integrity between [`Self::kind`] and [`ActionOutput::binding`].
   #[inline]
-  pub const fn kind(&self) -> TokenKindId<Kind> {
+  pub const fn kind(&self) -> KindId<Kind> {
     self.kind
   }
 
@@ -182,10 +182,10 @@ impl<'a, Kind, State, Heap> Action<'a, Kind, State, Heap> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::token::SubTokenKind;
-  use whitehole_macros::_token_kind;
+  use crate::kind::SubKind;
+  use whitehole_macros::_kind;
 
-  #[_token_kind]
+  #[_kind]
   #[derive(Debug)]
   enum MyKind {
     A,
@@ -236,7 +236,7 @@ mod tests {
           literal: Some("123".into()),
         }
       ),
-      "ActionBase { exec: ActionExec(...), kind: TokenKindId<whitehole::lexer::action::tests::MyKind>(0), literal: Some(\"123\"), head: Some(OneOf({'a'})), muted: true }"
+      "ActionBase { exec: ActionExec(...), kind: KindId<whitehole::lexer::action::tests::MyKind>(0), literal: Some(\"123\"), head: Some(OneOf({'a'})), muted: true }"
     );
   }
 }

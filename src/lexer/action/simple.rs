@@ -1,5 +1,5 @@
 use super::{input::ActionInput, Action, ActionExec, ActionOutput};
-use crate::lexer::token::{MockTokenKind, SubTokenKind};
+use crate::kind::{MockKind, SubKind};
 
 /// Accept a function that digests the rest of the input text and returns the number of digested bytes.
 /// The function should return `0` if the action is rejected.
@@ -17,16 +17,16 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 #[inline]
 pub fn simple<'a, State, Heap>(
   f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> usize + 'a,
-) -> Action<'a, MockTokenKind<()>, State, Heap> {
+) -> Action<'a, MockKind<()>, State, Heap> {
   Action {
     exec: ActionExec::new(move |input| match f(input) {
       0 => None,
       digested => Some(ActionOutput {
-        binding: MockTokenKind::new(()).into(),
+        binding: MockKind::new(()).into(),
         digested,
       }),
     }),
-    kind: MockTokenKind::kind_id(),
+    kind: MockKind::kind_id(),
     head: None,
     muted: false,
     literal: None,
@@ -48,23 +48,23 @@ pub fn simple<'a, State, Heap>(
 /// MUST be smaller than the length of [`ActionInput::rest`].
 /// # Examples
 /// ```
-/// use whitehole::lexer::token::MockTokenKind;
+/// use whitehole::lexer::token::MockKind;
 /// use whitehole::lexer::action::{Action, simple_with_data};
 /// // accept all rest characters and parse them into an integer
-/// let a: Action<MockTokenKind<i32>> = simple_with_data(|input| Some((input.rest().len(), input.rest().parse().unwrap())));
+/// let a: Action<MockKind<i32>> = simple_with_data(|input| Some((input.rest().len(), input.rest().parse().unwrap())));
 /// ```
 #[inline]
 pub fn simple_with_data<'a, State, Heap, T>(
   f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<(usize, T)> + 'a,
-) -> Action<'a, MockTokenKind<T>, State, Heap> {
+) -> Action<'a, MockKind<T>, State, Heap> {
   Action {
     exec: ActionExec::new(move |input| {
       f(input).map(|(digested, data)| ActionOutput {
-        binding: MockTokenKind::new(data).into(),
+        binding: MockKind::new(data).into(),
         digested,
       })
     }),
-    kind: MockTokenKind::kind_id(),
+    kind: MockKind::kind_id(),
     head: None,
     muted: false,
     literal: None,
@@ -110,8 +110,7 @@ mod tests {
 
   #[test]
   fn simple_option_with_data_accept() {
-    let action: Action<MockTokenKind<u32>> =
-      simple_with_data(|input| Some((input.text().len(), 123)));
+    let action: Action<MockKind<u32>> = simple_with_data(|input| Some((input.text().len(), 123)));
     let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut (), &mut ()).unwrap());
     assert!(matches!(
       output,
@@ -124,7 +123,7 @@ mod tests {
 
   #[test]
   fn simple_option_with_data_accept_0() {
-    let action: Action<MockTokenKind<u32>> = simple_with_data(|_| Some((0, 123)));
+    let action: Action<MockKind<u32>> = simple_with_data(|_| Some((0, 123)));
     let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut (), &mut ()).unwrap());
     assert!(matches!(
       output,
@@ -137,7 +136,7 @@ mod tests {
 
   #[test]
   fn simple_option_with_data_reject() {
-    let action: Action<MockTokenKind<u32>> = simple_with_data(|_| None);
+    let action: Action<MockKind<u32>> = simple_with_data(|_| None);
     let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut (), &mut ()).unwrap());
     assert!(output.is_none());
   }

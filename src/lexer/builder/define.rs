@@ -1,9 +1,7 @@
 use super::LexerBuilder;
 use crate::{
-  lexer::{
-    action::Action,
-    token::{MockTokenKind, SubTokenKind, TokenKindIdBinding},
-  },
+  kind::{KindIdBinding, MockKind, SubKind},
+  lexer::action::Action,
   utils::OneOrMore,
 };
 
@@ -11,8 +9,8 @@ impl<'a, Kind, State: 'a, Heap: 'a> LexerBuilder<'a, Kind, State, Heap> {
   /// Define actions and bind them to the provided kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::token_kind};
-  /// # #[token_kind]
+  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::kind};
+  /// # #[kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
   /// # fn main() {
@@ -28,10 +26,10 @@ impl<'a, Kind, State: 'a, Heap: 'a> LexerBuilder<'a, Kind, State, Heap> {
   pub fn define<ViaKind>(
     self,
     kind: ViaKind,
-    actions: impl Into<OneOrMore<Action<'a, MockTokenKind<()>, State, Heap>>>,
+    actions: impl Into<OneOrMore<Action<'a, MockKind<()>, State, Heap>>>,
   ) -> Self
   where
-    ViaKind: SubTokenKind<TokenKind = Kind> + Into<TokenKindIdBinding<Kind>> + Clone + 'a,
+    ViaKind: SubKind<Kind = Kind> + Into<KindIdBinding<Kind>> + Clone + 'a,
   {
     self.append(Self::map_actions(actions, move |a| a.bind(kind.clone())))
   }
@@ -39,8 +37,8 @@ impl<'a, Kind, State: 'a, Heap: 'a> LexerBuilder<'a, Kind, State, Heap> {
   /// Define actions with a decorator and bind them to the provided kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::token_kind};
-  /// # #[token_kind]
+  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::kind};
+  /// # #[kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
   /// # fn main() {
@@ -56,12 +54,11 @@ impl<'a, Kind, State: 'a, Heap: 'a> LexerBuilder<'a, Kind, State, Heap> {
   pub fn define_with<ViaKind>(
     self,
     kind: ViaKind,
-    actions: impl Into<OneOrMore<Action<'a, MockTokenKind<()>, State, Heap>>>,
-    decorator: impl Fn(Action<MockTokenKind<()>, State, Heap>) -> Action<MockTokenKind<()>, State, Heap>
-      + 'a,
+    actions: impl Into<OneOrMore<Action<'a, MockKind<()>, State, Heap>>>,
+    decorator: impl Fn(Action<MockKind<()>, State, Heap>) -> Action<MockKind<()>, State, Heap> + 'a,
   ) -> Self
   where
-    ViaKind: SubTokenKind<TokenKind = Kind> + Into<TokenKindIdBinding<Kind>> + Clone + 'a,
+    ViaKind: SubKind<Kind = Kind> + Into<KindIdBinding<Kind>> + Clone + 'a,
   {
     self.define(kind, Self::map_actions(actions, decorator))
   }
@@ -71,9 +68,9 @@ impl<'a, Kind, State: 'a, Heap: 'a> LexerBuilder<'a, Kind, State, Heap> {
 mod tests {
   use super::*;
   use crate::lexer::action::{exact, word};
-  use whitehole_macros::_token_kind;
+  use whitehole_macros::_kind;
 
-  #[_token_kind]
+  #[_kind]
   #[derive(Clone, Debug)]
   enum MyKind {
     A,

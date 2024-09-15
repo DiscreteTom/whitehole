@@ -1,9 +1,7 @@
 use super::LexerBuilder;
 use crate::{
-  lexer::{
-    action::Action,
-    token::{DefaultTokenKind, MockTokenKind},
-  },
+  kind::{DefaultKind, MockKind},
+  lexer::action::Action,
   utils::OneOrMore,
 };
 
@@ -11,8 +9,8 @@ impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`].
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::token_kind};
-  /// # #[token_kind]
+  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::kind};
+  /// # #[kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
   /// # fn main() {
@@ -32,8 +30,8 @@ impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] with a decorator.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::token_kind};
-  /// # #[token_kind]
+  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::kind};
+  /// # #[kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
   /// # fn main() {
@@ -57,8 +55,8 @@ impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] and bind them to the default kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, builder::LexerBuilder, token::token_kind};
-  /// # #[token_kind]
+  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, builder::LexerBuilder, token::kind};
+  /// # #[kind]
   /// # #[derive(Default, Clone)]
   /// # enum MyKind {
   /// #   #[default]
@@ -76,10 +74,10 @@ impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
   #[inline]
   pub fn ignore_default(
     self,
-    actions: impl Into<OneOrMore<Action<'a, MockTokenKind<()>, State, Heap>>>,
+    actions: impl Into<OneOrMore<Action<'a, MockKind<()>, State, Heap>>>,
   ) -> Self
   where
-    Kind: DefaultTokenKind + Default,
+    Kind: DefaultKind + Default,
     State: 'a,
     Heap: 'a,
   {
@@ -89,8 +87,8 @@ impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] with a decorator and bind them to the default kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::token_kind};
-  /// # #[token_kind]
+  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::kind};
+  /// # #[kind]
   /// # #[derive(Clone, Default)]
   /// # enum MyKind { #[default] A }
   /// # fn main() {
@@ -105,12 +103,11 @@ impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
   #[inline]
   pub fn ignore_default_with(
     self,
-    actions: impl Into<OneOrMore<Action<'a, MockTokenKind<()>, State, Heap>>>,
-    decorator: impl Fn(Action<MockTokenKind<()>, State, Heap>) -> Action<MockTokenKind<()>, State, Heap>
-      + 'a,
+    actions: impl Into<OneOrMore<Action<'a, MockKind<()>, State, Heap>>>,
+    decorator: impl Fn(Action<MockKind<()>, State, Heap>) -> Action<MockKind<()>, State, Heap> + 'a,
   ) -> Self
   where
-    Kind: DefaultTokenKind + Default,
+    Kind: DefaultKind + Default,
     State: 'a,
     Heap: 'a,
   {
@@ -121,10 +118,10 @@ impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::{action::word, token::SubTokenKind};
-  use whitehole_macros::_token_kind;
+  use crate::{kind::SubKind, lexer::action::word};
+  use whitehole_macros::_kind;
 
-  #[_token_kind]
+  #[_kind]
   #[derive(Default, Clone, Debug)]
   enum MyKind {
     #[default]

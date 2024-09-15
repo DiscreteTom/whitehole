@@ -14,7 +14,7 @@ pub use string::*;
 pub use word::*;
 
 use super::{simple::simple, Action};
-use crate::lexer::token::MockTokenKind;
+use crate::kind::MockKind;
 use std::{collections::HashSet, ops::RangeInclusive};
 
 /// Match chars by the condition greedily.
@@ -30,7 +30,7 @@ use std::{collections::HashSet, ops::RangeInclusive};
 #[inline]
 pub fn chars<'a, State, Heap>(
   condition: impl Fn(char) -> bool + 'a,
-) -> Action<'a, MockTokenKind<()>, State, Heap> {
+) -> Action<'a, MockKind<()>, State, Heap> {
   simple(move |input| {
     let mut digested = 0;
     for ch in input.rest().chars() {
@@ -56,7 +56,7 @@ pub fn chars<'a, State, Heap>(
 #[inline]
 pub fn chars_in_range<State, Heap>(
   range: impl Into<RangeInclusive<char>>,
-) -> Action<'static, MockTokenKind<()>, State, Heap> {
+) -> Action<'static, MockKind<()>, State, Heap> {
   let range = range.into();
   {
     let range = range.clone();
@@ -78,7 +78,7 @@ pub fn chars_in_range<State, Heap>(
 #[inline]
 pub fn charset<State, Heap>(
   set: impl Into<HashSet<char>>,
-) -> Action<'static, MockTokenKind<()>, State, Heap> {
+) -> Action<'static, MockKind<()>, State, Heap> {
   let set = set.into();
   {
     // TODO: optimize runtime perf using lookup table
@@ -101,7 +101,7 @@ pub fn charset<State, Heap>(
 #[inline]
 pub fn chars_in_str<State, Heap>(
   s: impl Into<String>,
-) -> Action<'static, MockTokenKind<()>, State, Heap> {
+) -> Action<'static, MockKind<()>, State, Heap> {
   charset(s.into().chars().collect::<HashSet<_>>())
 }
 
@@ -118,8 +118,8 @@ pub fn chars_in_str<State, Heap>(
 /// E.g. in JSON you only need to support `0x0009`, `0x000A`, `0x000D`, `0x0020`.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::{action::whitespaces, token::token_kind, builder::LexerBuilder};
-/// # #[token_kind]
+/// # use whitehole::lexer::{action::whitespaces, token::kind, builder::LexerBuilder};
+/// # #[kind]
 /// # #[derive(Default, Clone)]
 /// # enum MyKind { #[default] Anonymous }
 /// # fn main() {
@@ -128,7 +128,7 @@ pub fn chars_in_str<State, Heap>(
 /// # }
 /// ```
 #[inline]
-pub fn whitespaces<State, Heap>() -> Action<'static, MockTokenKind<()>, State, Heap> {
+pub fn whitespaces<State, Heap>() -> Action<'static, MockKind<()>, State, Heap> {
   chars(|ch| ch.is_whitespace())
     // 0009..000D    ; White_Space # Cc   [5] <control-0009>..<control-000D>
     // 0020          ; White_Space # Zs       SPACE
@@ -174,7 +174,7 @@ pub fn comment<State, Heap>(
   // TODO: use ref instead of owned?
   open: impl Into<String>,
   close: impl Into<String>,
-) -> Action<'static, MockTokenKind<()>, State, Heap> {
+) -> Action<'static, MockKind<()>, State, Heap> {
   let open: String = open.into();
   let close: String = close.into();
   let first = open.chars().next().expect("open is empty");
@@ -201,7 +201,7 @@ mod tests {
   use super::*;
   use crate::lexer::action::{ActionInput, HeadMatcher};
 
-  fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
+  fn assert_accept(action: &Action<MockKind<()>>, text: &str, expected: usize) {
     assert_eq!(
       (action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut ()).unwrap())
         .unwrap()
@@ -209,13 +209,13 @@ mod tests {
       expected
     );
   }
-  fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
+  fn assert_reject(action: &Action<MockKind<()>>, text: &str) {
     assert!((action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut ()).unwrap()).is_none());
   }
 
   #[test]
   fn action_utils_chars() {
-    let action: Action<MockTokenKind<()>> = chars(|ch| ch.is_ascii_digit());
+    let action: Action<MockKind<()>> = chars(|ch| ch.is_ascii_digit());
 
     // common cases
     assert_reject(&action, "abc");
@@ -228,7 +228,7 @@ mod tests {
 
   #[test]
   fn action_utils_chars_in_range() {
-    let action: Action<MockTokenKind<()>> = chars_in_range('1'..='3');
+    let action: Action<MockKind<()>> = chars_in_range('1'..='3');
 
     // common cases
     assert_reject(&action, "abc");
@@ -244,7 +244,7 @@ mod tests {
 
   #[test]
   fn action_utils_charset() {
-    let action: Action<MockTokenKind<()>> = charset(['1', '3', '5']);
+    let action: Action<MockKind<()>> = charset(['1', '3', '5']);
 
     // common cases
     assert_reject(&action, "abc");
@@ -260,7 +260,7 @@ mod tests {
 
   #[test]
   fn action_utils_chars_in_str() {
-    let action: Action<MockTokenKind<()>> = chars_in_str("135");
+    let action: Action<MockKind<()>> = chars_in_str("135");
 
     // common cases
     assert_reject(&action, "abc");
@@ -276,7 +276,7 @@ mod tests {
 
   #[test]
   fn action_utils_comment() {
-    let action: Action<MockTokenKind<()>> = comment("//", "\n");
+    let action: Action<MockKind<()>> = comment("//", "\n");
 
     // common cases
     let text = "// this is a comment\n";
@@ -298,7 +298,7 @@ mod tests {
 
   #[test]
   fn action_utils_whitespaces() {
-    let action: Action<MockTokenKind<()>> = whitespaces();
+    let action: Action<MockKind<()>> = whitespaces();
 
     // common cases
     assert_reject(&action, "123");

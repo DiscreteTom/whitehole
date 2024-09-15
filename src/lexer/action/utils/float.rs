@@ -8,10 +8,8 @@ use super::{
   decimal_integer_literal_body_with_options, IntegerLiteralBodyOptions, NumericSeparatorAccumulator,
 };
 use crate::{
-  lexer::{
-    action::{simple_with_data, Action},
-    token::MockTokenKind,
-  },
+  kind::MockKind,
+  lexer::action::{simple_with_data, Action},
   utils::Accumulator,
 };
 use std::collections::HashSet;
@@ -241,12 +239,8 @@ pub fn float_literal_with<
   options_builder: impl FnOnce(
     FloatLiteralOptions<(), (), (), ()>,
   ) -> FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
-) -> Action<
-  'static,
-  MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>,
-  State,
-  Heap,
-> {
+) -> Action<'static, MockKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>, State, Heap>
+{
   float_literal_with_options(options_builder(FloatLiteralOptions::new()))
 }
 
@@ -270,12 +264,8 @@ pub fn float_literal_with_options<
   ExpAcc: Accumulator<char> + Clone + 'static,
 >(
   options: FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
-) -> Action<
-  'static,
-  MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>,
-  State,
-  Heap,
-> {
+) -> Action<'static, MockKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>, State, Heap>
+{
   // head for integer part
   let mut heads = HashSet::from(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
 
@@ -476,7 +466,7 @@ mod tests {
   }
 
   fn assert_accept(
-    action: &Action<MockTokenKind<FloatLiteralData<Vec<usize>, String, String, String>>>,
+    action: &Action<MockKind<FloatLiteralData<Vec<usize>, String, String, String>>>,
     s: &str,
     integer: (usize, &str, Vec<usize>),
     fraction: Option<(usize, &str, Vec<usize>)>,

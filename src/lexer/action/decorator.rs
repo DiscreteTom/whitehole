@@ -7,7 +7,7 @@ mod literal;
 pub use context::*;
 
 use super::{input::ActionInput, output::ActionOutput, Action, ActionExec, RawActionExec};
-use crate::lexer::token::TokenKindId;
+use crate::kind::KindId;
 
 /// Apply a statement and return `self`.
 macro_rules! echo_with {
@@ -23,8 +23,8 @@ impl<'a, Kind, State, Heap> Action<'a, Kind, State, Heap> {
   /// Set [`Self::muted`] to `true`.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::token_kind};
-  /// # #[token_kind]
+  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::kind};
+  /// # #[kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # fn main() {
@@ -43,8 +43,8 @@ impl<'a, Kind, State, Heap> Action<'a, Kind, State, Heap> {
   /// Set [`Self::muted`] to `false`.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::token_kind};
-  /// # #[token_kind]
+  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::kind};
+  /// # #[kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # fn main() {
@@ -85,7 +85,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   #[inline]
   fn map_exec_new<NewKind>(
     self,
-    kind: TokenKindId<NewKind>,
+    kind: KindId<NewKind>,
     f: impl Fn(
         &RawActionExec<Kind, State, Heap>,
         &mut ActionInput<&mut State, &mut Heap>,
@@ -106,8 +106,8 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// Reject the action if the `condition` returns `true`.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::token_kind};
-  /// # #[token_kind]
+  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::kind};
+  /// # #[kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # #[derive(Clone, Default)]
@@ -142,8 +142,8 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// Modify `State` and `Heap` before the action is executed.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::token_kind};
-  /// # #[token_kind]
+  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::kind};
+  /// # #[kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # #[derive(Clone, Default)]
@@ -170,8 +170,8 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// Reject the action if the `condition` returns `true`.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::token_kind};
-  /// # #[token_kind]
+  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::kind};
+  /// # #[kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # fn main() {
@@ -208,8 +208,8 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// Reject the action after execution.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::token_kind};
-  /// # #[token_kind]
+  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::kind};
+  /// # #[kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # fn main() {
@@ -238,8 +238,8 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// Call the `cb` if the action is accepted.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::token_kind};
-  /// # #[token_kind]
+  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::kind};
+  /// # #[kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # #[derive(Clone, Default)]
@@ -274,9 +274,9 @@ mod tests {
   use crate::lexer::action::{
     exact, input::ActionInput, output::ActionOutput, AcceptedActionOutputContext, Action,
   };
-  use whitehole_macros::_token_kind;
+  use whitehole_macros::_kind;
 
-  #[_token_kind]
+  #[_kind]
   #[derive(Clone)]
   enum MyKind {
     A,

@@ -1,7 +1,7 @@
 use super::AcceptedActionOutputContext;
-use crate::lexer::{
-  action::{Action, ActionInput, ActionOutput},
-  token::{DefaultTokenKind, SubTokenKind, TokenKindIdBinding},
+use crate::{
+  kind::{DefaultKind, KindIdBinding, SubKind},
+  lexer::action::{Action, ActionInput, ActionOutput},
 };
 
 impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
@@ -11,10 +11,10 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// ```
   /// use whitehole::lexer::{
   ///   action::{Action, exact},
-  ///   token::token_kind,
+  ///   token::kind,
   /// };
   ///
-  /// #[token_kind]
+  /// #[kind]
   /// #[derive(Clone, Debug)]
   /// enum MyKind { A, B(i32) }
   ///
@@ -26,7 +26,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   #[inline]
   pub fn bind<NewKind, ViaKind>(self, kind: ViaKind) -> Action<'a, NewKind, State, Heap>
   where
-    ViaKind: SubTokenKind<TokenKind = NewKind> + Into<TokenKindIdBinding<NewKind>> + Clone + 'a,
+    ViaKind: SubKind<Kind = NewKind> + Into<KindIdBinding<NewKind>> + Clone + 'a,
   {
     self.map_exec_new(ViaKind::kind_id(), move |exec, input| {
       exec(input).map(|output| ActionOutput {
@@ -41,10 +41,10 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// ```
   /// use whitehole::lexer::{
   ///   action::{Action, exact},
-  ///   token::{token_kind, SubTokenKind},
+  ///   token::{kind, SubKind},
   /// };
   ///
-  /// #[token_kind]
+  /// #[kind]
   /// #[derive(Clone, Debug, Default)]
   /// enum MyKind { #[default] Anonymous, A }
   ///
@@ -56,11 +56,11 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   #[inline]
   pub fn bind_default<NewKind>(self) -> Action<'a, NewKind, State, Heap>
   where
-    NewKind: DefaultTokenKind + Default,
+    NewKind: DefaultKind + Default,
   {
     self.map_exec_new(NewKind::default_kind_id(), move |exec, input| {
       exec(input).map(|output| ActionOutput {
-        binding: TokenKindIdBinding::default(),
+        binding: KindIdBinding::default(),
         digested: output.digested,
       })
     })
@@ -74,10 +74,10 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// ```
   /// use whitehole::lexer::{
   ///   action::{Action, regex},
-  ///   token::token_kind,
+  ///   token::kind,
   /// };
   ///
-  /// #[token_kind]
+  /// #[kind]
   /// #[derive(Clone, Debug)]
   /// enum MyKind { Num(i32) }
   ///
@@ -95,7 +95,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
       + 'a,
   ) -> Action<'a, NewKind, State, Heap>
   where
-    ViaKind: Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKind = NewKind>,
+    ViaKind: Into<KindIdBinding<NewKind>> + SubKind<Kind = NewKind>,
   {
     self.map_exec_new(ViaKind::kind_id(), move |exec, input| {
       exec(input).map(|output| ActionOutput {
@@ -110,9 +110,9 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
 mod tests {
   use super::*;
   use crate::lexer::action::{exact, regex};
-  use whitehole_macros::_token_kind;
+  use whitehole_macros::_kind;
 
-  #[_token_kind]
+  #[_kind]
   #[derive(Clone, Debug, Default)]
   enum MyKind {
     #[default]

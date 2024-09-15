@@ -6,12 +6,13 @@ use super::{
   StatelessLexer,
 };
 use crate::{
+  kind::KindId,
   lexer::{
     action::{ActionInput, ActionOutput},
     fork::{ForkOutputFactory, LexOptionsFork},
     output::LexOutput,
     stateless::utils::traverse_actions,
-    token::{Token, TokenKindId},
+    token::Token,
   },
   utils::lookup::Lookup,
 };
@@ -229,7 +230,7 @@ impl<'a, Kind, State, Heap> StatelessLexer<'a, Kind, State, Heap> {
 
   fn get_literal_head_map(
     &self,
-    kind: Option<TokenKindId<Kind>>,
+    kind: Option<KindId<Kind>>,
     literal: &str,
   ) -> (&LiteralMap<Kind, State, Heap>, &HeadMap<Kind, State, Heap>) {
     let literal_map = kind.map_or(&self.literal_map, |kind| {
@@ -245,7 +246,7 @@ impl<'a, Kind, State, Heap> StatelessLexer<'a, Kind, State, Heap> {
     (literal_map, head_map)
   }
 
-  fn get_kind_head_map(&self, kind: Option<TokenKindId<Kind>>) -> &HeadMap<Kind, State, Heap> {
+  fn get_kind_head_map(&self, kind: Option<KindId<Kind>>) -> &HeadMap<Kind, State, Heap> {
     kind.map_or(
       &self.head_map, // if no expected kind, use the head map with all actions
       |kind| {

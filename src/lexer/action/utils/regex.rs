@@ -1,8 +1,8 @@
 // TODO: only available in feature `regex`?
 
-use crate::lexer::{
-  action::{simple, Action},
-  token::MockTokenKind,
+use crate::{
+  kind::MockKind,
+  lexer::action::{simple, Action},
 };
 use regex::Regex;
 
@@ -20,7 +20,7 @@ use regex::Regex;
 /// let a: Action<_> = regex(r"^\d+");
 /// ```
 #[inline]
-pub fn regex<State, Heap>(re: &str) -> Action<MockTokenKind<()>, State, Heap> {
+pub fn regex<State, Heap>(re: &str) -> Action<MockKind<()>, State, Heap> {
   Regex::new(re)
     .map(|re| simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
     .expect("invalid regex")

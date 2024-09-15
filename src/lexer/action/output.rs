@@ -1,10 +1,10 @@
-use crate::lexer::token::TokenKindIdBinding;
+use crate::kind::KindIdBinding;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActionOutput<Kind> {
   /// The [`Token::binding`](crate::lexer::token::Token::binding)
   /// that is created by this action.
-  pub binding: TokenKindIdBinding<Kind>,
+  pub binding: KindIdBinding<Kind>,
   /// How many bytes are digested by this action.
   /// # Caveats
   /// `0` is allowed, but be careful with infinite loops.

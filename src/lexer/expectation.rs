@@ -1,9 +1,9 @@
-use super::token::{SubTokenKind, TokenKindId};
+use crate::kind::{KindId, SubKind};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Expectation<'literal, Kind> {
   /// See [`Self::kind`].
-  pub kind: Option<TokenKindId<Kind>>,
+  pub kind: Option<KindId<Kind>>,
   /// See [`Self::literal`].
   pub literal: Option<&'literal str>,
 }
@@ -15,16 +15,14 @@ impl<'literal, Kind> Default for Expectation<'literal, Kind> {
   }
 }
 
-impl<'literal, Kind> From<TokenKindId<Kind>> for Expectation<'literal, Kind> {
+impl<'literal, Kind> From<KindId<Kind>> for Expectation<'literal, Kind> {
   #[inline]
-  fn from(id: TokenKindId<Kind>) -> Self {
+  fn from(id: KindId<Kind>) -> Self {
     Self::new().kind(id)
   }
 }
 
-impl<'literal, Kind, ViaKind: SubTokenKind<TokenKind = Kind>> From<ViaKind>
-  for Expectation<'literal, Kind>
-{
+impl<'literal, Kind, ViaKind: SubKind<Kind = Kind>> From<ViaKind> for Expectation<'literal, Kind> {
   #[inline]
   fn from(_: ViaKind) -> Self {
     Self::new().kind(ViaKind::kind_id())
@@ -52,9 +50,9 @@ impl<'literal, Kind> Expectation<'literal, Kind> {
   /// with different [`kind`](crate::lexer::action::Action::kind) (unless [`muted`](crate::lexer::action::Action::muted)).
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::token::{token_kind, SubTokenKind};
+  /// # use whitehole::lexer::token::{kind, SubKind};
   /// # use whitehole::lexer::expectation::Expectation;
-  /// #[token_kind]
+  /// #[kind]
   /// enum MyKind { A(String), B }
   /// # fn main() {
   /// // use kind id, useful for enum variant with associated data
@@ -67,7 +65,7 @@ impl<'literal, Kind> Expectation<'literal, Kind> {
   /// # }
   /// ```
   #[inline]
-  pub fn kind(mut self, kind: impl Into<TokenKindId<Kind>>) -> Self {
+  pub fn kind(mut self, kind: impl Into<KindId<Kind>>) -> Self {
     self.kind = Some(kind.into());
     self
   }
@@ -99,10 +97,10 @@ impl<'literal, Kind> Expectation<'literal, Kind> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::token::SubTokenKind;
-  use whitehole_macros::_token_kind;
+  use crate::kind::SubKind;
+  use whitehole_macros::_kind;
 
-  #[_token_kind]
+  #[_kind]
   #[derive(Debug)]
   enum MyKind {
     A(()),
@@ -120,7 +118,7 @@ mod tests {
   }
 
   #[test]
-  fn expectation_from_kind_id_or_sub_token_kind_value() {
+  fn expectation_from_kind_id_or_sub_kind_value() {
     let expectation = Expectation::from(A::kind_id());
     assert_eq!(expectation.kind, Some(A::kind_id()));
     assert_eq!(expectation.literal, None);

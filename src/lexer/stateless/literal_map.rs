@@ -127,19 +127,21 @@ impl<'a, Kind, State, Heap> LiteralMap<'a, Kind, State, Heap> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::{
-    action::{exact, regex, Action},
-    stateless::head_map::RuntimeActions,
-    token::MockTokenKind,
+  use crate::{
+    kind::MockKind,
+    lexer::{
+      action::{exact, regex, Action},
+      stateless::head_map::RuntimeActions,
+    },
   };
 
-  fn r<S>(s: &str) -> Action<MockTokenKind<()>, S> {
+  fn r<S>(s: &str) -> Action<MockKind<()>, S> {
     regex(s)
   }
 
   fn assert_immutable_actions_eq(
-    actions: &RuntimeActions<MockTokenKind<()>, (), ()>,
-    expected: Vec<Action<MockTokenKind<()>, ()>>,
+    actions: &RuntimeActions<MockKind<()>, (), ()>,
+    expected: Vec<Action<MockKind<()>, ()>>,
   ) {
     assert_eq!(actions.len(), expected.len());
     for (m, e) in actions.muted().iter().zip(expected.iter()) {

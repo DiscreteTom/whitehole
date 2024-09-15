@@ -20,10 +20,8 @@ pub use options::*;
 pub use value::*;
 
 use crate::{
-  lexer::{
-    action::{simple_with_data, Action},
-    token::MockTokenKind,
-  },
+  kind::MockKind,
+  lexer::action::{simple_with_data, Action},
   utils::{Accumulator, OneOrMore},
 };
 use std::collections::HashSet;
@@ -38,7 +36,7 @@ pub fn string<
 >(
   open: impl Into<OneOrMore<String>>,
   options: StringBodyOptions<Value, CustomError, BodyAcc>,
-) -> Action<'static, MockTokenKind<BodyAcc>, State, Heap> {
+) -> Action<'static, MockKind<BodyAcc>, State, Heap> {
   let open: Vec<String> = open.into().0;
   let head: HashSet<_> = open
     .iter()
@@ -68,15 +66,15 @@ mod tests {
   use crate::lexer::action::{ActionInput, ActionOutput, HeadMatcher};
 
   fn exec_action(
-    action: &Action<MockTokenKind<Vec<PartialStringBody<String, ()>>>, ()>,
+    action: &Action<MockKind<Vec<PartialStringBody<String, ()>>>, ()>,
     text: &str,
-  ) -> Option<ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>>> {
+  ) -> Option<ActionOutput<MockKind<Vec<PartialStringBody<String, ()>>>>> {
     (action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut ()).unwrap())
   }
 
   fn validate_output(
-    output: ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>>,
-  ) -> ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>> {
+    output: ActionOutput<MockKind<Vec<PartialStringBody<String, ()>>>>,
+  ) -> ActionOutput<MockKind<Vec<PartialStringBody<String, ()>>>> {
     // ensure at least one partial string body (the unterminated error)
     assert!(!output.binding.kind().data.is_empty());
 
@@ -99,10 +97,10 @@ mod tests {
   }
 
   fn assert_accept_all(
-    action: &Action<MockTokenKind<Vec<PartialStringBody<String, ()>>>, ()>,
+    action: &Action<MockKind<Vec<PartialStringBody<String, ()>>>, ()>,
     text: &str,
     value: &str,
-  ) -> ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>> {
+  ) -> ActionOutput<MockKind<Vec<PartialStringBody<String, ()>>>> {
     let output = exec_action(action, text).unwrap();
     assert_eq!(output.digested, text.len());
     assert_eq!(

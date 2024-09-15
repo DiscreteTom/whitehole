@@ -60,14 +60,14 @@ impl_ctx!(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::token::MockTokenKind;
+  use crate::kind::MockKind;
 
   fn create_input() -> ActionInput<'static, (), ()> {
     ActionInput::new("123", 1, (), ()).unwrap()
   }
-  fn create_output() -> ActionOutput<MockTokenKind<()>> {
+  fn create_output() -> ActionOutput<MockKind<()>> {
     ActionOutput {
-      binding: MockTokenKind::new(()).into(),
+      binding: MockKind::new(()).into(),
       digested: 1,
     }
   }

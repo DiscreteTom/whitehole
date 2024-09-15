@@ -1,7 +1,7 @@
 use super::exact;
-use crate::lexer::{
-  action::{AcceptedActionOutputContext, Action, ActionInput, ActionOutput},
-  token::MockTokenKind,
+use crate::{
+  kind::MockKind,
+  lexer::action::{AcceptedActionOutputContext, Action, ActionInput, ActionOutput},
 };
 
 pub use whitehole_helpers::word_vec;
@@ -47,7 +47,7 @@ pub fn starts_with_word_boundary(rest: &str) -> bool {
 pub fn no_word_boundary_in_rest<State, Heap>(
   ctx: AcceptedActionOutputContext<
     &mut ActionInput<&mut State, &mut Heap>,
-    &ActionOutput<MockTokenKind<()>>,
+    &ActionOutput<MockKind<()>>,
   >,
 ) -> bool {
   !starts_with_word_boundary(ctx.rest())
@@ -69,7 +69,7 @@ pub fn no_word_boundary_in_rest<State, Heap>(
 #[inline]
 pub fn word<State: 'static, Heap: 'static>(
   s: impl Into<String>,
-) -> Action<'static, MockTokenKind<()>, State, Heap> {
+) -> Action<'static, MockKind<()>, State, Heap> {
   exact(s).reject_if(no_word_boundary_in_rest)
 }
 
@@ -79,7 +79,7 @@ mod tests {
   use crate::lexer::action::{ActionInput, HeadMatcher};
   use whitehole_helpers::_word_vec;
 
-  fn assert_accept(action: &Action<MockTokenKind<()>>, text: &str, expected: usize) {
+  fn assert_accept(action: &Action<MockKind<()>>, text: &str, expected: usize) {
     assert_eq!(
       (action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut ()).unwrap())
         .unwrap()
@@ -87,7 +87,7 @@ mod tests {
       expected
     );
   }
-  fn assert_reject(action: &Action<MockTokenKind<()>>, text: &str) {
+  fn assert_reject(action: &Action<MockKind<()>>, text: &str) {
     assert!((action.exec.raw)(&mut ActionInput::new(text, 0, &mut (), &mut ()).unwrap()).is_none());
   }
 
@@ -99,7 +99,7 @@ mod tests {
 
   #[test]
   fn action_utils_word() {
-    let action: Action<MockTokenKind<()>> = word("a");
+    let action: Action<MockKind<()>> = word("a");
     assert_reject(&action, "b");
     assert_accept(&action, "a", 1);
     // lookahead
@@ -125,7 +125,7 @@ mod tests {
 
   #[test]
   fn action_utils_word_vec() {
-    let actions: Vec<Action<MockTokenKind<()>>> = _word_vec!["int", "bool"];
+    let actions: Vec<Action<MockKind<()>>> = _word_vec!["int", "bool"];
     assert_accept(&actions[0], "int", 3);
     assert_accept(&actions[1], "bool", 4);
     // lookahead

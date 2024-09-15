@@ -191,23 +191,21 @@ impl<'a, Kind, State, Heap> StatelessLexer<'a, Kind, State, Heap> {
 mod tests {
   use super::*;
   use crate::{
-    lexer::{
-      action::{exact, regex},
-      token::{MockTokenKind, SubTokenKind},
-    },
+    kind::{MockKind, SubKind},
+    lexer::action::{exact, regex},
     utils::lookup::Lookup,
   };
   use head_map::RuntimeActions;
-  use whitehole_macros::_token_kind;
+  use whitehole_macros::_kind;
 
-  #[_token_kind]
+  #[_kind]
   #[derive(Debug, Clone)]
   pub enum MyKind {
     A,
     B,
   }
 
-  fn r<S>(s: &str) -> Action<MockTokenKind<()>, S> {
+  fn r<S>(s: &str) -> Action<MockKind<()>, S> {
     regex(s)
   }
 

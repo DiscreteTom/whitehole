@@ -1,3 +1,11 @@
+//! ## Getting Started
+//!
+//! Here is the recommended order of learning this crate:
+//!
+//! - [`kind`]
+//! - [`lexer`]
+
+pub mod kind;
 pub mod lexer;
 pub mod utils;
 // pub mod parser;

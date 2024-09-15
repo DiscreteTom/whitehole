@@ -1,11 +1,11 @@
 use super::AcceptedActionOutputContext;
-use crate::lexer::{
-  action::{Action, ActionInput, ActionOutput},
-  token::{MockTokenKind, SubTokenKind},
+use crate::{
+  kind::{MockKind, SubKind},
+  lexer::action::{Action, ActionInput, ActionOutput},
 };
 
 impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
-  /// Set the kind to [`MockTokenKind`] and store the data in [`MockTokenKind::data`].
+  /// Set the kind to [`MockKind`] and store the data in [`MockKind::data`].
   /// Return a new action.
   ///
   /// You can consume the original [`ActionOutput`] in the `factory`.
@@ -22,11 +22,11 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
         AcceptedActionOutputContext<&mut ActionInput<&mut State, &mut Heap>, ActionOutput<Kind>>,
       ) -> T
       + 'a,
-  ) -> Action<'a, MockTokenKind<T>, State, Heap> {
-    self.map_exec_new(MockTokenKind::kind_id(), move |exec, input| {
+  ) -> Action<'a, MockKind<T>, State, Heap> {
+    self.map_exec_new(MockKind::kind_id(), move |exec, input| {
       exec(input).map(|output| ActionOutput {
         digested: output.digested,
-        binding: MockTokenKind {
+        binding: MockKind {
           data: factory(AcceptedActionOutputContext { input, output }),
         }
         .into(),
@@ -35,8 +35,8 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   }
 }
 
-impl<'a, Data: 'a, State: 'a, Heap: 'a> Action<'a, MockTokenKind<Data>, State, Heap> {
-  /// Map the data of the kind to another data, stored in [`MockTokenKind::data`].
+impl<'a, Data: 'a, State: 'a, Heap: 'a> Action<'a, MockKind<Data>, State, Heap> {
+  /// Map the data of the kind to another data, stored in [`MockKind::data`].
   /// Return a new action.
   /// # Examples
   /// ```
@@ -48,7 +48,7 @@ impl<'a, Data: 'a, State: 'a, Heap: 'a> Action<'a, MockTokenKind<Data>, State, H
   pub fn map<NewData>(
     self,
     transformer: impl Fn(Data) -> NewData + 'a,
-  ) -> Action<'a, MockTokenKind<NewData>, State, Heap> {
+  ) -> Action<'a, MockKind<NewData>, State, Heap> {
     self.data(move |ctx| transformer(ctx.output.binding.take().data))
   }
 }

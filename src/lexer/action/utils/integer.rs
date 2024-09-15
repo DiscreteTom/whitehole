@@ -5,10 +5,8 @@ pub use data::*;
 pub use options::*;
 
 use crate::{
-  lexer::{
-    action::{simple_with_data, Action},
-    token::MockTokenKind,
-  },
+  kind::MockKind,
+  lexer::action::{simple_with_data, Action},
   utils::Accumulator,
 };
 
@@ -312,7 +310,7 @@ macro_rules! generate_integer_literal_functions {
       options_builder: impl FnOnce(
         IntegerLiteralBodyOptions<(), ()>,
       ) -> IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
-    ) -> Action<'static, MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, State, Heap> {
+    ) -> Action<'static, MockKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, State, Heap> {
       $action_fn_name_with_options(options_builder(IntegerLiteralBodyOptions::new()))
     }
 
@@ -344,7 +342,7 @@ macro_rules! generate_integer_literal_functions {
       ValueAcc: Accumulator<char> + Clone + 'static,
     >(
       options: IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
-    ) -> Action<'static, MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, State, Heap> {
+    ) -> Action<'static, MockKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, State, Heap> {
       let prefix = $prefix;
 
       if prefix.len() == 0 {
@@ -543,14 +541,14 @@ mod tests {
     test(hexadecimal_integer_literal_body_with_options);
   }
 
-  fn assert_reject(action: Action<MockTokenKind<IntegerLiteralData<(), ()>>>, s: &str) {
+  fn assert_reject(action: Action<MockKind<IntegerLiteralData<(), ()>>>, s: &str) {
     assert!((action.exec.raw)(&mut ActionInput::new(s, 0, &mut (), &mut ()).unwrap()).is_none());
   }
 
   #[test]
   fn test_integer_literal_actions() {
     fn assert_integer_literal_action(
-      action: Action<MockTokenKind<IntegerLiteralData<Vec<usize>, String>>>,
+      action: Action<MockKind<IntegerLiteralData<Vec<usize>, String>>>,
       s: &str,
       expect_value: &str,
     ) {

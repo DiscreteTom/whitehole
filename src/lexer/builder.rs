@@ -142,17 +142,17 @@ impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::lexer::{
-    action::{exact, regex},
-    token::MockTokenKind,
+  use crate::{
+    kind::MockKind,
+    lexer::action::{exact, regex},
   };
 
   #[test]
   fn test_lexer_builder_constructors() {
     // ensure the return type is correct
-    let _: LexerBuilder<MockTokenKind<()>, i32> = LexerBuilder::default().append(exact("a"));
-    let _: LexerBuilder<MockTokenKind<()>> = LexerBuilder::new().append(exact("a"));
-    let _: LexerBuilder<MockTokenKind<()>, i32> = LexerBuilder::stateful().append(exact("a"));
+    let _: LexerBuilder<MockKind<()>, i32> = LexerBuilder::default().append(exact("a"));
+    let _: LexerBuilder<MockKind<()>> = LexerBuilder::new().append(exact("a"));
+    let _: LexerBuilder<MockKind<()>, i32> = LexerBuilder::stateful().append(exact("a"));
   }
 
   #[test]

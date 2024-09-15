@@ -183,7 +183,7 @@ impl<'a, Kind, State, Heap> HeadMap<'a, Kind, State, Heap> {
 //   use super::*;
 //   use crate::lexer::{
 //     action::{exact, regex, Action},
-//     token::MockTokenKind,
+//     token::MockKind,
 //   };
 
 //   fn push_helper<K, S>(actions: &mut RuntimeActions<K, S, ()>, a: Action<K, S, ()>) {
@@ -193,7 +193,7 @@ impl<'a, Kind, State, Heap> HeadMap<'a, Kind, State, Heap> {
 
 //   #[test]
 //   fn test_head_map_actions() {
-//     let mut actions: RuntimeActions<MockTokenKind<()>, i32, ()> = RuntimeActions::new();
+//     let mut actions: RuntimeActions<MockKind<()>, i32, ()> = RuntimeActions::new();
 //     assert_eq!(actions.len(), 0);
 
 //     push_helper(&mut actions, exact("a"));
@@ -221,8 +221,8 @@ impl<'a, Kind, State, Heap> HeadMap<'a, Kind, State, Heap> {
 //   }
 
 //   fn assert_immutable_actions_eq(
-//     actions: &RuntimeActions<MockTokenKind<()>, (), ()>,
-//     expected: Vec<Action<MockTokenKind<()>, (), ()>>,
+//     actions: &RuntimeActions<MockKind<()>, (), ()>,
+//     expected: Vec<Action<MockKind<()>, (), ()>>,
 //   ) {
 //     assert_eq!(actions.len(), expected.len());
 //     for i in 0..actions.immutables.len() {

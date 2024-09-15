@@ -6,22 +6,20 @@ use super::{
   StringBodyOptions,
 };
 use crate::{
-  lexer::{
-    action::{simple_with_data, Action},
-    token::MockTokenKind,
-  },
+  kind::MockKind,
+  lexer::action::{simple_with_data, Action},
   utils::Accumulator,
 };
 
 /// Create an action that matches any JSON whitespace characters greedily.
 /// The characters are: `'\x20'` (space), `'\x0a'` (line feed), `'\x0d'` (carriage return), `'\x09'` (tab).
-pub fn whitespaces<State, Heap>() -> Action<'static, MockTokenKind<()>, State, Heap> {
+pub fn whitespaces<State, Heap>() -> Action<'static, MockKind<()>, State, Heap> {
   chars_in_str("\x20\x0a\x0d\x09")
 }
 
 /// Create an action that matches one JSON boundary character exactly.
 /// The characters are: `'{'`, `'}'`, `','`, `':'`, `'['`, `']'`.
-pub fn boundaries<State, Heap>() -> Vec<Action<'static, MockTokenKind<()>, State, Heap>> {
+pub fn boundaries<State, Heap>() -> Vec<Action<'static, MockKind<()>, State, Heap>> {
   exact_chars("{},:[]")
 }
 
@@ -78,7 +76,7 @@ pub fn string<
   BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone + 'static,
 >(
   options: StringOptions<BodyAcc, CustomError>,
-) -> Action<'static, MockTokenKind<BodyAcc>, State, Heap> {
+) -> Action<'static, MockKind<BodyAcc>, State, Heap> {
   super::string(
     "\"",
     StringBodyOptions::default()
@@ -119,7 +117,7 @@ pub fn string_with<
   BodyAcc: Accumulator<PartialStringBody<Value, CustomError>> + Clone + 'static,
 >(
   options_builder: impl FnOnce(StringOptions<(), HexEscapeError>) -> StringOptions<BodyAcc, CustomError>,
-) -> Action<'static, MockTokenKind<BodyAcc>, State, Heap> {
+) -> Action<'static, MockKind<BodyAcc>, State, Heap> {
   string(options_builder(StringOptions::new()))
 }
 
@@ -212,8 +210,7 @@ pub fn number<
   ExpAcc: Accumulator<char> + Clone + 'static,
 >(
   options: NumberOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
-) -> Action<'static, MockTokenKind<FloatLiteralData<SepAcc, IntAcc, FracAcc, ExpAcc>>, State, Heap>
-{
+) -> Action<'static, MockKind<FloatLiteralData<SepAcc, IntAcc, FracAcc, ExpAcc>>, State, Heap> {
   let options = FloatLiteralOptions::new()
     .separator_with(|o| o.indexes_to(options.separator))
     .integral_to(options.integer)
@@ -251,7 +248,6 @@ pub fn number_with<
   options_builder: impl FnOnce(
     NumberOptions<(), (), (), ()>,
   ) -> NumberOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
-) -> Action<'static, MockTokenKind<FloatLiteralData<SepAcc, IntAcc, FracAcc, ExpAcc>>, State, Heap>
-{
+) -> Action<'static, MockKind<FloatLiteralData<SepAcc, IntAcc, FracAcc, ExpAcc>>, State, Heap> {
   number(options_builder(NumberOptions::new()))
 }

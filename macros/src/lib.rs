@@ -2,12 +2,12 @@ use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{self, parse, Data, DeriveInput, Fields};
 
-/// This macro will transform an enum into a token kind.
+/// This macro will transform an enum into a kind.
 /// # Examples
 /// The following code
 /// ```
-/// use whitehole_macros::token_kind;
-/// #[token_kind]
+/// use whitehole_macros::kind;
+/// #[kind]
 /// pub enum MyKind {
 ///   A,
 ///   B(i32),
@@ -19,20 +19,20 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// pub enum MyKind { A, B(B), C(C) }
 /// pub struct A;
 /// impl Into<MyKind> for A { ... }
-/// impl SubTokenKind for A { ... }
+/// impl SubKind for A { ... }
 ///
 /// pub struct B(pub i32);
 /// impl Into<MyKind> for B { ... }
-/// impl SubTokenKind for B { ... }
+/// impl SubKind for B { ... }
 ///
 /// pub struct C { pub c: i32 }
 /// impl Into<MyKind> for C { ... }
-/// impl SubTokenKind for C { ... }
+/// impl SubKind for C { ... }
 /// ```
-/// Besides, if the token kind derive [`Default`]:
+/// Besides, if the kind derive [`Default`]:
 /// ```
-/// use whitehole_macros::token_kind;
-/// #[token_kind]
+/// use whitehole_macros::kind;
+/// #[kind]
 /// #[derive(Default)]
 /// enum MyKind {
 ///   #[default]
@@ -43,26 +43,26 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// ```
 /// the macro will also generate:
 /// ```no_run
-/// impl DefaultTokenKindId for MyKind { ... }
+/// impl DefaultKind for MyKind { ... }
 /// ```
 /// # Limitations
 /// Generics are not supported yet.
 #[proc_macro_attribute]
-pub fn token_kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
   common(quote! { whitehole }, input).into()
 }
 
-/// Same as [`token_kind`].
+/// Same as [`kind`].
 /// This is only used internally in whitehole.
 #[proc_macro_attribute]
-pub fn _token_kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn _kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
   common(quote! { crate }, input).into()
 }
 
 /// Print the generated code for debugging.
 /// This is only used internally in whitehole.
 #[proc_macro_attribute]
-pub fn _debug_token_kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn _debug_kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
   let ts = common(quote! { crate }, input);
   println!("{}", ts.to_string());
   ts.into()
@@ -142,7 +142,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
     }
 
     // impl Into<MyKind> for the generated structs
-    // this is required by `TokenKindIdBinding::new`
+    // this is required by `KindIdBinding::new`
     match &variant.fields {
       Fields::Named(_) | Fields::Unnamed(_) => {
         gen.push(quote! {
@@ -166,22 +166,22 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
       }
     }
 
-    // impl SubTokenKind for the generated struct
+    // impl SubKind for the generated struct
     gen.push(quote! {
-      // impl SubTokenKind so users can get the kind id from the type instead of the value
-      impl #crate_name::lexer::token::SubTokenKind for #variant_name {
-        type TokenKind = #enum_name;
+      // impl SubKind so users can get the kind id from the type instead of the value
+      impl #crate_name::kind::SubKind for #variant_name {
+        type Kind = #enum_name;
         const VARIANT_INDEX: usize = #index;
       }
     });
 
-    // if a variant is the default variant, we will impl DefaultTokenKindId for the enum
+    // if a variant is the default variant, we will impl DefaultKindId for the enum
     if variant_attrs
       .iter()
       .any(|attr| attr.path.is_ident("default"))
     {
       gen.push(quote! {
-        impl #crate_name::lexer::token::DefaultTokenKind for #enum_name {
+        impl #crate_name::kind::DefaultKind for #enum_name {
           type Default = #variant_name;
         }
       });
