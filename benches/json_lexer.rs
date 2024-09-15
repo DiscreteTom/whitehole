@@ -7,9 +7,9 @@ use whitehole::lexer::{
     FloatLiteralData, HexEscapeError, PartialStringBody,
   },
   builder::LexerBuilder,
+  into::IntoLexer,
   stateless::StatelessLexer,
   token::token_kind,
-  IntoLexer,
 };
 
 #[token_kind]

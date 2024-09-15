@@ -3,9 +3,9 @@ use std::{fs::read_to_string, rc::Rc};
 use whitehole::lexer::{
   action::{chars, simple, unchecked_exact, unchecked_exact_chars},
   builder::LexerBuilder,
+  into::IntoLexer,
   stateless::StatelessLexer,
   token::token_kind,
-  IntoLexer,
 };
 
 #[token_kind]
