@@ -4,7 +4,7 @@ use crate::lexer::{
   token::{DefaultTokenKindId, SubTokenKind, TokenKindIdBinding},
 };
 
-impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
+impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// Set the binding for this action.
   /// Use this if your action can only yield a const token kind value.
   /// # Examples
@@ -24,10 +24,9 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// # }
   /// ```
   #[inline]
-  pub fn bind<NewKind, ViaKind>(self, kind: ViaKind) -> Action<NewKind, State, Heap>
+  pub fn bind<NewKind, ViaKind>(self, kind: ViaKind) -> Action<'a, NewKind, State, Heap>
   where
-    ViaKind:
-      SubTokenKind<TokenKind = NewKind> + Into<TokenKindIdBinding<NewKind>> + Clone + 'static,
+    ViaKind: SubTokenKind<TokenKind = NewKind> + Into<TokenKindIdBinding<NewKind>> + Clone + 'a,
   {
     self.map_exec_new(ViaKind::kind_id(), move |exec, input| {
       exec(input).map(|output| ActionOutput {
@@ -55,7 +54,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// # }
   /// ```
   #[inline]
-  pub fn bind_default<NewKind>(self) -> Action<NewKind, State, Heap>
+  pub fn bind_default<NewKind>(self) -> Action<'a, NewKind, State, Heap>
   where
     NewKind: DefaultTokenKindId + Default,
   {
@@ -93,8 +92,8 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
     selector: impl Fn(
         AcceptedActionOutputContext<&mut ActionInput<&mut State, &mut Heap>, ActionOutput<Kind>>,
       ) -> ViaKind
-      + 'static,
-  ) -> Action<NewKind, State, Heap>
+      + 'a,
+  ) -> Action<'a, NewKind, State, Heap>
   where
     ViaKind: Into<TokenKindIdBinding<NewKind>> + SubTokenKind<TokenKind = NewKind>,
   {

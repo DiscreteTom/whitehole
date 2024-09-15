@@ -4,7 +4,7 @@ use crate::lexer::{
   token::{MockTokenKind, SubTokenKind},
 };
 
-impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
+impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// Set the kind to [`MockTokenKind`] and store the data in [`MockTokenKind::data`].
   /// Return a new action.
   ///
@@ -21,8 +21,8 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
     factory: impl Fn(
         AcceptedActionOutputContext<&mut ActionInput<&mut State, &mut Heap>, ActionOutput<Kind>>,
       ) -> T
-      + 'static,
-  ) -> Action<MockTokenKind<T>, State, Heap> {
+      + 'a,
+  ) -> Action<'a, MockTokenKind<T>, State, Heap> {
     self.map_exec_new(MockTokenKind::kind_id(), move |exec, input| {
       exec(input).map(|output| ActionOutput {
         digested: output.digested,
@@ -35,7 +35,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   }
 }
 
-impl<Data: 'static, State: 'static, Heap: 'static> Action<MockTokenKind<Data>, State, Heap> {
+impl<'a, Data: 'a, State: 'a, Heap: 'a> Action<'a, MockTokenKind<Data>, State, Heap> {
   /// Map the data of the kind to another data, stored in [`MockTokenKind::data`].
   /// Return a new action.
   /// # Examples
@@ -47,8 +47,8 @@ impl<Data: 'static, State: 'static, Heap: 'static> Action<MockTokenKind<Data>, S
   #[inline]
   pub fn map<NewData>(
     self,
-    transformer: impl Fn(Data) -> NewData + 'static,
-  ) -> Action<MockTokenKind<NewData>, State, Heap> {
+    transformer: impl Fn(Data) -> NewData + 'a,
+  ) -> Action<'a, MockTokenKind<NewData>, State, Heap> {
     self.data(move |ctx| transformer(ctx.output.binding.take().data))
   }
 }

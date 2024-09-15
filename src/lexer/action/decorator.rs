@@ -19,7 +19,7 @@ macro_rules! echo_with {
 pub(super) use echo_with;
 
 // simple decorators that doesn't require generic bounds
-impl<Kind, State, Heap> Action<Kind, State, Heap> {
+impl<'a, Kind, State, Heap> Action<'a, Kind, State, Heap> {
   /// Set [`Self::muted`] to `true`.
   /// # Examples
   /// ```
@@ -62,8 +62,8 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
 }
 
 // these decorators will use `Box` to construct new action exec
-// so `Kind/State/Heap` must be `'static`
-impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
+// so `Kind/State/Heap` must be `'a`
+impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// Apply a function to [`Action::exec`] and return the modified `self`.
   #[inline]
   fn map_exec(
@@ -72,7 +72,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
         &RawActionExec<Kind, State, Heap>,
         &mut ActionInput<&mut State, &mut Heap>,
       ) -> Option<ActionOutput<Kind>>
-      + 'static,
+      + 'a,
   ) -> Self {
     echo_with!(self, {
       let exec = self.exec.raw;
@@ -90,8 +90,8 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
         &RawActionExec<Kind, State, Heap>,
         &mut ActionInput<&mut State, &mut Heap>,
       ) -> Option<ActionOutput<NewKind>>
-      + 'static,
-  ) -> Action<NewKind, State, Heap> {
+      + 'a,
+  ) -> Action<'a, NewKind, State, Heap> {
     let exec = self.exec.raw;
     Action {
       exec: ActionExec::new(move |input| f(&exec, input)),
@@ -126,7 +126,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   #[inline]
   pub fn prevent(
     self,
-    condition: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> bool + 'static,
+    condition: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> bool + 'a,
   ) -> Self {
     self.map_exec(
       move |exec, input| {
@@ -160,10 +160,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// # }
   /// ```
   #[inline]
-  pub fn prepare(
-    self,
-    modifier: impl Fn(&mut ActionInput<&mut State, &mut Heap>) + 'static,
-  ) -> Self {
+  pub fn prepare(self, modifier: impl Fn(&mut ActionInput<&mut State, &mut Heap>) + 'a) -> Self {
     self.map_exec(move |exec, input| {
       modifier(input);
       exec(input)
@@ -192,7 +189,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
     condition: impl Fn(
         AcceptedActionOutputContext<&mut ActionInput<&mut State, &mut Heap>, &ActionOutput<Kind>>,
       ) -> bool
-      + 'static,
+      + 'a,
   ) -> Self {
     self.map_exec(move |exec, input| {
       exec(input).and_then(|output| {
@@ -262,7 +259,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   pub fn then(
     self,
     cb: impl Fn(AcceptedActionOutputContext<&mut ActionInput<&mut State, &mut Heap>, &ActionOutput<Kind>>)
-      + 'static,
+      + 'a,
   ) -> Self {
     self.map_exec(move |exec, input| {
       exec(input).inspect(|output| {

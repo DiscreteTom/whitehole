@@ -6,7 +6,7 @@ use crate::lexer::{
   stateless::utils::{break_loop_on_none, lex, prepare_input, traverse_actions},
 };
 
-impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
+impl<'a, Kind, State, Heap> StatelessLexer<'a, Kind, State, Heap> {
   /// Lex with muted actions, the default state and the default options.
   ///
   /// This function will create a new state and a new heap and return them.

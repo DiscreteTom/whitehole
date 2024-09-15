@@ -15,9 +15,9 @@ use crate::lexer::token::{MockTokenKind, SubTokenKind};
 /// let a: Action<_> = simple(|input| input.rest().len());
 /// ```
 #[inline]
-pub fn simple<State, Heap>(
-  f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> usize + 'static,
-) -> Action<MockTokenKind<()>, State, Heap> {
+pub fn simple<'a, State, Heap>(
+  f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> usize + 'a,
+) -> Action<'a, MockTokenKind<()>, State, Heap> {
   Action {
     exec: ActionExec::new(move |input| match f(input) {
       0 => None,
@@ -54,9 +54,9 @@ pub fn simple<State, Heap>(
 /// let a: Action<MockTokenKind<i32>> = simple_with_data(|input| Some((input.rest().len(), input.rest().parse().unwrap())));
 /// ```
 #[inline]
-pub fn simple_with_data<State, Heap, T>(
-  f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<(usize, T)> + 'static,
-) -> Action<MockTokenKind<T>, State, Heap> {
+pub fn simple_with_data<'a, State, Heap, T>(
+  f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<(usize, T)> + 'a,
+) -> Action<'a, MockTokenKind<T>, State, Heap> {
   Action {
     exec: ActionExec::new(move |input| {
       f(input).map(|(digested, data)| ActionOutput {

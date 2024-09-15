@@ -1,7 +1,7 @@
 use super::echo_with;
 use crate::lexer::action::Action;
 
-impl<Kind, State, Heap> Action<Kind, State, Heap> {
+impl<'a, Kind, State, Heap> Action<'a, Kind, State, Heap> {
   /// Set [`Action::literal`].
   /// # Caveats
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.

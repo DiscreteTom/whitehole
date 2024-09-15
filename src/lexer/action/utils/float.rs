@@ -241,7 +241,12 @@ pub fn float_literal_with<
   options_builder: impl FnOnce(
     FloatLiteralOptions<(), (), (), ()>,
   ) -> FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
-) -> Action<MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>, State, Heap> {
+) -> Action<
+  'static,
+  MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>,
+  State,
+  Heap,
+> {
   float_literal_with_options(options_builder(FloatLiteralOptions::new()))
 }
 
@@ -265,7 +270,12 @@ pub fn float_literal_with_options<
   ExpAcc: Accumulator<char> + Clone + 'static,
 >(
   options: FloatLiteralOptions<SepAcc, IntAcc, FracAcc, ExpAcc>,
-) -> Action<MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>, State, Heap> {
+) -> Action<
+  'static,
+  MockTokenKind<FloatLiteralData<SepAcc::Acc, IntAcc, FracAcc, ExpAcc>>,
+  State,
+  Heap,
+> {
   // head for integer part
   let mut heads = HashSet::from(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
 

@@ -11,19 +11,19 @@ use crate::{
 /// [`Action::exec`](crate::lexer::action::Action::exec) and [`Action::muted`](crate::lexer::action::Action::muted)
 /// in separate lists, and discard all other fields to optimize cache performance.
 #[derive(Debug)]
-pub(super) struct RuntimeActions<Kind, State, Heap> {
-  execs: Vec<RcActionExec<Kind, State, Heap>>,
+pub(super) struct RuntimeActions<'a, Kind, State, Heap> {
+  execs: Vec<RcActionExec<'a, Kind, State, Heap>>,
   muted: Vec<bool>, // TODO: optimize with bit vec
 }
 
-impl<Kind, State, Heap> Default for RuntimeActions<Kind, State, Heap> {
+impl<'a, Kind, State, Heap> Default for RuntimeActions<'a, Kind, State, Heap> {
   #[inline]
   fn default() -> Self {
     Self::new()
   }
 }
 
-impl<Kind, State, Heap> Clone for RuntimeActions<Kind, State, Heap> {
+impl<'a, Kind, State, Heap> Clone for RuntimeActions<'a, Kind, State, Heap> {
   #[inline]
   fn clone(&self) -> Self {
     Self {
@@ -33,7 +33,7 @@ impl<Kind, State, Heap> Clone for RuntimeActions<Kind, State, Heap> {
   }
 }
 
-impl<Kind, State, Heap> RuntimeActions<Kind, State, Heap> {
+impl<'a, Kind, State, Heap> RuntimeActions<'a, Kind, State, Heap> {
   #[inline]
   pub fn new() -> Self {
     Self {
@@ -46,7 +46,7 @@ impl<Kind, State, Heap> RuntimeActions<Kind, State, Heap> {
 
   // getters
   #[inline]
-  pub fn execs(&self) -> &Vec<RcActionExec<Kind, State, Heap>> {
+  pub fn execs(&self) -> &Vec<RcActionExec<'a, Kind, State, Heap>> {
     &self.execs
   }
   #[inline]
@@ -55,7 +55,7 @@ impl<Kind, State, Heap> RuntimeActions<Kind, State, Heap> {
   }
 
   #[inline]
-  pub fn push(&mut self, exec: RcActionExec<Kind, State, Heap>, muted: bool) {
+  pub fn push(&mut self, exec: RcActionExec<'a, Kind, State, Heap>, muted: bool) {
     self.execs.push(exec);
     self.muted.push(muted);
   }
@@ -67,28 +67,28 @@ impl<Kind, State, Heap> RuntimeActions<Kind, State, Heap> {
 }
 
 #[derive(Debug)]
-pub(super) struct HeadMap<Kind, State, Heap> {
+pub(super) struct HeadMap<'a, Kind, State, Heap> {
   /// Store actions for known chars.
-  known_map: SparseCharLookupTable<RuntimeActions<Kind, State, Heap>>,
+  known_map: SparseCharLookupTable<RuntimeActions<'a, Kind, State, Heap>>,
   /// Store actions for unknown chars.
-  unknown_fallback: RuntimeActions<Kind, State, Heap>,
+  unknown_fallback: RuntimeActions<'a, Kind, State, Heap>,
 }
 
 /// A new-type to represent the return type of [`HeadMap::collect_all_known`].
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`HeadMap::new`].
-pub(super) struct KnownHeadChars<Kind, State, Heap>(
-  SparseCharLookupTableBuilder<RuntimeActions<Kind, State, Heap>>,
+pub(super) struct KnownHeadChars<'a, Kind, State, Heap>(
+  SparseCharLookupTableBuilder<RuntimeActions<'a, Kind, State, Heap>>,
 );
 
-impl<Kind, State, Heap> Clone for KnownHeadChars<Kind, State, Heap> {
+impl<'a, Kind, State, Heap> Clone for KnownHeadChars<'a, Kind, State, Heap> {
   #[inline]
   fn clone(&self) -> Self {
     Self(self.0.clone())
   }
 }
 
-impl<Kind, State, Heap> HeadMap<Kind, State, Heap> {
+impl<'a, Kind, State, Heap> HeadMap<'a, Kind, State, Heap> {
   /// Collect all known head chars from all actions instead of a subset of actions to make sure
   /// 'known' has a consistent meaning across all head maps in a stateless lexer
   /// (otherwise maybe only a subset of chars are known for a subset of actions,
@@ -96,7 +96,9 @@ impl<Kind, State, Heap> HeadMap<Kind, State, Heap> {
   /// This must be done before creating a head map because we need to iter over all known chars when filling the head map
   /// with [`HeadMatcher::Not`] and [`HeadMatcher::Unknown`].
   #[inline] // there is only one call site, so mark this as inline
-  pub fn collect_all_known(props: &Vec<RcActionProps<Kind>>) -> KnownHeadChars<Kind, State, Heap> {
+  pub fn collect_all_known(
+    props: &Vec<RcActionProps<Kind>>,
+  ) -> KnownHeadChars<'a, Kind, State, Heap> {
     let mut known_chars = Vec::with_capacity(props.len());
     for p in props {
       if let Some(head) = p.head() {
@@ -114,9 +116,9 @@ impl<Kind, State, Heap> HeadMap<Kind, State, Heap> {
 
   /// Create a new instance with a subset of actions and a known char map created by [`Self::collect_all_known`].
   pub fn new(
-    execs: &[RcActionExec<Kind, State, Heap>],
+    execs: &[RcActionExec<'a, Kind, State, Heap>],
     props: &[RcActionProps<Kind>],
-    known_map: KnownHeadChars<Kind, State, Heap>,
+    known_map: KnownHeadChars<'a, Kind, State, Heap>,
   ) -> Self {
     let mut unknown_fallback = RuntimeActions::new();
     let mut known_map = known_map.0;

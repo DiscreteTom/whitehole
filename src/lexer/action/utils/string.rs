@@ -38,7 +38,7 @@ pub fn string<
 >(
   open: impl Into<OneOrMore<String>>,
   options: StringBodyOptions<Value, CustomError, BodyAcc>,
-) -> Action<MockTokenKind<BodyAcc>, State, Heap> {
+) -> Action<'static, MockTokenKind<BodyAcc>, State, Heap> {
   let open: Vec<String> = open.into().0;
   let head: HashSet<_> = open
     .iter()

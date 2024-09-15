@@ -118,8 +118,8 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
   }
 }
 
-type RawActionExec<Kind, State, Heap> =
-  Box<dyn Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<Kind>>>;
+type RawActionExec<'a, Kind, State, Heap> =
+  Box<dyn Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<Kind>> + 'a>;
 
 /// The [`Action::exec`].
 /// This is a new-type for the inner type and implements [`Debug`]
@@ -129,10 +129,10 @@ pub struct ActionExec<Raw> {
   pub(crate) raw: Raw,
 }
 
-impl<Kind, State, Heap> ActionExec<RawActionExec<Kind, State, Heap>> {
+impl<'a, Kind, State, Heap> ActionExec<RawActionExec<'a, Kind, State, Heap>> {
   #[inline]
   pub(crate) fn new(
-    raw: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<Kind>> + 'static,
+    raw: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<Kind>> + 'a,
   ) -> Self {
     Self { raw: Box::new(raw) }
   }
@@ -147,20 +147,21 @@ impl<Raw> Debug for ActionExec<Raw> {
 
 /// To create this, use [`simple`](simple::simple), [`simple_with_data`](simple::simple_with_data)
 /// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
-pub type Action<Kind, State = (), Heap = ()> =
-  ActionBase<Kind, ActionExec<RawActionExec<Kind, State, Heap>>>;
+pub type Action<'a, Kind, State = (), Heap = ()> =
+  ActionBase<Kind, ActionExec<RawActionExec<'a, Kind, State, Heap>>>;
 
 /// Action's attributes without [`Action::exec`], wrapped in an [`Rc`].
 pub(super) type RcActionProps<Kind> = Rc<ActionBase<Kind, ()>>;
 /// [`Action::exec`] wrapped in an [`Rc`] to make it clone-able.
-pub(super) type RcActionExec<Kind, State, Heap> =
-  ActionExec<Rc<dyn Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<Kind>>>>;
+pub(super) type RcActionExec<'a, Kind, State, Heap> = ActionExec<
+  Rc<dyn Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<Kind>> + 'a>,
+>;
 
-impl<Kind, State, Heap> Action<Kind, State, Heap> {
+impl<'a, Kind, State, Heap> Action<'a, Kind, State, Heap> {
   /// Break self into two parts and wrap them in [`Rc`].
   /// Return [`RcActionExec`] and [`RcActionProps`].
   #[inline]
-  pub(super) fn into_rc(self) -> (RcActionExec<Kind, State, Heap>, RcActionProps<Kind>) {
+  pub(super) fn into_rc(self) -> (RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>) {
     let props = Rc::new(ActionBase {
       kind: self.kind,
       literal: self.literal,

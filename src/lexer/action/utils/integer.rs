@@ -312,7 +312,7 @@ macro_rules! generate_integer_literal_functions {
       options_builder: impl FnOnce(
         IntegerLiteralBodyOptions<(), ()>,
       ) -> IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
-    ) -> Action<MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, State, Heap> {
+    ) -> Action<'static, MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, State, Heap> {
       $action_fn_name_with_options(options_builder(IntegerLiteralBodyOptions::new()))
     }
 
@@ -344,7 +344,7 @@ macro_rules! generate_integer_literal_functions {
       ValueAcc: Accumulator<char> + Clone + 'static,
     >(
       options: IntegerLiteralBodyOptions<SepAcc, ValueAcc>,
-    ) -> Action<MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, State, Heap> {
+    ) -> Action<'static, MockTokenKind<IntegerLiteralData<SepAcc::Acc, ValueAcc>>, State, Heap> {
       let prefix = $prefix;
 
       if prefix.len() == 0 {

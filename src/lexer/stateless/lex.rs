@@ -16,7 +16,7 @@ use crate::{
   utils::lookup::Lookup,
 };
 
-impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
+impl<'a, Kind, State, Heap> StatelessLexer<'a, Kind, State, Heap> {
   const INVALID_EXPECTED_KIND: &'static str = "no action is defined for the expected kind";
   const INVALID_EXPECTED_LITERAL: &'static str = "no action is defined for the expected literal";
 
@@ -284,12 +284,12 @@ fn done_with_token<Kind, ForkOutputFactoryType: ForkOutputFactory>(
   }
 }
 
-fn get_actions_by_literal_map<'this, Kind, State, Heap>(
+fn get_actions_by_literal_map<'a, 'this: 'a, Kind, State, Heap>(
   input: &ActionInput<&mut State, &mut Heap>,
   literal: &str,
-  literal_map: &'this LiteralMap<Kind, State, Heap>,
-  head_map: &'this HeadMap<Kind, State, Heap>,
-) -> &'this RuntimeActions<Kind, State, Heap> {
+  literal_map: &'this LiteralMap<'a, Kind, State, Heap>,
+  head_map: &'this HeadMap<'a, Kind, State, Heap>,
+) -> &'this RuntimeActions<'a, Kind, State, Heap> {
   {
     if !input.rest().starts_with(literal) {
       // prefix mismatch, only execute muted actions

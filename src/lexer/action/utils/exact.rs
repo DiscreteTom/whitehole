@@ -20,7 +20,7 @@ pub use whitehole_helpers::{exact_vec, unchecked_exact_vec};
 /// # let action: Action<_> =
 /// exact(';'); // using char
 /// ```
-pub fn exact<State, Heap>(s: impl Into<String>) -> Action<MockTokenKind<()>, State, Heap> {
+pub fn exact<State, Heap>(s: impl Into<String>) -> Action<'static, MockTokenKind<()>, State, Heap> {
   let s: String = s.into();
   let head = s.chars().next().expect("empty string is not allowed");
   let literal = s.clone();
@@ -50,7 +50,7 @@ pub fn exact<State, Heap>(s: impl Into<String>) -> Action<MockTokenKind<()>, Sta
 #[inline]
 pub fn exact_chars<State, Heap>(
   s: impl Into<String>,
-) -> Vec<Action<MockTokenKind<()>, State, Heap>> {
+) -> Vec<Action<'static, MockTokenKind<()>, State, Heap>> {
   s.into().chars().map(|c| exact(c)).collect()
 }
 
@@ -72,7 +72,7 @@ pub fn exact_chars<State, Heap>(
 /// ```
 pub fn unchecked_exact<State, Heap>(
   s: impl Into<String>,
-) -> Action<MockTokenKind<()>, State, Heap> {
+) -> Action<'static, MockTokenKind<()>, State, Heap> {
   let s: String = s.into();
   let head = s.chars().next().expect("empty string is not allowed");
   let len = s.len();
@@ -99,7 +99,7 @@ pub fn unchecked_exact<State, Heap>(
 #[inline]
 pub fn unchecked_exact_chars<State, Heap>(
   s: impl Into<String>,
-) -> Vec<Action<MockTokenKind<()>, State, Heap>> {
+) -> Vec<Action<'static, MockTokenKind<()>, State, Heap>> {
   s.into().chars().map(|c| unchecked_exact(c)).collect()
 }
 

@@ -69,7 +69,7 @@ pub fn no_word_boundary_in_rest<State, Heap>(
 #[inline]
 pub fn word<State: 'static, Heap: 'static>(
   s: impl Into<String>,
-) -> Action<MockTokenKind<()>, State, Heap> {
+) -> Action<'static, MockTokenKind<()>, State, Heap> {
   exact(s).reject_if(no_word_boundary_in_rest)
 }
 

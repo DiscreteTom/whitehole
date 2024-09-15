@@ -7,7 +7,7 @@ use crate::{
   utils::OneOrMore,
 };
 
-impl<Kind, State: 'static, Heap: 'static> LexerBuilder<Kind, State, Heap> {
+impl<'a, Kind, State: 'a, Heap: 'a> LexerBuilder<'a, Kind, State, Heap> {
   /// Define actions and bind them to the provided kind.
   /// # Examples
   /// ```
@@ -28,12 +28,12 @@ impl<Kind, State: 'static, Heap: 'static> LexerBuilder<Kind, State, Heap> {
   pub fn define<ViaKind>(
     self,
     kind: ViaKind,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, Heap>>>,
+    actions: impl Into<OneOrMore<Action<'a, MockTokenKind<()>, State, Heap>>>,
   ) -> Self
   where
-    ViaKind: SubTokenKind<TokenKind = Kind> + Into<TokenKindIdBinding<Kind>> + Clone + 'static,
+    ViaKind: SubTokenKind<TokenKind = Kind> + Into<TokenKindIdBinding<Kind>> + Clone + 'a,
   {
-    self.append(Self::map_actions(actions, |a| a.bind(kind.clone())))
+    self.append(Self::map_actions(actions, move |a| a.bind(kind.clone())))
   }
 
   /// Define actions with a decorator and bind them to the provided kind.
@@ -56,11 +56,12 @@ impl<Kind, State: 'static, Heap: 'static> LexerBuilder<Kind, State, Heap> {
   pub fn define_with<ViaKind>(
     self,
     kind: ViaKind,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, Heap>>>,
-    decorator: impl Fn(Action<MockTokenKind<()>, State, Heap>) -> Action<MockTokenKind<()>, State, Heap>,
+    actions: impl Into<OneOrMore<Action<'a, MockTokenKind<()>, State, Heap>>>,
+    decorator: impl Fn(Action<MockTokenKind<()>, State, Heap>) -> Action<MockTokenKind<()>, State, Heap>
+      + 'a,
   ) -> Self
   where
-    ViaKind: SubTokenKind<TokenKind = Kind> + Into<TokenKindIdBinding<Kind>> + Clone + 'static,
+    ViaKind: SubTokenKind<TokenKind = Kind> + Into<TokenKindIdBinding<Kind>> + Clone + 'a,
   {
     self.define(kind, Self::map_actions(actions, decorator))
   }

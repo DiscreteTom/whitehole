@@ -7,7 +7,7 @@ use crate::{
   utils::OneOrMore,
 };
 
-impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
+impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
   /// Append actions to the builder.
   /// # Examples
   /// ```
@@ -25,7 +25,7 @@ impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
   /// # }
   /// ```
   #[inline]
-  pub fn append(mut self, actions: impl Into<OneOrMore<Action<Kind, State, Heap>>>) -> Self {
+  pub fn append(mut self, actions: impl Into<OneOrMore<Action<'a, Kind, State, Heap>>>) -> Self {
     self.actions.extend(actions.into().0);
     self
   }
@@ -49,8 +49,8 @@ impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
   #[inline]
   pub fn append_with(
     self,
-    actions: impl Into<OneOrMore<Action<Kind, State, Heap>>>,
-    decorator: impl Fn(Action<Kind, State, Heap>) -> Action<Kind, State, Heap>,
+    actions: impl Into<OneOrMore<Action<'a, Kind, State, Heap>>>,
+    decorator: impl Fn(Action<Kind, State, Heap>) -> Action<Kind, State, Heap> + 'a,
   ) -> Self {
     self.append(Self::map_actions(actions, decorator))
   }
@@ -77,12 +77,12 @@ impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
   #[inline]
   pub fn append_default(
     self,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, Heap>>>,
+    actions: impl Into<OneOrMore<Action<'a, MockTokenKind<()>, State, Heap>>>,
   ) -> Self
   where
     Kind: DefaultTokenKindId + Default,
-    State: 'static,
-    Heap: 'static,
+    State: 'a,
+    Heap: 'a,
   {
     self.append(Self::map_actions(actions, |a| a.bind_default()))
   }
@@ -106,13 +106,14 @@ impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
   #[inline]
   pub fn append_default_with(
     self,
-    actions: impl Into<OneOrMore<Action<MockTokenKind<()>, State, Heap>>>,
-    decorator: impl Fn(Action<MockTokenKind<()>, State, Heap>) -> Action<MockTokenKind<()>, State, Heap>,
+    actions: impl Into<OneOrMore<Action<'a, MockTokenKind<()>, State, Heap>>>,
+    decorator: impl Fn(Action<MockTokenKind<()>, State, Heap>) -> Action<MockTokenKind<()>, State, Heap>
+      + 'a,
   ) -> Self
   where
     Kind: DefaultTokenKindId + Default,
-    State: 'static,
-    Heap: 'static,
+    State: 'a,
+    Heap: 'a,
   {
     self.append_default(Self::map_actions(actions, decorator))
   }

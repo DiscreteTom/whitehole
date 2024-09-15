@@ -28,9 +28,9 @@ use std::{collections::HashSet, ops::RangeInclusive};
 /// chars(|ch| ch.is_ascii_digit());
 /// ```
 #[inline]
-pub fn chars<State, Heap>(
-  condition: impl Fn(char) -> bool + 'static,
-) -> Action<MockTokenKind<()>, State, Heap> {
+pub fn chars<'a, State, Heap>(
+  condition: impl Fn(char) -> bool + 'a,
+) -> Action<'a, MockTokenKind<()>, State, Heap> {
   simple(move |input| {
     let mut digested = 0;
     for ch in input.rest().chars() {
@@ -56,7 +56,7 @@ pub fn chars<State, Heap>(
 #[inline]
 pub fn chars_in_range<State, Heap>(
   range: impl Into<RangeInclusive<char>>,
-) -> Action<MockTokenKind<()>, State, Heap> {
+) -> Action<'static, MockTokenKind<()>, State, Heap> {
   let range = range.into();
   {
     let range = range.clone();
@@ -78,7 +78,7 @@ pub fn chars_in_range<State, Heap>(
 #[inline]
 pub fn charset<State, Heap>(
   set: impl Into<HashSet<char>>,
-) -> Action<MockTokenKind<()>, State, Heap> {
+) -> Action<'static, MockTokenKind<()>, State, Heap> {
   let set = set.into();
   {
     // TODO: optimize runtime perf using lookup table
@@ -99,7 +99,9 @@ pub fn charset<State, Heap>(
 /// chars_in_str("asd");
 /// ```
 #[inline]
-pub fn chars_in_str<State, Heap>(s: impl Into<String>) -> Action<MockTokenKind<()>, State, Heap> {
+pub fn chars_in_str<State, Heap>(
+  s: impl Into<String>,
+) -> Action<'static, MockTokenKind<()>, State, Heap> {
   charset(s.into().chars().collect::<HashSet<_>>())
 }
 
@@ -126,7 +128,7 @@ pub fn chars_in_str<State, Heap>(s: impl Into<String>) -> Action<MockTokenKind<(
 /// # }
 /// ```
 #[inline]
-pub fn whitespaces<State, Heap>() -> Action<MockTokenKind<()>, State, Heap> {
+pub fn whitespaces<State, Heap>() -> Action<'static, MockTokenKind<()>, State, Heap> {
   chars(|ch| ch.is_whitespace())
     // 0009..000D    ; White_Space # Cc   [5] <control-0009>..<control-000D>
     // 0020          ; White_Space # Zs       SPACE
@@ -169,9 +171,10 @@ pub fn whitespaces<State, Heap>() -> Action<MockTokenKind<()>, State, Heap> {
 /// ```
 #[inline]
 pub fn comment<State, Heap>(
+  // TODO: use ref instead of owned?
   open: impl Into<String>,
   close: impl Into<String>,
-) -> Action<MockTokenKind<()>, State, Heap> {
+) -> Action<'static, MockTokenKind<()>, State, Heap> {
   let open: String = open.into();
   let close: String = close.into();
   let first = open.chars().next().expect("open is empty");
