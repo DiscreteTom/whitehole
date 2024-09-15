@@ -111,7 +111,7 @@ impl<'a, 'text, Kind, State, Heap> Lexer<'a, 'text, Kind, State, Heap> {
 
   /// Get the stateless lexer.
   #[inline]
-  pub const fn stateless(&self) -> &Rc<StatelessLexer<Kind, State, Heap>> {
+  pub const fn stateless(&self) -> &Rc<StatelessLexer<'a, Kind, State, Heap>> {
     &self.stateless
   }
   /// Get the lexer state.
