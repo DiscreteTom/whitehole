@@ -83,14 +83,15 @@ impl<V> SparseCharLookupTableBuilder<V> {
     debug_assert!(raw_keys.len() > 0);
     debug_assert!(raw_keys.windows(2).all(|w| w[0] <= w[1]));
 
-    // SAFETY: `raw_keys` is not empty, so `min` and `max` are safe to be unchecked
+    // SAFETY: `raw_keys` is not empty, so `min` is safe to be unchecked
     let min = *unsafe { raw_keys.get_unchecked(0) } as usize;
     let table =
       OptionLookupTable::with_keys_init(raw_keys.iter().map(|k| *k as usize - min), V::default);
 
-    // by doing this, keys are ensured to be unique/deduplicated and ordered.
+    // here keys are ensured to be unique/deduplicated and ordered.
     let keys = table
       .keys()
+      // SAFETY: these keys are safe to be transformed back to `char`
       .map(|k| unsafe { char::from_u32_unchecked((k + min) as u32) })
       .collect::<Vec<_>>();
 
@@ -147,6 +148,7 @@ impl<V> SparseCharLookupTableBuilder<V> {
   /// Apply the function to each entry in the lookup table.
   /// The traversal is ordered.
   pub fn for_each_entry_mut(&mut self, mut f: impl FnMut(char, &mut V)) {
+    // since we stored keys, accessing using keys should be faster than traversing the underlying OptionLookupTable
     for (keys, table) in self.keys.iter().zip(self.table.tables.iter_mut()) {
       for k in keys {
         // SAFETY: `k` is guaranteed to be a key of `table`
