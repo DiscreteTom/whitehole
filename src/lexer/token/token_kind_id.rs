@@ -41,8 +41,7 @@ use std::{
 /// we need to construct the variant value first, just to get the id,
 /// which is neither necessary nor convenient.
 /// ## Why not just use [`std::any::TypeId`]?
-/// - We hope the id is type-sensitive (that's why there is a [`PhantomData`] in the struct),
-/// `TypeId` is not.
+/// - We hope the id is type-sensitive (that's why there is a [`PhantomData`] in the struct), `TypeId` is not.
 /// - Currently `TypeId` use 128 bits to represent the type, which is too large for our purpose.
 /// ## Others
 /// By using [`usize`] as the id, we can use this as the index of a lookup table.

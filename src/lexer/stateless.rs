@@ -99,7 +99,7 @@ mod utils;
 pub use options::*;
 
 use super::action::{Action, RcActionExec, RcActionProps};
-use crate::utils::lookup::{Lookup, option::OptionLookupTable};
+use crate::utils::lookup::{option::OptionLookupTable, Lookup};
 use head_map::HeadMap;
 use literal_map::LiteralMap;
 
@@ -151,9 +151,10 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
     }
   }
 
+  #[allow(clippy::type_complexity, reason = "this type only exists here once")]
   fn init_kind_map(
-    execs: &Vec<RcActionExec<Kind, State, Heap>>,
-    props: &Vec<RcActionProps<Kind>>,
+    execs: &[RcActionExec<Kind, State, Heap>],
+    props: &[RcActionProps<Kind>],
   ) -> OptionLookupTable<(
     Vec<RcActionExec<Kind, State, Heap>>,
     Vec<RcActionProps<Kind>>,
@@ -215,8 +216,8 @@ mod tests {
     expected: Vec<Action<MyKind, ()>>,
   ) {
     assert_eq!(actions.len(), expected.len());
-    for i in 0..actions.len() {
-      assert_eq!(actions.muted()[i], expected[i].muted());
+    for (m, e) in actions.muted().iter().zip(expected.iter()) {
+      assert_eq!(*m, e.muted());
     }
   }
 
@@ -294,7 +295,7 @@ mod tests {
     // kind_head_map
     let kind_a_head_map = lexer.kind_head_map.get(A::kind_id().value()).unwrap();
     assert_immutable_actions_eq(
-      &kind_a_head_map.get('a'),
+      kind_a_head_map.get('a'),
       vec![
         exact("a").bind(A),                              // A, "a", not muted
         exact("a").mute().bind(A),                       // A, "a", muted
@@ -309,7 +310,7 @@ mod tests {
       ],
     );
     assert_immutable_actions_eq(
-      &kind_a_head_map.get('b'),
+      kind_a_head_map.get('b'),
       vec![
         r("a").unchecked_head_not(['c']).bind(A), // A, Not('c'), not muted
         r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
@@ -322,7 +323,7 @@ mod tests {
       ],
     );
     assert_immutable_actions_eq(
-      &kind_a_head_map.get('c'),
+      kind_a_head_map.get('c'),
       vec![
         r("a").bind(A),        // A, no head, not muted
         r("a").mute().bind(A), // A, no head, muted
@@ -330,7 +331,7 @@ mod tests {
       ],
     );
     assert_immutable_actions_eq(
-      &kind_a_head_map.get('z'),
+      kind_a_head_map.get('z'),
       vec![
         r("a").unchecked_head_not(['c']).bind(A), // A, Not('c'), not muted
         r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
@@ -435,7 +436,7 @@ mod tests {
     // kind_literal_map
     let kind_a_literal_map = lexer.kind_literal_map.get(A::kind_id().value()).unwrap();
     assert_immutable_actions_eq(
-      &kind_a_literal_map.known_map()["a"].get('a'),
+      kind_a_literal_map.known_map()["a"].get('a'),
       vec![
         exact("a").bind(A),                              // A, "a", not muted
         exact("a").mute().bind(A),                       // A, "a", muted
@@ -447,7 +448,7 @@ mod tests {
       ],
     );
     assert_immutable_actions_eq(
-      &kind_a_literal_map.known_map()["a"].get('b'),
+      kind_a_literal_map.known_map()["a"].get('b'),
       vec![
         r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
         r("a").mute().bind(A),                           // A, no head, muted
@@ -458,14 +459,14 @@ mod tests {
       ],
     );
     assert_immutable_actions_eq(
-      &kind_a_literal_map.known_map()["a"].get('c'),
+      kind_a_literal_map.known_map()["a"].get('c'),
       vec![
         r("a").mute().bind(A), // A, no head, muted
         r("b").mute().bind(B), // B, no head, muted
       ],
     );
     assert_immutable_actions_eq(
-      &kind_a_literal_map.known_map()["a"].get('z'),
+      kind_a_literal_map.known_map()["a"].get('z'),
       vec![
         r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
         r("a").unchecked_head_unknown().mute().bind(A),  // A, Unknown, muted
@@ -476,7 +477,7 @@ mod tests {
       ],
     );
     assert_immutable_actions_eq(
-      &kind_a_literal_map.muted_map().get('a'),
+      kind_a_literal_map.muted_map().get('a'),
       vec![
         exact("a").mute().bind(A),                       // A, "a", muted
         r("a").unchecked_head_in(['a']).mute().bind(A),  // A, OneOf('a'), muted
@@ -487,7 +488,7 @@ mod tests {
       ],
     );
     assert_immutable_actions_eq(
-      &kind_a_literal_map.muted_map().get('b'),
+      kind_a_literal_map.muted_map().get('b'),
       vec![
         r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
         r("a").mute().bind(A),                           // A, no head, muted
@@ -498,14 +499,14 @@ mod tests {
       ],
     );
     assert_immutable_actions_eq(
-      &kind_a_literal_map.muted_map().get('c'),
+      kind_a_literal_map.muted_map().get('c'),
       vec![
         r("a").mute().bind(A), // A, no head, muted
         r("b").mute().bind(B), // B, no head, muted
       ],
     );
     assert_immutable_actions_eq(
-      &kind_a_literal_map.muted_map().get('z'),
+      kind_a_literal_map.muted_map().get('z'),
       vec![
         r("a").unchecked_head_not(['c']).mute().bind(A), // A, Not('c'), muted
         r("a").unchecked_head_unknown().mute().bind(A),  // A, Unknown, muted

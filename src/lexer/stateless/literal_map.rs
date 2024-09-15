@@ -140,8 +140,8 @@ mod tests {
     expected: Vec<Action<MockTokenKind<()>, ()>>,
   ) {
     assert_eq!(actions.len(), expected.len());
-    for i in 0..actions.len() {
-      assert_eq!(actions.muted()[i], expected[i].muted());
+    for (m, e) in actions.muted().iter().zip(expected.iter()) {
+      assert_eq!(*m, e.muted());
     }
   }
 

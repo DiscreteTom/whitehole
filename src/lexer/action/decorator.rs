@@ -265,12 +265,8 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
       + 'static,
   ) -> Self {
     self.map_exec(move |exec, input| {
-      exec(input).map(|output| {
-        cb(AcceptedActionOutputContext {
-          input,
-          output: &output,
-        });
-        output
+      exec(input).inspect(|output| {
+        cb(AcceptedActionOutputContext { input, output });
       })
     })
   }
