@@ -1,18 +1,20 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::{fs::read_to_string, rc::Rc};
-use whitehole::lexer::{
-  action::{
-    chars, exact,
-    json::{boundaries, number_with, string_with},
-    FloatLiteralData, HexEscapeError, PartialStringBody,
+use whitehole::{
+  kind::kind,
+  lexer::{
+    action::{
+      chars, exact,
+      json::{boundaries, number_with, string_with},
+      FloatLiteralData, HexEscapeError, PartialStringBody,
+    },
+    builder::LexerBuilder,
+    into::IntoLexer,
+    stateless::StatelessLexer,
   },
-  builder::LexerBuilder,
-  into::IntoLexer,
-  stateless::StatelessLexer,
-  token::token_kind,
 };
 
-#[token_kind]
+#[kind]
 #[derive(Default, Clone, Debug)]
 enum JsonTokenKind {
   #[default]
