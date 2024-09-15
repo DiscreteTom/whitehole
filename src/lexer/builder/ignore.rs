@@ -11,7 +11,7 @@ impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`].
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
@@ -32,7 +32,7 @@ impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] with a decorator.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
@@ -57,7 +57,7 @@ impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] and bind them to the default kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::{Action, whitespaces, word}, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Default, Clone)]
   /// # enum MyKind {
@@ -89,7 +89,7 @@ impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
   /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] with a decorator and bind them to the default kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone, Default)]
   /// # enum MyKind { #[default] A }

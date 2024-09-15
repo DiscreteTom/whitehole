@@ -25,7 +25,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// This function will create a new state and a new heap and return them.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::exact, LexerBuilder};
+  /// # use whitehole::lexer::{action::exact, builder::LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("1")).build_stateless();
   /// let (output, state, heap) = stateless.lex("123");
   /// ```
@@ -49,7 +49,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// Panics if no action is defined for the expected kind or literal.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::exact, LexerBuilder};
+  /// # use whitehole::lexer::{action::exact, builder::LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// # let mut state = ();
   /// # let mut heap = ();
@@ -76,7 +76,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// Panics if no action is defined for the expected kind or literal.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessLexOptions};
+  /// # use whitehole::lexer::{action::exact, builder::LexerBuilder, stateless::StatelessLexOptions};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// # let mut state = ();
   /// # let mut heap = ();
@@ -174,7 +174,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// Panics if no action is defined for the expected kind or literal.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::exact, LexerBuilder};
+  /// # use whitehole::lexer::{action::exact, builder::LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// # let state = ();
   /// # let mut heap = ();
@@ -204,7 +204,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// Panics if no action is defined for the expected kind or literal.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessLexOptions};
+  /// # use whitehole::lexer::{action::exact, builder::LexerBuilder, stateless::StatelessLexOptions};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// # let state = ();
   /// # let mut heap = ();
@@ -316,7 +316,7 @@ fn done_without_token<TokenType, ForkOutputType: Default>(
 // TODO: add tests
 // #[cfg(test)]
 // mod tests {
-//   use crate::lexer::{action::exact, LexerBuilder};
+//   use crate::lexer::{action::exact, builder::LexerBuilder};
 //   use whitehole_macros::_TokenKind;
 //   use MyKind::*;
 

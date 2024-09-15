@@ -10,7 +10,7 @@
 /// may be inconsistent with the original lexing.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::{action::{exact, regex}, LexerBuilder};
+/// # use whitehole::lexer::{action::{exact, regex}, builder::LexerBuilder};
 /// let text = "Option<Option<()>>";
 /// let mut lexer = LexerBuilder::new()
 ///   // try to match `>>` first, if failed, try to match `>`

@@ -12,7 +12,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// This function will create a new state and a new heap and return them.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::exact, LexerBuilder};
+  /// # use whitehole::lexer::{action::exact, builder::LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// let (output, state, heap) = stateless.trim("123");
   /// ```
@@ -34,7 +34,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// Lex with muted actions and the given options builder.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::exact, LexerBuilder};
+  /// # use whitehole::lexer::{action::exact, builder::LexerBuilder};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// # let mut state = ();
   /// # let mut heap = ();
@@ -58,7 +58,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
   /// Lex with muted actions and the given [`StatelessTrimOptions`].
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::exact, LexerBuilder, stateless::StatelessTrimOptions};
+  /// # use whitehole::lexer::{action::exact, builder::LexerBuilder, stateless::StatelessTrimOptions};
   /// # let stateless = LexerBuilder::new().append(exact("2")).build_stateless();
   /// # let mut state = ();
   /// # let mut heap = ();

@@ -11,7 +11,7 @@ impl<Kind, State: 'static, Heap: 'static> LexerBuilder<Kind, State, Heap> {
   /// Define actions and bind them to the provided kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
@@ -39,7 +39,7 @@ impl<Kind, State: 'static, Heap: 'static> LexerBuilder<Kind, State, Heap> {
   /// Define actions with a decorator and bind them to the provided kind.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, word}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A, B }

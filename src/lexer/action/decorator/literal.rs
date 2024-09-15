@@ -11,7 +11,7 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// or [`utils::word`](crate::lexer::action::utils::word) to set [`Action::literal`].
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, simple}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::{Action, simple}, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }

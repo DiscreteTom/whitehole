@@ -45,7 +45,7 @@ use token::Token;
 ///
 /// If you want a stateless experience, you can use [`StatelessLexer`].
 ///
-/// To create a lexer, you should use [`LexerBuilder`](crate::lexer::LexerBuilder).
+/// To create a lexer, you should use [`LexerBuilder`](crate::lexer::builder::LexerBuilder).
 /// # Design
 /// ## Why there is no `Lexer::errors` to store all the errors?
 /// Why the error accumulator is not a field of [`Lexer`]
@@ -90,7 +90,7 @@ impl<'text, Kind, State: Clone, Heap: Clone> Clone for Lexer<'text, Kind, State,
 
 impl<'text, Kind, State, Heap> Lexer<'text, Kind, State, Heap> {
   /// Create a new lexer with the given stateless lexer, state and text.
-  /// For most cases you should use [`LexerBuilder`](crate::lexer::LexerBuilder)
+  /// For most cases you should use [`LexerBuilder`](crate::lexer::builder::LexerBuilder)
   /// to create a lexer.
   #[inline]
   pub const fn new(

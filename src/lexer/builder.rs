@@ -25,7 +25,7 @@ impl<Kind> LexerBuilder<Kind> {
   /// auto infer `Kind` from the provided actions.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{LexerBuilder, action::exact};
+  /// # use whitehole::lexer::{builder::LexerBuilder, action::exact};
   /// # let mut builder =
   /// LexerBuilder::new();
   /// # builder.append(exact("a"));
@@ -46,7 +46,7 @@ impl<Kind> LexerBuilder<Kind> {
   /// auto infer `Kind` from the provided actions.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{LexerBuilder, action::exact};
+  /// # use whitehole::lexer::{builder::LexerBuilder, action::exact};
   /// # struct MyState;
   /// # let mut builder: LexerBuilder<_, MyState> =
   /// LexerBuilder::stateful();
@@ -81,7 +81,7 @@ impl<Kind, State, Heap> LexerBuilder<Kind, State, Heap> {
   /// # Examples
   /// This should be used after all actions are appended, before build.
   /// ```
-  /// # use whitehole::lexer::{LexerBuilder, action::exact};
+  /// # use whitehole::lexer::{builder::LexerBuilder, action::exact};
   /// LexerBuilder::new()
   ///   .append(exact("a"))
   ///   .ensure_head_matcher()

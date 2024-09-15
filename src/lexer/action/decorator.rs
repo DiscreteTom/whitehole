@@ -23,7 +23,7 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// Set [`Self::muted`] to `true`.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -43,7 +43,7 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// Set [`Self::muted`] to `false`.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -106,7 +106,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// Reject the action if the `condition` returns `true`.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -142,7 +142,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// Modify `State` and `Heap` before the action is executed.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -173,7 +173,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// Reject the action if the `condition` returns `true`.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -211,7 +211,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// Reject the action after execution.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -241,7 +241,7 @@ impl<Kind: 'static, State: 'static, Heap: 'static> Action<Kind, State, Heap> {
   /// Call the `cb` if the action is accepted.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::regex, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }

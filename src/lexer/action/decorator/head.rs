@@ -7,7 +7,7 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::{Action, regex}, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -27,7 +27,7 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::{Action, regex}, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -45,7 +45,7 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::{Action, regex}, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
@@ -64,7 +64,7 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::{action::{Action, regex}, LexerBuilder, token::token_kind};
+  /// # use whitehole::lexer::{action::{Action, regex}, builder::LexerBuilder, token::token_kind};
   /// # #[token_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }

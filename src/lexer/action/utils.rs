@@ -116,8 +116,7 @@ pub fn chars_in_str<State, Heap>(s: impl Into<String>) -> Action<MockTokenKind<(
 /// E.g. in JSON you only need to support `0x0009`, `0x000A`, `0x000D`, `0x0020`.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::{action::whitespaces, token::token_kind};
-/// # use whitehole::lexer::LexerBuilder;
+/// # use whitehole::lexer::{action::whitespaces, token::token_kind, builder::LexerBuilder};
 /// # #[token_kind]
 /// # #[derive(Default, Clone)]
 /// # enum MyKind { #[default] Anonymous }
