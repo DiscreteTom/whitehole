@@ -1,13 +1,42 @@
-use super::{
-  fork::{ForkOutputFactory, LexOptionsFork},
-  instant::Instant,
-  options::{LexOptions, TrimOptions},
-  output::{LexOutput, TrimOutput},
-  snapshot::Snapshot,
-  stateless::{StatelessLexOptions, StatelessLexer, StatelessTrimOptions},
-  token::Token,
-};
+//! ## For Developers
+//!
+//! Here is the recommended order of reading the source code:
+//!
+//! - [`self::token`]
+//! - [`self::action`]
+//! - [`self::instant`]
+//! - [`self::snapshot`]
+//! - [`self::expectation`]
+//! - [`self::re_lex`]
+//! - [`self::fork`]
+//! - [`self::options`]
+//! - [`self::output`]
+//! - [`self`]
+//! - [`self::builder`]
+//! - [`self::stateless`]
+//! - [`self::position`]
+
+pub mod action;
+pub mod builder;
+pub mod expectation;
+pub mod fork;
+pub mod instant;
+pub mod options;
+pub mod output;
+pub mod position;
+pub mod re_lex;
+pub mod snapshot;
+pub mod stateless;
+pub mod token;
+
+use crate::lexer::instant::Instant;
+use fork::{ForkOutputFactory, LexOptionsFork};
+use options::{LexOptions, TrimOptions};
+use output::{LexOutput, TrimOutput};
+use snapshot::Snapshot;
+use stateless::{StatelessLexOptions, StatelessLexer, StatelessTrimOptions};
 use std::rc::Rc;
+use token::Token;
 
 /// This is the "stateful" lexer, it manages the [`Instant`] and the `State`.
 /// The [`Instant`] is responsible to manage the text and the progress of the lexer.

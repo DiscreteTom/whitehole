@@ -2,7 +2,7 @@ mod append;
 mod define;
 mod ignore;
 
-use super::{action::Action, lexer::IntoLexer, stateless::StatelessLexer, Lexer};
+use super::{action::Action, stateless::StatelessLexer, IntoLexer, Lexer};
 use crate::utils::OneOrMore;
 
 /// To create this, see [`Self::new`] and [`Self::stateful`].
