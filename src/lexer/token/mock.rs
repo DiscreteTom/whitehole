@@ -41,7 +41,7 @@ mod tests {
   #[test]
   fn mock_token_kind_new() {
     assert_eq!(MockTokenKind::new(42).data, 42);
-    assert_eq!(MockTokenKind::new(()).data, ());
+    assert_eq!(MockTokenKind::new("123").data, "123");
   }
 
   #[test]

@@ -80,13 +80,13 @@ impl<Kind> Debug for TokenKindId<Kind> {
       .finish()
   }
 }
+impl<Kind> Copy for TokenKindId<Kind> {}
 impl<Kind> Clone for TokenKindId<Kind> {
   #[inline]
   fn clone(&self) -> Self {
-    Self::new(self.value)
+    *self
   }
 }
-impl<Kind> Copy for TokenKindId<Kind> {}
 impl<Kind> PartialEq for TokenKindId<Kind> {
   #[inline]
   fn eq(&self, other: &Self) -> bool {
@@ -154,16 +154,8 @@ mod tests {
   }
 
   #[test]
-  fn token_kind_id_clone() {
-    // ensure we don't need to impl Clone for MyKind but the clone is still working
-    let id = TokenKindId::new(42) as TokenKindId<MyKind>;
-    let id_clone = id.clone();
-    assert_eq!(id.value, id_clone.value);
-  }
-
-  #[test]
   fn token_kind_id_copy() {
-    // ensure we don't need to impl Copy for MyKind but the copy is still working
+    // ensure we don't need to impl Clone/Copy for MyKind but the copy is still working
     let id = TokenKindId::new(42) as TokenKindId<MyKind>;
     let id_copy = id;
     assert_eq!(id.value, id_copy.value);

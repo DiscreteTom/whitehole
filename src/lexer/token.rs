@@ -194,7 +194,7 @@
 //! - [`self::sub_token_kind`]
 //! - [`self::binding`]
 //! - [`self::mock`]
-//! - [`self::token`]
+//! - [`self`]
 //! - [`self::token_kind`]
 //!
 //! The [`token_kind`] macro will be tested in this file.
@@ -202,15 +202,38 @@
 mod binding;
 mod mock;
 mod sub_token_kind;
-mod token;
 mod token_kind_id;
 
 pub use binding::*;
 pub use mock::*;
 pub use sub_token_kind::*;
-pub use token::*;
 pub use token_kind_id::*;
 pub use whitehole_macros::token_kind;
+
+pub type Range = std::ops::Range<usize>;
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Token<Kind> {
+  /// The token kind id and value.
+  pub binding: TokenKindIdBinding<Kind>,
+  /// The byte range of the token in the input text.
+  /// This can be used to index the input text.
+  /// # Example
+  /// ```
+  /// # use whitehole::lexer::token::{Token, MockTokenKind};
+  /// let token = Token {
+  ///   binding: MockTokenKind::new(()).into(),
+  ///   range: 0..5,
+  /// };
+  /// // index a string with the range
+  /// assert_eq!(&"0123456"[token.range], "01234");
+  pub range: Range,
+  // we don't store `token.content` here (as a `&str`).
+  // when lexing users can get the content in the lexing context,
+  // parse its value if needed and store the result data in `self.binding.kind`.
+  // `token.content` may only be used less than once, and can be calculated from `token.range`.
+  // users can calculate and cache it by themselves, we don't do unnecessary work.
+}
 
 #[cfg(test)]
 mod tests {
@@ -229,18 +252,29 @@ mod tests {
   }
 
   #[test]
+  fn test_token() {
+    let token = Token {
+      binding: MockTokenKind::new(()).into(),
+      range: 0..5, // ensure we can create the range with the range syntax
+    };
+
+    // ensure the range can be used to index a string
+    assert_eq!(&"0123456"[token.range], "01234");
+  }
+
+  #[test]
   fn token_kind_macro() {
     // generated structs
     let _ = Unit;
-    Unnamed(42);
-    Named { name: 42 };
+    let _ = Unnamed(42);
+    let _ = Named { name: 42 };
 
     // unit variant is still unit variant instead of an unnamed variant
     let _ = MyKind::Unit;
 
     // other variants are transformed into unnamed variants
-    MyKind::Unnamed(Unnamed(42));
-    MyKind::Named(Named { name: 42 });
+    let _ = MyKind::Unnamed(Unnamed(42));
+    let _ = MyKind::Named(Named { name: 42 });
 
     // sub token kinds into token kind
     assert!(matches!(Unit.into(), MyKind::Unit));
