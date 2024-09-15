@@ -149,12 +149,12 @@
 //! impl SubKind for Identifier {
 //!   type Kind = MyKind;
 //!   fn kind_id() -> SubKindId<MyKind> {
-//!     KindId::new(0)
+//!     SubKindId::new(0)
 //!   }
 //! }
 //! impl SubKind for Number {
 //!   type Kind = MyKind;
-//!   fn kind_id() -> KindId<MyKind> {
+//!   fn kind_id() -> SubKindId<MyKind> {
 //!     SubKindId::new(1)
 //!   }
 //! }
