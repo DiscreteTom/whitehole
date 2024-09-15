@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::{fs::read_to_string, rc::Rc};
 use whitehole::{
-  kind::kind,
+  kind::whitehole_kind,
   lexer::{
     action::{chars, simple, unchecked_exact, unchecked_exact_chars},
     builder::LexerBuilder,
@@ -10,7 +10,7 @@ use whitehole::{
   },
 };
 
-#[kind]
+#[whitehole_kind]
 #[derive(Default, Clone, Debug)]
 enum JsonTokenKind {
   #[default]
