@@ -1,4 +1,4 @@
-use super::lookup::Lookup;
+use super::Lookup;
 use std::{
   fmt::{self, Debug},
   iter::{Enumerate, FlatMap},

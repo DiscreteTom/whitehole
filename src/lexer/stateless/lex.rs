@@ -13,7 +13,7 @@ use crate::{
     stateless::utils::traverse_actions,
     token::{Token, TokenKindId},
   },
-  utils::lookup::lookup::Lookup,
+  utils::lookup::Lookup,
 };
 
 impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {

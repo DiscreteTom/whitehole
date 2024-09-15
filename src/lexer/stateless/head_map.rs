@@ -2,7 +2,7 @@ use crate::{
   lexer::action::{HeadMatcher, RcActionExec, RcActionProps},
   utils::lookup::{
     char::{SparseCharLookupTable, SparseCharLookupTableBuilder},
-    lookup::Lookup,
+    Lookup,
   },
 };
 

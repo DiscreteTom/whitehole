@@ -99,7 +99,7 @@ mod utils;
 pub use options::*;
 
 use super::action::{Action, RcActionExec, RcActionProps};
-use crate::utils::lookup::{lookup::Lookup, option::OptionLookupTable};
+use crate::utils::lookup::{Lookup, option::OptionLookupTable};
 use head_map::HeadMap;
 use literal_map::LiteralMap;
 
@@ -194,7 +194,7 @@ mod tests {
       action::{exact, regex},
       token::{MockTokenKind, SubTokenKind},
     },
-    utils::lookup::lookup::Lookup,
+    utils::lookup::Lookup,
   };
   use head_map::RuntimeActions;
   use whitehole_macros::_token_kind;

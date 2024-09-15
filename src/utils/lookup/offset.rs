@@ -1,4 +1,4 @@
-use super::lookup::Lookup;
+use super::Lookup;
 
 /// A lookup table wrapper that won't allocate for the first `n` values to save memory.
 /// This will record the offset `n` and prevent access to the first `n` values.

@@ -1,3 +1,24 @@
+//! # Lookup Table
+//!
+//! This is the core module for the lexer and the parser.
+//! We use lookup tables to replace hash maps as much as possible
+//! to increase the runtime performance.
+//!
+//! # Getting Started
+//!
+//! Here is the recommended order of learning this module:
+//!
+//! - [`self`]
+//! - [`self::option`]
+//! - [`self::offset`]
+//! - [`self::char`]
+//!
+//! // TODO: maybe publish this mod as a separate crate?
+
+pub mod char;
+pub mod offset;
+pub mod option;
+
 /// A trait for a lookup table.
 pub(crate) trait Lookup {
   type Value;

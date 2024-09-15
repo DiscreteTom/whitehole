@@ -1,4 +1,4 @@
-use super::{lookup::Lookup, offset::OffsetLookupTable, option::OptionLookupTable};
+use super::{offset::OffsetLookupTable, option::OptionLookupTable, Lookup};
 
 /// Not every character is used in the lookup table, so we use [`OptionLookupTable`] to store values.
 /// Since the range of characters is big and only a few characters are used, we use [`OffsetLookupTable`]
