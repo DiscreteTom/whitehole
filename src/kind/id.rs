@@ -123,9 +123,20 @@ mod tests {
 
   #[test]
   fn kind_id_copy() {
-    // ensure we don't need to impl Clone/Copy for MyKind but the copy is still working
+    // ensure we don't need to impl Copy for MyKind but the copy is still working
     let id = SubKindId::new(42) as SubKindId<MyKind>;
     let id_copy = id;
+    assert_eq!(id.value, id_copy.value);
+  }
+
+  #[test]
+  fn kind_id_clone() {
+    // ensure we don't need to impl Clone for MyKind but the clone is still working
+    fn clone<T: Clone>(t: T) -> T {
+      t.clone()
+    }
+    let id = SubKindId::new(42) as SubKindId<MyKind>;
+    let id_copy = clone(id);
     assert_eq!(id.value, id_copy.value);
   }
 
