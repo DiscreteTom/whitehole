@@ -1,14 +1,14 @@
 use regex::Regex;
 use whitehole::{
-  kind::{kind, KindIdBinding, MockKind, SubKind},
+  kind::{whitehole_kind, KindIdBinding, MockKind, SubKind},
   lexer::{
     action::{regex, simple_with_data, Action},
     builder::LexerBuilder,
   },
 };
 
-// define token kinds, make sure it is decorated by `#[kind]`
-#[kind]
+// define token kinds, make sure it is decorated by `#[whitehole_kind]`
+#[whitehole_kind]
 #[derive(Clone, Debug)]
 enum MyKind {
   A(usize),
@@ -33,7 +33,7 @@ fn kind_enum_with_calculated_value() {
 
   // the lex should emit `A(123)`
   let token = lexer.lex().token.unwrap();
-  // as you can see the `MyKind::A(usize)` enum is mutated to `MyKind::A(A)` by the `#[kind]` macro
+  // as you can see the `MyKind::A(usize)` enum is mutated to `MyKind::A(A)` by the `#[whitehole_kind]` macro
   assert!(matches!(token.binding.kind(), MyKind::A(A(123))));
 }
 

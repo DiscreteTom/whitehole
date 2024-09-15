@@ -1,5 +1,5 @@
 use whitehole::{
-  kind::kind,
+  kind::whitehole_kind,
   lexer::{
     action::{comment, exact_chars, exact_vec, regex, simple, whitespaces, word_vec},
     builder::LexerBuilder,
@@ -7,8 +7,8 @@ use whitehole::{
   },
 };
 
-// define token kinds, make sure it is decorated by `#[kind]`
-#[kind]
+// define token kinds, make sure it is decorated by `#[whitehole_kind]`
+#[whitehole_kind]
 #[derive(Clone, Default)]
 enum MyKind {
   #[default]

@@ -4,8 +4,8 @@
 //   LexerBuilder,
 // };
 
-// // define token kinds, make sure it is decorated by `#[kind]`
-// #[kind]
+// // define token kinds, make sure it is decorated by `#[whitehole_kind]`
+// #[whitehole_kind]
 // #[derive(Clone, Default)]
 // enum MyKind {
 //   #[default]

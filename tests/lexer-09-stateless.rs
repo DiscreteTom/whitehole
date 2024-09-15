@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use whitehole::{
-  kind::kind,
+  kind::whitehole_kind,
   lexer::{
     action::{regex, whitespaces},
     builder::LexerBuilder,
@@ -8,8 +8,8 @@ use whitehole::{
   },
 };
 
-// define token kinds, make sure it is decorated by `#[kind]`
-#[kind]
+// define token kinds, make sure it is decorated by `#[whitehole_kind]`
+#[whitehole_kind]
 #[derive(Clone, Default)]
 enum MyKind {
   #[default]
