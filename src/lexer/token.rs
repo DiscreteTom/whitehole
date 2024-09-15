@@ -28,7 +28,7 @@ pub struct Token<Kind> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::kind::{DefaultSubKind, KindId, MockKind, SubKind};
+  use crate::kind::{DefaultSubKind, SubKindId, MockKind, SubKind};
   use whitehole_macros::_whitehole_kind;
 
   #[_whitehole_kind]
@@ -87,7 +87,7 @@ mod tests {
     assert_eq!(b.take(), MyKind::Named(Named { name: 42 }));
 
     // generated token kind id, as sub token kind.
-    let v: Vec<KindId<MyKind>> = vec![Unit::kind_id(), Unnamed::kind_id(), Named::kind_id()];
+    let v: Vec<SubKindId<MyKind>> = vec![Unit::kind_id(), Unnamed::kind_id(), Named::kind_id()];
     for (i, id) in v.iter().enumerate() {
       for (j, id2) in v.iter().enumerate() {
         if i == j {
@@ -99,13 +99,13 @@ mod tests {
     }
 
     // sub token kind into token kind id
-    assert_eq!(<Unit as Into<KindId<MyKind>>>::into(Unit), Unit::kind_id());
+    assert_eq!(<Unit as Into<SubKindId<MyKind>>>::into(Unit), Unit::kind_id());
     assert_eq!(
-      <Unnamed as Into<KindId<MyKind>>>::into(Unnamed(42)),
+      <Unnamed as Into<SubKindId<MyKind>>>::into(Unnamed(42)),
       Unnamed::kind_id()
     );
     assert_eq!(
-      <Named as Into<KindId<MyKind>>>::into(Named { name: 42 }),
+      <Named as Into<SubKindId<MyKind>>>::into(Named { name: 42 }),
       Named::kind_id()
     );
 

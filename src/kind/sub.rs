@@ -1,4 +1,4 @@
-use super::KindId;
+use super::SubKindId;
 
 /// Usually we use enum to represent a "token kind".
 /// Each variant of the enum is a "sub token kind".
@@ -28,14 +28,14 @@ pub trait SubKind {
 
   /// Return the kind id of this sub token kind.
   #[inline]
-  fn kind_id() -> KindId<Self::Kind> {
-    KindId::new(Self::VARIANT_INDEX)
+  fn kind_id() -> SubKindId<Self::Kind> {
+    SubKindId::new(Self::VARIANT_INDEX)
   }
 }
 
 // this is helpful in expectational lexing, if users wants to provide the expected kind id
 // they can just use the value (especially for unit variants)
-impl<Kind, Sub: SubKind<Kind = Kind>> From<Sub> for KindId<Kind> {
+impl<Kind, Sub: SubKind<Kind = Kind>> From<Sub> for SubKindId<Kind> {
   #[inline]
   fn from(_: Sub) -> Self {
     Sub::kind_id()
@@ -73,7 +73,7 @@ pub trait DefaultSubKind: Sized {
   type Default: SubKind<Kind = Self>;
 
   #[inline]
-  fn default_kind_id() -> KindId<Self> {
+  fn default_kind_id() -> SubKindId<Self> {
     Self::Default::kind_id()
   }
 }

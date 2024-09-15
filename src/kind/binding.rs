@@ -1,4 +1,4 @@
-use super::{DefaultSubKind, KindId, SubKind};
+use super::{DefaultSubKind, SubKind, SubKindId};
 
 /// Bind the token kind value with an [`KindId`].
 ///
@@ -24,7 +24,7 @@ use super::{DefaultSubKind, KindId, SubKind};
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct KindIdBinding<Kind> {
-  id: KindId<Kind>,
+  id: SubKindId<Kind>,
   kind: Kind,
 }
 
@@ -43,7 +43,7 @@ impl<Kind> KindIdBinding<Kind> {
   /// Get the id of the sub token kind.
   /// See [`KindId`].
   #[inline]
-  pub const fn id(&self) -> KindId<Kind> {
+  pub const fn id(&self) -> SubKindId<Kind> {
     self.id
   }
 

@@ -1,9 +1,9 @@
-use crate::kind::{KindId, SubKind};
+use crate::kind::{SubKind, SubKindId};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Expectation<'literal, Kind> {
   /// See [`Self::kind`].
-  pub kind: Option<KindId<Kind>>,
+  pub kind: Option<SubKindId<Kind>>,
   /// See [`Self::literal`].
   pub literal: Option<&'literal str>,
 }
@@ -15,9 +15,9 @@ impl<'literal, Kind> Default for Expectation<'literal, Kind> {
   }
 }
 
-impl<'literal, Kind> From<KindId<Kind>> for Expectation<'literal, Kind> {
+impl<'literal, Kind> From<SubKindId<Kind>> for Expectation<'literal, Kind> {
   #[inline]
-  fn from(id: KindId<Kind>) -> Self {
+  fn from(id: SubKindId<Kind>) -> Self {
     Self::new().kind(id)
   }
 }
@@ -65,7 +65,7 @@ impl<'literal, Kind> Expectation<'literal, Kind> {
   /// # }
   /// ```
   #[inline]
-  pub fn kind(mut self, kind: impl Into<KindId<Kind>>) -> Self {
+  pub fn kind(mut self, kind: impl Into<SubKindId<Kind>>) -> Self {
     self.kind = Some(kind.into());
     self
   }

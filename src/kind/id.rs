@@ -46,12 +46,12 @@ use std::{
 /// ## Others
 /// By using [`usize`] as the id, we can use this as the index of a lookup table.
 /// And it is small enough to be passed around by value.
-pub struct KindId<Kind> {
+pub struct SubKindId<Kind> {
   value: usize,
   __: PhantomData<Kind>,
 }
 
-impl<Kind> KindId<Kind> {
+impl<Kind> SubKindId<Kind> {
   /// This is internal to prevent users from creating the id directly.
   /// All the ids should be created by [`SubKind::kind_id`](super::SubKind::kind_id).
   #[inline]
@@ -71,7 +71,7 @@ impl<Kind> KindId<Kind> {
 
 // manually implement these traits to avoid `Kind`
 // being `Debug`, `Copy`, `Clone`, `Eq`, `PartialEq`, `Hash`
-impl<Kind> Debug for KindId<Kind> {
+impl<Kind> Debug for SubKindId<Kind> {
   #[inline]
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.debug_tuple(&format!("KindId<{}>", type_name::<Kind>()))
@@ -79,21 +79,21 @@ impl<Kind> Debug for KindId<Kind> {
       .finish()
   }
 }
-impl<Kind> Copy for KindId<Kind> {}
-impl<Kind> Clone for KindId<Kind> {
+impl<Kind> Copy for SubKindId<Kind> {}
+impl<Kind> Clone for SubKindId<Kind> {
   #[inline]
   fn clone(&self) -> Self {
     *self
   }
 }
-impl<Kind> PartialEq for KindId<Kind> {
+impl<Kind> PartialEq for SubKindId<Kind> {
   #[inline]
   fn eq(&self, other: &Self) -> bool {
     self.value == other.value
   }
 }
-impl<Kind> Eq for KindId<Kind> {}
-impl<Kind> Hash for KindId<Kind> {
+impl<Kind> Eq for SubKindId<Kind> {}
+impl<Kind> Hash for SubKindId<Kind> {
   #[inline]
   fn hash<H: Hasher>(&self, state: &mut H) {
     self.value.hash(state);

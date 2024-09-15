@@ -30,7 +30,7 @@ pub use output::*;
 pub use simple::*;
 pub use utils::*;
 
-use crate::kind::KindId;
+use crate::kind::SubKindId;
 use std::{
   collections::HashSet,
   fmt::{self, Debug},
@@ -52,7 +52,7 @@ pub struct ActionBase<Kind, Exec> {
   exec: Exec,
 
   /// See [`Self::kind`].
-  kind: KindId<Kind>,
+  kind: SubKindId<Kind>,
   /// See [`Self::literal`].
   literal: Option<String>,
   /// See [`Self::head`].
@@ -71,7 +71,7 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
   /// [`Self::bind_default`] or [`Self::select`].
   /// These methods will ensure the integrity between [`Self::kind`] and [`ActionOutput::binding`].
   #[inline]
-  pub const fn kind(&self) -> KindId<Kind> {
+  pub const fn kind(&self) -> SubKindId<Kind> {
     self.kind
   }
 

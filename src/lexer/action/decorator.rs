@@ -7,7 +7,7 @@ mod literal;
 pub use context::*;
 
 use super::{input::ActionInput, output::ActionOutput, Action, ActionExec, RawActionExec};
-use crate::kind::KindId;
+use crate::kind::SubKindId;
 
 /// Apply a statement and return `self`.
 macro_rules! echo_with {
@@ -85,7 +85,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   #[inline]
   fn map_exec_new<NewKind>(
     self,
-    kind: KindId<NewKind>,
+    kind: SubKindId<NewKind>,
     f: impl Fn(
         &RawActionExec<Kind, State, Heap>,
         &mut ActionInput<&mut State, &mut Heap>,
