@@ -202,13 +202,11 @@
 //! - [`self`]
 
 mod binding;
-mod default;
 mod id;
 mod mock;
 mod sub;
 
 pub use binding::*;
-pub use default::*;
 pub use id::*;
 pub use mock::*;
 pub use sub::*;

@@ -1,4 +1,4 @@
-use super::{DefaultKind, KindId, SubKind};
+use super::{DefaultSubKind, KindId, SubKind};
 
 /// Bind the token kind value with an [`KindId`].
 ///
@@ -60,7 +60,7 @@ impl<Kind> KindIdBinding<Kind> {
   }
 }
 
-impl<Kind: DefaultKind + Default> Default for KindIdBinding<Kind> {
+impl<Kind: DefaultSubKind + Default> Default for KindIdBinding<Kind> {
   #[inline]
   fn default() -> Self {
     Self {

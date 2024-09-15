@@ -1,6 +1,6 @@
 use super::AcceptedActionOutputContext;
 use crate::{
-  kind::{DefaultKind, KindIdBinding, SubKind},
+  kind::{DefaultSubKind, KindIdBinding, SubKind},
   lexer::action::{Action, ActionInput, ActionOutput},
 };
 
@@ -56,7 +56,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   #[inline]
   pub fn bind_default<NewKind>(self) -> Action<'a, NewKind, State, Heap>
   where
-    NewKind: DefaultKind + Default,
+    NewKind: DefaultSubKind + Default,
   {
     self.map_exec_new(NewKind::default_kind_id(), move |exec, input| {
       exec(input).map(|output| ActionOutput {

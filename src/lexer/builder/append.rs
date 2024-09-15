@@ -1,6 +1,6 @@
 use super::LexerBuilder;
 use crate::{
-  kind::{DefaultKind, MockKind},
+  kind::{DefaultSubKind, MockKind},
   lexer::action::Action,
   utils::OneOrMore,
 };
@@ -78,7 +78,7 @@ impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
     actions: impl Into<OneOrMore<Action<'a, MockKind<()>, State, Heap>>>,
   ) -> Self
   where
-    Kind: DefaultKind + Default,
+    Kind: DefaultSubKind + Default,
     State: 'a,
     Heap: 'a,
   {
@@ -108,7 +108,7 @@ impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
     decorator: impl Fn(Action<MockKind<()>, State, Heap>) -> Action<MockKind<()>, State, Heap> + 'a,
   ) -> Self
   where
-    Kind: DefaultKind + Default,
+    Kind: DefaultSubKind + Default,
     State: 'a,
     Heap: 'a,
   {

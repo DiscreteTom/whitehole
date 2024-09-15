@@ -28,7 +28,7 @@ pub struct Token<Kind> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::kind::{DefaultKind, KindId, MockKind, SubKind};
+  use crate::kind::{DefaultSubKind, KindId, MockKind, SubKind};
   use whitehole_macros::_kind;
 
   #[_kind]

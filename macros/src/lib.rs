@@ -43,7 +43,7 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// ```
 /// the macro will also generate:
 /// ```no_run
-/// impl DefaultKind for MyKind { ... }
+/// impl DefaultSubKind for MyKind { ... }
 /// ```
 /// # Limitations
 /// Generics are not supported yet.
@@ -181,7 +181,7 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
       .any(|attr| attr.path.is_ident("default"))
     {
       gen.push(quote! {
-        impl #crate_name::kind::DefaultKind for #enum_name {
+        impl #crate_name::kind::DefaultSubKind for #enum_name {
           type Default = #variant_name;
         }
       });
