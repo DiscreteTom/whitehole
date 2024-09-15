@@ -116,13 +116,13 @@ mod tests {
   }
 
   #[test]
-  fn token_kind_id_new_and_value() {
+  fn kind_id_new_and_value() {
     let id = SubKindId::new(42) as SubKindId<MyKind>;
     assert_eq!(id.value(), 42);
   }
 
   #[test]
-  fn token_kind_id_copy() {
+  fn kind_id_copy() {
     // ensure we don't need to impl Clone/Copy for MyKind but the copy is still working
     let id = SubKindId::new(42) as SubKindId<MyKind>;
     let id_copy = id;
@@ -130,7 +130,7 @@ mod tests {
   }
 
   #[test]
-  fn token_kind_id_eq() {
+  fn kind_id_eq() {
     // ensure we don't need to impl PartialEq for MyKind but the eq is still working
     let id1 = SubKindId::new(42) as SubKindId<MyKind>;
     let id2 = SubKindId::new(42) as SubKindId<MyKind>;
@@ -138,7 +138,7 @@ mod tests {
   }
 
   #[test]
-  fn token_kind_id_hash() {
+  fn kind_id_hash() {
     // ensure we don't need to impl Hash for MyKind but the hash is still working
     let id1 = SubKindId::new(42) as SubKindId<MyKind>;
     let id2 = SubKindId::new(42) as SubKindId<MyKind>;
@@ -148,7 +148,7 @@ mod tests {
   }
 
   #[test]
-  fn token_kind_id_debug() {
+  fn kind_id_debug() {
     assert_eq!(
       format!("{:?}", A::kind_id()),
       "SubKindId<whitehole::kind::id::tests::MyKind>(0)"
@@ -156,8 +156,8 @@ mod tests {
   }
 
   #[test]
-  fn default_token_kind_id() {
-    // default token kind id is not always 0
+  fn default_kind_id() {
+    // default kind id is not always 0
     assert_eq!(MyKind::default_kind_id(), B::kind_id());
   }
 }
