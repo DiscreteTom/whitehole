@@ -202,6 +202,7 @@ impl<V> Lookup for OptionLookupTable<V> {
 /// See [`OptionLookupTable::iter`].
 #[derive(Clone, Debug)]
 pub struct Iter<'a, V> {
+  #[allow(clippy::type_complexity, reason = "this type only exists here once")]
   iter: FlatMap<
     Enumerate<slice::Iter<'a, Option<V>>>,
     Option<(usize, &'a V)>,
@@ -281,6 +282,7 @@ impl<'a, V> Iterator for Values<'a, V> {
 /// See [`OptionLookupTable::iter_mut`].
 #[derive(Debug)]
 pub struct IterMut<'a, V> {
+  #[allow(clippy::type_complexity, reason = "this type only exists here once")]
   iter: FlatMap<
     Enumerate<slice::IterMut<'a, Option<V>>>,
     Option<(usize, &'a mut V)>,

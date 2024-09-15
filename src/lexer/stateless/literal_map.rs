@@ -19,6 +19,7 @@ pub(super) struct LiteralMap<Kind, State, Heap> {
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`LiteralMap::new`].
 pub(super) struct KnownLiterals<Kind, State, Heap>(
+  #[allow(clippy::type_complexity, reason = "this type only exists here once")]
   HashMap<
     String,
     (
