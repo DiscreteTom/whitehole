@@ -2,7 +2,7 @@ mod append;
 mod define;
 mod ignore;
 
-use super::{action::Action, stateless::StatelessLexer, IntoLexer, Lexer};
+use super::{action::Action, into::IntoLexer, stateless::StatelessLexer, Lexer};
 use crate::utils::OneOrMore;
 
 /// To create this, see [`Self::new`] and [`Self::stateful`].
@@ -136,20 +136,6 @@ impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
     f: impl Fn(Action<'a, OldKind, State, Heap>) -> Action<'a, NewKind, State, Heap> + 'a,
   ) -> Vec<Action<'a, NewKind, State, Heap>> {
     actions.into().0.into_iter().map(f).collect()
-  }
-}
-
-impl<'a, Kind, State, Heap> IntoLexer<'a, Kind, State, Heap>
-  for LexerBuilder<'a, Kind, State, Heap>
-{
-  #[inline]
-  fn into_lexer_with<'text>(
-    self,
-    state: State,
-    heap: Heap,
-    text: &'text str,
-  ) -> Lexer<'a, 'text, Kind, State, Heap> {
-    self.build_stateless().into_lexer_with(state, heap, text)
   }
 }
 
