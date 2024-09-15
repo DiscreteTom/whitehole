@@ -6,8 +6,8 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// # Examples
 /// The following code
 /// ```
-/// use whitehole_macros::kind;
-/// #[kind]
+/// use whitehole::kind::whitehole_kind;
+/// #[whitehole_kind]
 /// pub enum MyKind {
 ///   A,
 ///   B(i32),
@@ -31,8 +31,8 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// ```
 /// Besides, if the kind derive [`Default`]:
 /// ```
-/// use whitehole_macros::kind;
-/// #[kind]
+/// use whitehole::kind::whitehole_kind;
+/// #[whitehole_kind]
 /// #[derive(Default)]
 /// enum MyKind {
 ///   #[default]
@@ -48,21 +48,21 @@ use syn::{self, parse, Data, DeriveInput, Fields};
 /// # Limitations
 /// Generics are not supported yet.
 #[proc_macro_attribute]
-pub fn kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn whitehole_kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
   common(quote! { whitehole }, input).into()
 }
 
 /// Same as [`kind`].
 /// This is only used internally in whitehole.
 #[proc_macro_attribute]
-pub fn _kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn _whitehole_kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
   common(quote! { crate }, input).into()
 }
 
 /// Print the generated code for debugging.
 /// This is only used internally in whitehole.
 #[proc_macro_attribute]
-pub fn _debug_kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn _debug_whitehole_kind(_attr: TokenStream, input: TokenStream) -> TokenStream {
   let ts = common(quote! { crate }, input);
   println!("{}", ts.to_string());
   ts.into()

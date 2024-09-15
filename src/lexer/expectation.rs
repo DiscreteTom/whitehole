@@ -52,7 +52,7 @@ impl<'literal, Kind> Expectation<'literal, Kind> {
   /// ```
   /// # use whitehole::lexer::token::{kind, SubKind};
   /// # use whitehole::lexer::expectation::Expectation;
-  /// #[kind]
+  /// #[whitehole_kind]
   /// enum MyKind { A(String), B }
   /// # fn main() {
   /// // use kind id, useful for enum variant with associated data
@@ -98,9 +98,9 @@ impl<'literal, Kind> Expectation<'literal, Kind> {
 mod tests {
   use super::*;
   use crate::kind::SubKind;
-  use whitehole_macros::_kind;
+  use whitehole_macros::_whitehole_kind;
 
-  #[_kind]
+  #[_whitehole_kind]
   #[derive(Debug)]
   enum MyKind {
     A(()),

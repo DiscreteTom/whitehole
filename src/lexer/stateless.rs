@@ -196,9 +196,9 @@ mod tests {
     utils::lookup::Lookup,
   };
   use head_map::RuntimeActions;
-  use whitehole_macros::_kind;
+  use whitehole_macros::_whitehole_kind;
 
-  #[_kind]
+  #[_whitehole_kind]
   #[derive(Debug, Clone)]
   pub enum MyKind {
     A,

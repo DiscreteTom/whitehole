@@ -10,7 +10,7 @@ impl<'a, Kind, State: 'a, Heap: 'a> LexerBuilder<'a, Kind, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::kind};
-  /// # #[kind]
+  /// # #[whitehole_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
   /// # fn main() {
@@ -38,7 +38,7 @@ impl<'a, Kind, State: 'a, Heap: 'a> LexerBuilder<'a, Kind, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::{Action, word}, builder::LexerBuilder, token::kind};
-  /// # #[kind]
+  /// # #[whitehole_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A, B }
   /// # fn main() {
@@ -68,9 +68,9 @@ impl<'a, Kind, State: 'a, Heap: 'a> LexerBuilder<'a, Kind, State, Heap> {
 mod tests {
   use super::*;
   use crate::lexer::action::{exact, word};
-  use whitehole_macros::_kind;
+  use whitehole_macros::_whitehole_kind;
 
-  #[_kind]
+  #[_whitehole_kind]
   #[derive(Clone, Debug)]
   enum MyKind {
     A,

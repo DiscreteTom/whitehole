@@ -29,9 +29,9 @@ pub struct Token<Kind> {
 mod tests {
   use super::*;
   use crate::kind::{DefaultSubKind, KindId, MockKind, SubKind};
-  use whitehole_macros::_kind;
+  use whitehole_macros::_whitehole_kind;
 
-  #[_kind]
+  #[_whitehole_kind]
   #[derive(Debug, Clone, Default, PartialEq, Eq)]
   pub enum MyKind {
     #[default]

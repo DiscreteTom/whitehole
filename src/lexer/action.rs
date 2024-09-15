@@ -183,9 +183,9 @@ impl<'a, Kind, State, Heap> Action<'a, Kind, State, Heap> {
 mod tests {
   use super::*;
   use crate::kind::SubKind;
-  use whitehole_macros::_kind;
+  use whitehole_macros::_whitehole_kind;
 
-  #[_kind]
+  #[_whitehole_kind]
   #[derive(Debug)]
   enum MyKind {
     A,

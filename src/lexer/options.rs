@@ -48,7 +48,7 @@ impl<'literal, Kind, Fork> LexOptions<'literal, Kind, Fork> {
   /// # use whitehole::lexer::options::LexOptions;
   /// # use whitehole::lexer::expectation::Expectation;
   /// # use whitehole::lexer::token::{kind, SubKind};
-  /// #[kind]
+  /// #[whitehole_kind]
   /// enum MyKind { A }
   ///
   /// # fn main() {
@@ -79,7 +79,7 @@ impl<'literal, Kind, Fork> LexOptions<'literal, Kind, Fork> {
   /// ```
   /// # use whitehole::lexer::options::LexOptions;
   /// # use whitehole::lexer::token::{kind, SubKind};
-  /// #[kind]
+  /// #[whitehole_kind]
   /// enum MyKind { A }
   ///
   /// # fn main() {

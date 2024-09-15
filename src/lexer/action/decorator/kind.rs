@@ -14,7 +14,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   ///   token::kind,
   /// };
   ///
-  /// #[kind]
+  /// #[whitehole_kind]
   /// #[derive(Clone, Debug)]
   /// enum MyKind { A, B(i32) }
   ///
@@ -44,7 +44,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   ///   token::{kind, SubKind},
   /// };
   ///
-  /// #[kind]
+  /// #[whitehole_kind]
   /// #[derive(Clone, Debug, Default)]
   /// enum MyKind { #[default] Anonymous, A }
   ///
@@ -77,7 +77,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   ///   token::kind,
   /// };
   ///
-  /// #[kind]
+  /// #[whitehole_kind]
   /// #[derive(Clone, Debug)]
   /// enum MyKind { Num(i32) }
   ///
@@ -110,9 +110,9 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
 mod tests {
   use super::*;
   use crate::lexer::action::{exact, regex};
-  use whitehole_macros::_kind;
+  use whitehole_macros::_whitehole_kind;
 
-  #[_kind]
+  #[_whitehole_kind]
   #[derive(Clone, Debug, Default)]
   enum MyKind {
     #[default]

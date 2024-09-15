@@ -119,7 +119,7 @@ pub fn chars_in_str<State, Heap>(
 /// # Examples
 /// ```
 /// # use whitehole::lexer::{action::whitespaces, token::kind, builder::LexerBuilder};
-/// # #[kind]
+/// # #[whitehole_kind]
 /// # #[derive(Default, Clone)]
 /// # enum MyKind { #[default] Anonymous }
 /// # fn main() {

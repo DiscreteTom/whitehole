@@ -24,7 +24,7 @@ impl<'a, Kind, State, Heap> Action<'a, Kind, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::kind};
-  /// # #[kind]
+  /// # #[whitehole_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # fn main() {
@@ -44,7 +44,7 @@ impl<'a, Kind, State, Heap> Action<'a, Kind, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::kind};
-  /// # #[kind]
+  /// # #[whitehole_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # fn main() {
@@ -107,7 +107,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::kind};
-  /// # #[kind]
+  /// # #[whitehole_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # #[derive(Clone, Default)]
@@ -143,7 +143,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::kind};
-  /// # #[kind]
+  /// # #[whitehole_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # #[derive(Clone, Default)]
@@ -171,7 +171,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::kind};
-  /// # #[kind]
+  /// # #[whitehole_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # fn main() {
@@ -209,7 +209,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::kind};
-  /// # #[kind]
+  /// # #[whitehole_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # fn main() {
@@ -239,7 +239,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::regex, builder::LexerBuilder, token::kind};
-  /// # #[kind]
+  /// # #[whitehole_kind]
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
   /// # #[derive(Clone, Default)]
@@ -274,9 +274,9 @@ mod tests {
   use crate::lexer::action::{
     exact, input::ActionInput, output::ActionOutput, AcceptedActionOutputContext, Action,
   };
-  use whitehole_macros::_kind;
+  use whitehole_macros::_whitehole_kind;
 
-  #[_kind]
+  #[_whitehole_kind]
   #[derive(Clone)]
   enum MyKind {
     A,

@@ -13,7 +13,7 @@ use super::KindId;
 /// ```
 /// use whitehole::lexer::token::{kind, SubKind};
 ///
-/// #[kind]
+/// #[whitehole_kind]
 /// #[derive(Debug)]
 /// enum MyKind { A, B(i32) }
 ///
@@ -50,7 +50,7 @@ impl<Kind, Sub: SubKind<Kind = Kind>> From<Sub> for KindId<Kind> {
 ///   kind, KindIdBinding, SubKind, DefaultKindId,
 /// };
 ///
-/// #[kind]
+/// #[whitehole_kind]
 /// #[derive(Default, Debug, PartialEq, Eq)]
 /// enum MyKind {
 ///   #[default]

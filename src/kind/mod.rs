@@ -181,7 +181,7 @@
 //!
 //! ```
 //! use whitehole::lexer::token::kind;
-//! #[kind]
+//! #[whitehole_kind]
 //! pub enum MyKind {
 //!   Identifier(String),
 //!   Number(i32),
@@ -210,4 +210,4 @@ pub use binding::*;
 pub use id::*;
 pub use mock::*;
 pub use sub::*;
-pub use whitehole_macros::kind;
+pub use whitehole_macros::whitehole_kind;
