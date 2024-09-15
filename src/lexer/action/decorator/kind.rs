@@ -1,7 +1,7 @@
 use super::AcceptedActionOutputContext;
 use crate::lexer::{
   action::{Action, ActionInput, ActionOutput},
-  token::{DefaultTokenKindId, SubTokenKind, TokenKindIdBinding},
+  token::{DefaultTokenKind, SubTokenKind, TokenKindIdBinding},
 };
 
 impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
@@ -56,7 +56,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   #[inline]
   pub fn bind_default<NewKind>(self) -> Action<'a, NewKind, State, Heap>
   where
-    NewKind: DefaultTokenKindId + Default,
+    NewKind: DefaultTokenKind + Default,
   {
     self.map_exec_new(NewKind::default_kind_id(), move |exec, input| {
       exec(input).map(|output| ActionOutput {

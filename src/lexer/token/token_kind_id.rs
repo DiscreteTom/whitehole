@@ -1,3 +1,4 @@
+use super::SubTokenKind;
 use std::{
   any::type_name,
   fmt::{self, Debug},
@@ -127,8 +128,13 @@ impl<Kind> Hash for TokenKindId<Kind> {
 ///
 /// We can't just `impl<T> Default for TokenKindId<T>` either
 /// because the default token kind id's value is not always `0`.
-pub trait DefaultTokenKindId: Sized {
-  fn default_kind_id() -> TokenKindId<Self>;
+pub trait DefaultTokenKind: Sized {
+  type Default: SubTokenKind<TokenKind = Self>;
+
+  #[inline]
+  fn default_kind_id() -> TokenKindId<Self> {
+    Self::Default::kind_id()
+  }
 }
 
 #[cfg(test)]

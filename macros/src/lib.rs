@@ -181,11 +181,8 @@ fn common(crate_name: proc_macro2::TokenStream, input: TokenStream) -> proc_macr
       .any(|attr| attr.path.is_ident("default"))
     {
       gen.push(quote! {
-        impl #crate_name::lexer::token::DefaultTokenKindId for #enum_name {
-          #[inline]
-          fn default_kind_id() -> #crate_name::lexer::token::TokenKindId<#enum_name> {
-            <#variant_name as #crate_name::lexer::token::SubTokenKind>::kind_id()
-          }
+        impl #crate_name::lexer::token::DefaultTokenKind for #enum_name {
+          type Default = #variant_name;
         }
       });
     }
