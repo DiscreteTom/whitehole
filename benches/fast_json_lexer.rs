@@ -20,7 +20,7 @@ enum JsonTokenKind {
   Null,
 }
 
-fn build_lexer() -> StatelessLexer<JsonTokenKind> {
+fn build_lexer() -> StatelessLexer<'static, JsonTokenKind> {
   // this lexer assume the input is a valid json and won't check the correctness
   LexerBuilder::new()
     .ignore_default(chars(|c| matches!(c, ' ' | '\n' | '\r' | '\t')))

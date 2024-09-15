@@ -24,7 +24,7 @@ enum JsonTokenKind {
   Null,
 }
 
-fn build_lexer() -> StatelessLexer<JsonTokenKind> {
+fn build_lexer() -> StatelessLexer<'static, JsonTokenKind> {
   LexerBuilder::new()
     .ignore_default(chars(|c| matches!(c, ' ' | '\n' | '\r' | '\t')))
     .append_default(boundaries())
