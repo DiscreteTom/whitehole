@@ -51,15 +51,14 @@ macro_rules! break_loop_on_none {
 pub(super) use break_loop_on_none;
 
 /// Prepare the input for lexing.
-/// Break the loop if the input is [`None`],
 macro_rules! prepare_input {
-  ($start:expr, $digested:expr, $text:expr, $state:expr, $heap:expr) => {
-    break_loop_on_none!(ActionInput::new(
+  ($text:expr, $digested:expr, $options:ident) => {
+    ActionInput::new(
       $text,
-      $start + $digested,
-      &mut *$state,
-      &mut *$heap
-    ))
+      $options.start + $digested,
+      &mut *$options.state,
+      &mut *$options.heap,
+    )
   };
 }
 pub(super) use prepare_input;

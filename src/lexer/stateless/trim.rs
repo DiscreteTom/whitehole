@@ -76,8 +76,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
 
     let mut digested = 0;
 
-    loop {
-      let mut input = prepare_input!(options.start, digested, text, options.state, options.heap);
+    while let Some(mut input) = prepare_input!(text, digested, options) {
       // the literal map's muted map contains all the muted actions
       let actions = self.literal_map.muted_map().get(input.next());
       let (_output, _action_index, muted) = lex!(input, actions, &re_lex, digested);

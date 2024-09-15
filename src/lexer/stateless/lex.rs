@@ -92,9 +92,7 @@ impl<Kind, State, Heap> StatelessLexer<Kind, State, Heap> {
 
     macro_rules! lex_with_actions {
       ($actions_getter:ident, $output_validator:ident) => {
-        loop {
-          let mut input =
-            prepare_input!(options.start, digested, text, options.state, options.heap);
+        while let Some(mut input) = prepare_input!(text, digested, options) {
           let actions = $actions_getter!(input);
           let (output, action_index, muted) = lex!(input, actions, &options.base.re_lex, digested);
 
