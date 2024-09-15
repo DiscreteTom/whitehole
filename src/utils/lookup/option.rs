@@ -173,11 +173,7 @@ impl<V> OptionLookupTable<V> {
   /// Create a new instance with the same size and values mapped by the provided function.
   pub fn map_to_new<R>(&self, mapper: impl Fn(&V) -> R) -> OptionLookupTable<R> {
     OptionLookupTable {
-      data: self
-        .data
-        .iter()
-        .map(|v| v.as_ref().map(|v| mapper(v)))
-        .collect(),
+      data: self.data.iter().map(|v| v.as_ref().map(&mapper)).collect(),
     }
   }
 }

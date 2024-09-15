@@ -80,7 +80,7 @@ impl<V> SparseCharLookupTableBuilder<V> {
   where
     V: Default,
   {
-    debug_assert!(raw_keys.len() > 0);
+    debug_assert!(!raw_keys.is_empty());
     debug_assert!(raw_keys.windows(2).all(|w| w[0] <= w[1]));
 
     // SAFETY: `raw_keys` is not empty, so `min` is safe to be unchecked

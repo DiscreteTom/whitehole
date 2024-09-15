@@ -13,6 +13,6 @@ mod tests {
   fn mock_accumulator() {
     let mut acc = ();
     acc.update(123);
-    assert_eq!(acc, ());
+    let _: () = acc;
   }
 }

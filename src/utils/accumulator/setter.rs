@@ -42,7 +42,6 @@ mod tests {
   fn test_accumulator_setter() {
     // ensure the return type
     let _setter: DebugAccumulator = AccumulatorSetter::new(|x| x).to_stdout();
-
-    assert_eq!(AccumulatorSetter::new(|x| x).to(()), ());
+    let _: () = AccumulatorSetter::new(|x| x).to(());
   }
 }
