@@ -118,7 +118,7 @@ pub fn chars_in_str<State, Heap>(
 /// E.g. in JSON you only need to support `0x0009`, `0x000A`, `0x000D`, `0x0020`.
 /// # Examples
 /// ```
-/// # use whitehole::lexer::{action::whitespaces, token::kind, builder::LexerBuilder};
+/// # use whitehole::{kind::whitehole_kind, lexer::{action::whitespaces, builder::LexerBuilder}};
 /// # #[whitehole_kind]
 /// # #[derive(Default, Clone)]
 /// # enum MyKind { #[default] Anonymous }

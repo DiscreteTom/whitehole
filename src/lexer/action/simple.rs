@@ -48,7 +48,7 @@ pub fn simple<'a, State, Heap>(
 /// MUST be smaller than the length of [`ActionInput::rest`].
 /// # Examples
 /// ```
-/// use whitehole::lexer::token::MockKind;
+/// use whitehole::kind::MockKind;
 /// use whitehole::lexer::action::{Action, simple_with_data};
 /// // accept all rest characters and parse them into an integer
 /// let a: Action<MockKind<i32>> = simple_with_data(|input| Some((input.rest().len(), input.rest().parse().unwrap())));

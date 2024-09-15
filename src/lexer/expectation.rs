@@ -50,7 +50,7 @@ impl<'literal, Kind> Expectation<'literal, Kind> {
   /// with different [`kind`](crate::lexer::action::Action::kind) (unless [`muted`](crate::lexer::action::Action::muted)).
   /// # Examples
   /// ```
-  /// # use whitehole::lexer::token::{kind, SubKind};
+  /// # use whitehole::kind::{whitehole_kind, SubKind};
   /// # use whitehole::lexer::expectation::Expectation;
   /// #[whitehole_kind]
   /// enum MyKind { A(String), B }

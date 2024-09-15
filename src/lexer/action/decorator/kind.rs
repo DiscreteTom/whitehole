@@ -9,9 +9,9 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// Use this if your action can only yield a const token kind value.
   /// # Examples
   /// ```
-  /// use whitehole::lexer::{
-  ///   action::{Action, exact},
-  ///   token::kind,
+  /// use whitehole::{
+  ///   kind::whitehole_kind,
+  ///   lexer::action::{Action, exact},
   /// };
   ///
   /// #[whitehole_kind]
@@ -39,9 +39,9 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// Set the kind to the default for this action.
   /// # Examples
   /// ```
-  /// use whitehole::lexer::{
-  ///   action::{Action, exact},
-  ///   token::{kind, SubKind},
+  /// use whitehole::{
+  ///   kind::{whitehole_kind, SubKind},
+  ///   lexer::action::{Action, exact},
   /// };
   ///
   /// #[whitehole_kind]
@@ -72,10 +72,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// You can consume the original [`ActionOutput`] in the `selector`.
   /// # Examples
   /// ```
-  /// use whitehole::lexer::{
-  ///   action::{Action, regex},
-  ///   token::kind,
-  /// };
+  /// use whitehole::{kind::whitehole_kind, lexer::action::{Action, regex}};
   ///
   /// #[whitehole_kind]
   /// #[derive(Clone, Debug)]

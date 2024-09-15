@@ -236,7 +236,7 @@ mod tests {
           literal: Some("123".into()),
         }
       ),
-      "ActionBase { exec: ActionExec(...), kind: KindId<whitehole::lexer::action::tests::MyKind>(0), literal: Some(\"123\"), head: Some(OneOf({'a'})), muted: true }"
+      "ActionBase { exec: ActionExec(...), kind: SubKindId<whitehole::lexer::action::tests::MyKind>(0), literal: Some(\"123\"), head: Some(OneOf({'a'})), muted: true }"
     );
   }
 }
