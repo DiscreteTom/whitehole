@@ -1,12 +1,14 @@
 use regex::Regex;
-use whitehole::lexer::{
-  action::{regex, simple_with_data, Action},
-  token::{token_kind, MockTokenKind, SubTokenKind, TokenKindIdBinding},
-  LexerBuilder,
+use whitehole::{
+  kind::{kind, KindIdBinding, MockKind, SubKind},
+  lexer::{
+    action::{regex, simple_with_data, Action},
+    builder::LexerBuilder,
+  },
 };
 
-// define token kinds, make sure it is decorated by `#[token_kind]`
-#[token_kind]
+// define token kinds, make sure it is decorated by `#[kind]`
+#[kind]
 #[derive(Clone, Debug)]
 enum MyKind {
   A(usize),
@@ -31,7 +33,7 @@ fn kind_enum_with_calculated_value() {
 
   // the lex should emit `A(123)`
   let token = lexer.lex().token.unwrap();
-  // as you can see the `MyKind::A(usize)` enum is mutated to `MyKind::A(A)` by the `#[token_kind]` macro
+  // as you can see the `MyKind::A(usize)` enum is mutated to `MyKind::A(A)` by the `#[kind]` macro
   assert!(matches!(token.binding.kind(), MyKind::A(A(123))));
 }
 
@@ -62,20 +64,20 @@ fn kind_enum_with_const_value() {
 }
 
 #[test]
-fn carry_data_with_mock_token_kind() {
-  // `MockTokenKind<()>` is the default action kind
-  let _: Action<MockTokenKind<()>> = regex(r"^a");
+fn carry_data_with_mock_kind() {
+  // `MockKind<()>` is the default action kind
+  let _: Action<MockKind<()>> = regex(r"^a");
 
-  // `MockTokenKind` can carry data, it implements `SubTokenKind`,
+  // `MockKind` can carry data, it implements `SubKind`,
   // and it will always have the same kind id
-  let v1: TokenKindIdBinding<MockTokenKind<i32>> = MockTokenKind::new(42).into();
-  let v2: TokenKindIdBinding<MockTokenKind<bool>> = MockTokenKind::new(true).into();
-  assert_eq!(v1.id(), MockTokenKind::kind_id());
-  assert_eq!(v2.id(), MockTokenKind::kind_id());
+  let v1: KindIdBinding<MockKind<i32>> = MockKind::new(42).into();
+  let v2: KindIdBinding<MockKind<bool>> = MockKind::new(true).into();
+  assert_eq!(v1.id(), MockKind::kind_id());
+  assert_eq!(v2.id(), MockKind::kind_id());
 
   // with this you can calculate data during the action is executed
   // instead of parsing the token's content in `Action::select`.
-  let action: Action<MockTokenKind<usize>> = simple_with_data(|input| {
+  let action: Action<MockKind<usize>> = simple_with_data(|input| {
     Regex::new(r"^(\d+)e(\d+)")
       .unwrap()
       .captures(input.rest())
@@ -89,16 +91,16 @@ fn carry_data_with_mock_token_kind() {
       })
   });
 
-  // now convert the `MockTokenKind` to your token kind with `Action::select`
+  // now convert the `MockKind` to your token kind with `Action::select`
   let action = action.select(|ctx| A(ctx.output.binding.take().data));
 
-  // you can construct actions with `MockTokenKind` using `Action::data`
-  let action: Action<MockTokenKind<usize>> = action.data(|ctx| match ctx.output.binding.take() {
+  // you can construct actions with `MockKind` using `Action::data`
+  let action: Action<MockKind<usize>> = action.data(|ctx| match ctx.output.binding.take() {
     MyKind::A(a) => a.0,
   });
 
   // you can also transform the data with `Action::map`
-  let _: Action<MockTokenKind<String>> = action.map(|data| data.to_string());
+  let _: Action<MockKind<String>> = action.map(|data| data.to_string());
 
   // TODO: add examples after action utils for strings and numbers are implemented
 }

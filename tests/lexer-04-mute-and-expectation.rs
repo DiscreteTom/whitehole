@@ -1,11 +1,13 @@
-use whitehole::lexer::{
-  action::{exact, regex, whitespaces, Action},
-  token::{token_kind, SubTokenKind},
-  LexerBuilder,
+use whitehole::{
+  kind::{kind, SubKind},
+  lexer::{
+    action::{exact, regex, whitespaces, Action},
+    builder::LexerBuilder,
+  },
 };
 
-// define token kinds, make sure it is decorated by `#[token_kind]`
-#[token_kind]
+// define token kinds, make sure it is decorated by `#[kind]`
+#[kind]
 #[derive(Clone, Default)]
 enum MyKind {
   #[default]

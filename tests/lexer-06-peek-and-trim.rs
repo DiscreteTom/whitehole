@@ -1,11 +1,13 @@
-use whitehole::lexer::{
-  action::{regex, whitespaces},
-  token::{token_kind, SubTokenKind},
-  LexerBuilder,
+use whitehole::{
+  kind::{kind, SubKind},
+  lexer::{
+    action::{regex, whitespaces},
+    builder::LexerBuilder,
+  },
 };
 
-// define token kinds, make sure it is decorated by `#[token_kind]`
-#[token_kind]
+// define token kinds, make sure it is decorated by `#[kind]`
+#[kind]
 #[derive(Clone, Default)]
 enum MyKind {
   #[default]
@@ -50,7 +52,7 @@ fn peek_lexer() {
 
   // another thing to mention is that
   // you can provide expectations when peek just like in lex
-  let lexer = lexer.reload(" a");
+  let mut lexer = lexer.reload(" a");
   let (output, _) = lexer.peek_with(|o| o.expect(B::kind_id()));
   assert!(output.token.is_none());
 }

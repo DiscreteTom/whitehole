@@ -1,12 +1,15 @@
 use std::rc::Rc;
-use whitehole::lexer::{
-  action::{regex, whitespaces},
-  token::token_kind,
-  Lexer, LexerBuilder,
+use whitehole::{
+  kind::kind,
+  lexer::{
+    action::{regex, whitespaces},
+    builder::LexerBuilder,
+    Lexer,
+  },
 };
 
-// define token kinds, make sure it is decorated by `#[token_kind]`
-#[token_kind]
+// define token kinds, make sure it is decorated by `#[kind]`
+#[kind]
 #[derive(Clone, Default)]
 enum MyKind {
   #[default]
@@ -36,7 +39,8 @@ fn stateless_lexer() {
 
   // you can also manually provide the state and other details
   let mut state = ();
-  let output = stateless.lex_with("aaa", |o| o.start(1).state(&mut state));
+  let mut heap = ();
+  let output = stateless.lex_with("aaa", |o| o.start(1).state(&mut state).heap(&mut heap));
   assert!(matches!(output.token.unwrap().binding.kind(), MyKind::A));
 }
 
@@ -45,6 +49,6 @@ fn stateless_to_lexer() {
   // if you already have all actions, but don't have an input text yet,
   // you can build a stateless lexer first, and then build a stateful lexer from it
   let stateless = LexerBuilder::<MyKind>::default().build_stateless();
-  let lexer = Lexer::new(Rc::new(stateless), (), "123");
+  let lexer = Lexer::new(Rc::new(stateless), (), (), "123");
   assert_eq!(lexer.instant().text(), "123");
 }

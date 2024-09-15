@@ -1,7 +1,10 @@
-use whitehole::lexer::{action::regex, token::token_kind, LexerBuilder};
+use whitehole::{
+  kind::kind,
+  lexer::{action::regex, builder::LexerBuilder},
+};
 
-// define token kinds, make sure it is decorated by `#[token_kind]`
-#[token_kind]
+// define token kinds, make sure it is decorated by `#[kind]`
+#[kind]
 #[derive(Clone, Default)]
 enum MyKind {
   #[default]
@@ -30,20 +33,20 @@ fn stateful_lexer() {
     .build("123123");
 
   // by default `state.reject` is `false`
-  assert_eq!(lexer.state.reject, false);
+  assert!(!lexer.state.reject);
 
   // the first lex should be accepted
   assert_ne!(lexer.lex().digested, 0);
 
   // and the state will be changed
-  assert_eq!(lexer.state.reject, true);
+  assert!(lexer.state.reject);
 
   // then the second lex should be rejected
   assert_eq!(lexer.lex().digested, 0);
 
   // besides, you can mutate or set the state directly
   lexer.state.reject = false;
-  assert_eq!(lexer.state.reject, false);
+  assert!(!lexer.state.reject);
   lexer.state = MyState { reject: true };
-  assert_eq!(lexer.state.reject, true);
+  assert!(lexer.state.reject);
 }

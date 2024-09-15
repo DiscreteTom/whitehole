@@ -1,12 +1,14 @@
 use std::collections::HashSet;
-use whitehole::lexer::{
-  action::{exact, regex, whitespaces, HeadMatcher},
-  token::token_kind,
-  LexerBuilder,
+use whitehole::{
+  kind::kind,
+  lexer::{
+    action::{exact, regex, whitespaces, HeadMatcher},
+    builder::LexerBuilder,
+  },
 };
 
-// define token kinds, make sure it is decorated by `#[token_kind]`
-#[token_kind]
+// define token kinds, make sure it is decorated by `#[kind]`
+#[kind]
 #[derive(Clone, Default)]
 enum MyKind {
   #[default]

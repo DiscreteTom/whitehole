@@ -1,12 +1,15 @@
-use whitehole::lexer::{
-  action::regex,
-  position::{Position, PositionTransformer},
-  token::{token_kind, Range},
-  LexerBuilder,
+use whitehole::{
+  kind::kind,
+  lexer::{
+    action::regex,
+    builder::LexerBuilder,
+    position::{Position, PositionTransformer},
+    token::Range,
+  },
 };
 
-// define token kinds, make sure it is decorated by `#[token_kind]`
-#[token_kind]
+// define token kinds, make sure it is decorated by `#[kind]`
+#[kind]
 #[derive(Clone, Default)]
 enum MyKind {
   #[default]
@@ -23,7 +26,7 @@ fn token_position() {
   // when creating a PositionTransformer it will calculate the range in byte of each line
   let pt = PositionTransformer::new(text);
 
-  let lexer = LexerBuilder::new()
+  let mut lexer = LexerBuilder::new()
     .ignore_default(regex(r"^\n"))
     .define(A, regex(r"^123"))
     .build(text);
