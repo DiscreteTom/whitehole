@@ -96,21 +96,17 @@ mod tests {
   #[test]
   fn mock_fork_output_factory() {
     let factory = ();
-    let stateless_fork_output =
-      ForkOutputFactory::into_fork_output(factory, 0, 2, 1);
-    assert_eq!(stateless_fork_output, ());
+    let _: () = ForkOutputFactory::into_fork_output(factory, 0, 2, 1);
   }
 
   #[test]
   fn fork_output_builder() {
-    let builder = ForkOutputBuilder::default();
-    let stateless_fork_output =
-      ForkOutputFactory::into_fork_output(builder, 0, 2, 1);
+    let builder = ForkOutputBuilder;
+    let stateless_fork_output = ForkOutputFactory::into_fork_output(builder, 0, 2, 1);
     assert_eq!(stateless_fork_output, None);
 
-    let builder = ForkOutputBuilder::default();
-    let stateless_fork_output =
-      ForkOutputFactory::into_fork_output(builder, 0, 2, 0);
+    let builder = ForkOutputBuilder;
+    let stateless_fork_output = ForkOutputFactory::into_fork_output(builder, 0, 2, 0);
     assert_eq!(
       stateless_fork_output,
       Some(ReLexContext { start: 0, skip: 1 })

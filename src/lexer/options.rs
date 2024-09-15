@@ -22,6 +22,12 @@ impl<'literal, Kind> LexOptions<'literal, Kind, ()> {
   }
 }
 
+impl<'literal, Kind> Default for LexOptions<'literal, Kind, ()> {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl<'literal, Kind> From<Expectation<'literal, Kind>> for LexOptions<'literal, Kind, ()> {
   #[inline]
   fn from(expectation: Expectation<'literal, Kind>) -> Self {

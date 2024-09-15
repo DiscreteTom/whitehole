@@ -154,49 +154,49 @@ mod tests {
     let text = "abc\ndef\n123\n345";
     transformer.update(text);
     assert_eq!(
-      transformer.transform(text.find("a").unwrap(), text),
+      transformer.transform(text.find('a').unwrap(), text),
       Some(Position {
         line: 0,
         character: 0
       })
     );
     assert_eq!(
-      transformer.transform(text.find("c").unwrap(), text),
+      transformer.transform(text.find('c').unwrap(), text),
       Some(Position {
         line: 0,
         character: 2
       })
     );
     assert_eq!(
-      transformer.transform(text.find("\n").unwrap(), text),
+      transformer.transform(text.find('\n').unwrap(), text),
       Some(Position {
         line: 0,
         character: 3
       })
     );
     assert_eq!(
-      transformer.transform(text.find("d").unwrap(), text),
+      transformer.transform(text.find('d').unwrap(), text),
       Some(Position {
         line: 1,
         character: 0
       })
     );
     assert_eq!(
-      transformer.transform(text.find("f").unwrap(), text),
+      transformer.transform(text.find('f').unwrap(), text),
       Some(Position {
         line: 1,
         character: 2
       })
     );
     assert_eq!(
-      transformer.transform(text.find("1").unwrap(), text),
+      transformer.transform(text.find('1').unwrap(), text),
       Some(Position {
         line: 2,
         character: 0
       })
     );
     assert_eq!(
-      transformer.transform(text.find("5").unwrap(), text),
+      transformer.transform(text.find('5').unwrap(), text),
       Some(Position {
         line: 3,
         character: 2
@@ -212,42 +212,42 @@ mod tests {
     let text = "a\nb🦀c哈";
     transformer.update(text);
     assert_eq!(
-      transformer.transform(text.find("a").unwrap(), text),
+      transformer.transform(text.find('a').unwrap(), text),
       Some(Position {
         line: 0,
         character: 0
       })
     );
     assert_eq!(
-      transformer.transform(text.find("\n").unwrap(), text),
+      transformer.transform(text.find('\n').unwrap(), text),
       Some(Position {
         line: 0,
         character: 1
       })
     );
     assert_eq!(
-      transformer.transform(text.find("b").unwrap(), text),
+      transformer.transform(text.find('b').unwrap(), text),
       Some(Position {
         line: 1,
         character: 0
       })
     );
     assert_eq!(
-      transformer.transform(text.find("🦀").unwrap(), text),
+      transformer.transform(text.find('🦀').unwrap(), text),
       Some(Position {
         line: 1,
         character: 1
       })
     );
     assert_eq!(
-      transformer.transform(text.find("c").unwrap(), text),
+      transformer.transform(text.find('c').unwrap(), text),
       Some(Position {
         line: 1,
         character: 2
       })
     );
     assert_eq!(
-      transformer.transform(text.find("哈").unwrap(), text),
+      transformer.transform(text.find('哈').unwrap(), text),
       Some(Position {
         line: 1,
         character: 3

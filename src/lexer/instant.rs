@@ -97,29 +97,29 @@ mod tests {
   fn test_digest() {
     let mut state = Instant::new("123");
     assert_eq!(state.digested(), 0);
-    assert_eq!(state.trimmed(), false);
+    assert!(!state.trimmed());
 
     state.digest(1);
     assert_eq!(state.digested(), 1);
-    assert_eq!(state.trimmed(), false);
+    assert!(!state.trimmed());
 
     state.digest(2);
     assert_eq!(state.digested(), 3);
-    assert_eq!(state.trimmed(), true);
+    assert!(state.trimmed());
   }
 
   #[test]
   fn test_digest_0() {
     let mut state = Instant::new("123");
     assert_eq!(state.digested(), 0);
-    assert_eq!(state.trimmed(), false);
+    assert!(!state.trimmed());
     state.trim(0);
     assert_eq!(state.digested(), 0);
-    assert_eq!(state.trimmed(), true);
+    assert!(state.trimmed());
     // make sure digest 0 won't change trimmed
     state.digest(0);
     assert_eq!(state.digested(), 0);
-    assert_eq!(state.trimmed(), true);
+    assert!(state.trimmed());
   }
 
   #[test]
@@ -133,11 +133,11 @@ mod tests {
   fn test_trim() {
     let mut state = Instant::new("123");
     assert_eq!(state.digested(), 0);
-    assert_eq!(state.trimmed(), false);
+    assert!(!state.trimmed());
 
     state.trim(1);
     assert_eq!(state.digested(), 1);
-    assert_eq!(state.trimmed(), true);
+    assert!(state.trimmed());
   }
 
   #[test]
