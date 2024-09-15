@@ -1,12 +1,12 @@
 use super::{DefaultSubKind, SubKind, SubKindId};
 
-/// Bind the token kind value with an [`KindId`].
+/// Bind the kind value with an [`SubKindId`].
 ///
 /// This is readonly to make sure the binding is not broken,
 /// you can use [`Self::take`] to take the kind value out.
 /// # Examples
 /// ```
-/// use whitehole::lexer::token::{kind, KindIdBinding, SubKind};
+/// use whitehole::kind::{whitehole_kind, KindIdBinding, SubKind};
 ///
 /// #[whitehole_kind]
 /// #[derive(Debug)]
@@ -29,25 +29,25 @@ pub struct KindIdBinding<Kind> {
 }
 
 // this is the only way to construct self
-impl<Kind, ViaKind: SubKind<Kind = Kind> + Into<Kind>> From<ViaKind> for KindIdBinding<Kind> {
+impl<Kind, Sub: SubKind<Kind = Kind> + Into<Kind>> From<Sub> for KindIdBinding<Kind> {
   #[inline]
-  fn from(value: ViaKind) -> Self {
+  fn from(value: Sub) -> Self {
     Self {
-      id: ViaKind::kind_id(),
+      id: Sub::kind_id(),
       kind: value.into(),
     }
   }
 }
 
 impl<Kind> KindIdBinding<Kind> {
-  /// Get the id of the sub token kind.
-  /// See [`KindId`].
+  /// Get the id of the sub kind.
+  /// See [`SubKindId`].
   #[inline]
   pub const fn id(&self) -> SubKindId<Kind> {
     self.id
   }
 
-  /// Get the value of the token kind.
+  /// Get the value of the kind.
   #[inline]
   pub const fn kind(&self) -> &Kind {
     &self.kind

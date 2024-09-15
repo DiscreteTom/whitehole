@@ -1,17 +1,17 @@
 use super::SubKindId;
 
-/// Usually we use enum to represent a "token kind".
-/// Each variant of the enum is a "sub token kind".
+/// Usually we use enum to represent a "kind".
+/// Each variant of the enum is a "sub kind".
 ///
-/// Every sub token kind should have a unique kind id.
+/// Every sub kind should have a unique sub kind id.
 /// Usually we create a struct for each variant and implement this
 /// trait for those structs so each of them have a unique id.
 ///
-/// This can be auto implemented by applying [`kind`](crate::lexer::token::kind)
-/// to the token kind enum.
+/// This can be auto implemented by applying [`whitehole_kind`](crate::kind::whitehole_kind) macro
+/// to the kind enum.
 /// # Examples
 /// ```
-/// use whitehole::lexer::token::{kind, SubKind};
+/// use whitehole::kind::{whitehole_kind, SubKind};
 ///
 /// #[whitehole_kind]
 /// #[derive(Debug)]
@@ -26,14 +26,14 @@ pub trait SubKind {
   type Kind;
   const VARIANT_INDEX: usize;
 
-  /// Return the kind id of this sub token kind.
+  /// Return the sub kind id of this sub kind.
   #[inline]
   fn kind_id() -> SubKindId<Self::Kind> {
     SubKindId::new(Self::VARIANT_INDEX)
   }
 }
 
-// this is helpful in expectational lexing, if users wants to provide the expected kind id
+// this is helpful in expectational lexing, if users wants to provide the expected sub kind id
 // they can just use the value (especially for unit variants)
 impl<Kind, Sub: SubKind<Kind = Kind>> From<Sub> for SubKindId<Kind> {
   #[inline]
@@ -42,12 +42,12 @@ impl<Kind, Sub: SubKind<Kind = Kind>> From<Sub> for SubKindId<Kind> {
   }
 }
 
-/// Implement this trait for the token kind enum to provide the default token kind id.
-/// This can be auto implemented by the [`kind`](crate::lexer::token::kind) macro.
+/// Implement this trait for the kind enum to provide the default sub kind.
+/// This can be auto implemented by the [`whitehole_kind`](crate::kind::whitehole_kind) macro.
 /// # Examples
 /// ```
-/// use whitehole::lexer::token::{
-///   kind, KindIdBinding, SubKind, DefaultKindId,
+/// use whitehole::kind::{
+///   whitehole_kind, KindIdBinding, SubKind, DefaultSubKind,
 /// };
 ///
 /// #[whitehole_kind]
@@ -64,11 +64,11 @@ impl<Kind, Sub: SubKind<Kind = Kind>> From<Sub> for SubKindId<Kind> {
 /// ```
 /// # Design
 /// We can't replace this with [`Default`] because otherwise
-/// users have to `impl Default for KindId<MyKind>` manually,
-/// but [`Default`] and [`KindId`] are both foreign names for user's crate.
+/// users have to `impl Default for SubKindId<MyKind>` manually,
+/// but [`Default`] and [`SubKindId`] are both foreign names for user's crate.
 ///
-/// We can't just `impl<T> Default for KindId<T>` either
-/// because the default token kind id's value is not always `0`.
+/// We can't just `impl<T> Default for SubKindId<T>` either
+/// because the default sub kind id's value is not always `0`.
 pub trait DefaultSubKind: Sized {
   type Default: SubKind<Kind = Self>;
 

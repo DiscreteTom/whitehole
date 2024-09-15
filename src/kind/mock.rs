@@ -1,12 +1,12 @@
 use super::SubKind;
 
 /// This implements [`SubKind`]
-/// and the [`KindId::value`](crate::lexer::token::KindId::value)
+/// and the [`SubKindId::value`](crate::kind::SubKindId::value)
 /// will always be `0`.
 /// This is useful as a placeholder or data carrier.
 /// # Examples
 /// ```
-/// use whitehole::lexer::token::{MockKind, SubKind, KindIdBinding};
+/// use whitehole::kind::{MockKind, SubKind, KindIdBinding};
 ///
 /// let v1: KindIdBinding<MockKind<i32>> = MockKind::new(42).into();
 /// let v2: KindIdBinding<MockKind<bool>> = MockKind::new(true).into();
