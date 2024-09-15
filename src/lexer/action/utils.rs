@@ -281,11 +281,11 @@ mod tests {
     assert_reject(&action, "123");
     assert_reject(&action, "  // ");
     assert_reject(&action, "/");
-    assert_accept(&action, &text, text.len());
+    assert_accept(&action, text, text.len());
 
     // no close
     let text = "// this is a comment";
-    assert_accept(&action, &text, text.len());
+    assert_accept(&action, text, text.len());
 
     // head matcher
     assert!(matches!(

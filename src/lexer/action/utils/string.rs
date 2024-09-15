@@ -57,7 +57,7 @@ pub fn string<
       }
     }
     // no prefix matched
-    return None;
+    None
   })
   .unchecked_head_in(head)
 }
@@ -78,7 +78,7 @@ mod tests {
     output: ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>>,
   ) -> ActionOutput<MockTokenKind<Vec<PartialStringBody<String, ()>>>> {
     // ensure at least one partial string body (the unterminated error)
-    assert!(output.binding.kind().data.len() > 0);
+    assert!(!output.binding.kind().data.is_empty());
 
     // ensure only the last partial string body is the close
     output
@@ -187,7 +187,7 @@ mod tests {
       output.binding.kind().data[0].error,
       Some(StringLiteralError::UnhandledEscape)
     ));
-    assert!(matches!(output.binding.kind().data[1].error, None));
+    assert!(output.binding.kind().data[1].error.is_none());
 
     // all together
     let value = "123\n\t\x11\u{1234}\u{1234}\\1";

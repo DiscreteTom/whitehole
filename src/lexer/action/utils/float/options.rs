@@ -20,6 +20,12 @@ impl FloatFractionalOptions<()> {
   }
 }
 
+impl Default for FloatFractionalOptions<()> {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl<Acc> FloatFractionalOptions<Acc> {
   /// Set the character used as the decimal point.
   /// Default is `'.'`.
@@ -70,13 +76,19 @@ impl FloatExponentOptions<()> {
   /// Create a new instance with the candidate strings `["e-", "e+", "e", "E-", "E+", "E"]` and no accumulator.
   pub fn new() -> Self {
     Self {
-      indicators: vec!["e-", "e+", "e", "E-", "E+", "E"]
+      indicators: ["e-", "e+", "e", "E-", "E+", "E"]
         .iter()
         .map(|s| s.to_string())
         .collect(),
       value_to: (),
       indicator_heads: vec!['e', 'E'].into_iter().collect(),
     }
+  }
+}
+
+impl Default for FloatExponentOptions<()> {
+  fn default() -> Self {
+    Self::new()
   }
 }
 
@@ -153,6 +165,12 @@ impl FloatLiteralOptions<(), (), (), ()> {
       fractional: None,
       exponent: None,
     }
+  }
+}
+
+impl Default for FloatLiteralOptions<(), (), (), ()> {
+  fn default() -> Self {
+    Self::new()
   }
 }
 

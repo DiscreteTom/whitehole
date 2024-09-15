@@ -41,6 +41,12 @@ impl StringOptions<(), HexEscapeError> {
   }
 }
 
+impl Default for StringOptions<(), HexEscapeError> {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl<BodyAcc, CustomError> StringOptions<BodyAcc, CustomError> {
   /// Set the accumulator for the string body.
   pub fn acc<NewAcc>(self, acc: NewAcc) -> StringOptions<NewAcc, CustomError> {

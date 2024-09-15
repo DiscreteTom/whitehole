@@ -102,10 +102,10 @@ mod tests {
 
   #[test]
   fn simple_reject_on_0() {
-    assert!(matches!(
-      (simple(|_| 0).exec.raw)(&mut ActionInput::new("123", 0, &mut (), &mut ()).unwrap()),
-      None
-    ));
+    assert!(
+      (simple(|_| 0).exec.raw)(&mut ActionInput::new("123", 0, &mut (), &mut ()).unwrap())
+        .is_none()
+    );
   }
 
   #[test]
@@ -139,6 +139,6 @@ mod tests {
   fn simple_option_with_data_reject() {
     let action: Action<MockTokenKind<u32>> = simple_with_data(|_| None);
     let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut (), &mut ()).unwrap());
-    assert!(matches!(output, None));
+    assert!(output.is_none());
   }
 }

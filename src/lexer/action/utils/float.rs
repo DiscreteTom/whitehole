@@ -278,7 +278,7 @@ pub fn float_literal_with_options<
   // because we don't allow exponent part to be the only part
 
   simple_with_data(move |input| {
-    let res = float_literal_body_with_options(&input.rest(), options.clone());
+    let res = float_literal_body_with_options(input.rest(), options.clone());
 
     if res.0 == 0 {
       return None;

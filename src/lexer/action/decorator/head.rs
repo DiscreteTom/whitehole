@@ -37,7 +37,7 @@ impl<Kind, State, Heap> Action<Kind, State, Heap> {
   /// # }
   #[inline]
   pub fn unchecked_head_in_range(self, range: impl Into<RangeInclusive<char>>) -> Self {
-    self.unchecked_head_in(range.into().into_iter().collect::<HashSet<_>>())
+    self.unchecked_head_in(range.into().collect::<HashSet<_>>())
   }
 
   /// Set [`Action::head`] to [`HeadMatcher::Not`].
@@ -98,7 +98,7 @@ mod tests {
     let action: Action<_> = Action::from(simple(|_| 1)).unchecked_head_in_range('a'..='z');
     assert!(matches!(
       action.head,
-      Some(HeadMatcher::OneOf(set)) if set == ('a'..='z').into_iter().collect::<HashSet<_>>()
+      Some(HeadMatcher::OneOf(set)) if set == ('a'..='z').collect::<HashSet<_>>()
     ));
   }
 

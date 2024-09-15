@@ -49,6 +49,12 @@ impl NumericSeparatorOptions<()> {
   }
 }
 
+impl Default for NumericSeparatorOptions<()> {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl<Acc> NumericSeparatorOptions<Acc> {
   /// Set the character used as the numeric separator.
   /// Default is `'_'`.
@@ -123,6 +129,12 @@ impl IntegerLiteralBodyOptions<(), ()> {
   }
 }
 
+impl Default for IntegerLiteralBodyOptions<(), ()> {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl<SepAcc, ValueAcc> IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
   /// Set the numeric separator for the integer literal.
   /// Default is `()` which means numeric separator is disabled.
@@ -192,12 +204,19 @@ impl<SepAcc, ValueAcc> IntegerLiteralBodyOptions<SepAcc, ValueAcc> {
 mod tests {
   use super::*;
 
+  /// Assert the unit type.
+  macro_rules! assert_unit {
+    ($e: expr) => {
+      let _: () = $e;
+    };
+  }
+
   #[test]
   fn test_mock_numeric_separator_accumulator() {
     fn test(acc: impl NumericSeparatorAccumulator<Acc = ()>) {
       assert!(!acc.validate('_'));
       assert!(!acc.validate('1'));
-      assert_eq!(acc.emit(), ());
+      assert_unit!(acc.emit());
     }
     test(());
   }
@@ -207,7 +226,7 @@ mod tests {
     // new
     let mut options = NumericSeparatorOptions::new();
     assert_eq!(options.char, '_');
-    assert_eq!(options.indexes_to, ());
+    assert_unit!(options.indexes_to);
 
     // methods
     options = options.char('-');
@@ -228,19 +247,19 @@ mod tests {
   fn test_integer_literal_body_options() {
     // new
     let options = IntegerLiteralBodyOptions::new();
-    assert_eq!(options.separator, ());
-    assert_eq!(options.value_to, ());
+    assert_unit!(options.separator);
+    assert_unit!(options.value_to);
 
     // methods
     let options = options.separator(NumericSeparatorOptions::new());
     assert_eq!(options.separator.char, '_');
-    assert_eq!(options.separator.indexes_to, ());
+    assert_unit!(options.separator.indexes_to);
     let options = options.separator_with(|s| s.char('-').indexes_to_vec());
     assert_eq!(options.separator.char, '-');
     assert_eq!(options.separator.indexes_to, vec![]);
     let options = options.default_separator();
     assert_eq!(options.separator.char, '_');
-    assert_eq!(options.separator.indexes_to, ());
+    assert_unit!(options.separator.indexes_to);
     let options = options.value_to(String::new());
     assert_eq!(options.value_to, String::new());
     let options = options.value_to_string();

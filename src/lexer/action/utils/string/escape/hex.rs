@@ -306,7 +306,7 @@ pub fn code_point_with_options<Value: PartialStringBodyValue, CustomError: 'stat
 
 fn escape_error<Value: PartialStringBodyValue, FromError, ToError>(
   e: FromError,
-  error_mapper: &Box<dyn Fn(FromError) -> ToError>,
+  error_mapper: &dyn Fn(FromError) -> ToError,
 ) -> Option<Escape<Value, ToError>> {
   Some(Escape {
     digested: 0,             // don't digest body, only the prefix will be digested

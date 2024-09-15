@@ -1,6 +1,8 @@
 use super::{PartialStringBodyValue, StringBodyOptions, StringLiteralError};
 use crate::utils::Accumulator;
 
+// prevent users from constructing this struct
+#[non_exhaustive]
 pub struct StringBodyMatcherInput<'text> {
   /// The rest of the input text.
   /// This is guaranteed to be non-empty.
@@ -11,15 +13,12 @@ pub struct StringBodyMatcherInput<'text> {
   // this is precalculated and cached because this might be used for at least once
   // when traversing string body matchers
   pub next: char,
-
-  // private field to prevent users from constructing this struct
-  __: (),
 }
 
 impl<'text> StringBodyMatcherInput<'text> {
   /// Return [`None`] if [`rest`](Self::rest) is empty.
   pub fn new(rest: &'text str) -> Option<Self> {
-    rest.chars().next().map(|next| Self { rest, next, __: () })
+    rest.chars().next().map(|next| Self { rest, next })
   }
 }
 

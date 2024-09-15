@@ -309,7 +309,7 @@ mod tests {
 
     // the second exec, the action is prevented, so the state is not updated
     let output = (action.exec.raw)(&mut ActionInput::new("aa", 1, &mut state, &mut ()).unwrap());
-    assert!(matches!(output, None));
+    assert!(output.is_none());
     assert_eq!(state.value, 1); // the state is not updated
 
     // prevent for immutable action
@@ -326,14 +326,14 @@ mod tests {
 
     // the action is rejected, but the state is still updated
     let output = (action.exec.raw)(&mut ActionInput::new("b", 0, &mut state, &mut ()).unwrap());
-    assert!(matches!(output, None));
+    assert!(output.is_none());
     assert_eq!(state.value, 1);
 
     // prepare for mutable action
     let action = action.prepare(|input| input.state.value += 1);
     state.value = 0;
     let output = (action.exec.raw)(&mut ActionInput::new("b", 0, &mut state, &mut ()).unwrap());
-    assert!(matches!(output, None));
+    assert!(output.is_none());
     assert_eq!(state.value, 2);
   }
 
@@ -348,23 +348,19 @@ mod tests {
 
   #[test]
   fn action_reject_if() {
-    let action: Action<_> = exact("a").reject_if(|ctx| ctx.rest().len() > 0);
+    let action: Action<_> = exact("a").reject_if(|ctx| !ctx.rest().is_empty());
 
     assert!((action.exec.raw)(&mut ActionInput::new("a", 0, &mut (), &mut ()).unwrap()).is_some());
-    assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("aa", 0, &mut (), &mut ()).unwrap()),
-      None
-    ));
+    assert!((action.exec.raw)(&mut ActionInput::new("aa", 0, &mut (), &mut ()).unwrap()).is_none());
 
     // reject for mutable action
     let action: Action<_, i32> = exact("a")
       .prepare(|input| *input.state += 1)
-      .reject_if(|ctx| ctx.rest().len() > 0);
+      .reject_if(|ctx| !ctx.rest().is_empty());
     let mut state = 0;
-    assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("a ", 0, &mut state, &mut ()).unwrap()),
-      None
-    ));
+    assert!(
+      (action.exec.raw)(&mut ActionInput::new("a ", 0, &mut state, &mut ()).unwrap()).is_none()
+    );
     assert_eq!(state, 1);
   }
 
@@ -372,18 +368,17 @@ mod tests {
   fn action_reject() {
     let rejected_action: Action<_> = exact("a").reject();
 
-    assert!(matches!(
-      (rejected_action.exec.raw)(&mut ActionInput::new("a", 0, &mut (), &mut ()).unwrap()),
-      None
-    ));
+    assert!(
+      (rejected_action.exec.raw)(&mut ActionInput::new("a", 0, &mut (), &mut ()).unwrap())
+        .is_none()
+    );
 
     // reject for mutable action
     let action: Action<_, i32> = exact("a").prepare(|input| *input.state += 1).reject();
     let mut state = 0;
-    assert!(matches!(
-      (action.exec.raw)(&mut ActionInput::new("a ", 0, &mut state, &mut ()).unwrap()),
-      None
-    ));
+    assert!(
+      (action.exec.raw)(&mut ActionInput::new("a ", 0, &mut state, &mut ()).unwrap()).is_none()
+    );
     assert_eq!(state, 1);
   }
 

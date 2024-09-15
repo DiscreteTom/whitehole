@@ -76,7 +76,7 @@ mod tests {
   fn action_map() {
     let action: Action<_, i32> = simple_with_data(|_| Some((1, Box::new(1))))
       // ensure data can be consumed in the transformer
-      .map(|data| Box::new(data))
+      .map(Box::new)
       .prepare(|input| *input.state += 1);
     assert!(matches!(
       (action.exec.raw)(&mut ActionInput::new("A", 0, &mut 123, &mut ()).unwrap()),
