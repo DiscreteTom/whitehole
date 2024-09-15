@@ -114,8 +114,8 @@ impl<Kind, State, Heap> HeadMap<Kind, State, Heap> {
 
   /// Create a new instance with a subset of actions and a known char map created by [`Self::collect_all_known`].
   pub fn new(
-    execs: &Vec<RcActionExec<Kind, State, Heap>>,
-    props: &Vec<RcActionProps<Kind>>,
+    execs: &[RcActionExec<Kind, State, Heap>],
+    props: &[RcActionProps<Kind>],
     known_map: KnownHeadChars<Kind, State, Heap>,
   ) -> Self {
     let mut unknown_fallback = RuntimeActions::new();

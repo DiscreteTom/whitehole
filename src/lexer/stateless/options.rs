@@ -131,9 +131,21 @@ impl StatelessTrimOptions<(), ()> {
   }
 }
 
+impl Default for StatelessTrimOptions<(), ()> {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  macro_rules! assert_unit {
+    ($e: expr) => {
+      let _: () = $e;
+    };
+  }
 
   #[test]
   fn test_stateless_options() {
@@ -144,30 +156,30 @@ mod tests {
       base: (),
     };
     assert_eq!(options.start, 0);
-    assert_eq!(options.state, ());
-    assert_eq!(options.base, ());
+    assert_unit!(options.state);
+    assert_unit!(options.base);
 
     let options = options.start(1);
     assert_eq!(options.start, 1);
-    assert_eq!(options.state, ());
-    assert_eq!(options.base, ());
+    assert_unit!(options.state);
+    assert_unit!(options.base);
 
     let options = options.state(1);
     assert_eq!(options.start, 1);
     assert_eq!(options.state, 1);
-    assert_eq!(options.base, ());
+    assert_unit!(options.base);
   }
 
   #[test]
   fn test_stateless_lex_options() {
     let options = StatelessLexOptions::new();
     assert_eq!(options.start, 0);
-    assert_eq!(options.state, ());
+    assert_unit!(options.state);
     assert_eq!(options.base, LexOptions::<(), _>::new());
 
     let options = options.expect(Expectation::default());
     assert_eq!(options.start, 0);
-    assert_eq!(options.state, ());
+    assert_unit!(options.state);
     assert_eq!(
       options.base,
       LexOptions::new().expect(Expectation::default())
@@ -175,7 +187,7 @@ mod tests {
 
     let options = options.expect_with(|e| e.literal("a"));
     assert_eq!(options.start, 0);
-    assert_eq!(options.state, ());
+    assert_unit!(options.state);
     assert_eq!(
       options.base,
       LexOptions::new().expect_with(|e| e.literal("a"))
@@ -184,12 +196,12 @@ mod tests {
     let options: StatelessOptions<(), (), LexOptions<(), ForkEnabled>> =
       StatelessLexOptions::new().fork();
     assert_eq!(options.start, 0);
-    assert_eq!(options.state, ());
+    assert_unit!(options.state);
     assert_eq!(options.base, LexOptions::new().fork());
 
     let options = options.re_lex(ReLexContext { start: 1, skip: 1 });
     assert_eq!(options.start, 0);
-    assert_eq!(options.state, ());
+    assert_unit!(options.state);
     assert_eq!(
       options.base,
       LexOptions::new()
@@ -202,7 +214,7 @@ mod tests {
   fn test_stateless_trim_options() {
     let options = StatelessTrimOptions::new();
     assert_eq!(options.start, 0);
-    assert_eq!(options.state, ());
+    assert_unit!(options.state);
     assert_eq!(options.base, TrimOptions);
   }
 }

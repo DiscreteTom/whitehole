@@ -60,8 +60,9 @@ impl<Kind, State, Heap> LiteralMap<Kind, State, Heap> {
   /// Create a self with a subset of actions, a known literal map created by [`Self::collect_all_known`]
   /// and a known head map created by [`HeadMap::collect_all_known`].
   pub fn new(
-    execs: &Vec<RcActionExec<Kind, State, Heap>>,
-    props: &Vec<RcActionProps<Kind>>,
+    // TODO: accept iter instead of slice to prevent unnecessary allocation
+    execs: &[RcActionExec<Kind, State, Heap>],
+    props: &[RcActionProps<Kind>],
     known_map: KnownLiterals<Kind, State, Heap>,
     known_head_map: &KnownHeadChars<Kind, State, Heap>,
   ) -> Self {
@@ -89,7 +90,7 @@ impl<Kind, State, Heap> LiteralMap<Kind, State, Heap> {
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
 
-    let (muted_execs, muted_props) = execs
+    let (muted_execs, muted_props): (Vec<_>, Vec<_>) = execs
       .iter()
       .zip(props.iter())
       .filter(|(_, p)| p.muted())
@@ -145,7 +146,7 @@ mod tests {
 
   #[test]
   fn test_literal_map() {
-    let (execs, props) = vec![
+    let (execs, props): (Vec<_>, Vec<_>) = vec![
       exact("a"),                              // "a", not muted
       exact("a").mute(),                       // "a", muted
       r("a").unchecked_head_in(['a']),         // OneOf('a'), not muted
