@@ -9,7 +9,7 @@ use super::instant::Instant;
 /// you shouldn't modify [`Self::instant`] directly.
 ///
 /// Since `State` should be cheap to clone,
-/// this is also cheap to clone.
+/// this is also cheap to create or clone.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Snapshot<'text, State> {
   /// See [`Lexer::state`](crate::lexer::Lexer::state).
