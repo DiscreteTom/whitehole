@@ -115,7 +115,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// #   pub reject: bool,
   /// # }
   /// # fn main() {
-  /// # let mut builder = LexerBuilder::stateful::<MyState>();
+  /// # let mut builder = LexerBuilder::new().state::<MyState>();
   /// builder.define_with(
   ///   A,
   ///   regex(r"^\s+"),
@@ -151,7 +151,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// #   pub value: i32,
   /// # }
   /// # fn main() {
-  /// # let mut builder = LexerBuilder::stateful::<MyState>();
+  /// # let mut builder = LexerBuilder::new().state::<MyState>();
   /// builder.define_with(
   ///   A,
   ///   regex(r"^\s+"),
@@ -247,7 +247,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// #   pub value: i32,
   /// # }
   /// # fn main() {
-  /// # let mut builder = LexerBuilder::stateful::<MyState>();
+  /// # let mut builder = LexerBuilder::new().state::<MyState>();
   /// builder.define_with(
   ///   A,
   ///   regex(r"^\s+"),
