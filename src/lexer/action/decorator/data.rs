@@ -24,12 +24,13 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
       + 'a,
   ) -> Action<'a, MockKind<T>, State, Heap> {
     self.map_exec_new(MockKind::kind_id(), move |exec, input| {
-      exec(input).map(|output| ActionOutput {
-        digested: output.digested,
-        binding: MockKind {
-          data: factory(AcceptedActionOutputContext { input, output }),
-        }
-        .into(),
+      exec(input).map(|output| {
+        output.map(|output| {
+          MockKind {
+            data: factory(AcceptedActionOutputContext { input, output }),
+          }
+          .into()
+        })
       })
     })
   }

@@ -13,3 +13,17 @@ pub struct ActionOutput<Kind> {
   /// [`ActionInput::rest`](crate::lexer::action::input::ActionInput::rest).
   pub digested: usize,
 }
+
+impl<Kind> ActionOutput<Kind> {
+  /// Convert [`Self::binding`] to another kind.
+  #[inline]
+  pub(super) fn map<NewKind>(
+    self,
+    f: impl FnOnce(Self) -> KindIdBinding<NewKind>,
+  ) -> ActionOutput<NewKind> {
+    ActionOutput {
+      digested: self.digested,
+      binding: f(self),
+    }
+  }
+}

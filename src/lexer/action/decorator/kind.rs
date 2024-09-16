@@ -29,10 +29,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
     Sub: SubKind<Kind = NewKind> + Into<KindIdBinding<NewKind>> + Clone + 'a,
   {
     self.map_exec_new(Sub::kind_id(), move |exec, input| {
-      exec(input).map(|output| ActionOutput {
-        binding: kind.clone().into(),
-        digested: output.digested,
-      })
+      exec(input).map(|output| output.map(|_| kind.clone().into()))
     })
   }
 
@@ -59,10 +56,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
     NewKind: DefaultSubKind + Default,
   {
     self.map_exec_new(NewKind::default_kind_id(), move |exec, input| {
-      exec(input).map(|output| ActionOutput {
-        binding: KindIdBinding::default(),
-        digested: output.digested,
-      })
+      exec(input).map(|output| output.map(|_| KindIdBinding::default()))
     })
   }
 
@@ -95,9 +89,8 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
     Sub: Into<KindIdBinding<NewKind>> + SubKind<Kind = NewKind>,
   {
     self.map_exec_new(Sub::kind_id(), move |exec, input| {
-      exec(input).map(|output| ActionOutput {
-        digested: output.digested,
-        binding: selector(AcceptedActionOutputContext { input, output }).into(),
+      exec(input).map(|output| {
+        output.map(|output| selector(AcceptedActionOutputContext { input, output }).into())
       })
     })
   }
