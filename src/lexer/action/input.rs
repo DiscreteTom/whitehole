@@ -12,6 +12,8 @@ pub struct ActionInput<'text, StateRef, HeapRef> {
   /// This should be small and cheap to clone (maybe just a bunch of integers or booleans).
   /// If a var only represents a resource (e.g. a chunk of memory, a channel, etc),
   /// it should be stored in [`Self::heap`].
+  ///
+  /// The `State` should be cheap to clone.
   pub state: StateRef,
   /// This is often `&mut Heap`.
   /// This is public, so you can mutate this directly.
