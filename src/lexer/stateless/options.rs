@@ -5,7 +5,7 @@ use crate::lexer::{
   re_lex::ReLexContext,
 };
 
-/// Add [`Self::start`] and [`Self::state`] to the `Base` options.
+/// Add [`Self::start`], [`Self::state`] and [`Self::heap`] to the `Base` options.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StatelessOptions<StateRef, HeapRef, Base> {
   /// See [`Self::start`].
@@ -42,7 +42,7 @@ impl<StateRef, HeapRef, Base> StatelessOptions<StateRef, HeapRef, Base> {
   }
 
   /// Set the heap.
-  /// This is `&mut Heap`.
+  /// This should be `&mut Heap`.
   #[inline]
   pub fn heap<NewHeapRef>(self, heap: NewHeapRef) -> StatelessOptions<StateRef, NewHeapRef, Base> {
     StatelessOptions {
@@ -54,12 +54,13 @@ impl<StateRef, HeapRef, Base> StatelessOptions<StateRef, HeapRef, Base> {
   }
 }
 
-/// Add [`StatelessLexOptions::start`] and [`StatelessLexOptions::state`] to [`LexOptions`].
+/// Add [`StatelessLexOptions::start`], [`StatelessLexOptions::state`]
+/// and [`StatelessLexOptions::heap`] to [`LexOptions`].
 pub type StatelessLexOptions<'literal, Kind, StateRef, HeapRef, Fork> =
   StatelessOptions<StateRef, HeapRef, LexOptions<'literal, Kind, Fork>>;
 
 impl<'literal, Kind> StatelessLexOptions<'literal, Kind, (), (), ()> {
-  /// Create a new instance with `0` as the start index and no state.
+  /// Create a new instance with `0` as the start index, no state and no heap.
   #[inline]
   pub const fn new() -> Self {
     Self {
@@ -113,11 +114,12 @@ impl<'literal, Kind, StateRef, HeapRef, Fork>
   }
 }
 
-/// Add [`StatelessTrimOptions::start`] and [`StatelessTrimOptions::state`] to [`TrimOptions`].
+/// Add [`StatelessTrimOptions::start`], [`StatelessTrimOptions::state`]
+/// and [`StatelessTrimOptions::heap`] to [`TrimOptions`].
 pub type StatelessTrimOptions<StateRef, Heap> = StatelessOptions<StateRef, Heap, TrimOptions>;
 
 impl StatelessTrimOptions<(), ()> {
-  /// Create a new instance with `0` as the start index and no state.
+  /// Create a new instance with `0` as the start index, no state and no heap.
   #[inline]
   pub const fn new() -> Self {
     Self {
