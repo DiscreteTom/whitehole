@@ -5,6 +5,8 @@
 /// You should never construct this struct manually
 /// because whe [`StatelessLexer`](crate::lexer::stateless::StatelessLexer) will skip
 /// actions as needed and it is not guaranteed the memory layout of this struct are stable across versions.
+///
+/// This is cheap to create or clone.
 /// # Caveats
 /// Be careful with stateful lexers, because when actions are skipped your lexer's state
 /// may be inconsistent with the original lexing.
@@ -19,7 +21,7 @@
 ///   .ignore(regex(".").unchecked_head_unknown())
 ///   .build(text);
 ///
-/// // take a snapshot of the lexer before lexing
+/// // take a snapshot of the lexer before lexing, this is cheap
 /// let snapshot = lexer.snapshot();
 ///
 /// // the first lex will emit `>>`, which is not what we want
@@ -27,7 +29,7 @@
 /// assert_eq!(&text[output.token.unwrap().range], ">>");
 ///
 /// // since we enabled `fork`, the lexer might return a re-lex context.
-/// // if the lex is re-lexable, the context will be Some.
+/// // if the lex is re-lexable, the context will be `Some`.
 /// let context = output.fork.unwrap();
 /// // we can restore the lexer to the state before the last lex
 /// lexer.restore(snapshot);
