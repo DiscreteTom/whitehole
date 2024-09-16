@@ -1,3 +1,5 @@
+//! Stateless, immutable lexer.
+//!
 //! ## Design
 //!
 //! [`StatelessLexer`] doesn't hold text, progress or states.

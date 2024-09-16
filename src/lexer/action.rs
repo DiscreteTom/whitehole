@@ -1,3 +1,5 @@
+//! Lexical rules.
+//!
 //! ## Design
 //!
 //! For a better engineering experience, the lexer is designed to be modular

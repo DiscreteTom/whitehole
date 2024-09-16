@@ -1,3 +1,5 @@
+//! Lexical analysis.
+//!
 //! ## Getting Started
 //!
 //! Here is the recommended order of learning this module:
@@ -41,6 +43,7 @@ use std::rc::Rc;
 use token::Token;
 
 /// This is the "stateful" lexer, it manages the [`Instant`] and the `State`.
+///
 /// The [`Instant`] is responsible to manage the text and the progress of the lexer.
 /// The `State` is provided by you and can be accessed by [`Action`](crate::lexer::action::Action)s
 /// to realize stateful lexing.

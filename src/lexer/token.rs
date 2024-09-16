@@ -2,6 +2,14 @@ use crate::kind::KindIdBinding;
 
 pub type Range = std::ops::Range<usize>;
 
+/// A range of text with a kind value.
+/// # Design
+/// ## There is no `Token::content` here (as a `&str`)
+/// When lexing you can get the content in
+/// [`AcceptedActionOutputContext::content`](crate::lexer::action::AcceptedActionOutputContext::content),
+/// parse its value if needed and store the result data in [`Self::binding`].
+/// The content may only be used less than once, and can be calculated manually from [`Self::range`].
+/// You can calculate and cache it by yourself.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Token<Kind> {
   /// The sub kind id and the kind value.
@@ -18,11 +26,6 @@ pub struct Token<Kind> {
   /// // index a string with the range
   /// assert_eq!(&"0123456"[token.range], "01234");
   pub range: Range,
-  // we don't store `token.content` here (as a `&str`).
-  // when lexing users can get the content in the lexing context,
-  // parse its value if needed and store the result data in `self.binding.kind`.
-  // `token.content` may only be used less than once, and can be calculated from `token.range`.
-  // users can calculate and cache it by themselves, we don't do unnecessary work.
 }
 
 #[cfg(test)]
