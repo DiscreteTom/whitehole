@@ -14,6 +14,29 @@ fn new_mock<'a, State, Heap, T>(
   }
 }
 
+macro_rules! check_digested {
+  ($digested: expr, $input: expr) => {
+    assert!($digested <= $input.rest().len());
+  };
+}
+macro_rules! debug_check_digested {
+  ($digested: expr, $input: expr) => {
+    debug_assert!($digested <= $input.rest().len());
+  };
+}
+
+macro_rules! impl_eat {
+  ($n:expr, $checker:ident) => {
+    new_mock(move |input| {
+      $checker!($n, input);
+      Some(ActionOutput {
+        binding: MockKind::new(()).into(),
+        digested: $n,
+      })
+    })
+  };
+}
+
 /// Eat at most `n` bytes from the rest of the input text.
 /// `0` is ***allowed*** but be careful with infinite loops.
 ///
@@ -26,14 +49,9 @@ fn new_mock<'a, State, Heap, T>(
 /// // eat at most 10 bytes
 /// let a: Action<_> = eat(10);
 /// ```
+#[inline]
 pub fn eat<'a, State, Heap>(n: usize) -> Action<'a, MockKind<()>, State, Heap> {
-  new_mock(move |input| {
-    assert!(n <= input.rest().len());
-    Some(ActionOutput {
-      binding: MockKind::new(()).into(),
-      digested: n,
-    })
-  })
+  impl_eat!(n, check_digested)
 }
 
 /// Eat `n` bytes from the rest of the input text.
@@ -50,14 +68,24 @@ pub fn eat<'a, State, Heap>(n: usize) -> Action<'a, MockKind<()>, State, Heap> {
 /// // eat 10 bytes
 /// let a: Action<_> = eat_unchecked(10);
 /// ```
+#[inline]
 pub fn eat_unchecked<'a, State, Heap>(n: usize) -> Action<'a, MockKind<()>, State, Heap> {
-  new_mock(move |input| {
-    debug_assert!(n <= input.rest().len());
-    Some(ActionOutput {
-      binding: MockKind::new(()).into(),
-      digested: n,
+  impl_eat!(n, debug_check_digested)
+}
+
+macro_rules! impl_simple {
+  ($f:expr, $checker:ident) => {
+    new_mock(move |input| match $f(input) {
+      0 => None,
+      digested => {
+        $checker!(digested, input);
+        Some(ActionOutput {
+          binding: MockKind::new(()).into(),
+          digested,
+        })
+      }
     })
-  })
+  };
 }
 
 /// Accept a function that eats the rest of the input text and returns the number of digested bytes.
@@ -77,16 +105,7 @@ pub fn eat_unchecked<'a, State, Heap>(n: usize) -> Action<'a, MockKind<()>, Stat
 pub fn simple<'a, State, Heap>(
   f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> usize + 'a,
 ) -> Action<'a, MockKind<()>, State, Heap> {
-  new_mock(move |input| match f(input) {
-    0 => None,
-    digested => {
-      assert!(digested <= input.rest().len());
-      Some(ActionOutput {
-        binding: MockKind::new(()).into(),
-        digested,
-      })
-    }
-  })
+  impl_simple!(f, check_digested)
 }
 
 /// Accept a function that eats the rest of the input text and returns the number of digested bytes.
@@ -108,16 +127,21 @@ pub fn simple<'a, State, Heap>(
 pub fn simple_unchecked<'a, State, Heap>(
   f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> usize + 'a,
 ) -> Action<'a, MockKind<()>, State, Heap> {
-  new_mock(move |input| match f(input) {
-    0 => None,
-    digested => {
-      debug_assert!(digested <= input.rest().len());
-      Some(ActionOutput {
-        binding: MockKind::new(()).into(),
-        digested,
+  impl_simple!(f, debug_check_digested)
+}
+
+macro_rules! impl_simple_with_data {
+  ($f:expr, $checker:ident) => {
+    new_mock(move |input| {
+      $f(input).map(|(digested, data)| {
+        $checker!(digested, input);
+        ActionOutput {
+          binding: MockKind::new(data).into(),
+          digested,
+        }
       })
-    }
-  })
+    })
+  };
 }
 
 /// Provide a function that eats the rest of the input text and
@@ -145,15 +169,7 @@ pub fn simple_unchecked<'a, State, Heap>(
 pub fn simple_with_data<'a, State, Heap, T>(
   f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<(usize, T)> + 'a,
 ) -> Action<'a, MockKind<T>, State, Heap> {
-  new_mock(move |input| {
-    f(input).map(|(digested, data)| {
-      assert!(digested <= input.rest().len());
-      ActionOutput {
-        binding: MockKind::new(data).into(),
-        digested,
-      }
-    })
-  })
+  impl_simple_with_data!(f, check_digested)
 }
 
 /// Provide a function that eats the rest of the input text and
@@ -183,15 +199,7 @@ pub fn simple_with_data<'a, State, Heap, T>(
 pub fn simple_with_data_unchecked<'a, State, Heap, T>(
   f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<(usize, T)> + 'a,
 ) -> Action<'a, MockKind<T>, State, Heap> {
-  new_mock(move |input| {
-    f(input).map(|(digested, data)| {
-      debug_assert!(digested <= input.rest().len());
-      ActionOutput {
-        binding: MockKind::new(data).into(),
-        digested,
-      }
-    })
-  })
+  impl_simple_with_data!(f, debug_check_digested)
 }
 
 #[cfg(test)]
