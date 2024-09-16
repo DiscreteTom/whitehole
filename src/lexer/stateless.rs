@@ -81,7 +81,10 @@
 //!
 //! ## Getting Started
 //!
-//! Here is the recommended order of learning this module:
+//! Here is the recommended order of learning this module
+//! (many of them have no exported items,
+//! read the source code if you are interested in how the stateless lexer works,
+//! you can skip them if you just want to use the stateless lexer):
 //!
 //! - [`self::head_map`]
 //! - [`self::literal_map`]
@@ -91,12 +94,12 @@
 //! - [`self::trim`]
 //! - [`self::utils`]
 
-mod head_map;
-mod lex;
-mod literal_map;
-mod options;
-mod trim;
-mod utils;
+pub mod head_map;
+pub mod lex;
+pub mod literal_map;
+pub mod options;
+pub mod trim;
+pub mod utils;
 
 pub use options::*;
 
