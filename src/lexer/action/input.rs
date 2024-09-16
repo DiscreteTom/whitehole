@@ -74,6 +74,8 @@ impl<'text, StateRef, HeapRef> ActionInput<'text, StateRef, HeapRef> {
   ///
   /// This is precalculated and cached to prevent creating the slice every time
   /// because this is frequently used across all actions during the lexing loop.
+  ///
+  /// If you just want to get the next char, use [`Self::next`] instead.
   #[inline]
   pub const fn rest(&self) -> &'text str {
     self.rest
@@ -88,12 +90,12 @@ impl<'text, StateRef, HeapRef> ActionInput<'text, StateRef, HeapRef> {
     self.next
   }
 
-  /// A helper method to create a [`Range`] from [`Self::start`](Self::start) and
-  /// the `digested` length.
+  /// A helper method to create a [`Range`] from [`Self::start`]
+  /// with the `digested` length.
   /// # Safety
   /// This method won't check if the `digested` length is
   /// greater than the length of [`Self::rest`].
-  /// For a safer version, use [`Self::range`].
+  /// For a checked version, use [`Self::range`].
   #[inline]
   pub const fn range_unchecked(&self, digested: usize) -> Range {
     Range {
@@ -102,8 +104,8 @@ impl<'text, StateRef, HeapRef> ActionInput<'text, StateRef, HeapRef> {
     }
   }
 
-  /// A helper method to create a [`Range`] from [`Self::start`](Self::start) and
-  /// the `digested` length.
+  /// A helper method to create a [`Range`] from [`Self::start`]
+  /// with the `digested` length.
   ///
   /// Return [`None`] if the `digested` length is greater than the length of [`Self::rest`].
   #[inline]
