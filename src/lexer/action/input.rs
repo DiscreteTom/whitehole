@@ -10,7 +10,7 @@ pub struct ActionInput<'text, StateRef, HeapRef> {
   ///
   /// All vars that control the flow of the lexing loop should be stored here.
   /// This should be small and cheap to clone (maybe just a bunch of integers or booleans).
-  /// If a var is just a resource (e.g. a chunk of memory, a channel, etc),
+  /// If a var only represents a resource (e.g. a chunk of memory, a channel, etc),
   /// it should be stored in [`Self::heap`].
   pub state: StateRef,
   /// This is often `&mut Heap`.
@@ -19,10 +19,10 @@ pub struct ActionInput<'text, StateRef, HeapRef> {
   /// With the `Heap`, you can re-use allocated memory
   /// across actions and lexing loops.
   ///
-  /// All vars that doesn't count as a state should be stored here.
+  /// All vars that doesn't count as a part of [`Self::state`] should be stored here.
   /// If a var is used to control the flow of the lexing loop,
   /// it should be treated as a state and stored in [`Self::state`].
-  /// If a var is just a resource (e.g. a chunk of memory, a channel, etc),
+  /// If a var only represents a resource (e.g. a chunk of memory, a channel, etc),
   /// it should be stored here.
   pub heap: HeapRef,
 
