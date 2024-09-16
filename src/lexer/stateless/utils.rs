@@ -69,6 +69,7 @@ pub(super) use prepare_input;
 macro_rules! lex {
   ($input:expr, $actions:expr, $re_lex:expr, $digested:expr) => {{
     let res = break_loop_on_none!(traverse_actions(&mut $input, $actions, $re_lex));
+    debug_assert!(res.0.digested <= $input.rest().len());
     $digested += res.0.digested;
     res
   }};
