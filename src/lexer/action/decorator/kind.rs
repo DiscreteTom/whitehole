@@ -5,8 +5,8 @@ use crate::{
 };
 
 impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
-  /// Set the binding for this action.
-  /// Use this if your action can only yield a const kind value.
+  /// Set [`Self::kind`] to a constant sub kind.
+  /// Use this if the action can only yield a constant kind value.
   /// # Examples
   /// ```
   /// use whitehole::{
@@ -36,7 +36,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
     })
   }
 
-  /// Set the kind to the default for this action.
+  /// Set [`Self::kind`] to the default sub kind.
   /// # Examples
   /// ```
   /// use whitehole::{
@@ -46,10 +46,10 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   ///
   /// #[whitehole_kind]
   /// #[derive(Clone, Debug, Default)]
-  /// enum MyKind { #[default] Anonymous, A }
+  /// enum MyKind { #[default] Anonymous }
   ///
   /// # fn main() {
-  /// let action: Action<MyKind> = exact("A").bind_default();
+  /// let action: Action<MyKind> = exact("a").bind_default();
   /// assert_eq!(action.kind(), Anonymous::kind_id());
   /// # }
   /// ```
@@ -66,8 +66,8 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
     })
   }
 
-  /// Set the binding for this action by the `selector`.
-  /// Use this if you need to calculate the kind based on the [`ActionInput`] and [`ActionOutput`].
+  /// Set [`Self::kind`] by the `selector`.
+  /// Use this if you need to calculate the kind value based on the [`ActionInput`] and [`ActionOutput`].
   ///
   /// You can consume the original [`ActionOutput`] in the `selector`.
   /// # Examples
