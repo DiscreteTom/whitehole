@@ -8,8 +8,8 @@
 //! and re-use it across multiple (stateful) lexers.
 //!
 //! The [`StatelessLexer`] implements all the core lexing features,
-//! including expectation, fork, etc. If you
-//! want a stateless experience, you can use the [`StatelessLexer`] directly,
+//! including peek, trim, expectation, fork, etc.
+//! If you want a stateless experience, you can use the [`StatelessLexer`] directly,
 //! but you may need to manage the text, progress and states manually.
 //!
 //! ## The Lexing Process
@@ -37,6 +37,9 @@
 //!
 //! If an action has no head matcher, it will be executed no matter what the first character is.
 //! So it is recommended to add a head matcher to all actions to make the lexer faster.
+//!
+//! (You can use [`LexerBuilder::ensure_head_matcher`](crate::lexer::builder::LexerBuilder::ensure_head_matcher)
+//! to check if all actions have head matchers.)
 //!
 //! ### With Expected Kind
 //!
@@ -79,12 +82,14 @@
 //! Be careful if you lexer is stateful. Since in every lexing the evaluated actions
 //! are different, you may need to manage the states carefully to avoid inconsistency.
 //!
-//! ## Getting Started
+//! ## For developers
 //!
-//! Here is the recommended order of learning this module
-//! (many of them have no exported items,
-//! read the source code if you are interested in how the stateless lexer works,
-//! you can skip them if you just want to use the stateless lexer):
+//! Many of the modules have no exported items,
+//! they are public just to make the following links work.
+//! Read the source code if you are interested in how the stateless lexer works.
+//! You don't need to read them if you just want to use the stateless lexer.
+//!
+//! Here is the recommended order of reading the source code:
 //!
 //! - [`self::head_map`]
 //! - [`self::literal_map`]
