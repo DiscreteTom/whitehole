@@ -1,4 +1,4 @@
-//! # Kind Management
+//! Define your kinds.
 //!
 //! ## Design
 //!
@@ -118,7 +118,6 @@
 //!   // we store "sub kind" values in the enum variant
 //!   // to avoid destructing sub kind values
 //!   // when constructing kind values
-//!   // TODO: is this faster?
 //!   Identifier(Identifier),
 //!   Number(Number),
 //! }
@@ -203,10 +202,10 @@
 //! - [`binding`]
 //! - [`mock`]
 
-mod binding;
-mod id;
-mod mock;
-mod sub;
+pub mod binding;
+pub mod id;
+pub mod mock;
+pub mod sub;
 
 pub use binding::*;
 pub use id::*;

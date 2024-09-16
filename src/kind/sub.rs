@@ -43,12 +43,11 @@ impl<Kind, Sub: SubKind<Kind = Kind>> From<Sub> for SubKindId<Kind> {
 }
 
 /// Implement this trait for the kind enum to provide the default sub kind.
+///
 /// This can be auto implemented by the [`whitehole_kind`](crate::kind::whitehole_kind) macro.
 /// # Examples
 /// ```
-/// use whitehole::kind::{
-///   whitehole_kind, KindIdBinding, SubKind, DefaultSubKind,
-/// };
+/// use whitehole::kind::{whitehole_kind, KindIdBinding, SubKind, DefaultSubKind};
 ///
 /// #[whitehole_kind]
 /// #[derive(Default, Debug, PartialEq, Eq)]

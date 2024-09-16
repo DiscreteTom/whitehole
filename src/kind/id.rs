@@ -6,6 +6,7 @@ use std::{
 };
 
 /// The unique id of a sub kind.
+///
 /// The [`Self::value`] is the index of the enum variant.
 /// The sub kind id and the kind value can be bound together
 /// by [`KindIdBinding`](super::KindIdBinding).
