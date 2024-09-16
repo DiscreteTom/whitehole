@@ -4,7 +4,7 @@ pub type Range = std::ops::Range<usize>;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Token<Kind> {
-  /// The kind id and value.
+  /// The sub kind id and the kind value.
   pub binding: KindIdBinding<Kind>,
   /// The byte range of the token in the input text.
   /// This can be used to index the input text.
