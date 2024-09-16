@@ -1,11 +1,13 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LexOutput<TokenType, ForkOutputType> {
-  /// If all actions are rejected, this will be [`None`].
+  /// If all actions are rejected,
+  /// or reaching the end of the input,
+  /// this will be [`None`].
   pub token: Option<TokenType>,
   /// How many bytes are digested in this lexing.
   /// # Caveats
   /// This might not be `0` even [`Self::token`] is [`None`]
-  /// because there might be many actions which are accepted during multiple iterations
+  /// because there might be many muted actions which are accepted during multiple iterations
   /// of the lexing loop, this value is the total digested bytes in one lexing.
   pub digested: usize,
   /// If fork is disabled, this will always be `()`.
