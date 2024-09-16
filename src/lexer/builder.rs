@@ -5,7 +5,6 @@ mod ignore;
 use super::{action::Action, into::IntoLexer, stateless::StatelessLexer, Lexer};
 use crate::utils::OneOrMore;
 
-/// To create this, see [`Self::new`] and [`Self::stateful`].
 #[derive(Debug)]
 pub struct LexerBuilder<'a, Kind, State = (), Heap = ()> {
   actions: Vec<Action<'a, Kind, State, Heap>>,
@@ -21,7 +20,7 @@ impl<'a, Kind, State, Heap> Default for LexerBuilder<'a, Kind, State, Heap> {
 }
 
 impl<'a, Kind> LexerBuilder<'a, Kind> {
-  /// Create a new lexer builder, set `State` to `()`,
+  /// Create a new lexer builder, set `State` and `Heap` to `()`,
   /// auto infer `Kind` from the provided actions.
   /// # Examples
   /// ```
@@ -41,29 +40,28 @@ impl<'a, Kind> LexerBuilder<'a, Kind> {
   pub fn new() -> Self {
     Self::default()
   }
+}
 
-  /// Create a new lexer builder with the provided `State`,
-  /// auto infer `Kind` from the provided actions.
-  /// # Examples
-  /// ```
-  /// # use whitehole::lexer::{builder::LexerBuilder, action::exact};
-  /// # struct MyState;
-  /// # let mut builder: LexerBuilder<_, MyState> =
-  /// LexerBuilder::stateful();
-  /// # builder.append(exact("a"));
-  /// # let mut builder =
-  /// LexerBuilder::stateful::<MyState>();
-  /// # builder.append(exact("a"));
-  /// // equals to
-  /// # let mut builder =
-  /// LexerBuilder::<_, MyState>::default();
-  /// # builder.append(exact("a"));
-  /// # let mut builder =
-  /// LexerBuilder::<_, MyState, ()>::default();
-  /// # builder.append(exact("a"));
-  /// ```
+impl<'a, Kind, Heap> LexerBuilder<'a, Kind, (), Heap> {
+  /// Set [`Lexer::state`] type.
+  /// # Caveats
+  /// [`Self::actions`] will be cleared.
+  /// [`debug_assert`] will be used to ensure no actions are appended.
   #[inline]
-  pub fn stateful<State>() -> LexerBuilder<'a, Kind, State> {
+  pub fn state<State>(self) -> LexerBuilder<'a, Kind, State, Heap> {
+    debug_assert!(self.actions.is_empty());
+    LexerBuilder::default()
+  }
+}
+
+impl<'a, Kind, State> LexerBuilder<'a, Kind, State> {
+  /// Set [`Lexer::heap`] type.
+  /// # Caveats
+  /// [`Self::actions`] will be cleared.
+  /// [`debug_assert`] will be used to ensure no actions are appended.
+  #[inline]
+  pub fn heap<Heap>(self) -> LexerBuilder<'a, Kind, State, Heap> {
+    debug_assert!(self.actions.is_empty());
     LexerBuilder::default()
   }
 }
@@ -152,7 +150,10 @@ mod tests {
     // ensure the return type is correct
     let _: LexerBuilder<MockKind<()>, i32> = LexerBuilder::default().append(exact("a"));
     let _: LexerBuilder<MockKind<()>> = LexerBuilder::new().append(exact("a"));
-    let _: LexerBuilder<MockKind<()>, i32> = LexerBuilder::stateful().append(exact("a"));
+    let _: LexerBuilder<MockKind<()>, i32> = LexerBuilder::new().state().append(exact("a"));
+    let _: LexerBuilder<MockKind<()>, (), i32> = LexerBuilder::new().heap().append(exact("a"));
+    let _: LexerBuilder<MockKind<()>, i32, i32> =
+      LexerBuilder::new().state().heap().append(exact("a"));
   }
 
   #[test]
@@ -177,7 +178,7 @@ mod tests {
 
   #[test]
   fn test_build() {
-    let builder_factory = || LexerBuilder::stateful::<i32>().append(exact("a"));
+    let builder_factory = || LexerBuilder::new().state::<i32>().append(exact("a"));
 
     let lexer = builder_factory().build_with(1, (), "123");
     assert_eq!(lexer.state, 1);
