@@ -105,8 +105,7 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
     &self.head
   }
 
-  /// Muted actions won't yield tokens and won't stop a lexing process from running,
-  /// but the errors will still be collected by [`LexOptions::errors`](crate::lexer::options::LexOptions::errors).
+  /// Muted actions won't yield tokens and won't stop a lexing process from running.
   ///
   /// This field could be set via [`Self::mute`] or [`Self::unmute`].
   #[inline]
