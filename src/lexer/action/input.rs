@@ -151,10 +151,9 @@ mod tests {
   }
 
   #[test]
-  #[should_panic]
   fn action_input_out_of_text() {
     let mut state = ();
-    ActionInput::new("123", 4, &mut state, &mut ());
+    assert!(ActionInput::new("123", 4, &mut state, &mut ()).is_none());
   }
 
   #[test]
