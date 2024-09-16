@@ -1,4 +1,6 @@
 /// The instantaneous state of a lexer (a.k.a the "configuration" in the automata theory).
+///
+/// This is cheap to clone.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Instant<'text> {
   /// See [`Self::text`].
@@ -49,18 +51,14 @@ impl<'text> Instant<'text> {
     &self.text[self.digested..]
   }
 
-  /// Digest `n` bytes.
-  /// The caller MUST ensure `n` is smaller than the length of [`Self::rest`].
+  /// Digest `n` bytes and update [`Self::trimmed`].
   /// `0` is allowed but it won't change [`Self::trimmed`].
+  ///
+  /// `n` should be smaller than the length of [`Self::rest`],
+  /// this will be checked using [`debug_assert!`].
   #[inline]
   pub fn digest(&mut self, n: usize) {
-    debug_assert!(
-      self.digested + n <= self.text.len(),
-      "digest overflow, digested = {}, n = {}, text.len() = {}",
-      self.digested,
-      n,
-      self.text.len()
-    );
+    debug_assert!(self.digested + n <= self.text.len());
 
     if n == 0 {
       // don't override trimmed
@@ -72,17 +70,13 @@ impl<'text> Instant<'text> {
   }
 
   /// Digest `n` bytes and set [`Self::trimmed`] to `true`.
-  /// The caller MUST ensure `n` is smaller than the length of [`Self::rest`].
   /// `0` is allowed.
+  ///
+  /// `n` should be smaller than the length of [`Self::rest`],
+  /// this will be checked using [`debug_assert!`].
   #[inline]
   pub fn trim(&mut self, n: usize) {
-    debug_assert!(
-      self.digested + n <= self.text.len(),
-      "digest overflow, digested = {}, n = {}, text.len() = {}",
-      self.digested,
-      n,
-      self.text.len()
-    );
+    debug_assert!(self.digested + n <= self.text.len());
 
     self.digested += n;
     self.trimmed = true;
