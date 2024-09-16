@@ -14,7 +14,13 @@ pub use string::*;
 pub use word::*;
 
 use super::{simple_unchecked, Action};
-use crate::kind::MockKind;
+use crate::{
+  kind::MockKind,
+  utils::lookup::{
+    char::{SparseCharLookupTable, SparseCharLookupTableBuilder},
+    Lookup,
+  },
+};
 use std::{collections::HashSet, ops::RangeInclusive};
 
 /// Match chars by the condition greedily.
@@ -66,6 +72,7 @@ pub fn chars_in_range<State, Heap>(
 }
 
 /// Match chars in the set greedily.
+/// This will use a lookup table for performance.
 ///
 /// The [`Action::head`] will be set automatically.
 /// # Examples
@@ -80,12 +87,9 @@ pub fn charset<State, Heap>(
   set: impl Into<HashSet<char>>,
 ) -> Action<'static, MockKind<()>, State, Heap> {
   let set = set.into();
-  {
-    // TODO: optimize runtime perf using lookup table
-    let set = set.clone();
-    chars(move |ch| set.contains(&ch))
-  }
-  .unchecked_head_in(set)
+  let table: SparseCharLookupTable<()> =
+    SparseCharLookupTableBuilder::new(set.iter().copied().collect()).build();
+  chars(move |ch| table.get(ch as usize).is_some()).unchecked_head_in(set)
 }
 
 /// Match chars in the string greedily.
