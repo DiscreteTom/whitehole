@@ -17,14 +17,14 @@
 //! - [`output`]
 //! - [`self`]
 //! - [`decorator`]
-//! - [`simple`]
+//! - [`simple`](mod@simple)
 //! - [`utils`]
 
-mod decorator;
-mod input;
-mod output;
-mod simple;
-mod utils;
+pub mod decorator;
+pub mod input;
+pub mod output;
+pub mod simple;
+pub mod utils;
 
 pub use decorator::*;
 pub use input::*;
