@@ -108,12 +108,9 @@ pub fn chars_in_str<State, Heap>(s: &str) -> Action<'static, MockKind<()>, State
 ///
 /// The [`Action::head`] will be set automatically.
 /// # Caveats
-/// The range of unicode whitespaces is from `0x0009` to `0x3000`,
-/// which will cause a large lookup table when building the lexer,
-/// the building time will be increased and the runtime memory usage will be increased.
-///
-/// You may not need to support all unicode whitespaces.
+/// For most cases you may not need to support all unicode whitespaces.
 /// E.g. in JSON you only need to support `0x0009`, `0x000A`, `0x000D`, `0x0020`.
+/// Supporting all unicode whitespaces may slow down the lexer.
 /// # Examples
 /// ```
 /// # use whitehole::{kind::whitehole_kind, lexer::{action::whitespaces, builder::LexerBuilder}};
