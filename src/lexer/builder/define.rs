@@ -23,13 +23,13 @@ impl<'a, Kind, State: 'a, Heap: 'a> LexerBuilder<'a, Kind, State, Heap> {
   /// # }
   /// ```
   #[inline]
-  pub fn define<ViaKind>(
+  pub fn define<Sub>(
     self,
-    kind: ViaKind,
+    kind: Sub,
     actions: impl Into<OneOrMore<Action<'a, MockKind<()>, State, Heap>>>,
   ) -> Self
   where
-    ViaKind: SubKind<Kind = Kind> + Into<KindIdBinding<Kind>> + Clone + 'a,
+    Sub: SubKind<Kind = Kind> + Into<KindIdBinding<Kind>> + Clone + 'a,
   {
     self.append(Self::map_actions(actions, move |a| a.bind(kind.clone())))
   }
@@ -51,14 +51,14 @@ impl<'a, Kind, State: 'a, Heap: 'a> LexerBuilder<'a, Kind, State, Heap> {
   /// # }
   /// ```
   #[inline]
-  pub fn define_with<ViaKind>(
+  pub fn define_with<Sub>(
     self,
-    kind: ViaKind,
+    kind: Sub,
     actions: impl Into<OneOrMore<Action<'a, MockKind<()>, State, Heap>>>,
     decorator: impl Fn(Action<MockKind<()>, State, Heap>) -> Action<MockKind<()>, State, Heap> + 'a,
   ) -> Self
   where
-    ViaKind: SubKind<Kind = Kind> + Into<KindIdBinding<Kind>> + Clone + 'a,
+    Sub: SubKind<Kind = Kind> + Into<KindIdBinding<Kind>> + Clone + 'a,
   {
     self.define(kind, Self::map_actions(actions, decorator))
   }

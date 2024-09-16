@@ -24,11 +24,11 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// # }
   /// ```
   #[inline]
-  pub fn bind<NewKind, ViaKind>(self, kind: ViaKind) -> Action<'a, NewKind, State, Heap>
+  pub fn bind<NewKind, Sub>(self, kind: Sub) -> Action<'a, NewKind, State, Heap>
   where
-    ViaKind: SubKind<Kind = NewKind> + Into<KindIdBinding<NewKind>> + Clone + 'a,
+    Sub: SubKind<Kind = NewKind> + Into<KindIdBinding<NewKind>> + Clone + 'a,
   {
-    self.map_exec_new(ViaKind::kind_id(), move |exec, input| {
+    self.map_exec_new(Sub::kind_id(), move |exec, input| {
       exec(input).map(|output| ActionOutput {
         binding: kind.clone().into(),
         digested: output.digested,
@@ -84,17 +84,17 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// # }
   /// ```
   #[inline]
-  pub fn select<NewKind, ViaKind>(
+  pub fn select<NewKind, Sub>(
     self,
     selector: impl Fn(
         AcceptedActionOutputContext<&mut ActionInput<&mut State, &mut Heap>, ActionOutput<Kind>>,
-      ) -> ViaKind
+      ) -> Sub
       + 'a,
   ) -> Action<'a, NewKind, State, Heap>
   where
-    ViaKind: Into<KindIdBinding<NewKind>> + SubKind<Kind = NewKind>,
+    Sub: Into<KindIdBinding<NewKind>> + SubKind<Kind = NewKind>,
   {
-    self.map_exec_new(ViaKind::kind_id(), move |exec, input| {
+    self.map_exec_new(Sub::kind_id(), move |exec, input| {
       exec(input).map(|output| ActionOutput {
         digested: output.digested,
         binding: selector(AcceptedActionOutputContext { input, output }).into(),

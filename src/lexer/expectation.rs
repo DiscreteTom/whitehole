@@ -22,10 +22,10 @@ impl<'literal, Kind> From<SubKindId<Kind>> for Expectation<'literal, Kind> {
   }
 }
 
-impl<'literal, Kind, ViaKind: SubKind<Kind = Kind>> From<ViaKind> for Expectation<'literal, Kind> {
+impl<'literal, Kind, Sub: SubKind<Kind = Kind>> From<Sub> for Expectation<'literal, Kind> {
   #[inline]
-  fn from(_: ViaKind) -> Self {
-    Self::new().kind(ViaKind::kind_id())
+  fn from(_: Sub) -> Self {
+    Self::new().kind(Sub::kind_id())
   }
 }
 
