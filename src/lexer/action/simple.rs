@@ -42,7 +42,8 @@ pub fn simple<'a, State, Heap>(
 
 /// Provide a function that eats the rest of the input text and
 /// returns the number of digested bytes and the data.
-/// `0` is ***allowed*** as an accepted number of digested bytes.
+/// `0` is ***allowed*** as an accepted number of digested bytes
+/// but be careful with infinite loops.
 /// Return [`None`] if the action is rejected.
 ///
 /// This is useful if you can directly yield the data in the function,
