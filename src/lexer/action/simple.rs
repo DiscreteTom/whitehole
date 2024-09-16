@@ -1,7 +1,7 @@
 use super::{input::ActionInput, Action, ActionExec, ActionOutput};
 use crate::kind::{MockKind, SubKind};
 
-/// Accept a function that digests the rest of the input text and returns the number of digested bytes.
+/// Accept a function that eats the rest of the input text and returns the number of digested bytes.
 /// The function should return `0` if the action is rejected.
 ///
 /// It's recommended to set [`Action::head`] to optimize the lex performance.
@@ -33,7 +33,7 @@ pub fn simple<'a, State, Heap>(
   }
 }
 
-/// Provide a function that digests the rest of the input text and
+/// Provide a function that eats the rest of the input text and
 /// returns the number of digested bytes and the data.
 /// `0` is ***allowed*** as an accepted number of digested bytes.
 /// Return [`None`] if the action is rejected.
