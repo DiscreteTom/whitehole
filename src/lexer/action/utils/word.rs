@@ -73,6 +73,9 @@ pub fn word<State: 'static, Heap: 'static>(
   exact(s).reject_if(no_word_boundary_in_rest)
 }
 
+// there is no `unchecked_word`. usually in unchecked scenarios,
+// using `unchecked_exact` is enough.
+
 #[cfg(test)]
 mod tests {
   use super::*;
