@@ -64,13 +64,13 @@ pub fn eat_unchecked<'a, State, Heap>(n: usize) -> Action<'a, MockKind<()>, Stat
 /// The function should return `0` if the action is rejected.
 ///
 /// It's recommended to set [`Action::head`] to optimize the lex performance.
-/// # Caveats
-/// The function's return value (how many bytes are digested)
-/// MUST be smaller than the length of [`ActionInput::rest`].
+/// # Panics
+/// Panics if the function's return value (how many bytes are digested)
+/// is larger than the length of [`ActionInput::rest`].
 /// # Examples
 /// ```
 /// use whitehole::lexer::action::{Action, simple};
-/// // accept all rest characters
+/// // accept all the rest characters
 /// let a: Action<_> = simple(|input| input.rest().len());
 /// ```
 #[inline]
@@ -79,10 +79,80 @@ pub fn simple<'a, State, Heap>(
 ) -> Action<'a, MockKind<()>, State, Heap> {
   new_mock(move |input| match f(input) {
     0 => None,
-    digested => Some(ActionOutput {
-      binding: MockKind::new(()).into(),
-      digested,
-    }),
+    digested => {
+      assert!(digested <= input.rest().len());
+      Some(ActionOutput {
+        binding: MockKind::new(()).into(),
+        digested,
+      })
+    }
+  })
+}
+
+/// Accept a function that eats the rest of the input text and returns the number of digested bytes.
+/// The function should return `0` if the action is rejected.
+///
+/// It's recommended to set [`Action::head`] to optimize the lex performance.
+/// # Caveats
+/// The function's return value (how many bytes are digested)
+/// should be smaller than the length of [`ActionInput::rest`].
+/// This will be checked using [`debug_assert!`].
+/// For the unchecked version, see [`simple`].
+/// # Examples
+/// ```
+/// use whitehole::lexer::action::{Action, simple_unchecked};
+/// // accept all the rest characters
+/// let a: Action<_> = simple_unchecked(|input| input.rest().len());
+/// ```
+#[inline]
+pub fn simple_unchecked<'a, State, Heap>(
+  f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> usize + 'a,
+) -> Action<'a, MockKind<()>, State, Heap> {
+  new_mock(move |input| match f(input) {
+    0 => None,
+    digested => {
+      debug_assert!(digested <= input.rest().len());
+      Some(ActionOutput {
+        binding: MockKind::new(()).into(),
+        digested,
+      })
+    }
+  })
+}
+
+/// Provide a function that eats the rest of the input text and
+/// returns the number of digested bytes and the data.
+/// `0` is ***allowed*** as an accepted number of digested bytes
+/// but be careful with infinite loops.
+/// Return [`None`] if the action is rejected.
+///
+/// This is useful if you can directly yield the data in the function,
+/// instead of parsing the [`content`](super::AcceptedActionOutputContext::content)
+/// later using [`Action::data`].
+///
+/// It's recommended to set [`Action::head`] to optimize the lex performance.
+/// # Panics
+/// Panics if the function's return value (how many bytes are digested)
+/// is larger than the length of [`ActionInput::rest`].
+/// # Examples
+/// ```
+/// use whitehole::kind::MockKind;
+/// use whitehole::lexer::action::{Action, simple_with_data};
+/// // accept all the rest characters and parse them into an integer
+/// let a: Action<MockKind<i32>> = simple_with_data(|input| Some((input.rest().len(), input.rest().parse().unwrap())));
+/// ```
+#[inline]
+pub fn simple_with_data<'a, State, Heap, T>(
+  f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<(usize, T)> + 'a,
+) -> Action<'a, MockKind<T>, State, Heap> {
+  new_mock(move |input| {
+    f(input).map(|(digested, data)| {
+      assert!(digested <= input.rest().len());
+      ActionOutput {
+        binding: MockKind::new(data).into(),
+        digested,
+      }
+    })
   })
 }
 
@@ -99,22 +169,27 @@ pub fn simple<'a, State, Heap>(
 /// It's recommended to set [`Action::head`] to optimize the lex performance.
 /// # Caveats
 /// The function's return value (how many bytes are digested)
-/// MUST be smaller than the length of [`ActionInput::rest`].
+/// should be smaller than the length of [`ActionInput::rest`].
+/// This will be checked using [`debug_assert!`].
+/// For the unchecked version, see [`simple_with_data`].
 /// # Examples
 /// ```
 /// use whitehole::kind::MockKind;
-/// use whitehole::lexer::action::{Action, simple_with_data};
-/// // accept all rest characters and parse them into an integer
-/// let a: Action<MockKind<i32>> = simple_with_data(|input| Some((input.rest().len(), input.rest().parse().unwrap())));
+/// use whitehole::lexer::action::{Action, simple_with_data_unchecked};
+/// // accept all the rest characters and parse them into an integer
+/// let a: Action<MockKind<i32>> = simple_with_data_unchecked(|input| Some((input.rest().len(), input.rest().parse().unwrap())));
 /// ```
 #[inline]
-pub fn simple_with_data<'a, State, Heap, T>(
+pub fn simple_with_data_unchecked<'a, State, Heap, T>(
   f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<(usize, T)> + 'a,
 ) -> Action<'a, MockKind<T>, State, Heap> {
   new_mock(move |input| {
-    f(input).map(|(digested, data)| ActionOutput {
-      binding: MockKind::new(data).into(),
-      digested,
+    f(input).map(|(digested, data)| {
+      debug_assert!(digested <= input.rest().len());
+      ActionOutput {
+        binding: MockKind::new(data).into(),
+        digested,
+      }
     })
   })
 }
