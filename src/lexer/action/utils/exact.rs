@@ -1,6 +1,6 @@
 use crate::{
   kind::MockKind,
-  lexer::action::{simple, Action},
+  lexer::action::{eat_unchecked, simple_unchecked, Action},
 };
 
 pub use whitehole_helpers::{exact_vec, unchecked_exact_vec};
@@ -10,6 +10,9 @@ pub use whitehole_helpers::{exact_vec, unchecked_exact_vec};
 /// [`Action::head`] and [`Action::literal`] will be set automatically.
 /// # Panics
 /// Panics if the string is empty.
+/// # Caveats
+/// If there is only one char in the string,
+/// it will be checked by head matcher, and this action will accept it directly.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, exact};
@@ -24,13 +27,20 @@ pub fn exact<State, Heap>(s: impl Into<String>) -> Action<'static, MockKind<()>,
   let s: String = s.into();
   let head = s.chars().next().expect("empty string is not allowed");
   let literal = s.clone();
-  simple(move |input| {
-    if input.rest().starts_with(&s) {
-      s.len()
-    } else {
-      0
-    }
-  })
+
+  if s.len() == head.len_utf8() {
+    // perf: if there is only one char, it will be checked by head matcher
+    // so we can just eat it
+    eat_unchecked(head.len_utf8())
+  } else {
+    simple_unchecked(move |input| {
+      if input.rest().starts_with(&s) {
+        s.len()
+      } else {
+        0
+      }
+    })
+  }
   .unchecked_head_in([head])
   .unchecked_literal(literal)
 }
@@ -48,10 +58,8 @@ pub fn exact<State, Heap>(s: impl Into<String>) -> Action<'static, MockKind<()>,
 /// vec![exact("+"), exact("-"), exact("*"), exact("/"), exact("("), exact(")")];
 /// ```
 #[inline]
-pub fn exact_chars<State, Heap>(
-  s: impl Into<String>,
-) -> Vec<Action<'static, MockKind<()>, State, Heap>> {
-  s.into().chars().map(|c| exact(c)).collect()
+pub fn exact_chars<State, Heap>(s: &str) -> Vec<Action<'static, MockKind<()>, State, Heap>> {
+  s.chars().map(|c| exact(c)).collect()
 }
 
 /// Match one string only by its first char instead of the whole string, ***NO LOOKAHEAD***.
@@ -76,32 +84,13 @@ pub fn unchecked_exact<State, Heap>(
   let s: String = s.into();
   let head = s.chars().next().expect("empty string is not allowed");
   let len = s.len();
-  simple(move |_| len)
+  eat_unchecked(len)
     .unchecked_head_in([head])
     .unchecked_literal(s)
 }
 
-/// Create an action for each char using [`unchecked_exact`].
-///
-/// [`Action::head`] and [`Action::literal`] will be set automatically.
-/// # Caveats
-/// You should only use this if you are sure the token is unique by its first char,
-/// and the content you are lexing is valid to your format.
-/// # Examples
-/// ```
-/// # use whitehole::lexer::action::{Action, unchecked_exact_chars, unchecked_exact};
-/// # let action: Vec<Action<_>> =
-/// unchecked_exact_chars("+-*/");
-/// // equals to
-/// # let actions: Vec<Action<_>> =
-/// vec![unchecked_exact("+"), unchecked_exact("-"), unchecked_exact("*"), unchecked_exact("/")];
-/// ```
-#[inline]
-pub fn unchecked_exact_chars<State, Heap>(
-  s: impl Into<String>,
-) -> Vec<Action<'static, MockKind<()>, State, Heap>> {
-  s.into().chars().map(|c| unchecked_exact(c)).collect()
-}
+// there is no uncheck_exact_chars because it's the same as exact_chars
+// since the performance is already optimized by exact
 
 #[cfg(test)]
 mod tests {
@@ -220,40 +209,5 @@ mod tests {
   #[should_panic]
   fn action_utils_unchecked_exact_empty() {
     unchecked_exact::<(), ()>("");
-  }
-
-  #[test]
-  fn action_utils_unchecked_exact_chars() {
-    let actions: Vec<Action<_>> = unchecked_exact_chars("+-*/");
-    assert_accept(&actions[0], "+", 1);
-    assert_accept(&actions[1], "-", 1);
-    assert_accept(&actions[2], "*", 1);
-    assert_accept(&actions[3], "/", 1);
-    // no lookahead
-    assert_accept(&actions[0], "++", 1);
-    assert_accept(&actions[1], "--", 1);
-    // head matcher
-    assert!(matches!(
-      actions[0].head().as_ref().unwrap(),
-      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'+')
-    ));
-    assert!(matches!(
-      actions[1].head().as_ref().unwrap(),
-      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'-')
-    ));
-    assert!(matches!(
-      actions[2].head().as_ref().unwrap(),
-      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'*')
-    ));
-    assert!(matches!(
-      actions[3].head().as_ref().unwrap(),
-      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'/')
-    ));
-
-    // only the first char is checked by head matcher, not the action exec
-    assert_accept(&actions[0], "1", 1);
-    assert_accept(&actions[1], "1", 1);
-    assert_accept(&actions[2], "1", 1);
-    assert_accept(&actions[3], "1", 1);
   }
 }
