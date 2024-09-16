@@ -9,7 +9,7 @@ pub struct ActionOutput<Kind> {
   /// # Caveats
   /// `0` is allowed, but be careful with infinite loops.
   ///
-  /// The caller MUST ensure this value is smaller than the length of
+  /// This value should be smaller than or equal to the length of
   /// [`ActionInput::rest`](crate::lexer::action::input::ActionInput::rest).
   pub digested: usize,
 }
