@@ -4,10 +4,12 @@ use super::instant::Instant;
 ///
 /// This can be created by [`Lexer::snapshot`](crate::lexer::Lexer::snapshot)
 /// and use by [`Lexer::restore`](crate::lexer::Lexer::restore).
-/// and [`Lexer::clone_with_snapshot`](crate::lexer::Lexer::clone_with_snapshot).
 ///
 /// You can't construct this manually because
 /// you shouldn't modify [`Self::instant`] directly.
+///
+/// Since `State` should be cheap to clone,
+/// this is also cheap to clone.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Snapshot<'text, State> {
   /// See [`Lexer::state`](crate::lexer::Lexer::state).
