@@ -14,6 +14,47 @@ fn new_mock<'a, State, Heap, T>(
   }
 }
 
+/// Eat at most `n` bytes from the rest of the input text.
+/// `0` is ***allowed*** but be careful with infinite loops.
+///
+/// It's recommended to set [`Action::head`] to optimize the lex performance.
+/// # Examples
+/// ```
+/// use whitehole::lexer::action::{Action, eat};
+/// // eat at most 10 bytes
+/// let a: Action<_> = eat(10);
+/// ```
+pub fn eat<'a, State, Heap>(n: usize) -> Action<'a, MockKind<()>, State, Heap> {
+  new_mock(move |input| {
+    Some(ActionOutput {
+      binding: MockKind::new(()).into(),
+      digested: input.rest().len().min(n),
+    })
+  })
+}
+
+/// Eat `n` bytes from the rest of the input text.
+/// `0` is ***allowed*** but be careful with infinite loops.
+///
+/// It's recommended to set [`Action::head`] to optimize the lex performance.
+/// # Caveats
+/// You should ensure that `n` is smaller than the length of [`ActionInput::rest`].
+/// For the checked version, see [`eat`].
+/// # Examples
+/// ```
+/// use whitehole::lexer::action::{Action, eat};
+/// // eat 10 bytes
+/// let a: Action<_> = eat_unchecked(10);
+/// ```
+pub fn eat_unchecked<'a, State, Heap>(n: usize) -> Action<'a, MockKind<()>, State, Heap> {
+  new_mock(move |_| {
+    Some(ActionOutput {
+      binding: MockKind::new(()).into(),
+      digested: n,
+    })
+  })
+}
+
 /// Accept a function that eats the rest of the input text and returns the number of digested bytes.
 /// The function should return `0` if the action is rejected.
 ///
