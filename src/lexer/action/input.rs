@@ -37,22 +37,19 @@ pub struct ActionInput<'text, StateRef, HeapRef> {
 }
 
 impl<'text, StateRef, HeapRef> ActionInput<'text, StateRef, HeapRef> {
-  /// Return [`None`] if the [`start`](Self::start) is equal to the length of
-  /// [`text`](Self::text).
-  /// # Panics
-  /// This method panics if the [`start`](Self::start) is out of bounds of
-  /// [`text`](Self::text).
+  /// Return [`None`] if the [`start`](Self::start) is equal to or larger than
+  /// the length of [`text`](Self::text).
   #[inline]
   pub fn new(text: &'text str, start: usize, state: StateRef, heap: HeapRef) -> Option<Self> {
-    let rest = &text[start..];
-
-    rest.chars().next().map(|next| Self {
-      text,
-      start,
-      rest,
-      next,
-      state,
-      heap,
+    text.get(start..).and_then(|rest| {
+      rest.chars().next().map(|next| Self {
+        text,
+        start,
+        rest,
+        next,
+        state,
+        heap,
+      })
     })
   }
 
