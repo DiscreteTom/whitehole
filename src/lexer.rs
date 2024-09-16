@@ -2,20 +2,20 @@
 //!
 //! Here is the recommended order of learning this module:
 //!
-//! - [`self::token`]
-//! - [`self::action`]
-//! - [`self::instant`]
-//! - [`self::snapshot`]
-//! - [`self::expectation`]
-//! - [`self::re_lex`]
-//! - [`self::fork`]
-//! - [`self::options`]
-//! - [`self::output`]
+//! - [`token`]
+//! - [`action`]
+//! - [`instant`]
+//! - [`snapshot`]
+//! - [`expectation`]
+//! - [`re_lex`]
+//! - [`fork`]
+//! - [`options`]
+//! - [`output`]
 //! - [`self`]
-//! - [`self::builder`]
-//! - [`self::into`]
-//! - [`self::stateless`]
-//! - [`self::position`]
+//! - [`builder`]
+//! - [`into`]
+//! - [`stateless`]
+//! - [`position`]
 
 pub mod action;
 pub mod builder;

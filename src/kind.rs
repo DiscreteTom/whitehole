@@ -198,10 +198,10 @@
 //!
 //! Here is the recommended order of learning this module:
 //!
-//! - [`self::id`]
-//! - [`self::sub`]
-//! - [`self::binding`]
-//! - [`self::mock`]
+//! - [`id`]
+//! - [`sub`]
+//! - [`binding`]
+//! - [`mock`]
 
 mod binding;
 mod id;

@@ -11,12 +11,12 @@
 //!
 //! Here is the recommended order of learning this module:
 //!
-//! - [`self::input`]
-//! - [`self::output`]
+//! - [`input`]
+//! - [`output`]
 //! - [`self`]
-//! - [`self::decorator`]
-//! - [`self::simple`]
-//! - [`self::utils`]
+//! - [`decorator`]
+//! - [`simple`]
+//! - [`utils`]
 
 mod decorator;
 mod input;
