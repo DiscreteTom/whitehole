@@ -43,6 +43,7 @@ impl<'literal, Kind> From<ReLexContext> for LexOptions<'literal, Kind, ()> {
 
 impl<'literal, Kind, Fork> LexOptions<'literal, Kind, Fork> {
   /// Set the expectation to speed up the lexing.
+  /// See [`Expectation`] for more details.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::options::LexOptions;
@@ -75,6 +76,7 @@ impl<'literal, Kind, Fork> LexOptions<'literal, Kind, Fork> {
   }
 
   /// Set the expectation to speed up the lexing.
+  /// See [`Expectation`] for more details.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::options::LexOptions;
@@ -132,7 +134,9 @@ impl<'literal, Kind, Fork> LexOptions<'literal, Kind, Fork> {
   }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+// currently there is no fields in TrimOptions.
+// we define this for future compatibility.
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct TrimOptions;
 
 #[cfg(test)]
