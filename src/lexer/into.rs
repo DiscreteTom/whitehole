@@ -2,8 +2,13 @@ use super::{builder::LexerBuilder, stateless::StatelessLexer, Lexer};
 use std::rc::Rc;
 
 /// A helper trait to convert common types into a lexer.
+///
+/// These types already implement the [`IntoLexer`] trait:
+/// - [`LexerBuilder`]
+/// - [`StatelessLexer`]
+/// - [`Rc<StatelessLexer>`]
 pub trait IntoLexer<'a, Kind, State, Heap>: Sized {
-  /// Consume self, build a [`Lexer`] with the provided `state` and `text`.
+  /// Consume self, build a [`Lexer`] with the provided `state`, `heap` and `text`.
   fn into_lexer_with<'text>(
     self,
     state: State,
