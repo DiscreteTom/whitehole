@@ -1,5 +1,5 @@
 use crate::{
-  lexer::action::{HeadMatcher, RcActionExec, RcActionProps},
+  lexer::action::{HeadMatcher, RcAction, RcActionExec},
   utils::lookup::{
     char::{SparseCharLookupTable, SparseCharLookupTableBuilder},
     Lookup,
@@ -102,7 +102,7 @@ impl<'a, Kind, State, Heap> HeadMap<'a, Kind, State, Heap> {
   /// with [`HeadMatcher::Not`] and [`HeadMatcher::Unknown`].
   #[inline] // there is only one call site, so mark this as inline
   pub fn collect_all_known(
-    actions: &[(RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>)],
+    actions: &[RcAction<'a, Kind, State, Heap>],
   ) -> KnownHeadChars<'a, Kind, State, Heap> {
     // assume every action has at least one known head char.
     // we don't need to deduplicate chars here
@@ -125,7 +125,7 @@ impl<'a, Kind, State, Heap> HeadMap<'a, Kind, State, Heap> {
 
   /// Create a new instance with a subset of actions and a known char map created by [`Self::collect_all_known`].
   pub fn new(
-    actions: &[(RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>)],
+    actions: &[RcAction<'a, Kind, State, Heap>],
     known_map: KnownHeadChars<'a, Kind, State, Heap>,
   ) -> Self {
     let mut unknown_fallback = RuntimeActions::new();

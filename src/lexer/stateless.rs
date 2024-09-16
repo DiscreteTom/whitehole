@@ -108,7 +108,7 @@ pub mod utils;
 
 pub use options::*;
 
-use super::action::{Action, RcActionExec, RcActionProps};
+use super::action::{Action, RcAction};
 use crate::utils::lookup::{option::OptionLookupTable, Lookup};
 use head_map::HeadMap;
 use literal_map::LiteralMap;
@@ -153,10 +153,9 @@ impl<'a, Kind, State, Heap> StatelessLexer<'a, Kind, State, Heap> {
     }
   }
 
-  #[allow(clippy::type_complexity, reason = "these type only exists here once")]
   fn init_kind_map(
-    all_actions: &[(RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>)],
-  ) -> OptionLookupTable<Vec<(RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>)>> {
+    all_actions: &[RcAction<'a, Kind, State, Heap>],
+  ) -> OptionLookupTable<Vec<RcAction<'a, Kind, State, Heap>>> {
     let mut res = OptionLookupTable::with_keys_init(
       all_actions.iter().map(|(_, p)| p.kind().value()),
       // in most cases there is only one action for each kind

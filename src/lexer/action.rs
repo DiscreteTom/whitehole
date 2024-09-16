@@ -157,12 +157,14 @@ pub(super) type RcActionProps<Kind> = Rc<ActionBase<Kind, ()>>;
 pub(super) type RcActionExec<'a, Kind, State, Heap> = ActionExec<
   Rc<dyn Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<Kind>> + 'a>,
 >;
+pub(super) type RcAction<'a, Kind, State, Heap> =
+  (RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>);
 
 impl<'a, Kind, State, Heap> Action<'a, Kind, State, Heap> {
   /// Break self into two parts and wrap them in [`Rc`].
   /// Return [`RcActionExec`] and [`RcActionProps`].
   #[inline]
-  pub(super) fn into_rc(self) -> (RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>) {
+  pub(super) fn into_rc(self) -> RcAction<'a, Kind, State, Heap> {
     let props = Rc::new(ActionBase {
       kind: self.kind,
       literal: self.literal,

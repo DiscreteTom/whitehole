@@ -1,5 +1,5 @@
 use super::head_map::{HeadMap, KnownHeadChars};
-use crate::lexer::action::{RcActionExec, RcActionProps};
+use crate::lexer::action::RcAction;
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -19,8 +19,7 @@ pub(super) struct LiteralMap<'a, Kind, State, Heap> {
 /// This is to prevent other modules from modifying the known map by mistake
 /// before calling [`LiteralMap::new`].
 pub(super) struct KnownLiterals<'a, Kind, State, Heap>(
-  #[allow(clippy::type_complexity, reason = "this type only exists here once")]
-  HashMap<String, Vec<(RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>)>>,
+  HashMap<String, Vec<RcAction<'a, Kind, State, Heap>>>,
 );
 
 impl<'a, Kind, State, Heap> Clone for KnownLiterals<'a, Kind, State, Heap> {
@@ -39,7 +38,7 @@ impl<'a, Kind, State, Heap> LiteralMap<'a, Kind, State, Heap> {
   /// when filling the literal map with no-literal actions.
   #[inline] // there is only one call site, so mark this as inline
   pub fn collect_all_known(
-    actions: &[(RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>)],
+    actions: &[RcAction<'a, Kind, State, Heap>],
   ) -> KnownLiterals<'a, Kind, State, Heap> {
     let mut res = HashMap::new();
 
@@ -56,7 +55,7 @@ impl<'a, Kind, State, Heap> LiteralMap<'a, Kind, State, Heap> {
   /// and a known head map created by [`HeadMap::collect_all_known`].
   pub fn new(
     // TODO: accept iter instead of slice to prevent unnecessary allocation
-    actions: &[(RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>)],
+    actions: &[RcAction<'a, Kind, State, Heap>],
     known_map: KnownLiterals<'a, Kind, State, Heap>,
     known_head_map: &KnownHeadChars<'a, Kind, State, Heap>,
   ) -> Self {
