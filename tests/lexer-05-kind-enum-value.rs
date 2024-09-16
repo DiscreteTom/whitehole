@@ -16,7 +16,7 @@ enum MyKind {
 
 #[test]
 fn kind_id_is_not_relevant_with_value() {
-  // kind id is bound to the sub token kind, not the value
+  // kind id is bound to the sub kind, not the value
   A::kind_id();
 }
 
@@ -26,7 +26,7 @@ fn kind_enum_with_calculated_value() {
   // we need to use `action.select`
   let action = regex(r"^\d+").select(|ctx| A(ctx.content().parse().unwrap()));
 
-  // these actions already have target token kind set,
+  // these actions already have target sub kind set,
   // so we can't use `define` to add them to the lexer builder,
   // we should use `append` instead of `define`
   let mut lexer = LexerBuilder::new().append(action).build("123");
@@ -91,7 +91,7 @@ fn carry_data_with_mock_kind() {
       })
   });
 
-  // now convert the `MockKind` to your token kind with `Action::select`
+  // now convert the `MockKind` to your kind with `Action::select`
   let action = action.select(|ctx| A(ctx.output.binding.take().data));
 
   // you can construct actions with `MockKind` using `Action::data`

@@ -125,7 +125,7 @@ fn action_utils() {
     .ignore_default(whitespaces())
     .ignore_default([comment("//", "\n"), comment("/*", "*/")])
     // for keywords and operators, they are literal and don't need a kind,
-    // so you can use `append_default` to bind them with the default token kind.
+    // so you can use `append_default` to bind them with the default sub kind.
     // for keywords, there should be a word boundary after the keyword,
     // you can use `word` and `word_vec` to ensure the word boundary.
     .append_default(word_vec!["true", "false"])
