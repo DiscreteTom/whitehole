@@ -4,7 +4,7 @@ use whitehole::{
   kind::whitehole_kind,
   lexer::{
     action::{
-      chars, exact,
+      chars_in_str, exact,
       json::{boundaries, number_with, string_with},
       FloatLiteralData, HexEscapeError, PartialStringBody,
     },
@@ -28,7 +28,7 @@ enum JsonTokenKind {
 
 fn build_lexer() -> StatelessLexer<'static, JsonTokenKind> {
   LexerBuilder::new()
-    .ignore_default(chars(|c| matches!(c, ' ' | '\n' | '\r' | '\t')))
+    .ignore_default(chars_in_str(" \n\r\t"))
     .append_default(boundaries())
     .define(True, exact("true"))
     .define(False, exact("false"))
