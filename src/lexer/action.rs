@@ -146,8 +146,8 @@ impl<Raw> Debug for ActionExec<Raw> {
   }
 }
 
-/// To create this, use [`simple`](simple::simple), [`simple_with_data`](simple::simple_with_data)
-/// or [`utils`] (like [`regex`](utils::regex), [`exact`], [`word`]).
+/// To create this, use [`eat`], [`simple`](simple::simple()), [`simple_with_data`]
+/// or [`utils`] (like [`regex`](utils::regex()), [`exact`], [`word`]).
 pub type Action<'a, Kind, State = (), Heap = ()> =
   ActionBase<Kind, ActionExec<RawActionExec<'a, Kind, State, Heap>>>;
 

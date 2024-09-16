@@ -104,7 +104,7 @@ pub fn chars_in_str<State, Heap>(s: &str) -> Action<'static, MockKind<()>, State
 }
 
 /// Match unicode whitespaces greedily.
-/// For the list of whitespaces, see https://www.unicode.org/Public/UCD/latest/ucd/PropList.txt.
+/// For the list of whitespaces, see <https://www.unicode.org/Public/UCD/latest/ucd/PropList.txt>.
 ///
 /// The [`Action::head`] will be set automatically.
 /// # Caveats
