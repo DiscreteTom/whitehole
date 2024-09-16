@@ -33,7 +33,7 @@ impl<'a, Kind, State, Heap> LiteralMap<'a, Kind, State, Heap> {
   /// Collect all known literals from all actions instead of a subset of actions to make sure
   /// 'known' as a consistent meaning across all literal maps in a stateless lexer
   /// (otherwise maybe only a subset of literals are known for a subset of actions,
-  /// in this case the 'known' has an inconsistent meaning).
+  /// in which case the 'known' has an inconsistent meaning).
   /// This must be done before creating a literal map because we need to iter over all known literals
   /// when filling the literal map with no-literal actions.
   #[inline] // there is only one call site, so mark this as inline
