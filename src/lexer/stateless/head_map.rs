@@ -13,7 +13,10 @@ use crate::{
 #[derive(Debug)]
 pub(super) struct RuntimeActions<'a, Kind, State, Heap> {
   execs: Vec<RcActionExec<'a, Kind, State, Heap>>,
-  muted: Vec<bool>, // TODO: optimize with bit vec
+  // logically using a bit vec should be better than `Vec<bool>`.
+  // however in head map the length of this vector is usually 1,
+  // so the overhead of using a bit vec is not worth it.
+  muted: Vec<bool>,
 }
 
 impl<'a, Kind, State, Heap> Default for RuntimeActions<'a, Kind, State, Heap> {
@@ -37,10 +40,10 @@ impl<'a, Kind, State, Heap> RuntimeActions<'a, Kind, State, Heap> {
   #[inline]
   pub fn new() -> Self {
     Self {
-      // in head map maybe every head only has one action, so we don't need to pre-allocate memory
-      // TODO: maybe allocate one?
-      execs: Vec::new(),
-      muted: Vec::new(),
+      // in head map maybe every head only has one action
+      // but there will be at least one action, so we allocate 1 here
+      execs: Vec::with_capacity(1),
+      muted: Vec::with_capacity(1),
     }
   }
 
@@ -62,6 +65,7 @@ impl<'a, Kind, State, Heap> RuntimeActions<'a, Kind, State, Heap> {
 
   #[inline]
   pub fn len(&self) -> usize {
+    // `self.execs` and `self.muted` should have the same length
     self.execs.len()
   }
 }
@@ -92,14 +96,19 @@ impl<'a, Kind, State, Heap> HeadMap<'a, Kind, State, Heap> {
   /// Collect all known head chars from all actions instead of a subset of actions to make sure
   /// 'known' has a consistent meaning across all head maps in a stateless lexer
   /// (otherwise maybe only a subset of chars are known for a subset of actions,
-  /// in this case the 'known' has an inconsistent meaning).
-  /// This must be done before creating a head map because we need to iter over all known chars when filling the head map
+  /// in which case the 'known' has an inconsistent meaning).
+  /// This must be done before creating a head map
+  /// because we need to iter over all known chars when filling the head map
   /// with [`HeadMatcher::Not`] and [`HeadMatcher::Unknown`].
   #[inline] // there is only one call site, so mark this as inline
   pub fn collect_all_known(
     props: &Vec<RcActionProps<Kind>>,
   ) -> KnownHeadChars<'a, Kind, State, Heap> {
+    // assume every action has at least one known head char.
+    // we don't need to deduplicate chars here
+    // since SparseCharLookupTableBuilder will deduplicate them (and maybe faster).
     let mut known_chars = Vec::with_capacity(props.len());
+
     for p in props {
       if let Some(head) = p.head() {
         for c in match head {
