@@ -3,7 +3,7 @@ use std::{fs::read_to_string, rc::Rc};
 use whitehole::{
   kind::whitehole_kind,
   lexer::{
-    action::{chars, simple, unchecked_exact, unchecked_exact_chars},
+    action::{chars, chars_in_str, simple, unchecked_exact, unchecked_exact_chars},
     builder::LexerBuilder,
     into::IntoLexer,
     stateless::StatelessLexer,
@@ -25,7 +25,7 @@ enum JsonTokenKind {
 fn build_lexer() -> StatelessLexer<'static, JsonTokenKind> {
   // this lexer assume the input is a valid json and won't check the correctness
   LexerBuilder::new()
-    .ignore_default(chars(|c| matches!(c, ' ' | '\n' | '\r' | '\t')))
+    .ignore_default(chars_in_str(" \n\r\t"))
     .append_default(unchecked_exact_chars("{},:[]"))
     .define(True, unchecked_exact("true"))
     .define(False, unchecked_exact("false"))
