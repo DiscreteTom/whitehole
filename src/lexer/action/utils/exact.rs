@@ -13,6 +13,7 @@ pub use whitehole_helpers::{exact_vec, unchecked_exact_vec};
 /// # Caveats
 /// If there is only one char in the string,
 /// it will be checked by head matcher, and this action will accept it directly.
+/// This is OK when using with lexers, but might be faulty when being used standalone.
 /// # Examples
 /// ```
 /// # use whitehole::lexer::action::{Action, exact};
@@ -118,11 +119,26 @@ mod tests {
 
   #[test]
   fn action_utils_exact() {
-    let action: Action<MockKind<()>> = exact("a");
-    assert_reject(&action, "b");
-    assert_accept(&action, "a", 1);
+    let action: Action<MockKind<()>> = exact("aa");
+    assert_reject(&action, "bb");
+    assert_accept(&action, "aa", 2);
     // no lookahead
-    assert_accept(&action, "ab", 1);
+    assert_accept(&action, "aab", 2);
+    // head matcher
+    assert!(matches!(
+      action.head().as_ref().unwrap(),
+      HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'a')
+    ));
+    // literal
+    assert_eq!(action.literal(), &Some("aa".into()));
+  }
+
+  #[test]
+  fn exact_one_char() {
+    let action: Action<MockKind<()>> = exact("a");
+    assert_accept(&action, "a", 1);
+    // only check using head matcher, don't check the body
+    assert_accept(&action, "b", 1);
     // head matcher
     assert!(matches!(
       action.head().as_ref().unwrap(),

@@ -313,19 +313,19 @@ mod tests {
   #[test]
   fn action_prepare() {
     let mut state = MyState { value: 0 };
-    let action: Action<_, _> = exact("a")
+    let action: Action<_, _> = exact("aa")
       // modify the state before the action is executed
       .prepare(|input: &mut ActionInput<&mut MyState, &mut ()>| input.state.value += 1);
 
     // the action is rejected, but the state is still updated
-    let output = (action.exec.raw)(&mut ActionInput::new("b", 0, &mut state, &mut ()).unwrap());
+    let output = (action.exec.raw)(&mut ActionInput::new("ab", 0, &mut state, &mut ()).unwrap());
     assert!(output.is_none());
     assert_eq!(state.value, 1);
 
     // prepare for mutable action
     let action = action.prepare(|input| input.state.value += 1);
     state.value = 0;
-    let output = (action.exec.raw)(&mut ActionInput::new("b", 0, &mut state, &mut ()).unwrap());
+    let output = (action.exec.raw)(&mut ActionInput::new("ab", 0, &mut state, &mut ()).unwrap());
     assert!(output.is_none());
     assert_eq!(state.value, 2);
   }

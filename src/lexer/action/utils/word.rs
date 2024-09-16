@@ -99,28 +99,28 @@ mod tests {
 
   #[test]
   fn action_utils_word() {
-    let action: Action<MockKind<()>> = word("a");
-    assert_reject(&action, "b");
-    assert_accept(&action, "a", 1);
-    // lookahead
-    assert_accept(&action, "a ", 1);
-    assert_accept(&action, "a\t", 1);
-    assert_accept(&action, "a\n", 1);
-    assert_accept(&action, "a+", 1);
-    assert_accept(&action, "a,", 1);
-    assert_accept(&action, "a=", 1);
-    assert_accept(&action, "a，", 1); // punctuation in other languages also count as word boundary
+    let action: Action<MockKind<()>> = word("aa");
     assert_reject(&action, "ab");
-    assert_reject(&action, "a1");
-    assert_reject(&action, "a_");
-    assert_reject(&action, "a我");
+    assert_accept(&action, "aa", 2);
+    // lookahead
+    assert_accept(&action, "aa ", 2);
+    assert_accept(&action, "aa\t", 2);
+    assert_accept(&action, "aa\n", 2);
+    assert_accept(&action, "aa+", 2);
+    assert_accept(&action, "aa,", 2);
+    assert_accept(&action, "aa=", 2);
+    assert_accept(&action, "aa，", 2); // punctuation in other languages also count as word boundary
+    assert_reject(&action, "aab");
+    assert_reject(&action, "aa1");
+    assert_reject(&action, "aa_");
+    assert_reject(&action, "aa我");
     // head matcher
     assert!(matches!(
       action.head().as_ref().unwrap(),
       HeadMatcher::OneOf(set) if set.len() == 1 && set.contains(&'a')
     ));
     // literal
-    assert_eq!(action.literal(), &Some("a".into()));
+    assert_eq!(action.literal(), &Some("aa".into()));
   }
 
   #[test]
