@@ -102,14 +102,14 @@ impl<'a, Kind, State, Heap> HeadMap<'a, Kind, State, Heap> {
   /// with [`HeadMatcher::Not`] and [`HeadMatcher::Unknown`].
   #[inline] // there is only one call site, so mark this as inline
   pub fn collect_all_known(
-    props: &Vec<RcActionProps<Kind>>,
+    actions: &[(RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>)],
   ) -> KnownHeadChars<'a, Kind, State, Heap> {
     // assume every action has at least one known head char.
     // we don't need to deduplicate chars here
     // since SparseCharLookupTableBuilder will deduplicate them (and maybe faster).
-    let mut known_chars = Vec::with_capacity(props.len());
+    let mut known_chars = Vec::with_capacity(actions.len());
 
-    for p in props {
+    for (_, p) in actions {
       if let Some(head) = p.head() {
         for c in match head {
           HeadMatcher::OneOf(set) | HeadMatcher::Not(set) => set,
@@ -125,15 +125,14 @@ impl<'a, Kind, State, Heap> HeadMap<'a, Kind, State, Heap> {
 
   /// Create a new instance with a subset of actions and a known char map created by [`Self::collect_all_known`].
   pub fn new(
-    execs: &[RcActionExec<'a, Kind, State, Heap>],
-    props: &[RcActionProps<Kind>],
+    actions: &[(RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>)],
     known_map: KnownHeadChars<'a, Kind, State, Heap>,
   ) -> Self {
     let mut unknown_fallback = RuntimeActions::new();
     let mut known_map = known_map.0;
 
     // fill the head map
-    for (e, p) in execs.iter().zip(props.iter()) {
+    for (e, p) in actions {
       // when lexing the lexer needs to check the head matcher no matter the action is muted or not
       // so we won't check if the action is muted here
       if let Some(head) = p.head() {

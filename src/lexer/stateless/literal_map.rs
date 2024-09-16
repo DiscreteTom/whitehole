@@ -20,13 +20,7 @@ pub(super) struct LiteralMap<'a, Kind, State, Heap> {
 /// before calling [`LiteralMap::new`].
 pub(super) struct KnownLiterals<'a, Kind, State, Heap>(
   #[allow(clippy::type_complexity, reason = "this type only exists here once")]
-  HashMap<
-    String,
-    (
-      Vec<RcActionExec<'a, Kind, State, Heap>>,
-      Vec<RcActionProps<Kind>>,
-    ),
-  >,
+  HashMap<String, Vec<(RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>)>>,
 );
 
 impl<'a, Kind, State, Heap> Clone for KnownLiterals<'a, Kind, State, Heap> {
@@ -45,15 +39,13 @@ impl<'a, Kind, State, Heap> LiteralMap<'a, Kind, State, Heap> {
   /// when filling the literal map with no-literal actions.
   #[inline] // there is only one call site, so mark this as inline
   pub fn collect_all_known(
-    props: &Vec<RcActionProps<Kind>>,
+    actions: &[(RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>)],
   ) -> KnownLiterals<'a, Kind, State, Heap> {
     let mut res = HashMap::new();
 
-    for p in props {
+    for (_, p) in actions {
       if let Some(literal) = p.literal() {
-        res
-          .entry(literal.clone())
-          .or_insert((Vec::new(), Vec::new()));
+        res.entry(literal.clone()).or_insert(Vec::new());
       }
     }
 
@@ -64,19 +56,17 @@ impl<'a, Kind, State, Heap> LiteralMap<'a, Kind, State, Heap> {
   /// and a known head map created by [`HeadMap::collect_all_known`].
   pub fn new(
     // TODO: accept iter instead of slice to prevent unnecessary allocation
-    execs: &[RcActionExec<'a, Kind, State, Heap>],
-    props: &[RcActionProps<Kind>],
+    actions: &[(RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>)],
     known_map: KnownLiterals<'a, Kind, State, Heap>,
     known_head_map: &KnownHeadChars<'a, Kind, State, Heap>,
   ) -> Self {
     let mut known_map = known_map.0;
     // fill the action map
-    for (e, p) in execs.iter().zip(props.iter()) {
+    for (e, p) in actions {
       if p.muted() {
         // muted, expectation.literal will be ignored, add to all known literals
-        for (execs, props) in known_map.values_mut() {
-          execs.push(e.clone());
-          props.push(p.clone());
+        for a in known_map.values_mut() {
+          a.push((e.clone(), p.clone()));
         }
         // ignore self.literal, just continue
         continue;
@@ -86,30 +76,23 @@ impl<'a, Kind, State, Heap> LiteralMap<'a, Kind, State, Heap> {
       if let Some(literal) = p.literal() {
         // SAFETY: the key must exist because we have collected all known chars in `collect_all_known`
         // and `KnownLiterals` ensures the known map is not modified before creating the literal map
-        let (execs, props) = unsafe { known_map.get_mut(literal).unwrap_unchecked() };
-        execs.push(e.clone());
-        props.push(p.clone());
+        let a = unsafe { known_map.get_mut(literal).unwrap_unchecked() };
+        a.push((e.clone(), p.clone()));
       }
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
 
-    let (muted_execs, muted_props): (Vec<_>, Vec<_>) = execs
+    let muted_actions: Vec<_> = actions
       .iter()
-      .zip(props.iter())
       .filter(|(_, p)| p.muted())
       .map(|(e, p)| (e.clone(), p.clone()))
-      .unzip();
+      .collect();
     Self {
       known_map: known_map
         .into_iter()
-        .map(|(literal, (execs, props))| {
-          (
-            literal,
-            HeadMap::new(&execs, &props, known_head_map.clone()),
-          )
-        })
+        .map(|(literal, actions)| (literal, HeadMap::new(&actions, known_head_map.clone())))
         .collect(),
-      muted_map: HeadMap::new(&muted_execs, &muted_props, known_head_map.clone()),
+      muted_map: HeadMap::new(&muted_actions, known_head_map.clone()),
     }
   }
 
@@ -151,7 +134,7 @@ mod tests {
 
   #[test]
   fn test_literal_map() {
-    let (execs, props): (Vec<_>, Vec<_>) = vec![
+    let actions: Vec<_> = vec![
       exact("a"),                              // "a", not muted
       exact("a").mute(),                       // "a", muted
       r("a").unchecked_head_in(['a']),         // OneOf('a'), not muted
@@ -175,13 +158,12 @@ mod tests {
     ]
     .into_iter()
     .map(|a| a.into_rc())
-    .unzip();
+    .collect();
 
     let lm = LiteralMap::new(
-      &execs,
-      &props,
-      LiteralMap::collect_all_known(&props),
-      &HeadMap::collect_all_known(&props),
+      &actions,
+      LiteralMap::collect_all_known(&actions),
+      &HeadMap::collect_all_known(&actions),
     );
 
     // collect all literals

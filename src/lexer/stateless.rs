@@ -134,61 +134,46 @@ impl<'a, Kind, State, Heap> StatelessLexer<'a, Kind, State, Heap> {
   /// Create a new [`StatelessLexer`] from a list of actions.
   /// This function will pre-calculate some collections to optimize the runtime performance.
   pub fn new(actions: Vec<Action<'a, Kind, State, Heap>>) -> Self {
-    // as per data oriented design, convert actions into 2 lists to optimize iteration efficiency (optimize CPU cache hit)
-    let mut execs = Vec::with_capacity(actions.len());
-    let mut props = Vec::with_capacity(actions.len());
-    for a in actions {
-      let (e, p) = a.into_rc();
-      execs.push(e);
-      props.push(p);
-    }
+    let all_actions = actions.into_iter().map(Action::into_rc).collect::<Vec<_>>();
 
     // known kinds => actions
-    let kinds_action_map = Self::init_kind_map(&execs, &props);
+    let kinds_action_map = Self::init_kind_map(&all_actions);
 
     // collect known chars/literals using all actions so we can re-use these map for all head/literal maps
-    let known_head_chars = HeadMap::collect_all_known(&props);
-    let known_literals = LiteralMap::collect_all_known(&props);
+    let known_head_chars = HeadMap::collect_all_known(&all_actions);
+    let known_literals = LiteralMap::collect_all_known(&all_actions);
 
     Self {
       kind_head_map: kinds_action_map
-        .map_to_new(|(execs, props)| HeadMap::new(execs, props, known_head_chars.clone())),
-      kind_literal_map: kinds_action_map.map_to_new(|(execs, props)| {
-        LiteralMap::new(execs, props, known_literals.clone(), &known_head_chars)
-      }),
-      literal_map: LiteralMap::new(&execs, &props, known_literals, &known_head_chars),
-      head_map: HeadMap::new(&execs, &props, known_head_chars),
+        .map_to_new(|actions| HeadMap::new(actions, known_head_chars.clone())),
+      kind_literal_map: kinds_action_map
+        .map_to_new(|actions| LiteralMap::new(actions, known_literals.clone(), &known_head_chars)),
+      literal_map: LiteralMap::new(&all_actions, known_literals, &known_head_chars),
+      head_map: HeadMap::new(&all_actions, known_head_chars),
     }
   }
 
-  #[allow(clippy::type_complexity, reason = "this type only exists here once")]
+  #[allow(clippy::type_complexity, reason = "these type only exists here once")]
   fn init_kind_map(
-    execs: &[RcActionExec<'a, Kind, State, Heap>],
-    props: &[RcActionProps<Kind>],
-  ) -> OptionLookupTable<(
-    Vec<RcActionExec<'a, Kind, State, Heap>>,
-    Vec<RcActionProps<Kind>>,
-  )> {
+    all_actions: &[(RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>)],
+  ) -> OptionLookupTable<Vec<(RcActionExec<'a, Kind, State, Heap>, RcActionProps<Kind>)>> {
     let mut res = OptionLookupTable::with_keys_init(
-      props.iter().map(|p| p.kind().value()),
+      all_actions.iter().map(|(_, p)| p.kind().value()),
       // in most cases there is only one action for each kind
-      || (Vec::with_capacity(1), Vec::with_capacity(1)),
+      || Vec::with_capacity(1),
     );
 
-    for (i, p) in props.iter().enumerate() {
-      let e = unsafe { execs.get_unchecked(i) };
+    for (e, p) in all_actions {
       if p.muted() {
         // muted, add to all kinds
-        res.values_mut().for_each(|(execs, props)| {
-          execs.push(e.clone());
-          props.push(p.clone());
+        res.values_mut().for_each(|actions| {
+          actions.push((e.clone(), p.clone()));
         });
       } else {
         // non-muted, only add to possible kinds
         // SAFETY: `p.kind().value()` is guaranteed to be in the range of `0..=max`
-        let (execs, props) = unsafe { res.get_unchecked_mut(p.kind().value()) };
-        execs.push(e.clone());
-        props.push(p.clone());
+        let actions = unsafe { res.get_unchecked_mut(p.kind().value()) };
+        actions.push((e.clone(), p.clone()));
       }
     }
     // the above code should make sure the order of actions in each vec is the same as the order in `actions`
