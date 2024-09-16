@@ -240,7 +240,7 @@ mod tests {
   }
 
   #[test]
-  fn simple_option_with_data_accept() {
+  fn simple_with_data_accept() {
     let action: Action<MockKind<u32>> = simple_with_data(|input| Some((input.text().len(), 123)));
     let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut (), &mut ()).unwrap());
     assert!(matches!(
@@ -253,7 +253,7 @@ mod tests {
   }
 
   #[test]
-  fn simple_option_with_data_accept_0() {
+  fn simple_with_data_accept_0() {
     let action: Action<MockKind<u32>> = simple_with_data(|_| Some((0, 123)));
     let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut (), &mut ()).unwrap());
     assert!(matches!(
@@ -266,7 +266,7 @@ mod tests {
   }
 
   #[test]
-  fn simple_option_with_data_reject() {
+  fn simple_with_data_reject() {
     let action: Action<MockKind<u32>> = simple_with_data(|_| None);
     let output = (action.exec.raw)(&mut ActionInput::new("123", 0, &mut (), &mut ()).unwrap());
     assert!(output.is_none());
