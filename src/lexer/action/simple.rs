@@ -46,7 +46,7 @@ pub fn eat<'a, State, Heap>(n: usize) -> Action<'a, MockKind<()>, State, Heap> {
 /// For the checked version, see [`eat`].
 /// # Examples
 /// ```
-/// use whitehole::lexer::action::{Action, eat};
+/// use whitehole::lexer::action::{Action, eat_unchecked};
 /// // eat 10 bytes
 /// let a: Action<_> = eat_unchecked(10);
 /// ```
