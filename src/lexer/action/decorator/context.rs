@@ -46,8 +46,8 @@ macro_rules! impl_ctx {
   };
 }
 
-// ActionInput won't be consumed.
-// ActionOutput won't be modified directly in the context.
+// ActionInput won't be consumed and is always mutable.
+// ActionOutput won't be modified directly in the context, but can be consumed.
 impl_ctx!(
   &mut ActionInput<'text, StateRef, HeapRef>,
   ActionOutput<Kind>
