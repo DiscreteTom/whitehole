@@ -136,7 +136,6 @@ impl<'a, Kind, State, Heap> HeadMap<'a, Kind, State, Heap> {
       // when lexing the lexer needs to check the head matcher no matter the action is muted or not
       // so we won't check if the action is muted here
       if let Some(head) = p.head() {
-        // TODO: why the following line is not covered in the coverage report?
         match head {
           HeadMatcher::OneOf(set) => {
             for c in set {
