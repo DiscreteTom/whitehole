@@ -22,6 +22,7 @@ impl LexOptionsFork for () {
 }
 
 /// This struct is used to indicate that the fork feature is enabled.
+///
 /// This struct implements [`LexOptionsFork`].
 /// See [`LexOptions::fork`](crate::lexer::options::LexOptions::fork).
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
@@ -31,6 +32,8 @@ impl LexOptionsFork for ForkEnabled {
   type OutputFactoryType = ForkOutputBuilder;
 }
 
+/// See [`LexOptions::fork`](crate::lexer::options::LexOptions::fork).
+///
 /// These types already implement the [`ForkOutputFactory`] trait:
 /// - `()` - no fork output will be created.
 /// - [`ForkOutputBuilder`] - create fork output structs if possible.
