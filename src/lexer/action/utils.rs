@@ -13,7 +13,7 @@ pub use regex::*;
 pub use string::*;
 pub use word::*;
 
-use super::{simple::simple, Action};
+use super::{simple_unchecked, Action};
 use crate::kind::MockKind;
 use std::{collections::HashSet, ops::RangeInclusive};
 
@@ -31,7 +31,7 @@ use std::{collections::HashSet, ops::RangeInclusive};
 pub fn chars<'a, State, Heap>(
   condition: impl Fn(char) -> bool + 'a,
 ) -> Action<'a, MockKind<()>, State, Heap> {
-  simple(move |input| {
+  simple_unchecked(move |input| {
     let mut digested = 0;
     for ch in input.rest().chars() {
       if !condition(ch) {
@@ -177,7 +177,7 @@ pub fn comment<State, Heap>(
   let close: String = close.into();
   let first = open.chars().next().expect("open is empty");
 
-  simple(move |input| {
+  simple_unchecked(move |input| {
     // open mismatch
     if !input.rest().starts_with(&open) {
       return 0;
