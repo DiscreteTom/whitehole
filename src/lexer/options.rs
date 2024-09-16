@@ -23,6 +23,7 @@ impl<'literal, Kind> LexOptions<'literal, Kind, ()> {
 }
 
 impl<'literal, Kind> Default for LexOptions<'literal, Kind, ()> {
+  #[inline]
   fn default() -> Self {
     Self::new()
   }

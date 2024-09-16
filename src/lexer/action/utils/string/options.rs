@@ -9,6 +9,7 @@ pub struct StringBodyOptions<Value = (), CustomError = (), BodyAcc = ()> {
 }
 
 impl<Value, CustomError> Default for StringBodyOptions<Value, CustomError, ()> {
+  #[inline]
   fn default() -> Self {
     Self {
       matchers: Vec::new(),

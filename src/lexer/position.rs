@@ -15,6 +15,7 @@ pub struct PositionTransformer {
 }
 
 impl Default for PositionTransformer {
+  #[inline]
   fn default() -> Self {
     PositionTransformer {
       line_ranges: vec![Range { start: 0, end: 0 }],

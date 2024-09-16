@@ -132,6 +132,7 @@ impl StatelessTrimOptions<(), ()> {
 }
 
 impl Default for StatelessTrimOptions<(), ()> {
+  #[inline]
   fn default() -> Self {
     Self::new()
   }

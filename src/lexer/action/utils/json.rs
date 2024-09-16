@@ -40,6 +40,7 @@ impl StringOptions<(), HexEscapeError> {
 }
 
 impl Default for StringOptions<(), HexEscapeError> {
+  #[inline]
   fn default() -> Self {
     Self::new()
   }

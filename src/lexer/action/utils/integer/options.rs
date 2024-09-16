@@ -50,6 +50,7 @@ impl NumericSeparatorOptions<()> {
 }
 
 impl Default for NumericSeparatorOptions<()> {
+  #[inline]
   fn default() -> Self {
     Self::new()
   }
@@ -130,6 +131,7 @@ impl IntegerLiteralBodyOptions<(), ()> {
 }
 
 impl Default for IntegerLiteralBodyOptions<(), ()> {
+  #[inline]
   fn default() -> Self {
     Self::new()
   }

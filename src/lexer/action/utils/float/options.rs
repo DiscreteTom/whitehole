@@ -21,6 +21,7 @@ impl FloatFractionalOptions<()> {
 }
 
 impl Default for FloatFractionalOptions<()> {
+  #[inline]
   fn default() -> Self {
     Self::new()
   }
@@ -87,6 +88,7 @@ impl FloatExponentOptions<()> {
 }
 
 impl Default for FloatExponentOptions<()> {
+  #[inline]
   fn default() -> Self {
     Self::new()
   }
@@ -169,6 +171,7 @@ impl FloatLiteralOptions<(), (), (), ()> {
 }
 
 impl Default for FloatLiteralOptions<(), (), (), ()> {
+  #[inline]
   fn default() -> Self {
     Self::new()
   }

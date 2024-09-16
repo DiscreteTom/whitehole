@@ -22,6 +22,7 @@ pub struct HexEscapeOptions<CustomError> {
 }
 
 impl Default for HexEscapeOptions<HexEscapeError> {
+  #[inline]
   fn default() -> Self {
     Self {
       prefix: 'x',
@@ -176,6 +177,7 @@ pub struct CodePointEscapeOptions<CustomError> {
 }
 
 impl Default for CodePointEscapeOptions<CodePointEscapeError> {
+  #[inline]
   fn default() -> Self {
     Self {
       prefix: 'u',
