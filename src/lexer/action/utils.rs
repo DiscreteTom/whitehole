@@ -99,10 +99,8 @@ pub fn charset<State, Heap>(
 /// chars_in_str("asd");
 /// ```
 #[inline]
-pub fn chars_in_str<State, Heap>(
-  s: impl Into<String>,
-) -> Action<'static, MockKind<()>, State, Heap> {
-  charset(s.into().chars().collect::<HashSet<_>>())
+pub fn chars_in_str<State, Heap>(s: &str) -> Action<'static, MockKind<()>, State, Heap> {
+  charset(s.chars().collect::<HashSet<_>>())
 }
 
 /// Match unicode whitespaces greedily.
