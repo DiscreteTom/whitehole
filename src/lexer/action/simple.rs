@@ -18,6 +18,8 @@ fn new_mock<'a, State, Heap, T>(
 /// `0` is ***allowed*** but be careful with infinite loops.
 ///
 /// It's recommended to set [`Action::head`] to optimize the lex performance.
+/// # Panics
+/// Panics if `n` is larger than the length of [`ActionInput::rest`].
 /// # Examples
 /// ```
 /// use whitehole::lexer::action::{Action, eat};
@@ -26,9 +28,10 @@ fn new_mock<'a, State, Heap, T>(
 /// ```
 pub fn eat<'a, State, Heap>(n: usize) -> Action<'a, MockKind<()>, State, Heap> {
   new_mock(move |input| {
+    assert!(n <= input.rest().len());
     Some(ActionOutput {
       binding: MockKind::new(()).into(),
-      digested: input.rest().len().min(n),
+      digested: n,
     })
   })
 }
@@ -38,7 +41,8 @@ pub fn eat<'a, State, Heap>(n: usize) -> Action<'a, MockKind<()>, State, Heap> {
 ///
 /// It's recommended to set [`Action::head`] to optimize the lex performance.
 /// # Caveats
-/// You should ensure that `n` is smaller than the length of [`ActionInput::rest`].
+/// You should ensure that `n` is smaller than or equal to the length of [`ActionInput::rest`].
+/// This will be checked using [`debug_assert!`].
 /// For the checked version, see [`eat`].
 /// # Examples
 /// ```
@@ -47,7 +51,8 @@ pub fn eat<'a, State, Heap>(n: usize) -> Action<'a, MockKind<()>, State, Heap> {
 /// let a: Action<_> = eat_unchecked(10);
 /// ```
 pub fn eat_unchecked<'a, State, Heap>(n: usize) -> Action<'a, MockKind<()>, State, Heap> {
-  new_mock(move |_| {
+  new_mock(move |input| {
+    debug_assert!(n <= input.rest().len());
     Some(ActionOutput {
       binding: MockKind::new(()).into(),
       digested: n,
