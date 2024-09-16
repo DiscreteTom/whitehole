@@ -54,7 +54,7 @@ use std::rc::Rc;
 ///
 /// If you want a stateless experience, you can use [`StatelessLexer`].
 ///
-/// To create a lexer, see [`LexerBuilder`](crate::lexer::builder::LexerBuilder).
+/// To create a lexer, see [`LexerBuilder`].
 #[derive(Debug)]
 pub struct Lexer<'a, 'text, Kind, State = (), Heap = ()> {
   /// See [`ActionInput::state`](crate::lexer::action::ActionInput::state).
@@ -91,7 +91,7 @@ impl<'a, 'text, Kind, State: Clone, Heap: Clone> Clone for Lexer<'a, 'text, Kind
 impl<'a, 'text, Kind, State, Heap> Lexer<'a, 'text, Kind, State, Heap> {
   /// Create a new lexer with the given stateless lexer, state, heap and text.
   ///
-  /// See [`LexerBuilder`](crate::lexer::builder::LexerBuilder) to create a lexer.
+  /// See [`LexerBuilder`] to create a lexer.
   /// You can also use [`IntoLexer`] to convert some types to a lexer.
   #[inline]
   pub const fn new(
