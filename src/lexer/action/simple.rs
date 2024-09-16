@@ -37,7 +37,7 @@ macro_rules! impl_eat {
   };
 }
 
-/// Eat at most `n` bytes from the rest of the input text.
+/// Eat `n` bytes from the rest of the input text.
 /// `0` is ***allowed*** but be careful with infinite loops.
 ///
 /// It's recommended to set [`Action::head`] to optimize the lex performance.
@@ -46,7 +46,7 @@ macro_rules! impl_eat {
 /// # Examples
 /// ```
 /// use whitehole::lexer::action::{Action, eat};
-/// // eat at most 10 bytes
+/// // eat 10 bytes
 /// let a: Action<_> = eat(10);
 /// ```
 #[inline]
