@@ -33,14 +33,20 @@ pub mod snapshot;
 pub mod stateless;
 pub mod token;
 
-use crate::lexer::instant::Instant;
-use fork::{ForkOutputFactory, LexOptionsFork};
-use options::{LexOptions, TrimOptions};
-use output::{LexOutput, TrimOutput};
-use snapshot::Snapshot;
-use stateless::{StatelessLexOptions, StatelessLexer, StatelessTrimOptions};
+pub use builder::*;
+pub use expectation::*;
+pub use fork::*;
+pub use instant::*;
+pub use into::*;
+pub use options::*;
+pub use output::*;
+pub use position::*;
+pub use re_lex::*;
+pub use snapshot::*;
+pub use stateless::*;
+pub use token::*;
+
 use std::rc::Rc;
-use token::Token;
 
 /// This is the "stateful" lexer, it manages the [`Instant`] and the `State`.
 ///
