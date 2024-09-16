@@ -2,7 +2,7 @@
 
 use crate::{
   kind::MockKind,
-  lexer::action::{simple, Action},
+  lexer::action::{simple_unchecked, Action},
 };
 use regex::Regex;
 
@@ -22,7 +22,7 @@ use regex::Regex;
 #[inline]
 pub fn regex<State, Heap>(re: &str) -> Action<MockKind<()>, State, Heap> {
   Regex::new(re)
-    .map(|re| simple(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
+    .map(|re| simple_unchecked(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)))
     .expect("invalid regex")
 }
 
