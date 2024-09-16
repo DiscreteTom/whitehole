@@ -34,7 +34,7 @@ impl<'a, Kind, State: 'a, Heap: 'a> LexerBuilder<'a, Kind, State, Heap> {
     self.append(Self::map_actions(actions, move |a| a.bind(kind.clone())))
   }
 
-  /// Define actions with a decorator and bind them to the provided kind.
+  /// Define actions, apply a decorator to them and bind them to the provided kind.
   /// # Examples
   /// ```
   /// # use whitehole::{kind::whitehole_kind, lexer::{action::{Action, word}, builder::LexerBuilder}};

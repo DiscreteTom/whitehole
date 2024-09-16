@@ -6,7 +6,7 @@ use crate::{
 };
 
 impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
-  /// Define [`muted`](Action::muted) actions by calling [`Action::mute`].
+  /// Define actions and [`mute`](Action::mute) them.
   /// # Examples
   /// ```
   /// # use whitehole::{kind::whitehole_kind, lexer::{action::{Action, word}, builder::LexerBuilder}};
@@ -27,7 +27,7 @@ impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
     self.append(Self::map_actions(actions, |a| a.mute()))
   }
 
-  /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] with a decorator.
+  /// Define actions, apply a decorator to them and [`mute`](Action::mute) them.
   /// # Examples
   /// ```
   /// # use whitehole::{kind::whitehole_kind, lexer::{action::{Action, word}, builder::LexerBuilder}};
@@ -52,7 +52,7 @@ impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
     self.ignore(Self::map_actions(actions, decorator))
   }
 
-  /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] and bind them to the default kind.
+  /// Define actions, [`mute`](Action::mute) them and bind them to the default kind.
   /// # Examples
   /// ```
   /// # use whitehole::{kind::whitehole_kind, lexer::{action::{Action, whitespaces, word}, builder::LexerBuilder}};
@@ -84,7 +84,7 @@ impl<'a, Kind, State, Heap> LexerBuilder<'a, Kind, State, Heap> {
     self.ignore(Self::map_actions(actions, |a| a.bind_default()))
   }
 
-  /// Define [`muted`](Action::muted) actions by calling [`Action::mute`] with a decorator and bind them to the default kind.
+  /// Define actions, apply a decorator to them, [`mute`](Action::mute) them and bind them to the default kind.
   /// # Examples
   /// ```
   /// # use whitehole::{kind::whitehole_kind, lexer::{action::{Action, word}, builder::LexerBuilder}};
