@@ -245,7 +245,7 @@ mod tests {
     let _ = MyKind::Unnamed(Unnamed(42));
     let _ = MyKind::Named(Named { name: 42 });
 
-    // sub token kinds into token kind
+    // sub kinds into kind
     assert!(matches!(Unit.into(), MyKind::Unit));
     assert!(matches!(Unnamed(42).into(), MyKind::Unnamed(Unnamed(42))));
     assert!(matches!(
@@ -253,7 +253,7 @@ mod tests {
       MyKind::Named(Named { name: 42 })
     ));
 
-    // into token kind id binding
+    // into kind id binding
     let b: KindIdBinding<MyKind> = Unit.into();
     assert_eq!(b.id(), Unit::kind_id());
     assert_eq!(b.take(), MyKind::Unit);
@@ -264,7 +264,7 @@ mod tests {
     assert_eq!(b.id(), Named::kind_id());
     assert_eq!(b.take(), MyKind::Named(Named { name: 42 }));
 
-    // generated token kind id, as sub token kind.
+    // generated kind id, as sub kind.
     let v: Vec<SubKindId<MyKind>> = vec![Unit::kind_id(), Unnamed::kind_id(), Named::kind_id()];
     for (i, id) in v.iter().enumerate() {
       for (j, id2) in v.iter().enumerate() {
@@ -276,7 +276,7 @@ mod tests {
       }
     }
 
-    // sub token kind into token kind id
+    // sub kind into kind id
     assert_eq!(
       <Unit as Into<SubKindId<MyKind>>>::into(Unit),
       Unit::kind_id()

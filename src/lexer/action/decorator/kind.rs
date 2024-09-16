@@ -6,7 +6,7 @@ use crate::{
 
 impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   /// Set the binding for this action.
-  /// Use this if your action can only yield a const token kind value.
+  /// Use this if your action can only yield a const kind value.
   /// # Examples
   /// ```
   /// use whitehole::{
