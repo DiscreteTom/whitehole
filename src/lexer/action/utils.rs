@@ -166,7 +166,9 @@ pub fn whitespaces<State, Heap>() -> Action<'static, MockKind<()>, State, Heap> 
 /// ```
 #[inline]
 pub fn comment<State, Heap>(
-  // TODO: use ref instead of owned?
+  // here we use owned string to generate 'static action.
+  // actually we can use a string reference to generate a non-'static action,
+  // but 2 small strings are not a big deal.
   open: impl Into<String>,
   close: impl Into<String>,
 ) -> Action<'static, MockKind<()>, State, Heap> {
