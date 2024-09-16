@@ -1,6 +1,19 @@
 use super::{input::ActionInput, Action, ActionExec, ActionOutput};
 use crate::kind::{MockKind, SubKind};
 
+#[inline]
+fn new_mock<'a, State, Heap, T>(
+  exec: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<ActionOutput<MockKind<T>>> + 'a,
+) -> Action<'a, MockKind<T>, State, Heap> {
+  Action {
+    exec: ActionExec::new(exec),
+    kind: MockKind::kind_id(),
+    head: None,
+    muted: false,
+    literal: None,
+  }
+}
+
 /// Accept a function that eats the rest of the input text and returns the number of digested bytes.
 /// The function should return `0` if the action is rejected.
 ///
@@ -18,19 +31,13 @@ use crate::kind::{MockKind, SubKind};
 pub fn simple<'a, State, Heap>(
   f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> usize + 'a,
 ) -> Action<'a, MockKind<()>, State, Heap> {
-  Action {
-    exec: ActionExec::new(move |input| match f(input) {
-      0 => None,
-      digested => Some(ActionOutput {
-        binding: MockKind::new(()).into(),
-        digested,
-      }),
+  new_mock(move |input| match f(input) {
+    0 => None,
+    digested => Some(ActionOutput {
+      binding: MockKind::new(()).into(),
+      digested,
     }),
-    kind: MockKind::kind_id(),
-    head: None,
-    muted: false,
-    literal: None,
-  }
+  })
 }
 
 /// Provide a function that eats the rest of the input text and
@@ -57,18 +64,12 @@ pub fn simple<'a, State, Heap>(
 pub fn simple_with_data<'a, State, Heap, T>(
   f: impl Fn(&mut ActionInput<&mut State, &mut Heap>) -> Option<(usize, T)> + 'a,
 ) -> Action<'a, MockKind<T>, State, Heap> {
-  Action {
-    exec: ActionExec::new(move |input| {
-      f(input).map(|(digested, data)| ActionOutput {
-        binding: MockKind::new(data).into(),
-        digested,
-      })
-    }),
-    kind: MockKind::kind_id(),
-    head: None,
-    muted: false,
-    literal: None,
-  }
+  new_mock(move |input| {
+    f(input).map(|(digested, data)| ActionOutput {
+      binding: MockKind::new(data).into(),
+      digested,
+    })
+  })
 }
 
 #[cfg(test)]
