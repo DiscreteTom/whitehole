@@ -21,9 +21,9 @@ impl<'a, Kind, State, Heap> StatelessLexer<'a, Kind, State, Heap> {
   const INVALID_EXPECTED_KIND: &'static str = "no action is defined for the expected kind";
   const INVALID_EXPECTED_LITERAL: &'static str = "no action is defined for the expected literal";
 
-  /// Lex from the start of the input text with the default state and options.
+  /// Lex from the start of the input text with the default state, heap and options.
   ///
-  /// This function will create a new state and a new heap and return them.
+  /// This function will create a new state and a new heap and then return them.
   /// # Examples
   /// ```
   /// # use whitehole::lexer::{action::exact, builder::LexerBuilder};
