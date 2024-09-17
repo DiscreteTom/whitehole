@@ -1,7 +1,7 @@
 use crate::lexer::action::{echo_with, Action, HeadMatcher};
 use std::{collections::HashSet, ops::RangeInclusive};
 
-impl<'a, Kind, State, Heap> Action<'a, Kind, State, Heap> {
+impl<Kind, State, Heap> Action<'_, Kind, State, Heap> {
   /// Set [`Action::head`] to [`HeadMatcher::OneOf`].
   /// # Caveats
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.

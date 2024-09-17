@@ -19,7 +19,7 @@ macro_rules! echo_with {
 pub(super) use echo_with;
 
 // simple decorators that doesn't require generic bounds
-impl<'a, Kind, State, Heap> Action<'a, Kind, State, Heap> {
+impl<Kind, State, Heap> Action<'_, Kind, State, Heap> {
   /// Set [`Self::muted`] to `true`.
   /// # Examples
   /// ```
@@ -69,7 +69,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
   fn map_exec(
     mut self,
     f: impl Fn(
-        &RawActionExec<Kind, State, Heap>,
+        &RawActionExec<'a, Kind, State, Heap>,
         &mut ActionInput<&mut State, &mut Heap>,
       ) -> Option<ActionOutput<Kind>>
       + 'a,
@@ -87,7 +87,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
     self,
     kind: SubKindId<NewKind>,
     f: impl Fn(
-        &RawActionExec<Kind, State, Heap>,
+        &RawActionExec<'a, Kind, State, Heap>,
         &mut ActionInput<&mut State, &mut Heap>,
       ) -> Option<ActionOutput<NewKind>>
       + 'a,
