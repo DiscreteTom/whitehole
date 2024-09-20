@@ -267,6 +267,45 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Action<'a, Kind, State, Heap> {
       })
     })
   }
+
+  /// Check if the `rest` starts with a specific string before the action is executed.
+  /// [`Self::head`] will be set automatically.
+  /// # Panics
+  /// Panics if the provided string is empty.
+  /// # Examples
+  /// ```
+  /// # use whitehole::{kind::whitehole_kind, lexer::{action::regex, builder::LexerBuilder}};
+  /// # fn main() {
+  /// # let mut builder = LexerBuilder::new();
+  /// builder.define_with(
+  ///   A,
+  ///   regex(r"^[0-9a-fA-F]+"),
+  ///   |a| a.prefix("0x")
+  /// );
+  /// # }
+  /// ```
+  pub fn prefix(self, s: impl Into<String>) -> Self {
+    let s = s.into();
+    let head = s.chars().next().expect("empty string is not allowed");
+    self
+      .map_exec(move |exec, input| {
+        if !input.rest().starts_with(&s) {
+          // prefix mismatch
+          None
+        } else {
+          ActionInput::new(
+            input.text(),
+            input.start() + s.len(),
+            &mut *input.state,
+            &mut *input.heap,
+          )
+          .as_mut()
+          .and_then(exec)
+          .map(|mut output| echo_with!(output, output.digested += s.len()))
+        }
+      })
+      .unchecked_head_in([head])
+  }
 }
 
 #[cfg(test)]

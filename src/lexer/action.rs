@@ -93,7 +93,9 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
   /// This is used to accelerate lexing by the first character
   /// of the rest of the input.
   /// See the [`stateless`](crate::lexer::stateless) module for more details.
+  ///
   /// This is optional but highly recommended.
+  /// You can use [`Self::prefix`] to set this field safely.
   /// Some [`utils`] already set this field safely (e.g. [`exact`] and [`word`])
   /// and you should use them as much as possible.
   ///
