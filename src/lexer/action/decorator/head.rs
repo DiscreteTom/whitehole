@@ -40,6 +40,25 @@ impl<Kind, State, Heap> Action<'_, Kind, State, Heap> {
     self.unchecked_head_in(range.into().collect::<HashSet<_>>())
   }
 
+  /// Set [`Action::head`] to [`HeadMatcher::OneOf`]
+  /// with the chars in the given string.
+  /// # Caveats
+  /// The provided parameter will NOT be checked, you have to make sure it's logically correct.
+  /// # Examples
+  /// ```
+  /// # use whitehole::{kind::whitehole_kind, lexer::{action::{Action, regex}, builder::LexerBuilder}};
+  /// # #[whitehole_kind]
+  /// # #[derive(Clone)]
+  /// # enum MyKind { A }
+  /// # fn main() {
+  /// # let mut builder = LexerBuilder::new();
+  /// builder.define(A, regex(r"^\d").unchecked_head_in_str("0123456789"));
+  /// # }
+  #[inline]
+  pub fn unchecked_head_in_str(self, s: &str) -> Self {
+    self.unchecked_head_in(s.chars().collect::<HashSet<_>>())
+  }
+
   /// Set [`Action::head`] to [`HeadMatcher::Not`].
   /// # Caveats
   /// The provided parameter will NOT be checked, you have to make sure it's logically correct.

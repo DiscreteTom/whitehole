@@ -99,7 +99,7 @@ impl<Kind, Exec> ActionBase<Kind, Exec> {
   ///
   /// If you want to set this field manually,
   /// this could be set by [`Self::unchecked_head_in`], [`Self::unchecked_head_in_range`],
-  /// [`Self::unchecked_head_not`] or [`Self::unchecked_head_unknown`].
+  /// [`Self::unchecked_head_in_str`], [`Self::unchecked_head_not`] or [`Self::unchecked_head_unknown`].
   #[inline]
   pub const fn head(&self) -> &Option<HeadMatcher> {
     &self.head
