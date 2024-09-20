@@ -24,7 +24,7 @@ pub use whitehole_helpers::{exact_vec, unchecked_exact_vec};
 /// # let action: Action<_> =
 /// exact(';'); // using char
 /// ```
-pub fn exact<State, Heap>(s: impl Into<String>) -> Action<'static, MockKind<()>, State, Heap> {
+pub fn exact<'a, State, Heap>(s: impl Into<String>) -> Action<'a, MockKind<()>, State, Heap> {
   let s: String = s.into();
   let head = s.chars().next().expect("empty string is not allowed");
   let literal = s.clone();
@@ -59,7 +59,7 @@ pub fn exact<State, Heap>(s: impl Into<String>) -> Action<'static, MockKind<()>,
 /// vec![exact("+"), exact("-"), exact("*"), exact("/"), exact("("), exact(")")];
 /// ```
 #[inline]
-pub fn exact_chars<State, Heap>(s: &str) -> Vec<Action<'static, MockKind<()>, State, Heap>> {
+pub fn exact_chars<'a, State, Heap>(s: &str) -> Vec<Action<'a, MockKind<()>, State, Heap>> {
   s.chars().map(|c| exact(c)).collect()
 }
 
@@ -79,9 +79,9 @@ pub fn exact_chars<State, Heap>(s: &str) -> Vec<Action<'static, MockKind<()>, St
 /// # let action: Action<_> =
 /// unchecked_exact("true");
 /// ```
-pub fn unchecked_exact<State, Heap>(
+pub fn unchecked_exact<'a, State, Heap>(
   s: impl Into<String>,
-) -> Action<'static, MockKind<()>, State, Heap> {
+) -> Action<'a, MockKind<()>, State, Heap> {
   let s: String = s.into();
   let head = s.chars().next().expect("empty string is not allowed");
   let len = s.len();
@@ -106,9 +106,9 @@ pub fn unchecked_exact<State, Heap>(
 /// vec![unchecked_exact("+"), unchecked_exact("-"), unchecked_exact("*"), unchecked_exact("/")];
 /// ```
 #[inline]
-pub fn unchecked_exact_chars<State, Heap>(
+pub fn unchecked_exact_chars<'a, State, Heap>(
   s: impl Into<String>,
-) -> Vec<Action<'static, MockKind<()>, State, Heap>> {
+) -> Vec<Action<'a, MockKind<()>, State, Heap>> {
   // actually this is the same as `exact_chars` because the `exact` is optimized for one char.
   // however using `unchecked_exact` is more clear for the user,
   // and the building process is slightly more optimized since `unchecked_exact` is simpler than `exact`.

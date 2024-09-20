@@ -67,9 +67,9 @@ pub fn no_word_boundary_in_rest<State, Heap>(
 /// word("import");
 /// ```
 #[inline]
-pub fn word<State: 'static, Heap: 'static>(
+pub fn word<'a, State: 'a, Heap: 'a>(
   s: impl Into<String>,
-) -> Action<'static, MockKind<()>, State, Heap> {
+) -> Action<'a, MockKind<()>, State, Heap> {
   exact(s).reject_if(no_word_boundary_in_rest)
 }
 
