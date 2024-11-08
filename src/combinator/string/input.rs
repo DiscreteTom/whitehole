@@ -55,3 +55,45 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
     unsafe { self.rest().chars().next().unwrap_unchecked() }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn input_at_start() {
+    let mut state = ();
+    let mut heap = ();
+    let input = Input::new("123", 0, &mut state, &mut heap).unwrap();
+    assert_eq!(input.text(), "123");
+    assert_eq!(input.start(), 0);
+    assert_eq!(input.rest(), "123");
+    assert_eq!(input.next(), '1');
+  }
+
+  #[test]
+  fn input_in_the_middle() {
+    let mut state = ();
+    let mut heap = ();
+    let input = Input::new("123", 1, &mut state, &mut heap).unwrap();
+    assert_eq!(input.text(), "123");
+    assert_eq!(input.start(), 1);
+    assert_eq!(input.rest(), "23");
+    assert_eq!(input.next(), '2');
+  }
+
+  #[test]
+  fn input_no_rest() {
+    assert!(Input::new("123", 3, &mut (), &mut ()).is_none());
+  }
+
+  #[test]
+  fn input_out_of_text() {
+    assert!(Input::new("123", 4, &mut (), &mut ()).is_none());
+  }
+
+  #[test]
+  fn input_invalid_utf8_boundary() {
+    assert!(Input::new("好", 1, &mut (), &mut ()).is_none());
+  }
+}
