@@ -1,4 +1,4 @@
-use super::Combinator;
+use super::{Combinator, Input, Output};
 use std::ops;
 
 impl<'a, Kind: 'a, State: 'a, Heap: 'a> ops::BitOr for Combinator<'a, Kind, State, Heap> {
@@ -7,6 +7,60 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> ops::BitOr for Combinator<'a, Kind, Stat
   /// Try to parse with the left-hand side, if it fails, try the right-hand side.
   fn bitor(self, rhs: Self) -> Self::Output {
     Combinator::boxed(move |input| self.parse(input).or_else(|| rhs.parse(input)))
+  }
+}
+
+impl<'a, Kind: 'a, State: 'a, Heap: 'a, NewKind: 'a> ops::Add<Combinator<'a, NewKind, State, Heap>>
+  for Combinator<'a, Kind, State, Heap>
+{
+  type Output = Combinator<'a, NewKind, State, Heap>;
+
+  /// Parse with the left-hand side, then parse with the right-hand side.
+  ///
+  /// Return the output with the kind of the right hand side and the sum of the digested.
+  fn add(self, rhs: Combinator<'a, NewKind, State, Heap>) -> Self::Output {
+    Combinator::boxed(move |input| {
+      self.parse(input).and_then(|output| {
+        Input::new(
+          input.text(),
+          input.start() + output.digested,
+          &mut *input.state,
+          &mut *input.heap,
+        )
+        .and_then(|mut input| rhs.parse(&mut input))
+        .map(|rhs_output| Output {
+          kind: rhs_output.kind,
+          digested: output.digested + rhs_output.digested,
+        })
+      })
+    })
+  }
+}
+
+impl<'a, Kind: 'a, State: 'a, Heap: 'a, NewKind: 'a>
+  ops::BitAnd<Combinator<'a, NewKind, State, Heap>> for Combinator<'a, Kind, State, Heap>
+{
+  type Output = Combinator<'a, (Kind, NewKind), State, Heap>;
+
+  /// Parse with the left-hand side, then parse with the right-hand side.
+  ///
+  /// Return the output with the combined kind and the sum of the digested.
+  fn bitand(self, rhs: Combinator<'a, NewKind, State, Heap>) -> Self::Output {
+    Combinator::boxed(move |input| {
+      self.parse(input).and_then(|output| {
+        Input::new(
+          input.text(),
+          input.start() + output.digested,
+          &mut *input.state,
+          &mut *input.heap,
+        )
+        .and_then(|mut input| rhs.parse(&mut input))
+        .map(|rhs_output| Output {
+          kind: (output.kind, rhs_output.kind),
+          digested: output.digested + rhs_output.digested,
+        })
+      })
+    })
   }
 }
 
@@ -56,5 +110,97 @@ mod tests {
       })
     );
     assert_eq!(state, 1);
+  }
+
+  #[test]
+  fn combinator_add() {
+    let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
+    let accepter_unit = || {
+      Combinator::boxed(|_| {
+        Some(Output {
+          kind: (),
+          digested: 1,
+        })
+      })
+    };
+    let accepter_int = || {
+      Combinator::boxed(|_| {
+        Some(Output {
+          kind: 123,
+          digested: 1,
+        })
+      })
+    };
+
+    // reject then accept, should return None
+    assert!((rejecter() + accepter_unit())
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // accept then reject, should return None
+    assert!((accepter_unit() + rejecter())
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // accept then accept, should return the sum of the digested
+    // with the kind of the right-hand side
+    assert_eq!(
+      (accepter_unit() + accepter_int())
+        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: 123,
+        digested: 2,
+      })
+    );
+    assert_eq!(
+      (accepter_int() + accepter_unit())
+        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        digested: 2,
+      })
+    );
+  }
+
+  #[test]
+  fn combinator_bit_and() {
+    let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
+    let accepter_unit = || {
+      Combinator::boxed(|_| {
+        Some(Output {
+          kind: (),
+          digested: 1,
+        })
+      })
+    };
+    let accepter_int = || {
+      Combinator::boxed(|_| {
+        Some(Output {
+          kind: 123,
+          digested: 1,
+        })
+      })
+    };
+
+    // reject then accept, should return None
+    assert!((rejecter() & accepter_unit())
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // accept then reject, should return None
+    assert!((accepter_unit() & rejecter())
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // accept then accept, should return the sum of the digested
+    // with both kinds
+    assert_eq!(
+      (accepter_unit() & accepter_int())
+        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: ((), 123),
+        digested: 2,
+      })
+    );
   }
 }
