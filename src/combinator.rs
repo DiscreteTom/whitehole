@@ -1,2 +1,3 @@
-pub mod generic;
-pub mod string;
+mod input;
+
+pub use input::*;
