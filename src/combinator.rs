@@ -1,10 +1,12 @@
 mod input;
 mod operator;
+mod output;
 
 pub use input::*;
+pub use output::*;
 
 pub type CombinatorExec<'a, Kind, State, Heap> =
-  Box<dyn Fn(&mut Input<&mut State, &mut Heap>) -> Option<(usize, Kind)> + 'a>;
+  Box<dyn Fn(&mut Input<&mut State, &mut Heap>) -> Option<Output<Kind>> + 'a>;
 
 pub struct Combinator<'a, Kind, State, Heap> {
   exec: CombinatorExec<'a, Kind, State, Heap>,
@@ -18,12 +20,12 @@ impl<'a, Kind, State, Heap> Combinator<'a, Kind, State, Heap> {
 
   /// Create a new instance by boxing the `exec` function.
   pub fn boxed(
-    exec: impl Fn(&mut Input<&mut State, &mut Heap>) -> Option<(usize, Kind)> + 'a,
+    exec: impl Fn(&mut Input<&mut State, &mut Heap>) -> Option<Output<Kind>> + 'a,
   ) -> Self {
     Self::new(Box::new(exec))
   }
 
-  pub fn parse(&self, input: &mut Input<&mut State, &mut Heap>) -> Option<(usize, Kind)> {
+  pub fn parse(&self, input: &mut Input<&mut State, &mut Heap>) -> Option<Output<Kind>> {
     (self.exec)(input)
   }
 }
@@ -35,9 +37,15 @@ mod tests {
   #[test]
   fn combinator_parse() {
     assert_eq!(
-      Combinator::boxed(|_| Some((1, ())))
-        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some((1, ()))
+      Combinator::boxed(|_| Some(Output {
+        kind: (),
+        digested: 1
+      }))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        digested: 1
+      })
     );
   }
 }
