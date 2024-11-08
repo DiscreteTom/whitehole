@@ -6,9 +6,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> ops::BitOr for Combinator<'a, Kind, Stat
 
   /// Try to parse with the left-hand side, if it fails, try the right-hand side.
   fn bitor(self, rhs: Self) -> Self::Output {
-    Combinator {
-      exec: Box::new(move |input| self.parse(input).or_else(|| rhs.parse(input))),
-    }
+    Combinator::boxed(move |input| self.parse(input).or_else(|| rhs.parse(input)))
   }
 }
 
