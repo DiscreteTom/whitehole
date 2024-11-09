@@ -34,13 +34,13 @@ mod tests {
   fn combinator_chars() {
     // normal
     assert_eq!(
-      chars(|_| true)
+      chars(|c| c.is_ascii_digit())
         .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
     // reject
-    assert!(chars(|_| false)
+    assert!(chars(|c| c.is_ascii_alphabetic())
       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
   }
