@@ -68,6 +68,7 @@ pub fn exact<'a, State, Heap>(prefix: impl ExactPrefix + 'a) -> Combinator<'a, (
 /// Reject if not found.
 ///
 /// Empty string is allowed, but be careful with infinite loops.
+/// You can use `word("")` as a word boundary checker.
 /// # Examples
 /// ```
 /// # use whitehole::combinator::{Combinator, word};
