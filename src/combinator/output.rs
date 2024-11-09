@@ -21,3 +21,23 @@ impl<Kind> Output<Kind> {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn output_map() {
+    assert_eq!(
+      Output {
+        kind: 1,
+        digested: 2,
+      }
+      .map(|kind| kind + 1),
+      Output {
+        kind: 2,
+        digested: 2,
+      }
+    );
+  }
+}
