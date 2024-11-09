@@ -1,6 +1,9 @@
 mod snapshot;
 
-use crate::combinator::Combinator;
+use crate::{
+  combinator::{Combinator, Input},
+  node::Node,
+};
 
 pub use snapshot::*;
 
@@ -112,5 +115,43 @@ impl<'a, 'text, Kind, State, Heap> Parser<'a, 'text, Kind, State, Heap> {
       self.state = state;
     }
     self
+  }
+
+  /// Try to yield the next [`Node`].
+  /// Return [`None`] if the text is already fully digested
+  /// or the combinator rejects.
+  pub fn parse(&mut self) -> Option<Node<Kind>> {
+    let output = self.entry.parse(&mut Input::new(
+      self.text,
+      self.digested,
+      &mut self.state,
+      &mut self.heap,
+    )?)?;
+    let node = Node {
+      kind: output.kind,
+      range: self.digested..self.digested + output.digested,
+    };
+    self.digested += output.digested;
+    node.into()
+  }
+
+  /// Try to yield the next [`Node`] without updating [`Self::digested`] and [`Self::state`].
+  /// [`Self::state`] will be cloned and returned.
+  /// Return [`None`] if the text is already fully digested
+  /// or the combinator rejects.
+  pub fn peek(&mut self) -> (Option<Node<Kind>>, State)
+  where
+    State: Clone,
+  {
+    let mut tmp_state = self.state.clone();
+    (
+      Input::new(self.text, self.digested, &mut tmp_state, &mut self.heap)
+        .and_then(|mut input| self.entry.parse(&mut input))
+        .map(|output| Node {
+          kind: output.kind,
+          range: self.digested..self.digested + output.digested,
+        }),
+      tmp_state,
+    )
   }
 }
