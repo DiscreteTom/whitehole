@@ -12,10 +12,10 @@ pub struct Output<Kind> {
 
 impl<Kind> Output<Kind> {
   /// Convert [`Self::kind`] to a new kind.
-  pub fn map<NewKind>(self, f: impl FnOnce(Self) -> NewKind) -> Output<NewKind> {
+  pub fn map<NewKind>(self, f: impl FnOnce(Kind) -> NewKind) -> Output<NewKind> {
     Output {
+      kind: f(self.kind),
       digested: self.digested,
-      kind: f(self),
     }
   }
 }
