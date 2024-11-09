@@ -12,3 +12,4 @@ pub mod utils;
 // TODO: move parser in a standalone branch for now
 
 pub mod combinator;
+pub mod node;
