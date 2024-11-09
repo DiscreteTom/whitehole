@@ -58,7 +58,8 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
 
   /// The index of [`Self::text`], in bytes.
   ///
-  /// This is guaranteed to be smaller than the length of [`Self::text`].
+  /// This is guaranteed to be smaller than the length of [`Self::text`],
+  /// and will never be mutated after the creation of this instance.
   pub const fn start(&self) -> usize {
     self.start
   }
