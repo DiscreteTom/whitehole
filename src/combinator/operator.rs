@@ -1,4 +1,4 @@
-use super::{Combinator, Input, Output};
+use super::{Combinator, Output};
 use std::ops;
 
 impl<'a, Kind: 'a, State: 'a, Heap: 'a> ops::BitOr for Combinator<'a, Kind, State, Heap> {
@@ -21,17 +21,13 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a, NewKind: 'a> ops::Add<Combinator<'a, New
   fn add(self, rhs: Combinator<'a, NewKind, State, Heap>) -> Self::Output {
     Combinator::boxed(move |input| {
       self.parse(input).and_then(|output| {
-        Input::new(
-          input.text(),
-          input.start() + output.digested,
-          &mut *input.state,
-          &mut *input.heap,
-        )
-        .and_then(|mut input| rhs.parse(&mut input))
-        .map(|rhs_output| Output {
-          kind: rhs_output.kind,
-          digested: output.digested + rhs_output.digested,
-        })
+        input
+          .digest(output.digested)
+          .and_then(|mut input| rhs.parse(&mut input))
+          .map(|rhs_output| Output {
+            kind: rhs_output.kind,
+            digested: output.digested + rhs_output.digested,
+          })
       })
     })
   }
@@ -48,17 +44,13 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a, NewKind: 'a>
   fn bitand(self, rhs: Combinator<'a, NewKind, State, Heap>) -> Self::Output {
     Combinator::boxed(move |input| {
       self.parse(input).and_then(|output| {
-        Input::new(
-          input.text(),
-          input.start() + output.digested,
-          &mut *input.state,
-          &mut *input.heap,
-        )
-        .and_then(|mut input| rhs.parse(&mut input))
-        .map(|rhs_output| Output {
-          kind: (output.kind, rhs_output.kind),
-          digested: output.digested + rhs_output.digested,
-        })
+        input
+          .digest(output.digested)
+          .and_then(|mut input| rhs.parse(&mut input))
+          .map(|rhs_output| Output {
+            kind: (output.kind, rhs_output.kind),
+            digested: output.digested + rhs_output.digested,
+          })
       })
     })
   }
