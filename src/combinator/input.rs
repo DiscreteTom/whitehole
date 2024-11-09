@@ -88,6 +88,16 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   }
 }
 
+// TODO: is this function's lifetime correct?
+impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
+  /// Try to construct a new [`Input`] by moving the [`Self::start`] forward by `n`.
+  ///
+  /// Return [`Some`] if [`Self::rest`] can be constructed and not empty.
+  pub fn digest(&mut self, n: usize) -> Option<Input<'text, &mut State, &mut Heap>> {
+    Input::new(self.text, self.start + n, &mut *self.state, &mut *self.heap)
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -127,5 +137,15 @@ mod tests {
   #[test]
   fn input_invalid_utf8_boundary() {
     assert!(Input::new("好", 1, &mut (), &mut ()).is_none());
+  }
+
+  #[test]
+  fn input_digest() {
+    let mut state = ();
+    let mut heap = ();
+    let mut input = Input::new("123", 0, &mut state, &mut heap).unwrap();
+    assert_eq!(input.digest(1).unwrap().rest(), "23");
+    assert_eq!(input.digest(2).unwrap().rest(), "3");
+    assert!(input.digest(3).is_none());
   }
 }
