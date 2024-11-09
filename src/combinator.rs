@@ -1,3 +1,5 @@
+//! Building block of a parser.
+
 mod decorator;
 mod input;
 mod operator;
@@ -7,9 +9,11 @@ pub use decorator::*;
 pub use input::*;
 pub use output::*;
 
+/// A boxed function. Return [`None`] if the combinator is rejected.
 pub type CombinatorExec<'a, Kind, State, Heap> =
   Box<dyn Fn(&mut Input<&mut State, &mut Heap>) -> Option<Output<Kind>> + 'a>;
 
+/// Building block of a parser.
 pub struct Combinator<'a, Kind, State, Heap> {
   exec: CombinatorExec<'a, Kind, State, Heap>,
 }
@@ -27,6 +31,7 @@ impl<'a, Kind, State, Heap> Combinator<'a, Kind, State, Heap> {
     Self::new(Box::new(exec))
   }
 
+  /// Execute the combinator.
   pub fn parse(&self, input: &mut Input<&mut State, &mut Heap>) -> Option<Output<Kind>> {
     (self.exec)(input)
   }
