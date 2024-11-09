@@ -1,7 +1,9 @@
+mod decorator;
 mod input;
 mod operator;
 mod output;
 
+pub use decorator::*;
 pub use input::*;
 pub use output::*;
 
