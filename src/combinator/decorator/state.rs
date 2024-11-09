@@ -54,3 +54,85 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
     })
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[derive(Debug, Default, PartialEq, Eq)]
+  struct State {
+    from: i32,
+    to: i32,
+  }
+
+  fn accepter() -> Combinator<'static, (), State, ()> {
+    Combinator::boxed(|input: &mut Input<&mut State, &mut ()>| {
+      input.state.to = input.state.from;
+      Some(Output {
+        kind: (),
+        digested: 1,
+      })
+    })
+  }
+
+  fn rejecter() -> Combinator<'static, (), State, ()> {
+    Combinator::boxed(|input: &mut Input<&mut State, &mut ()>| {
+      input.state.to = input.state.from;
+      None
+    })
+  }
+
+  #[test]
+  fn combinator_prepare() {
+    let mut state = State::default();
+    assert!(accepter()
+      .prepare(|input| {
+        input.state.from = 1;
+      })
+      .parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .is_some());
+    assert_eq!(state, State { from: 1, to: 1 });
+  }
+
+  #[test]
+  fn combinator_then() {
+    let mut state = State::default();
+    assert!(accepter()
+      .then(|ctx| {
+        ctx.input.state.from = 1;
+      })
+      .parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .is_some());
+    assert_eq!(state, State { from: 1, to: 0 });
+
+    let mut state = State::default();
+    assert!(rejecter()
+      .then(|ctx| {
+        ctx.input.state.from = 1;
+      })
+      .parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .is_none());
+    assert_eq!(state, State { from: 0, to: 0 });
+  }
+
+  #[test]
+  fn combinator_rollback() {
+    let mut state = State::default();
+    assert!(accepter()
+      .rollback(|input| {
+        input.state.from = 1;
+      })
+      .parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .is_some());
+    assert_eq!(state, State { from: 0, to: 0 });
+
+    let mut state = State::default();
+    assert!(rejecter()
+      .rollback(|input| {
+        input.state.from = 1;
+      })
+      .parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .is_none());
+    assert_eq!(state, State { from: 1, to: 0 });
+  }
+}

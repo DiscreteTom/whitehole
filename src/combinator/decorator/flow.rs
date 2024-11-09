@@ -109,3 +109,132 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
     })
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn accepter() -> Combinator<'static, (), bool, ()> {
+    Combinator::boxed(|input| {
+      *input.state = true;
+      Some(Output {
+        kind: (),
+        digested: 1,
+      })
+    })
+  }
+
+  fn rejecter() -> Combinator<'static, (), bool, ()> {
+    Combinator::boxed(|input| {
+      *input.state = true;
+      None
+    })
+  }
+
+  #[test]
+  fn combinator_prevent() {
+    let mut executed = false;
+    assert!(accepter()
+      .prevent(|_| true)
+      .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .is_none());
+    assert!(!executed);
+
+    let mut executed = false;
+    assert!(accepter()
+      .prevent(|_| false)
+      .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .is_some());
+    assert!(executed);
+  }
+
+  #[test]
+  fn combinator_accept() {
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .accept()
+        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        digested: 1
+      })
+    );
+    assert!(executed);
+
+    let mut executed = false;
+    assert_eq!(
+      rejecter()
+        .accept()
+        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        digested: 0
+      })
+    );
+    assert!(executed);
+  }
+
+  #[test]
+  fn combinator_optional() {
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .optional()
+        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+      Some(Output {
+        kind: Some(()),
+        digested: 1
+      })
+    );
+    assert!(executed);
+
+    let mut executed = false;
+    assert_eq!(
+      rejecter()
+        .optional()
+        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+      Some(Output {
+        kind: Option::<()>::None,
+        digested: 0
+      })
+    );
+    assert!(executed);
+  }
+
+  #[test]
+  fn combinator_reject() {
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .reject()
+        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+      None
+    );
+    assert!(executed);
+  }
+
+  #[test]
+  fn combinator_reject_if() {
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .reject_if(|_| false)
+        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        digested: 1
+      })
+    );
+    assert!(executed);
+
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .reject_if(|_| true)
+        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+      None
+    );
+    assert!(executed);
+  }
+}

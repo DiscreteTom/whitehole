@@ -84,3 +84,72 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
     Combinator::boxed(move |input| self.parse(input).map(|output| output.map(&converter)))
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn combinator_bind() {
+    assert_eq!(
+      Combinator::boxed(|_| Some(Output {
+        kind: (),
+        digested: 1
+      }))
+      .bind(123)
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: 123,
+        digested: 1
+      })
+    );
+  }
+
+  #[test]
+  fn combinator_bind_default() {
+    assert_eq!(
+      Combinator::boxed(|_| Some(Output {
+        kind: (),
+        digested: 1
+      }))
+      .bind_default::<i32>()
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: 0,
+        digested: 1
+      })
+    );
+  }
+
+  #[test]
+  fn combinator_select() {
+    assert_eq!(
+      Combinator::boxed(|_| Some(Output {
+        kind: (),
+        digested: 1
+      }))
+      .select(|ctx| if ctx.content() == "1" { 1 } else { 2 })
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: 1,
+        digested: 1
+      })
+    );
+  }
+
+  #[test]
+  fn combinator_map() {
+    assert_eq!(
+      Combinator::boxed(|_| Some(Output {
+        kind: 1,
+        digested: 1
+      }))
+      .map(Some)
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: Some(1),
+        digested: 1
+      })
+    );
+  }
+}
