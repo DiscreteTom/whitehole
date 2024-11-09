@@ -1,3 +1,4 @@
+mod builder;
 mod snapshot;
 
 use crate::{
@@ -5,6 +6,7 @@ use crate::{
   node::Node,
 };
 
+pub use builder::*;
 pub use snapshot::*;
 
 pub struct Parser<'a, 'text, Kind, State = (), Heap = ()> {
