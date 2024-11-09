@@ -19,11 +19,12 @@ pub struct Parser<'a, 'text, Kind, State = (), Heap = ()> {
   text: &'text str,
   /// See [`Self::digested`].
   digested: usize,
+  /// See [`Self::entry`].
   entry: Combinator<'a, Kind, State, Heap>,
 }
 
 impl<'a, 'text, Kind, State, Heap> Parser<'a, 'text, Kind, State, Heap> {
-  /// Get the entry combinator.
+  /// The entry combinator.
   pub const fn entry(&self) -> &Combinator<'a, Kind, State, Heap> {
     &self.entry
   }
