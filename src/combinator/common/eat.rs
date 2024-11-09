@@ -9,7 +9,7 @@ use crate::combinator::{Combinator, Input, Output};
 /// ```
 /// use whitehole::combinator::{Combinator, eat};
 /// // eat 10 bytes
-/// let c: Combinator<_> = eat(10);
+/// let _: Combinator<_> = eat(10);
 /// ```
 pub fn eat<'a, State, Heap>(n: usize) -> Combinator<'a, (), State, Heap> {
   Combinator::boxed(move |input| {
@@ -33,7 +33,7 @@ pub fn eat<'a, State, Heap>(n: usize) -> Combinator<'a, (), State, Heap> {
 /// ```
 /// use whitehole::combinator::{Combinator, eat_unchecked};
 /// // eat 10 bytes
-/// let c: Combinator<_> = eat_unchecked(10);
+/// let _: Combinator<_> = eat_unchecked(10);
 /// ```
 pub fn eat_unchecked<'a, State, Heap>(n: usize) -> Combinator<'a, (), State, Heap> {
   Combinator::boxed(move |input| {
@@ -53,7 +53,7 @@ pub fn eat_unchecked<'a, State, Heap>(n: usize) -> Combinator<'a, (), State, Hea
 /// ```
 /// use whitehole::combinator::{Combinator, eater};
 /// // accept all the rest characters
-/// let a: Combinator<_> = eater(|input| input.rest().len());
+/// let _: Combinator<_> = eater(|input| input.rest().len());
 /// ```
 pub fn eater<'a, State, Heap>(
   f: impl Fn(&mut Input<&mut State, &mut Heap>) -> usize + 'a,
@@ -74,7 +74,7 @@ pub fn eater<'a, State, Heap>(
 /// ```
 /// use whitehole::combinator::{Combinator, eater_unchecked};
 /// // accept all the rest characters
-/// let a: Combinator<_> = eater_unchecked(|input| input.rest().len());
+/// let _: Combinator<_> = eater_unchecked(|input| input.rest().len());
 /// ```
 pub fn eater_unchecked<'a, State, Heap>(
   f: impl Fn(&mut Input<&mut State, &mut Heap>) -> usize + 'a,
