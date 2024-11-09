@@ -1,10 +1,12 @@
 //! Building block of a parser.
 
+mod common;
 mod decorator;
 mod input;
 mod operator;
 mod output;
 
+pub use common::*;
 pub use decorator::*;
 pub use input::*;
 pub use output::*;
