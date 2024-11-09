@@ -1,3 +1,6 @@
+/// [`Combinator`](crate::combinator::Combinator)'s input.
+///
+/// Once created, only [`Self::state`] and [`Self::heap`] can be mutated.
 #[derive(Debug)]
 pub struct Input<'text, StateRef, HeapRef> {
   /// The `&mut State`.
@@ -65,7 +68,7 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   }
 
   /// The undigested part of the input text.
-  /// This is guaranteed to be not empty.
+  /// This is guaranteed to be non-empty.
   ///
   /// This is precalculated in [`Self::new`] and cached to prevent creating the slice every time
   /// because this is frequently used across combinators.
@@ -76,6 +79,9 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   }
 
   /// The next char in the rest of the input text.
+  ///
+  /// Since [`Self::rest`] is guaranteed to be non-empty,
+  /// the next char is guaranteed to be available.
   pub fn next(&self) -> char {
     // SAFETY: `self.rest()` is guaranteed to be not empty.
     unsafe { self.rest().chars().next().unwrap_unchecked() }
