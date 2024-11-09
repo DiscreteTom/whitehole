@@ -172,9 +172,15 @@ mod tests {
     // empty
     assert_eq!(
       word("")
-        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .parse(&mut Input::new("-123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(0)
+    );
+    assert_eq!(
+      word("")
+        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.digested),
+      None
     );
     // reject if next char is alphanumeric
     assert!(word("123")
