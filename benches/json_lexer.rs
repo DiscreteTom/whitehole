@@ -8,7 +8,7 @@ use whitehole::{
 fn build_lexer(s: &str) -> Parser<()> {
   let whitespaces = chars(|c| " \t\r\n".contains(c));
   let number = {
-    let digit_1_to_9 = next(|c| ('1'..='9').contains(&c));
+    let digit_1_to_9 = next(|c| matches!(c, '1'..='9'));
     let digits = || chars(|c| c.is_ascii_digit());
     let integer = exact('0') | (digit_1_to_9 + digits().optional());
     let fraction = exact('.') + digits();
@@ -20,7 +20,7 @@ fn build_lexer(s: &str) -> Parser<()> {
       + (next(|c| "\"\\/bfnrt".contains(c)) | (exact('u') + next(|c| c.is_ascii_hexdigit()) * 4));
     let non_escape = chars(|c| c != '"' && c != '\\' && ('\u{0020}'..='\u{10ffff}').contains(&c));
     let body = (escape | non_escape) * ..;
-    exact('"') + body.optional() + exact('"')
+    exact('"') + body.optional() + '"'
   };
   let boundary = next(|c| "[]{}:,".contains(c));
 
