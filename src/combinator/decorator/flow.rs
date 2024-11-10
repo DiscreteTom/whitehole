@@ -22,8 +22,6 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
   }
 
   /// If the combinator is rejected, accept it with the default kind and zero digested.
-  ///
-  /// If the `Kind` doesn't implement [`Default`], consider using [`Self::optional`] instead.
   /// # Examples
   /// ```
   /// # use whitehole::combinator::Combinator;
@@ -40,30 +38,6 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
         kind: Default::default(),
         digested: 0,
       }))
-    })
-  }
-
-  /// If the combinator is rejected, accept it with [`None`] as the kind and zero digested.
-  ///
-  /// If you want to use the default kind instead of [`None`], consider using [`Self::accept`] instead.
-  /// # Examples
-  /// ```
-  /// # use whitehole::combinator::Combinator;
-  /// # fn t(combinator: Combinator<(), (), ()>) {
-  /// combinator.optional()
-  /// # ;}
-  /// ```
-  pub fn optional(self) -> Combinator<'a, Option<Kind>, State, Heap> {
-    Combinator::boxed(move |input| {
-      Some(
-        self
-          .parse(input)
-          .map(|output| output.map(Some))
-          .unwrap_or_else(|| Output {
-            kind: None,
-            digested: 0,
-          }),
-      )
     })
   }
 
@@ -169,33 +143,6 @@ mod tests {
         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 0
-      })
-    );
-    assert!(executed);
-  }
-
-  #[test]
-  fn combinator_optional() {
-    let mut executed = false;
-    assert_eq!(
-      accepter()
-        .optional()
-        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
-      Some(Output {
-        kind: Some(()),
-        digested: 1
-      })
-    );
-    assert!(executed);
-
-    let mut executed = false;
-    assert_eq!(
-      rejecter()
-        .optional()
-        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
-      Some(Output {
-        kind: Option::<()>::None,
         digested: 0
       })
     );
