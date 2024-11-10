@@ -46,19 +46,16 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::combinator::Combinator;
-  /// # enum MyKind { A, B }
-  /// # fn t(combinator: Combinator<(), (), ()>) {
-  /// combinator.select(|ctx| if ctx.content() == "A" { MyKind::A } else { MyKind::B })
+  /// # enum MyKind { Num(i32) }
+  /// # fn t(combinator: Combinator<MyKind, (), ()>) {
+  /// combinator.select(|ctx| MyKind::Num(ctx.content().parse().unwrap()))
   /// # ;}
   /// ```
   pub fn select<NewKind>(
     self,
     selector: impl Fn(AcceptedOutputContext<&mut Input<&mut State, &mut Heap>, Output<Kind>>) -> NewKind
       + 'a,
-  ) -> Combinator<'a, NewKind, State, Heap>
-  where
-    NewKind: Default,
-  {
+  ) -> Combinator<'a, NewKind, State, Heap> {
     Combinator::boxed(move |input| {
       self.parse(input).map(|output| Output {
         digested: output.digested,
