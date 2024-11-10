@@ -1,4 +1,4 @@
-use crate::combinator::Combinator;
+use crate::combinator::{exact, Combinator, ExactPrefix};
 use std::ops::BitOr;
 
 impl<'a, Kind: 'a, State: 'a, Heap: 'a> BitOr for Combinator<'a, Kind, State, Heap> {
@@ -7,6 +7,15 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> BitOr for Combinator<'a, Kind, State, He
   /// Try to parse with the left-hand side, if it fails, try the right-hand side.
   fn bitor(self, rhs: Self) -> Self::Output {
     Combinator::boxed(move |input| self.parse(input).or_else(|| rhs.parse(input)))
+  }
+}
+
+impl<'a, State: 'a, Heap: 'a, T: ExactPrefix + 'a> BitOr<T> for Combinator<'a, (), State, Heap> {
+  type Output = Combinator<'a, (), State, Heap>;
+
+  /// Try to parse with the left-hand side, if it fails, try the right-hand side.
+  fn bitor(self, rhs: T) -> Self::Output {
+    self | exact(rhs)
   }
 }
 
@@ -56,5 +65,11 @@ mod tests {
       })
     );
     assert_eq!(state, 1);
+  }
+
+  fn _combinator_bit_or_exact_prefix() {
+    let _: Combinator<_> = Combinator::boxed(|_| None) | "123"; // with &str
+    let _: Combinator<_> = Combinator::boxed(|_| None) | "123".to_string(); // with String
+    let _: Combinator<_> = Combinator::boxed(|_| None) | '1'; // with char
   }
 }
