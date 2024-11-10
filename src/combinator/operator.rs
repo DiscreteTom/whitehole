@@ -16,7 +16,6 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a, NewKind: 'a> ops::Add<Combinator<'a, New
   type Output = Combinator<'a, NewKind, State, Heap>;
 
   /// Parse with the left-hand side, then parse with the right-hand side.
-  ///
   /// Return the output with the kind of the right hand side and the sum of the digested.
   fn add(self, rhs: Combinator<'a, NewKind, State, Heap>) -> Self::Output {
     Combinator::boxed(move |input| {
