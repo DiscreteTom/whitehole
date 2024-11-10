@@ -21,7 +21,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
     })
   }
 
-  /// Reject the combinator if the `condition` returns `true`.
+  /// Reject the combinator after execution if the `condition` returns `true`.
   /// # Examples
   /// ```
   /// # use whitehole::combinator::Combinator;
