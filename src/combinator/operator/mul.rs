@@ -8,6 +8,32 @@ use std::ops::{
 /// A helper trait to fold kind values when calling [`Mul`] on [`Combinator`].
 ///
 /// Built-in implementations are provided for `()`.
+/// # Examples
+/// ```
+/// # use whitehole::combinator::{operator::mul::Fold, Combinator, next, Input};
+/// struct DecimalNumberAccumulator(usize);
+///
+/// impl Fold for DecimalNumberAccumulator {
+///   type Output = usize;
+///   fn fold(self, current: Self::Output) -> Self::Output {
+///     current * 10 + self.0
+///   }
+/// }
+///
+/// let combinator: Combinator<usize> =
+///   // accept one ascii digit at a time
+///   next(|c| c.is_ascii_digit())
+///     // convert the char to a number, wrapped in `DecimalNumberAccumulator`
+///     .select(|ctx| DecimalNumberAccumulator(ctx.input.next() as usize - '0' as usize))
+///     // repeat 1 or more times, fold `DecimalNumberAccumulator` to `usize`
+///     * (1..);
+///
+/// // parse "123" to 123
+/// assert_eq!(
+///   combinator.parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().kind,
+///   123
+/// )
+/// ```
 pub trait Fold {
   /// The fold result type.
   type Output: Default;
