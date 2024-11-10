@@ -1,11 +1,11 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::fs::read_to_string;
 use whitehole::{
-  combinator::{chars, exact, next, Combinator},
-  parser::Builder,
+  combinator::{chars, exact, next},
+  parser::{Builder, Parser},
 };
 
-fn build_lexer() -> Builder<Combinator<'static, ()>, (), ()> {
+fn build_lexer(s: &str) -> Parser<()> {
   let whitespaces = chars(|c| " \t\r\n".contains(c));
   let number = {
     let digit_1_to_9 = next(|c| ('1'..='9').contains(&c));
@@ -24,11 +24,13 @@ fn build_lexer() -> Builder<Combinator<'static, ()>, (), ()> {
   };
   let boundary = next(|c| "[]{}:,".contains(c));
 
-  Builder::new().entry(whitespaces | boundary | number | string | "true" | "false" | "null")
+  Builder::new()
+    .entry(whitespaces | boundary | number | string | "true" | "false" | "null")
+    .build(s)
 }
 
-fn lex_json(builder: Builder<Combinator<'static, ()>, (), ()>, s: &str) {
-  let mut parser = builder.build(s);
+fn lex_json(s: &str) {
+  let mut parser = build_lexer(s);
 
   loop {
     let output = parser.parse();
@@ -55,9 +57,9 @@ fn bench_lex(c: &mut Criterion) {
 
   c.bench_function("json_lexer: lex 3 json", |b| {
     b.iter(|| {
-      lex_json(build_lexer(), &citm_catalog);
-      lex_json(build_lexer(), &twitter);
-      lex_json(build_lexer(), &canada);
+      lex_json(&citm_catalog);
+      lex_json(&twitter);
+      lex_json(&canada);
     })
   });
 }
