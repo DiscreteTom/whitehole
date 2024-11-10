@@ -64,21 +64,6 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
     })
   }
 
-  /// Reject the combinator after execution.
-  /// # Examples
-  /// ```
-  /// # use whitehole::combinator::Combinator;
-  /// # fn t(combinator: Combinator<(), (), ()>) {
-  /// combinator.reject()
-  /// # ;}
-  /// ```
-  pub fn reject(self) -> Self {
-    Combinator::boxed(move |input| {
-      self.parse(input);
-      None
-    })
-  }
-
   /// Reject the combinator if the `condition` returns `true`.
   /// # Examples
   /// ```
@@ -168,18 +153,6 @@ mod tests {
         kind: (),
         digested: 0
       })
-    );
-    assert!(executed);
-  }
-
-  #[test]
-  fn combinator_reject() {
-    let mut executed = false;
-    assert_eq!(
-      accepter()
-        .reject()
-        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
-      None
     );
     assert!(executed);
   }
