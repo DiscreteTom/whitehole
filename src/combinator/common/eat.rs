@@ -1,3 +1,5 @@
+//! Basic combinators that just eat some bytes from the input text.
+
 use crate::combinator::{Combinator, Input, Output};
 
 /// Eat `n` bytes from the rest of the input text.
