@@ -1,3 +1,5 @@
+//! Overload [`Mul`] operator for [`Combinator`].
+
 use crate::combinator::{Combinator, Output};
 use std::ops::{
   Bound, Mul, Range, RangeBounds, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
