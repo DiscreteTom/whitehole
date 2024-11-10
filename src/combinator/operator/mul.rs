@@ -5,27 +5,49 @@ use std::ops::{
   Bound, Mul, Range, RangeBounds, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
 };
 
-/// A helper trait to fold kind values when calling [`Mul`] on [`Combinator`].
+/// A helper trait to accumulate kind values when calling [`Mul`] on [`Combinator`].
 ///
 /// Built-in implementations are provided for `()`.
 /// # Examples
+/// ## Inline Fold
+/// For simple cases, you can accumulate the kind values inline, without using this trait.
+/// ```
+/// # use whitehole::combinator::{Combinator, next, Input};
+/// let combinator: Combinator<usize> =
+///   // accept one ascii digit at a time
+///   next(|c| c.is_ascii_digit())
+///     // convert the char to a number
+///     .select(|ctx| ctx.input.next() as usize - '0' as usize)
+///     // repeat 1 or more times, init accumulator with 0, and fold kind values
+///     * (1.., || 0, |kind, acc| acc * 10 + kind);
+///
+/// // parse "123" to 123
+/// assert_eq!(
+///   combinator.parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().kind,
+///   123
+/// )
+/// ```
+/// ## Fold with Custom Type
+/// If you want to re-use the folder logic, you can implement this trait for a custom type.
 /// ```
 /// # use whitehole::combinator::{operator::mul::Fold, Combinator, next, Input};
-/// struct DecimalNumberAccumulator(usize);
+/// // since you can't implement `Fold` for `usize` directly,
+/// // wrap it in a new-type
+/// struct DecimalNumber(usize);
 ///
-/// impl Fold for DecimalNumberAccumulator {
+/// impl Fold for DecimalNumber {
 ///   type Output = usize;
-///   fn fold(self, current: Self::Output) -> Self::Output {
-///     current * 10 + self.0
+///   fn fold(self, acc: Self::Output) -> Self::Output {
+///     acc * 10 + self.0
 ///   }
 /// }
 ///
 /// let combinator: Combinator<usize> =
 ///   // accept one ascii digit at a time
 ///   next(|c| c.is_ascii_digit())
-///     // convert the char to a number, wrapped in `DecimalNumberAccumulator`
-///     .select(|ctx| DecimalNumberAccumulator(ctx.input.next() as usize - '0' as usize))
-///     // repeat 1 or more times, fold `DecimalNumberAccumulator` to `usize`
+///     // convert the char to a number, wrapped in `DecimalNumber`
+///     .select(|ctx| DecimalNumber(ctx.input.next() as usize - '0' as usize))
+///     // repeat 1 or more times, fold `DecimalNumber` to `usize`
 ///     * (1..);
 ///
 /// // parse "123" to 123
@@ -35,10 +57,10 @@ use std::ops::{
 /// )
 /// ```
 pub trait Fold {
-  /// The fold result type.
+  /// The accumulator type.
   type Output: Default;
-  /// Fold self with the current value.
-  fn fold(self, current: Self::Output) -> Self::Output;
+  /// Fold self with the accumulator.
+  fn fold(self, acc: Self::Output) -> Self::Output;
 }
 
 impl Fold for () {
@@ -50,10 +72,12 @@ impl Fold for () {
 // At that time this mod could be simplified with
 // `impl Mul<RangeBounds> for Combinator`
 
-fn impl_mul_for_range_bound<'a, Kind: Fold + 'a, State: 'a, Heap: 'a>(
+fn impl_mul_for_range_bound<'a, Kind: 'a, State: 'a, Heap: 'a, Acc>(
   lhs: Combinator<'a, Kind, State, Heap>,
   rhs: impl RangeBounds<usize> + 'a,
-) -> Combinator<'a, Kind::Output, State, Heap> {
+  init: impl Fn() -> Acc + 'a,
+  folder: impl Fn(Kind, Acc) -> Acc + 'a,
+) -> Combinator<'a, Acc, State, Heap> {
   Combinator::boxed(move |input| {
     // if repeat at most 0 times, just return the default value
     if match rhs.end_bound() {
@@ -62,7 +86,7 @@ fn impl_mul_for_range_bound<'a, Kind: Fold + 'a, State: 'a, Heap: 'a>(
       Bound::Unbounded => false,
     } {
       return Some(Output {
-        kind: Kind::Output::default(),
+        kind: init(),
         digested: 0,
       });
     }
@@ -77,7 +101,7 @@ fn impl_mul_for_range_bound<'a, Kind: Fold + 'a, State: 'a, Heap: 'a>(
           Bound::Unbounded => true,
         } {
           return Some(Output {
-            kind: Kind::Output::default(),
+            kind: init(),
             digested: 0,
           });
         }
@@ -88,7 +112,7 @@ fn impl_mul_for_range_bound<'a, Kind: Fold + 'a, State: 'a, Heap: 'a>(
         let mut repeated = 1;
         // generate the target kind value here instead of outer scope
         // to prevent unnecessary creation of the default value
-        let mut output = output.map(|kind| kind.fold(Kind::Output::default()));
+        let mut output = output.map(|kind| folder(kind, init()));
         while match rhs.end_bound() {
           Bound::Included(&end) => repeated < end,
           Bound::Excluded(&end) => repeated + 1 < end,
@@ -100,7 +124,7 @@ fn impl_mul_for_range_bound<'a, Kind: Fold + 'a, State: 'a, Heap: 'a>(
           {
             Some(next_output) => {
               output.digested += next_output.digested;
-              output.kind = next_output.kind.fold(output.kind);
+              output.kind = folder(next_output.kind, output.kind);
               repeated += 1;
             }
             None => {
@@ -133,13 +157,35 @@ fn impl_mul_for_range_bound<'a, Kind: Fold + 'a, State: 'a, Heap: 'a>(
   })
 }
 
+// TODO: simplify code with macro_rules, add tests for inline fold
+
 impl<'a, Kind: Fold + 'a, State: 'a, Heap: 'a> Mul<usize> for Combinator<'a, Kind, State, Heap> {
   type Output = Combinator<'a, Kind::Output, State, Heap>;
 
   /// Repeat the combinator `rhs` times.
   /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
   fn mul(self, rhs: usize) -> Self::Output {
-    impl_mul_for_range_bound(self, rhs..=rhs)
+    impl_mul_for_range_bound(self, rhs..=rhs, Kind::Output::default, Kind::fold)
+  }
+}
+
+impl<
+    'a,
+    Kind: 'a,
+    State: 'a,
+    Heap: 'a,
+    Acc,
+    Initializer: Fn() -> Acc + 'a,
+    InlineFolder: Fn(Kind, Acc) -> Acc + 'a,
+  > Mul<(usize, Initializer, InlineFolder)> for Combinator<'a, Kind, State, Heap>
+{
+  type Output = Combinator<'a, Acc, State, Heap>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
+  fn mul(self, rhs: (usize, Initializer, InlineFolder)) -> Self::Output {
+    let (repeat, init, folder) = rhs;
+    impl_mul_for_range_bound(self, repeat..=repeat, init, folder)
   }
 }
 
@@ -151,7 +197,27 @@ impl<'a, Kind: Fold + 'a, State: 'a, Heap: 'a> Mul<Range<usize>>
   /// Repeat the combinator `rhs` times.
   /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
   fn mul(self, rhs: Range<usize>) -> Self::Output {
-    impl_mul_for_range_bound(self, rhs)
+    impl_mul_for_range_bound(self, rhs, Kind::Output::default, Kind::fold)
+  }
+}
+
+impl<
+    'a,
+    Kind: 'a,
+    State: 'a,
+    Heap: 'a,
+    Acc,
+    Initializer: Fn() -> Acc + 'a,
+    InlineFolder: Fn(Kind, Acc) -> Acc + 'a,
+  > Mul<(Range<usize>, Initializer, InlineFolder)> for Combinator<'a, Kind, State, Heap>
+{
+  type Output = Combinator<'a, Acc, State, Heap>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
+  fn mul(self, rhs: (Range<usize>, Initializer, InlineFolder)) -> Self::Output {
+    let (repeat, init, folder) = rhs;
+    impl_mul_for_range_bound(self, repeat, init, folder)
   }
 }
 
@@ -163,7 +229,27 @@ impl<'a, Kind: Fold + 'a, State: 'a, Heap: 'a> Mul<RangeFrom<usize>>
   /// Repeat the combinator `rhs` times.
   /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
   fn mul(self, rhs: RangeFrom<usize>) -> Self::Output {
-    impl_mul_for_range_bound(self, rhs)
+    impl_mul_for_range_bound(self, rhs, Kind::Output::default, Kind::fold)
+  }
+}
+
+impl<
+    'a,
+    Kind: 'a,
+    State: 'a,
+    Heap: 'a,
+    Acc,
+    Initializer: Fn() -> Acc + 'a,
+    InlineFolder: Fn(Kind, Acc) -> Acc + 'a,
+  > Mul<(RangeFrom<usize>, Initializer, InlineFolder)> for Combinator<'a, Kind, State, Heap>
+{
+  type Output = Combinator<'a, Acc, State, Heap>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
+  fn mul(self, rhs: (RangeFrom<usize>, Initializer, InlineFolder)) -> Self::Output {
+    let (repeat, init, folder) = rhs;
+    impl_mul_for_range_bound(self, repeat, init, folder)
   }
 }
 
@@ -175,7 +261,27 @@ impl<'a, Kind: Fold + 'a, State: 'a, Heap: 'a> Mul<RangeFull>
   /// Repeat the combinator `rhs` times.
   /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
   fn mul(self, rhs: RangeFull) -> Self::Output {
-    impl_mul_for_range_bound(self, rhs)
+    impl_mul_for_range_bound(self, rhs, Kind::Output::default, Kind::fold)
+  }
+}
+
+impl<
+    'a,
+    Kind: 'a,
+    State: 'a,
+    Heap: 'a,
+    Acc,
+    Initializer: Fn() -> Acc + 'a,
+    InlineFolder: Fn(Kind, Acc) -> Acc + 'a,
+  > Mul<(RangeFull, Initializer, InlineFolder)> for Combinator<'a, Kind, State, Heap>
+{
+  type Output = Combinator<'a, Acc, State, Heap>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
+  fn mul(self, rhs: (RangeFull, Initializer, InlineFolder)) -> Self::Output {
+    let (repeat, init, folder) = rhs;
+    impl_mul_for_range_bound(self, repeat, init, folder)
   }
 }
 
@@ -187,7 +293,27 @@ impl<'a, Kind: Fold + 'a, State: 'a, Heap: 'a> Mul<RangeInclusive<usize>>
   /// Repeat the combinator `rhs` times.
   /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
   fn mul(self, rhs: RangeInclusive<usize>) -> Self::Output {
-    impl_mul_for_range_bound(self, rhs)
+    impl_mul_for_range_bound(self, rhs, Kind::Output::default, Kind::fold)
+  }
+}
+
+impl<
+    'a,
+    Kind: 'a,
+    State: 'a,
+    Heap: 'a,
+    Acc,
+    Initializer: Fn() -> Acc + 'a,
+    InlineFolder: Fn(Kind, Acc) -> Acc + 'a,
+  > Mul<(RangeInclusive<usize>, Initializer, InlineFolder)> for Combinator<'a, Kind, State, Heap>
+{
+  type Output = Combinator<'a, Acc, State, Heap>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
+  fn mul(self, rhs: (RangeInclusive<usize>, Initializer, InlineFolder)) -> Self::Output {
+    let (repeat, init, folder) = rhs;
+    impl_mul_for_range_bound(self, repeat, init, folder)
   }
 }
 
@@ -199,7 +325,27 @@ impl<'a, Kind: Fold + 'a, State: 'a, Heap: 'a> Mul<RangeTo<usize>>
   /// Repeat the combinator `rhs` times.
   /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
   fn mul(self, rhs: RangeTo<usize>) -> Self::Output {
-    impl_mul_for_range_bound(self, rhs)
+    impl_mul_for_range_bound(self, rhs, Kind::Output::default, Kind::fold)
+  }
+}
+
+impl<
+    'a,
+    Kind: 'a,
+    State: 'a,
+    Heap: 'a,
+    Acc,
+    Initializer: Fn() -> Acc + 'a,
+    InlineFolder: Fn(Kind, Acc) -> Acc + 'a,
+  > Mul<(RangeTo<usize>, Initializer, InlineFolder)> for Combinator<'a, Kind, State, Heap>
+{
+  type Output = Combinator<'a, Acc, State, Heap>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
+  fn mul(self, rhs: (RangeTo<usize>, Initializer, InlineFolder)) -> Self::Output {
+    let (repeat, init, folder) = rhs;
+    impl_mul_for_range_bound(self, repeat, init, folder)
   }
 }
 
@@ -211,7 +357,28 @@ impl<'a, Kind: Fold + 'a, State: 'a, Heap: 'a> Mul<RangeToInclusive<usize>>
   /// Repeat the combinator `rhs` times.
   /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
   fn mul(self, rhs: RangeToInclusive<usize>) -> Self::Output {
-    impl_mul_for_range_bound(self, rhs)
+    impl_mul_for_range_bound(self, rhs, Kind::Output::default, Kind::fold)
+  }
+}
+
+impl<
+    'a,
+    Kind: 'a,
+    State: 'a,
+    Heap: 'a,
+    Acc,
+    Initializer: Fn() -> Acc + 'a,
+    InlineFolder: Fn(Kind, Acc) -> Acc + 'a,
+  > Mul<(RangeToInclusive<usize>, Initializer, InlineFolder)>
+  for Combinator<'a, Kind, State, Heap>
+{
+  type Output = Combinator<'a, Acc, State, Heap>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
+  fn mul(self, rhs: (RangeToInclusive<usize>, Initializer, InlineFolder)) -> Self::Output {
+    let (repeat, init, folder) = rhs;
+    impl_mul_for_range_bound(self, repeat, init, folder)
   }
 }
 
