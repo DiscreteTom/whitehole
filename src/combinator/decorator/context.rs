@@ -3,7 +3,7 @@ use std::ops::Range;
 
 /// This struct provides the [`Input`] and [`Output`]
 /// in combinator decorators when the combinator is accepted.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct AcceptedOutputContext<InputType, OutputType> {
   /// The `&mut Input`.
   pub input: InputType,
