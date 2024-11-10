@@ -157,7 +157,7 @@ mod tests {
   use crate::combinator::{Input, Output};
 
   #[test]
-  fn combinator_mul() {
+  fn combinator_mul_usize() {
     let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
     let accepter = || {
       Combinator::boxed(|input| {
@@ -192,5 +192,202 @@ mod tests {
     assert!((accepter() * 4)
       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
+  }
+
+  #[test]
+  fn combinator_mul_range() {
+    let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
+    let accepter = || {
+      Combinator::boxed(|input| {
+        Some(Output {
+          kind: input.next(),
+          digested: 1,
+        })
+      })
+    };
+
+    // repeat a rejecter will reject
+    assert!((rejecter() * (1..2))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // repeat an accepter 0 times will reject
+    assert!((accepter() * (0..1))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // normal, apply the last output's kind and sum the digested
+    assert_eq!(
+      (accepter() * (0..3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: '2',
+        digested: 2,
+      })
+    );
+
+    // too few, reject
+    assert!((accepter() * (4..6))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+  }
+
+  #[test]
+  fn combinator_mul_range_from() {
+    let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
+    let accepter = || {
+      Combinator::boxed(|input| {
+        Some(Output {
+          kind: input.next(),
+          digested: 1,
+        })
+      })
+    };
+
+    // repeat a rejecter will reject
+    assert!((rejecter() * (1..))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // normal, apply the last output's kind and sum the digested
+    assert_eq!(
+      (accepter() * (0..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: '3',
+        digested: 3,
+      })
+    );
+
+    // too few, reject
+    assert!((accepter() * (4..))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+  }
+
+  #[test]
+  fn combinator_mul_range_full() {
+    let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
+    let accepter = || {
+      Combinator::boxed(|input| {
+        Some(Output {
+          kind: input.next(),
+          digested: 1,
+        })
+      })
+    };
+
+    // repeat a rejecter will reject
+    assert!((rejecter() * (..))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // normal, apply the last output's kind and sum the digested
+    assert_eq!(
+      (accepter() * (..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: '3',
+        digested: 3,
+      })
+    );
+  }
+
+  #[test]
+  fn combinator_mul_range_inclusive() {
+    let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
+    let accepter = || {
+      Combinator::boxed(|input| {
+        Some(Output {
+          kind: input.next(),
+          digested: 1,
+        })
+      })
+    };
+
+    // repeat a rejecter will reject
+    assert!((rejecter() * (1..=3))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // repeat an accepter 0 times will reject
+    assert!((accepter() * (0..=0))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // normal, apply the last output's kind and sum the digested
+    assert_eq!(
+      (accepter() * (0..=3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: '3',
+        digested: 3,
+      })
+    );
+
+    // too few, reject
+    assert!((accepter() * (4..=6))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+  }
+
+  #[test]
+  fn combinator_mul_range_to() {
+    let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
+    let accepter = || {
+      Combinator::boxed(|input| {
+        Some(Output {
+          kind: input.next(),
+          digested: 1,
+        })
+      })
+    };
+
+    // repeat a rejecter will reject
+    assert!((rejecter() * (..2))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // repeat an accepter 0 times will reject
+    assert!((accepter() * (..1))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // normal, apply the last output's kind and sum the digested
+    assert_eq!(
+      (accepter() * (..3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: '2',
+        digested: 2,
+      })
+    );
+  }
+
+  #[test]
+  fn combinator_mul_range_to_inclusive() {
+    let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
+    let accepter = || {
+      Combinator::boxed(|input| {
+        Some(Output {
+          kind: input.next(),
+          digested: 1,
+        })
+      })
+    };
+
+    // repeat a rejecter will reject
+    assert!((rejecter() * (..=2))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // repeat an accepter 0 times will reject
+    assert!((accepter() * (..=0))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // normal, apply the last output's kind and sum the digested
+    assert_eq!(
+      (accepter() * (..=3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: '3',
+        digested: 3,
+      })
+    );
   }
 }
