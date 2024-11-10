@@ -1,6 +1,6 @@
 //! Overload [`BitOr`] operator for [`Combinator`].
 
-use crate::combinator::{exact, Combinator, ExactPrefix};
+use crate::combinator::{eat, exact, Combinator, ExactPrefix};
 use std::ops::BitOr;
 
 impl<'a, Kind: 'a, State: 'a, Heap: 'a> BitOr for Combinator<'a, Kind, State, Heap> {
@@ -15,9 +15,18 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> BitOr for Combinator<'a, Kind, State, He
 impl<'a, State: 'a, Heap: 'a, T: ExactPrefix + 'a> BitOr<T> for Combinator<'a, (), State, Heap> {
   type Output = Combinator<'a, (), State, Heap>;
 
-  /// Try to parse with the left-hand side, if it fails, try the right-hand side.
+  /// Shortcut for `self | exact(rhs)`. See [`exact`].
   fn bitor(self, rhs: T) -> Self::Output {
     self | exact(rhs)
+  }
+}
+
+impl<'a, State: 'a, Heap: 'a> BitOr<usize> for Combinator<'a, (), State, Heap> {
+  type Output = Combinator<'a, (), State, Heap>;
+
+  /// Shortcut for `self | eat(rhs)`. See [`eat`].
+  fn bitor(self, rhs: usize) -> Self::Output {
+    self | eat(rhs)
   }
 }
 
@@ -73,5 +82,9 @@ mod tests {
     let _: Combinator<_> = Combinator::boxed(|_| None) | "123"; // with &str
     let _: Combinator<_> = Combinator::boxed(|_| None) | "123".to_string(); // with String
     let _: Combinator<_> = Combinator::boxed(|_| None) | '1'; // with char
+  }
+
+  fn _combinator_bit_or_usize() {
+    let _: Combinator<_> = Combinator::boxed(|_| None) | 1;
   }
 }
