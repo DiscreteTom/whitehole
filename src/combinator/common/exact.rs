@@ -1,6 +1,6 @@
 use crate::combinator::{Combinator, Output};
 
-/// A util trait to make [`exact`] family generic over different types.
+/// A util trait to make [`exact`] generic over different types.
 ///
 /// Built-in implementations are provided for [`String`], `&str`, and [`char`].
 pub trait ExactPrefix {
