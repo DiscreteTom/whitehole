@@ -69,10 +69,10 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
   /// ```
   /// # use whitehole::combinator::Combinator;
   /// # fn t(combinator: Combinator<(), (), ()>) {
-  /// combinator.reject_if(|ctx| ctx.content() != "123")
+  /// combinator.reject(|ctx| ctx.content() != "123")
   /// # ;}
   /// ```
-  pub fn reject_if(
+  pub fn reject(
     self,
     condition: impl Fn(AcceptedOutputContext<&mut Input<&mut State, &mut Heap>, &Output<Kind>>) -> bool
       + 'a,
@@ -158,11 +158,11 @@ mod tests {
   }
 
   #[test]
-  fn combinator_reject_if() {
+  fn combinator_reject() {
     let mut executed = false;
     assert_eq!(
       accepter()
-        .reject_if(|_| false)
+        .reject(|_| false)
         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
         kind: (),
@@ -174,7 +174,7 @@ mod tests {
     let mut executed = false;
     assert_eq!(
       accepter()
-        .reject_if(|_| true)
+        .reject(|_| true)
         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       None
     );
