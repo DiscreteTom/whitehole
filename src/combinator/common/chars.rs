@@ -6,11 +6,14 @@ use crate::combinator::Combinator;
 /// Match the next undigested char by the condition.
 /// Reject if the char is not matched.
 ///
+/// This is usually used with the [`in_str!`](crate::in_str) macro.
 /// # Examples
 /// ```
-/// # use whitehole::combinator::{Combinator, next};
+/// # use whitehole::{combinator::{Combinator, next}, in_str};
 /// // match one ascii digit
 /// let _: Combinator<_> = next(|ch| ch.is_ascii_digit());
+/// // match a char in a literal str
+/// let _: Combinator<_> = next(in_str!("+-*/"));
 /// ```
 pub fn next<'a, State, Heap>(
   condition: impl Fn(char) -> bool + 'a,
@@ -27,11 +30,14 @@ pub fn next<'a, State, Heap>(
 /// Match chars by the condition greedily.
 /// Reject if no char is matched.
 ///
+/// This is usually used with the [`in_str!`](crate::in_str) macro.
 /// # Examples
 /// ```
-/// # use whitehole::combinator::{Combinator, chars};
+/// # use whitehole::{combinator::{Combinator, chars}, in_str};
 /// // match all ascii digits greedily
 /// let _: Combinator<_> = chars(|ch| ch.is_ascii_digit());
+/// // match all JSON whitespaces greedily
+/// let _: Combinator<_> = chars(in_str!(" \t\r\n"));
 /// ```
 pub fn chars<'a, State, Heap>(
   condition: impl Fn(char) -> bool + 'a,
