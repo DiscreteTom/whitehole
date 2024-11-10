@@ -90,6 +90,25 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
       }))
     })
   }
+
+  /// Reject the combinator after execution if the next char is alphanumeric or `_`.
+  /// See [`char::is_alphanumeric`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::combinator::Combinator;
+  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// combinator.boundary()
+  /// # ;}
+  /// ```
+  pub fn boundary(self) -> Self {
+    self.reject(|ctx| {
+      ctx
+        .rest()
+        .chars()
+        .next()
+        .map_or(false, |c| c.is_alphanumeric() || c == '_')
+    })
+  }
 }
 
 #[cfg(test)]
@@ -177,6 +196,48 @@ mod tests {
         kind: (),
         digested: 0
       })
+    );
+    assert!(executed);
+  }
+
+  #[test]
+  fn combinator_boundary() {
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .boundary()
+        .parse(&mut Input::new("1", 0, &mut executed, &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        digested: 1
+      })
+    );
+    assert!(executed);
+
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .boundary()
+        .parse(&mut Input::new("12", 0, &mut executed, &mut ()).unwrap()),
+      None
+    );
+    assert!(executed);
+
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .boundary()
+        .parse(&mut Input::new("1a", 0, &mut executed, &mut ()).unwrap()),
+      None
+    );
+    assert!(executed);
+
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .boundary()
+        .parse(&mut Input::new("1_", 0, &mut executed, &mut ()).unwrap()),
+      None
     );
     assert!(executed);
   }
