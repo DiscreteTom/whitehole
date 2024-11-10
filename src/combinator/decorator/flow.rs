@@ -26,10 +26,10 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
   /// ```
   /// # use whitehole::combinator::Combinator;
   /// # fn t(combinator: Combinator<(), (), ()>) {
-  /// combinator.accept()
+  /// combinator.optional()
   /// # ;}
   /// ```
-  pub fn accept(self) -> Self
+  pub fn optional(self) -> Self
   where
     Kind: Default,
   {
@@ -123,11 +123,11 @@ mod tests {
   }
 
   #[test]
-  fn combinator_accept() {
+  fn combinator_optional() {
     let mut executed = false;
     assert_eq!(
       accepter()
-        .accept()
+        .optional()
         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
         kind: (),
@@ -139,7 +139,7 @@ mod tests {
     let mut executed = false;
     assert_eq!(
       rejecter()
-        .accept()
+        .optional()
         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
         kind: (),
