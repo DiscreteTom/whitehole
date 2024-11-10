@@ -1,71 +1,49 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::{fs::read_to_string, rc::Rc};
+use std::fs::read_to_string;
 use whitehole::{
-  kind::whitehole_kind,
-  lexer::{
-    action::{
-      chars_in_str, exact,
-      json::{boundaries, number_with, string_with},
-      FloatLiteralData, HexEscapeError, PartialStringBody,
-    },
-    builder::LexerBuilder,
-    into::IntoLexer,
-    stateless::StatelessLexer,
-  },
+  combinator::{chars, exact, next, Combinator},
+  parser::Builder,
 };
 
-#[whitehole_kind]
-#[derive(Default, Clone, Debug)]
-enum JsonTokenKind {
-  #[default]
-  Anonymous,
-  JsonString(Vec<PartialStringBody<String, HexEscapeError>>),
-  Number(FloatLiteralData<Vec<usize>, String, String, String>),
-  True,
-  False,
-  Null,
+fn build_lexer() -> Builder<Combinator<'static, ()>, (), ()> {
+  let whitespaces = chars(|c| " \t\r\n".contains(c));
+  let number = {
+    let digit_1_to_9 = next(|c| ('1'..='9').contains(&c));
+    let digits = || chars(|c| c.is_ascii_digit());
+    let integer = exact('0') | (digit_1_to_9 + digits().accept());
+    let fraction = exact('.') + digits();
+    let exponent = (exact('e') | 'E') + (exact('-') | '+').accept() + digits();
+    exact('-').accept() + integer + fraction.accept() + exponent.accept()
+  };
+  let string = {
+    let escape = exact('\\')
+      + (next(|c| "\"\\/bfnrt".contains(c)) | (exact('u') + next(|c| c.is_ascii_hexdigit()) * 4));
+    let non_escape = chars(|c| c != '"' && c != '\\' && ('\u{0020}'..='\u{10ffff}').contains(&c));
+    let body = (escape | non_escape) * ..;
+    exact('"') + body.accept() + exact('"')
+  };
+  let boundary = next(|c| "[]{}:,".contains(c));
+
+  Builder::new().entry(whitespaces | boundary | number | string | "true" | "false" | "null")
 }
 
-fn build_lexer() -> StatelessLexer<'static, JsonTokenKind> {
-  LexerBuilder::new()
-    .ignore_default(chars_in_str(" \n\r\t"))
-    .append_default(boundaries())
-    .define(True, exact("true"))
-    .define(False, exact("false"))
-    .define(Null, exact("null"))
-    .append(
-      string_with(|o| o.acc(Vec::new())).select(|ctx| JsonString(ctx.output.binding.take().data)),
-    )
-    .append(
-      number_with(|o| {
-        o.separator(Vec::new())
-          .integer(String::new())
-          .fraction(String::new())
-          .exponent(String::new())
-      })
-      .select(|ctx| Number(ctx.output.binding.take().data)),
-    )
-    .build_stateless()
-}
-
-fn lex_json(stateless: &Rc<StatelessLexer<JsonTokenKind>>, s: &str) {
-  let mut lexer = stateless.clone().into_lexer(s);
+fn lex_json(builder: Builder<Combinator<'static, ()>, (), ()>, s: &str) {
+  let mut parser = builder.build(s);
 
   loop {
-    let output = lexer.lex();
-    if output.digested == 0 {
+    let output = parser.parse();
+    if output.is_none() {
       break;
     }
     // println!("{:?}", output);
   }
 
-  if !lexer.instant().rest().is_empty() {
-    panic!("lexer failed to consume the whole input");
+  if !parser.rest().is_empty() {
+    panic!(
+      "lexer failed to consume the whole input, remaining: {}",
+      &parser.rest()[..100.min(parser.rest().len())]
+    );
   }
-}
-
-fn bench_build(c: &mut Criterion) {
-  c.bench_function("json_lexer: build", |b| b.iter(build_lexer));
 }
 
 fn bench_lex(c: &mut Criterion) {
@@ -75,13 +53,11 @@ fn bench_lex(c: &mut Criterion) {
   let twitter = read_to_string("bench_data/twitter.json").unwrap();
   let canada = read_to_string("bench_data/canada.json").unwrap();
 
-  let stateless = Rc::new(build_lexer());
-
   c.bench_function("json_lexer: lex 3 json", |b| {
     b.iter(|| {
-      lex_json(&stateless, &citm_catalog);
-      lex_json(&stateless, &twitter);
-      lex_json(&stateless, &canada);
+      lex_json(build_lexer(), &citm_catalog);
+      lex_json(build_lexer(), &twitter);
+      lex_json(build_lexer(), &canada);
     })
   });
 }
@@ -89,6 +65,6 @@ fn bench_lex(c: &mut Criterion) {
 criterion_group! {
   name = benches;
   config = Criterion::default();
-  targets = bench_build, bench_lex
+  targets = bench_lex
 }
 criterion_main!(benches);
