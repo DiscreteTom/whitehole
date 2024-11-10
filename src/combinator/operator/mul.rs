@@ -3,6 +3,10 @@ use std::ops::{
   Bound, Mul, Range, RangeBounds, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
 };
 
+// TODO: Currently `usize` is not `RangeBounds<usize>` but in the future it might be.
+// At that time this mod could be simplified with
+// `impl Mul<RangeBounds> for Combinator`
+
 fn impl_mul_for_range_bound<'a, Kind: 'a, State: 'a, Heap: 'a>(
   lhs: Combinator<'a, Kind, State, Heap>,
   rhs: impl RangeBounds<usize> + 'a,
