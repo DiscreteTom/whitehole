@@ -21,6 +21,33 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
     })
   }
 
+  /// Reject the combinator if the `condition` returns `true`.
+  /// # Examples
+  /// ```
+  /// # use whitehole::combinator::Combinator;
+  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// combinator.reject(|ctx| ctx.content() != "123")
+  /// # ;}
+  /// ```
+  pub fn reject(
+    self,
+    condition: impl Fn(AcceptedOutputContext<&mut Input<&mut State, &mut Heap>, &Output<Kind>>) -> bool
+      + 'a,
+  ) -> Self {
+    Combinator::boxed(move |input| {
+      self.parse(input).and_then(|output| {
+        if condition(AcceptedOutputContext {
+          input,
+          output: &output,
+        }) {
+          None
+        } else {
+          output.into()
+        }
+      })
+    })
+  }
+
   /// If the combinator is rejected, accept it with the default kind and zero digested.
   /// # Caveats
   /// This requires the `Kind` to implement [`Default`],
@@ -61,33 +88,6 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
         kind: Default::default(),
         digested: 0,
       }))
-    })
-  }
-
-  /// Reject the combinator if the `condition` returns `true`.
-  /// # Examples
-  /// ```
-  /// # use whitehole::combinator::Combinator;
-  /// # fn t(combinator: Combinator<(), (), ()>) {
-  /// combinator.reject(|ctx| ctx.content() != "123")
-  /// # ;}
-  /// ```
-  pub fn reject(
-    self,
-    condition: impl Fn(AcceptedOutputContext<&mut Input<&mut State, &mut Heap>, &Output<Kind>>) -> bool
-      + 'a,
-  ) -> Self {
-    Combinator::boxed(move |input| {
-      self.parse(input).and_then(|output| {
-        if condition(AcceptedOutputContext {
-          input,
-          output: &output,
-        }) {
-          None
-        } else {
-          output.into()
-        }
-      })
     })
   }
 }
@@ -131,6 +131,30 @@ mod tests {
   }
 
   #[test]
+  fn combinator_reject() {
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .reject(|_| false)
+        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        digested: 1
+      })
+    );
+    assert!(executed);
+
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .reject(|_| true)
+        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+      None
+    );
+    assert!(executed);
+  }
+
+  #[test]
   fn combinator_optional() {
     let mut executed = false;
     assert_eq!(
@@ -153,30 +177,6 @@ mod tests {
         kind: (),
         digested: 0
       })
-    );
-    assert!(executed);
-  }
-
-  #[test]
-  fn combinator_reject() {
-    let mut executed = false;
-    assert_eq!(
-      accepter()
-        .reject(|_| false)
-        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
-      Some(Output {
-        kind: (),
-        digested: 1
-      })
-    );
-    assert!(executed);
-
-    let mut executed = false;
-    assert_eq!(
-      accepter()
-        .reject(|_| true)
-        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
-      None
     );
     assert!(executed);
   }
