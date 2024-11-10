@@ -32,6 +32,29 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a, NewKind: 'a> ops::Add<Combinator<'a, New
   }
 }
 
+impl<'a, Kind: 'a, State: 'a, Heap: 'a> ops::Mul<usize> for Combinator<'a, Kind, State, Heap> {
+  type Output = Combinator<'a, Kind, State, Heap>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the kind of the last output and the sum of the digested.
+  fn mul(self, rhs: usize) -> Self::Output {
+    Combinator::boxed(move |input| {
+      if rhs == 0 {
+        return None;
+      }
+
+      self.parse(input).and_then(|mut output| {
+        for _ in 1..rhs {
+          let next_output = self.parse(&mut input.digest(output.digested)?)?;
+          output.digested += next_output.digested;
+          output.kind = next_output.kind;
+        }
+        output.into()
+      })
+    })
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -128,5 +151,43 @@ mod tests {
         digested: 2,
       })
     );
+  }
+
+  #[test]
+  fn combinator_mul() {
+    let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
+    let accepter = || {
+      Combinator::boxed(|input| {
+        Some(Output {
+          kind: input.next(),
+          digested: 1,
+        })
+      })
+    };
+
+    // repeat a rejecter will reject
+    assert!((rejecter() * 3)
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // repeat an accepter 0 times will reject
+    let n = 0;
+    assert!((accepter() * n)
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+
+    // normal, apply the last output's kind and sum the digested
+    assert_eq!(
+      (accepter() * 3).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: '3',
+        digested: 3,
+      })
+    );
+
+    // overflow, reject
+    assert!((accepter() * 4)
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
   }
 }
