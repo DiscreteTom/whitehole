@@ -8,8 +8,9 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::combinator::Combinator;
+  /// # #[derive(Clone)]
   /// # enum MyKind { A }
-  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// # fn t(combinator: Combinator<MyKind, (), ()>) {
   /// combinator.bind(MyKind::A)
   /// # ;}
   /// ```
@@ -24,9 +25,9 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::combinator::Combinator;
-  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// # fn t(combinator: Combinator<(), (), ()>) -> Combinator<i32, (), ()> {
   /// combinator.bind_default()
-  /// # ;}
+  /// # }
   /// ```
   pub fn bind_default<NewKind>(self) -> Combinator<'a, NewKind, State, Heap>
   where
