@@ -1,3 +1,5 @@
+//! Decorators that modify the acceptance of a combinator.
+
 use super::AcceptedOutputContext;
 use crate::combinator::{Combinator, Input, Output};
 
