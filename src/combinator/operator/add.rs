@@ -153,7 +153,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a, T: ExactPrefix + 'a> Add<T>
 {
   type Output = Combinator<'a, Kind, State, Heap>;
 
-  /// Shortcut for `self + exact(rhs)`.
+  /// Shortcut for `self + exact(rhs)`. See [`exact`].
   fn add(self, rhs: T) -> Self::Output {
     self + exact(rhs)
   }
