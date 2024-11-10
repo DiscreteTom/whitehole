@@ -22,6 +22,29 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
   }
 
   /// If the combinator is rejected, accept it with the default kind and zero digested.
+  /// # Caveats
+  /// This requires the `Kind` to implement [`Default`],
+  /// thus usually used before setting a custom kind.
+  /// ```
+  /// # use whitehole::combinator::Combinator;
+  /// # #[derive(Clone)]
+  /// # enum MyKind { A }
+  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// // bind a kind after calling `optional`
+  /// combinator.optional().bind(MyKind::A)
+  /// // instead of
+  /// // combinator.bind(MyKind::A).optional()
+  /// # ;}
+  /// ```
+  /// Or you can wrap `Kind` with [`Option`]:
+  /// ```
+  /// # use whitehole::combinator::Combinator;
+  /// # #[derive(Clone)]
+  /// # enum MyKind { A }
+  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// combinator.bind(Some(MyKind::A)).optional()
+  /// # ;}
+  /// ```
   /// # Examples
   /// ```
   /// # use whitehole::combinator::Combinator;
