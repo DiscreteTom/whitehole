@@ -37,10 +37,21 @@ fn impl_mul_for_range_bound<'a, Kind: 'a, State: 'a, Heap: 'a>(
         Bound::Excluded(&end) => repeated + 1 < end,
         Bound::Unbounded => true,
       } {
-        let next_output = lhs.parse(&mut input.digest(output.digested)?)?;
-        output.digested += next_output.digested;
-        output.kind = next_output.kind;
-        repeated += 1;
+        match input
+          .digest(output.digested)
+          .and_then(|mut input| lhs.parse(&mut input))
+        {
+          Some(next_output) => {
+            output.digested += next_output.digested;
+            output.kind = next_output.kind;
+            repeated += 1;
+          }
+          None => {
+            // end of input, or rejected
+            // proceed with current output
+            break;
+          }
+        }
       }
       output.into()
     })?;
