@@ -1,3 +1,5 @@
+//! Overload [`BitOr`] operator for [`Combinator`].
+
 use crate::combinator::{exact, Combinator, ExactPrefix};
 use std::ops::BitOr;
 
