@@ -2,11 +2,12 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use std::fs::read_to_string;
 use whitehole::{
   combinator::{chars, exact, next},
+  in_str,
   parser::{Builder, Parser},
 };
 
 fn build_lexer(s: &str) -> Parser<()> {
-  let whitespaces = chars(|c| " \t\r\n".contains(c));
+  let whitespaces = chars(in_str!(" \t\r\n"));
   let number = {
     let digit_1_to_9 = next(|c| matches!(c, '1'..='9'));
     let digits = || chars(|c| c.is_ascii_digit());
@@ -17,12 +18,12 @@ fn build_lexer(s: &str) -> Parser<()> {
   };
   let string = {
     let escape = exact('\\')
-      + (next(|c| "\"\\/bfnrt".contains(c)) | (exact('u') + next(|c| c.is_ascii_hexdigit()) * 4));
-    let non_escape = chars(|c| c != '"' && c != '\\' && ('\u{0020}'..='\u{10ffff}').contains(&c));
+      + (next(in_str!("\"\\/bfnrt")) | (exact('u') + next(|c| c.is_ascii_hexdigit()) * 4));
+    let non_escape = chars(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}'));
     let body = (escape | non_escape) * ..;
     exact('"') + body.optional() + '"'
   };
-  let boundary = next(|c| "[]{}:,".contains(c));
+  let boundary = next(in_str!("[]{}:,"));
 
   Builder::new()
     .entry(whitespaces | boundary | number | string | "true" | "false" | "null")
