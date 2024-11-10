@@ -1,5 +1,8 @@
 use super::{Combinator, Output};
-use std::ops::{Add, BitOr, Mul};
+use std::ops::{
+  Add, BitOr, Bound, Mul, Range, RangeBounds, RangeFrom, RangeFull, RangeInclusive, RangeTo,
+  RangeToInclusive,
+};
 
 impl<'a, Kind: 'a, State: 'a, Heap: 'a> BitOr for Combinator<'a, Kind, State, Heap> {
   type Output = Self;
@@ -32,26 +35,136 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a, NewKind: 'a> Add<Combinator<'a, NewKind,
   }
 }
 
+fn impl_mul_for_range_bound<'a, Kind: 'a, State: 'a, Heap: 'a>(
+  lhs: Combinator<'a, Kind, State, Heap>,
+  rhs: impl RangeBounds<usize> + 'a,
+) -> Combinator<'a, Kind, State, Heap> {
+  Combinator::boxed(move |input| {
+    // reject if repeat 0 times
+    match rhs.end_bound() {
+      Bound::Included(&end) => {
+        if end == 0 {
+          return None;
+        }
+      }
+      Bound::Excluded(&end) => {
+        if end <= 1 {
+          return None;
+        }
+      }
+      Bound::Unbounded => {}
+    }
+
+    // now the combinator is expected to repeat at least once
+
+    let mut repeated = 0;
+    let output = lhs.parse(input).and_then(|mut output| {
+      repeated += 1;
+      while match rhs.end_bound() {
+        Bound::Included(&end) => repeated < end,
+        Bound::Excluded(&end) => repeated + 1 < end,
+        Bound::Unbounded => true,
+      } {
+        let next_output = lhs.parse(&mut input.digest(output.digested)?)?;
+        output.digested += next_output.digested;
+        output.kind = next_output.kind;
+        repeated += 1;
+      }
+      output.into()
+    })?;
+
+    // reject if repeated times is too few
+    match rhs.start_bound() {
+      Bound::Included(&start) => {
+        if repeated < start {
+          return None;
+        }
+      }
+      Bound::Excluded(&start) => {
+        if repeated <= start {
+          return None;
+        }
+      }
+      Bound::Unbounded => {}
+    }
+
+    output.into()
+  })
+}
+
 impl<'a, Kind: 'a, State: 'a, Heap: 'a> Mul<usize> for Combinator<'a, Kind, State, Heap> {
   type Output = Combinator<'a, Kind, State, Heap>;
 
   /// Repeat the combinator `rhs` times.
   /// Return the output with the kind of the last output and the sum of the digested.
   fn mul(self, rhs: usize) -> Self::Output {
-    Combinator::boxed(move |input| {
-      if rhs == 0 {
-        return None;
-      }
+    impl_mul_for_range_bound(self, rhs..=rhs)
+  }
+}
 
-      self.parse(input).and_then(|mut output| {
-        for _ in 1..rhs {
-          let next_output = self.parse(&mut input.digest(output.digested)?)?;
-          output.digested += next_output.digested;
-          output.kind = next_output.kind;
-        }
-        output.into()
-      })
-    })
+impl<'a, Kind: 'a, State: 'a, Heap: 'a> Mul<Range<usize>> for Combinator<'a, Kind, State, Heap> {
+  type Output = Combinator<'a, Kind, State, Heap>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the kind of the last output and the sum of the digested.
+  fn mul(self, rhs: Range<usize>) -> Self::Output {
+    impl_mul_for_range_bound(self, rhs)
+  }
+}
+
+impl<'a, Kind: 'a, State: 'a, Heap: 'a> Mul<RangeFrom<usize>>
+  for Combinator<'a, Kind, State, Heap>
+{
+  type Output = Combinator<'a, Kind, State, Heap>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the kind of the last output and the sum of the digested.
+  fn mul(self, rhs: RangeFrom<usize>) -> Self::Output {
+    impl_mul_for_range_bound(self, rhs)
+  }
+}
+
+impl<'a, Kind: 'a, State: 'a, Heap: 'a> Mul<RangeFull> for Combinator<'a, Kind, State, Heap> {
+  type Output = Combinator<'a, Kind, State, Heap>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the kind of the last output and the sum of the digested.
+  fn mul(self, rhs: RangeFull) -> Self::Output {
+    impl_mul_for_range_bound(self, rhs)
+  }
+}
+
+impl<'a, Kind: 'a, State: 'a, Heap: 'a> Mul<RangeInclusive<usize>>
+  for Combinator<'a, Kind, State, Heap>
+{
+  type Output = Combinator<'a, Kind, State, Heap>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the kind of the last output and the sum of the digested.
+  fn mul(self, rhs: RangeInclusive<usize>) -> Self::Output {
+    impl_mul_for_range_bound(self, rhs)
+  }
+}
+
+impl<'a, Kind: 'a, State: 'a, Heap: 'a> Mul<RangeTo<usize>> for Combinator<'a, Kind, State, Heap> {
+  type Output = Combinator<'a, Kind, State, Heap>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the kind of the last output and the sum of the digested.
+  fn mul(self, rhs: RangeTo<usize>) -> Self::Output {
+    impl_mul_for_range_bound(self, rhs)
+  }
+}
+
+impl<'a, Kind: 'a, State: 'a, Heap: 'a> Mul<RangeToInclusive<usize>>
+  for Combinator<'a, Kind, State, Heap>
+{
+  type Output = Combinator<'a, Kind, State, Heap>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the kind of the last output and the sum of the digested.
+  fn mul(self, rhs: RangeToInclusive<usize>) -> Self::Output {
+    impl_mul_for_range_bound(self, rhs)
   }
 }
 
