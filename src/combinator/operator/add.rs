@@ -1,21 +1,146 @@
+//! Overload [`Add`] operator for [`Combinator`].
+
 use crate::combinator::{exact, Combinator, ExactPrefix, Output};
 use std::ops::Add;
 
-impl<'a, Kind: 'a, State: 'a, Heap: 'a, NewKind: 'a> Add<Combinator<'a, NewKind, State, Heap>>
-  for Combinator<'a, Kind, State, Heap>
+/// A helper trait to concat types when calling [`Add`] on [`Combinator`].
+///
+/// Built-in implementations:
+/// - `concat(T, ()) -> T`
+/// - `concat((), (T1, T2, ...)) -> (T1, T2, ...)` for results with up to 12 elements.
+/// - `concat((T1, T2, ...), (U1, U2, ...)) -> (T1, T2, ..., U1, U2, ...)`
+///   for results with up to 12 elements.
+pub trait Concat<Rhs> {
+  /// The concat result.
+  type Output;
+  /// Concat self with the `rhs`.
+  fn concat(self, rhs: Rhs) -> Self::Output;
+}
+
+impl<T> Concat<()> for T {
+  type Output = T;
+  fn concat(self, _: ()) -> Self::Output {
+    self
+  }
+}
+
+macro_rules! impl_concat_for_unit {
+  ($($rhs:ident),*) => {
+    impl<$($rhs),*> Concat<($($rhs),*,)> for () {
+      type Output = ($($rhs),*,);
+      fn concat(self, rhs: ($($rhs),*,)) -> Self::Output {
+        rhs
+      }
+    }
+  };
+}
+impl_concat_for_unit!(_1);
+impl_concat_for_unit!(_1, _2);
+impl_concat_for_unit!(_1, _2, _3);
+impl_concat_for_unit!(_1, _2, _3, _4);
+impl_concat_for_unit!(_1, _2, _3, _4, _5);
+impl_concat_for_unit!(_1, _2, _3, _4, _5, _6);
+impl_concat_for_unit!(_1, _2, _3, _4, _5, _6, _7);
+impl_concat_for_unit!(_1, _2, _3, _4, _5, _6, _7, _8);
+impl_concat_for_unit!(_1, _2, _3, _4, _5, _6, _7, _8, _9);
+impl_concat_for_unit!(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
+impl_concat_for_unit!(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11);
+impl_concat_for_unit!(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12);
+
+macro_rules! impl_concat_tuple {
+  (($($lhs:ident),*), ($($rhs:ident),*)) => {
+    impl<$($lhs),*,$($rhs),*> Concat<($($rhs),*,)> for ($($lhs),*,) {
+      type Output = ($($lhs),*,$($rhs),*);
+      fn concat(self, rhs: ($($rhs),*,)) -> Self::Output {
+        let ($($lhs),*,) = self;
+        let ($($rhs),*,) = rhs;
+        ($($lhs),*, $($rhs),*)
+      }
+    }
+  };
+}
+impl_concat_tuple!((_1), (_2));
+impl_concat_tuple!((_1), (_2, _3));
+impl_concat_tuple!((_1), (_2, _3, _4));
+impl_concat_tuple!((_1), (_2, _3, _4, _5));
+impl_concat_tuple!((_1), (_2, _3, _4, _5, _6));
+impl_concat_tuple!((_1), (_2, _3, _4, _5, _6, _7));
+impl_concat_tuple!((_1), (_2, _3, _4, _5, _6, _7, _8));
+impl_concat_tuple!((_1), (_2, _3, _4, _5, _6, _7, _8, _9));
+impl_concat_tuple!((_1), (_2, _3, _4, _5, _6, _7, _8, _9, _10));
+impl_concat_tuple!((_1), (_2, _3, _4, _5, _6, _7, _8, _9, _10, _11));
+impl_concat_tuple!((_1), (_2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12));
+impl_concat_tuple!((_1, _2), (_3));
+impl_concat_tuple!((_1, _2), (_3, _4));
+impl_concat_tuple!((_1, _2), (_3, _4, _5));
+impl_concat_tuple!((_1, _2), (_3, _4, _5, _6));
+impl_concat_tuple!((_1, _2), (_3, _4, _5, _6, _7));
+impl_concat_tuple!((_1, _2), (_3, _4, _5, _6, _7, _8));
+impl_concat_tuple!((_1, _2), (_3, _4, _5, _6, _7, _8, _9));
+impl_concat_tuple!((_1, _2), (_3, _4, _5, _6, _7, _8, _9, _10));
+impl_concat_tuple!((_1, _2), (_3, _4, _5, _6, _7, _8, _9, _10, _11));
+impl_concat_tuple!((_1, _2), (_3, _4, _5, _6, _7, _8, _9, _10, _11, _12));
+impl_concat_tuple!((_1, _2, _3), (_4));
+impl_concat_tuple!((_1, _2, _3), (_4, _5));
+impl_concat_tuple!((_1, _2, _3), (_4, _5, _6));
+impl_concat_tuple!((_1, _2, _3), (_4, _5, _6, _7));
+impl_concat_tuple!((_1, _2, _3), (_4, _5, _6, _7, _8));
+impl_concat_tuple!((_1, _2, _3), (_4, _5, _6, _7, _8, _9));
+impl_concat_tuple!((_1, _2, _3), (_4, _5, _6, _7, _8, _9, _10));
+impl_concat_tuple!((_1, _2, _3), (_4, _5, _6, _7, _8, _9, _10, _11));
+impl_concat_tuple!((_1, _2, _3), (_4, _5, _6, _7, _8, _9, _10, _11, _12));
+impl_concat_tuple!((_1, _2, _3, _4), (_5));
+impl_concat_tuple!((_1, _2, _3, _4), (_5, _6));
+impl_concat_tuple!((_1, _2, _3, _4), (_5, _6, _7));
+impl_concat_tuple!((_1, _2, _3, _4), (_5, _6, _7, _8));
+impl_concat_tuple!((_1, _2, _3, _4), (_5, _6, _7, _8, _9));
+impl_concat_tuple!((_1, _2, _3, _4), (_5, _6, _7, _8, _9, _10));
+impl_concat_tuple!((_1, _2, _3, _4), (_5, _6, _7, _8, _9, _10, _11));
+impl_concat_tuple!((_1, _2, _3, _4), (_5, _6, _7, _8, _9, _10, _11, _12));
+impl_concat_tuple!((_1, _2, _3, _4, _5), (_6));
+impl_concat_tuple!((_1, _2, _3, _4, _5), (_6, _7));
+impl_concat_tuple!((_1, _2, _3, _4, _5), (_6, _7, _8));
+impl_concat_tuple!((_1, _2, _3, _4, _5), (_6, _7, _8, _9));
+impl_concat_tuple!((_1, _2, _3, _4, _5), (_6, _7, _8, _9, _10));
+impl_concat_tuple!((_1, _2, _3, _4, _5), (_6, _7, _8, _9, _10, _11));
+impl_concat_tuple!((_1, _2, _3, _4, _5), (_6, _7, _8, _9, _10, _11, _12));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6), (_7));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6), (_7, _8));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6), (_7, _8, _9));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6), (_7, _8, _9, _10));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6), (_7, _8, _9, _10, _11));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6), (_7, _8, _9, _10, _11, _12));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7), (_8));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7), (_8, _9));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7), (_8, _9, _10));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7), (_8, _9, _10, _11));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7), (_8, _9, _10, _11, _12));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8), (_9));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8), (_9, _10));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8), (_9, _10, _11));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8), (_9, _10, _11, _12));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8, _9), (_10));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8, _9), (_10, _11));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8, _9), (_10, _11, _12));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8, _9, _10), (_11));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8, _9, _10), (_11, _12));
+impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11), (_12));
+
+impl<'a, Lhs: Concat<Rhs> + 'a, Rhs: 'a, State: 'a, Heap: 'a> Add<Combinator<'a, Rhs, State, Heap>>
+  for Combinator<'a, Lhs, State, Heap>
 {
-  type Output = Combinator<'a, NewKind, State, Heap>;
+  type Output = Combinator<'a, Lhs::Output, State, Heap>;
 
   /// Parse with the left-hand side, then parse with the right-hand side.
-  /// Return the output with the kind of the right hand side and the sum of the digested.
-  fn add(self, rhs: Combinator<'a, NewKind, State, Heap>) -> Self::Output {
+  /// Return the output with [`Concat`]-ed kind and the sum of the digested.
+  fn add(self, rhs: Combinator<'a, Rhs, State, Heap>) -> Self::Output {
     Combinator::boxed(move |input| {
       self.parse(input).and_then(|output| {
         input
           .digest(output.digested)
           .and_then(|mut input| rhs.parse(&mut input))
           .map(|rhs_output| Output {
-            kind: rhs_output.kind,
+            kind: output.kind.concat(rhs_output.kind),
             digested: output.digested + rhs_output.digested,
           })
       })
@@ -26,10 +151,9 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a, NewKind: 'a> Add<Combinator<'a, NewKind,
 impl<'a, Kind: 'a, State: 'a, Heap: 'a, T: ExactPrefix + 'a> Add<T>
   for Combinator<'a, Kind, State, Heap>
 {
-  type Output = Combinator<'a, (), State, Heap>; // TODO: passthrough `Kind` instead of `()`
+  type Output = Combinator<'a, Kind, State, Heap>;
 
-  /// Parse with the left-hand side, then parse with the right-hand side.
-  /// Return the output with the kind of the right hand side and the sum of the digested.
+  /// Shortcut for `self + exact(rhs)`.
   fn add(self, rhs: T) -> Self::Output {
     self + exact(rhs)
   }
@@ -54,7 +178,7 @@ mod tests {
     let accepter_int = || {
       Combinator::boxed(|_| {
         Some(Output {
-          kind: 123,
+          kind: (123,),
           digested: 1,
         })
       })
@@ -71,12 +195,12 @@ mod tests {
       .is_none());
 
     // accept then accept, should return the sum of the digested
-    // with the kind of the right-hand side
+    // with the concat kind
     assert_eq!(
       (accepter_unit() + accepter_int())
         .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: 123,
+        kind: (123,),
         digested: 2,
       })
     );
@@ -84,7 +208,7 @@ mod tests {
       (accepter_int() + accepter_unit())
         .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        kind: (123,),
         digested: 2,
       })
     );

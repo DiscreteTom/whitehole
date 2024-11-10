@@ -3,8 +3,9 @@
 mod common;
 mod decorator;
 mod input;
-mod operator;
 mod output;
+
+pub mod operator;
 
 pub use common::*;
 pub use decorator::*;
