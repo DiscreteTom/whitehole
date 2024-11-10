@@ -1,4 +1,4 @@
-use crate::combinator::{Combinator, Output};
+use crate::combinator::{exact, Combinator, ExactPrefix, Output};
 use std::ops::Add;
 
 impl<'a, Kind: 'a, State: 'a, Heap: 'a, NewKind: 'a> Add<Combinator<'a, NewKind, State, Heap>>
@@ -20,6 +20,18 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a, NewKind: 'a> Add<Combinator<'a, NewKind,
           })
       })
     })
+  }
+}
+
+impl<'a, Kind: 'a, State: 'a, Heap: 'a, T: ExactPrefix + 'a> Add<T>
+  for Combinator<'a, Kind, State, Heap>
+{
+  type Output = Combinator<'a, (), State, Heap>; // TODO: passthrough `Kind` instead of `()`
+
+  /// Parse with the left-hand side, then parse with the right-hand side.
+  /// Return the output with the kind of the right hand side and the sum of the digested.
+  fn add(self, rhs: T) -> Self::Output {
+    self + exact(rhs)
   }
 }
 
@@ -75,6 +87,31 @@ mod tests {
         kind: (),
         digested: 2,
       })
+    );
+  }
+
+  #[test]
+  fn combinator_add_exact_prefix() {
+    // str
+    assert_eq!(
+      (exact("123") + "456")
+        .parse(&mut Input::new("123456", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.digested),
+      Some(6)
+    );
+    // String
+    assert_eq!(
+      (exact("123") + "456".to_string())
+        .parse(&mut Input::new("123456", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.digested),
+      Some(6)
+    );
+    // char
+    assert_eq!(
+      (exact("1") + '2')
+        .parse(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.digested),
+      Some(2)
     );
   }
 }
