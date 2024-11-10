@@ -1,3 +1,5 @@
+//! Combinators that match chars by the condition.
+
 use super::eater_unchecked;
 use crate::combinator::Combinator;
 
