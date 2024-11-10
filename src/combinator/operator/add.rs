@@ -1,6 +1,6 @@
 //! Overload [`Add`] operator for [`Combinator`].
 
-use crate::combinator::{exact, Combinator, ExactPrefix, Output};
+use crate::combinator::{eat, exact, Combinator, ExactPrefix, Output};
 use std::ops::Add;
 
 /// A helper trait to concat types when calling [`Add`] on [`Combinator`].
@@ -159,6 +159,15 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a, T: ExactPrefix + 'a> Add<T>
   }
 }
 
+impl<'a, Kind: 'a, State: 'a, Heap: 'a> Add<usize> for Combinator<'a, Kind, State, Heap> {
+  type Output = Combinator<'a, Kind, State, Heap>;
+
+  /// Shortcut for `self + eat(rhs)`. See [`eat`].
+  fn add(self, rhs: usize) -> Self::Output {
+    self + eat(rhs)
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -236,6 +245,31 @@ mod tests {
         .parse(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(2)
+    );
+  }
+
+  #[test]
+  fn combinator_add_usize() {
+    // normal
+    assert_eq!(
+      (eat(3) + 2)
+        .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.digested),
+      Some(5)
+    );
+    // overflow
+    assert_eq!(
+      (eat(3) + 3)
+        .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.digested),
+      None
+    );
+    // 0
+    assert_eq!(
+      (eat(0) + 0)
+        .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.digested),
+      Some(0)
     );
   }
 }
