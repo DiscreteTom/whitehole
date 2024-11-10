@@ -1,7 +1,7 @@
 use super::{Combinator, Output};
-use std::ops;
+use std::ops::{Add, BitOr, Mul};
 
-impl<'a, Kind: 'a, State: 'a, Heap: 'a> ops::BitOr for Combinator<'a, Kind, State, Heap> {
+impl<'a, Kind: 'a, State: 'a, Heap: 'a> BitOr for Combinator<'a, Kind, State, Heap> {
   type Output = Self;
 
   /// Try to parse with the left-hand side, if it fails, try the right-hand side.
@@ -10,7 +10,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> ops::BitOr for Combinator<'a, Kind, Stat
   }
 }
 
-impl<'a, Kind: 'a, State: 'a, Heap: 'a, NewKind: 'a> ops::Add<Combinator<'a, NewKind, State, Heap>>
+impl<'a, Kind: 'a, State: 'a, Heap: 'a, NewKind: 'a> Add<Combinator<'a, NewKind, State, Heap>>
   for Combinator<'a, Kind, State, Heap>
 {
   type Output = Combinator<'a, NewKind, State, Heap>;
@@ -32,7 +32,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a, NewKind: 'a> ops::Add<Combinator<'a, New
   }
 }
 
-impl<'a, Kind: 'a, State: 'a, Heap: 'a> ops::Mul<usize> for Combinator<'a, Kind, State, Heap> {
+impl<'a, Kind: 'a, State: 'a, Heap: 'a> Mul<usize> for Combinator<'a, Kind, State, Heap> {
   type Output = Combinator<'a, Kind, State, Heap>;
 
   /// Repeat the combinator `rhs` times.
