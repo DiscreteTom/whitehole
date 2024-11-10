@@ -2,7 +2,7 @@ use super::AcceptedOutputContext;
 use crate::combinator::{Combinator, Input, Output};
 
 impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
-  /// Modify `State` and `Heap` before the combinator is executed.
+  /// Modify [`Input::state`] and [`Input::heap`] before the combinator is executed.
   /// # Examples
   /// ```
   /// # use whitehole::combinator::Combinator;
@@ -17,7 +17,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
     })
   }
 
-  /// Modify `State` and `Heap` if the combinator is accepted.
+  /// Modify [`Input::state`] and [`Input::heap`] if the combinator is accepted.
   /// # Examples
   /// ```
   /// # use whitehole::combinator::Combinator;
@@ -36,7 +36,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
     })
   }
 
-  /// Modify `State` and `Heap` if the combinator is rejected.
+  /// Modify [`Input::state`] and [`Input::heap`] if the combinator is rejected.
   /// # Examples
   /// ```
   /// # use whitehole::combinator::Combinator;
