@@ -1,6 +1,6 @@
 //! Overload [`Add`] operator for [`Combinator`].
 
-use crate::combinator::{eat, exact, Combinator, ExactPrefix, Output};
+use crate::combinator::{eat, exact, Combinator, Exact, Output};
 use std::ops::Add;
 
 /// A helper trait to concat types when calling [`Add`] on [`Combinator`].
@@ -148,7 +148,7 @@ impl<'a, Lhs: Concat<Rhs> + 'a, Rhs: 'a, State: 'a, Heap: 'a> Add<Combinator<'a,
   }
 }
 
-impl<'a, Kind: 'a, State: 'a, Heap: 'a, T: ExactPrefix + 'a> Add<T>
+impl<'a, Kind: 'a, State: 'a, Heap: 'a, T: Exact + 'a> Add<T>
   for Combinator<'a, Kind, State, Heap>
 {
   type Output = Combinator<'a, Kind, State, Heap>;

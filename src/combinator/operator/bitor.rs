@@ -1,6 +1,6 @@
 //! Overload [`BitOr`] operator for [`Combinator`].
 
-use crate::combinator::{eat, exact, Combinator, ExactPrefix};
+use crate::combinator::{eat, exact, Combinator, Exact};
 use std::ops::BitOr;
 
 impl<'a, Kind: 'a, State: 'a, Heap: 'a> BitOr for Combinator<'a, Kind, State, Heap> {
@@ -12,7 +12,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> BitOr for Combinator<'a, Kind, State, He
   }
 }
 
-impl<'a, State: 'a, Heap: 'a, T: ExactPrefix + 'a> BitOr<T> for Combinator<'a, (), State, Heap> {
+impl<'a, State: 'a, Heap: 'a, T: Exact + 'a> BitOr<T> for Combinator<'a, (), State, Heap> {
   type Output = Combinator<'a, (), State, Heap>;
 
   /// Shortcut for `self | exact(rhs)`. See [`exact`].
