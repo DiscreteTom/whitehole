@@ -221,6 +221,13 @@ mod tests {
         digested: 2,
       })
     );
+    assert_eq!(
+      (accepter_int() + accepter_int()).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (123, 123),
+        digested: 2,
+      })
+    );
   }
 
   #[test]
