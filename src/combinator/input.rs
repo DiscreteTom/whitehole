@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 /// [`Combinator`](crate::combinator::Combinator)'s input.
 ///
 /// Once created, only [`Self::state`] and [`Self::heap`] can be mutated.
@@ -86,6 +88,28 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
     // SAFETY: `self.rest()` is guaranteed to be not empty.
     unsafe { self.rest().chars().next().unwrap_unchecked() }
   }
+
+  /// A helper method to create a [`Range`] from [`Self::start`]
+  /// with the `digested` length.
+  /// # Caveats
+  /// This method won't check if the `digested` length is
+  /// greater than the length of [`Self::rest`].
+  /// For a checked version, use [`Self::range`].
+  pub const fn range_unchecked(&self, digested: usize) -> Range<usize> {
+    self.start..(self.start + digested)
+  }
+
+  /// A helper method to create a [`Range`] from [`Self::start`]
+  /// with the `digested` length.
+  ///
+  /// Return [`None`] if the `digested` length is greater than the length of [`Self::rest`].
+  pub const fn range(&self, digested: usize) -> Option<Range<usize>> {
+    if digested > self.rest.len() {
+      None
+    } else {
+      Some(self.range_unchecked(digested))
+    }
+  }
 }
 
 // TODO: is this function's lifetime correct?
@@ -147,5 +171,23 @@ mod tests {
     assert_eq!(input.digest(1).unwrap().rest(), "23");
     assert_eq!(input.digest(2).unwrap().rest(), "3");
     assert!(input.digest(3).is_none());
+  }
+
+  #[test]
+  fn input_range_unchecked() {
+    let mut state = ();
+    let mut heap = ();
+    let input = Input::new("123", 1, &mut state, &mut heap).unwrap();
+    assert_eq!(input.range_unchecked(2), Range { start: 1, end: 3 });
+    assert_eq!(input.range_unchecked(3), Range { start: 1, end: 4 });
+  }
+
+  #[test]
+  fn input_range() {
+    let mut state = ();
+    let mut heap = ();
+    let input = Input::new("123", 1, &mut state, &mut heap).unwrap();
+    assert_eq!(input.range(2), Some(Range { start: 1, end: 3 }));
+    assert_eq!(input.range(3), None);
   }
 }
