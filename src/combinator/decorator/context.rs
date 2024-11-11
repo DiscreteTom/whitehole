@@ -16,12 +16,12 @@ pub struct AcceptedOutputContext<InputType, OutputType> {
 macro_rules! impl_ctx {
   ($input:ty, $output:ty) => {
     impl<'text, Kind, StateRef, HeapRef> AcceptedOutputContext<$input, $output> {
-      /// The end of [`Node::range`](crate::node::Node::range).
+      /// Shortcut for `self.input.start() + self.output.digested`.
       pub fn end(&self) -> usize {
         self.input.start() + self.output.digested
       }
 
-      /// The [`Node::range`](crate::node::Node::range).
+      /// Shortcut for `self.input.start()..self.end()`.
       pub fn range(&self) -> Range<usize> {
         self.input.start()..self.end()
       }
