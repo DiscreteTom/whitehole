@@ -3,41 +3,34 @@ use crate::combinator::{Combinator, Output};
 /// A util trait to make [`exact`] generic over different types.
 ///
 /// Built-in implementations are provided for [`String`], `&str`, and [`char`].
-pub trait ExactPrefix {
-  /// Check if the input starts with the prefix.
-  fn is_prefix_of(&self, input: &str) -> bool;
-  /// Get the byte length of the prefix.
-  fn byte_len(&self) -> usize;
+///
+/// See [`exact`] for more details.
+pub trait Exact {
+  /// Check if the input starts with this instance.
+  /// Return the byte length of the prefix if found.
+  /// `0` is allowed, but be careful with infinite loops.
+  fn parse(&self, input: &str) -> Option<usize>;
 }
 
-impl ExactPrefix for String {
-  fn is_prefix_of(&self, input: &str) -> bool {
-    input.starts_with(self)
-  }
-  fn byte_len(&self) -> usize {
-    self.len()
-  }
-}
-
-impl ExactPrefix for &str {
-  fn is_prefix_of(&self, input: &str) -> bool {
-    input.starts_with(self)
-  }
-  fn byte_len(&self) -> usize {
-    self.len()
+impl Exact for String {
+  fn parse(&self, input: &str) -> Option<usize> {
+    input.starts_with(self).then_some(self.len())
   }
 }
 
-impl ExactPrefix for char {
-  fn is_prefix_of(&self, input: &str) -> bool {
-    input.starts_with(*self)
-  }
-  fn byte_len(&self) -> usize {
-    self.len_utf8()
+impl Exact for &str {
+  fn parse(&self, input: &str) -> Option<usize> {
+    input.starts_with(self).then_some(self.len())
   }
 }
 
-/// Match a prefix exactly, no lookahead.
+impl Exact for char {
+  fn parse(&self, input: &str) -> Option<usize> {
+    input.starts_with(*self).then(|| self.len_utf8())
+  }
+}
+
+/// Match a pattern exactly, no lookahead.
 /// Reject if not found.
 ///
 /// Empty string is allowed, but be careful with infinite loops.
@@ -47,18 +40,16 @@ impl ExactPrefix for char {
 /// let _: Combinator<_> = exact("true".to_string()); // with String
 /// let _: Combinator<_> = exact("true"); // with &str
 /// let _: Combinator<_> = exact(';'); // with char
+///
+/// // to lookahead one char to ensure there is a word boundary,
+/// // use the `boundary` decorator
+/// let _: Combinator<_> = exact("true").boundary();
 /// ```
-pub fn exact<'a, State, Heap>(prefix: impl ExactPrefix + 'a) -> Combinator<'a, (), State, Heap> {
+pub fn exact<'a, State, Heap>(pattern: impl Exact + 'a) -> Combinator<'a, (), State, Heap> {
   Combinator::boxed(move |input| {
-    if !prefix.is_prefix_of(input.rest()) {
-      return None;
-    }
-
-    Output {
-      kind: (),
-      digested: prefix.byte_len(), // might be 0
-    }
-    .into()
+    pattern
+      .parse(input.rest())
+      .map(|digested| Output { kind: (), digested })
   })
 }
 
