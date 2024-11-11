@@ -64,7 +64,7 @@ impl<'a, Kind, State, Heap> Builder<Combinator<'a, Kind, State, Heap>, State, He
       state: self.state,
       heap: self.heap,
       text,
-      digested: 0,
+      rest: text,
       entry: self.entry,
     }
   }

@@ -18,13 +18,15 @@ use crate::combinator::Combinator;
 pub fn next<'a, State, Heap>(
   condition: impl Fn(char) -> bool + 'a,
 ) -> Combinator<'a, (), State, Heap> {
-  eater_unchecked(move |input| {
-    let next = input.next();
-    if !condition(next) {
-      return 0;
-    }
-    next.len_utf8()
-  })
+  unsafe {
+    eater_unchecked(move |input| {
+      let next = input.next();
+      if !condition(next) {
+        return 0;
+      }
+      next.len_utf8()
+    })
+  }
 }
 
 /// Match chars by the condition greedily.
@@ -42,16 +44,18 @@ pub fn next<'a, State, Heap>(
 pub fn chars<'a, State, Heap>(
   condition: impl Fn(char) -> bool + 'a,
 ) -> Combinator<'a, (), State, Heap> {
-  eater_unchecked(move |input| {
-    let mut digested = 0;
-    for c in input.rest().chars() {
-      if !condition(c) {
-        break;
+  unsafe {
+    eater_unchecked(move |input| {
+      let mut digested = 0;
+      for c in input.rest().chars() {
+        if !condition(c) {
+          break;
+        }
+        digested += c.len_utf8();
       }
-      digested += c.len_utf8();
-    }
-    digested
-  })
+      digested
+    })
+  }
 }
 
 #[cfg(test)]
@@ -65,8 +69,8 @@ mod tests {
     assert_eq!(
       next(|c| c.is_ascii_digit())
         .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.digested),
-      Some(1)
+        .map(|output| output.rest),
+      Some("23")
     );
     // reject
     assert!(next(|c| c.is_ascii_alphabetic())
@@ -80,8 +84,8 @@ mod tests {
     assert_eq!(
       chars(|c| c.is_ascii_digit())
         .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.digested),
-      Some(3)
+        .map(|output| output.rest),
+      Some("")
     );
     // reject
     assert!(chars(|c| c.is_ascii_alphabetic())

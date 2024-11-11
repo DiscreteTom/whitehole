@@ -98,15 +98,15 @@ impl<
       let mut repeated = 0;
       let mut output = Output {
         kind: init(),
-        digested: 0,
+        rest: input.rest(),
       };
       while range.should_repeat(repeated) {
         match input
-          .digest(output.digested)
+          .reload(output.rest)
           .and_then(|mut input| self.parse(&mut input))
         {
           Some(next_output) => {
-            output.digested += next_output.digested;
+            output.rest = next_output.rest;
             output.kind = folder(next_output.kind, output.kind);
             repeated += 1;
           }
@@ -223,7 +223,7 @@ mod tests {
       Combinator::boxed(|input| {
         Some(Output {
           kind: MyKind(input.start()),
-          digested: 1,
+          rest: &input.rest()[1..],
         })
       })
     };
@@ -239,7 +239,7 @@ mod tests {
       (rejecter() * n).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 0,
+        rest: "123",
       })
     );
 
@@ -249,17 +249,14 @@ mod tests {
       (accepter() * n).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: 0,
-        digested: 0,
+        rest: "123",
       })
     );
 
     // normal, apply the folded kind value and sum the digested
     assert_eq!(
       (accepter() * 3).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        kind: 3,
-        digested: 3,
-      })
+      Some(Output { kind: 3, rest: "" })
     );
 
     // overflow, reject
@@ -275,7 +272,7 @@ mod tests {
       Combinator::boxed(|input| {
         Some(Output {
           kind: MyKind(input.start()),
-          digested: 1,
+          rest: &input.rest()[1..],
         })
       })
     };
@@ -290,7 +287,7 @@ mod tests {
       (rejecter() * (0..2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 0,
+        rest: "123",
       })
     );
 
@@ -299,17 +296,14 @@ mod tests {
       (accepter() * (0..1)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: 0,
-        digested: 0,
+        rest: "123",
       })
     );
 
     // normal, apply the folded kind value and sum the digested
     assert_eq!(
       (accepter() * (0..3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        kind: 1,
-        digested: 2,
-      })
+      Some(Output { kind: 1, rest: "3" })
     );
 
     // too few, reject
@@ -325,7 +319,7 @@ mod tests {
       Combinator::boxed(|input| {
         Some(Output {
           kind: MyKind(input.start()),
-          digested: 1,
+          rest: &input.rest()[1..],
         })
       })
     };
@@ -340,17 +334,14 @@ mod tests {
       (rejecter() * (0..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 0,
+        rest: "123",
       })
     );
 
     // normal, apply the folded kind value and sum the digested
     assert_eq!(
       (accepter() * (0..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        kind: 3,
-        digested: 3,
-      })
+      Some(Output { kind: 3, rest: "" })
     );
 
     // too few, reject
@@ -366,7 +357,7 @@ mod tests {
       Combinator::boxed(|input| {
         Some(Output {
           kind: MyKind(input.start()),
-          digested: 1,
+          rest: &input.rest()[1..],
         })
       })
     };
@@ -376,17 +367,14 @@ mod tests {
       (rejecter() * (..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 0,
+        rest: "123",
       })
     );
 
     // normal, apply the folded kind value and sum the digested
     assert_eq!(
       (accepter() * (..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        kind: 3,
-        digested: 3,
-      })
+      Some(Output { kind: 3, rest: "" })
     );
   }
 
@@ -397,7 +385,7 @@ mod tests {
       Combinator::boxed(|input| {
         Some(Output {
           kind: MyKind(input.start()),
-          digested: 1,
+          rest: &input.rest()[1..],
         })
       })
     };
@@ -412,7 +400,7 @@ mod tests {
       (rejecter() * (0..=2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 0,
+        rest: "123",
       })
     );
 
@@ -421,17 +409,14 @@ mod tests {
       (accepter() * (0..=0)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: 0,
-        digested: 0,
+        rest: "123",
       })
     );
 
     // normal, apply the folded kind value and sum the digested
     assert_eq!(
       (accepter() * (0..=3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        kind: 3,
-        digested: 3,
-      })
+      Some(Output { kind: 3, rest: "" })
     );
 
     // too few, reject
@@ -447,7 +432,7 @@ mod tests {
       Combinator::boxed(|input| {
         Some(Output {
           kind: MyKind(input.start()),
-          digested: 1,
+          rest: &input.rest()[1..],
         })
       })
     };
@@ -457,7 +442,7 @@ mod tests {
       (rejecter() * (..2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 0,
+        rest: "123",
       })
     );
 
@@ -466,17 +451,14 @@ mod tests {
       (accepter() * (..1)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: 0,
-        digested: 0,
+        rest: "123",
       })
     );
 
     // normal, apply the folded kind value and sum the digested
     assert_eq!(
       (accepter() * (..3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        kind: 1,
-        digested: 2,
-      })
+      Some(Output { kind: 1, rest: "3" })
     );
   }
 
@@ -487,7 +469,7 @@ mod tests {
       Combinator::boxed(|input| {
         Some(Output {
           kind: MyKind(input.start()),
-          digested: 1,
+          rest: &input.rest()[1..],
         })
       })
     };
@@ -497,7 +479,7 @@ mod tests {
       (rejecter() * (..=2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 0,
+        rest: "123",
       })
     );
 
@@ -506,17 +488,14 @@ mod tests {
       (accepter() * (..=0)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: 0,
-        digested: 0,
+        rest: "123",
       })
     );
 
     // normal, apply the folded kind value and sum the digested
     assert_eq!(
       (accepter() * (..=3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        kind: 3,
-        digested: 3,
-      })
+      Some(Output { kind: 3, rest: "" })
     );
   }
 }

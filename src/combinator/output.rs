@@ -1,23 +1,18 @@
 /// [`Combinator`](crate::combinator::Combinator)'s output.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Output<Kind> {
+pub struct Output<'text, Kind> {
   /// The [`Node::kind`](crate::node::Node::kind).
   pub kind: Kind,
-  /// How many bytes are digested by this combinator.
-  /// # Caveats
-  /// `0` is allowed, but be careful with infinite loops.
-  ///
-  /// This value should be smaller than or equal to the length of
-  /// [`Input::rest`](crate::combinator::input::Input::rest).
-  pub digested: usize,
+  /// The rest of the input text.
+  pub rest: &'text str,
 }
 
-impl<Kind> Output<Kind> {
+impl<'text, Kind> Output<'text, Kind> {
   /// Convert [`Self::kind`] to a new kind.
-  pub fn map<NewKind>(self, f: impl FnOnce(Kind) -> NewKind) -> Output<NewKind> {
+  pub fn map<NewKind>(self, f: impl FnOnce(Kind) -> NewKind) -> Output<'text, NewKind> {
     Output {
       kind: f(self.kind),
-      digested: self.digested,
+      rest: self.rest,
     }
   }
 }
@@ -31,12 +26,12 @@ mod tests {
     assert_eq!(
       Output {
         kind: 1,
-        digested: 2,
+        rest: "123",
       }
       .map(|kind| kind + 1),
       Output {
         kind: 2,
-        digested: 2,
+        rest: "123",
       }
     );
   }

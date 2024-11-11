@@ -33,7 +33,9 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
   /// ```
   pub fn reject(
     self,
-    condition: impl Fn(AcceptedOutputContext<&mut Input<&mut State, &mut Heap>, &Output<Kind>>) -> bool
+    condition: impl for<'text> Fn(
+        AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, Kind>>,
+      ) -> bool
       + 'a,
   ) -> Self {
     Combinator::boxed(move |input| {
@@ -88,7 +90,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
     Combinator::boxed(move |input| {
       Some(self.parse(input).unwrap_or_else(|| Output {
         kind: Default::default(),
-        digested: 0,
+        rest: input.rest(),
       }))
     })
   }
@@ -105,7 +107,8 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
   pub fn boundary(self) -> Self {
     self.reject(|ctx| {
       ctx
-        .rest()
+        .output
+        .rest
         .chars()
         .next()
         .map_or(false, |c| c.is_alphanumeric() || c == '_')
@@ -122,7 +125,7 @@ mod tests {
       *input.state = true;
       Some(Output {
         kind: (),
-        digested: 1,
+        rest: &input.rest()[1..],
       })
     })
   }
@@ -160,7 +163,7 @@ mod tests {
         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 1
+        rest: "23"
       })
     );
     assert!(executed);
@@ -184,7 +187,7 @@ mod tests {
         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 1
+        rest: "23"
       })
     );
     assert!(executed);
@@ -196,7 +199,7 @@ mod tests {
         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 0
+        rest: "123"
       })
     );
     assert!(executed);
@@ -209,10 +212,7 @@ mod tests {
       accepter()
         .boundary()
         .parse(&mut Input::new("1", 0, &mut executed, &mut ()).unwrap()),
-      Some(Output {
-        kind: (),
-        digested: 1
-      })
+      Some(Output { kind: (), rest: "" })
     );
     assert!(executed);
 

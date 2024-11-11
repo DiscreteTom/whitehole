@@ -16,11 +16,20 @@ pub struct AcceptedOutputContext<InputType, OutputType> {
 macro_rules! impl_ctx {
   ($input:ty, $output:ty) => {
     impl<'text, Kind, StateRef, HeapRef> AcceptedOutputContext<$input, $output> {
-      /// Shortcut for `self.input.start() + self.output.digested`.
-      pub fn end(&self) -> usize {
-        self.input.start() + self.output.digested
+      /// How many bytes are digested by this combinator.
+      pub fn digested(&self) -> usize {
+        self.input.rest().len() - self.output.rest.len()
       }
 
+      /// The end index in bytes in the whole input text.
+      ///
+      /// Shortcut for `self.input.start() + self.digested()`.
+      pub fn end(&self) -> usize {
+        self.input.start() + self.digested()
+      }
+
+      /// The byte range of the digested text in the whole input text.
+      ///
       /// Shortcut for `self.input.start()..self.end()`.
       pub fn range(&self) -> Range<usize> {
         self.input.start()..self.end()
@@ -29,13 +38,7 @@ macro_rules! impl_ctx {
       /// The text content accepted by this combinator.
       pub fn content(&self) -> &'text str {
         // we don't cache this slice since it might not be used frequently
-        &self.input.text()[self.range()]
-      }
-
-      /// The rest of the input text after this combinator is accepted.
-      pub fn rest(&self) -> &'text str {
-        // we don't cache this slice since it might not be used frequently
-        &self.input.text()[self.end()..]
+        unsafe { self.input.rest().get_unchecked(..self.digested()) }
       }
     }
   };
@@ -43,8 +46,8 @@ macro_rules! impl_ctx {
 
 // Input won't be consumed and is always mutable.
 // Output won't be modified directly in the context, but can be consumed.
-impl_ctx!(&mut Input<'text, StateRef, HeapRef>, Output<Kind>);
-impl_ctx!(&mut Input<'text, StateRef, HeapRef>, &Output<Kind>);
+impl_ctx!(&mut Input<'text, StateRef, HeapRef>, Output<'text, Kind>);
+impl_ctx!(&mut Input<'text, StateRef, HeapRef>, &Output<'text, Kind>);
 
 #[cfg(test)]
 mod tests {
@@ -53,10 +56,10 @@ mod tests {
   fn create_input() -> Input<'static, (), ()> {
     Input::new("123", 1, (), ()).unwrap()
   }
-  fn create_output() -> Output<()> {
+  fn create_output() -> Output<'static, ()> {
     Output {
       kind: (),
-      digested: 1,
+      rest: "23",
     }
   }
 
@@ -84,6 +87,14 @@ mod tests {
         input: &mut create_input(),
         output: create_output(),
       }
+      .digested(),
+      1
+    );
+    assert_eq!(
+      AcceptedOutputContext {
+        input: &mut create_input(),
+        output: create_output(),
+      }
       .end(),
       2
     );
@@ -93,15 +104,7 @@ mod tests {
         output: create_output(),
       }
       .content(),
-      "2"
-    );
-    assert_eq!(
-      AcceptedOutputContext {
-        input: &mut create_input(),
-        output: create_output(),
-      }
-      .rest(),
-      "3"
+      "1"
     );
   }
 }

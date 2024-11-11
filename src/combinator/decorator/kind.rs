@@ -54,12 +54,14 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
   /// ```
   pub fn select<NewKind>(
     self,
-    selector: impl Fn(AcceptedOutputContext<&mut Input<&mut State, &mut Heap>, Output<Kind>>) -> NewKind
+    selector: impl for<'text> Fn(
+        AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, Output<'text, Kind>>,
+      ) -> NewKind
       + 'a,
   ) -> Combinator<'a, NewKind, State, Heap> {
     Combinator::boxed(move |input| {
       self.parse(input).map(|output| Output {
-        digested: output.digested,
+        rest: output.rest,
         kind: selector(AcceptedOutputContext { input, output }),
       })
     })
@@ -90,15 +92,15 @@ mod tests {
   #[test]
   fn combinator_bind() {
     assert_eq!(
-      Combinator::boxed(|_| Some(Output {
+      Combinator::boxed(|input| Some(Output {
         kind: (),
-        digested: 1
+        rest: &input.rest()[1..]
       }))
       .bind(123)
       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: 123,
-        digested: 1
+        rest: "23"
       })
     );
   }
@@ -106,15 +108,15 @@ mod tests {
   #[test]
   fn combinator_bind_default() {
     assert_eq!(
-      Combinator::boxed(|_| Some(Output {
+      Combinator::boxed(|input| Some(Output {
         kind: (),
-        digested: 1
+        rest: &input.rest()[1..]
       }))
       .bind_default::<i32>()
       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: 0,
-        digested: 1
+        rest: "23"
       })
     );
   }
@@ -122,15 +124,15 @@ mod tests {
   #[test]
   fn combinator_select() {
     assert_eq!(
-      Combinator::boxed(|_| Some(Output {
+      Combinator::boxed(|input| Some(Output {
         kind: (),
-        digested: 1
+        rest: &input.rest()[1..]
       }))
       .select(|ctx| if ctx.content() == "1" { 1 } else { 2 })
       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: 1,
-        digested: 1
+        rest: "23"
       })
     );
   }
@@ -138,15 +140,15 @@ mod tests {
   #[test]
   fn combinator_map() {
     assert_eq!(
-      Combinator::boxed(|_| Some(Output {
+      Combinator::boxed(|input| Some(Output {
         kind: 1,
-        digested: 1
+        rest: &input.rest()[1..]
       }))
       .map(Some)
       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: Some(1),
-        digested: 1
+        rest: "23"
       })
     );
   }

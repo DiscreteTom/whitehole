@@ -50,7 +50,7 @@ mod tests {
         *input.state += 1;
         Some(Output {
           kind: (),
-          digested: 1,
+          rest: &input.rest()[1..],
         })
       })
     };
@@ -60,7 +60,7 @@ mod tests {
       (rejecter() | accepter()).parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 1,
+        rest: "23",
       })
     );
     assert_eq!(state, 2);
@@ -72,7 +72,7 @@ mod tests {
       (accepter() | rejecter()).parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 1,
+        rest: "23",
       })
     );
     assert_eq!(state, 1);

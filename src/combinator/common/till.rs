@@ -7,33 +7,37 @@ use crate::combinator::{Combinator, Output};
 /// See [`till`] for more details.
 pub trait Till {
   /// Check if the input contains this instance.
-  /// Return the total byte length from the start of the `input`
-  /// to the end of the first occurrence of this instance if found.
-  /// `0` is allowed, but be careful with infinite loops.
-  fn parse(&self, input: &str) -> Option<usize>;
+  /// Return the rest of input if found.
+  fn parse<'text>(&self, input: &'text str) -> Option<&'text str>;
 }
 
 impl Till for String {
-  fn parse(&self, input: &str) -> Option<usize> {
-    input.find(self).map(|i| i + self.len())
+  fn parse<'text>(&self, input: &'text str) -> Option<&'text str> {
+    input
+      .find(self)
+      .map(|i| unsafe { input.get_unchecked(i + self.len()..) })
   }
 }
 
 impl Till for &str {
-  fn parse(&self, input: &str) -> Option<usize> {
-    input.find(self).map(|i| i + self.len())
+  fn parse<'text>(&self, input: &'text str) -> Option<&'text str> {
+    input
+      .find(self)
+      .map(|i| unsafe { input.get_unchecked(i + self.len()..) })
   }
 }
 
 impl Till for char {
-  fn parse(&self, input: &str) -> Option<usize> {
-    input.find(*self).map(|i| i + self.len_utf8())
+  fn parse<'text>(&self, input: &'text str) -> Option<&'text str> {
+    input
+      .find(*self)
+      .map(|i| unsafe { input.get_unchecked(i + self.len_utf8()..) })
   }
 }
 
 impl Till for () {
-  fn parse(&self, input: &str) -> Option<usize> {
-    Some(input.len())
+  fn parse<'text>(&self, _: &'text str) -> Option<&'text str> {
+    Some("")
   }
 }
 
@@ -53,7 +57,7 @@ pub fn till<'a, State, Heap>(pattern: impl Till + 'a) -> Combinator<'a, (), Stat
   Combinator::boxed(move |input| {
     pattern
       .parse(input.rest())
-      .map(|digested| Output { kind: (), digested })
+      .map(|rest| Output { kind: (), rest })
   })
 }
 
@@ -68,29 +72,26 @@ mod tests {
       till("end".to_string()).parse(&mut Input::new("123end456", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 6
+        rest: "456"
       })
     );
     assert_eq!(
       till("end").parse(&mut Input::new("123end456", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 6
+        rest: "456"
       })
     );
     assert_eq!(
       till(';').parse(&mut Input::new("123;456", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 4
+        rest: "456"
       })
     );
     assert_eq!(
       till(()).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        kind: (),
-        digested: 3
-      })
+      Some(Output { kind: (), rest: "" })
     );
   }
 }

@@ -137,11 +137,11 @@ impl<'a, Lhs: Concat<Rhs> + 'a, Rhs: 'a, State: 'a, Heap: 'a> Add<Combinator<'a,
     Combinator::boxed(move |input| {
       self.parse(input).and_then(|output| {
         input
-          .digest(output.digested)
+          .reload(output.rest)
           .and_then(|mut input| rhs.parse(&mut input))
           .map(|rhs_output| Output {
             kind: output.kind.concat(rhs_output.kind),
-            digested: output.digested + rhs_output.digested,
+            rest: rhs_output.rest,
           })
       })
     })
@@ -177,18 +177,18 @@ mod tests {
   fn combinator_add() {
     let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
     let accepter_unit = || {
-      Combinator::boxed(|_| {
+      Combinator::boxed(|input| {
         Some(Output {
           kind: (),
-          digested: 1,
+          rest: &input.rest()[1..],
         })
       })
     };
     let accepter_int = || {
-      Combinator::boxed(|_| {
+      Combinator::boxed(|input| {
         Some(Output {
           kind: (123,),
-          digested: 1,
+          rest: &input.rest()[1..],
         })
       })
     };
@@ -210,7 +210,7 @@ mod tests {
         .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: (123,),
-        digested: 2,
+        rest: "3",
       })
     );
     assert_eq!(
@@ -218,14 +218,14 @@ mod tests {
         .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: (123,),
-        digested: 2,
+        rest: "3",
       })
     );
     assert_eq!(
       (accepter_int() + accepter_int()).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: (123, 123),
-        digested: 2,
+        rest: "3",
       })
     );
   }
@@ -236,22 +236,22 @@ mod tests {
     assert_eq!(
       (exact("123") + "456")
         .parse(&mut Input::new("123456", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.digested),
-      Some(6)
+        .map(|output| output.rest),
+      Some("")
     );
     // String
     assert_eq!(
       (exact("123") + "456".to_string())
         .parse(&mut Input::new("123456", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.digested),
-      Some(6)
+        .map(|output| output.rest),
+      Some("")
     );
     // char
     assert_eq!(
       (exact("1") + '2')
         .parse(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.digested),
-      Some(2)
+        .map(|output| output.rest),
+      Some("")
     );
   }
 
@@ -261,22 +261,22 @@ mod tests {
     assert_eq!(
       (eat(3) + 2)
         .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.digested),
-      Some(5)
+        .map(|output| output.rest),
+      Some("")
     );
     // overflow
     assert_eq!(
       (eat(3) + 3)
         .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.digested),
+        .map(|output| output.rest),
       None
     );
     // 0
     assert_eq!(
       (eat(0) + 0)
         .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.digested),
-      Some(0)
+        .map(|output| output.rest),
+      Some("12345")
     );
   }
 }

@@ -1,5 +1,3 @@
-use std::ops::Range;
-
 /// [`Combinator`](crate::combinator::Combinator)'s input.
 ///
 /// Once created, only [`Self::state`] and [`Self::heap`] can be mutated.
@@ -31,8 +29,6 @@ pub struct Input<'text, StateRef, HeapRef> {
   /// it should be stored here.
   pub heap: HeapRef,
 
-  /// See [`Input::text`].
-  text: &'text str,
   /// See [`Self::start`].
   start: usize,
   /// See [`Input::rest`].
@@ -40,31 +36,19 @@ pub struct Input<'text, StateRef, HeapRef> {
 }
 
 impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
-  /// Return [`Some`] if [`Self::rest`] can be constructed and not empty.
-  pub fn new(text: &'text str, start: usize, state: StateRef, heap: HeapRef) -> Option<Self> {
-    text.get(start..).and_then(|rest| {
-      (!rest.is_empty()).then(|| Self {
-        text,
-        rest,
-        start,
-        state,
-        heap,
-      })
+  /// Return [`Some`] if `rest` is not empty.
+  pub fn new(rest: &'text str, start: usize, state: StateRef, heap: HeapRef) -> Option<Self> {
+    (!rest.is_empty()).then(|| Self {
+      rest,
+      start,
+      state,
+      heap,
     })
   }
 
-  /// The whole input text.
+  /// The index of the whole input text, in bytes.
   ///
-  /// You can access the whole input text instead of only the rest of text,
-  /// so that you can check chars before the [`Self::start`] position if needed.
-  pub const fn text(&self) -> &'text str {
-    self.text
-  }
-
-  /// The index of [`Self::text`], in bytes.
-  ///
-  /// This is guaranteed to be smaller than the length of [`Self::text`],
-  /// and will never be mutated after the creation of this instance.
+  /// This will never be mutated after the creation of this instance.
   pub const fn start(&self) -> usize {
     self.start
   }
@@ -72,53 +56,37 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   /// The undigested part of the input text.
   /// This is guaranteed to be non-empty.
   ///
-  /// This is precalculated in [`Self::new`] and cached to prevent creating the slice every time
-  /// because this is frequently used across combinators.
-  ///
   /// If you just want to get the next char, use [`Self::next`] instead.
   pub const fn rest(&self) -> &'text str {
     self.rest
   }
 
-  /// The next char in the rest of the input text.
+  /// The first char in [`Self::rest`].
   ///
   /// Since [`Self::rest`] is guaranteed to be non-empty,
   /// the next char is guaranteed to be available.
+  ///
+  /// This is faster than `self.rest().chars().next().unwrap()`.
   pub fn next(&self) -> char {
     // SAFETY: `self.rest()` is guaranteed to be not empty.
+    // TODO: make this faster by override `core::str::validations::next_code_point`
     unsafe { self.rest().chars().next().unwrap_unchecked() }
-  }
-
-  /// A helper method to create a [`Range`] from [`Self::start`]
-  /// with the `digested` length.
-  /// # Caveats
-  /// This method won't check if the `digested` length is
-  /// greater than the length of [`Self::rest`].
-  /// For a checked version, use [`Self::range`].
-  pub const fn range_unchecked(&self, digested: usize) -> Range<usize> {
-    self.start..(self.start + digested)
-  }
-
-  /// A helper method to create a [`Range`] from [`Self::start`]
-  /// with the `digested` length.
-  ///
-  /// Return [`None`] if the `digested` length is greater than the length of [`Self::rest`].
-  pub const fn range(&self, digested: usize) -> Option<Range<usize>> {
-    if digested > self.rest.len() {
-      None
-    } else {
-      Some(self.range_unchecked(digested))
-    }
   }
 }
 
 // TODO: is this function's lifetime correct?
 impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
-  /// Try to construct a new [`Input`] by moving the [`Self::start`] forward by `n`.
+  /// Try to construct a new [`Input`] with the provided `rest`.
+  /// The [`start`](Self::start) of the new instance will be auto calculated.
   ///
-  /// Return [`Some`] if [`Self::rest`] can be constructed and not empty.
-  pub fn digest(&mut self, n: usize) -> Option<Input<'text, &mut State, &mut Heap>> {
-    Input::new(self.text, self.start + n, &mut *self.state, &mut *self.heap)
+  /// Return [`Some`] if `rest` not empty.
+  pub fn reload(&mut self, rest: &'text str) -> Option<Input<'text, &mut State, &mut Heap>> {
+    Input::new(
+      rest,
+      self.rest.len() - rest.len() + self.start,
+      &mut *self.state,
+      &mut *self.heap,
+    )
   }
 }
 
@@ -127,67 +95,27 @@ mod tests {
   use super::*;
 
   #[test]
-  fn input_at_start() {
+  fn input_new() {
     let mut state = ();
     let mut heap = ();
     let input = Input::new("123", 0, &mut state, &mut heap).unwrap();
-    assert_eq!(input.text(), "123");
     assert_eq!(input.start(), 0);
     assert_eq!(input.rest(), "123");
     assert_eq!(input.next(), '1');
   }
 
   #[test]
-  fn input_in_the_middle() {
-    let mut state = ();
-    let mut heap = ();
-    let input = Input::new("123", 1, &mut state, &mut heap).unwrap();
-    assert_eq!(input.text(), "123");
-    assert_eq!(input.start(), 1);
-    assert_eq!(input.rest(), "23");
-    assert_eq!(input.next(), '2');
+  fn input_new_no_rest() {
+    assert!(Input::new("", 0, &mut (), &mut ()).is_none());
   }
 
   #[test]
-  fn input_no_rest() {
-    assert!(Input::new("123", 3, &mut (), &mut ()).is_none());
-  }
-
-  #[test]
-  fn input_out_of_text() {
-    assert!(Input::new("123", 4, &mut (), &mut ()).is_none());
-  }
-
-  #[test]
-  fn input_invalid_utf8_boundary() {
-    assert!(Input::new("好", 1, &mut (), &mut ()).is_none());
-  }
-
-  #[test]
-  fn input_digest() {
+  fn input_reload() {
     let mut state = ();
     let mut heap = ();
     let mut input = Input::new("123", 0, &mut state, &mut heap).unwrap();
-    assert_eq!(input.digest(1).unwrap().rest(), "23");
-    assert_eq!(input.digest(2).unwrap().rest(), "3");
-    assert!(input.digest(3).is_none());
-  }
-
-  #[test]
-  fn input_range_unchecked() {
-    let mut state = ();
-    let mut heap = ();
-    let input = Input::new("123", 1, &mut state, &mut heap).unwrap();
-    assert_eq!(input.range_unchecked(2), Range { start: 1, end: 3 });
-    assert_eq!(input.range_unchecked(3), Range { start: 1, end: 4 });
-  }
-
-  #[test]
-  fn input_range() {
-    let mut state = ();
-    let mut heap = ();
-    let input = Input::new("123", 1, &mut state, &mut heap).unwrap();
-    assert_eq!(input.range(2), Some(Range { start: 1, end: 3 }));
-    assert_eq!(input.range(3), None);
+    assert_eq!(input.reload("23").unwrap().start(), 1);
+    assert_eq!(input.reload("3").unwrap().start(), 2);
+    assert!(input.reload("").is_none());
   }
 }

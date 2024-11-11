@@ -27,7 +27,9 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Combinator<'a, Kind, State, Heap> {
   /// ```
   pub fn then(
     self,
-    modifier: impl Fn(AcceptedOutputContext<&mut Input<&mut State, &mut Heap>, &Output<Kind>>) + 'a,
+    modifier: impl for<'text> Fn(
+        AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, Kind>>,
+      ) + 'a,
   ) -> Self {
     Combinator::boxed(move |input| {
       self.parse(input).inspect(|output| {
@@ -70,7 +72,7 @@ mod tests {
       input.state.to = input.state.from;
       Some(Output {
         kind: (),
-        digested: 1,
+        rest: &input.rest()[1..],
       })
     })
   }

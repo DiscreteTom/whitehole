@@ -81,8 +81,9 @@ pub use input::*;
 pub use output::*;
 
 /// A boxed function. Return [`None`] if the combinator is rejected.
-pub type CombinatorExec<'a, Kind, State = (), Heap = ()> =
-  Box<dyn Fn(&mut Input<&mut State, &mut Heap>) -> Option<Output<Kind>> + 'a>;
+pub type CombinatorExec<'a, Kind, State = (), Heap = ()> = Box<
+  dyn for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>> + 'a,
+>;
 
 /// See the [module-level documentation](crate::combinator).
 pub struct Combinator<'a, Kind, State = (), Heap = ()> {
@@ -97,13 +98,17 @@ impl<'a, Kind, State, Heap> Combinator<'a, Kind, State, Heap> {
 
   /// Create a new instance by boxing the `exec` function.
   pub fn boxed(
-    exec: impl Fn(&mut Input<&mut State, &mut Heap>) -> Option<Output<Kind>> + 'a,
+    exec: impl for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>
+      + 'a,
   ) -> Self {
     Self::new(Box::new(exec))
   }
 
   /// Execute the combinator.
-  pub fn parse(&self, input: &mut Input<&mut State, &mut Heap>) -> Option<Output<Kind>> {
+  pub fn parse<'text>(
+    &self,
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, Kind>> {
     (self.exec)(input)
   }
 }
@@ -115,14 +120,14 @@ mod tests {
   #[test]
   fn combinator_parse() {
     assert_eq!(
-      Combinator::boxed(|_| Some(Output {
+      Combinator::boxed(|input| Some(Output {
         kind: (),
-        digested: 1
+        rest: &input.rest()[1..]
       }))
       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: (),
-        digested: 1
+        rest: "23"
       })
     );
   }
