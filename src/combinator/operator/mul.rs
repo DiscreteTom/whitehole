@@ -1,17 +1,86 @@
 //! Overload [`Mul`] operator for [`Combinator`].
 
-use crate::{
-  combinator::{Combinator, Output},
-  polyfill::RangeBounds,
-};
-use std::ops::{Bound, Mul};
+use crate::combinator::{Combinator, Output};
+use std::ops::{Mul, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
+
+// TODO: better name
+pub trait Repeat {
+  // TODO: better name
+  fn should_repeat(&self, repeat: usize) -> bool;
+  fn should_accept(&self, repeat: usize) -> bool;
+}
+
+impl Repeat for usize {
+  fn should_repeat(&self, repeat: usize) -> bool {
+    repeat < *self
+  }
+
+  fn should_accept(&self, repeat: usize) -> bool {
+    repeat == *self
+  }
+}
+
+impl Repeat for Range<usize> {
+  fn should_repeat(&self, repeat: usize) -> bool {
+    repeat + 1 < self.end
+  }
+
+  fn should_accept(&self, repeat: usize) -> bool {
+    self.contains(&repeat)
+  }
+}
+impl Repeat for RangeFrom<usize> {
+  fn should_repeat(&self, _: usize) -> bool {
+    true
+  }
+
+  fn should_accept(&self, repeat: usize) -> bool {
+    self.contains(&repeat)
+  }
+}
+impl Repeat for RangeFull {
+  fn should_repeat(&self, _: usize) -> bool {
+    true
+  }
+
+  fn should_accept(&self, _: usize) -> bool {
+    true
+  }
+}
+impl Repeat for RangeInclusive<usize> {
+  fn should_repeat(&self, repeat: usize) -> bool {
+    repeat < *self.end()
+  }
+
+  fn should_accept(&self, repeat: usize) -> bool {
+    self.contains(&repeat)
+  }
+}
+impl Repeat for RangeTo<usize> {
+  fn should_repeat(&self, repeat: usize) -> bool {
+    repeat + 1 < self.end
+  }
+
+  fn should_accept(&self, repeat: usize) -> bool {
+    self.contains(&repeat)
+  }
+}
+impl Repeat for RangeToInclusive<usize> {
+  fn should_repeat(&self, repeat: usize) -> bool {
+    repeat < self.end
+  }
+
+  fn should_accept(&self, repeat: usize) -> bool {
+    self.contains(&repeat)
+  }
+}
 
 impl<
     'a,
     Kind: 'a,
     State: 'a,
     Heap: 'a,
-    Range: RangeBounds<usize> + 'a,
+    Range: Repeat + 'a,
     Acc,
     Initializer: Fn() -> Acc + 'a,
     InlineFolder: Fn(Kind, Acc) -> Acc + 'a,
@@ -26,81 +95,31 @@ impl<
   fn mul(self, rhs: (Range, Initializer, InlineFolder)) -> Self::Output {
     let (range, init, folder) = rhs;
     Combinator::boxed(move |input| {
-      // if repeat at most 0 times, just return the default value
-      if match range.end_bound() {
-        Bound::Included(&end) => end == 0,
-        Bound::Excluded(&end) => end <= 1,
-        Bound::Unbounded => false,
-      } {
-        return Some(Output {
-          kind: init(),
-          digested: 0,
-        });
-      }
-
-      let (repeated, output) = match self.parse(input) {
-        None => {
-          // the first parse is rejected,
-          // accept if 0 is included in the range
-          if match range.start_bound() {
-            Bound::Included(&start) => start == 0,
-            Bound::Excluded(_) => false, // usize cannot be negative
-            Bound::Unbounded => true,
-          } {
-            return Some(Output {
-              kind: init(),
-              digested: 0,
-            });
-          }
-          // else, repeat 0 times is not allowed, reject
-          return None;
-        }
-        Some(output) => {
-          let mut repeated = 1;
-          // generate the target kind value here instead of outer scope
-          // to prevent unnecessary creation of the default value
-          let mut output = output.map(|kind| folder(kind, init()));
-          while match range.end_bound() {
-            Bound::Included(&end) => repeated < end,
-            Bound::Excluded(&end) => repeated + 1 < end,
-            Bound::Unbounded => true,
-          } {
-            match input
-              .digest(output.digested)
-              .and_then(|mut input| self.parse(&mut input))
-            {
-              Some(next_output) => {
-                output.digested += next_output.digested;
-                output.kind = folder(next_output.kind, output.kind);
-                repeated += 1;
-              }
-              None => {
-                // end of input, or rejected
-                // proceed with current output
-                break;
-              }
-            }
-          }
-          (repeated, output)
-        }
+      let mut repeated = 0;
+      let mut output = Output {
+        kind: init(),
+        digested: 0,
       };
+      while range.should_repeat(repeated) {
+        match input
+          .digest(output.digested)
+          .and_then(|mut input| self.parse(&mut input))
+        {
+          Some(next_output) => {
+            output.digested += next_output.digested;
+            output.kind = folder(next_output.kind, output.kind);
+            repeated += 1;
+          }
+          None => {
+            // end of input, or rejected
+            // proceed with current output
+            break;
+          }
+        }
+      }
 
       // reject if repeated times is too few
-      match range.start_bound() {
-        Bound::Included(&start) => {
-          if repeated < start {
-            return None;
-          }
-        }
-        Bound::Excluded(&start) => {
-          if repeated <= start {
-            return None;
-          }
-        }
-        Bound::Unbounded => {}
-      }
-
-      output.into()
+      range.should_accept(repeated).then_some(output)
     })
   }
 }
@@ -169,7 +188,7 @@ impl Fold for () {
   fn fold(self, _: Self::Output) -> Self::Output {}
 }
 
-impl<'a, Kind: Fold + 'a, State: 'a, Heap: 'a, Range: RangeBounds<usize> + 'a> Mul<Range>
+impl<'a, Kind: Fold + 'a, State: 'a, Heap: 'a, Range: Repeat + 'a> Mul<Range>
   for Combinator<'a, Kind, State, Heap>
 {
   type Output = Combinator<'a, Kind::Output, State, Heap>;
