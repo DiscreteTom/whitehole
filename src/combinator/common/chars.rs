@@ -18,15 +18,13 @@ use crate::combinator::Combinator;
 pub fn next<'a, State, Heap>(
   condition: impl Fn(char) -> bool + 'a,
 ) -> Combinator<'a, (), State, Heap> {
-  unsafe {
-    eater_unchecked(move |input| {
-      let next = input.next();
-      if !condition(next) {
-        return 0;
-      }
-      next.len_utf8()
-    })
-  }
+  Combinator::boxed(move |input| {
+    let next = input.next();
+    if !condition(next) {
+      return None;
+    }
+    Some(unsafe { input.digest_unchecked(next.len_utf8()) })
+  })
 }
 
 /// Match chars by the condition greedily.

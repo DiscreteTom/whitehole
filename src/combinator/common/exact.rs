@@ -1,37 +1,35 @@
-use crate::combinator::{Combinator, Output};
+use crate::combinator::Combinator;
 
 /// A util trait to make [`exact`] generic over different types.
 ///
 /// Built-in implementations are provided for [`String`], `&str`, and [`char`].
 ///
 /// See [`exact`] for more details.
-pub trait Exact {
+/// # Safety
+/// You should ensure that [`Output::rest`](crate::combinator::Output::rest) can be built
+/// as a valid UTF-8 string.
+/// This will be checked using [`debug_assert!`].
+pub unsafe trait Exact {
   /// Check if the input starts with this instance.
-  /// Return the rest of input if found.
-  fn parse<'text>(&self, input: &'text str) -> Option<&'text str>;
+  /// Return the length of digested bytes if found.
+  fn parse(&self, input: &str) -> Option<usize>;
 }
 
-impl Exact for String {
-  fn parse<'text>(&self, input: &'text str) -> Option<&'text str> {
-    input
-      .starts_with(self)
-      .then(|| unsafe { input.get_unchecked(self.len()..) })
+unsafe impl Exact for String {
+  fn parse(&self, input: &str) -> Option<usize> {
+    input.starts_with(self).then_some(self.len())
   }
 }
 
-impl Exact for &str {
-  fn parse<'text>(&self, input: &'text str) -> Option<&'text str> {
-    input
-      .starts_with(self)
-      .then(|| unsafe { input.get_unchecked(self.len()..) })
+unsafe impl Exact for &str {
+  fn parse(&self, input: &str) -> Option<usize> {
+    input.starts_with(self).then_some(self.len())
   }
 }
 
-impl Exact for char {
-  fn parse<'text>(&self, input: &'text str) -> Option<&'text str> {
-    input
-      .starts_with(*self)
-      .then(|| unsafe { input.get_unchecked(self.len_utf8()..) })
+unsafe impl Exact for char {
+  fn parse(&self, input: &str) -> Option<usize> {
+    input.starts_with(*self).then(|| self.len_utf8())
   }
 }
 
@@ -54,7 +52,7 @@ pub fn exact<'a, State, Heap>(pattern: impl Exact + 'a) -> Combinator<'a, (), St
   Combinator::boxed(move |input| {
     pattern
       .parse(input.rest())
-      .map(|rest| Output { kind: (), rest })
+      .map(|digested| unsafe { input.digest_unchecked(digested) })
   })
 }
 

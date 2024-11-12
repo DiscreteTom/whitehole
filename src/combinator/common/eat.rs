@@ -1,6 +1,6 @@
 //! Basic combinators that just eat some bytes from the input text.
 
-use crate::combinator::{Combinator, Input, Output};
+use crate::combinator::{Combinator, Input};
 
 /// Eat `n` bytes from the rest of the input text.
 /// Reject if [`Output::rest`] can't be built
@@ -15,7 +15,7 @@ use crate::combinator::{Combinator, Input, Output};
 /// let _: Combinator<_> = eat(10);
 /// ```
 pub fn eat<'a, State, Heap>(n: usize) -> Combinator<'a, (), State, Heap> {
-  Combinator::boxed(move |input| input.rest().get(n..).map(|rest| Output { kind: (), rest }))
+  Combinator::boxed(move |input| input.digest(n))
 }
 
 /// Eat `n` bytes from the rest of the input text,
@@ -23,7 +23,7 @@ pub fn eat<'a, State, Heap>(n: usize) -> Combinator<'a, (), State, Heap> {
 ///
 /// `0` is allowed but be careful with infinite loops.
 /// # Safety
-/// You should ensure that [`Output::rest`] can be built
+/// You should ensure that [`Output::rest`](crate::combinator::Output::rest) can be built
 /// as a valid UTF-8 string.
 /// This will be checked using [`debug_assert!`].
 /// For the checked version, see [`eat`].
@@ -34,19 +34,11 @@ pub fn eat<'a, State, Heap>(n: usize) -> Combinator<'a, (), State, Heap> {
 /// let _: Combinator<_> = unsafe { eat_unchecked(10) };
 /// ```
 pub unsafe fn eat_unchecked<'a, State, Heap>(n: usize) -> Combinator<'a, (), State, Heap> {
-  Combinator::boxed(move |input| {
-    debug_assert!(input.rest().get(n..).is_some());
-
-    Output {
-      kind: (),
-      rest: input.rest().get_unchecked(n..),
-    }
-    .into()
-  })
+  Combinator::boxed(move |input| input.digest_unchecked(n).into())
 }
 
 /// Accept a function that eats [`Input::rest`] and returns the number of digested bytes.
-/// Reject if the function returns `0` or [`Output::rest`] can't be built
+/// Reject if the function returns `0` or [`Output::rest`](crate::combinator::Output::rest) can't be built
 /// as a valid UTF-8 string.
 /// # Examples
 /// ```
@@ -59,7 +51,7 @@ pub fn eater<'a, State, Heap>(
 ) -> Combinator<'a, (), State, Heap> {
   Combinator::boxed(move |input| match f(input) {
     0 => None,
-    digested => (input.rest().get(digested..)).map(|rest| Output { kind: (), rest }),
+    digested => input.digest(digested),
   })
 }
 
@@ -80,14 +72,7 @@ pub unsafe fn eater_unchecked<'a, State, Heap>(
 ) -> Combinator<'a, (), State, Heap> {
   Combinator::boxed(move |input| match f(input) {
     0 => None,
-    digested => {
-      debug_assert!(input.rest().get(digested..).is_some());
-      Output {
-        kind: (),
-        rest: input.rest().get_unchecked(digested..),
-      }
-      .into()
-    }
+    digested => input.digest_unchecked(digested).into(),
   })
 }
 

@@ -1,43 +1,41 @@
-use crate::combinator::{Combinator, Output};
+use crate::combinator::Combinator;
 
 /// A util trait to make [`till`] generic over different types.
 ///
 /// Built-in implementations are provided for [`String`], `&str`, [`char`] and `()`.
 ///
 /// See [`till`] for more details.
-pub trait Till {
+/// # Safety
+/// You should ensure that [`Output::rest`](crate::combinator::Output::rest) can be built
+/// as a valid UTF-8 string.
+/// This will be checked using [`debug_assert!`].
+pub unsafe trait Till {
   /// Check if the input contains this instance.
-  /// Return the rest of input if found.
-  fn parse<'text>(&self, input: &'text str) -> Option<&'text str>;
+  /// Return the length of digested bytes if found.
+  fn parse(&self, input: &str) -> Option<usize>;
 }
 
-impl Till for String {
-  fn parse<'text>(&self, input: &'text str) -> Option<&'text str> {
-    input
-      .find(self)
-      .map(|i| unsafe { input.get_unchecked(i + self.len()..) })
+unsafe impl Till for String {
+  fn parse(&self, input: &str) -> Option<usize> {
+    input.find(self).map(|i| i + self.len())
   }
 }
 
-impl Till for &str {
-  fn parse<'text>(&self, input: &'text str) -> Option<&'text str> {
-    input
-      .find(self)
-      .map(|i| unsafe { input.get_unchecked(i + self.len()..) })
+unsafe impl Till for &str {
+  fn parse(&self, input: &str) -> Option<usize> {
+    input.find(self).map(|i| i + self.len())
   }
 }
 
-impl Till for char {
-  fn parse<'text>(&self, input: &'text str) -> Option<&'text str> {
-    input
-      .find(*self)
-      .map(|i| unsafe { input.get_unchecked(i + self.len_utf8()..) })
+unsafe impl Till for char {
+  fn parse(&self, input: &str) -> Option<usize> {
+    input.find(*self).map(|i| i + self.len_utf8())
   }
 }
 
-impl Till for () {
-  fn parse<'text>(&self, _: &'text str) -> Option<&'text str> {
-    Some("")
+unsafe impl Till for () {
+  fn parse(&self, input: &str) -> Option<usize> {
+    Some(input.len())
   }
 }
 
@@ -57,14 +55,14 @@ pub fn till<'a, State, Heap>(pattern: impl Till + 'a) -> Combinator<'a, (), Stat
   Combinator::boxed(move |input| {
     pattern
       .parse(input.rest())
-      .map(|rest| Output { kind: (), rest })
+      .map(|digested| unsafe { input.digest_unchecked(digested) })
   })
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::combinator::Input;
+  use crate::combinator::{Input, Output};
 
   #[test]
   fn till_parse() {
