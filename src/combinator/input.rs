@@ -75,7 +75,6 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   #[inline]
   pub fn next(&self) -> char {
     // SAFETY: `self.rest()` is guaranteed to be not empty.
-    // TODO: make this faster by override `core::str::validations::next_code_point`
     unsafe { self.rest().chars().next().unwrap_unchecked() }
   }
 
