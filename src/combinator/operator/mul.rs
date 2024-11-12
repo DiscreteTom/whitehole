@@ -115,21 +115,15 @@ impl<
         rest: input.rest(),
       };
       while range.should_repeat(repeated) {
-        match input
-          .reload(output.rest)
-          .and_then(|mut input| self.parse(&mut input))
-        {
-          Some(next_output) => {
-            output.rest = next_output.rest;
-            output.kind = folder(next_output.kind, output.kind);
-            repeated += 1;
-          }
-          None => {
-            // end of input, or rejected
-            // proceed with current output
-            break;
-          }
-        }
+        let Some(mut input) = input.reload(output.rest) else {
+          break;
+        };
+        let Some(next_output) = self.parse(&mut input) else {
+          break;
+        };
+        output.rest = next_output.rest;
+        output.kind = folder(next_output.kind, output.kind);
+        repeated += 1;
       }
 
       // reject if repeated times is too few
