@@ -86,6 +86,7 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   /// # Safety
   /// You should ensure that [`Output::rest`] can be built
   /// as a valid UTF-8 string.
+  /// This will be checked using [`debug_assert!`].
   /// For the checked version, see [`Self::digest`].
   pub unsafe fn digest_unchecked(&self, n: usize) -> Output<'text, ()> {
     debug_assert!(self.rest.get(n..).is_some());
