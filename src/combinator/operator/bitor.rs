@@ -7,6 +7,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> BitOr for Combinator<'a, Kind, State, He
   type Output = Self;
 
   /// Try to parse with the left-hand side, if it fails, try the right-hand side.
+  #[inline]
   fn bitor(self, rhs: Self) -> Self::Output {
     Combinator::boxed(move |input| self.parse(input).or_else(|| rhs.parse(input)))
   }
@@ -16,6 +17,7 @@ impl<'a, State: 'a, Heap: 'a, T: Exact + 'a> BitOr<T> for Combinator<'a, (), Sta
   type Output = Combinator<'a, (), State, Heap>;
 
   /// Shortcut for `self | exact(rhs)`. See [`exact`].
+  #[inline]
   fn bitor(self, rhs: T) -> Self::Output {
     self | exact(rhs)
   }
@@ -25,6 +27,7 @@ impl<'a, State: 'a, Heap: 'a> BitOr<usize> for Combinator<'a, (), State, Heap> {
   type Output = Combinator<'a, (), State, Heap>;
 
   /// Shortcut for `self | eat(rhs)`. See [`eat`].
+  #[inline]
   fn bitor(self, rhs: usize) -> Self::Output {
     self | eat(rhs)
   }

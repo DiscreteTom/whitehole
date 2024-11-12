@@ -11,6 +11,7 @@ pub struct Output<'text, Kind> {
 
 impl<'text, Kind> Output<'text, Kind> {
   /// Convert [`Self::kind`] to a new kind.
+  #[inline]
   pub fn map<NewKind>(self, f: impl FnOnce(Kind) -> NewKind) -> Output<'text, NewKind> {
     Output {
       kind: f(self.kind),

@@ -19,6 +19,7 @@ pub trait Concat<Rhs> {
 
 impl<T> Concat<()> for T {
   type Output = T;
+  #[inline]
   fn concat(self, _: ()) -> Self::Output {
     self
   }
@@ -28,6 +29,7 @@ macro_rules! impl_concat_for_unit {
   ($($rhs:ident),*) => {
     impl<$($rhs),*> Concat<($($rhs),*,)> for () {
       type Output = ($($rhs),*,);
+      #[inline]
       fn concat(self, rhs: ($($rhs),*,)) -> Self::Output {
         rhs
       }
@@ -51,6 +53,7 @@ macro_rules! impl_concat_tuple {
   (($($lhs:ident),*), ($($rhs:ident),*)) => {
     impl<$($lhs),*,$($rhs),*> Concat<($($rhs),*,)> for ($($lhs),*,) {
       type Output = ($($lhs),*,$($rhs),*);
+      #[inline]
       fn concat(self, rhs: ($($rhs),*,)) -> Self::Output {
         let ($($lhs),*,) = self;
         let ($($rhs),*,) = rhs;
@@ -154,6 +157,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a, T: Exact + 'a> Add<T>
   type Output = Combinator<'a, Kind, State, Heap>;
 
   /// Shortcut for `self + exact(rhs)`. See [`exact`].
+  #[inline]
   fn add(self, rhs: T) -> Self::Output {
     self + exact(rhs)
   }
@@ -163,6 +167,7 @@ impl<'a, Kind: 'a, State: 'a, Heap: 'a> Add<usize> for Combinator<'a, Kind, Stat
   type Output = Combinator<'a, Kind, State, Heap>;
 
   /// Shortcut for `self + eat(rhs)`. See [`eat`].
+  #[inline]
   fn add(self, rhs: usize) -> Self::Output {
     self + eat(rhs)
   }

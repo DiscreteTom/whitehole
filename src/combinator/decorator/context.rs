@@ -17,6 +17,7 @@ macro_rules! impl_ctx {
   ($input:ty, $output:ty) => {
     impl<'text, Kind, StateRef, HeapRef> AcceptedOutputContext<$input, $output> {
       /// How many bytes are digested by this combinator.
+      #[inline]
       pub fn digested(&self) -> usize {
         self.input.rest().len() - self.output.rest.len()
       }
@@ -24,6 +25,7 @@ macro_rules! impl_ctx {
       /// The end index in bytes in the whole input text.
       ///
       /// Shortcut for `self.input.start() + self.digested()`.
+      #[inline]
       pub fn end(&self) -> usize {
         self.input.start() + self.digested()
       }
@@ -31,11 +33,13 @@ macro_rules! impl_ctx {
       /// The byte range of the digested text in the whole input text.
       ///
       /// Shortcut for `self.input.start()..self.end()`.
+      #[inline]
       pub fn range(&self) -> Range<usize> {
         self.input.start()..self.end()
       }
 
       /// The text content accepted by this combinator.
+      #[inline]
       pub fn content(&self) -> &'text str {
         // we don't cache this slice since it might not be used frequently
         unsafe { self.input.rest().get_unchecked(..self.digested()) }

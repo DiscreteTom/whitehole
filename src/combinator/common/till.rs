@@ -16,24 +16,28 @@ pub unsafe trait Till {
 }
 
 unsafe impl Till for String {
+  #[inline]
   fn parse(&self, input: &str) -> Option<usize> {
     input.find(self).map(|i| i + self.len())
   }
 }
 
 unsafe impl Till for &str {
+  #[inline]
   fn parse(&self, input: &str) -> Option<usize> {
     input.find(self).map(|i| i + self.len())
   }
 }
 
 unsafe impl Till for char {
+  #[inline]
   fn parse(&self, input: &str) -> Option<usize> {
     input.find(*self).map(|i| i + self.len_utf8())
   }
 }
 
 unsafe impl Till for () {
+  #[inline]
   fn parse(&self, input: &str) -> Option<usize> {
     Some(input.len())
   }

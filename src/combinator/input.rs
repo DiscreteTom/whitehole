@@ -39,6 +39,7 @@ pub struct Input<'text, StateRef, HeapRef> {
 
 impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   /// Return [`Some`] if `rest` is not empty.
+  #[inline]
   pub fn new(rest: &'text str, start: usize, state: StateRef, heap: HeapRef) -> Option<Self> {
     (!rest.is_empty()).then(|| Self {
       rest,
@@ -51,6 +52,7 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   /// The index of the whole input text, in bytes.
   ///
   /// This will never be mutated after the creation of this instance.
+  #[inline]
   pub const fn start(&self) -> usize {
     self.start
   }
@@ -59,6 +61,7 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   /// This is guaranteed to be non-empty.
   ///
   /// If you just want to get the next char, use [`Self::next`] instead.
+  #[inline]
   pub const fn rest(&self) -> &'text str {
     self.rest
   }
@@ -69,6 +72,7 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   /// the next char is guaranteed to be available.
   ///
   /// This is faster than `self.rest().chars().next().unwrap()`.
+  #[inline]
   pub fn next(&self) -> char {
     // SAFETY: `self.rest()` is guaranteed to be not empty.
     // TODO: make this faster by override `core::str::validations::next_code_point`
@@ -78,6 +82,7 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   /// Try to build an [`Output`] by digesting `n` bytes.
   /// Return [`None`] if the [`Output::rest`] can't be built
   /// as a valid UTF-8 string.
+  #[inline]
   pub fn digest(&self, n: usize) -> Option<Output<'text, ()>> {
     self.rest.get(n..).map(|rest| Output { kind: (), rest })
   }
@@ -88,6 +93,7 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   /// as a valid UTF-8 string.
   /// This will be checked using [`debug_assert!`].
   /// For the checked version, see [`Self::digest`].
+  #[inline]
   pub unsafe fn digest_unchecked(&self, n: usize) -> Output<'text, ()> {
     debug_assert!(self.rest.get(n..).is_some());
     Output {
@@ -103,6 +109,7 @@ impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
   /// The [`start`](Self::start) of the new instance will be auto calculated.
   ///
   /// Return [`Some`] if `rest` not empty.
+  #[inline]
   pub fn reload(&mut self, rest: &'text str) -> Option<Input<'text, &mut State, &mut Heap>> {
     Input::new(
       rest,

@@ -105,6 +105,7 @@ impl<'a, Kind, State, Heap> Combinator<'a, Kind, State, Heap> {
   }
 
   /// Execute the combinator.
+  #[inline]
   pub fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,

@@ -11,65 +11,79 @@ pub trait Repeat {
 }
 
 impl Repeat for usize {
+  #[inline]
   fn should_repeat(&self, repeat: usize) -> bool {
     repeat < *self
   }
 
+  #[inline]
   fn should_accept(&self, repeat: usize) -> bool {
     repeat == *self
   }
 }
 
 impl Repeat for Range<usize> {
+  #[inline]
   fn should_repeat(&self, repeat: usize) -> bool {
     repeat + 1 < self.end
   }
 
+  #[inline]
   fn should_accept(&self, repeat: usize) -> bool {
     self.contains(&repeat)
   }
 }
 impl Repeat for RangeFrom<usize> {
+  #[inline]
   fn should_repeat(&self, _: usize) -> bool {
     true
   }
 
+  #[inline]
   fn should_accept(&self, repeat: usize) -> bool {
     self.contains(&repeat)
   }
 }
 impl Repeat for RangeFull {
+  #[inline]
   fn should_repeat(&self, _: usize) -> bool {
     true
   }
 
+  #[inline]
   fn should_accept(&self, _: usize) -> bool {
     true
   }
 }
 impl Repeat for RangeInclusive<usize> {
+  #[inline]
   fn should_repeat(&self, repeat: usize) -> bool {
     repeat < *self.end()
   }
 
+  #[inline]
   fn should_accept(&self, repeat: usize) -> bool {
     self.contains(&repeat)
   }
 }
 impl Repeat for RangeTo<usize> {
+  #[inline]
   fn should_repeat(&self, repeat: usize) -> bool {
     repeat + 1 < self.end
   }
 
+  #[inline]
   fn should_accept(&self, repeat: usize) -> bool {
     self.contains(&repeat)
   }
 }
 impl Repeat for RangeToInclusive<usize> {
+  #[inline]
   fn should_repeat(&self, repeat: usize) -> bool {
     repeat < self.end
   }
 
+  #[inline]
   fn should_accept(&self, repeat: usize) -> bool {
     self.contains(&repeat)
   }
@@ -185,6 +199,7 @@ pub trait Fold {
 
 impl Fold for () {
   type Output = ();
+  #[inline]
   fn fold(self, _: Self::Output) -> Self::Output {}
 }
 
@@ -197,6 +212,7 @@ impl<'a, Kind: Fold + 'a, State: 'a, Heap: 'a, Range: Repeat + 'a> Mul<Range>
   /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
   ///
   /// See [`Fold`] for more information.
+  #[inline]
   fn mul(self, rhs: Range) -> Self::Output {
     self * (rhs, Kind::Output::default, Kind::fold)
   }

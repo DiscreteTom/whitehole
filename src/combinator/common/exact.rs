@@ -16,18 +16,21 @@ pub unsafe trait Exact {
 }
 
 unsafe impl Exact for String {
+  #[inline]
   fn parse(&self, input: &str) -> Option<usize> {
     input.starts_with(self).then_some(self.len())
   }
 }
 
 unsafe impl Exact for &str {
+  #[inline]
   fn parse(&self, input: &str) -> Option<usize> {
     input.starts_with(self).then_some(self.len())
   }
 }
 
 unsafe impl Exact for char {
+  #[inline]
   fn parse(&self, input: &str) -> Option<usize> {
     input.starts_with(*self).then(|| self.len_utf8())
   }
