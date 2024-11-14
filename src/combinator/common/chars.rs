@@ -17,7 +17,7 @@ pub struct Next<F> {
 /// This is usually used with the [`in_str!`](crate::in_str) macro.
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::{Combinator, next}, in_str};
+/// use whitehole::{combinator::next, in_str};
 /// // match one ascii digit
 /// next(|c| c.is_ascii_digit());
 /// // match a char in a literal str
@@ -63,7 +63,7 @@ pub struct Chars<F> {
 /// TODO: make [`next`] faster enough to remove this.
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::{Combinator, chars}, in_str};
+/// use whitehole::{combinator::chars, in_str};
 /// // match all ascii digits greedily
 /// chars(|ch| ch.is_ascii_digit());
 /// // match all JSON whitespaces greedily
