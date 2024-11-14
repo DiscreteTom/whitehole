@@ -45,19 +45,21 @@ impl<Entry, State, Heap> Builder<Entry, State, Heap> {
   }
 
   /// Set [`Parser::entry`].
-  pub fn entry<Kind>(
+  pub fn entry<'a, Kind>(
     self,
-    entry: Combinator<Kind, State, Heap>,
-  ) -> Builder<Combinator<Kind, State, Heap>, State, Heap> {
+    entry: impl Combinator<State, Heap, Kind = Kind> + 'a,
+  ) -> Builder<Box<dyn Combinator<State, Heap, Kind = Kind> + 'a>, State, Heap> {
     Builder {
-      entry,
+      entry: Box::new(entry),
       state: self.state,
       heap: self.heap,
     }
   }
 }
 
-impl<'a, Kind, State, Heap> Builder<Combinator<'a, Kind, State, Heap>, State, Heap> {
+impl<'a, Kind, State, Heap>
+  Builder<Box<dyn Combinator<State, Heap, Kind = Kind> + 'a>, State, Heap>
+{
   /// Build a [`Parser`] with the given text.
   pub fn build<'text>(self, text: &'text str) -> Parser<'a, 'text, Kind, State, Heap> {
     Parser {

@@ -1,93 +1,122 @@
 //! Overload [`BitOr`] operator for [`Combinator`].
 
-use crate::combinator::{eat, exact, Combinator, Exact};
-use std::ops::BitOr;
+use crate::{
+  combinator::{eat, Combinator, Input, Output},
+  impl_combinator_ops,
+};
+use std::ops;
 
-impl<'a, Kind: 'a, State: 'a, Heap: 'a> BitOr for Combinator<'a, Kind, State, Heap> {
-  type Output = Self;
+// impl<'a, Kind: 'a, State: 'a, Heap: 'a> ops::BitOr for Combinator<'a, Kind, State, Heap> {
+//   type Output = Self;
 
-  /// Try to parse with the left-hand side, if it fails, try the right-hand side.
-  #[inline]
-  fn bitor(self, rhs: Self) -> Self::Output {
-    Combinator::boxed(move |input| self.parse(input).or_else(|| rhs.parse(input)))
+//   /// Try to parse with the left-hand side, if it fails, try the right-hand side.
+//   #[inline]
+//   fn bitor(self, rhs: Self) -> Self::Output {
+//     Combinator::boxed(move |input| self.parse(input).or_else(|| rhs.parse(input)))
+//   }
+// }
+
+pub struct BitOr<Lhs, Rhs> {
+  pub lhs: Lhs,
+  pub rhs: Rhs,
+}
+
+impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
+  pub fn new(lhs: Lhs, rhs: Rhs) -> Self {
+    Self { lhs, rhs }
   }
 }
 
-impl<'a, State: 'a, Heap: 'a, T: Exact + 'a> BitOr<T> for Combinator<'a, (), State, Heap> {
-  type Output = Combinator<'a, (), State, Heap>;
+impl<State, Heap, Lhs: Combinator<State, Heap>, Rhs: Combinator<State, Heap, Kind = Lhs::Kind>>
+  Combinator<State, Heap> for BitOr<Lhs, Rhs>
+{
+  type Kind = Lhs::Kind;
 
-  /// Shortcut for `self | exact(rhs)`. See [`exact`].
-  #[inline]
-  fn bitor(self, rhs: T) -> Self::Output {
-    self | exact(rhs)
+  fn parse<'text>(
+    &self,
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, Self::Kind>> {
+    self.lhs.parse(input).or_else(|| self.rhs.parse(input))
   }
 }
 
-impl<'a, State: 'a, Heap: 'a> BitOr<usize> for Combinator<'a, (), State, Heap> {
-  type Output = Combinator<'a, (), State, Heap>;
+impl_combinator_ops!(BitOr<Lhs, R>, Lhs, R);
 
-  /// Shortcut for `self | eat(rhs)`. See [`eat`].
-  #[inline]
-  fn bitor(self, rhs: usize) -> Self::Output {
-    self | eat(rhs)
-  }
-}
+// impl<'a, State: 'a, Heap: 'a, T: Exact + 'a> ops::BitOr<T> for Combinator< State, Heap> {
+//   type Output = Combinator<'a, (), State, Heap>;
 
-#[cfg(test)]
-mod tests {
-  use super::*;
-  use crate::combinator::{Input, Output};
+//   /// Shortcut for `self | exact(rhs)`. See [`exact`].
+//   #[inline]
+//   fn bitor(self, rhs: T) -> Self::Output {
+//     self | exact(rhs)
+//   }
+// }
 
-  #[test]
-  fn combinator_bit_or() {
-    let mut state = 0;
+// impl<'a, State: 'a, Heap: 'a> ops::BitOr<usize> for Combinator<'a, (), State, Heap> {
+//   type Output = Combinator<'a, (), State, Heap>;
 
-    let rejecter = || {
-      Combinator::boxed(|input| {
-        *input.state += 1;
-        None
-      })
-    };
-    let accepter = || {
-      Combinator::boxed(|input| {
-        *input.state += 1;
-        Some(Output {
-          kind: (),
-          rest: &input.rest()[1..],
-        })
-      })
-    };
+//   /// Shortcut for `self | eat(rhs)`. See [`eat`].
+//   #[inline]
+//   fn bitor(self, rhs: usize) -> Self::Output {
+//     self | eat(rhs)
+//   }
+// }
 
-    // reject then accept, both should increment the state
-    assert_eq!(
-      (rejecter() | accepter()).parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
-      Some(Output {
-        kind: (),
-        rest: "23",
-      })
-    );
-    assert_eq!(state, 2);
+// #[cfg(test)]
+// mod tests {
+//   use super::*;
+//   use crate::combinator::{Input, Output};
 
-    state = 0;
+//   #[test]
+//   fn combinator_bit_or() {
+//     let mut state = 0;
 
-    // accept then reject, only the first should increment the state
-    assert_eq!(
-      (accepter() | rejecter()).parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
-      Some(Output {
-        kind: (),
-        rest: "23",
-      })
-    );
-    assert_eq!(state, 1);
-  }
+//     let rejecter = || {
+//       Combinator::boxed(|input| {
+//         *input.state += 1;
+//         None
+//       })
+//     };
+//     let accepter = || {
+//       Combinator::boxed(|input| {
+//         *input.state += 1;
+//         Some(Output {
+//           kind: (),
+//           rest: &input.rest()[1..],
+//         })
+//       })
+//     };
 
-  fn _combinator_bit_or_exact_prefix() {
-    let _: Combinator<_> = Combinator::boxed(|_| None) | "123"; // with &str
-    let _: Combinator<_> = Combinator::boxed(|_| None) | "123".to_string(); // with String
-    let _: Combinator<_> = Combinator::boxed(|_| None) | '1'; // with char
-  }
+//     // reject then accept, both should increment the state
+//     assert_eq!(
+//       (rejecter() | accepter()).parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
+//       Some(Output {
+//         kind: (),
+//         rest: "23",
+//       })
+//     );
+//     assert_eq!(state, 2);
 
-  fn _combinator_bit_or_usize() {
-    let _: Combinator<_> = Combinator::boxed(|_| None) | 1;
-  }
-}
+//     state = 0;
+
+//     // accept then reject, only the first should increment the state
+//     assert_eq!(
+//       (accepter() | rejecter()).parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
+//       Some(Output {
+//         kind: (),
+//         rest: "23",
+//       })
+//     );
+//     assert_eq!(state, 1);
+//   }
+
+//   fn _combinator_bit_or_exact_prefix() {
+//     let _: Combinator<_> = Combinator::boxed(|_| None) | "123"; // with &str
+//     let _: Combinator<_> = Combinator::boxed(|_| None) | "123".to_string(); // with String
+//     let _: Combinator<_> = Combinator::boxed(|_| None) | '1'; // with char
+//   }
+
+//   fn _combinator_bit_or_usize() {
+//     let _: Combinator<_> = Combinator::boxed(|_| None) | 1;
+//   }
+// }

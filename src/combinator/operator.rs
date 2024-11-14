@@ -1,6 +1,7 @@
 //! Operator overloading for [`Combinator`](crate::combinator::Combinator).
 
-mod bitor;
+// TODO: rename to ops
 
 pub mod add;
+pub mod bitor;
 pub mod mul;

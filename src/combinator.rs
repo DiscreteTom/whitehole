@@ -80,56 +80,79 @@ pub use decorator::*;
 pub use input::*;
 pub use output::*;
 
-/// A boxed function. Return [`None`] if the combinator is rejected.
-pub type CombinatorExec<'a, Kind, State = (), Heap = ()> = Box<
-  dyn for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>> + 'a,
->;
-
 /// See the [module-level documentation](crate::combinator).
-pub struct Combinator<'a, Kind, State = (), Heap = ()> {
-  exec: CombinatorExec<'a, Kind, State, Heap>,
-}
+pub trait Combinator<State = (), Heap = ()> {
+  /// See [`Output::kind`].
+  type Kind;
 
-impl<'a, Kind, State, Heap> Combinator<'a, Kind, State, Heap> {
-  /// Create a new instance.
-  pub fn new(exec: CombinatorExec<'a, Kind, State, Heap>) -> Self {
-    Self { exec }
-  }
-
-  /// Create a new instance by boxing the `exec` function.
-  pub fn boxed(
-    exec: impl for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>
-      + 'a,
-  ) -> Self {
-    Self::new(Box::new(exec))
-  }
-
-  /// Execute the combinator.
-  #[inline]
-  pub fn parse<'text>(
+  /// Return [`None`] if the combinator is rejected.
+  fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, Kind>> {
-    (self.exec)(input)
-  }
+  ) -> Option<Output<'text, Self::Kind>>;
 }
 
-#[cfg(test)]
-mod tests {
-  use super::*;
+#[macro_export]
+macro_rules! impl_combinator_ops {
+  ($type:ty, $($generic:ident),*) => {
+    impl<Rhs, $($generic),*> std::ops::Mul<Rhs> for $type {
+      type Output = $crate::combinator::operator::mul::Mul<Self, Rhs>;
 
-  #[test]
-  fn combinator_parse() {
-    assert_eq!(
-      Combinator::boxed(|input| Some(Output {
-        kind: (),
-        rest: &input.rest()[1..]
-      }))
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        kind: (),
-        rest: "23"
-      })
-    );
-  }
+      /// Repeat the combinator `rhs` times.
+      /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
+      ///
+      /// See [`Fold`] for more information.
+      fn mul(self, rhs: Rhs) -> Self::Output {
+        Self::Output::new(self, rhs)
+      }
+    }
+
+    impl<Rhs, $($generic),*> std::ops::BitOr<Rhs> for $type {
+      type Output = $crate::combinator::operator::bitor::BitOr<Self, Rhs>;
+
+      /// Try to parse with the left-hand side, if it fails, try the right-hand side.
+      #[inline]
+      fn bitor(self, rhs: Rhs) -> Self::Output {
+        Self::Output::new(self, rhs)
+      }
+    }
+
+    impl<Rhs, $($generic),*> std::ops::Add<Rhs> for $type {
+      type Output = $crate::combinator::operator::add::Add<Self, Rhs>;
+
+      /// Parse with the left-hand side, then parse with the right-hand side.
+      /// Return the output with [`Concat`]-ed kind and the sum of the digested.
+      #[inline]
+      fn add(self, rhs: Rhs) -> Self::Output {
+        Self::Output::new(self, rhs)
+      }
+    }
+
+    // TODO: move to another macro
+    impl<$($generic),*> $type {
+      pub fn optional(self) -> $crate::combinator::decorator::Optional<Self> {
+        $crate::combinator::decorator::Optional::new(self)
+      }
+    }
+  };
 }
+
+// #[cfg(test)]
+// mod tests {
+//   use super::*;
+
+//   #[test]
+//   fn combinator_parse() {
+//     assert_eq!(
+//       Combinator::boxed(|input| Some(Output {
+//         kind: (),
+//         rest: &input.rest()[1..]
+//       }))
+//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+//       Some(Output {
+//         kind: (),
+//         rest: "23"
+//       })
+//     );
+//   }
+// }

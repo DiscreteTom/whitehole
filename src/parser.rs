@@ -22,14 +22,14 @@ pub struct Parser<'a, 'text, Kind, State = (), Heap = ()> {
   /// See [`Self::rest`].
   rest: &'text str,
   /// See [`Self::entry`].
-  entry: Combinator<'a, Kind, State, Heap>,
+  entry: Box<dyn Combinator<State, Heap, Kind = Kind> + 'a>,
 }
 
 impl<'a, 'text, Kind, State, Heap> Parser<'a, 'text, Kind, State, Heap> {
   /// The entry combinator.
-  pub const fn entry(&self) -> &Combinator<'a, Kind, State, Heap> {
-    &self.entry
-  }
+  // pub const fn entry(&self) -> &Combinator<'a, Kind, State, Heap> {
+  //   &self.entry
+  // }
 
   /// The whole input text.
   pub const fn text(&self) -> &'text str {
