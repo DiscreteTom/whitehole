@@ -94,6 +94,9 @@ pub trait Combinator<State = (), Heap = ()> {
 
 #[macro_export]
 macro_rules! impl_combinator_ops {
+  ($type:ty) => {
+    impl_combinator_ops!($type,);
+  };
   ($type:ty, $($generic:ident),*) => {
     impl<Rhs, $($generic),*> std::ops::Mul<Rhs> for $type {
       type Output = $crate::combinator::operator::mul::Mul<Self, Rhs>;
