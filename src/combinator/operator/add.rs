@@ -1,11 +1,11 @@
-//! Overload [`Add`] operator for [`Combinator`].
+//! Overload [`Add`] operator for combinator.
 
 use crate::{
-  combinator::{eat, Parse, Input, Output},
+  combinator::{Input, Output, Parse},
   impl_combinator,
 };
 
-/// A helper trait to concat types when calling [`Add`] on [`Combinator`].
+/// A helper trait to concat types when calling [`Add`] on combinator.
 ///
 /// Built-in implementations:
 /// - `concat(T, ()) -> T`
@@ -131,26 +131,28 @@ impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8, _9, _10), (_11));
 impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8, _9, _10), (_11, _12));
 impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11), (_12));
 
+/// A composite combinator created by `+`.
+#[derive(Debug, Clone, Copy)]
 pub struct Add<Lhs, Rhs> {
-  pub lhs: Lhs,
-  pub rhs: Rhs,
+  lhs: Lhs,
+  rhs: Rhs,
 }
 
 impl<Lhs, Rhs> Add<Lhs, Rhs> {
+  #[inline]
   pub fn new(lhs: Lhs, rhs: Rhs) -> Self {
     Self { lhs, rhs }
   }
 }
 
-impl<
-    State,
-    Heap,
-    Lhs: Parse<State, Heap, Kind: Concat<Rhs::Kind>>,
-    Rhs: Parse<State, Heap>,
-  > Parse<State, Heap> for Add<Lhs, Rhs>
+impl_combinator!(Add<Lhs, Rhs>, Lhs, Rhs);
+
+impl<State, Heap, Lhs: Parse<State, Heap, Kind: Concat<Rhs::Kind>>, Rhs: Parse<State, Heap>>
+  Parse<State, Heap> for Add<Lhs, Rhs>
 {
   type Kind = <Lhs::Kind as Concat<Rhs::Kind>>::Output;
 
+  #[inline]
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
@@ -167,30 +169,7 @@ impl<
   }
 }
 
-impl_combinator!(Add<Lhs, R>, Lhs, R);
-
-// impl<'a, Lhs: Concat<Rhs> + 'a, Rhs: 'a, State: 'a, Heap: 'a> ops::Add<Combinator<'a, Rhs, State, Heap>>
-//   for Combinator<'a, Lhs, State, Heap>
-// {
-//   type Output = Combinator<'a, Lhs::Output, State, Heap>;
-
-//   /// Parse with the left-hand side, then parse with the right-hand side.
-//   /// Return the output with [`Concat`]-ed kind and the sum of the digested.
-//   fn add(self, rhs: Combinator<'a, Rhs, State, Heap>) -> Self::Output {
-//     Combinator::boxed(move |input| {
-//       self.parse(input).and_then(|output| {
-//         input
-//           .reload(output.rest)
-//           .and_then(|mut input| rhs.parse(&mut input))
-//           .map(|rhs_output| Output {
-//             kind: output.kind.concat(rhs_output.kind),
-//             rest: rhs_output.rest,
-//           })
-//       })
-//     })
-//   }
-// }
-
+// TODO: impl Combinator and Parse for char, String and &str?
 // impl<'a, Kind: 'a, State: 'a, Heap: 'a, T: Exact + 'a> ops::Add<T>
 //   for Combinator<'a, Kind, State, Heap>
 // {
@@ -213,6 +192,7 @@ impl_combinator!(Add<Lhs, R>, Lhs, R);
 //   }
 // }
 
+// TODO: restore tests
 // #[cfg(test)]
 // mod tests {
 //   use super::*;

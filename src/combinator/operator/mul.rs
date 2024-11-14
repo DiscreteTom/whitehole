@@ -1,7 +1,7 @@
-//! Overload [`Mul`] operator for [`Combinator`].
+//! Overload [`Mul`] operator for combinator.
 
 use crate::{
-  combinator::{Combinator, Input, Output, Parse},
+  combinator::{Input, Output, Parse},
   impl_combinator,
 };
 use std::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
@@ -92,16 +92,21 @@ impl Repeat for RangeToInclusive<usize> {
   }
 }
 
+/// A composite combinator created by `*`.
+#[derive(Debug, Clone, Copy)]
 pub struct Mul<Lhs, Rhs> {
   pub lhs: Lhs,
   pub rhs: Rhs,
 }
 
 impl<Lhs, Rhs> Mul<Lhs, Rhs> {
+  #[inline]
   pub fn new(lhs: Lhs, rhs: Rhs) -> Self {
     Self { lhs, rhs }
   }
 }
+
+impl_combinator!(Mul<Lhs, Rhs>, Lhs, Rhs);
 
 impl<
     State,
@@ -115,6 +120,7 @@ impl<
 {
   type Kind = Acc;
 
+  #[inline]
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
@@ -141,81 +147,6 @@ impl<
     range.should_accept(repeated).then_some(output)
   }
 }
-
-impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold<Output: Default>>, Rhs: Repeat>
-  Parse<State, Heap> for Mul<Lhs, Rhs>
-{
-  type Kind = <Lhs::Kind as Fold>::Output;
-
-  fn parse<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
-    let range = &self.rhs;
-    let mut repeated = 0;
-    let mut output = Output {
-      kind: Default::default(),
-      rest: input.rest(),
-    };
-    while range.should_repeat(repeated) {
-      let Some(mut input) = input.reload(output.rest) else {
-        break;
-      };
-      let Some(next_output) = self.lhs.parse(&mut input) else {
-        break;
-      };
-      output.rest = next_output.rest;
-      output.kind = next_output.kind.fold(output.kind);
-      repeated += 1;
-    }
-
-    // reject if repeated times is too few
-    range.should_accept(repeated).then_some(output)
-  }
-}
-
-impl_combinator!(Mul<Lhs, R>, Lhs, R);
-
-// impl<
-//     'a,
-//     Kind,
-//     State,
-//     Heap,
-//     Lhs,
-//     Range: Repeat + 'a,
-//     Acc,
-//     Initializer: Fn() -> Acc + 'a,
-//     InlineFolder: Fn(Kind, Acc) -> Acc + 'a,
-//   > Combinator<'a, Acc, State, Heap> for Mul<Kind, Lhs, (Range, Initializer, InlineFolder)>
-// where
-//   Lhs: Combinator<'a, Kind, State, Heap>,
-// {
-//   fn parse<'text>(
-//     &self,
-//     input: &mut Input<'text, &mut State, &mut Heap>,
-//   ) -> Option<Output<'text, Acc>> {
-//     let (range, init, folder) = &self.rhs;
-//     let mut repeated = 0;
-//     let mut output = Output {
-//       kind: init(),
-//       rest: input.rest(),
-//     };
-//     while range.should_repeat(repeated) {
-//       let Some(mut input) = input.reload(output.rest) else {
-//         break;
-//       };
-//       let Some(next_output) = self.lhs.parse(&mut input) else {
-//         break;
-//       };
-//       output.rest = next_output.rest;
-//       output.kind = folder(next_output.kind, output.kind);
-//       repeated += 1;
-//     }
-
-//     // reject if repeated times is too few
-//     range.should_accept(repeated).then_some(output)
-//   }
-// }
 
 /// A helper trait to accumulate kind values when calling [`Mul`] on [`Combinator`].
 ///
@@ -280,6 +211,40 @@ impl Fold for () {
   type Output = ();
   #[inline]
   fn fold(self, _: Self::Output) -> Self::Output {}
+}
+
+impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold<Output: Default>>, Rhs: Repeat>
+  Parse<State, Heap> for Mul<Lhs, Rhs>
+{
+  type Kind = <Lhs::Kind as Fold>::Output;
+
+  // TODO: merge dup code
+  #[inline]
+  fn parse<'text>(
+    &self,
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, Self::Kind>> {
+    let range = &self.rhs;
+    let mut repeated = 0;
+    let mut output = Output {
+      kind: Default::default(),
+      rest: input.rest(),
+    };
+    while range.should_repeat(repeated) {
+      let Some(mut input) = input.reload(output.rest) else {
+        break;
+      };
+      let Some(next_output) = self.lhs.parse(&mut input) else {
+        break;
+      };
+      output.rest = next_output.rest;
+      output.kind = next_output.kind.fold(output.kind);
+      repeated += 1;
+    }
+
+    // reject if repeated times is too few
+    range.should_accept(repeated).then_some(output)
+  }
 }
 
 // #[cfg(test)]

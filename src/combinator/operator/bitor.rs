@@ -1,37 +1,32 @@
-//! Overload [`BitOr`] operator for [`Combinator`].
+//! Overload [`BitOr`] operator for combinator.
 
 use crate::{
-  combinator::{eat, Combinator, Input, Output, Parse},
+  combinator::{Input, Output, Parse},
   impl_combinator,
 };
-use std::ops;
 
-// impl<'a, Kind: 'a, State: 'a, Heap: 'a> ops::BitOr for Combinator<'a, Kind, State, Heap> {
-//   type Output = Self;
-
-//   /// Try to parse with the left-hand side, if it fails, try the right-hand side.
-//   #[inline]
-//   fn bitor(self, rhs: Self) -> Self::Output {
-//     Combinator::boxed(move |input| self.parse(input).or_else(|| rhs.parse(input)))
-//   }
-// }
-
+/// A composite combinator created by `|`.
+#[derive(Debug, Clone, Copy)]
 pub struct BitOr<Lhs, Rhs> {
   pub lhs: Lhs,
   pub rhs: Rhs,
 }
 
 impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
+  #[inline]
   pub fn new(lhs: Lhs, rhs: Rhs) -> Self {
     Self { lhs, rhs }
   }
 }
+
+impl_combinator!(BitOr<Lhs, R>, Lhs, R);
 
 impl<State, Heap, Lhs: Parse<State, Heap>, Rhs: Parse<State, Heap, Kind = Lhs::Kind>>
   Parse<State, Heap> for BitOr<Lhs, Rhs>
 {
   type Kind = Lhs::Kind;
 
+  #[inline]
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
@@ -40,8 +35,7 @@ impl<State, Heap, Lhs: Parse<State, Heap>, Rhs: Parse<State, Heap, Kind = Lhs::K
   }
 }
 
-impl_combinator!(BitOr<Lhs, R>, Lhs, R);
-
+// TODO: impl Combinator and Parse for char, String and &str?
 // impl<'a, State: 'a, Heap: 'a, T: Exact + 'a> ops::BitOr<T> for Combinator< State, Heap> {
 //   type Output = Combinator<'a, (), State, Heap>;
 
@@ -62,6 +56,7 @@ impl_combinator!(BitOr<Lhs, R>, Lhs, R);
 //   }
 // }
 
+// TODO: restore tests
 // #[cfg(test)]
 // mod tests {
 //   use super::*;
