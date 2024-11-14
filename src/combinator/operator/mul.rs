@@ -1,7 +1,7 @@
 //! Overload [`Mul`] operator for [`Combinator`].
 
 use crate::{
-  combinator::{Combinator, Input, Output},
+  combinator::{Parse, Input, Output},
   impl_combinator_ops,
 };
 use std::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
@@ -106,12 +106,12 @@ impl<Lhs, Rhs> Mul<Lhs, Rhs> {
 impl<
     State,
     Heap,
-    Lhs: Combinator<State, Heap>,
+    Lhs: Parse<State, Heap>,
     Acc,
     Range: Repeat,
     Initializer: Fn() -> Acc,
     InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
-  > Combinator<State, Heap> for Mul<Lhs, (Range, Initializer, InlineFolder)>
+  > Parse<State, Heap> for Mul<Lhs, (Range, Initializer, InlineFolder)>
 {
   type Kind = Acc;
 
@@ -142,8 +142,8 @@ impl<
   }
 }
 
-impl<State, Heap, Lhs: Combinator<State, Heap, Kind: Fold<Output: Default>>, Rhs: Repeat>
-  Combinator<State, Heap> for Mul<Lhs, Rhs>
+impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold<Output: Default>>, Rhs: Repeat>
+  Parse<State, Heap> for Mul<Lhs, Rhs>
 {
   type Kind = <Lhs::Kind as Fold>::Output;
 

@@ -1,5 +1,5 @@
 use crate::{
-  combinator::{Combinator, Input, Output},
+  combinator::{Parse, Input, Output},
   impl_combinator_ops,
 };
 
@@ -69,7 +69,7 @@ pub fn till<T: Till>(pattern: T) -> TillCombinator<T> {
   TillCombinator { pattern }
 }
 
-impl<State, Heap, T: Till> Combinator<State, Heap> for TillCombinator<T> {
+impl<State, Heap, T: Till> Parse<State, Heap> for TillCombinator<T> {
   type Kind = ();
 
   #[inline]

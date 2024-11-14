@@ -1,5 +1,5 @@
 use crate::{
-  combinator::{Combinator, Input, Output},
+  combinator::{Parse, Input, Output},
   impl_combinator_ops,
 };
 
@@ -65,7 +65,7 @@ pub fn exact<P: Exact>(pattern: P) -> ExactCombinator<P> {
   ExactCombinator { pattern }
 }
 
-impl<State, Heap, P: Exact> Combinator<State, Heap> for ExactCombinator<P> {
+impl<State, Heap, P: Exact> Parse<State, Heap> for ExactCombinator<P> {
   type Kind = ();
 
   #[inline]

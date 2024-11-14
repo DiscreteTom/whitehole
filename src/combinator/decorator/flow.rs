@@ -2,7 +2,7 @@
 
 // use super::AcceptedOutputContext;
 use crate::{
-  combinator::{Combinator, Input, Output},
+  combinator::{Input, Output, Parse},
   impl_combinator_ops,
 };
 
@@ -16,9 +16,7 @@ impl<C> Optional<C> {
   }
 }
 
-impl<State, Heap, C: Combinator<State, Heap, Kind: Default>> Combinator<State, Heap>
-  for Optional<C>
-{
+impl<State, Heap, C: Parse<State, Heap, Kind: Default>> Parse<State, Heap> for Optional<C> {
   type Kind = C::Kind;
 
   fn parse<'text>(
@@ -45,8 +43,8 @@ impl<C, F> Prevent<C, F> {
   }
 }
 
-impl<State, Heap, C: Combinator<State, Heap>, F: Fn(&mut Input<&mut State, &mut Heap>) -> bool>
-  Combinator<State, Heap> for Prevent<C, F>
+impl<State, Heap, C: Parse<State, Heap>, F: Fn(&mut Input<&mut State, &mut Heap>) -> bool>
+  Parse<State, Heap> for Prevent<C, F>
 {
   type Kind = C::Kind;
 

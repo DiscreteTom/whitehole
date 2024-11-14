@@ -1,7 +1,7 @@
 //! Combinators that match chars by the condition.
 
 use crate::{
-  combinator::{Combinator, Input, Output},
+  combinator::{Parse, Input, Output},
   impl_combinator_ops,
 };
 
@@ -28,7 +28,7 @@ pub fn next<F: Fn(char) -> bool>(condition: F) -> Next<F> {
   Next { condition }
 }
 
-impl<State, Heap, F> Combinator<State, Heap> for Next<F>
+impl<State, Heap, F> Parse<State, Heap> for Next<F>
 where
   F: Fn(char) -> bool,
 {
@@ -74,7 +74,7 @@ pub fn chars<F: Fn(char) -> bool>(condition: F) -> Chars<F> {
   Chars { condition }
 }
 
-impl<State, Heap, F> Combinator<State, Heap> for Chars<F>
+impl<State, Heap, F> Parse<State, Heap> for Chars<F>
 where
   F: Fn(char) -> bool,
 {

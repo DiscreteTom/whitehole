@@ -1,7 +1,7 @@
 //! Basic combinators that just eat some bytes from the input text.
 
 use crate::{
-  combinator::{Combinator, Input, Output},
+  combinator::{Input, Output, Parse},
   impl_combinator_ops,
 };
 
@@ -28,7 +28,7 @@ pub fn eat(n: usize) -> Eat {
   Eat { n }
 }
 
-impl<State, Heap> Combinator<State, Heap> for Eat {
+impl<State, Heap> Parse<State, Heap> for Eat {
   type Kind = ();
 
   #[inline]
@@ -69,7 +69,7 @@ pub unsafe fn eat_unchecked(n: usize) -> EatUnchecked {
   EatUnchecked { n }
 }
 
-impl<State, Heap> Combinator<State, Heap> for EatUnchecked {
+impl<State, Heap> Parse<State, Heap> for EatUnchecked {
   type Kind = ();
 
   #[inline]
@@ -101,7 +101,7 @@ pub fn eater<State, Heap, F: Fn(&mut Input<&mut State, &mut Heap>) -> usize>(f: 
   Eater { f }
 }
 
-impl<State, Heap, F> Combinator<State, Heap> for Eater<F>
+impl<State, Heap, F> Parse<State, Heap> for Eater<F>
 where
   F: Fn(&mut Input<&mut State, &mut Heap>) -> usize,
 {
@@ -144,7 +144,7 @@ pub unsafe fn eater_unchecked<State, Heap, F: Fn(&mut Input<&mut State, &mut Hea
   EaterUnchecked { f }
 }
 
-impl<State, Heap, F> Combinator<State, Heap> for EaterUnchecked<F>
+impl<State, Heap, F> Parse<State, Heap> for EaterUnchecked<F>
 where
   F: Fn(&mut Input<&mut State, &mut Heap>) -> usize,
 {

@@ -81,7 +81,7 @@ pub use input::*;
 pub use output::*;
 
 /// See the [module-level documentation](crate::combinator).
-pub trait Combinator<State = (), Heap = ()> {
+pub trait Parse<State = (), Heap = ()> {
   /// See [`Output::kind`].
   type Kind;
 

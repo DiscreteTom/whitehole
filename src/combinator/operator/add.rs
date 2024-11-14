@@ -1,7 +1,7 @@
 //! Overload [`Add`] operator for [`Combinator`].
 
 use crate::{
-  combinator::{eat, Combinator, Input, Output},
+  combinator::{eat, Parse, Input, Output},
   impl_combinator_ops,
 };
 
@@ -145,9 +145,9 @@ impl<Lhs, Rhs> Add<Lhs, Rhs> {
 impl<
     State,
     Heap,
-    Lhs: Combinator<State, Heap, Kind: Concat<Rhs::Kind>>,
-    Rhs: Combinator<State, Heap>,
-  > Combinator<State, Heap> for Add<Lhs, Rhs>
+    Lhs: Parse<State, Heap, Kind: Concat<Rhs::Kind>>,
+    Rhs: Parse<State, Heap>,
+  > Parse<State, Heap> for Add<Lhs, Rhs>
 {
   type Kind = <Lhs::Kind as Concat<Rhs::Kind>>::Output;
 
