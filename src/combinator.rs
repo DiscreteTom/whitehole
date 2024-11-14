@@ -146,8 +146,8 @@ macro_rules! impl_combinator {
   ($type:ty, $($generic:ident),*) => {
     impl<$($generic),*> $crate::combinator::Combinator for $type {}
 
-    impl<Rhs, $($generic),*> std::ops::Mul<Rhs> for $type {
-      type Output = $crate::combinator::operator::mul::Mul<Self, Rhs>;
+    impl<_Rhs, $($generic),*> std::ops::Mul<_Rhs> for $type {
+      type Output = $crate::combinator::operator::mul::Mul<Self, _Rhs>;
 
       // TODO: fix doc link
 
@@ -155,28 +155,28 @@ macro_rules! impl_combinator {
       /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
       ///
       /// See [`Fold`] for more information.
-      fn mul(self, rhs: Rhs) -> Self::Output {
+      fn mul(self, rhs: _Rhs) -> Self::Output {
         Self::Output::new(self, rhs)
       }
     }
 
-    impl<Rhs, $($generic),*> std::ops::BitOr<Rhs> for $type {
-      type Output = $crate::combinator::operator::bitor::BitOr<Self, Rhs>;
+    impl<_Rhs, $($generic),*> std::ops::BitOr<_Rhs> for $type {
+      type Output = $crate::combinator::operator::bitor::BitOr<Self, _Rhs>;
 
       /// Try to parse with the left-hand side, if it fails, try the right-hand side.
       #[inline]
-      fn bitor(self, rhs: Rhs) -> Self::Output {
+      fn bitor(self, rhs: _Rhs) -> Self::Output {
         Self::Output::new(self, rhs)
       }
     }
 
-    impl<Rhs, $($generic),*> std::ops::Add<Rhs> for $type {
-      type Output = $crate::combinator::operator::add::Add<Self, Rhs>;
+    impl<_Rhs, $($generic),*> std::ops::Add<_Rhs> for $type {
+      type Output = $crate::combinator::operator::add::Add<Self, _Rhs>;
 
       /// Parse with the left-hand side, then parse with the right-hand side.
       /// Return the output with [`Concat`]-ed kind and the sum of the digested.
       #[inline]
-      fn add(self, rhs: Rhs) -> Self::Output {
+      fn add(self, rhs: _Rhs) -> Self::Output {
         Self::Output::new(self, rhs)
       }
     }
