@@ -1,4 +1,7 @@
-use crate::{combinator::Combinator, impl_combinator_ops};
+use crate::{
+  combinator::{Combinator, Input, Output},
+  impl_combinator_ops,
+};
 
 /// A util trait to make [`exact`] generic over different types.
 ///
@@ -6,7 +9,7 @@ use crate::{combinator::Combinator, impl_combinator_ops};
 ///
 /// See [`exact`] for more details.
 /// # Safety
-/// You should ensure that [`Output::rest`](crate::combinator::Output::rest) can be built
+/// You should ensure that [`Output::rest`] can be built
 /// as a valid UTF-8 string.
 /// This will be checked using [`debug_assert!`].
 pub unsafe trait Exact {
@@ -36,6 +39,8 @@ unsafe impl Exact for char {
   }
 }
 
+/// See [`exact`].
+#[derive(Debug, Clone, Copy)]
 pub struct ExactCombinator<P> {
   pattern: P,
 }
@@ -46,15 +51,16 @@ pub struct ExactCombinator<P> {
 /// Empty string is allowed, but be careful with infinite loops.
 /// # Examples
 /// ```
-/// # use whitehole::combinator::{Combinator, exact};
-/// let _: Combinator<_> = exact("true".to_string()); // with String
-/// let _: Combinator<_> = exact("true"); // with &str
-/// let _: Combinator<_> = exact(';'); // with char
+/// # use whitehole::combinator::exact;
+/// exact("true".to_string()); // with String
+/// exact("true"); // with &str
+/// exact(';'); // with char
 ///
 /// // to lookahead one char to ensure there is a word boundary,
 /// // use the `boundary` decorator
-/// let _: Combinator<_> = exact("true").boundary();
+/// exact("true").boundary();
 /// ```
+#[inline]
 pub fn exact<P: Exact>(pattern: P) -> ExactCombinator<P> {
   ExactCombinator { pattern }
 }
@@ -62,10 +68,11 @@ pub fn exact<P: Exact>(pattern: P) -> ExactCombinator<P> {
 impl<State, Heap, P: Exact> Combinator<State, Heap> for ExactCombinator<P> {
   type Kind = ();
 
+  #[inline]
   fn parse<'text>(
     &self,
-    input: &mut crate::combinator::Input<'text, &mut State, &mut Heap>,
-  ) -> Option<crate::combinator::Output<'text, Self::Kind>> {
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, Self::Kind>> {
     self
       .pattern
       .parse(input.rest())
