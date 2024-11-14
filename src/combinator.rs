@@ -80,6 +80,8 @@ pub use decorator::*;
 pub use input::*;
 pub use output::*;
 
+/// This trait provides combinator decorators.
+/// You can use [`impl_combinator!`] to implement this trait for your combinator.
 pub trait Combinator {
   /// If the combinator is rejected, accept it with the default kind and zero digested.
   /// # Caveats
@@ -121,7 +123,7 @@ pub trait Combinator {
   }
 }
 
-/// See the [module-level documentation](crate::combinator).
+/// Provide the [`parse`](Parse::parse) method.
 pub trait Parse<State = (), Heap = ()> {
   /// See [`Output::kind`].
   type Kind;
@@ -133,6 +135,9 @@ pub trait Parse<State = (), Heap = ()> {
   ) -> Option<Output<'text, Self::Kind>>;
 }
 
+/// Implement [`Combinator`] and override [`Add`](std::ops::Add),
+/// [`BitOr`](std::ops::BitOr), [`Mul`](std::ops::Mul) operators.
+/// TODO: examples
 #[macro_export]
 macro_rules! impl_combinator {
   ($type:ty) => {
@@ -143,6 +148,8 @@ macro_rules! impl_combinator {
 
     impl<Rhs, $($generic),*> std::ops::Mul<Rhs> for $type {
       type Output = $crate::combinator::operator::mul::Mul<Self, Rhs>;
+
+      // TODO: fix doc link
 
       /// Repeat the combinator `rhs` times.
       /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
