@@ -80,6 +80,47 @@ pub use decorator::*;
 pub use input::*;
 pub use output::*;
 
+pub trait Combinator {
+  /// If the combinator is rejected, accept it with the default kind and zero digested.
+  /// # Caveats
+  /// This requires the `Kind` to implement [`Default`],
+  /// thus usually used before setting a custom kind.
+  /// ```
+  /// # use whitehole::combinator::Combinator;
+  /// # #[derive(Clone)]
+  /// # enum MyKind { A }
+  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// // bind a kind after calling `optional`
+  /// combinator.optional().bind(MyKind::A)
+  /// // instead of
+  /// // combinator.bind(MyKind::A).optional()
+  /// # ;}
+  /// ```
+  /// Or you can wrap `Kind` with [`Option`]:
+  /// ```
+  /// # use whitehole::combinator::Combinator;
+  /// # #[derive(Clone)]
+  /// # enum MyKind { A }
+  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// combinator.bind(Some(MyKind::A)).optional()
+  /// # ;}
+  /// ```
+  /// # Examples
+  /// ```
+  /// # use whitehole::combinator::Combinator;
+  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// combinator.optional()
+  /// # ;}
+  /// ```
+  #[inline]
+  fn optional(self) -> Optional<Self>
+  where
+    Self: Sized,
+  {
+    Optional::new(self)
+  }
+}
+
 /// See the [module-level documentation](crate::combinator).
 pub trait Parse<State = (), Heap = ()> {
   /// See [`Output::kind`].
@@ -93,11 +134,13 @@ pub trait Parse<State = (), Heap = ()> {
 }
 
 #[macro_export]
-macro_rules! impl_combinator_ops {
+macro_rules! impl_combinator {
   ($type:ty) => {
-    impl_combinator_ops!($type,);
+    impl_combinator!($type,);
   };
   ($type:ty, $($generic:ident),*) => {
+    impl<$($generic),*> $crate::combinator::Combinator for $type {}
+
     impl<Rhs, $($generic),*> std::ops::Mul<Rhs> for $type {
       type Output = $crate::combinator::operator::mul::Mul<Self, Rhs>;
 
@@ -128,13 +171,6 @@ macro_rules! impl_combinator_ops {
       #[inline]
       fn add(self, rhs: Rhs) -> Self::Output {
         Self::Output::new(self, rhs)
-      }
-    }
-
-    // TODO: move to another macro
-    impl<$($generic),*> $type {
-      pub fn optional(self) -> $crate::combinator::decorator::Optional<Self> {
-        $crate::combinator::decorator::Optional::new(self)
       }
     }
   };

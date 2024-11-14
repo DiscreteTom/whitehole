@@ -1,8 +1,8 @@
 //! Overload [`BitOr`] operator for [`Combinator`].
 
 use crate::{
-  combinator::{eat, Parse, Input, Output},
-  impl_combinator_ops,
+  combinator::{eat, Combinator, Input, Output, Parse},
+  impl_combinator,
 };
 use std::ops;
 
@@ -40,7 +40,7 @@ impl<State, Heap, Lhs: Parse<State, Heap>, Rhs: Parse<State, Heap, Kind = Lhs::K
   }
 }
 
-impl_combinator_ops!(BitOr<Lhs, R>, Lhs, R);
+impl_combinator!(BitOr<Lhs, R>, Lhs, R);
 
 // impl<'a, State: 'a, Heap: 'a, T: Exact + 'a> ops::BitOr<T> for Combinator< State, Heap> {
 //   type Output = Combinator<'a, (), State, Heap>;

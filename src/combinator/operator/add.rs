@@ -2,7 +2,7 @@
 
 use crate::{
   combinator::{eat, Parse, Input, Output},
-  impl_combinator_ops,
+  impl_combinator,
 };
 
 /// A helper trait to concat types when calling [`Add`] on [`Combinator`].
@@ -167,7 +167,7 @@ impl<
   }
 }
 
-impl_combinator_ops!(Add<Lhs, R>, Lhs, R);
+impl_combinator!(Add<Lhs, R>, Lhs, R);
 
 // impl<'a, Lhs: Concat<Rhs> + 'a, Rhs: 'a, State: 'a, Heap: 'a> ops::Add<Combinator<'a, Rhs, State, Heap>>
 //   for Combinator<'a, Lhs, State, Heap>

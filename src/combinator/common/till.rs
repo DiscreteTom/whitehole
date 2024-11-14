@@ -1,6 +1,6 @@
 use crate::{
   combinator::{Parse, Input, Output},
-  impl_combinator_ops,
+  impl_combinator,
 };
 
 /// A util trait to make [`till`] generic over different types.
@@ -84,7 +84,7 @@ impl<State, Heap, T: Till> Parse<State, Heap> for TillCombinator<T> {
   }
 }
 
-impl_combinator_ops!(TillCombinator<T>, T);
+impl_combinator!(TillCombinator<T>, T);
 
 #[cfg(test)]
 mod tests {

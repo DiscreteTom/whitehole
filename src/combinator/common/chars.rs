@@ -1,8 +1,8 @@
 //! Combinators that match chars by the condition.
 
 use crate::{
-  combinator::{Parse, Input, Output},
-  impl_combinator_ops,
+  combinator::{Input, Output, Parse},
+  impl_combinator,
 };
 
 /// See [`next`].
@@ -47,7 +47,7 @@ where
   }
 }
 
-impl_combinator_ops!(Next<F>, F);
+impl_combinator!(Next<F>, F);
 
 #[derive(Debug, Clone)]
 pub struct Chars<F> {
@@ -99,7 +99,7 @@ where
   }
 }
 
-impl_combinator_ops!(Chars<F>, F);
+impl_combinator!(Chars<F>, F);
 
 #[cfg(test)]
 mod tests {

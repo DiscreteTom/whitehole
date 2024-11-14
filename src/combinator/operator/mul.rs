@@ -1,8 +1,8 @@
 //! Overload [`Mul`] operator for [`Combinator`].
 
 use crate::{
-  combinator::{Parse, Input, Output},
-  impl_combinator_ops,
+  combinator::{Combinator, Input, Output, Parse},
+  impl_combinator,
 };
 use std::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 
@@ -174,7 +174,7 @@ impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold<Output: Default>>, Rhs: Rep
   }
 }
 
-impl_combinator_ops!(Mul<Lhs, R>, Lhs, R);
+impl_combinator!(Mul<Lhs, R>, Lhs, R);
 
 // impl<
 //     'a,

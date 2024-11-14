@@ -3,7 +3,7 @@
 // use super::AcceptedOutputContext;
 use crate::{
   combinator::{Input, Output, Parse},
-  impl_combinator_ops,
+  impl_combinator,
 };
 
 pub struct Optional<C> {
@@ -30,7 +30,7 @@ impl<State, Heap, C: Parse<State, Heap, Kind: Default>> Parse<State, Heap> for O
   }
 }
 
-impl_combinator_ops!(Optional<C>, C);
+impl_combinator!(Optional<C>, C);
 
 pub struct Prevent<C, F> {
   c: C,

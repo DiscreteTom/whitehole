@@ -1,6 +1,6 @@
 use crate::{
-  combinator::{Parse, Input, Output},
-  impl_combinator_ops,
+  combinator::{Input, Output, Parse},
+  impl_combinator,
 };
 
 /// A util trait to make [`exact`] generic over different types.
@@ -80,7 +80,7 @@ impl<State, Heap, P: Exact> Parse<State, Heap> for ExactCombinator<P> {
   }
 }
 
-impl_combinator_ops!(ExactCombinator<P>, P);
+impl_combinator!(ExactCombinator<P>, P);
 
 #[cfg(test)]
 mod tests {

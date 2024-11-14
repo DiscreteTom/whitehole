@@ -2,7 +2,7 @@
 
 use crate::{
   combinator::{Input, Output, Parse},
-  impl_combinator_ops,
+  impl_combinator,
 };
 
 /// See [`eat`].
@@ -40,7 +40,7 @@ impl<State, Heap> Parse<State, Heap> for Eat {
   }
 }
 
-impl_combinator_ops!(Eat);
+impl_combinator!(Eat);
 
 /// See [`eat_unchecked`].
 #[derive(Debug, Clone, Copy)]
@@ -162,7 +162,7 @@ where
   }
 }
 
-impl_combinator_ops!(EaterUnchecked<F>, F);
+impl_combinator!(EaterUnchecked<F>, F);
 
 #[cfg(test)]
 mod tests {
