@@ -1,4 +1,7 @@
-use crate::combinator::Combinator;
+use crate::{
+  combinator::{Combinator, Input, Output},
+  impl_combinator_ops,
+};
 
 /// A util trait to make [`till`] generic over different types.
 ///
@@ -43,25 +46,45 @@ unsafe impl Till for () {
   }
 }
 
+/// See [`till`].
+#[derive(Debug, Clone, Copy)]
+pub struct TillCombinator<T> {
+  pattern: T,
+}
+
 /// Match a pattern, eat all the bytes
 /// to the end of the first occurrence of the pattern.
 ///
 /// Empty string is allowed, but be careful with infinite loops.
 /// # Examples
 /// ```
-/// # use whitehole::combinator::{Combinator, till};
-/// let _: Combinator<_> = till("end".to_string()); // with String
-/// let _: Combinator<_> = till("end"); // with &str
-/// let _: Combinator<_> = till(';'); // with char
-/// let _: Combinator<_> = till(()); // with (), eat all rest
+/// # use whitehole::combinator::till;
+/// till("end".to_string()); // with String
+/// till("end"); // with &str
+/// till(';'); // with char
+/// till(()); // with (), eat all rest
 /// ```
-pub fn till<'a, State, Heap>(pattern: impl Till + 'a) -> Combinator<'a, (), State, Heap> {
-  Combinator::boxed(move |input| {
-    pattern
+#[inline]
+pub fn till<T: Till>(pattern: T) -> TillCombinator<T> {
+  TillCombinator { pattern }
+}
+
+impl<State, Heap, T: Till> Combinator<State, Heap> for TillCombinator<T> {
+  type Kind = ();
+
+  #[inline]
+  fn parse<'text>(
+    &self,
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, Self::Kind>> {
+    self
+      .pattern
       .parse(input.rest())
       .map(|digested| unsafe { input.digest_unchecked(digested) })
-  })
+  }
 }
+
+impl_combinator_ops!(TillCombinator<T>, T);
 
 #[cfg(test)]
 mod tests {
