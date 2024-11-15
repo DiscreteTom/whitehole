@@ -19,7 +19,7 @@ impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
   }
 }
 
-impl_combinator!(BitOr<Lhs, R>, Lhs, R);
+impl_combinator!(BitOr<Lhs, Rhs>, Lhs, Rhs);
 
 impl<State, Heap, Lhs: Parse<State, Heap>, Rhs: Parse<State, Heap, Kind = Lhs::Kind>>
   Parse<State, Heap> for BitOr<Lhs, Rhs>
