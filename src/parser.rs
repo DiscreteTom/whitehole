@@ -2,18 +2,18 @@ mod builder;
 mod snapshot;
 
 use crate::{
-  combinator::{Input, Parse},
   node::Node,
+  parse::{Input, Parse},
 };
 
 pub use builder::*;
 pub use snapshot::*;
 
 pub struct Parser<'a, 'text, Kind, State = (), Heap = ()> {
-  /// See [`Input::state`](crate::combinator::Input::state).
+  /// See [`Input::state`](crate::parse::Input::state).
   /// You can mutate this directly if needed.
   pub state: State,
-  /// See [`Input::heap`](crate::combinator::Input::heap).
+  /// See [`Input::heap`](crate::parse::Input::heap).
   /// You can mutate this directly if needed.
   pub heap: Heap,
 

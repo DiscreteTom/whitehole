@@ -1,6 +1,6 @@
-/// [`Combinator`](crate::combinator::Combinator)'s output.
+/// The output of [`Parse::parse`](crate::parse::Parse::parse).
 ///
-/// Usually built by [`Input::digest`](crate::combinator::Input::digest).
+/// Usually built by [`Input::digest`](crate::parse::Input::digest).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Output<'text, Kind> {
   /// The [`Node::kind`](crate::node::Node::kind).

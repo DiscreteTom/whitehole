@@ -12,6 +12,7 @@ pub mod utils;
 
 pub mod combinator;
 pub mod node;
+pub mod parse;
 pub mod parser;
 
 pub use whitehole_macros::in_str;

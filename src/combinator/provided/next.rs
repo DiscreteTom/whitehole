@@ -1,7 +1,7 @@
 use crate::combinator::{wrap, Combinator, Parse};
 
 /// Returns a combinator to match
-/// [`Input::next`](crate::combinator::Input::next) by the condition.
+/// [`Input::next`](crate::parse::Input::next) by the condition.
 /// The combinator will reject if not matched.
 ///
 /// This is usually used with the [`in_str!`](crate::in_str) macro.
@@ -29,7 +29,7 @@ pub fn next<State, Heap>(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::combinator::Input;
+  use crate::parse::Input;
 
   #[test]
   fn combinator_next() {

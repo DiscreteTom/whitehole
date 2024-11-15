@@ -69,7 +69,7 @@ pub fn till<State, Heap>(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::combinator::{Input, Output};
+  use crate::parse::{Input, Output};
 
   #[test]
   fn till_parse() {

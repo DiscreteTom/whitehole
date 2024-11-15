@@ -69,74 +69,14 @@
 //! See [`Combinator`]'s methods for more decorators.
 
 mod decorator;
-mod input;
-mod output;
 mod provided;
 
 pub mod operator;
 
-use std::marker::PhantomData;
-
 pub use decorator::*;
-pub use input::*;
-pub use output::*;
 pub use provided::*;
 
-/// Provide the [`parse`](Parse::parse) method.
-pub trait Parse {
-  /// See [`Output::kind`].
-  type Kind;
-  /// See [`Input::state`].
-  type State;
-  /// See [`Input::heap`].
-  type Heap;
-
-  /// Return [`None`] if the combinator is rejected.
-  fn parse<'text>(
-    &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Kind>>;
-}
-
-/// Implement [`Parse`] for plain closures.
-/// Currently this struct is required to constrain generic params.
-/// Maybe removed in the future, thus private.
-/// TODO: remove this.
-#[derive(Debug, Clone, Copy)]
-struct Closure<Kind, State, Heap, T> {
-  closure: T,
-  _phantom: PhantomData<(Kind, State, Heap)>,
-}
-
-impl<Kind, State, Heap, T> Closure<Kind, State, Heap, T> {
-  #[inline]
-  fn new(closure: T) -> Self {
-    Self {
-      closure,
-      _phantom: PhantomData,
-    }
-  }
-}
-
-impl<
-    Kind,
-    State,
-    Heap,
-    T: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>,
-  > Parse for Closure<Kind, State, Heap, T>
-{
-  type Kind = Kind;
-  type State = State;
-  type Heap = Heap;
-
-  #[inline]
-  fn parse<'text>(
-    &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
-    (self.closure)(input)
-  }
-}
+use crate::parse::{Closure, Input, Output, Parse};
 
 /// Wrap a [`Parse`] implementor and provide composition operators.
 #[derive(Debug, Clone, Copy)]

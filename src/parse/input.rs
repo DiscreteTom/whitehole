@@ -1,6 +1,6 @@
 use super::Output;
 
-/// [`Combinator`](crate::combinator::Combinator)'s input.
+/// The input of [`Parse::parse`](crate::parse::Parse::parse).
 ///
 /// Once created, only [`Self::state`] and [`Self::heap`] can be mutated.
 #[derive(Debug)]

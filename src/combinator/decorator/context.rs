@@ -1,4 +1,4 @@
-use crate::combinator::{Input, Output};
+use crate::parse::{Input, Output};
 use std::ops::Range;
 
 /// This struct provides the [`Input`] and [`Output`]
