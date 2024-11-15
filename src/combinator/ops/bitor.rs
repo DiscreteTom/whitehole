@@ -1,5 +1,6 @@
 //! Overload [`BitOr`] operator for combinator.
 
+use super::{EatChar, EatStr, EatString, EatUsize};
 use crate::combinator::{Combinator, Input, Output, Parse};
 use std::ops;
 
@@ -45,26 +46,45 @@ impl<Lhs: Parse, Rhs: Parse<Kind = Lhs::Kind, State = Lhs::State, Heap = Lhs::He
   }
 }
 
-// TODO: impl Combinator and Parse for char, String and &str?
-// impl<'a, State: 'a, Heap: 'a, T: Exact + 'a> ops::BitOr<T> for Combinator< State, Heap> {
-//   type Output = Combinator<'a, (), State, Heap>;
+impl<Lhs: Parse> ops::BitOr<char> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, EatChar<Lhs::State, Lhs::Heap>>>;
 
-//   /// Shortcut for `self | exact(rhs)`. See [`exact`].
-//   #[inline]
-//   fn bitor(self, rhs: T) -> Self::Output {
-//     self | exact(rhs)
-//   }
-// }
+  /// Similar to `self | eat(rhs)`. See [`eat`].
+  #[inline]
+  fn bitor(self, rhs: char) -> Self::Output {
+    Self::Output::new(BitOr::new(self.parser, EatChar::new(rhs)))
+  }
+}
 
-// impl<'a, State: 'a, Heap: 'a> ops::BitOr<usize> for Combinator<'a, (), State, Heap> {
-//   type Output = Combinator<'a, (), State, Heap>;
+impl<Lhs: Parse> ops::BitOr<usize> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, EatUsize<Lhs::State, Lhs::Heap>>>;
 
-//   /// Shortcut for `self | eat(rhs)`. See [`eat`].
-//   #[inline]
-//   fn bitor(self, rhs: usize) -> Self::Output {
-//     self | eat(rhs)
-//   }
-// }
+  /// Similar to `self | eat(rhs)`. See [`eat`].
+  #[inline]
+  fn bitor(self, rhs: usize) -> Self::Output {
+    Self::Output::new(BitOr::new(self.parser, EatUsize::new(rhs)))
+  }
+}
+
+impl<Lhs: Parse> ops::BitOr<String> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, EatString<Lhs::State, Lhs::Heap>>>;
+
+  /// Similar to `self | eat(rhs)`. See [`eat`].
+  #[inline]
+  fn bitor(self, rhs: String) -> Self::Output {
+    Self::Output::new(BitOr::new(self.parser, EatString::new(rhs)))
+  }
+}
+
+impl<'a, Lhs: Parse> ops::BitOr<&'a str> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, EatStr<'a, Lhs::State, Lhs::Heap>>>;
+
+  /// Similar to `self | eat(rhs)`. See [`eat`].
+  #[inline]
+  fn bitor(self, rhs: &'a str) -> Self::Output {
+    Self::Output::new(BitOr::new(self.parser, EatStr::new(rhs)))
+  }
+}
 
 #[cfg(test)]
 mod tests {
@@ -114,13 +134,47 @@ mod tests {
     assert_eq!(state, 1);
   }
 
-  // fn _combinator_bit_or_exact_prefix() {
-  //   let _: Combinator<_> = wrap(|_| None) | "123"; // with &str
-  //   let _: Combinator<_> = wrap(|_| None) | "123".to_string(); // with String
-  //   let _: Combinator<_> = wrap(|_| None) | '1'; // with char
-  // }
+  #[test]
+  fn combinator_bit_or_char() {
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    assert_eq!(
+      (rejecter() | '1')
+        .parse(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("")
+    );
+  }
 
-  // fn _combinator_bit_or_usize() {
-  //   let _: Combinator<_> = wrap(|_| None) | 1;
-  // }
+  #[test]
+  fn combinator_bit_or_usize() {
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    assert_eq!(
+      (rejecter() | 1)
+        .parse(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("")
+    );
+  }
+
+  #[test]
+  fn combinator_bit_or_str() {
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    assert_eq!(
+      (rejecter() | "1")
+        .parse(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("")
+    );
+  }
+
+  #[test]
+  fn combinator_bit_or_string() {
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    assert_eq!(
+      (rejecter() | "1".to_string())
+        .parse(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("")
+    );
+  }
 }
