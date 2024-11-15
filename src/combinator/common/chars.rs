@@ -26,41 +26,6 @@ pub fn next<State, Heap, F: Fn(char) -> bool>(
     Some(unsafe { input.digest_unchecked(next.len_utf8()) })
   })
 }
-
-/// Returns a combinator to match chars by the condition greedily.
-/// The combinator will reject if no char is matched.
-///
-/// This is usually used with the [`in_str!`](crate::in_str) macro.
-///
-/// This has the same behavior as `next(condition) * (1..)` but faster.
-/// TODO: make [`next`] faster enough to remove this.
-/// # Examples
-/// ```
-/// use whitehole::{combinator::chars, in_str};
-/// // match all ascii digits greedily
-/// chars(|ch| ch.is_ascii_digit());
-/// // match all JSON whitespaces greedily
-/// chars(in_str!(" \t\r\n"));
-/// ```
-#[inline]
-pub fn chars<State, Heap, F: Fn(char) -> bool>(
-  condition: F,
-) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
-  wrap(move |input| {
-    let mut digested = 0;
-    for c in input.rest().chars() {
-      if !condition(c) {
-        break;
-      }
-      digested += c.len_utf8();
-    }
-    if digested == 0 {
-      return None;
-    }
-    Some(unsafe { input.digest_unchecked(digested) })
-  })
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -77,21 +42,6 @@ mod tests {
     );
     // reject
     assert!(next(|c| c.is_ascii_alphabetic())
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-      .is_none());
-  }
-
-  #[test]
-  fn combinator_chars() {
-    // normal
-    assert_eq!(
-      chars(|c| c.is_ascii_digit())
-        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
-    );
-    // reject
-    assert!(chars(|c| c.is_ascii_alphabetic())
       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
   }
