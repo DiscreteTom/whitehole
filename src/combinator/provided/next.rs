@@ -1,9 +1,8 @@
-//! Combinators that match chars by the condition.
-
 use crate::combinator::{wrap, Combinator, Parse};
 
-/// Returns a combinator to match the next undigested char by the condition.
-/// The combinator will reject if the next char is not matched.
+/// Returns a combinator to match
+/// [`Input::next`](crate::combinator::Input::next) by the condition.
+/// The combinator will reject if not matched.
 ///
 /// This is usually used with the [`in_str!`](crate::in_str) macro.
 /// # Examples
@@ -15,8 +14,8 @@ use crate::combinator::{wrap, Combinator, Parse};
 /// next(in_str!("+-*/"));
 /// ```
 #[inline]
-pub fn next<State, Heap, F: Fn(char) -> bool>(
-  condition: F,
+pub fn next<State, Heap>(
+  condition: impl Fn(char) -> bool,
 ) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
   wrap(move |input| {
     let next = input.next();
@@ -26,6 +25,7 @@ pub fn next<State, Heap, F: Fn(char) -> bool>(
     Some(unsafe { input.digest_unchecked(next.len_utf8()) })
   })
 }
+
 #[cfg(test)]
 mod tests {
   use super::*;

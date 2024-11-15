@@ -1,5 +1,3 @@
-//! Basic combinators that just eat some bytes from the input text.
-
 use crate::combinator::{wrap, Combinator, Input, Output, Parse};
 
 /// A util trait to make [`eat`] generic over different types.

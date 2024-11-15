@@ -43,7 +43,7 @@ unsafe impl Till for () {
   }
 }
 
-/// Match a pattern, eat all the bytes
+/// Return a combinator to match the provided pattern, eat all the bytes
 /// to the end of the first occurrence of the pattern.
 ///
 /// Empty string is allowed, but be careful with infinite loops.
