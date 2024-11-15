@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::fs::read_to_string;
 use whitehole::{
-  combinator::{exact, next},
+  combinator::{eat, next},
   in_str,
   parser::{Builder, Parser},
 };
@@ -11,25 +11,23 @@ fn build_lexer(s: &str) -> Parser<()> {
   let number = {
     let digit_1_to_9 = next(|c| matches!(c, '1'..='9'));
     let digits = || next(|c| c.is_ascii_digit()) * (1..);
-    let integer = exact('0') | (digit_1_to_9 + digits().optional());
-    let fraction = exact('.') + digits();
-    let exponent = (exact('e') | exact('E')) + (exact('-') | exact('+')).optional() + digits();
-    exact('-').optional() + integer + fraction.optional() + exponent.optional()
+    let integer = eat('0') | (digit_1_to_9 + digits().optional());
+    let fraction = eat('.') + digits();
+    let exponent = (eat('e') | eat('E')) + (eat('-') | eat('+')).optional() + digits();
+    eat('-').optional() + integer + fraction.optional() + exponent.optional()
   };
   let string = {
-    let escape = exact('\\')
-      + (next(in_str!("\"\\/bfnrt")) | (exact('u') + next(|c| c.is_ascii_hexdigit()) * 4));
+    let escape =
+      eat('\\') + (next(in_str!("\"\\/bfnrt")) | (eat('u') + next(|c| c.is_ascii_hexdigit()) * 4));
     let non_escape =
       next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..);
     let body = (escape | non_escape) * ..;
-    exact('"') + body.optional() + exact('"')
+    eat('"') + body.optional() + eat('"')
   };
   let boundary = next(in_str!("[]{}:,"));
 
   Builder::new()
-    .entry(
-      whitespaces | boundary | number | string | exact("true") | exact("false") | exact("null"),
-    )
+    .entry(whitespaces | boundary | number | string | eat("true") | eat("false") | eat("null"))
     .build(s)
 }
 
