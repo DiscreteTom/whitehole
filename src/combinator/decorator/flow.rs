@@ -6,48 +6,28 @@ use crate::{
   impl_combinator,
 };
 
-pub struct Optional<C> {
-  c: C,
-}
-
-impl<C> Optional<C> {
-  pub fn new(c: C) -> Self {
-    Self { c }
-  }
-}
-
-impl<State, Heap, C: Parse<State, Heap, Kind: Default>> Parse<State, Heap> for Optional<C> {
-  type Kind = C::Kind;
-
-  fn parse<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
-    Some(self.c.parse(input).unwrap_or_else(|| Output {
-      kind: Default::default(),
-      rest: input.rest(),
-    }))
-  }
-}
-
-impl_combinator!(Optional<C>, C);
-
+/// See [`Combinator::prevent`](crate::combinator::Combinator::prevent).
+#[derive(Debug, Clone)]
 pub struct Prevent<C, F> {
   c: C,
   f: F,
 }
 
 impl<C, F> Prevent<C, F> {
+  #[inline]
   pub fn new(c: C, f: F) -> Self {
     Self { c, f }
   }
 }
+
+impl_combinator!(Prevent<C, F>, C, F);
 
 impl<State, Heap, C: Parse<State, Heap>, F: Fn(&mut Input<&mut State, &mut Heap>) -> bool>
   Parse<State, Heap> for Prevent<C, F>
 {
   type Kind = C::Kind;
 
+  #[inline]
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
@@ -57,6 +37,36 @@ impl<State, Heap, C: Parse<State, Heap>, F: Fn(&mut Input<&mut State, &mut Heap>
     } else {
       self.c.parse(input)
     }
+  }
+}
+
+/// See [`Combinator::optional`](crate::combinator::Combinator::optional).
+#[derive(Debug, Clone, Copy)]
+pub struct Optional<C> {
+  c: C,
+}
+
+impl<C> Optional<C> {
+  #[inline]
+  pub fn new(c: C) -> Self {
+    Self { c }
+  }
+}
+
+impl_combinator!(Optional<C>, C);
+
+impl<State, Heap, C: Parse<State, Heap, Kind: Default>> Parse<State, Heap> for Optional<C> {
+  type Kind = C::Kind;
+
+  #[inline]
+  fn parse<'text>(
+    &self,
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, Self::Kind>> {
+    Some(self.c.parse(input).unwrap_or_else(|| Output {
+      kind: Default::default(),
+      rest: input.rest(),
+    }))
   }
 }
 

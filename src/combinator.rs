@@ -83,6 +83,26 @@ pub use output::*;
 /// This trait provides combinator decorators.
 /// You can use [`impl_combinator!`] to implement this trait for your combinator.
 pub trait Combinator {
+  /// Check the [`Input`] before the combinator is executed.
+  /// Reject if the `condition` returns `true`.
+  /// # Examples
+  /// ```
+  /// # use whitehole::combinator::Combinator;
+  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// combinator.prevent(|input| input.state.reject)
+  /// # ;}
+  /// ```
+  #[inline]
+  fn prevent<State, Heap, F: Fn(&mut Input<&mut State, &mut Heap>) -> bool>(
+    self,
+    condition: F,
+  ) -> Prevent<Self, F>
+  where
+    Self: Sized,
+  {
+    Prevent::new(self, condition)
+  }
+
   /// If the combinator is rejected, accept it with the default kind and zero digested.
   /// # Caveats
   /// This requires the `Kind` to implement [`Default`],
