@@ -202,116 +202,115 @@ impl<Lhs: Parse<Kind: Concat<Rhs::Kind>, State = Rhs::State, Heap = Rhs::Heap>, 
 //   }
 // }
 
-// TODO: restore tests
-// #[cfg(test)]
-// mod tests {
-//   use super::*;
-//   use crate::combinator::Input;
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::combinator::{wrap, Input};
 
-//   #[test]
-//   fn combinator_add() {
-//     let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
-//     let accepter_unit = || {
-//       Combinator::boxed(|input| {
-//         Some(Output {
-//           kind: (),
-//           rest: &input.rest()[1..],
-//         })
-//       })
-//     };
-//     let accepter_int = || {
-//       Combinator::boxed(|input| {
-//         Some(Output {
-//           kind: (123,),
-//           rest: &input.rest()[1..],
-//         })
-//       })
-//     };
+  #[test]
+  fn combinator_add() {
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let accepter_unit = || {
+      wrap(|input| {
+        Some(Output {
+          kind: (),
+          rest: &input.rest()[1..],
+        })
+      })
+    };
+    let accepter_int = || {
+      wrap(|input| {
+        Some(Output {
+          kind: (123,),
+          rest: &input.rest()[1..],
+        })
+      })
+    };
 
-//     // reject then accept, should return None
-//     assert!((rejecter() + accepter_unit())
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-//       .is_none());
+    // reject then accept, should return None
+    assert!((rejecter() + accepter_unit())
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
 
-//     // accept then reject, should return None
-//     assert!((accepter_unit() + rejecter())
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-//       .is_none());
+    // accept then reject, should return None
+    assert!((accepter_unit() + rejecter())
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
 
-//     // accept then accept, should return the sum of the digested
-//     // with the concat kind
-//     assert_eq!(
-//       (accepter_unit() + accepter_int())
-//         .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: (123,),
-//         rest: "3",
-//       })
-//     );
-//     assert_eq!(
-//       (accepter_int() + accepter_unit())
-//         .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: (123,),
-//         rest: "3",
-//       })
-//     );
-//     assert_eq!(
-//       (accepter_int() + accepter_int()).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: (123, 123),
-//         rest: "3",
-//       })
-//     );
-//   }
+    // accept then accept, should return the sum of the digested
+    // with the concat kind
+    assert_eq!(
+      (accepter_unit() + accepter_int())
+        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (123,),
+        rest: "3",
+      })
+    );
+    assert_eq!(
+      (accepter_int() + accepter_unit())
+        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (123,),
+        rest: "3",
+      })
+    );
+    assert_eq!(
+      (accepter_int() + accepter_int()).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (123, 123),
+        rest: "3",
+      })
+    );
+  }
 
-//   #[test]
-//   fn combinator_add_exact_prefix() {
-//     // str
-//     assert_eq!(
-//       (exact("123") + "456")
-//         .parse(&mut Input::new("123456", 0, &mut (), &mut ()).unwrap())
-//         .map(|output| output.rest),
-//       Some("")
-//     );
-//     // String
-//     assert_eq!(
-//       (exact("123") + "456".to_string())
-//         .parse(&mut Input::new("123456", 0, &mut (), &mut ()).unwrap())
-//         .map(|output| output.rest),
-//       Some("")
-//     );
-//     // char
-//     assert_eq!(
-//       (exact("1") + '2')
-//         .parse(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
-//         .map(|output| output.rest),
-//       Some("")
-//     );
-//   }
+  // #[test]
+  // fn combinator_add_exact_prefix() {
+  //   // str
+  //   assert_eq!(
+  //     (exact("123") + "456")
+  //       .parse(&mut Input::new("123456", 0, &mut (), &mut ()).unwrap())
+  //       .map(|output| output.rest),
+  //     Some("")
+  //   );
+  //   // String
+  //   assert_eq!(
+  //     (exact("123") + "456".to_string())
+  //       .parse(&mut Input::new("123456", 0, &mut (), &mut ()).unwrap())
+  //       .map(|output| output.rest),
+  //     Some("")
+  //   );
+  //   // char
+  //   assert_eq!(
+  //     (exact("1") + '2')
+  //       .parse(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
+  //       .map(|output| output.rest),
+  //     Some("")
+  //   );
+  // }
 
-//   #[test]
-//   fn combinator_add_usize() {
-//     // normal
-//     assert_eq!(
-//       (eat(3) + 2)
-//         .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
-//         .map(|output| output.rest),
-//       Some("")
-//     );
-//     // overflow
-//     assert_eq!(
-//       (eat(3) + 3)
-//         .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
-//         .map(|output| output.rest),
-//       None
-//     );
-//     // 0
-//     assert_eq!(
-//       (eat(0) + 0)
-//         .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
-//         .map(|output| output.rest),
-//       Some("12345")
-//     );
-//   }
-// }
+  // #[test]
+  // fn combinator_add_usize() {
+  //   // normal
+  //   assert_eq!(
+  //     (eat(3) + 2)
+  //       .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
+  //       .map(|output| output.rest),
+  //     Some("")
+  //   );
+  //   // overflow
+  //   assert_eq!(
+  //     (eat(3) + 3)
+  //       .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
+  //       .map(|output| output.rest),
+  //     None
+  //   );
+  //   // 0
+  //   assert_eq!(
+  //     (eat(0) + 0)
+  //       .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
+  //       .map(|output| output.rest),
+  //     Some("12345")
+  //   );
+  // }
+}

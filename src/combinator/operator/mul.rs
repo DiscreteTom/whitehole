@@ -254,300 +254,300 @@ impl<Lhs: Parse<Kind: Fold<Output: Default>>, Rhs: Repeat> Parse for Mul<Lhs, Rh
   }
 }
 
-// #[cfg(test)]
-// mod tests {
-//   use super::*;
-//   use crate::combinator::{Input, Output};
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::combinator::{wrap, Input, Output};
 
-//   #[derive(Debug)]
-//   struct MyKind(usize);
-//   impl Fold for MyKind {
-//     type Output = usize;
-//     fn fold(self, current: Self::Output) -> Self::Output {
-//       self.0 + current
-//     }
-//   }
+  #[derive(Debug)]
+  struct MyKind(usize);
+  impl Fold for MyKind {
+    type Output = usize;
+    fn fold(self, current: Self::Output) -> Self::Output {
+      self.0 + current
+    }
+  }
 
-//   #[test]
-//   fn combinator_mul_usize() {
-//     let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
-//     let accepter = || {
-//       Combinator::boxed(|input| {
-//         Some(Output {
-//           kind: MyKind(input.start()),
-//           rest: &input.rest()[1..],
-//         })
-//       })
-//     };
+  #[test]
+  fn combinator_mul_usize() {
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let accepter = || {
+      wrap(|input| {
+        Some(Output {
+          kind: MyKind(input.start()),
+          rest: &input.rest()[1..],
+        })
+      })
+    };
 
-//     // repeat a rejecter will reject
-//     assert!((rejecter() * 3)
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-//       .is_none());
+    // repeat a rejecter will reject
+    assert!((rejecter() * 3)
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
 
-//     // repeat rejecter 0 times will accept
-//     let n = 0;
-//     assert_eq!(
-//       (rejecter() * n).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: (),
-//         rest: "123",
-//       })
-//     );
+    // repeat rejecter 0 times will accept
+    let n = 0;
+    assert_eq!(
+      (rejecter() * n).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        rest: "123",
+      })
+    );
 
-//     // repeat an accepter 0 times will accept
-//     let n = 0;
-//     assert_eq!(
-//       (accepter() * n).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: 0,
-//         rest: "123",
-//       })
-//     );
+    // repeat an accepter 0 times will accept
+    let n = 0;
+    assert_eq!(
+      (accepter() * n).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: 0,
+        rest: "123",
+      })
+    );
 
-//     // normal, apply the folded kind value and sum the digested
-//     assert_eq!(
-//       (accepter() * 3).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output { kind: 3, rest: "" })
-//     );
+    // normal, apply the folded kind value and sum the digested
+    assert_eq!(
+      (accepter() * 3).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output { kind: 3, rest: "" })
+    );
 
-//     // overflow, reject
-//     assert!((accepter() * 4)
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-//       .is_none());
-//   }
+    // overflow, reject
+    assert!((accepter() * 4)
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+  }
 
-//   #[test]
-//   fn combinator_mul_range() {
-//     let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
-//     let accepter = || {
-//       Combinator::boxed(|input| {
-//         Some(Output {
-//           kind: MyKind(input.start()),
-//           rest: &input.rest()[1..],
-//         })
-//       })
-//     };
+  #[test]
+  fn combinator_mul_range() {
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let accepter = || {
+      wrap(|input| {
+        Some(Output {
+          kind: MyKind(input.start()),
+          rest: &input.rest()[1..],
+        })
+      })
+    };
 
-//     // repeat a rejecter will reject
-//     assert!((rejecter() * (1..2))
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-//       .is_none());
+    // repeat a rejecter will reject
+    assert!((rejecter() * (1..2))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
 
-//     // repeat rejecter 0 times will accept
-//     assert_eq!(
-//       (rejecter() * (0..2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: (),
-//         rest: "123",
-//       })
-//     );
+    // repeat rejecter 0 times will accept
+    assert_eq!(
+      (rejecter() * (0..2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        rest: "123",
+      })
+    );
 
-//     // repeat an accepter 0 times will accept
-//     assert_eq!(
-//       (accepter() * (0..1)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: 0,
-//         rest: "123",
-//       })
-//     );
+    // repeat an accepter 0 times will accept
+    assert_eq!(
+      (accepter() * (0..1)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: 0,
+        rest: "123",
+      })
+    );
 
-//     // normal, apply the folded kind value and sum the digested
-//     assert_eq!(
-//       (accepter() * (0..3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output { kind: 1, rest: "3" })
-//     );
+    // normal, apply the folded kind value and sum the digested
+    assert_eq!(
+      (accepter() * (0..3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output { kind: 1, rest: "3" })
+    );
 
-//     // too few, reject
-//     assert!((accepter() * (4..6))
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-//       .is_none());
-//   }
+    // too few, reject
+    assert!((accepter() * (4..6))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+  }
 
-//   #[test]
-//   fn combinator_mul_range_from() {
-//     let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
-//     let accepter = || {
-//       Combinator::boxed(|input| {
-//         Some(Output {
-//           kind: MyKind(input.start()),
-//           rest: &input.rest()[1..],
-//         })
-//       })
-//     };
+  #[test]
+  fn combinator_mul_range_from() {
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let accepter = || {
+      wrap(|input| {
+        Some(Output {
+          kind: MyKind(input.start()),
+          rest: &input.rest()[1..],
+        })
+      })
+    };
 
-//     // repeat a rejecter will reject
-//     assert!((rejecter() * (1..))
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-//       .is_none());
+    // repeat a rejecter will reject
+    assert!((rejecter() * (1..))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
 
-//     // repeat rejecter 0 times will accept
-//     assert_eq!(
-//       (rejecter() * (0..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: (),
-//         rest: "123",
-//       })
-//     );
+    // repeat rejecter 0 times will accept
+    assert_eq!(
+      (rejecter() * (0..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        rest: "123",
+      })
+    );
 
-//     // normal, apply the folded kind value and sum the digested
-//     assert_eq!(
-//       (accepter() * (0..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output { kind: 3, rest: "" })
-//     );
+    // normal, apply the folded kind value and sum the digested
+    assert_eq!(
+      (accepter() * (0..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output { kind: 3, rest: "" })
+    );
 
-//     // too few, reject
-//     assert!((accepter() * (4..))
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-//       .is_none());
-//   }
+    // too few, reject
+    assert!((accepter() * (4..))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+  }
 
-//   #[test]
-//   fn combinator_mul_range_full() {
-//     let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
-//     let accepter = || {
-//       Combinator::boxed(|input| {
-//         Some(Output {
-//           kind: MyKind(input.start()),
-//           rest: &input.rest()[1..],
-//         })
-//       })
-//     };
+  #[test]
+  fn combinator_mul_range_full() {
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let accepter = || {
+      wrap(|input| {
+        Some(Output {
+          kind: MyKind(input.start()),
+          rest: &input.rest()[1..],
+        })
+      })
+    };
 
-//     // repeat rejecter 0 times will accept
-//     assert_eq!(
-//       (rejecter() * (..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: (),
-//         rest: "123",
-//       })
-//     );
+    // repeat rejecter 0 times will accept
+    assert_eq!(
+      (rejecter() * (..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        rest: "123",
+      })
+    );
 
-//     // normal, apply the folded kind value and sum the digested
-//     assert_eq!(
-//       (accepter() * (..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output { kind: 3, rest: "" })
-//     );
-//   }
+    // normal, apply the folded kind value and sum the digested
+    assert_eq!(
+      (accepter() * (..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output { kind: 3, rest: "" })
+    );
+  }
 
-//   #[test]
-//   fn combinator_mul_range_inclusive() {
-//     let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
-//     let accepter = || {
-//       Combinator::boxed(|input| {
-//         Some(Output {
-//           kind: MyKind(input.start()),
-//           rest: &input.rest()[1..],
-//         })
-//       })
-//     };
+  #[test]
+  fn combinator_mul_range_inclusive() {
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let accepter = || {
+      wrap(|input| {
+        Some(Output {
+          kind: MyKind(input.start()),
+          rest: &input.rest()[1..],
+        })
+      })
+    };
 
-//     // repeat a rejecter will reject
-//     assert!((rejecter() * (1..=3))
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-//       .is_none());
+    // repeat a rejecter will reject
+    assert!((rejecter() * (1..=3))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
 
-//     // repeat rejecter 0 times will accept
-//     assert_eq!(
-//       (rejecter() * (0..=2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: (),
-//         rest: "123",
-//       })
-//     );
+    // repeat rejecter 0 times will accept
+    assert_eq!(
+      (rejecter() * (0..=2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        rest: "123",
+      })
+    );
 
-//     // repeat an accepter 0 times will accept
-//     assert_eq!(
-//       (accepter() * (0..=0)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: 0,
-//         rest: "123",
-//       })
-//     );
+    // repeat an accepter 0 times will accept
+    assert_eq!(
+      (accepter() * (0..=0)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: 0,
+        rest: "123",
+      })
+    );
 
-//     // normal, apply the folded kind value and sum the digested
-//     assert_eq!(
-//       (accepter() * (0..=3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output { kind: 3, rest: "" })
-//     );
+    // normal, apply the folded kind value and sum the digested
+    assert_eq!(
+      (accepter() * (0..=3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output { kind: 3, rest: "" })
+    );
 
-//     // too few, reject
-//     assert!((accepter() * (4..=6))
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-//       .is_none());
-//   }
+    // too few, reject
+    assert!((accepter() * (4..=6))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+  }
 
-//   #[test]
-//   fn combinator_mul_range_to() {
-//     let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
-//     let accepter = || {
-//       Combinator::boxed(|input| {
-//         Some(Output {
-//           kind: MyKind(input.start()),
-//           rest: &input.rest()[1..],
-//         })
-//       })
-//     };
+  #[test]
+  fn combinator_mul_range_to() {
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let accepter = || {
+      wrap(|input| {
+        Some(Output {
+          kind: MyKind(input.start()),
+          rest: &input.rest()[1..],
+        })
+      })
+    };
 
-//     // repeat rejecter 0 times will accept
-//     assert_eq!(
-//       (rejecter() * (..2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: (),
-//         rest: "123",
-//       })
-//     );
+    // repeat rejecter 0 times will accept
+    assert_eq!(
+      (rejecter() * (..2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        rest: "123",
+      })
+    );
 
-//     // repeat an accepter 0 times will accept
-//     assert_eq!(
-//       (accepter() * (..1)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: 0,
-//         rest: "123",
-//       })
-//     );
+    // repeat an accepter 0 times will accept
+    assert_eq!(
+      (accepter() * (..1)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: 0,
+        rest: "123",
+      })
+    );
 
-//     // normal, apply the folded kind value and sum the digested
-//     assert_eq!(
-//       (accepter() * (..3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output { kind: 1, rest: "3" })
-//     );
-//   }
+    // normal, apply the folded kind value and sum the digested
+    assert_eq!(
+      (accepter() * (..3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output { kind: 1, rest: "3" })
+    );
+  }
 
-//   #[test]
-//   fn combinator_mul_range_to_inclusive() {
-//     let rejecter = || Combinator::boxed(|_| Option::<Output<()>>::None);
-//     let accepter = || {
-//       Combinator::boxed(|input| {
-//         Some(Output {
-//           kind: MyKind(input.start()),
-//           rest: &input.rest()[1..],
-//         })
-//       })
-//     };
+  #[test]
+  fn combinator_mul_range_to_inclusive() {
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let accepter = || {
+      wrap(|input| {
+        Some(Output {
+          kind: MyKind(input.start()),
+          rest: &input.rest()[1..],
+        })
+      })
+    };
 
-//     // repeat rejecter 0 times will accept
-//     assert_eq!(
-//       (rejecter() * (..=2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: (),
-//         rest: "123",
-//       })
-//     );
+    // repeat rejecter 0 times will accept
+    assert_eq!(
+      (rejecter() * (..=2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        rest: "123",
+      })
+    );
 
-//     // repeat an accepter 0 times will accept
-//     assert_eq!(
-//       (accepter() * (..=0)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: 0,
-//         rest: "123",
-//       })
-//     );
+    // repeat an accepter 0 times will accept
+    assert_eq!(
+      (accepter() * (..=0)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: 0,
+        rest: "123",
+      })
+    );
 
-//     // normal, apply the folded kind value and sum the digested
-//     assert_eq!(
-//       (accepter() * (..=3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output { kind: 3, rest: "" })
-//     );
-//   }
-// }
+    // normal, apply the folded kind value and sum the digested
+    assert_eq!(
+      (accepter() * (..=3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output { kind: 3, rest: "" })
+    );
+  }
+}
