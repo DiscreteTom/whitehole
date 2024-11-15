@@ -68,19 +68,19 @@
 //! ```
 //! See [`Combinator`]'s methods for more decorators.
 
-mod common;
 mod decorator;
 mod input;
 mod output;
+mod provided;
 
 pub mod operator;
 
 use std::marker::PhantomData;
 
-pub use common::*;
 pub use decorator::*;
 pub use input::*;
 pub use output::*;
+pub use provided::*;
 
 /// Provide the [`parse`](Parse::parse) method.
 pub trait Parse {
