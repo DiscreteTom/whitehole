@@ -89,71 +89,71 @@ impl<T: Parse> Combinator<T> {
   }
 }
 
-// #[cfg(test)]
-// mod tests {
-//   use super::*;
+#[cfg(test)]
+mod tests {
+  use super::*;
 
-//   #[test]
-//   fn combinator_bind() {
-//     assert_eq!(
-//       Combinator::boxed(|input| Some(Output {
-//         kind: (),
-//         rest: &input.rest()[1..]
-//       }))
-//       .bind(123)
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: 123,
-//         rest: "23"
-//       })
-//     );
-//   }
+  #[test]
+  fn combinator_bind() {
+    assert_eq!(
+      wrap(|input| Some(Output {
+        kind: (),
+        rest: &input.rest()[1..]
+      }))
+      .bind(123)
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: 123,
+        rest: "23"
+      })
+    );
+  }
 
-//   #[test]
-//   fn combinator_bind_default() {
-//     assert_eq!(
-//       Combinator::boxed(|input| Some(Output {
-//         kind: (),
-//         rest: &input.rest()[1..]
-//       }))
-//       .bind_default::<i32>()
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: 0,
-//         rest: "23"
-//       })
-//     );
-//   }
+  #[test]
+  fn combinator_bind_default() {
+    assert_eq!(
+      wrap(|input| Some(Output {
+        kind: (),
+        rest: &input.rest()[1..]
+      }))
+      .bind_default::<i32>()
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: 0,
+        rest: "23"
+      })
+    );
+  }
 
-//   #[test]
-//   fn combinator_select() {
-//     assert_eq!(
-//       Combinator::boxed(|input| Some(Output {
-//         kind: (),
-//         rest: &input.rest()[1..]
-//       }))
-//       .select(|ctx| if ctx.content() == "1" { 1 } else { 2 })
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: 1,
-//         rest: "23"
-//       })
-//     );
-//   }
+  #[test]
+  fn combinator_select() {
+    assert_eq!(
+      wrap(|input| Some(Output {
+        kind: (),
+        rest: &input.rest()[1..]
+      }))
+      .select(|ctx| if ctx.content() == "1" { 1 } else { 2 })
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: 1,
+        rest: "23"
+      })
+    );
+  }
 
-//   #[test]
-//   fn combinator_map() {
-//     assert_eq!(
-//       Combinator::boxed(|input| Some(Output {
-//         kind: 1,
-//         rest: &input.rest()[1..]
-//       }))
-//       .map(Some)
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: Some(1),
-//         rest: "23"
-//       })
-//     );
-//   }
-// }
+  #[test]
+  fn combinator_map() {
+    assert_eq!(
+      wrap(|input| Some(Output {
+        kind: 1,
+        rest: &input.rest()[1..]
+      }))
+      .map(Some)
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: Some(1),
+        rest: "23"
+      })
+    );
+  }
+}

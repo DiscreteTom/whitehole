@@ -120,131 +120,131 @@ impl<T: Parse> Combinator<T> {
   }
 }
 
-// #[cfg(test)]
-// mod tests {
-//   use super::*;
+#[cfg(test)]
+mod tests {
+  use super::*;
 
-//   fn accepter() -> Combinator<'static, (), bool, ()> {
-//     Combinator::boxed(|input| {
-//       *input.state = true;
-//       Some(Output {
-//         kind: (),
-//         rest: &input.rest()[1..],
-//       })
-//     })
-//   }
+  fn accepter() -> Combinator<impl Parse<Kind = (), State = bool, Heap = ()>> {
+    wrap(|input| {
+      *input.state = true;
+      Some(Output {
+        kind: (),
+        rest: &input.rest()[1..],
+      })
+    })
+  }
 
-//   fn rejecter() -> Combinator<'static, (), bool, ()> {
-//     Combinator::boxed(|input| {
-//       *input.state = true;
-//       None
-//     })
-//   }
+  fn rejecter() -> Combinator<impl Parse<Kind = (), State = bool, Heap = ()>> {
+    wrap(|input| {
+      *input.state = true;
+      None
+    })
+  }
 
-//   #[test]
-//   fn combinator_prevent() {
-//     let mut executed = false;
-//     assert!(accepter()
-//       .prevent(|_| true)
-//       .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
-//       .is_none());
-//     assert!(!executed);
+  #[test]
+  fn combinator_prevent() {
+    let mut executed = false;
+    assert!(accepter()
+      .prevent(|_| true)
+      .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .is_none());
+    assert!(!executed);
 
-//     let mut executed = false;
-//     assert!(accepter()
-//       .prevent(|_| false)
-//       .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
-//       .is_some());
-//     assert!(executed);
-//   }
+    let mut executed = false;
+    assert!(accepter()
+      .prevent(|_| false)
+      .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .is_some());
+    assert!(executed);
+  }
 
-//   #[test]
-//   fn combinator_reject() {
-//     let mut executed = false;
-//     assert_eq!(
-//       accepter()
-//         .reject(|_| false)
-//         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
-//       Some(Output {
-//         kind: (),
-//         rest: "23"
-//       })
-//     );
-//     assert!(executed);
+  #[test]
+  fn combinator_reject() {
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .reject(|_| false)
+        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        rest: "23"
+      })
+    );
+    assert!(executed);
 
-//     let mut executed = false;
-//     assert_eq!(
-//       accepter()
-//         .reject(|_| true)
-//         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
-//       None
-//     );
-//     assert!(executed);
-//   }
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .reject(|_| true)
+        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+      None
+    );
+    assert!(executed);
+  }
 
-//   #[test]
-//   fn combinator_optional() {
-//     let mut executed = false;
-//     assert_eq!(
-//       accepter()
-//         .optional()
-//         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
-//       Some(Output {
-//         kind: (),
-//         rest: "23"
-//       })
-//     );
-//     assert!(executed);
+  #[test]
+  fn combinator_optional() {
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .optional()
+        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        rest: "23"
+      })
+    );
+    assert!(executed);
 
-//     let mut executed = false;
-//     assert_eq!(
-//       rejecter()
-//         .optional()
-//         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
-//       Some(Output {
-//         kind: (),
-//         rest: "123"
-//       })
-//     );
-//     assert!(executed);
-//   }
+    let mut executed = false;
+    assert_eq!(
+      rejecter()
+        .optional()
+        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        rest: "123"
+      })
+    );
+    assert!(executed);
+  }
 
-//   #[test]
-//   fn combinator_boundary() {
-//     let mut executed = false;
-//     assert_eq!(
-//       accepter()
-//         .boundary()
-//         .parse(&mut Input::new("1", 0, &mut executed, &mut ()).unwrap()),
-//       Some(Output { kind: (), rest: "" })
-//     );
-//     assert!(executed);
+  #[test]
+  fn combinator_boundary() {
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .boundary()
+        .parse(&mut Input::new("1", 0, &mut executed, &mut ()).unwrap()),
+      Some(Output { kind: (), rest: "" })
+    );
+    assert!(executed);
 
-//     let mut executed = false;
-//     assert_eq!(
-//       accepter()
-//         .boundary()
-//         .parse(&mut Input::new("12", 0, &mut executed, &mut ()).unwrap()),
-//       None
-//     );
-//     assert!(executed);
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .boundary()
+        .parse(&mut Input::new("12", 0, &mut executed, &mut ()).unwrap()),
+      None
+    );
+    assert!(executed);
 
-//     let mut executed = false;
-//     assert_eq!(
-//       accepter()
-//         .boundary()
-//         .parse(&mut Input::new("1a", 0, &mut executed, &mut ()).unwrap()),
-//       None
-//     );
-//     assert!(executed);
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .boundary()
+        .parse(&mut Input::new("1a", 0, &mut executed, &mut ()).unwrap()),
+      None
+    );
+    assert!(executed);
 
-//     let mut executed = false;
-//     assert_eq!(
-//       accepter()
-//         .boundary()
-//         .parse(&mut Input::new("1_", 0, &mut executed, &mut ()).unwrap()),
-//       None
-//     );
-//     assert!(executed);
-//   }
-// }
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .boundary()
+        .parse(&mut Input::new("1_", 0, &mut executed, &mut ()).unwrap()),
+      None
+    );
+    assert!(executed);
+  }
+}
