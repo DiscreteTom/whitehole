@@ -71,7 +71,7 @@
 mod decorator;
 mod provided;
 
-pub mod operator;
+pub mod ops;
 
 pub use decorator::*;
 pub use provided::*;
