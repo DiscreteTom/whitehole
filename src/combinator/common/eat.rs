@@ -15,7 +15,7 @@ use crate::combinator::{wrap, Combinator, Input, Parse};
 /// eat(10);
 /// ```
 #[inline]
-pub fn eat<State, Heap>(n: usize) -> Combinator<impl Parse<State, Heap, Kind = ()>> {
+pub fn eat<State, Heap>(n: usize) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
   wrap(move |input| input.digest(n))
 }
 
@@ -38,7 +38,7 @@ pub fn eat<State, Heap>(n: usize) -> Combinator<impl Parse<State, Heap, Kind = (
 #[inline]
 pub unsafe fn eat_unchecked<State, Heap>(
   n: usize,
-) -> Combinator<impl Parse<State, Heap, Kind = ()>> {
+) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
   wrap(move |input| unsafe { input.digest_unchecked(n) }.into())
 }
 
@@ -54,7 +54,7 @@ pub unsafe fn eat_unchecked<State, Heap>(
 #[inline]
 pub fn eater<State, Heap, F: Fn(&mut Input<&mut State, &mut Heap>) -> usize>(
   f: F,
-) -> Combinator<impl Parse<State, Heap, Kind = ()>> {
+) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
   wrap(move |input| match f(input) {
     0 => None,
     digested => input.digest(digested),
@@ -76,7 +76,7 @@ pub fn eater<State, Heap, F: Fn(&mut Input<&mut State, &mut Heap>) -> usize>(
 #[inline]
 pub unsafe fn eater_unchecked<State, Heap, F: Fn(&mut Input<&mut State, &mut Heap>) -> usize>(
   f: F,
-) -> Combinator<impl Parse<State, Heap, Kind = ()>> {
+) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
   wrap(move |input| match f(input) {
     0 => None,
     digested => unsafe { input.digest_unchecked(digested) }.into(),

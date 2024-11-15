@@ -2,7 +2,7 @@ mod builder;
 mod snapshot;
 
 use crate::{
-  combinator::{Parse, Input},
+  combinator::{Input, Parse},
   node::Node,
 };
 
@@ -22,7 +22,7 @@ pub struct Parser<'a, 'text, Kind, State = (), Heap = ()> {
   /// See [`Self::rest`].
   rest: &'text str,
   /// See [`Self::entry`].
-  entry: Box<dyn Parse<State, Heap, Kind = Kind> + 'a>,
+  entry: Box<dyn Parse<Kind = Kind, State = State, Heap = Heap> + 'a>,
 }
 
 impl<'a, 'text, Kind, State, Heap> Parser<'a, 'text, Kind, State, Heap> {
@@ -126,7 +126,7 @@ impl<'a, 'text, Kind, State, Heap> Parser<'a, 'text, Kind, State, Heap> {
   /// or the combinator rejects.
   pub fn parse(&mut self) -> Option<Node<Kind>> {
     let output = self.entry.parse(&mut Input::new(
-      &self.rest,
+      self.rest,
       self.digested(),
       &mut self.state,
       &mut self.heap,

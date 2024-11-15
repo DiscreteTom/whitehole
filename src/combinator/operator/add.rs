@@ -143,15 +143,17 @@ impl<Lhs, Rhs> Add<Lhs, Rhs> {
   }
 }
 
-impl<State, Heap, Lhs: Parse<State, Heap, Kind: Concat<Rhs::Kind>>, Rhs: Parse<State, Heap>>
-  Parse<State, Heap> for Add<Lhs, Rhs>
+impl<Lhs: Parse<Kind: Concat<Rhs::Kind>, State = Rhs::State, Heap = Rhs::Heap>, Rhs: Parse> Parse
+  for Add<Lhs, Rhs>
 {
   type Kind = <Lhs::Kind as Concat<Rhs::Kind>>::Output;
+  type State = Rhs::State;
+  type Heap = Rhs::Heap;
 
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
+    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Self::Kind>> {
     self.lhs.parse(input).and_then(|output| {
       input
@@ -165,13 +167,15 @@ impl<State, Heap, Lhs: Parse<State, Heap, Kind: Concat<Rhs::Kind>>, Rhs: Parse<S
   }
 }
 
-impl<Lhs, Rhs> ops::Add<Combinator<Rhs>> for Combinator<Lhs> {
+impl<Lhs: Parse<Kind: Concat<Rhs::Kind>, State = Rhs::State, Heap = Rhs::Heap>, Rhs: Parse>
+  ops::Add<Rhs> for Combinator<Lhs>
+{
   type Output = Combinator<Add<Lhs, Rhs>>;
 
   /// Try to parse with the left-hand side, if it fails, try the right-hand side.
   #[inline]
-  fn add(self, rhs: Combinator<Rhs>) -> Self::Output {
-    Self::Output::new(Add::new(self.parser, rhs.parser))
+  fn add(self, rhs: Rhs) -> Self::Output {
+    Self::Output::new(Add::new(self.parser, rhs))
   }
 }
 

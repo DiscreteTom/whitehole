@@ -104,21 +104,21 @@ impl<Lhs, Rhs> Mul<Lhs, Rhs> {
 }
 
 impl<
-    State,
-    Heap,
-    Lhs: Parse<State, Heap>,
+    Lhs: Parse,
     Acc,
     Range: Repeat,
     Initializer: Fn() -> Acc,
     InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
-  > Parse<State, Heap> for Mul<Lhs, (Range, Initializer, InlineFolder)>
+  > Parse for Mul<Lhs, (Range, Initializer, InlineFolder)>
 {
   type Kind = Acc;
+  type State = Lhs::State;
+  type Heap = Lhs::Heap;
 
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
+    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Self::Kind>> {
     let (range, init, folder) = &self.rhs;
     let mut repeated = 0;
@@ -220,16 +220,16 @@ impl Fold for () {
   fn fold(self, _: Self::Output) -> Self::Output {}
 }
 
-impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold<Output: Default>>, Rhs: Repeat>
-  Parse<State, Heap> for Mul<Lhs, Rhs>
-{
+impl<Lhs: Parse<Kind: Fold<Output: Default>>, Rhs: Repeat> Parse for Mul<Lhs, Rhs> {
   type Kind = <Lhs::Kind as Fold>::Output;
+  type State = Lhs::State;
+  type Heap = Lhs::Heap;
 
   // TODO: merge dup code
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
+    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Self::Kind>> {
     let range = &self.rhs;
     let mut repeated = 0;

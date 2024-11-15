@@ -186,34 +186,73 @@ pub use output::*;
 // }
 
 /// Provide the [`parse`](Parse::parse) method.
-pub trait Parse<State = (), Heap = ()> {
+pub trait Parse {
   /// See [`Output::kind`].
   type Kind;
+  /// See [`Input::state`].
+  type State;
+  /// See [`Input::heap`].
+  type Heap;
 
   /// Return [`None`] if the combinator is rejected.
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
+    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Self::Kind>>;
 }
 
 // impl Parse for plain closures.
+struct Closure<Kind, State, Heap, T> {
+  closure: T,
+  _phantom: std::marker::PhantomData<(Kind, State, Heap)>,
+}
+
+impl<Kind, State, Heap, T> Closure<Kind, State, Heap, T> {
+  pub fn new(closure: T) -> Self {
+    Self {
+      closure,
+      _phantom: std::marker::PhantomData,
+    }
+  }
+}
+
 impl<
     Kind,
     State,
     Heap,
-    F: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>,
-  > Parse<State, Heap> for F
+    T: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>,
+  > Parse for Closure<Kind, State, Heap, T>
 {
   type Kind = Kind;
+  type State = State;
+  type Heap = Heap;
 
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
   ) -> Option<Output<'text, Self::Kind>> {
-    self(input)
+    (self.closure)(input)
   }
 }
+
+// impl<
+//     Kind,
+//     State,
+//     Heap,
+//     F: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>,
+//   > Parse for F
+// {
+//   type Kind = Kind;
+//   type State = State;
+//   type Heap = Heap;
+
+//   fn parse<'text>(
+//     &self,
+//     input: &mut Input<'text, &mut State, &mut Heap>,
+//   ) -> Option<Output<'text, Self::Kind>> {
+//     self(input)
+//   }
+// }
 
 // /// Implement [`Combinator`] and override [`Add`](std::ops::Add),
 // /// [`BitOr`](std::ops::BitOr), [`Mul`](std::ops::Mul) operators.
@@ -275,21 +314,32 @@ impl<T> Combinator<T> {
   pub fn new(parser: T) -> Self {
     Self { parser }
   }
+
+  pub fn wrap(self) -> Combinator<impl Parse>
+  where
+    T: Parse,
+  {
+    self
+  }
 }
 
 /// Wrap a closure.
 pub fn wrap<Kind, State, Heap>(
   parse: impl for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>,
-) -> Combinator<impl Parse<State, Heap, Kind = Kind>> {
-  Combinator { parser: parse }
+) -> Combinator<impl Parse<State = State, Heap = Heap, Kind = Kind>> {
+  Combinator {
+    parser: Closure::new(parse),
+  }
 }
 
-impl<State, Heap, T: Parse<State, Heap>> Parse<State, Heap> for Combinator<T> {
+impl<T: Parse> Parse for Combinator<T> {
   type Kind = T::Kind;
+  type State = T::State;
+  type Heap = T::Heap;
 
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
+    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Self::Kind>> {
     self.parser.parse(input)
   }

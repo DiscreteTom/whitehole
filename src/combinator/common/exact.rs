@@ -52,7 +52,9 @@ unsafe impl Exact for char {
 /// exact("true").boundary();
 /// ```
 #[inline]
-pub fn exact<State, Heap>(pattern: impl Exact) -> Combinator<impl Parse<State, Heap, Kind = ()>> {
+pub fn exact<State, Heap>(
+  pattern: impl Exact,
+) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
   wrap(move |input| {
     pattern
       .parse(input.rest())

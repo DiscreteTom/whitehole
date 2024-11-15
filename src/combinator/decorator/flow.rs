@@ -4,9 +4,9 @@ use super::AcceptedOutputContext;
 use crate::combinator::{wrap, Combinator, Input, Output, Parse};
 
 impl<T> Combinator<T> {
-  pub fn optional<State, Heap>(self) -> Combinator<impl Parse<State, Heap, Kind = T::Kind>>
+  pub fn optional(self) -> Combinator<impl Parse<Kind = T::Kind, State = T::State, Heap = T::Heap>>
   where
-    T: Parse<State, Heap>,
+    T: Parse,
     T::Kind: Default,
   {
     wrap(move |input| {

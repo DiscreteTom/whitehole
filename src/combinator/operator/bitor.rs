@@ -17,21 +17,25 @@ impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
   }
 }
 
-impl<State, Heap, Lhs: Parse<State, Heap>, Rhs: Parse<State, Heap, Kind = Lhs::Kind>>
-  Parse<State, Heap> for BitOr<Lhs, Rhs>
+impl<Lhs: Parse, Rhs: Parse<Kind = Lhs::Kind, State = Lhs::State, Heap = Lhs::Heap>> Parse
+  for BitOr<Lhs, Rhs>
 {
   type Kind = Lhs::Kind;
+  type State = Lhs::State;
+  type Heap = Lhs::Heap;
 
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
+    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Self::Kind>> {
     self.lhs.parse(input).or_else(|| self.rhs.parse(input))
   }
 }
 
-impl<Lhs, Rhs> ops::BitOr<Rhs> for Combinator<Lhs> {
+impl<Lhs: Parse, Rhs: Parse<Kind = Lhs::Kind, State = Lhs::State, Heap = Lhs::Heap>> ops::BitOr<Rhs>
+  for Combinator<Lhs>
+{
   type Output = Combinator<BitOr<Lhs, Rhs>>;
 
   /// Try to parse with the left-hand side, if it fails, try the right-hand side.

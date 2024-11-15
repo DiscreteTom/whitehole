@@ -17,7 +17,7 @@ use crate::combinator::{wrap, Combinator, Parse};
 #[inline]
 pub fn next<State, Heap, F: Fn(char) -> bool>(
   condition: F,
-) -> Combinator<impl Parse<State, Heap, Kind = ()>> {
+) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
   wrap(move |input| {
     let next = input.next();
     if !condition(next) {
@@ -45,7 +45,7 @@ pub fn next<State, Heap, F: Fn(char) -> bool>(
 #[inline]
 pub fn chars<State, Heap, F: Fn(char) -> bool>(
   condition: F,
-) -> Combinator<impl Parse<State, Heap, Kind = ()>> {
+) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
   wrap(move |input| {
     let mut digested = 0;
     for c in input.rest().chars() {
