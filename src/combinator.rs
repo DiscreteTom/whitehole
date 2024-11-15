@@ -75,115 +75,12 @@ mod output;
 
 pub mod operator;
 
+use std::marker::PhantomData;
+
 pub use common::*;
 pub use decorator::*;
 pub use input::*;
 pub use output::*;
-
-// /// This trait provides combinator decorators.
-// /// You can use [`impl_combinator!`] to implement this trait for your combinator.
-// pub trait Combinator {
-//   /// Check the [`Input`] before the combinator is executed.
-//   /// Reject if the `condition` returns `true`.
-//   /// # Examples
-//   /// ```
-//   /// # use whitehole::combinator::Combinator;
-//   /// # fn t(combinator: Combinator<(), (), ()>) {
-//   /// combinator.prevent(|input| input.state.reject)
-//   /// # ;}
-//   /// ```
-//   #[inline]
-//   fn prevent<State, Heap, F: Fn(&mut Input<&mut State, &mut Heap>) -> bool>(
-//     self,
-//     condition: F,
-//   ) -> Prevent<Self, F>
-//   where
-//     Self: Sized,
-//   {
-//     Prevent::new(self, condition)
-//   }
-
-//   /// If the combinator is rejected, accept it with the default kind and zero digested.
-//   /// # Caveats
-//   /// This requires the `Kind` to implement [`Default`],
-//   /// thus usually used before setting a custom kind.
-//   /// ```
-//   /// # use whitehole::combinator::Combinator;
-//   /// # #[derive(Clone)]
-//   /// # enum MyKind { A }
-//   /// # fn t(combinator: Combinator<(), (), ()>) {
-//   /// // bind a kind after calling `optional`
-//   /// combinator.optional().bind(MyKind::A)
-//   /// // instead of
-//   /// // combinator.bind(MyKind::A).optional()
-//   /// # ;}
-//   /// ```
-//   /// Or you can wrap `Kind` with [`Option`]:
-//   /// ```
-//   /// # use whitehole::combinator::Combinator;
-//   /// # #[derive(Clone)]
-//   /// # enum MyKind { A }
-//   /// # fn t(combinator: Combinator<(), (), ()>) {
-//   /// combinator.bind(Some(MyKind::A)).optional()
-//   /// # ;}
-//   /// ```
-//   /// # Examples
-//   /// ```
-//   /// # use whitehole::combinator::Combinator;
-//   /// # fn t(combinator: Combinator<(), (), ()>) {
-//   /// combinator.optional()
-//   /// # ;}
-//   /// ```
-//   #[inline]
-//   fn optional(self) -> Optional<Self>
-//   where
-//     Self: Sized,
-//   {
-//     Optional::new(self)
-//   }
-
-//   /// Reject the combinator after execution if the `condition` returns `true`.
-//   /// # Examples
-//   /// ```
-//   /// # use whitehole::combinator::Combinator;
-//   /// # fn t(combinator: Combinator<(), (), ()>) {
-//   /// combinator.reject(|ctx| ctx.content() != "123")
-//   /// # ;}
-//   /// ```
-//   #[inline]
-//   fn reject<
-//     State,
-//     Heap,
-//     F: for<'text> Fn(
-//       AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, Self::Kind>>,
-//     ) -> bool,
-//   >(
-//     self,
-//     condition: F,
-//   ) -> Reject<Self, F>
-//   where
-//     Self: Parse<State, Heap> + Sized,
-//   {
-//     Reject::new(self, condition)
-//   }
-
-//   /// Reject the combinator after execution if the next char is alphanumeric or `_`.
-//   /// See [`char::is_alphanumeric`].
-//   /// # Examples
-//   /// ```
-//   /// # use whitehole::combinator::Combinator;
-//   /// # fn t(combinator: Combinator<(), (), ()>) {
-//   /// combinator.boundary()
-//   /// # ;}
-//   /// ```
-//   #[inline]
-//   fn boundary(self) -> Boundary<Self>
-//   where
-//     Self: Sized,
-//   {
-//     Boundary::new(self)
-//   }
-// }
 
 /// Provide the [`parse`](Parse::parse) method.
 pub trait Parse {
@@ -201,17 +98,22 @@ pub trait Parse {
   ) -> Option<Output<'text, Self::Kind>>;
 }
 
-// impl Parse for plain closures.
+/// Implement [`Parse`] for plain closures.
+/// Currently this struct is required to constrain generic params.
+/// Maybe removed in the future, thus private.
+/// TODO: remove this.
+#[derive(Debug, Clone, Copy)]
 struct Closure<Kind, State, Heap, T> {
   closure: T,
-  _phantom: std::marker::PhantomData<(Kind, State, Heap)>,
+  _phantom: PhantomData<(Kind, State, Heap)>,
 }
 
 impl<Kind, State, Heap, T> Closure<Kind, State, Heap, T> {
-  pub fn new(closure: T) -> Self {
+  #[inline]
+  fn new(closure: T) -> Self {
     Self {
       closure,
-      _phantom: std::marker::PhantomData,
+      _phantom: PhantomData,
     }
   }
 }
@@ -227,103 +129,40 @@ impl<
   type State = State;
   type Heap = Heap;
 
+  #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
+    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Self::Kind>> {
     (self.closure)(input)
   }
 }
 
-// impl<
-//     Kind,
-//     State,
-//     Heap,
-//     F: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>,
-//   > Parse for F
-// {
-//   type Kind = Kind;
-//   type State = State;
-//   type Heap = Heap;
-
-//   fn parse<'text>(
-//     &self,
-//     input: &mut Input<'text, &mut State, &mut Heap>,
-//   ) -> Option<Output<'text, Self::Kind>> {
-//     self(input)
-//   }
-// }
-
-// /// Implement [`Combinator`] and override [`Add`](std::ops::Add),
-// /// [`BitOr`](std::ops::BitOr), [`Mul`](std::ops::Mul) operators.
-// /// TODO: examples
-// #[macro_export]
-// macro_rules! impl_combinator {
-//   ($type:ty) => {
-//     impl_combinator!($type,);
-//   };
-//   ($type:ty, $($generic:ident),*) => {
-//     // impl<$($generic),*> $crate::combinator::Combinator for $type {}
-
-//     impl<_Rhs, $($generic),*> std::ops::Mul<_Rhs> for $type {
-//       type Output = $crate::combinator::operator::mul::Mul<Self, _Rhs>;
-
-//       // TODO: fix doc link
-
-//       /// Repeat the combinator `rhs` times.
-//       /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
-//       ///
-//       /// See [`Fold`] for more information.
-//       fn mul(self, rhs: _Rhs) -> Self::Output {
-//         Self::Output::new(self, rhs)
-//       }
-//     }
-
-//     impl<_Rhs, $($generic),*> std::ops::BitOr<_Rhs> for $type {
-//       type Output = $crate::combinator::operator::bitor::BitOr<Self, _Rhs>;
-
-//       /// Try to parse with the left-hand side, if it fails, try the right-hand side.
-//       #[inline]
-//       fn bitor(self, rhs: _Rhs) -> Self::Output {
-//         Self::Output::new(self, rhs)
-//       }
-//     }
-
-//     impl<_Rhs, $($generic),*> std::ops::Add<_Rhs> for $type {
-//       type Output = $crate::combinator::operator::add::Add<Self, _Rhs>;
-
-//       /// Parse with the left-hand side, then parse with the right-hand side.
-//       /// Return the output with [`Concat`]-ed kind and the sum of the digested.
-//       #[inline]
-//       fn add(self, rhs: _Rhs) -> Self::Output {
-//         Self::Output::new(self, rhs)
-//       }
-//     }
-//   };
-// }
-
 /// Wrap a [`Parse`] implementor and provide composition operators.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Combinator<T> {
   parser: T,
 }
 
 impl<T> Combinator<T> {
-  /// Wrap a [`Parse`] implementor.
+  /// Create a new instance.
   #[inline]
   pub fn new(parser: T) -> Self {
     Self { parser }
   }
 
-  pub fn wrap(self) -> Combinator<impl Parse>
-  where
-    T: Parse,
-  {
-    self
-  }
+  // TODO
+  // #[inline]
+  // pub fn collapse(
+  //   self,
+  // ) -> Combinator<impl Parse> {
+  //   self
+  // }
 }
 
-/// Wrap a closure.
+/// Wrap a closure to create a [`Combinator`].
+/// TODO: better signature?
+#[inline]
 pub fn wrap<Kind, State, Heap>(
   parse: impl for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>,
 ) -> Combinator<impl Parse<State = State, Heap = Heap, Kind = Kind>> {
@@ -337,6 +176,7 @@ impl<T: Parse> Parse for Combinator<T> {
   type State = T::State;
   type Heap = T::Heap;
 
+  #[inline]
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
@@ -345,22 +185,22 @@ impl<T: Parse> Parse for Combinator<T> {
   }
 }
 
-// #[cfg(test)]
-// mod tests {
-//   use super::*;
+#[cfg(test)]
+mod tests {
+  use super::*;
 
-//   #[test]
-//   fn combinator_parse() {
-//     assert_eq!(
-//       Combinator::boxed(|input| Some(Output {
-//         kind: (),
-//         rest: &input.rest()[1..]
-//       }))
-//       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-//       Some(Output {
-//         kind: (),
-//         rest: "23"
-//       })
-//     );
-//   }
-// }
+  #[test]
+  fn combinator_parse() {
+    assert_eq!(
+      wrap(|input| Some(Output {
+        kind: (),
+        rest: &input.rest()[1..]
+      }))
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        rest: "23"
+      })
+    );
+  }
+}
