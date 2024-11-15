@@ -3,10 +3,90 @@
 use super::AcceptedOutputContext;
 use crate::combinator::{wrap, Combinator, Input, Output, Parse};
 
-impl<T> Combinator<T> {
-  pub fn optional(self) -> Combinator<impl Parse<Kind = T::Kind, State = T::State, Heap = T::Heap>>
+impl<T: Parse> Combinator<T> {
+  /// Check the [`Input`] before the combinator is executed.
+  /// Reject if the `condition` returns `true`.
+  /// # Examples
+  /// ```
+  /// # use whitehole::combinator::Combinator;
+  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// combinator.prevent(|input| input.state.reject)
+  /// # ;}
+  /// ```
+  pub fn prevent(
+    self,
+    condition: impl Fn(&mut Input<&mut T::State, &mut T::Heap>) -> bool,
+  ) -> Combinator<impl Parse<State = T::State, Heap = T::Heap, Kind = T::Kind>> {
+    wrap(move |input| {
+      if condition(input) {
+        None
+      } else {
+        self.parse(input)
+      }
+    })
+  }
+
+  /// Reject the combinator after execution if the `condition` returns `true`.
+  /// # Examples
+  /// ```
+  /// # use whitehole::combinator::Combinator;
+  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// combinator.reject(|ctx| ctx.content() != "123")
+  /// # ;}
+  /// ```
+  pub fn reject(
+    self,
+    condition: impl for<'text> Fn(
+      AcceptedOutputContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<'text, T::Kind>>,
+    ) -> bool,
+  ) -> Combinator<impl Parse<State = T::State, Heap = T::Heap, Kind = T::Kind>> {
+    wrap(move |input| {
+      self.parse(input).and_then(|output| {
+        if condition(AcceptedOutputContext {
+          input,
+          output: &output,
+        }) {
+          None
+        } else {
+          output.into()
+        }
+      })
+    })
+  }
+
+  /// If the combinator is rejected, accept it with the default kind and zero digested.
+  /// # Caveats
+  /// This requires the `Kind` to implement [`Default`],
+  /// thus usually used before setting a custom kind.
+  /// ```
+  /// # use whitehole::combinator::Combinator;
+  /// # #[derive(Clone)]
+  /// # enum MyKind { A }
+  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// // bind a kind after calling `optional`
+  /// combinator.optional().bind(MyKind::A)
+  /// // instead of
+  /// // combinator.bind(MyKind::A).optional()
+  /// # ;}
+  /// ```
+  /// Or you can wrap `Kind` with [`Option`]:
+  /// ```
+  /// # use whitehole::combinator::Combinator;
+  /// # #[derive(Clone)]
+  /// # enum MyKind { A }
+  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// combinator.bind(Some(MyKind::A)).optional()
+  /// # ;}
+  /// ```
+  /// # Examples
+  /// ```
+  /// # use whitehole::combinator::Combinator;
+  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// combinator.optional()
+  /// # ;}
+  /// ```
+  pub fn optional(self) -> Combinator<impl Parse<State = T::State, Heap = T::Heap, Kind = T::Kind>>
   where
-    T: Parse,
     T::Kind: Default,
   {
     wrap(move |input| {
@@ -16,151 +96,29 @@ impl<T> Combinator<T> {
       }))
     })
   }
+
+  /// Reject the combinator after execution if the next char is alphanumeric or `_`.
+  /// See [`char::is_alphanumeric`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::combinator::Combinator;
+  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// combinator.boundary()
+  /// # ;}
+  /// ```
+  pub fn boundary(
+    self,
+  ) -> Combinator<impl Parse<State = T::State, Heap = T::Heap, Kind = T::Kind>> {
+    self.reject(|ctx| {
+      ctx
+        .output
+        .rest
+        .chars()
+        .next()
+        .map_or(false, |c| c.is_alphanumeric() || c == '_')
+    })
+  }
 }
-
-// /// See [`Combinator::prevent`](crate::combinator::Combinator::prevent).
-// #[derive(Debug, Clone)]
-// pub struct Prevent<C, F> {
-//   c: C,
-//   f: F,
-// }
-
-// impl<C, F> Prevent<C, F> {
-//   #[inline]
-//   pub fn new(c: C, f: F) -> Self {
-//     Self { c, f }
-//   }
-// }
-
-// impl<State, Heap, C: Parse<State, Heap>, F: Fn(&mut Input<&mut State, &mut Heap>) -> bool>
-//   Parse<State, Heap> for Prevent<C, F>
-// {
-//   type Kind = C::Kind;
-
-//   #[inline]
-//   fn parse<'text>(
-//     &self,
-//     input: &mut Input<'text, &mut State, &mut Heap>,
-//   ) -> Option<Output<'text, Self::Kind>> {
-//     if (self.f)(input) {
-//       None
-//     } else {
-//       self.c.parse(input)
-//     }
-//   }
-// }
-
-// /// See [`Combinator::optional`](crate::combinator::Combinator::optional).
-// #[derive(Debug, Clone, Copy)]
-// pub struct Optional<C> {
-//   c: C,
-// }
-
-// impl<C> Optional<C> {
-//   #[inline]
-//   pub fn new(c: C) -> Self {
-//     Self { c }
-//   }
-// }
-
-// impl_combinator!(Optional<C>, C);
-
-// impl<State, Heap, C: Parse<State, Heap, Kind: Default>> Parse<State, Heap> for Optional<C> {
-//   type Kind = C::Kind;
-
-//   #[inline]
-//   fn parse<'text>(
-//     &self,
-//     input: &mut Input<'text, &mut State, &mut Heap>,
-//   ) -> Option<Output<'text, Self::Kind>> {
-//     Some(self.c.parse(input).unwrap_or_else(|| Output {
-//       kind: Default::default(),
-//       rest: input.rest(),
-//     }))
-//   }
-// }
-
-// /// See [`Combinator::reject`](crate::combinator::Combinator::reject).
-// #[derive(Debug, Clone)]
-// pub struct Reject<C, F> {
-//   c: C,
-//   f: F,
-// }
-
-// impl<C, F> Reject<C, F> {
-//   #[inline]
-//   pub fn new(c: C, f: F) -> Self {
-//     Self { c, f }
-//   }
-// }
-
-// impl_combinator!(Reject<C, F>, C, F);
-
-// impl<
-//     State,
-//     Heap,
-//     C: Parse<State, Heap>,
-//     F: for<'text> Fn(
-//       AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, C::Kind>>,
-//     ) -> bool,
-//   > Parse<State, Heap> for Reject<C, F>
-// {
-//   type Kind = C::Kind;
-
-//   #[inline]
-//   fn parse<'text>(
-//     &self,
-//     input: &mut Input<'text, &mut State, &mut Heap>,
-//   ) -> Option<Output<'text, Self::Kind>> {
-//     self.c.parse(input).and_then(|output| {
-//       if (self.f)(AcceptedOutputContext {
-//         input,
-//         output: &output,
-//       }) {
-//         None
-//       } else {
-//         output.into()
-//       }
-//     })
-//   }
-// }
-
-// /// See [`Combinator::boundary`](crate::combinator::Combinator::boundary).
-// #[derive(Debug, Clone, Copy)]
-// pub struct Boundary<C> {
-//   c: C,
-// }
-
-// impl<C> Boundary<C> {
-//   #[inline]
-//   pub fn new(c: C) -> Self {
-//     Self { c }
-//   }
-// }
-
-// impl_combinator!(Boundary<C>, C);
-
-// impl<State, Heap, C: Parse<State, Heap>> Parse<State, Heap> for Boundary<C> {
-//   type Kind = C::Kind;
-
-//   #[inline]
-//   fn parse<'text>(
-//     &self,
-//     input: &mut Input<'text, &mut State, &mut Heap>,
-//   ) -> Option<Output<'text, Self::Kind>> {
-//     let output = self.c.parse(input)?;
-//     if output
-//       .rest
-//       .chars()
-//       .next()
-//       .map_or(false, |c| c.is_alphanumeric() || c == '_')
-//     {
-//       None
-//     } else {
-//       Some(output)
-//     }
-//   }
-// }
 
 // #[cfg(test)]
 // mod tests {
