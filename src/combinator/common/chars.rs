@@ -1,15 +1,6 @@
 //! Combinators that match chars by the condition.
 
-use crate::{
-  combinator::{Input, Output, Parse},
-  impl_combinator,
-};
-
-/// See [`next`].
-#[derive(Debug, Clone)]
-pub struct Next<F> {
-  condition: F,
-}
+use crate::combinator::{wrap, Combinator, Parse};
 
 /// Returns a combinator to match the next undigested char by the condition.
 /// The combinator will reject if the next char is not matched.
@@ -24,34 +15,16 @@ pub struct Next<F> {
 /// next(in_str!("+-*/"));
 /// ```
 #[inline]
-pub fn next<F: Fn(char) -> bool>(condition: F) -> Next<F> {
-  Next { condition }
-}
-
-impl<State, Heap, F> Parse<State, Heap> for Next<F>
-where
-  F: Fn(char) -> bool,
-{
-  type Kind = ();
-
-  #[inline]
-  fn parse<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, ()>> {
+pub fn next<State, Heap, F: Fn(char) -> bool>(
+  condition: F,
+) -> Combinator<impl Parse<State, Heap, Kind = ()>> {
+  wrap(move |input| {
     let next = input.next();
-    if !(self.condition)(next) {
+    if !condition(next) {
       return None;
     }
     Some(unsafe { input.digest_unchecked(next.len_utf8()) })
-  }
-}
-
-impl_combinator!(Next<F>, F);
-
-#[derive(Debug, Clone)]
-pub struct Chars<F> {
-  condition: F,
+  })
 }
 
 /// Returns a combinator to match chars by the condition greedily.
@@ -70,24 +43,13 @@ pub struct Chars<F> {
 /// chars(in_str!(" \t\r\n"));
 /// ```
 #[inline]
-pub fn chars<F: Fn(char) -> bool>(condition: F) -> Chars<F> {
-  Chars { condition }
-}
-
-impl<State, Heap, F> Parse<State, Heap> for Chars<F>
-where
-  F: Fn(char) -> bool,
-{
-  type Kind = ();
-
-  #[inline]
-  fn parse<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, ()>> {
+pub fn chars<State, Heap, F: Fn(char) -> bool>(
+  condition: F,
+) -> Combinator<impl Parse<State, Heap, Kind = ()>> {
+  wrap(move |input| {
     let mut digested = 0;
     for c in input.rest().chars() {
-      if !(self.condition)(c) {
+      if !condition(c) {
         break;
       }
       digested += c.len_utf8();
@@ -96,10 +58,8 @@ where
       return None;
     }
     Some(unsafe { input.digest_unchecked(digested) })
-  }
+  })
 }
-
-impl_combinator!(Chars<F>, F);
 
 #[cfg(test)]
 mod tests {

@@ -1,10 +1,7 @@
 //! Overload [`Mul`] operator for combinator.
 
-use crate::{
-  combinator::{Input, Output, Parse},
-  impl_combinator,
-};
-use std::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
+use crate::combinator::{Combinator, Input, Output, Parse};
+use std::ops::{self, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 
 // TODO: better name
 pub trait Repeat {
@@ -106,8 +103,6 @@ impl<Lhs, Rhs> Mul<Lhs, Rhs> {
   }
 }
 
-impl_combinator!(Mul<Lhs, Rhs>, Lhs, Rhs);
-
 impl<
     State,
     Heap,
@@ -145,6 +140,18 @@ impl<
 
     // reject if repeated times is too few
     range.should_accept(repeated).then_some(output)
+  }
+}
+
+impl<Lhs, Rhs> ops::Mul<Rhs> for Combinator<Lhs> {
+  type Output = Combinator<Mul<Lhs, Rhs>>;
+
+  /// Repeat the combinator `rhs` times.
+  /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
+  ///
+  /// See [`Fold`] for more information.
+  fn mul(self, rhs: Rhs) -> Self::Output {
+    Self::Output::new(Mul::new(self.parser, rhs))
   }
 }
 

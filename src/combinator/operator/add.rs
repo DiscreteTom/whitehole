@@ -1,9 +1,7 @@
 //! Overload [`Add`] operator for combinator.
 
-use crate::{
-  combinator::{Input, Output, Parse},
-  impl_combinator,
-};
+use crate::combinator::{Combinator, Input, Output, Parse};
+use std::ops;
 
 /// A helper trait to concat types when calling [`Add`] on combinator.
 ///
@@ -145,8 +143,6 @@ impl<Lhs, Rhs> Add<Lhs, Rhs> {
   }
 }
 
-impl_combinator!(Add<Lhs, Rhs>, Lhs, Rhs);
-
 impl<State, Heap, Lhs: Parse<State, Heap, Kind: Concat<Rhs::Kind>>, Rhs: Parse<State, Heap>>
   Parse<State, Heap> for Add<Lhs, Rhs>
 {
@@ -166,6 +162,16 @@ impl<State, Heap, Lhs: Parse<State, Heap, Kind: Concat<Rhs::Kind>>, Rhs: Parse<S
           rest: rhs_output.rest,
         })
     })
+  }
+}
+
+impl<Lhs, Rhs> ops::Add<Combinator<Rhs>> for Combinator<Lhs> {
+  type Output = Combinator<Add<Lhs, Rhs>>;
+
+  /// Try to parse with the left-hand side, if it fails, try the right-hand side.
+  #[inline]
+  fn add(self, rhs: Combinator<Rhs>) -> Self::Output {
+    Self::Output::new(Add::new(self.parser, rhs.parser))
   }
 }
 

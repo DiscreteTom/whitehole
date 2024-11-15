@@ -1,7 +1,4 @@
-use crate::{
-  combinator::{Input, Output, Parse},
-  impl_combinator,
-};
+use crate::combinator::{wrap, Combinator, Parse};
 
 /// A util trait to make [`exact`] generic over different types.
 ///
@@ -39,12 +36,6 @@ unsafe impl Exact for char {
   }
 }
 
-/// See [`exact`].
-#[derive(Debug, Clone, Copy)]
-pub struct ExactCombinator<P> {
-  pattern: P,
-}
-
 /// Match a pattern exactly, no lookahead.
 /// Reject if not found.
 ///
@@ -61,26 +52,13 @@ pub struct ExactCombinator<P> {
 /// exact("true").boundary();
 /// ```
 #[inline]
-pub fn exact<P: Exact>(pattern: P) -> ExactCombinator<P> {
-  ExactCombinator { pattern }
-}
-
-impl<State, Heap, P: Exact> Parse<State, Heap> for ExactCombinator<P> {
-  type Kind = ();
-
-  #[inline]
-  fn parse<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
-    self
-      .pattern
+pub fn exact<State, Heap>(pattern: impl Exact) -> Combinator<impl Parse<State, Heap, Kind = ()>> {
+  wrap(move |input| {
+    pattern
       .parse(input.rest())
       .map(|digested| unsafe { input.digest_unchecked(digested) })
-  }
+  })
 }
-
-impl_combinator!(ExactCombinator<P>, P);
 
 #[cfg(test)]
 mod tests {

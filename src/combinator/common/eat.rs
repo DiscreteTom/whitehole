@@ -1,15 +1,6 @@
 //! Basic combinators that just eat some bytes from the input text.
 
-use crate::{
-  combinator::{Input, Output, Parse},
-  impl_combinator,
-};
-
-/// See [`eat`].
-#[derive(Debug, Clone, Copy)]
-pub struct Eat {
-  n: usize,
-}
+use crate::combinator::{wrap, Combinator, Input, Parse};
 
 /// Returns a combinator to eat `n` bytes from the head of [`Input::rest`].
 /// The combinator will reject if [`Output::rest`] can't be built
@@ -24,28 +15,8 @@ pub struct Eat {
 /// eat(10);
 /// ```
 #[inline]
-pub fn eat(n: usize) -> Eat {
-  Eat { n }
-}
-
-impl<State, Heap> Parse<State, Heap> for Eat {
-  type Kind = ();
-
-  #[inline]
-  fn parse<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
-    input.digest(self.n)
-  }
-}
-
-impl_combinator!(Eat);
-
-/// See [`eat_unchecked`].
-#[derive(Debug, Clone, Copy)]
-pub struct EatUnchecked {
-  n: usize,
+pub fn eat<State, Heap>(n: usize) -> Combinator<impl Parse<State, Heap, Kind = ()>> {
+  wrap(move |input| input.digest(n))
 }
 
 /// Returns a combinator to eat `n` bytes from the head of [`Input::rest`],
@@ -65,26 +36,10 @@ pub struct EatUnchecked {
 /// unsafe { eat_unchecked(10) };
 /// ```
 #[inline]
-pub unsafe fn eat_unchecked(n: usize) -> EatUnchecked {
-  EatUnchecked { n }
-}
-
-impl<State, Heap> Parse<State, Heap> for EatUnchecked {
-  type Kind = ();
-
-  #[inline]
-  fn parse<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
-    unsafe { input.digest_unchecked(self.n) }.into()
-  }
-}
-
-/// See [`eater`].
-#[derive(Debug, Clone)]
-pub struct Eater<F> {
-  f: F,
+pub unsafe fn eat_unchecked<State, Heap>(
+  n: usize,
+) -> Combinator<impl Parse<State, Heap, Kind = ()>> {
+  wrap(move |input| unsafe { input.digest_unchecked(n) }.into())
 }
 
 /// Accept a function that eats [`Input::rest`] and returns the number of digested bytes.
@@ -97,32 +52,13 @@ pub struct Eater<F> {
 /// eater(|input| input.rest().len());
 /// ```
 #[inline]
-pub fn eater<State, Heap, F: Fn(&mut Input<&mut State, &mut Heap>) -> usize>(f: F) -> Eater<F> {
-  Eater { f }
-}
-
-impl<State, Heap, F> Parse<State, Heap> for Eater<F>
-where
-  F: Fn(&mut Input<&mut State, &mut Heap>) -> usize,
-{
-  type Kind = ();
-
-  #[inline]
-  fn parse<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<crate::combinator::Output<'text, ()>> {
-    match (self.f)(input) {
-      0 => None,
-      digested => input.digest(digested),
-    }
-  }
-}
-
-/// See [`eater_unchecked`].
-#[derive(Debug, Clone)]
-pub struct EaterUnchecked<F> {
+pub fn eater<State, Heap, F: Fn(&mut Input<&mut State, &mut Heap>) -> usize>(
   f: F,
+) -> Combinator<impl Parse<State, Heap, Kind = ()>> {
+  wrap(move |input| match f(input) {
+    0 => None,
+    digested => input.digest(digested),
+  })
 }
 
 /// Accept a function that eats [`Input::rest`] and returns the number of digested bytes.
@@ -140,29 +76,12 @@ pub struct EaterUnchecked<F> {
 #[inline]
 pub unsafe fn eater_unchecked<State, Heap, F: Fn(&mut Input<&mut State, &mut Heap>) -> usize>(
   f: F,
-) -> EaterUnchecked<F> {
-  EaterUnchecked { f }
+) -> Combinator<impl Parse<State, Heap, Kind = ()>> {
+  wrap(move |input| match f(input) {
+    0 => None,
+    digested => unsafe { input.digest_unchecked(digested) }.into(),
+  })
 }
-
-impl<State, Heap, F> Parse<State, Heap> for EaterUnchecked<F>
-where
-  F: Fn(&mut Input<&mut State, &mut Heap>) -> usize,
-{
-  type Kind = ();
-
-  #[inline]
-  fn parse<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<crate::combinator::Output<'text, ()>> {
-    match (self.f)(input) {
-      0 => None,
-      digested => unsafe { input.digest_unchecked(digested) }.into(),
-    }
-  }
-}
-
-impl_combinator!(EaterUnchecked<F>, F);
 
 #[cfg(test)]
 mod tests {

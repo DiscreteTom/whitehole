@@ -1,15 +1,13 @@
 //! Overload [`BitOr`] operator for combinator.
 
-use crate::{
-  combinator::{Input, Output, Parse},
-  impl_combinator,
-};
+use crate::combinator::{Combinator, Input, Output, Parse};
+use std::ops;
 
-/// A composite combinator created by `|`.
+/// A [`Parse`] implementor created by `|`.
 #[derive(Debug, Clone, Copy)]
 pub struct BitOr<Lhs, Rhs> {
-  pub lhs: Lhs,
-  pub rhs: Rhs,
+  lhs: Lhs,
+  rhs: Rhs,
 }
 
 impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
@@ -18,8 +16,6 @@ impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
     Self { lhs, rhs }
   }
 }
-
-impl_combinator!(BitOr<Lhs, Rhs>, Lhs, Rhs);
 
 impl<State, Heap, Lhs: Parse<State, Heap>, Rhs: Parse<State, Heap, Kind = Lhs::Kind>>
   Parse<State, Heap> for BitOr<Lhs, Rhs>
@@ -32,6 +28,16 @@ impl<State, Heap, Lhs: Parse<State, Heap>, Rhs: Parse<State, Heap, Kind = Lhs::K
     input: &mut Input<'text, &mut State, &mut Heap>,
   ) -> Option<Output<'text, Self::Kind>> {
     self.lhs.parse(input).or_else(|| self.rhs.parse(input))
+  }
+}
+
+impl<Lhs, Rhs> ops::BitOr<Rhs> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Rhs>>;
+
+  /// Try to parse with the left-hand side, if it fails, try the right-hand side.
+  #[inline]
+  fn bitor(self, rhs: Rhs) -> Self::Output {
+    Self::Output::new(BitOr::new(self.parser, rhs))
   }
 }
 
