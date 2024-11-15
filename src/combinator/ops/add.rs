@@ -183,7 +183,7 @@ impl<Lhs: Parse<Kind: Concat<Rhs::Kind>, State = Rhs::State, Heap = Rhs::Heap>, 
 impl<Lhs: Parse> ops::Add<char> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatChar<Lhs::State, Lhs::Heap>>>;
 
-  /// Similar to `self + eat(rhs)`. See [`eat`].
+  /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
   fn add(self, rhs: char) -> Self::Output {
     Self::Output::new(Add::new(self.parser, EatChar::new(rhs)))
@@ -193,7 +193,7 @@ impl<Lhs: Parse> ops::Add<char> for Combinator<Lhs> {
 impl<Lhs: Parse> ops::Add<usize> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatUsize<Lhs::State, Lhs::Heap>>>;
 
-  /// Similar to `self + eat(rhs)`. See [`eat`].
+  /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
   fn add(self, rhs: usize) -> Self::Output {
     Self::Output::new(Add::new(self.parser, EatUsize::new(rhs)))
@@ -203,7 +203,7 @@ impl<Lhs: Parse> ops::Add<usize> for Combinator<Lhs> {
 impl<Lhs: Parse> ops::Add<String> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatString<Lhs::State, Lhs::Heap>>>;
 
-  /// Similar to `self + eat(rhs)`. See [`eat`].
+  /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
   fn add(self, rhs: String) -> Self::Output {
     Self::Output::new(Add::new(self.parser, EatString::new(rhs)))
@@ -213,7 +213,7 @@ impl<Lhs: Parse> ops::Add<String> for Combinator<Lhs> {
 impl<'a, Lhs: Parse> ops::Add<&'a str> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatStr<'a, Lhs::State, Lhs::Heap>>>;
 
-  /// Similar to `self + eat(rhs)`. See [`eat`].
+  /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
   fn add(self, rhs: &'a str) -> Self::Output {
     Self::Output::new(Add::new(self.parser, EatStr::new(rhs)))
