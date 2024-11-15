@@ -3,7 +3,7 @@
 use crate::combinator::{wrap, Combinator, Input, Parse};
 
 /// Returns a combinator to eat `n` bytes from the head of [`Input::rest`].
-/// The combinator will reject if [`Output::rest`] can't be built
+/// The combinator will reject if [`Output::rest`](crate::combinator::Output::rest) can't be built
 /// as a valid UTF-8 string.
 ///
 /// `0` is allowed but be careful with infinite loops.
@@ -25,7 +25,7 @@ pub fn eat<State, Heap>(n: usize) -> Combinator<impl Parse<Kind = (), State = St
 ///
 /// `0` is allowed but be careful with infinite loops.
 /// # Safety
-/// You should ensure that [`Output::rest`] can be built
+/// You should ensure that [`Output::rest`](crate::combinator::Output::rest) can be built
 /// as a valid UTF-8 string.
 /// This will be checked using [`debug_assert!`].
 /// For the checked version, see [`eat`].
@@ -39,11 +39,13 @@ pub fn eat<State, Heap>(n: usize) -> Combinator<impl Parse<Kind = (), State = St
 pub unsafe fn eat_unchecked<State, Heap>(
   n: usize,
 ) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
-  wrap(move |input| unsafe { input.digest_unchecked(n) }.into())
+  wrap(move |input| input.digest_unchecked(n).into())
 }
 
-/// Accept a function that eats [`Input::rest`] and returns the number of digested bytes.
-/// Reject if the function returns `0` or [`Output::rest`] can't be built
+/// Returns a combinator by the provided function that
+/// eats [`Input::rest`] and returns the number of digested bytes.
+/// The combinator will reject if the function returns `0`
+/// or [`Output::rest`](crate::combinator::Output::rest) can't be built
 /// as a valid UTF-8 string.
 /// # Examples
 /// ```
@@ -52,8 +54,8 @@ pub unsafe fn eat_unchecked<State, Heap>(
 /// eater(|input| input.rest().len());
 /// ```
 #[inline]
-pub fn eater<State, Heap, F: Fn(&mut Input<&mut State, &mut Heap>) -> usize>(
-  f: F,
+pub fn eater<State, Heap>(
+  f: impl Fn(&mut Input<&mut State, &mut Heap>) -> usize,
 ) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
   wrap(move |input| match f(input) {
     0 => None,
@@ -61,11 +63,13 @@ pub fn eater<State, Heap, F: Fn(&mut Input<&mut State, &mut Heap>) -> usize>(
   })
 }
 
-/// Accept a function that eats [`Input::rest`] and returns the number of digested bytes.
-/// Reject if the function returns `0`.
+/// Returns a combinator by the provided function that
+/// eats [`Input::rest`] and returns the number of digested bytes.
+/// The combinator will reject if the function returns `0`.
 /// # Safety
-/// You should ensure that [`Output::rest`] can be built
+/// You should ensure that [`Output::rest`](crate::combinator::Output::rest) can be built
 /// as a valid UTF-8 string.
+/// This will be checked using [`debug_assert!`].
 /// For the checked version, see [`eater`].
 /// # Examples
 /// ```
@@ -74,12 +78,12 @@ pub fn eater<State, Heap, F: Fn(&mut Input<&mut State, &mut Heap>) -> usize>(
 /// unsafe { eater_unchecked(|input| input.rest().len()) };
 /// ```
 #[inline]
-pub unsafe fn eater_unchecked<State, Heap, F: Fn(&mut Input<&mut State, &mut Heap>) -> usize>(
-  f: F,
+pub unsafe fn eater_unchecked<State, Heap>(
+  f: impl Fn(&mut Input<&mut State, &mut Heap>) -> usize,
 ) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
   wrap(move |input| match f(input) {
     0 => None,
-    digested => unsafe { input.digest_unchecked(digested) }.into(),
+    digested => input.digest_unchecked(digested).into(),
   })
 }
 
