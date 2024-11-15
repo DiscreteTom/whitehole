@@ -1,22 +1,88 @@
 //! Basic combinators that just eat some bytes from the input text.
 
-use crate::combinator::{wrap, Combinator, Input, Parse};
+use crate::combinator::{wrap, Combinator, Input, Output, Parse};
 
-/// Returns a combinator to eat `n` bytes from the head of [`Input::rest`].
-/// The combinator will reject if [`Output::rest`](crate::combinator::Output::rest) can't be built
+/// A util trait to make [`eat`] generic over different types.
+///
+/// Built-in implementations are provided for [`String`], `&str`, [`char`] and [`usize`].
+///
+/// See [`eat`] for more details.
+pub trait Eat {
+  /// Return [`None`] if [`Input::rest`] doesn't starts with this instance.
+  fn parse<'text, State, Heap>(
+    &self,
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, ()>>;
+}
+
+impl Eat for String {
+  #[inline]
+  fn parse<'text, State, Heap>(
+    &self,
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, ()>> {
+    input
+      .rest()
+      .starts_with(self)
+      .then(|| unsafe { input.digest_unchecked(self.len()) })
+  }
+}
+
+impl Eat for &str {
+  #[inline]
+  fn parse<'text, State, Heap>(
+    &self,
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, ()>> {
+    input
+      .rest()
+      .starts_with(self)
+      .then(|| unsafe { input.digest_unchecked(self.len()) })
+  }
+}
+
+impl Eat for char {
+  #[inline]
+  fn parse<'text, State, Heap>(
+    &self,
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, ()>> {
+    input
+      .rest()
+      .starts_with(*self)
+      .then(|| unsafe { input.digest_unchecked(self.len_utf8()) })
+  }
+}
+
+impl Eat for usize {
+  #[inline]
+  fn parse<'text, State, Heap>(
+    &self,
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, ()>> {
+    input.digest(*self)
+  }
+}
+
+/// Returns a combinator to eat from the head of [`Input::rest`] by the provided pattern.
+/// The combinator will reject if [`Output::rest`] can't be built
 /// as a valid UTF-8 string.
 ///
-/// `0` is allowed but be careful with infinite loops.
+/// `0` and `""` (empty string) are allowed but be careful with infinite loops.
 ///
 /// # Examples
 /// ```
 /// use whitehole::combinator::eat;
-/// // eat 10 bytes
-/// eat(10);
+/// eat('a'); // eat by char
+/// eat("true"); // eat by &str
+/// eat("true".to_string()); // eat by String
+/// eat(10); // eat by byte length
 /// ```
 #[inline]
-pub fn eat<State, Heap>(n: usize) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
-  wrap(move |input| input.digest(n))
+pub fn eat<State, Heap>(
+  pattern: impl Eat,
+) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
+  wrap(move |input| pattern.parse(input))
 }
 
 /// Returns a combinator to eat `n` bytes from the head of [`Input::rest`],
@@ -25,7 +91,7 @@ pub fn eat<State, Heap>(n: usize) -> Combinator<impl Parse<Kind = (), State = St
 ///
 /// `0` is allowed but be careful with infinite loops.
 /// # Safety
-/// You should ensure that [`Output::rest`](crate::combinator::Output::rest) can be built
+/// You should ensure that [`Output::rest`] can be built
 /// as a valid UTF-8 string.
 /// This will be checked using [`debug_assert!`].
 /// For the checked version, see [`eat`].
@@ -45,7 +111,7 @@ pub unsafe fn eat_unchecked<State, Heap>(
 /// Returns a combinator by the provided function that
 /// eats [`Input::rest`] and returns the number of digested bytes.
 /// The combinator will reject if the function returns `0`
-/// or [`Output::rest`](crate::combinator::Output::rest) can't be built
+/// or [`Output::rest`] can't be built
 /// as a valid UTF-8 string.
 /// # Examples
 /// ```
@@ -67,7 +133,7 @@ pub fn eater<State, Heap>(
 /// eats [`Input::rest`] and returns the number of digested bytes.
 /// The combinator will reject if the function returns `0`.
 /// # Safety
-/// You should ensure that [`Output::rest`](crate::combinator::Output::rest) can be built
+/// You should ensure that [`Output::rest`] can be built
 /// as a valid UTF-8 string.
 /// This will be checked using [`debug_assert!`].
 /// For the checked version, see [`eater`].
@@ -93,10 +159,31 @@ mod tests {
 
   #[test]
   fn combinator_eat() {
-    // normal
+    // normal usize
     assert_eq!(
       eat(3)
         .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("")
+    );
+    // normal str
+    assert_eq!(
+      eat("123")
+        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("")
+    );
+    // normal String
+    assert_eq!(
+      eat("123".to_string())
+        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("")
+    );
+    // normal char
+    assert_eq!(
+      eat(';')
+        .parse(&mut Input::new(";", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       Some("")
     );
@@ -107,6 +194,13 @@ mod tests {
         .map(|output| output.rest),
       None
     );
+    // reject
+    assert!(eat("123")
+      .parse(&mut Input::new("abc", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+    assert!(eat('1')
+      .parse(&mut Input::new("abc", 0, &mut (), &mut ()).unwrap())
+      .is_none());
     // invalid code point
     assert_eq!(
       eat(1)
@@ -114,9 +208,16 @@ mod tests {
         .map(|output| output.rest),
       None
     );
-    // 0
+    // 0 is allowed
     assert_eq!(
       eat(0)
+        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("123")
+    );
+    // empty is allowed
+    assert_eq!(
+      eat("")
         .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       Some("123")
