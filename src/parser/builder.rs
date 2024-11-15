@@ -1,5 +1,5 @@
 use super::Parser;
-use crate::combinator::Parse;
+use crate::parse::Parse;
 
 /// A builder for [`Parser`].
 pub struct Builder<Entry, State, Heap> {
