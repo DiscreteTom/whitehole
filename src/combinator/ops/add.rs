@@ -1,9 +1,10 @@
-//! Overload [`Add`] operator for combinator.
+//! Overload `+` operator for [`Combinator`].
 
+use super::{EatChar, EatStr, EatString, EatUsize};
 use crate::combinator::{Combinator, Input, Output, Parse};
 use std::ops;
 
-/// A helper trait to concat types when calling [`Add`] on combinator.
+/// A helper trait to concat types when calling `+` on [`Combinator`]s.
 ///
 /// Built-in implementations:
 /// - `concat(T, ()) -> T`
@@ -179,28 +180,45 @@ impl<Lhs: Parse<Kind: Concat<Rhs::Kind>, State = Rhs::State, Heap = Rhs::Heap>, 
   }
 }
 
-// TODO: impl Combinator and Parse for char, String and &str?
-// impl<'a, Kind: 'a, State: 'a, Heap: 'a, T: Exact + 'a> ops::Add<T>
-//   for Combinator<'a, Kind, State, Heap>
-// {
-//   type Output = Combinator<'a, Kind, State, Heap>;
+impl<Lhs: Parse> ops::Add<char> for Combinator<Lhs> {
+  type Output = Combinator<Add<Lhs, EatChar<Lhs::State, Lhs::Heap>>>;
 
-//   /// Shortcut for `self + exact(rhs)`. See [`exact`].
-//   #[inline]
-//   fn add(self, rhs: T) -> Self::Output {
-//     self + exact(rhs)
-//   }
-// }
+  /// Similar to `self + eat(rhs)`. See [`eat`].
+  #[inline]
+  fn add(self, rhs: char) -> Self::Output {
+    Self::Output::new(Add::new(self.parser, EatChar::new(rhs)))
+  }
+}
 
-// impl<'a, Kind: 'a, State: 'a, Heap: 'a> ops::Add<usize> for Combinator<'a, Kind, State, Heap> {
-//   type Output = Combinator<'a, Kind, State, Heap>;
+impl<Lhs: Parse> ops::Add<usize> for Combinator<Lhs> {
+  type Output = Combinator<Add<Lhs, EatUsize<Lhs::State, Lhs::Heap>>>;
 
-//   /// Shortcut for `self + eat(rhs)`. See [`eat`].
-//   #[inline]
-//   fn add(self, rhs: usize) -> Self::Output {
-//     self + eat(rhs)
-//   }
-// }
+  /// Similar to `self + eat(rhs)`. See [`eat`].
+  #[inline]
+  fn add(self, rhs: usize) -> Self::Output {
+    Self::Output::new(Add::new(self.parser, EatUsize::new(rhs)))
+  }
+}
+
+impl<Lhs: Parse> ops::Add<String> for Combinator<Lhs> {
+  type Output = Combinator<Add<Lhs, EatString<Lhs::State, Lhs::Heap>>>;
+
+  /// Similar to `self + eat(rhs)`. See [`eat`].
+  #[inline]
+  fn add(self, rhs: String) -> Self::Output {
+    Self::Output::new(Add::new(self.parser, EatString::new(rhs)))
+  }
+}
+
+impl<'a, Lhs: Parse> ops::Add<&'a str> for Combinator<Lhs> {
+  type Output = Combinator<Add<Lhs, EatStr<'a, Lhs::State, Lhs::Heap>>>;
+
+  /// Similar to `self + eat(rhs)`. See [`eat`].
+  #[inline]
+  fn add(self, rhs: &'a str) -> Self::Output {
+    Self::Output::new(Add::new(self.parser, EatStr::new(rhs)))
+  }
+}
 
 #[cfg(test)]
 mod tests {
@@ -264,53 +282,94 @@ mod tests {
     );
   }
 
-  // #[test]
-  // fn combinator_add_exact_prefix() {
-  //   // str
-  //   assert_eq!(
-  //     (exact("123") + "456")
-  //       .parse(&mut Input::new("123456", 0, &mut (), &mut ()).unwrap())
-  //       .map(|output| output.rest),
-  //     Some("")
-  //   );
-  //   // String
-  //   assert_eq!(
-  //     (exact("123") + "456".to_string())
-  //       .parse(&mut Input::new("123456", 0, &mut (), &mut ()).unwrap())
-  //       .map(|output| output.rest),
-  //     Some("")
-  //   );
-  //   // char
-  //   assert_eq!(
-  //     (exact("1") + '2')
-  //       .parse(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
-  //       .map(|output| output.rest),
-  //     Some("")
-  //   );
-  // }
+  #[test]
+  fn combinator_add_char() {
+    let eat1 = || {
+      wrap(|input| {
+        Some(Output {
+          kind: (),
+          rest: &input.rest()[1..],
+        })
+      })
+    };
 
-  // #[test]
-  // fn combinator_add_usize() {
-  //   // normal
-  //   assert_eq!(
-  //     (eat(3) + 2)
-  //       .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
-  //       .map(|output| output.rest),
-  //     Some("")
-  //   );
-  //   // overflow
-  //   assert_eq!(
-  //     (eat(3) + 3)
-  //       .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
-  //       .map(|output| output.rest),
-  //     None
-  //   );
-  //   // 0
-  //   assert_eq!(
-  //     (eat(0) + 0)
-  //       .parse(&mut Input::new("12345", 0, &mut (), &mut ()).unwrap())
-  //       .map(|output| output.rest),
-  //     Some("12345")
-  //   );
-  // }
+    assert_eq!(
+      (eat1() + '2')
+        .parse(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("")
+    );
+  }
+
+  #[test]
+  fn combinator_add_string() {
+    let eat1 = || {
+      wrap(|input| {
+        Some(Output {
+          kind: (),
+          rest: &input.rest()[1..],
+        })
+      })
+    };
+
+    assert_eq!(
+      (eat1() + "23".to_string())
+        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("")
+    );
+  }
+
+  #[test]
+  fn combinator_add_str() {
+    let eat1 = || {
+      wrap(|input| {
+        Some(Output {
+          kind: (),
+          rest: &input.rest()[1..],
+        })
+      })
+    };
+
+    assert_eq!(
+      (eat1() + "23")
+        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("")
+    );
+  }
+
+  #[test]
+  fn combinator_add_usize() {
+    let eat1 = || {
+      wrap(|input| {
+        Some(Output {
+          kind: (),
+          rest: &input.rest()[1..],
+        })
+      })
+    };
+
+    // normal
+    assert_eq!(
+      (eat1() + 2)
+        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("")
+    );
+    // overflow
+    assert_eq!(
+      (eat1() + 3)
+        .parse(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      None
+    );
+    // 0
+    assert_eq!(
+      (eat1() + 0)
+        .parse(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("2")
+    );
+  }
 }
