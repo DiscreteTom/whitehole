@@ -106,10 +106,10 @@ impl<Lhs, Rhs> Mul<Lhs, Rhs> {
 impl<
     Lhs: Parse,
     Acc,
-    Range: Repeat,
+    Repeater: Repeat,
     Initializer: Fn() -> Acc,
     InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
-  > Parse for Mul<Lhs, (Range, Initializer, InlineFolder)>
+  > Parse for Mul<Lhs, (Repeater, Initializer, InlineFolder)>
 {
   type Kind = Acc;
   type State = Lhs::State;
@@ -143,7 +143,7 @@ impl<
   }
 }
 
-impl<Lhs, Rhs> ops::Mul<Rhs> for Combinator<Lhs> {
+impl<Lhs: Parse, Rhs> ops::Mul<Rhs> for Combinator<Lhs> {
   type Output = Combinator<Mul<Lhs, Rhs>>;
 
   /// Repeat the combinator `rhs` times.
@@ -220,7 +220,7 @@ impl Fold for () {
   fn fold(self, _: Self::Output) -> Self::Output {}
 }
 
-impl<Lhs: Parse<Kind: Fold<Output: Default>>, Rhs: Repeat> Parse for Mul<Lhs, Rhs> {
+impl<Lhs: Parse<Kind: Fold>, Rhs: Repeat> Parse for Mul<Lhs, Rhs> {
   type Kind = <Lhs::Kind as Fold>::Output;
   type State = Lhs::State;
   type Heap = Lhs::Heap;
