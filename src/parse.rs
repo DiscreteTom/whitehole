@@ -34,3 +34,23 @@ impl<
     self(input)
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  /// Ensure closures implement [`Parse`].
+  fn _closure() {
+    fn assert_parse(_: impl Parse<(), (), Kind = ()>) {}
+
+    /// A helper function to cast a closure to a [`Parse`] implementation.
+    fn cast<Kind, State, Heap>(
+      f: impl for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>,
+    ) -> impl Parse<State, Heap, Kind = Kind> {
+      f
+    }
+
+    assert_parse(cast(|_| None));
+    assert_parse(cast(|input| input.digest(0)));
+  }
+}
