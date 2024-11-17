@@ -1,15 +1,20 @@
+//! [`Parser`] will manage the state, heap and the parsing progress.
+
 mod builder;
+mod instant;
 mod snapshot;
+
+pub use builder::*;
+pub use instant::*;
+pub use snapshot::*;
 
 use crate::{
   node::Node,
   parse::{Input, Parse},
 };
 
-pub use builder::*;
-pub use snapshot::*;
-
-pub struct Parser<'a, 'text, Kind, State = (), Heap = ()> {
+#[derive(Debug)]
+pub struct Parser<'text, T, State = (), Heap = ()> {
   /// See [`Input::state`](crate::parse::Input::state).
   /// You can mutate this directly if needed.
   pub state: State,
@@ -17,40 +22,48 @@ pub struct Parser<'a, 'text, Kind, State = (), Heap = ()> {
   /// You can mutate this directly if needed.
   pub heap: Heap,
 
-  /// See [`Self::text`].
-  text: &'text str,
-  /// See [`Self::rest`].
-  rest: &'text str,
+  /// See [`Self::instant`].
+  instant: Instant<'text>,
   /// See [`Self::entry`].
-  entry: Box<dyn Parse<State, Heap, Kind = Kind> + 'a>,
+  entry: T,
 }
 
-impl<'a, 'text, Kind, State, Heap> Parser<'a, 'text, Kind, State, Heap> {
+impl<'text, T: Clone, State: Clone, Heap: Clone> Clone for Parser<'text, T, State, Heap> {
+  /// Clone the parser, including [`Self::state`] and [`Self::heap`].
+  /// # Performance
+  /// Cloning the [`Self::heap`] might be expensive, you should use [`Parser::snapshot`] to avoid cloning [`Self::heap`],
+  /// and re-use one `heap` as much as possible.
+  /// If you want to prevent users from cloning this, don't implement [`Clone`] for `Heap`.
+  #[inline]
+  fn clone(&self) -> Self {
+    Self {
+      state: self.state.clone(),
+      heap: self.heap.clone(),
+      entry: self.entry.clone(),
+      instant: self.instant.clone(),
+    }
+  }
+}
+
+impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
   /// The entry combinator.
-  // pub const fn entry(&self) -> &Combinator<'a, Kind, State, Heap> {
-  //   &self.entry
-  // }
-
-  /// The whole input text.
-  pub const fn text(&self) -> &'text str {
-    self.text
+  #[inline]
+  pub const fn entry(&self) -> &T {
+    &self.entry
   }
 
-  /// How many bytes are already digested.
-  pub const fn digested(&self) -> usize {
-    // TODO: cache this
-    self.text.len() - self.rest.len()
-  }
-
-  /// Get the undigested text.
-  pub const fn rest(&self) -> &'text str {
-    self.rest
+  /// See [`Instant`].
+  /// You are not allowed to mutate this directly.
+  #[inline]
+  pub const fn instant(&self) -> &Instant<'text> {
+    &self.instant
   }
 
   /// Consume self, return a new instance with the same combinator and a new text.
-  /// [`Self::digested`] and [`Self::state`] will be reset to default.
+  /// [`Self::instant`] and [`Self::state`] will be reset to default.
   /// [`Self::heap`] won't change.
-  pub fn reload<'new_text>(self, text: &'new_text str) -> Parser<'a, 'new_text, Kind, State, Heap>
+  #[inline]
+  pub fn reload<'new_text>(self, text: &'new_text str) -> Parser<'new_text, T, State, Heap>
   where
     State: Default,
   {
@@ -58,49 +71,52 @@ impl<'a, 'text, Kind, State, Heap> Parser<'a, 'text, Kind, State, Heap> {
   }
 
   /// Consume self, return a new instance with the same combinator, a new text and the given state.
+  /// [`Self::instant`] will be reset to default.
   /// [`Self::heap`] won't change.
+  #[inline]
   pub fn reload_with<'new_text>(
     self,
     state: State,
     text: &'new_text str,
-  ) -> Parser<'a, 'new_text, Kind, State, Heap> {
+  ) -> Parser<'new_text, T, State, Heap> {
     Parser {
       entry: self.entry,
       heap: self.heap,
       state,
-      text,
-      rest: text,
+      instant: Instant::new(text),
     }
   }
 
-  // /// Take a snapshot of the current [`Self::state`], [`Self::text`] and [`Self::digested`].
-  // pub fn snapshot(&self) -> Snapshot<'text, State>
-  // where
-  //   State: Clone,
-  // {
-  //   Snapshot {
-  //     state: self.state.clone(),
-  //     text: self.text,
-  //     rest: self.rest,
-  //   }
-  // }
+  /// Take a snapshot of the current [`Self::state`] and [`Self::instant`].
+  #[inline]
+  pub fn snapshot(&self) -> Snapshot<'text, State>
+  where
+    State: Clone,
+  {
+    Snapshot {
+      state: self.state.clone(),
+      instant: self.instant.clone(),
+    }
+  }
 
-  // /// Restore [`Self::state`], [`Self::text`] and [`Self::digested`] from a [`Snapshot`].
-  // pub fn restore(&mut self, snapshot: Snapshot<'text, State>) {
-  //   self.state = snapshot.state;
-  //   self.text = snapshot.text;
-  //   self.rest = snapshot.rest;
-  // }
+  /// Restore [`Self::state`] and [`Self::instant`] from a [`Snapshot`].
+  #[inline]
+  pub fn restore(&mut self, snapshot: Snapshot<'text, State>) {
+    self.state = snapshot.state;
+    self.instant = snapshot.instant;
+  }
 
-  // /// Digest the next `n` chars and set [`Self::state`] to the default.
+  // TODO
+  // /// Digest the next `n` bytes and set [`Self::state`] to the default.
   // ///
-  // /// Usually when you digest some chars from outside of the parser
+  // /// Usually when you digest some bytes from outside of the parser
   // /// (e.g. by an error recovery strategy),
   // /// the state should be reset to the default.
   // /// If you want to keep the state, use [`Self::digest_with`] instead.
   // /// # Caveats
   // /// The caller should make sure `n` is no greater than the rest text length,
   // /// this will be checked using [`debug_assert`].
+  // #[inline]
   // pub fn digest(&mut self, n: usize) -> &mut Self
   // where
   //   State: Default,
@@ -112,6 +128,7 @@ impl<'a, 'text, Kind, State, Heap> Parser<'a, 'text, Kind, State, Heap> {
   // /// # Caveats
   // /// The caller should make sure `n` is no greater than the rest text length,
   // /// this will be checked using [`debug_assert`].
+  // #[inline]
   // pub fn digest_with(&mut self, state: impl Into<Option<State>>, n: usize) -> &mut Self {
   //   debug_assert!(self.digested + n <= self.text.len());
   //   self.digested += n;
@@ -124,38 +141,53 @@ impl<'a, 'text, Kind, State, Heap> Parser<'a, 'text, Kind, State, Heap> {
   /// Try to yield the next [`Node`].
   /// Return [`None`] if the text is already fully digested
   /// or the combinator rejects.
-  pub fn parse(&mut self) -> Option<Node<Kind>> {
+  #[inline]
+  pub fn parse(&mut self) -> Option<Node<T::Kind>>
+  where
+    T: Parse<State, Heap>,
+  {
     let output = self.entry.parse(&mut Input::new(
-      self.rest,
-      self.digested(),
+      self.instant.rest(),
+      self.instant.digested(),
       &mut self.state,
       &mut self.heap,
     )?)?;
-    let node = Node {
+
+    let start = self.instant.digested();
+    self.instant.update(output.rest);
+    Node {
       kind: output.kind,
-      range: self.digested()..output.rest.len() - self.rest.len() + self.digested(),
-    };
-    self.rest = output.rest;
-    node.into()
+      range: start..self.instant.digested(),
+    }
+    .into()
   }
 
-  // /// Try to yield the next [`Node`] without updating [`Self::digested`] and [`Self::state`].
-  // /// [`Self::state`] will be cloned and returned.
-  // /// Return [`None`] if the text is already fully digested
-  // /// or the combinator rejects.
-  // pub fn peek(&mut self) -> (Option<Node<Kind>>, State)
-  // where
-  //   State: Clone,
-  // {
-  //   let mut tmp_state = self.state.clone();
-  //   (
-  //     Input::new(self.text, self.digested, &mut tmp_state, &mut self.heap)
-  //       .and_then(|mut input| self.entry.parse(&mut input))
-  //       .map(|output| Node {
-  //         kind: output.kind,
-  //         range: self.digested..self.digested + output.digested,
-  //       }),
-  //     tmp_state,
-  //   )
-  // }
+  /// Try to yield the next [`Node`] without updating [`Self::instant`] and [`Self::state`].
+  /// [`Self::state`] will be cloned and returned.
+  /// Return [`None`] if the text is already fully digested
+  /// or the combinator rejects.
+  #[inline]
+  pub fn peek(&mut self) -> (Option<Node<T::Kind>>, State)
+  where
+    T: Parse<State, Heap>,
+    State: Clone,
+  {
+    let mut tmp_state = self.state.clone();
+    (
+      Input::new(
+        self.instant.text(),
+        self.instant.digested(),
+        &mut tmp_state,
+        &mut self.heap,
+      )
+      .and_then(|mut input| self.entry.parse(&mut input))
+      .map(|output| Node {
+        kind: output.kind,
+        range: self.instant.digested()..self.instant.text().len() - output.rest.len(),
+      }),
+      tmp_state,
+    )
+  }
 }
+
+// TODO: tests
