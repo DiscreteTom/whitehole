@@ -1,3 +1,4 @@
+/// Parse-related types and traits.
 mod input;
 mod output;
 
@@ -9,7 +10,7 @@ pub trait Parse<State, Heap> {
   /// See [`Output::kind`].
   type Kind;
 
-  /// Return [`None`] if the combinator is rejected.
+  /// Return [`None`] to reject.
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
