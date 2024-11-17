@@ -22,7 +22,7 @@ macro_rules! impl_eat {
     ///
     /// See [`eat`] for more details.
     #[derive(Debug, Clone, $($derive),*)]
-    pub struct $name<State, Heap> {
+    pub struct $name<State = (), Heap = ()> {
       inner: $inner,
       _phantom: PhantomData<(State, Heap)>,
     }
@@ -98,7 +98,7 @@ impl<State, Heap> Parse<State, Heap> for EatUsize<State, Heap> {
 ///
 /// See [`eat`] for more details.
 #[derive(Debug, Clone, Copy)]
-pub struct EatStr<'a, State, Heap> {
+pub struct EatStr<'a, State = (), Heap = ()> {
   s: &'a str,
   _phantom: PhantomData<(State, Heap)>,
 }

@@ -7,7 +7,7 @@ pub use input::*;
 pub use output::*;
 
 /// Provide the [`parse`](Parse::parse) method.
-pub trait Parse<State, Heap> {
+pub trait Parse<State = (), Heap = ()> {
   /// See [`Output::kind`].
   type Kind;
 

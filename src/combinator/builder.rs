@@ -8,7 +8,7 @@ use std::marker::PhantomData;
 /// A util struct to carry the `State` and `Heap` generic types
 /// for a better type inference.
 #[derive(Debug, Clone, Copy, Default)]
-pub struct Builder<State, Heap> {
+pub struct Builder<State = (), Heap = ()> {
   _phantom: PhantomData<(State, Heap)>,
 }
 
