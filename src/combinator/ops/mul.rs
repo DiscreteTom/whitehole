@@ -116,6 +116,31 @@ impl<Lhs, Rhs> Mul<Lhs, Rhs> {
   }
 }
 
+impl<
+    State,
+    Heap,
+    Lhs: Parse<State, Heap>,
+    Acc,
+    Repeater: Repeat,
+    Initializer: Fn() -> Acc,
+    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
+  > ops::Mul<(Repeater, Initializer, InlineFolder)> for Combinator<Lhs, State, Heap>
+{
+  type Output = Combinator<Mul<Lhs, (Repeater, Initializer, InlineFolder)>, State, Heap>;
+
+  /// Create a new combinator to repeat the original combinator
+  /// with the given repetition range, accumulator initializer and folder.
+  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// or reject if the repetition is not satisfied.
+  ///
+  /// `0` is a valid repetition range, which means the combinator is optional.
+  ///
+  /// See [`Fold`] for more information.
+  fn mul(self, rhs: (Repeater, Initializer, InlineFolder)) -> Self::Output {
+    Self::Output::new(Mul::new(self.parser, rhs))
+  }
+}
+
 #[inline]
 fn impl_mul<'text, Kind, State, Heap, Acc>(
   lhs: &impl Parse<State, Heap, Kind = Kind>,
@@ -164,31 +189,6 @@ impl<
   ) -> Option<Output<'text, Acc>> {
     let (range, init, folder) = &self.rhs;
     impl_mul(&self.lhs, range, init, folder, input)
-  }
-}
-
-impl<
-    State,
-    Heap,
-    Lhs: Parse<State, Heap>,
-    Acc,
-    Repeater: Repeat,
-    Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
-  > ops::Mul<(Repeater, Initializer, InlineFolder)> for Combinator<Lhs, State, Heap>
-{
-  type Output = Combinator<Mul<Lhs, (Repeater, Initializer, InlineFolder)>, State, Heap>;
-
-  /// Create a new combinator to repeat the original combinator
-  /// with the given repetition range, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
-  /// or reject if the repetition is not satisfied.
-  ///
-  /// `0` is a valid repetition range, which means the combinator is optional.
-  ///
-  /// See [`Fold`] for more information.
-  fn mul(self, rhs: (Repeater, Initializer, InlineFolder)) -> Self::Output {
-    Self::Output::new(Mul::new(self.parser, rhs))
   }
 }
 
