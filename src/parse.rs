@@ -1,4 +1,5 @@
-/// Parse-related types and traits.
+//! Parse-related types and traits.
+
 mod input;
 mod output;
 
