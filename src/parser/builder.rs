@@ -33,6 +33,7 @@ pub struct Builder<T, State = (), Heap = ()> {
 
 impl Builder<(), (), ()> {
   /// Create a new instance with [`Parser::state`] and [`Parser::heap`] set to `()`.
+  #[inline]
   pub const fn new() -> Self {
     Builder {
       state: (),
@@ -43,6 +44,7 @@ impl Builder<(), (), ()> {
 }
 
 impl Default for Builder<(), (), ()> {
+  #[inline]
   fn default() -> Self {
     Self::new()
   }
@@ -50,6 +52,7 @@ impl Default for Builder<(), (), ()> {
 
 impl<T, State, Heap> Builder<T, State, Heap> {
   /// Set [`Parser::state`].
+  #[inline]
   pub fn state<NewState>(self, state: NewState) -> Builder<T, NewState, Heap> {
     Builder {
       state,
@@ -59,6 +62,7 @@ impl<T, State, Heap> Builder<T, State, Heap> {
   }
 
   /// Set [`Parser::heap`].
+  #[inline]
   pub fn heap<NewHeap>(self, heap: NewHeap) -> Builder<T, State, NewHeap> {
     Builder {
       heap,
@@ -68,6 +72,7 @@ impl<T, State, Heap> Builder<T, State, Heap> {
   }
 
   /// Set [`Parser::entry`].
+  #[inline]
   pub fn entry<R: Parse<State, Heap>>(
     self,
     builder: impl FnOnce(combinator::Builder<State, Heap>) -> R,
@@ -82,6 +87,7 @@ impl<T, State, Heap> Builder<T, State, Heap> {
 
 impl<T: Parse<State, Heap>, State, Heap> Builder<T, State, Heap> {
   /// Build a [`Parser`] with the given text.
+  #[inline]
   pub fn build(self, text: &str) -> Parser<T, State, Heap> {
     Parser {
       state: self.state,
