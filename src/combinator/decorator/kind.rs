@@ -11,7 +11,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::Combinator;
-  /// # fn t(combinator: Combinator!((), (), ())) {
+  /// # fn t(combinator: Combinator!()) {
   /// combinator.map(|kind| Some(kind))
   /// # ;}
   /// ```
@@ -31,7 +31,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// # use whitehole::Combinator;
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
-  /// # fn t(combinator: Combinator!((), (), ())) {
+  /// # fn t(combinator: Combinator!()) {
   /// combinator.bind(MyKind::A)
   /// # ;}
   /// ```
@@ -47,7 +47,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::Combinator;
-  /// # fn t(combinator: Combinator!((), (), ())) -> Combinator!(i32, (), ()) {
+  /// # fn t(combinator: Combinator!()) -> Combinator!(i32) {
   /// combinator.bind_default()
   /// # }
   /// ```
@@ -67,7 +67,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// ```
   /// # use whitehole::Combinator;
   /// # enum MyKind { Num(i32) }
-  /// # fn t(combinator: Combinator!((), (), ())) {
+  /// # fn t(combinator: Combinator!()) {
   /// combinator.select(|ctx| MyKind::Num(ctx.content().parse().unwrap()))
   /// # ;}
   /// ```

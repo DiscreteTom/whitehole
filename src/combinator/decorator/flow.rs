@@ -13,7 +13,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// ```
   /// # use whitehole::Combinator;
   /// # struct MyState { reject: bool }
-  /// # fn t(combinator: Combinator!((), MyState, ())) {
+  /// # fn t(combinator: Combinator!((), MyState)) {
   /// combinator.prevent(|input| input.state.reject)
   /// # ;}
   /// ```
@@ -36,7 +36,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::Combinator;
-  /// # fn t(combinator: Combinator!((), (), ())) {
+  /// # fn t(combinator: Combinator!()) {
   /// combinator.reject(|ctx| ctx.content() != "123")
   /// # ;}
   /// ```
@@ -72,7 +72,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// # use whitehole::Combinator;
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
-  /// # fn t(combinator: Combinator!((), (), ())) {
+  /// # fn t(combinator: Combinator!()) {
   /// // make the combinator optional before binding a kind
   /// combinator.optional().bind(MyKind::A)
   /// // instead of
@@ -85,14 +85,14 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// # use whitehole::Combinator;
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
-  /// # fn t(combinator: Combinator!((), (), ())) {
+  /// # fn t(combinator: Combinator!()) {
   /// combinator.bind(Some(MyKind::A)).optional()
   /// # ;}
   /// ```
   /// # Examples
   /// ```
   /// # use whitehole::Combinator;
-  /// # fn t(combinator: Combinator!((), (), ())) {
+  /// # fn t(combinator: Combinator!()) {
   /// combinator.optional()
   /// # ;}
   /// ```
@@ -115,7 +115,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// # Examples
   /// ```
   /// # use whitehole::Combinator;
-  /// # fn t(combinator: Combinator!((), (), ())) {
+  /// # fn t(combinator: Combinator!()) {
   /// combinator.boundary()
   /// # ;}
   /// ```
@@ -136,7 +136,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
 mod tests {
   use super::*;
 
-  fn accepter() -> Combinator!((), bool, ()) {
+  fn accepter() -> Combinator!((), bool) {
     wrap(|input| {
       *input.state = true;
       Some(Output {
@@ -146,7 +146,7 @@ mod tests {
     })
   }
 
-  fn rejecter() -> Combinator!((), bool, ()) {
+  fn rejecter() -> Combinator!((), bool) {
     wrap(|input| {
       *input.state = true;
       None

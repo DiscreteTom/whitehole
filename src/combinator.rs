@@ -92,15 +92,27 @@ pub struct Combinator<T, State = (), Heap = ()> {
 
 /// Simplify the [`Combinator`] struct's signature.
 ///
-/// - `Combinator!(State, Heap)` will be expanded to `Combinator<impl Parse<State, Heap>, State, Heap>`.
+/// - `Combinator!()` will be expanded to `Combinator<impl Parse<Kind = ()>>`.
+/// - `Combinator!(MyKind)` will be expanded to `Combinator<impl Parse<Kind = MyKind>>`.
+/// - `Combinator!(MyKind, State)` will be expanded to `Combinator<impl Parse<State, Kind = MyKind>, State>`.
 /// - `Combinator!(MyKind, State, Heap)` will be expanded to `Combinator<impl Parse<State, Heap, Kind = MyKind>, State, Heap>`.
+/// - `Combinator!(_, State, Heap)` will be expanded to `Combinator<impl Parse<State, Heap>, State, Heap>`.
 #[macro_export]
 macro_rules! Combinator {
-  ($state:ty, $heap:ty) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<$state, $heap>, $state, $heap>
+  () => {
+    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = ()>>
+  };
+  ($kind:ty) => {
+    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = $kind>>
+  };
+  ($kind:ty, $state:ty) => {
+    $crate::combinator::Combinator<impl $crate::parse::Parse<$state, Kind = $kind>, $state>
   };
   ($kind:ty, $state:ty, $heap:ty) => {
     $crate::combinator::Combinator<impl $crate::parse::Parse<$state, $heap, Kind = $kind>, $state, $heap>
+  };
+  (_, $state:ty, $heap:ty) => {
+    $crate::combinator::Combinator<impl $crate::parse::Parse<$state, $heap>, $state, $heap>
   };
 }
 
@@ -119,7 +131,7 @@ impl<T, State, Heap> Combinator<T, State, Heap> {
   // TODO
   // /// Simplify generic params.
   // #[inline]
-  // pub fn collapse(self) -> Combinator!(State, Heap)
+  // pub fn collapse(self) -> Combinator!(_, State, Heap)
   // where
   //   T: Parse<State, Heap>,
   // {

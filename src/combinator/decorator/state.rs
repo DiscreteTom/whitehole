@@ -11,7 +11,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// ```
   /// # use whitehole::Combinator;
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: Combinator!((), MyState, ())) {
+  /// # fn t(combinator: Combinator!((), MyState)) {
   /// combinator.prepare(|input| input.state.value += 1)
   /// # ;}
   /// ```
@@ -32,7 +32,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// ```
   /// # use whitehole::Combinator;
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: Combinator!((), MyState, ())) {
+  /// # fn t(combinator: Combinator!((), MyState)) {
   /// combinator.then(|ctx| ctx.input.state.value += 1)
   /// # ;}
   /// ```
@@ -56,7 +56,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// ```
   /// # use whitehole::Combinator;
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: Combinator!((), MyState, ())) {
+  /// # fn t(combinator: Combinator!((), MyState)) {
   /// combinator.rollback(|input| input.state.value += 1)
   /// # ;}
   /// ```
@@ -85,7 +85,7 @@ mod tests {
     to: i32,
   }
 
-  fn accepter() -> Combinator!((), State, ()) {
+  fn accepter() -> Combinator!((), State) {
     wrap(|input: &mut Input<&mut State, &mut ()>| {
       input.state.to = input.state.from;
       Some(Output {
@@ -95,7 +95,7 @@ mod tests {
     })
   }
 
-  fn rejecter() -> Combinator!((), State, ()) {
+  fn rejecter() -> Combinator!((), State) {
     wrap(|input: &mut Input<&mut State, &mut ()>| {
       input.state.to = input.state.from;
       None
