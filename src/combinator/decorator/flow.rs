@@ -7,15 +7,17 @@ use crate::{
 };
 
 impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
-  /// Check the [`Input`] before the combinator is executed.
-  /// Reject if the `condition` returns `true`.
+  /// Create a new combinator to check the [`Input`] before being executed.
+  /// The combinator will reject if the `condition` returns `true`.
   /// # Examples
   /// ```
-  /// # use whitehole::combinator::Combinator;
-  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// # use whitehole::Combinator;
+  /// # struct MyState { reject: bool }
+  /// # fn t(combinator: Combinator!((), MyState, ())) {
   /// combinator.prevent(|input| input.state.reject)
   /// # ;}
   /// ```
+  #[inline]
   pub fn prevent(
     self,
     condition: impl Fn(&mut Input<&mut State, &mut Heap>) -> bool,
@@ -29,14 +31,16 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
     })
   }
 
-  /// Reject the combinator after execution if the `condition` returns `true`.
+  /// Create a new combinator to check the [`Input`] and [`Output`] after being executed.
+  /// The combinator will reject if the `condition` returns `true`.
   /// # Examples
   /// ```
-  /// # use whitehole::combinator::Combinator;
-  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// # use whitehole::Combinator;
+  /// # fn t(combinator: Combinator!((), (), ())) {
   /// combinator.reject(|ctx| ctx.content() != "123")
   /// # ;}
   /// ```
+  #[inline]
   pub fn reject(
     self,
     condition: impl for<'text> Fn(
@@ -57,37 +61,42 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
     })
   }
 
-  /// If the combinator is rejected, accept it with the default kind and zero digested.
+  /// Make the combinator optional.
+  ///
+  /// Under the hood, the combinator will be accepted
+  /// with the default kind and zero digested if the original combinator rejects.
   /// # Caveats
   /// This requires the `Kind` to implement [`Default`],
   /// thus usually used before setting a custom kind.
   /// ```
-  /// # use whitehole::combinator::Combinator;
+  /// # use whitehole::Combinator;
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
-  /// # fn t(combinator: Combinator<(), (), ()>) {
-  /// // bind a kind after calling `optional`
+  /// # fn t(combinator: Combinator!((), (), ())) {
+  /// // make the combinator optional before binding a kind
   /// combinator.optional().bind(MyKind::A)
   /// // instead of
   /// // combinator.bind(MyKind::A).optional()
   /// # ;}
   /// ```
-  /// Or you can wrap `Kind` with [`Option`]:
+  /// Or you can wrap `Kind` with [`Option`] to make it optional
+  /// after setting a custom kind.
   /// ```
-  /// # use whitehole::combinator::Combinator;
+  /// # use whitehole::Combinator;
   /// # #[derive(Clone)]
   /// # enum MyKind { A }
-  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// # fn t(combinator: Combinator!((), (), ())) {
   /// combinator.bind(Some(MyKind::A)).optional()
   /// # ;}
   /// ```
   /// # Examples
   /// ```
-  /// # use whitehole::combinator::Combinator;
-  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// # use whitehole::Combinator;
+  /// # fn t(combinator: Combinator!((), (), ())) {
   /// combinator.optional()
   /// # ;}
   /// ```
+  #[inline]
   pub fn optional(self) -> Combinator!(T::Kind, State, Heap)
   where
     T::Kind: Default,
@@ -100,15 +109,17 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
     })
   }
 
-  /// Reject the combinator after execution if the next char is alphanumeric or `_`.
+  /// Create a new combinator to reject after execution
+  /// if the next undigested char is alphanumeric or `_`.
   /// See [`char::is_alphanumeric`].
   /// # Examples
   /// ```
-  /// # use whitehole::combinator::Combinator;
-  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// # use whitehole::Combinator;
+  /// # fn t(combinator: Combinator!((), (), ())) {
   /// combinator.boundary()
   /// # ;}
   /// ```
+  #[inline]
   pub fn boundary(self) -> Combinator!(T::Kind, State, Heap) {
     self.reject(|ctx| {
       ctx
@@ -164,7 +175,7 @@ mod tests {
     let mut executed = false;
     assert_eq!(
       accepter()
-        .reject(|_| false)
+        .reject(|input| input.content() != "1")
         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
         kind: (),
@@ -176,7 +187,7 @@ mod tests {
     let mut executed = false;
     assert_eq!(
       accepter()
-        .reject(|_| true)
+        .reject(|input| input.content() == "1")
         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       None
     );

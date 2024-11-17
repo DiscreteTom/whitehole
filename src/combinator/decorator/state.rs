@@ -5,14 +5,17 @@ use crate::{
 };
 
 impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
-  /// Modify [`Input::state`] and [`Input::heap`] before the combinator is executed.
+  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
+  /// before being executed.
   /// # Examples
   /// ```
-  /// # use whitehole::combinator::Combinator;
-  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// # use whitehole::Combinator;
+  /// # struct MyState { value: i32 }
+  /// # fn t(combinator: Combinator!((), MyState, ())) {
   /// combinator.prepare(|input| input.state.value += 1)
   /// # ;}
   /// ```
+  #[inline]
   pub fn prepare(
     self,
     modifier: impl Fn(&mut Input<&mut State, &mut Heap>),
@@ -23,14 +26,17 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
     })
   }
 
-  /// Modify [`Input::state`] and [`Input::heap`] if the combinator is accepted.
+  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
+  /// after being accepted.
   /// # Examples
   /// ```
-  /// # use whitehole::combinator::Combinator;
-  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// # use whitehole::Combinator;
+  /// # struct MyState { value: i32 }
+  /// # fn t(combinator: Combinator!((), MyState, ())) {
   /// combinator.then(|ctx| ctx.input.state.value += 1)
   /// # ;}
   /// ```
+  #[inline]
   pub fn then(
     self,
     modifier: impl for<'text> Fn(
@@ -44,14 +50,17 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
     })
   }
 
-  /// Modify [`Input::state`] and [`Input::heap`] if the combinator is rejected.
+  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
+  /// after being rejected.
   /// # Examples
   /// ```
-  /// # use whitehole::combinator::Combinator;
-  /// # fn t(combinator: Combinator<(), (), ()>) {
+  /// # use whitehole::Combinator;
+  /// # struct MyState { value: i32 }
+  /// # fn t(combinator: Combinator!((), MyState, ())) {
   /// combinator.rollback(|input| input.state.value += 1)
   /// # ;}
   /// ```
+  #[inline]
   pub fn rollback(
     self,
     modifier: impl Fn(&mut Input<&mut State, &mut Heap>),
