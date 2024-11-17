@@ -116,6 +116,35 @@ impl<Lhs, Rhs> Mul<Lhs, Rhs> {
   }
 }
 
+#[inline]
+fn impl_mul<'text, Kind, State, Heap, Acc>(
+  lhs: &impl Parse<State, Heap, Kind = Kind>,
+  range: &impl Repeat,
+  init: impl Fn() -> Acc,
+  folder: impl Fn(Kind, Acc) -> Acc,
+  input: &mut Input<'text, &mut State, &mut Heap>,
+) -> Option<Output<'text, Acc>> {
+  let mut repeated = 0;
+  let mut output = Output {
+    kind: init(),
+    rest: input.rest(),
+  };
+
+  while range.validate(repeated) {
+    let Some(mut input) = input.reload(output.rest) else {
+      break;
+    };
+    let Some(next_output) = lhs.parse(&mut input) else {
+      break;
+    };
+    output.rest = next_output.rest;
+    output.kind = folder(next_output.kind, output.kind);
+    repeated += 1;
+  }
+
+  range.accept(repeated).then_some(output)
+}
+
 impl<
     State,
     Heap,
@@ -134,26 +163,7 @@ impl<
     input: &mut Input<'text, &mut State, &mut Heap>,
   ) -> Option<Output<'text, Acc>> {
     let (range, init, folder) = &self.rhs;
-
-    let mut repeated = 0;
-    let mut output = Output {
-      kind: init(),
-      rest: input.rest(),
-    };
-
-    while range.validate(repeated) {
-      let Some(mut input) = input.reload(output.rest) else {
-        break;
-      };
-      let Some(next_output) = self.lhs.parse(&mut input) else {
-        break;
-      };
-      output.rest = next_output.rest;
-      output.kind = folder(next_output.kind, output.kind);
-      repeated += 1;
-    }
-
-    range.accept(repeated).then_some(output)
+    impl_mul(&self.lhs, range, init, folder, input)
   }
 }
 
@@ -271,33 +281,18 @@ impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Rhs: Repeat> Parse<State,
 {
   type Kind = <Lhs::Kind as Fold>::Output;
 
-  // TODO: merge dup code
   #[inline]
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
   ) -> Option<Output<'text, Self::Kind>> {
-    let range = &self.rhs;
-
-    let mut repeated = 0;
-    let mut output = Output {
-      kind: Default::default(),
-      rest: input.rest(),
-    };
-
-    while range.validate(repeated) {
-      let Some(mut input) = input.reload(output.rest) else {
-        break;
-      };
-      let Some(next_output) = self.lhs.parse(&mut input) else {
-        break;
-      };
-      output.rest = next_output.rest;
-      output.kind = next_output.kind.fold(output.kind);
-      repeated += 1;
-    }
-
-    range.accept(repeated).then_some(output)
+    impl_mul(
+      &self.lhs,
+      &self.rhs,
+      Self::Kind::default,
+      Lhs::Kind::fold,
+      input,
+    )
   }
 }
 
