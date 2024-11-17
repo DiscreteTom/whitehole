@@ -144,10 +144,14 @@ impl<'a, State, Heap> Parse<State, Heap> for EatStr<'a, State, Heap> {
 ///
 /// # Examples
 /// ```
-/// use whitehole::combinator::eat;
+/// # use whitehole::combinator::{Combinator, eat};
+/// # let _: Combinator<(), (), _> =
 /// eat('a'); // eat by char
+/// # let _: Combinator<(), (), _> =
 /// eat("true"); // eat by &str
+/// # let _: Combinator<(), (), _> =
 /// eat("true".to_string()); // eat by String
+/// # let _: Combinator<(), (), _> =
 /// eat(10); // eat by byte length
 /// ```
 #[inline]
@@ -168,8 +172,9 @@ pub fn eat<State, Heap>(pattern: impl Eat) -> Combinator!((), State, Heap) {
 /// For the checked version, see [`eat`].
 /// # Examples
 /// ```
-/// use whitehole::combinator::eat_unchecked;
+/// # use whitehole::combinator::{Combinator, eat_unchecked};
 /// // eat 10 bytes
+/// # let _: Combinator<(), (), _> =
 /// unsafe { eat_unchecked(10) };
 /// ```
 #[inline]
@@ -184,8 +189,9 @@ pub unsafe fn eat_unchecked<State, Heap>(n: usize) -> Combinator!((), State, Hea
 /// as a valid UTF-8 string.
 /// # Examples
 /// ```
-/// use whitehole::combinator::eater;
+/// # use whitehole::combinator::{Combinator, eater};
 /// // accept all the rest characters
+/// # let _: Combinator<(), (), _> =
 /// eater(|input| input.rest().len());
 /// ```
 #[inline]
@@ -208,8 +214,9 @@ pub fn eater<State, Heap>(
 /// For the checked version, see [`eater`].
 /// # Examples
 /// ```
-/// use whitehole::combinator::eater_unchecked;
+/// # use whitehole::combinator::{Combinator, eater_unchecked};
 /// // accept all the rest characters
+/// # let _: Combinator<(), (), _> =
 /// unsafe { eater_unchecked(|input| input.rest().len()) };
 /// ```
 #[inline]
