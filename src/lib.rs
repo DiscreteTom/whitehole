@@ -1,14 +1,14 @@
 //! ## Getting Started
 //!
-//! Here is the recommended order of learning this crate:
+//! Here is the recommended order of learning this project:
 //!
-//! - [`kind`]
-//! - [`lexer`]
+//! - [`parse`] (optional)
+//! - [`combinator`]
+//! - [`parser`]
 
-pub mod kind;
-pub mod lexer;
-pub mod utils;
-// TODO: move parser in a standalone branch for now
+// pub mod kind;
+// pub mod lexer;
+// pub mod utils;
 
 pub mod combinator;
 pub mod node;
