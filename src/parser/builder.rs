@@ -24,6 +24,7 @@ use crate::{combinator, parse::Parse};
 ///   // build the parser
 ///   .build("hello world");
 /// ```
+#[derive(Debug, Clone, Copy)]
 pub struct Builder<T, State = (), Heap = ()> {
   state: State,
   heap: Heap,
