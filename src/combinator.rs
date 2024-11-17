@@ -81,26 +81,33 @@ pub use provided::*;
 use crate::parse::{Input, Output, Parse};
 use std::marker::PhantomData;
 
-/// Wrap a [`Parse`] implementor and provide composition operators.
+/// Wrap a [`Parse`] implementor to provide decorators and operator overloads.
+///
+/// See the [module-level documentation](self) for more information.
 #[derive(Debug, Clone, Copy)]
 pub struct Combinator<State, Heap, T> {
   parser: T,
   _phantom: PhantomData<(State, Heap)>,
 }
 
-/// `C!(State, Heap)` will be expanded to `Combinator<State, Heap, impl Parse<State, Heap>>`.
+/// A shorthand for [`Combinator`] with a [`Parse`] implementor.
+///
+/// - `C!(State, Heap)` will be expanded to `Combinator<State, Heap, impl Parse<State, Heap>>`.
+/// - `C!(MyKind, State, Heap)` will be expanded to `Combinator<State, Heap, impl Parse<State, Heap, Kind = MyKind>>`.
 #[macro_export]
 macro_rules! C {
-  ($kind:ty, $state:ty, $heap:ty) => {
-    $crate::combinator::Combinator<$state, $heap, impl $crate::parse::Parse<$state, $heap, Kind = $kind>>
-  };
   ($state:ty, $heap:ty) => {
     $crate::combinator::Combinator<$state, $heap, impl $crate::parse::Parse<$state, $heap>>
+  };
+  ($kind:ty, $state:ty, $heap:ty) => {
+    $crate::combinator::Combinator<$state, $heap, impl $crate::parse::Parse<$state, $heap, Kind = $kind>>
   };
 }
 
 impl<State, Heap, T> Combinator<State, Heap, T> {
-  /// Create a new instance.
+  /// Create a new instance by wrapping a [`Parse`] implementor.
+  ///
+  /// To wrap a closure, use [`wrap`] instead.
   #[inline]
   pub fn new(parser: T) -> Self {
     Self {
@@ -110,6 +117,7 @@ impl<State, Heap, T> Combinator<State, Heap, T> {
   }
 
   // TODO
+  // /// Simplify generic params.
   // #[inline]
   // pub fn collapse(self) -> C!(State, Heap)
   // where
@@ -120,7 +128,6 @@ impl<State, Heap, T> Combinator<State, Heap, T> {
 }
 
 /// Wrap a closure to create a [`Combinator`].
-/// TODO: better signature?
 #[inline]
 pub fn wrap<Kind, State, Heap>(
   parse: impl for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>,
