@@ -1,7 +1,9 @@
 use crate::parse::{Input, Output, Parse};
 use std::marker::PhantomData;
 
-/// Created by adding [`Combinator`](crate::combinator::Combinator) with [`char`].
+// TODO: move to eat, remove dup code
+
+/// Created when performing `+` or `|` by [`Combinator`](crate::combinator::Combinator) with [`char`].
 /// Similar to [`eat(char)`](crate::combinator::eat).
 ///
 /// This struct exists because the output of operator overloading has to be a concrete type.
@@ -37,7 +39,7 @@ impl<State, Heap> Parse<State, Heap> for EatChar<State, Heap> {
   }
 }
 
-/// Created by adding [`Combinator`](crate::combinator::Combinator) with [`String`].
+/// Created when performing `+` or `|` by [`Combinator`](crate::combinator::Combinator) with [`String`].
 /// Similar to [`eat(String)`](crate::combinator::eat).
 ///
 /// This struct exists because the output of operator overloading has to be a concrete type.
@@ -73,7 +75,7 @@ impl<State, Heap> Parse<State, Heap> for EatString<State, Heap> {
   }
 }
 
-/// Created by adding [`Combinator`](crate::combinator::Combinator) with `&str`.
+/// Created when performing `+` or `|` by [`Combinator`](crate::combinator::Combinator) with `&str`.
 /// Similar to [`eat(&str)`](crate::combinator::eat).
 ///
 /// This struct exists because the output of operator overloading has to be a concrete type.
@@ -109,7 +111,7 @@ impl<'a, State, Heap> Parse<State, Heap> for EatStr<'a, State, Heap> {
   }
 }
 
-/// Created by adding [`Combinator`](crate::combinator::Combinator) with [`usize`].
+/// Created when performing `+` or `|` by [`Combinator`](crate::combinator::Combinator) with [`usize`].
 /// Similar to [`eat(usize)`](crate::combinator::eat).
 ///
 /// This struct exists because the output of operator overloading has to be a concrete type.
@@ -141,3 +143,5 @@ impl<State, Heap> Parse<State, Heap> for EatUsize<State, Heap> {
     input.digest(self.u)
   }
 }
+
+// TODO: tests

@@ -1,95 +1,108 @@
-//! Overload [`Mul`] operator for combinator.
+//! Overload `*` operator for [`Combinator`].
 
 use crate::combinator::{Combinator, Input, Output, Parse};
 use std::ops::{self, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 
-// TODO: better name
+/// A helper trait to represent repetition when performing `*` on [`Combinator`]s.
+///
+/// Built-in implementations are provided for
+/// [`usize`], [`Range<usize>`], [`RangeFrom<usize>`], [`RangeFull`],
+/// [`RangeInclusive<usize>`], [`RangeTo<usize>`], and [`RangeToInclusive<usize>`].
 pub trait Repeat {
-  // TODO: better name
-  fn should_repeat(&self, repeat: usize) -> bool;
-  fn should_accept(&self, repeat: usize) -> bool;
+  /// Check if the repetition should continue
+  /// based on the current repeated times.
+  fn validate(&self, repeated: usize) -> bool;
+
+  /// Check if the repetition should be accepted
+  /// based on the current repeated times.
+  fn accept(&self, repeated: usize) -> bool;
 }
 
 impl Repeat for usize {
   #[inline]
-  fn should_repeat(&self, repeat: usize) -> bool {
-    repeat < *self
+  fn validate(&self, repeated: usize) -> bool {
+    repeated < *self
   }
 
   #[inline]
-  fn should_accept(&self, repeat: usize) -> bool {
-    repeat == *self
+  fn accept(&self, repeated: usize) -> bool {
+    repeated == *self
   }
 }
 
 impl Repeat for Range<usize> {
   #[inline]
-  fn should_repeat(&self, repeat: usize) -> bool {
-    repeat + 1 < self.end
+  fn validate(&self, repeated: usize) -> bool {
+    repeated + 1 < self.end
   }
 
   #[inline]
-  fn should_accept(&self, repeat: usize) -> bool {
-    self.contains(&repeat)
+  fn accept(&self, repeated: usize) -> bool {
+    self.contains(&repeated)
   }
 }
+
 impl Repeat for RangeFrom<usize> {
   #[inline]
-  fn should_repeat(&self, _: usize) -> bool {
+  fn validate(&self, _: usize) -> bool {
     true
   }
 
   #[inline]
-  fn should_accept(&self, repeat: usize) -> bool {
-    self.contains(&repeat)
+  fn accept(&self, repeated: usize) -> bool {
+    self.contains(&repeated)
   }
 }
+
 impl Repeat for RangeFull {
   #[inline]
-  fn should_repeat(&self, _: usize) -> bool {
+  fn validate(&self, _: usize) -> bool {
     true
   }
 
   #[inline]
-  fn should_accept(&self, _: usize) -> bool {
+  fn accept(&self, _: usize) -> bool {
     true
   }
 }
+
 impl Repeat for RangeInclusive<usize> {
   #[inline]
-  fn should_repeat(&self, repeat: usize) -> bool {
-    repeat < *self.end()
+  fn validate(&self, repeated: usize) -> bool {
+    repeated < *self.end()
   }
 
   #[inline]
-  fn should_accept(&self, repeat: usize) -> bool {
-    self.contains(&repeat)
+  fn accept(&self, repeated: usize) -> bool {
+    self.contains(&repeated)
   }
 }
+
 impl Repeat for RangeTo<usize> {
   #[inline]
-  fn should_repeat(&self, repeat: usize) -> bool {
-    repeat + 1 < self.end
+  fn validate(&self, repeated: usize) -> bool {
+    repeated + 1 < self.end
   }
 
   #[inline]
-  fn should_accept(&self, repeat: usize) -> bool {
-    self.contains(&repeat)
+  fn accept(&self, repeated: usize) -> bool {
+    self.contains(&repeated)
   }
 }
+
 impl Repeat for RangeToInclusive<usize> {
   #[inline]
-  fn should_repeat(&self, repeat: usize) -> bool {
-    repeat < self.end
+  fn validate(&self, repeated: usize) -> bool {
+    repeated < self.end
   }
 
   #[inline]
-  fn should_accept(&self, repeat: usize) -> bool {
-    self.contains(&repeat)
+  fn accept(&self, repeated: usize) -> bool {
+    self.contains(&repeated)
   }
 }
 
-/// A composite combinator created by `*`.
+/// A [`Parse`] implementor created by `*`.
 #[derive(Debug, Clone, Copy)]
 pub struct Mul<Lhs, Rhs> {
   pub lhs: Lhs,
@@ -121,12 +134,14 @@ impl<
     input: &mut Input<'text, &mut State, &mut Heap>,
   ) -> Option<Output<'text, Acc>> {
     let (range, init, folder) = &self.rhs;
+
     let mut repeated = 0;
     let mut output = Output {
       kind: init(),
       rest: input.rest(),
     };
-    while range.should_repeat(repeated) {
+
+    while range.validate(repeated) {
       let Some(mut input) = input.reload(output.rest) else {
         break;
       };
@@ -138,38 +153,50 @@ impl<
       repeated += 1;
     }
 
-    // reject if repeated times is too few
-    range.should_accept(repeated).then_some(output)
+    range.accept(repeated).then_some(output)
   }
 }
 
-impl<State, Heap, Lhs: Parse<State, Heap>, Rhs> ops::Mul<Rhs> for Combinator<State, Heap, Lhs> {
-  type Output = Combinator<State, Heap, Mul<Lhs, Rhs>>;
+impl<
+    State,
+    Heap,
+    Lhs: Parse<State, Heap>,
+    Acc,
+    Repeater: Repeat,
+    Initializer: Fn() -> Acc,
+    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
+  > ops::Mul<(Repeater, Initializer, InlineFolder)> for Combinator<State, Heap, Lhs>
+{
+  type Output = Combinator<State, Heap, Mul<Lhs, (Repeater, Initializer, InlineFolder)>>;
 
-  /// Repeat the combinator `rhs` times.
-  /// Return the output with the [`Fold`]-ed kind value and the sum of the digested.
+  /// Create a new combinator to repeat the original combinator
+  /// with the given repetition range, accumulator initializer and folder.
+  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// or reject if the repetition is not satisfied.
+  ///
+  /// `0` is a valid repetition range, which means the combinator is optional.
   ///
   /// See [`Fold`] for more information.
-  fn mul(self, rhs: Rhs) -> Self::Output {
+  fn mul(self, rhs: (Repeater, Initializer, InlineFolder)) -> Self::Output {
     Self::Output::new(Mul::new(self.parser, rhs))
   }
 }
 
-/// A helper trait to accumulate kind values when calling [`Mul`] on [`Combinator`].
+/// A helper trait to accumulate kind values when performing `*` on [`Combinator`]s.
 ///
 /// Built-in implementations are provided for `()`.
 /// # Examples
 /// ## Inline Fold
 /// For simple cases, you can accumulate the kind values inline, without using this trait.
 /// ```
-/// # use whitehole::combinator::{Combinator, next, Input};
-/// let combinator: Combinator<usize> =
+/// # use whitehole::{combinator::next, parse::Input};
+/// let combinator =
 ///   // accept one ascii digit at a time
 ///   next(|c| c.is_ascii_digit())
 ///     // convert the char to a number
 ///     .select(|ctx| ctx.input.next() as usize - '0' as usize)
-///     // repeat 1 or more times, init accumulator with 0, and fold kind values
-///     * (1.., || 0, |acc| acc * 10 + kind);
+///     // repeat for 1 or more times, init accumulator with 0, and fold kind values
+///     * (1.., || 0, |kind, acc| acc * 10 + kind);
 ///
 /// // parse "123" to 123
 /// assert_eq!(
@@ -180,26 +207,27 @@ impl<State, Heap, Lhs: Parse<State, Heap>, Rhs> ops::Mul<Rhs> for Combinator<Sta
 /// ## Fold with Custom Type
 /// If you want to re-use the folder logic, you can implement this trait for a custom type.
 /// ```
-/// # use whitehole::combinator::{operator::mul::Fold, Combinator, next, Input};
+/// # use whitehole::{combinator::{operator::mul::Fold, next}, parse::Input};
 /// // since you can't implement `Fold` for `usize` directly,
 /// // wrap it in a new-type
-/// struct DecimalNumber(usize);
+/// struct Usize(usize);
 ///
-/// impl Fold for DecimalNumber {
+/// impl Fold for Usize {
 ///   type Output = usize;
+///
 ///   fn fold(self, acc: Self::Output) -> Self::Output {
 ///     acc * 10 + self.0
 ///   }
 /// }
 ///
-/// let combinator: Combinator<usize> =
+/// let combinator =
 ///   // accept one ascii digit at a time
 ///   next(|c| c.is_ascii_digit())
-///     // convert the char to a number, wrapped in `DecimalNumber`
-///     .select(|ctx| DecimalNumber(ctx.input.next() as usize - '0' as usize))
-///     // repeat 1 or more times, fold `DecimalNumber` to `usize`
+///     // convert the char to a number, wrapped in `Usize`
+///     .select(|ctx| Usize(ctx.input.next() as usize - '0' as usize))
+///     // repeat for 1 or more times, fold `Usize` to `usize`
 ///     * (1..);
-///     // equals to: `* (1.., usize::default, DecimalNumber::fold)`
+///     // equals to: `* (1.., Usize::Output::default, Usize::fold)`
 ///
 /// // parse "123" to 123
 /// assert_eq!(
@@ -210,6 +238,7 @@ impl<State, Heap, Lhs: Parse<State, Heap>, Rhs> ops::Mul<Rhs> for Combinator<Sta
 pub trait Fold {
   /// The accumulator type.
   type Output: Default;
+
   /// Fold self with the accumulator.
   fn fold(self, acc: Self::Output) -> Self::Output;
 }
@@ -218,6 +247,23 @@ impl Fold for () {
   type Output = ();
   #[inline]
   fn fold(self, _: Self::Output) -> Self::Output {}
+}
+
+impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Rhs: Repeat> ops::Mul<Rhs>
+  for Combinator<State, Heap, Lhs>
+{
+  type Output = Combinator<State, Heap, Mul<Lhs, Rhs>>;
+
+  /// Create a new combinator to repeat the original combinator for `rhs` times.
+  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// or reject if the repetition is not satisfied.
+  ///
+  /// `0` is a valid repetition range, which means the combinator is optional.
+  ///
+  /// See [`Fold`] for more information.
+  fn mul(self, rhs: Rhs) -> Self::Output {
+    Self::Output::new(Mul::new(self.parser, rhs))
+  }
 }
 
 impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Rhs: Repeat> Parse<State, Heap>
@@ -232,12 +278,14 @@ impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Rhs: Repeat> Parse<State,
     input: &mut Input<'text, &mut State, &mut Heap>,
   ) -> Option<Output<'text, Self::Kind>> {
     let range = &self.rhs;
+
     let mut repeated = 0;
     let mut output = Output {
       kind: Default::default(),
       rest: input.rest(),
     };
-    while range.should_repeat(repeated) {
+
+    while range.validate(repeated) {
       let Some(mut input) = input.reload(output.rest) else {
         break;
       };
@@ -249,8 +297,7 @@ impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Rhs: Repeat> Parse<State,
       repeated += 1;
     }
 
-    // reject if repeated times is too few
-    range.should_accept(repeated).then_some(output)
+    range.accept(repeated).then_some(output)
   }
 }
 

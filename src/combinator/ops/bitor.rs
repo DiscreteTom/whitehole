@@ -1,4 +1,4 @@
-//! Overload [`BitOr`] operator for combinator.
+//! Overload `|` operator for [`Combinator`].
 
 use super::{EatChar, EatStr, EatString, EatUsize};
 use crate::combinator::{Combinator, Input, Output, Parse};
@@ -12,6 +12,7 @@ pub struct BitOr<Lhs, Rhs> {
 }
 
 impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
+  /// Create a new instance with the left-hand side and right-hand side.
   #[inline]
   pub fn new(lhs: Lhs, rhs: Rhs) -> Self {
     Self { lhs, rhs }
@@ -27,7 +28,7 @@ impl<State, Heap, Lhs: Parse<State, Heap>, Rhs: Parse<State, Heap, Kind = Lhs::K
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, Lhs::Kind>> {
+  ) -> Option<Output<'text, Self::Kind>> {
     self.lhs.parse(input).or_else(|| self.rhs.parse(input))
   }
 }
@@ -37,7 +38,9 @@ impl<State, Heap, Lhs: Parse<State, Heap>, Rhs: Parse<State, Heap, Kind = Lhs::K
 {
   type Output = Combinator<State, Heap, BitOr<Lhs, Rhs>>;
 
-  /// Try to parse with the left-hand side, if it fails, try the right-hand side.
+  /// Create a new combinator to try to parse with the left-hand side,
+  /// and if it fails, try to parse with the right-hand side.
+  /// The combinator will reject if all of the parses reject.
   #[inline]
   fn bitor(self, rhs: Combinator<State, Heap, Rhs>) -> Self::Output {
     Self::Output::new(BitOr::new(self.parser, rhs.parser))
