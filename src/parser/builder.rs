@@ -45,10 +45,10 @@ impl<Entry, State, Heap> Builder<Entry, State, Heap> {
   }
 
   /// Set [`Parser::entry`].
-  pub fn entry<'a, Kind, R: Parse<Kind, State, Heap> + 'a>(
+  pub fn entry<'a, R: Parse<State, Heap> + 'a>(
     self,
     builder: impl FnOnce(combinator::Builder<State, Heap>) -> R + 'a,
-  ) -> Builder<Box<dyn Parse<Kind, State, Heap> + 'a>, State, Heap> {
+  ) -> Builder<Box<dyn Parse<State, Heap, Kind = R::Kind> + 'a>, State, Heap> {
     Builder {
       entry: Box::new(builder(combinator::Builder::new())),
       state: self.state,
@@ -57,7 +57,7 @@ impl<Entry, State, Heap> Builder<Entry, State, Heap> {
   }
 }
 
-impl<'a, Kind, State, Heap> Builder<Box<dyn Parse<Kind, State, Heap> + 'a>, State, Heap> {
+impl<'a, Kind, State, Heap> Builder<Box<dyn Parse<State, Heap, Kind = Kind> + 'a>, State, Heap> {
   /// Build a [`Parser`] with the given text.
   pub fn build<'text>(self, text: &'text str) -> Parser<'a, 'text, Kind, State, Heap> {
     Parser {

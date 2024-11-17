@@ -83,20 +83,23 @@ use std::marker::PhantomData;
 
 /// Wrap a [`Parse`] implementor and provide composition operators.
 #[derive(Debug, Clone, Copy)]
-pub struct Combinator<Kind, State, Heap, T> {
+pub struct Combinator<State, Heap, T> {
   parser: T,
-  _phantom: PhantomData<(Kind, State, Heap)>,
+  _phantom: PhantomData<(State, Heap)>,
 }
 
-/// `C!(Kind, State, Heap)` will be expanded to `Combinator<Kind, State, Heap, impl Parse<Kind, State, Heap>>`.
+/// `C!(State, Heap)` will be expanded to `Combinator<State, Heap, impl Parse<State, Heap>>`.
 #[macro_export]
 macro_rules! C {
   ($kind:ty, $state:ty, $heap:ty) => {
-    $crate::combinator::Combinator<$kind, $state, $heap, impl $crate::parse::Parse<$kind, $state, $heap>>
+    $crate::combinator::Combinator<$state, $heap, impl $crate::parse::Parse<$state, $heap, Kind = $kind>>
+  };
+  ($state:ty, $heap:ty) => {
+    $crate::combinator::Combinator<$state, $heap, impl $crate::parse::Parse<$state, $heap>>
   };
 }
 
-impl<Kind, State, Heap, T> Combinator<Kind, State, Heap, T> {
+impl<State, Heap, T> Combinator<State, Heap, T> {
   /// Create a new instance.
   #[inline]
   pub fn new(parser: T) -> Self {
@@ -107,13 +110,13 @@ impl<Kind, State, Heap, T> Combinator<Kind, State, Heap, T> {
   }
 
   // TODO
-  #[inline]
-  pub fn collapse(self) -> C!(Kind, State, Heap)
-  where
-    T: Parse<Kind, State, Heap>,
-  {
-    self
-  }
+  // #[inline]
+  // pub fn collapse(self) -> C!(State, Heap)
+  // where
+  //   T: Parse<State, Heap>,
+  // {
+  //   self
+  // }
 }
 
 /// Wrap a closure to create a [`Combinator`].
@@ -125,14 +128,14 @@ pub fn wrap<Kind, State, Heap>(
   Combinator::new(parse)
 }
 
-impl<Kind, State, Heap, T: Parse<Kind, State, Heap>> Parse<Kind, State, Heap>
-  for Combinator<Kind, State, Heap, T>
-{
+impl<State, Heap, T: Parse<State, Heap>> Parse<State, Heap> for Combinator<State, Heap, T> {
+  type Kind = T::Kind;
+
   #[inline]
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, Kind>> {
+  ) -> Option<Output<'text, T::Kind>> {
     self.parser.parse(input)
   }
 }

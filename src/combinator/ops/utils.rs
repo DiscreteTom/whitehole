@@ -22,7 +22,9 @@ impl<State, Heap> EatChar<State, Heap> {
   }
 }
 
-impl<State, Heap> Parse<(), State, Heap> for EatChar<State, Heap> {
+impl<State, Heap> Parse<State, Heap> for EatChar<State, Heap> {
+  type Kind = ();
+
   #[inline]
   fn parse<'text>(
     &self,
@@ -56,7 +58,9 @@ impl<State, Heap> EatString<State, Heap> {
   }
 }
 
-impl<State, Heap> Parse<(), State, Heap> for EatString<State, Heap> {
+impl<State, Heap> Parse<State, Heap> for EatString<State, Heap> {
+  type Kind = ();
+
   #[inline]
   fn parse<'text>(
     &self,
@@ -90,7 +94,9 @@ impl<'a, State, Heap> EatStr<'a, State, Heap> {
   }
 }
 
-impl<'a, State, Heap> Parse<(), State, Heap> for EatStr<'a, State, Heap> {
+impl<'a, State, Heap> Parse<State, Heap> for EatStr<'a, State, Heap> {
+  type Kind = ();
+
   #[inline]
   fn parse<'text>(
     &self,
@@ -124,7 +130,9 @@ impl<State, Heap> EatUsize<State, Heap> {
   }
 }
 
-impl<State, Heap> Parse<(), State, Heap> for EatUsize<State, Heap> {
+impl<State, Heap> Parse<State, Heap> for EatUsize<State, Heap> {
+  type Kind = ();
+
   #[inline]
   fn parse<'text>(
     &self,

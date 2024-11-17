@@ -4,7 +4,7 @@ use crate::{
   C,
 };
 
-impl<Kind, State, Heap, T: Parse<Kind, State, Heap>> Combinator<Kind, State, Heap, T> {
+impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
   /// Modify [`Input::state`] and [`Input::heap`] before the combinator is executed.
   /// # Examples
   /// ```
@@ -16,7 +16,7 @@ impl<Kind, State, Heap, T: Parse<Kind, State, Heap>> Combinator<Kind, State, Hea
   pub fn prepare(
     self,
     modifier: impl Fn(&mut Input<&mut State, &mut Heap>),
-  ) -> C!(Kind, State, Heap) {
+  ) -> C!(T::Kind, State, Heap) {
     wrap(move |input| {
       modifier(input);
       self.parse(input)
@@ -34,9 +34,9 @@ impl<Kind, State, Heap, T: Parse<Kind, State, Heap>> Combinator<Kind, State, Hea
   pub fn then(
     self,
     modifier: impl for<'text> Fn(
-      AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, Kind>>,
+      AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, T::Kind>>,
     ),
-  ) -> C!(Kind, State, Heap) {
+  ) -> C!(T::Kind, State, Heap) {
     wrap(move |input| {
       self.parse(input).inspect(|output| {
         modifier(AcceptedOutputContext { input, output });
@@ -55,7 +55,7 @@ impl<Kind, State, Heap, T: Parse<Kind, State, Heap>> Combinator<Kind, State, Hea
   pub fn rollback(
     self,
     modifier: impl Fn(&mut Input<&mut State, &mut Heap>),
-  ) -> C!(Kind, State, Heap) {
+  ) -> C!(T::Kind, State, Heap) {
     wrap(move |input| {
       let output = self.parse(input);
       if output.is_none() {

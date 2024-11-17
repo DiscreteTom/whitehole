@@ -4,7 +4,7 @@ use crate::{
   C,
 };
 
-impl<Kind, State, Heap, T: Parse<Kind, State, Heap>> Combinator<Kind, State, Heap, T> {
+impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
   /// Set [`Output::kind`] to a constant kind value.
   ///
   /// If your `Kind` doesn't implement the [`Clone`] trait, consider using [`Self::select`] instead.
@@ -58,7 +58,7 @@ impl<Kind, State, Heap, T: Parse<Kind, State, Heap>> Combinator<Kind, State, Hea
   pub fn select<NewKind>(
     self,
     selector: impl for<'text> Fn(
-      AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, Output<'text, Kind>>,
+      AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, Output<'text, T::Kind>>,
     ) -> NewKind,
   ) -> C!(NewKind, State, Heap) {
     wrap(move |input| {
@@ -79,7 +79,7 @@ impl<Kind, State, Heap, T: Parse<Kind, State, Heap>> Combinator<Kind, State, Hea
   /// combinator.map(|kind| Some(kind))
   /// # ;}
   /// ```
-  pub fn map<NewKind>(self, converter: impl Fn(Kind) -> NewKind) -> C!(NewKind, State, Heap) {
+  pub fn map<NewKind>(self, converter: impl Fn(T::Kind) -> NewKind) -> C!(NewKind, State, Heap) {
     wrap(move |input| self.parse(input).map(|output| output.map(&converter)))
   }
 }
