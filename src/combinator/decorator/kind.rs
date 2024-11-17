@@ -1,4 +1,4 @@
-use super::AcceptedOutputContext;
+use super::AcceptedContext;
 use crate::{
   combinator::{wrap, Combinator, Input, Output, Parse},
   Combinator,
@@ -58,13 +58,13 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
   pub fn select<NewKind>(
     self,
     selector: impl for<'text> Fn(
-      AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, Output<'text, T::Kind>>,
+      AcceptedContext<&mut Input<'text, &mut State, &mut Heap>, Output<'text, T::Kind>>,
     ) -> NewKind,
   ) -> Combinator!(NewKind, State, Heap) {
     wrap(move |input| {
       self.parse(input).map(|output| Output {
         rest: output.rest,
-        kind: selector(AcceptedOutputContext { input, output }),
+        kind: selector(AcceptedContext { input, output }),
       })
     })
   }

@@ -1,6 +1,6 @@
 //! Decorators that modify the acceptance of a combinator.
 
-use super::AcceptedOutputContext;
+use super::AcceptedContext;
 use crate::{
   combinator::{wrap, Combinator, Input, Output, Parse},
   Combinator,
@@ -40,12 +40,12 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
   pub fn reject(
     self,
     condition: impl for<'text> Fn(
-      AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, T::Kind>>,
+      AcceptedContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, T::Kind>>,
     ) -> bool,
   ) -> Combinator!(T::Kind, State, Heap) {
     wrap(move |input| {
       self.parse(input).and_then(|output| {
-        if condition(AcceptedOutputContext {
+        if condition(AcceptedContext {
           input,
           output: &output,
         }) {

@@ -4,18 +4,18 @@ use std::ops::Range;
 /// This struct provides the [`Input`] and [`Output`]
 /// in combinator decorators when the combinator is accepted.
 #[derive(Debug)]
-pub struct AcceptedOutputContext<InputType, OutputType> {
+pub struct AcceptedContext<InputType, OutputType> {
   /// The `&mut Input`.
   pub input: InputType,
   /// The [`Output`].
   ///
-  /// Might also be `&Output`, depends on the specific decorator you are using.
+  /// If the decorator can't consume the output, this will be `&Output`.
   pub output: OutputType,
 }
 
 macro_rules! impl_ctx {
   ($input:ty, $output:ty) => {
-    impl<'text, Kind, StateRef, HeapRef> AcceptedOutputContext<$input, $output> {
+    impl<'text, Kind, StateRef, HeapRef> AcceptedContext<$input, $output> {
       /// How many bytes are digested by this combinator.
       #[inline]
       pub fn digested(&self) -> usize {
@@ -72,14 +72,14 @@ mod tests {
     // ensure the methods are working
 
     // &mut input and output
-    AcceptedOutputContext {
+    AcceptedContext {
       input: &mut create_input(),
       output: create_output(),
     }
     .end();
 
     // &mut input and &output
-    AcceptedOutputContext {
+    AcceptedContext {
       input: &mut create_input(),
       output: &create_output(),
     }
@@ -87,7 +87,7 @@ mod tests {
 
     // ensure the value is correct
     assert_eq!(
-      AcceptedOutputContext {
+      AcceptedContext {
         input: &mut create_input(),
         output: create_output(),
       }
@@ -95,7 +95,7 @@ mod tests {
       1
     );
     assert_eq!(
-      AcceptedOutputContext {
+      AcceptedContext {
         input: &mut create_input(),
         output: create_output(),
       }
@@ -103,7 +103,7 @@ mod tests {
       2
     );
     assert_eq!(
-      AcceptedOutputContext {
+      AcceptedContext {
         input: &mut create_input(),
         output: create_output(),
       }
