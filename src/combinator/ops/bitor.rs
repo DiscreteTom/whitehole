@@ -18,36 +18,34 @@ impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
   }
 }
 
-impl<Lhs: Parse, Rhs: Parse<Kind = Lhs::Kind, State = Lhs::State, Heap = Lhs::Heap>> Parse
-  for BitOr<Lhs, Rhs>
+impl<Kind, State, Heap, Lhs: Parse<Kind, State, Heap>, Rhs: Parse<Kind, State, Heap>>
+  Parse<Kind, State, Heap> for BitOr<Lhs, Rhs>
 {
-  type Kind = Lhs::Kind;
-  type State = Lhs::State;
-  type Heap = Lhs::Heap;
-
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, Kind>> {
     self.lhs.parse(input).or_else(|| self.rhs.parse(input))
   }
 }
 
-impl<Lhs: Parse, Rhs: Parse<Kind = Lhs::Kind, State = Lhs::State, Heap = Lhs::Heap>> ops::BitOr<Rhs>
-  for Combinator<Lhs>
+impl<Kind, State, Heap, Lhs: Parse<Kind, State, Heap>, Rhs: Parse<Kind, State, Heap>>
+  ops::BitOr<Combinator<Kind, State, Heap, Rhs>> for Combinator<Kind, State, Heap, Lhs>
 {
-  type Output = Combinator<BitOr<Lhs, Rhs>>;
+  type Output = Combinator<Kind, State, Heap, BitOr<Lhs, Rhs>>;
 
   /// Try to parse with the left-hand side, if it fails, try the right-hand side.
   #[inline]
-  fn bitor(self, rhs: Rhs) -> Self::Output {
-    Self::Output::new(BitOr::new(self.parser, rhs))
+  fn bitor(self, rhs: Combinator<Kind, State, Heap, Rhs>) -> Self::Output {
+    Self::Output::new(BitOr::new(self.parser, rhs.parser))
   }
 }
 
-impl<Lhs: Parse> ops::BitOr<char> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, EatChar<Lhs::State, Lhs::Heap>>>;
+impl<Kind, State, Heap, Lhs: Parse<Kind, State, Heap>> ops::BitOr<char>
+  for Combinator<Kind, State, Heap, Lhs>
+{
+  type Output = Combinator<Kind, State, Heap, BitOr<Lhs, EatChar<State, Heap>>>;
 
   /// Similar to `self | eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
@@ -56,8 +54,10 @@ impl<Lhs: Parse> ops::BitOr<char> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs: Parse> ops::BitOr<usize> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, EatUsize<Lhs::State, Lhs::Heap>>>;
+impl<Kind, State, Heap, Lhs: Parse<Kind, State, Heap>> ops::BitOr<usize>
+  for Combinator<Kind, State, Heap, Lhs>
+{
+  type Output = Combinator<Kind, State, Heap, BitOr<Lhs, EatUsize<State, Heap>>>;
 
   /// Similar to `self | eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
@@ -66,8 +66,10 @@ impl<Lhs: Parse> ops::BitOr<usize> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs: Parse> ops::BitOr<String> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, EatString<Lhs::State, Lhs::Heap>>>;
+impl<Kind, State, Heap, Lhs: Parse<Kind, State, Heap>> ops::BitOr<String>
+  for Combinator<Kind, State, Heap, Lhs>
+{
+  type Output = Combinator<Kind, State, Heap, BitOr<Lhs, EatString<State, Heap>>>;
 
   /// Similar to `self | eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
@@ -76,8 +78,10 @@ impl<Lhs: Parse> ops::BitOr<String> for Combinator<Lhs> {
   }
 }
 
-impl<'a, Lhs: Parse> ops::BitOr<&'a str> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, EatStr<'a, Lhs::State, Lhs::Heap>>>;
+impl<'a, Kind, State, Heap, Lhs: Parse<Kind, State, Heap>> ops::BitOr<&'a str>
+  for Combinator<Kind, State, Heap, Lhs>
+{
+  type Output = Combinator<Kind, State, Heap, BitOr<Lhs, EatStr<'a, State, Heap>>>;
 
   /// Similar to `self | eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]

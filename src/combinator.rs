@@ -68,36 +68,52 @@
 //! ```
 //! See [`Combinator`]'s methods for more decorators.
 
+mod builder;
 mod decorator;
 mod provided;
 
 pub mod ops;
 
+pub use builder::*;
 pub use decorator::*;
 pub use provided::*;
 
-use crate::parse::{Closure, Input, Output, Parse};
+use crate::parse::{Input, Output, Parse};
+use std::marker::PhantomData;
 
 /// Wrap a [`Parse`] implementor and provide composition operators.
 #[derive(Debug, Clone, Copy)]
-pub struct Combinator<T> {
+pub struct Combinator<Kind, State, Heap, T> {
   parser: T,
+  _phantom: PhantomData<(Kind, State, Heap)>,
 }
 
-impl<T> Combinator<T> {
+/// `C!(Kind, State, Heap)` will be expanded to `Combinator<Kind, State, Heap, impl Parse<Kind, State, Heap>>`.
+#[macro_export]
+macro_rules! C {
+  ($kind:ty, $state:ty, $heap:ty) => {
+    $crate::combinator::Combinator<$kind, $state, $heap, impl $crate::parse::Parse<$kind, $state, $heap>>
+  };
+}
+
+impl<Kind, State, Heap, T> Combinator<Kind, State, Heap, T> {
   /// Create a new instance.
   #[inline]
   pub fn new(parser: T) -> Self {
-    Self { parser }
+    Self {
+      parser,
+      _phantom: PhantomData,
+    }
   }
 
   // TODO
-  // #[inline]
-  // pub fn collapse(
-  //   self,
-  // ) -> Combinator<impl Parse> {
-  //   self
-  // }
+  #[inline]
+  pub fn collapse(self) -> C!(Kind, State, Heap)
+  where
+    T: Parse<Kind, State, Heap>,
+  {
+    self
+  }
 }
 
 /// Wrap a closure to create a [`Combinator`].
@@ -105,22 +121,18 @@ impl<T> Combinator<T> {
 #[inline]
 pub fn wrap<Kind, State, Heap>(
   parse: impl for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>,
-) -> Combinator<impl Parse<State = State, Heap = Heap, Kind = Kind>> {
-  Combinator {
-    parser: Closure::new(parse),
-  }
+) -> C!(Kind, State, Heap) {
+  Combinator::new(parse)
 }
 
-impl<T: Parse> Parse for Combinator<T> {
-  type Kind = T::Kind;
-  type State = T::State;
-  type Heap = T::Heap;
-
+impl<Kind, State, Heap, T: Parse<Kind, State, Heap>> Parse<Kind, State, Heap>
+  for Combinator<Kind, State, Heap, T>
+{
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, Kind>> {
     self.parser.parse(input)
   }
 }

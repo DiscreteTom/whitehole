@@ -1,9 +1,12 @@
 //! Decorators that modify the acceptance of a combinator.
 
 use super::AcceptedOutputContext;
-use crate::combinator::{wrap, Combinator, Input, Output, Parse};
+use crate::{
+  combinator::{wrap, Combinator, Input, Output, Parse},
+  C,
+};
 
-impl<T: Parse> Combinator<T> {
+impl<Kind, State, Heap, T: Parse<Kind, State, Heap>> Combinator<Kind, State, Heap, T> {
   /// Check the [`Input`] before the combinator is executed.
   /// Reject if the `condition` returns `true`.
   /// # Examples
@@ -15,8 +18,8 @@ impl<T: Parse> Combinator<T> {
   /// ```
   pub fn prevent(
     self,
-    condition: impl Fn(&mut Input<&mut T::State, &mut T::Heap>) -> bool,
-  ) -> Combinator<impl Parse<State = T::State, Heap = T::Heap, Kind = T::Kind>> {
+    condition: impl Fn(&mut Input<&mut State, &mut Heap>) -> bool,
+  ) -> C!(Kind, State, Heap) {
     wrap(move |input| {
       if condition(input) {
         None
@@ -37,9 +40,9 @@ impl<T: Parse> Combinator<T> {
   pub fn reject(
     self,
     condition: impl for<'text> Fn(
-      AcceptedOutputContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<'text, T::Kind>>,
+      AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, Kind>>,
     ) -> bool,
-  ) -> Combinator<impl Parse<State = T::State, Heap = T::Heap, Kind = T::Kind>> {
+  ) -> C!(Kind, State, Heap) {
     wrap(move |input| {
       self.parse(input).and_then(|output| {
         if condition(AcceptedOutputContext {
@@ -85,9 +88,9 @@ impl<T: Parse> Combinator<T> {
   /// combinator.optional()
   /// # ;}
   /// ```
-  pub fn optional(self) -> Combinator<impl Parse<State = T::State, Heap = T::Heap, Kind = T::Kind>>
+  pub fn optional(self) -> C!(Kind, State, Heap)
   where
-    T::Kind: Default,
+    Kind: Default,
   {
     wrap(move |input| {
       Some(self.parse(input).unwrap_or_else(|| Output {
@@ -106,9 +109,7 @@ impl<T: Parse> Combinator<T> {
   /// combinator.boundary()
   /// # ;}
   /// ```
-  pub fn boundary(
-    self,
-  ) -> Combinator<impl Parse<State = T::State, Heap = T::Heap, Kind = T::Kind>> {
+  pub fn boundary(self) -> C!(Kind, State, Heap) {
     self.reject(|ctx| {
       ctx
         .output
@@ -124,7 +125,7 @@ impl<T: Parse> Combinator<T> {
 mod tests {
   use super::*;
 
-  fn accepter() -> Combinator<impl Parse<Kind = (), State = bool, Heap = ()>> {
+  fn accepter() -> C!((), bool, ()) {
     wrap(|input| {
       *input.state = true;
       Some(Output {
@@ -134,7 +135,7 @@ mod tests {
     })
   }
 
-  fn rejecter() -> Combinator<impl Parse<Kind = (), State = bool, Heap = ()>> {
+  fn rejecter() -> C!((), bool, ()) {
     wrap(|input| {
       *input.state = true;
       None

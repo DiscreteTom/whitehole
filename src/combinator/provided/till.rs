@@ -1,4 +1,4 @@
-use crate::combinator::{wrap, Combinator, Parse};
+use crate::{combinator::wrap, C};
 
 /// A util trait to make [`till`] generic over different types.
 ///
@@ -56,9 +56,7 @@ unsafe impl Till for () {
 /// till(()); // with (), eat all rest
 /// ```
 #[inline]
-pub fn till<State, Heap>(
-  pattern: impl Till,
-) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
+pub fn till<State, Heap>(pattern: impl Till) -> C!((), State, Heap) {
   wrap(move |input| {
     pattern
       .parse(input.rest())
@@ -69,7 +67,7 @@ pub fn till<State, Heap>(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::parse::{Input, Output};
+  use crate::parse::{Input, Output, Parse};
 
   #[test]
   fn till_parse() {

@@ -1,5 +1,5 @@
 use super::Parser;
-use crate::parse::Parse;
+use crate::{combinator, parse::Parse};
 
 /// A builder for [`Parser`].
 pub struct Builder<Entry, State, Heap> {
@@ -45,21 +45,19 @@ impl<Entry, State, Heap> Builder<Entry, State, Heap> {
   }
 
   /// Set [`Parser::entry`].
-  pub fn entry<'a, Kind>(
+  pub fn entry<'a, Kind, R: Parse<Kind, State, Heap> + 'a>(
     self,
-    entry: impl Parse<Kind = Kind, State = State, Heap = Heap> + 'a,
-  ) -> Builder<Box<dyn Parse<Kind = Kind, State = State, Heap = Heap> + 'a>, State, Heap> {
+    builder: impl FnOnce(combinator::Builder<State, Heap>) -> R + 'a,
+  ) -> Builder<Box<dyn Parse<Kind, State, Heap> + 'a>, State, Heap> {
     Builder {
-      entry: Box::new(entry),
+      entry: Box::new(builder(combinator::Builder::new())),
       state: self.state,
       heap: self.heap,
     }
   }
 }
 
-impl<'a, Kind, State, Heap>
-  Builder<Box<dyn Parse<Kind = Kind, State = State, Heap = Heap> + 'a>, State, Heap>
-{
+impl<'a, Kind, State, Heap> Builder<Box<dyn Parse<Kind, State, Heap> + 'a>, State, Heap> {
   /// Build a [`Parser`] with the given text.
   pub fn build<'text>(self, text: &'text str) -> Parser<'a, 'text, Kind, State, Heap> {
     Parser {

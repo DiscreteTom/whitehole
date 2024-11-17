@@ -1,7 +1,10 @@
 use super::AcceptedOutputContext;
-use crate::combinator::{wrap, Combinator, Input, Output, Parse};
+use crate::{
+  combinator::{wrap, Combinator, Input, Output, Parse},
+  C,
+};
 
-impl<T: Parse> Combinator<T> {
+impl<Kind, State, Heap, T: Parse<Kind, State, Heap>> Combinator<Kind, State, Heap, T> {
   /// Set [`Output::kind`] to a constant kind value.
   ///
   /// If your `Kind` doesn't implement the [`Clone`] trait, consider using [`Self::select`] instead.
@@ -14,10 +17,7 @@ impl<T: Parse> Combinator<T> {
   /// combinator.bind(MyKind::A)
   /// # ;}
   /// ```
-  pub fn bind<NewKind>(
-    self,
-    kind: NewKind,
-  ) -> Combinator<impl Parse<Kind = NewKind, State = T::State, Heap = T::Heap>>
+  pub fn bind<NewKind>(self, kind: NewKind) -> C!(NewKind, State, Heap)
   where
     NewKind: Clone,
   {
@@ -32,9 +32,7 @@ impl<T: Parse> Combinator<T> {
   /// combinator.bind_default()
   /// # }
   /// ```
-  pub fn bind_default<NewKind>(
-    self,
-  ) -> Combinator<impl Parse<Kind = NewKind, State = T::State, Heap = T::Heap>>
+  pub fn bind_default<NewKind>(self) -> C!(NewKind, State, Heap)
   where
     NewKind: Default,
   {
@@ -60,9 +58,9 @@ impl<T: Parse> Combinator<T> {
   pub fn select<NewKind>(
     self,
     selector: impl for<'text> Fn(
-      AcceptedOutputContext<&mut Input<'text, &mut T::State, &mut T::Heap>, Output<'text, T::Kind>>,
+      AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, Output<'text, Kind>>,
     ) -> NewKind,
-  ) -> Combinator<impl Parse<Kind = NewKind, State = T::State, Heap = T::Heap>> {
+  ) -> C!(NewKind, State, Heap) {
     wrap(move |input| {
       self.parse(input).map(|output| Output {
         rest: output.rest,
@@ -81,10 +79,7 @@ impl<T: Parse> Combinator<T> {
   /// combinator.map(|kind| Some(kind))
   /// # ;}
   /// ```
-  pub fn map<NewKind>(
-    self,
-    converter: impl Fn(T::Kind) -> NewKind,
-  ) -> Combinator<impl Parse<Kind = NewKind, State = T::State, Heap = T::Heap>> {
+  pub fn map<NewKind>(self, converter: impl Fn(Kind) -> NewKind) -> C!(NewKind, State, Heap) {
     wrap(move |input| self.parse(input).map(|output| output.map(&converter)))
   }
 }

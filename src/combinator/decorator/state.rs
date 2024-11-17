@@ -1,7 +1,10 @@
 use super::AcceptedOutputContext;
-use crate::combinator::{wrap, Combinator, Input, Output, Parse};
+use crate::{
+  combinator::{wrap, Combinator, Input, Output, Parse},
+  C,
+};
 
-impl<T: Parse> Combinator<T> {
+impl<Kind, State, Heap, T: Parse<Kind, State, Heap>> Combinator<Kind, State, Heap, T> {
   /// Modify [`Input::state`] and [`Input::heap`] before the combinator is executed.
   /// # Examples
   /// ```
@@ -12,8 +15,8 @@ impl<T: Parse> Combinator<T> {
   /// ```
   pub fn prepare(
     self,
-    modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>),
-  ) -> Combinator<impl Parse<State = T::State, Heap = T::Heap, Kind = T::Kind>> {
+    modifier: impl Fn(&mut Input<&mut State, &mut Heap>),
+  ) -> C!(Kind, State, Heap) {
     wrap(move |input| {
       modifier(input);
       self.parse(input)
@@ -31,9 +34,9 @@ impl<T: Parse> Combinator<T> {
   pub fn then(
     self,
     modifier: impl for<'text> Fn(
-      AcceptedOutputContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<'text, T::Kind>>,
+      AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, Kind>>,
     ),
-  ) -> Combinator<impl Parse<State = T::State, Heap = T::Heap, Kind = T::Kind>> {
+  ) -> C!(Kind, State, Heap) {
     wrap(move |input| {
       self.parse(input).inspect(|output| {
         modifier(AcceptedOutputContext { input, output });
@@ -51,8 +54,8 @@ impl<T: Parse> Combinator<T> {
   /// ```
   pub fn rollback(
     self,
-    modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>),
-  ) -> Combinator<impl Parse<State = T::State, Heap = T::Heap, Kind = T::Kind>> {
+    modifier: impl Fn(&mut Input<&mut State, &mut Heap>),
+  ) -> C!(Kind, State, Heap) {
     wrap(move |input| {
       let output = self.parse(input);
       if output.is_none() {
@@ -73,7 +76,7 @@ mod tests {
     to: i32,
   }
 
-  fn accepter() -> Combinator<impl Parse<Kind = (), State = State, Heap = ()>> {
+  fn accepter() -> C!((), State, ()) {
     wrap(|input: &mut Input<&mut State, &mut ()>| {
       input.state.to = input.state.from;
       Some(Output {
@@ -83,7 +86,7 @@ mod tests {
     })
   }
 
-  fn rejecter() -> Combinator<impl Parse<Kind = (), State = State, Heap = ()>> {
+  fn rejecter() -> C!((), State, ()) {
     wrap(|input: &mut Input<&mut State, &mut ()>| {
       input.state.to = input.state.from;
       None

@@ -1,4 +1,7 @@
-use crate::combinator::{wrap, Combinator, Input, Output, Parse};
+use crate::{
+  combinator::{wrap, Input, Output},
+  C,
+};
 
 /// A util trait to make [`eat`] generic over different types.
 ///
@@ -77,9 +80,7 @@ impl Eat for usize {
 /// eat(10); // eat by byte length
 /// ```
 #[inline]
-pub fn eat<State, Heap>(
-  pattern: impl Eat,
-) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
+pub fn eat<State, Heap>(pattern: impl Eat) -> C!((), State, Heap) {
   wrap(move |input| pattern.parse(input))
 }
 
@@ -100,9 +101,7 @@ pub fn eat<State, Heap>(
 /// unsafe { eat_unchecked(10) };
 /// ```
 #[inline]
-pub unsafe fn eat_unchecked<State, Heap>(
-  n: usize,
-) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
+pub unsafe fn eat_unchecked<State, Heap>(n: usize) -> C!((), State, Heap) {
   wrap(move |input| input.digest_unchecked(n).into())
 }
 
@@ -120,7 +119,7 @@ pub unsafe fn eat_unchecked<State, Heap>(
 #[inline]
 pub fn eater<State, Heap>(
   f: impl Fn(&mut Input<&mut State, &mut Heap>) -> usize,
-) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
+) -> C!((), State, Heap) {
   wrap(move |input| match f(input) {
     0 => None,
     digested => input.digest(digested),
@@ -144,7 +143,7 @@ pub fn eater<State, Heap>(
 #[inline]
 pub unsafe fn eater_unchecked<State, Heap>(
   f: impl Fn(&mut Input<&mut State, &mut Heap>) -> usize,
-) -> Combinator<impl Parse<Kind = (), State = State, Heap = Heap>> {
+) -> C!((), State, Heap) {
   wrap(move |input| match f(input) {
     0 => None,
     digested => input.digest_unchecked(digested).into(),
@@ -154,6 +153,7 @@ pub unsafe fn eater_unchecked<State, Heap>(
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::parse::Parse;
 
   #[test]
   fn combinator_eat() {

@@ -22,16 +22,12 @@ impl<State, Heap> EatChar<State, Heap> {
   }
 }
 
-impl<State, Heap> Parse for EatChar<State, Heap> {
-  type Kind = ();
-  type State = State;
-  type Heap = Heap;
-
+impl<State, Heap> Parse<(), State, Heap> for EatChar<State, Heap> {
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, ()>> {
     input
       .rest()
       .starts_with(self.c)
@@ -60,16 +56,12 @@ impl<State, Heap> EatString<State, Heap> {
   }
 }
 
-impl<State, Heap> Parse for EatString<State, Heap> {
-  type Kind = ();
-  type State = State;
-  type Heap = Heap;
-
+impl<State, Heap> Parse<(), State, Heap> for EatString<State, Heap> {
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, ()>> {
     input
       .rest()
       .starts_with(&self.s)
@@ -98,16 +90,12 @@ impl<'a, State, Heap> EatStr<'a, State, Heap> {
   }
 }
 
-impl<'a, State, Heap> Parse for EatStr<'a, State, Heap> {
-  type Kind = ();
-  type State = State;
-  type Heap = Heap;
-
+impl<'a, State, Heap> Parse<(), State, Heap> for EatStr<'a, State, Heap> {
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, ()>> {
     input
       .rest()
       .starts_with(self.s)
@@ -136,16 +124,12 @@ impl<State, Heap> EatUsize<State, Heap> {
   }
 }
 
-impl<State, Heap> Parse for EatUsize<State, Heap> {
-  type Kind = ();
-  type State = State;
-  type Heap = Heap;
-
+impl<State, Heap> Parse<(), State, Heap> for EatUsize<State, Heap> {
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, ()>> {
     input.digest(self.u)
   }
 }

@@ -144,18 +144,21 @@ impl<Lhs, Rhs> Add<Lhs, Rhs> {
   }
 }
 
-impl<Lhs: Parse<Kind: Concat<Rhs::Kind>, State = Rhs::State, Heap = Rhs::Heap>, Rhs: Parse> Parse
-  for Add<Lhs, Rhs>
+impl<
+    LhsKind: Concat<RhsKind>,
+    RhsKind,
+    State,
+    Heap,
+    Lhs: Parse<LhsKind, State, Heap>,
+    Rhs: Parse<RhsKind, State, Heap>,
+  > Parse<LhsKind::Output, State, Heap>
+  for Add<Combinator<LhsKind, State, Heap, Lhs>, Combinator<RhsKind, State, Heap, Rhs>>
 {
-  type Kind = <Lhs::Kind as Concat<Rhs::Kind>>::Output;
-  type State = Rhs::State;
-  type Heap = Rhs::Heap;
-
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, LhsKind::Output>> {
     self.lhs.parse(input).and_then(|output| {
       input
         .reload(output.rest)
@@ -168,55 +171,97 @@ impl<Lhs: Parse<Kind: Concat<Rhs::Kind>, State = Rhs::State, Heap = Rhs::Heap>, 
   }
 }
 
-impl<Lhs: Parse<Kind: Concat<Rhs::Kind>, State = Rhs::State, Heap = Rhs::Heap>, Rhs: Parse>
-  ops::Add<Rhs> for Combinator<Lhs>
+impl<
+    LhsKind: Concat<RhsKind>,
+    RhsKind,
+    State,
+    Heap,
+    Lhs: Parse<LhsKind, State, Heap>,
+    Rhs: Parse<RhsKind, State, Heap>,
+  > ops::Add<Combinator<RhsKind, State, Heap, Rhs>> for Combinator<LhsKind, State, Heap, Lhs>
 {
-  type Output = Combinator<Add<Lhs, Rhs>>;
+  type Output = Combinator<
+    LhsKind::Output,
+    State,
+    Heap,
+    Add<Combinator<LhsKind, State, Heap, Lhs>, Combinator<RhsKind, State, Heap, Rhs>>,
+  >;
 
   /// Try to parse with the left-hand side, if it fails, try the right-hand side.
   #[inline]
-  fn add(self, rhs: Rhs) -> Self::Output {
-    Self::Output::new(Add::new(self.parser, rhs))
+  fn add(self, rhs: Combinator<RhsKind, State, Heap, Rhs>) -> Self::Output {
+    Self::Output::new(Add::new(self, rhs))
   }
 }
 
-impl<Lhs: Parse> ops::Add<char> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, EatChar<Lhs::State, Lhs::Heap>>>;
+impl<LhsKind: Concat<()>, State, Heap, Lhs: Parse<LhsKind, State, Heap>> ops::Add<char>
+  for Combinator<LhsKind, State, Heap, Lhs>
+{
+  type Output = Combinator<
+    LhsKind,
+    State,
+    Heap,
+    Add<Combinator<LhsKind, State, Heap, Lhs>, Combinator<(), State, Heap, EatChar<State, Heap>>>,
+  >;
 
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
   fn add(self, rhs: char) -> Self::Output {
-    Self::Output::new(Add::new(self.parser, EatChar::new(rhs)))
+    Self::Output::new(Add::new(self, Combinator::new(EatChar::new(rhs))))
   }
 }
 
-impl<Lhs: Parse> ops::Add<usize> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, EatUsize<Lhs::State, Lhs::Heap>>>;
+impl<LhsKind: Concat<()>, State, Heap, Lhs: Parse<LhsKind, State, Heap>> ops::Add<usize>
+  for Combinator<LhsKind, State, Heap, Lhs>
+{
+  type Output = Combinator<
+    LhsKind,
+    State,
+    Heap,
+    Add<Combinator<LhsKind, State, Heap, Lhs>, Combinator<(), State, Heap, EatUsize<State, Heap>>>,
+  >;
 
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
   fn add(self, rhs: usize) -> Self::Output {
-    Self::Output::new(Add::new(self.parser, EatUsize::new(rhs)))
+    Self::Output::new(Add::new(self, Combinator::new(EatUsize::new(rhs))))
   }
 }
 
-impl<Lhs: Parse> ops::Add<String> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, EatString<Lhs::State, Lhs::Heap>>>;
+impl<LhsKind: Concat<()>, State, Heap, Lhs: Parse<LhsKind, State, Heap>> ops::Add<String>
+  for Combinator<LhsKind, State, Heap, Lhs>
+{
+  type Output = Combinator<
+    LhsKind,
+    State,
+    Heap,
+    Add<Combinator<LhsKind, State, Heap, Lhs>, Combinator<(), State, Heap, EatString<State, Heap>>>,
+  >;
 
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
   fn add(self, rhs: String) -> Self::Output {
-    Self::Output::new(Add::new(self.parser, EatString::new(rhs)))
+    Self::Output::new(Add::new(self, Combinator::new(EatString::new(rhs))))
   }
 }
 
-impl<'a, Lhs: Parse> ops::Add<&'a str> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, EatStr<'a, Lhs::State, Lhs::Heap>>>;
+impl<'a, LhsKind: Concat<()>, State, Heap, Lhs: Parse<LhsKind, State, Heap>> ops::Add<&'a str>
+  for Combinator<LhsKind, State, Heap, Lhs>
+{
+  type Output = Combinator<
+    LhsKind,
+    State,
+    Heap,
+    Add<
+      Combinator<LhsKind, State, Heap, Lhs>,
+      Combinator<(), State, Heap, EatStr<'a, State, Heap>>,
+    >,
+  >;
 
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
   fn add(self, rhs: &'a str) -> Self::Output {
-    Self::Output::new(Add::new(self.parser, EatStr::new(rhs)))
+    Self::Output::new(Add::new(self, Combinator::new(EatStr::new(rhs))))
   }
 }
 

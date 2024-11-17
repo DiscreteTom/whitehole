@@ -22,7 +22,7 @@ pub struct Parser<'a, 'text, Kind, State = (), Heap = ()> {
   /// See [`Self::rest`].
   rest: &'text str,
   /// See [`Self::entry`].
-  entry: Box<dyn Parse<Kind = Kind, State = State, Heap = Heap> + 'a>,
+  entry: Box<dyn Parse<Kind, State, Heap> + 'a>,
 }
 
 impl<'a, 'text, Kind, State, Heap> Parser<'a, 'text, Kind, State, Heap> {
