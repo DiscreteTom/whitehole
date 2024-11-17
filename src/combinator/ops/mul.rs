@@ -1,6 +1,6 @@
 //! Overload `*` operator for [`Combinator`].
 
-use crate::combinator::{Combinator, Input, Output, Parse};
+use crate::combinator::{Combinator, EatChar, EatStr, EatString, Input, Output, Parse};
 use std::ops::{self, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 
 /// A helper trait to represent repetition when performing `*` on [`Combinator`]s.
@@ -156,10 +156,10 @@ fn impl_mul<'text, Kind, State, Heap, Acc>(
   };
 
   while range.validate(repeated) {
-    let Some(mut input) = input.reload(output.rest) else {
-      break;
-    };
-    let Some(next_output) = lhs.parse(&mut input) else {
+    let Some(next_output) = input
+      .reload(output.rest)
+      .and_then(|mut input| lhs.parse(&mut input))
+    else {
       break;
     };
     output.rest = next_output.rest;
@@ -189,6 +189,216 @@ impl<
   ) -> Option<Output<'text, Acc>> {
     let (range, init, folder) = &self.rhs;
     impl_mul(&self.lhs, range, init, folder, input)
+  }
+}
+
+impl<
+    State,
+    Heap,
+    Lhs: Parse<State, Heap>,
+    Sep: Parse<State, Heap, Kind = ()>, // TODO: allow more generic Kind
+    Acc,
+    Repeater: Repeat,
+    Initializer: Fn() -> Acc,
+    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
+  >
+  ops::Mul<(
+    Repeater,
+    Combinator<Sep, State, Heap>,
+    Initializer,
+    InlineFolder,
+  )> for Combinator<Lhs, State, Heap>
+{
+  type Output = Combinator<Mul<Lhs, (Repeater, Sep, Initializer, InlineFolder)>, State, Heap>;
+
+  /// Create a new combinator to repeat the original combinator
+  /// with the given repetition range, separator, accumulator initializer and folder.
+  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// or reject if the repetition is not satisfied.
+  ///
+  /// `0` is a valid repetition range, which means the combinator is optional.
+  ///
+  /// If there is at least one repetition, then the separator is allowed to be the last match.
+  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
+  ///
+  /// See [`Fold`] for more information.
+  fn mul(
+    self,
+    rhs: (
+      Repeater,
+      Combinator<Sep, State, Heap>,
+      Initializer,
+      InlineFolder,
+    ),
+  ) -> Self::Output {
+    let (range, sep, init, folder) = rhs;
+    Self::Output::new(Mul::new(self.parser, (range, sep.parser, init, folder)))
+  }
+}
+
+impl<
+    State,
+    Heap,
+    Lhs: Parse<State, Heap>,
+    Acc,
+    Repeater: Repeat,
+    Initializer: Fn() -> Acc,
+    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
+  > ops::Mul<(Repeater, char, Initializer, InlineFolder)> for Combinator<Lhs, State, Heap>
+{
+  type Output =
+    Combinator<Mul<Lhs, (Repeater, EatChar<State, Heap>, Initializer, InlineFolder)>, State, Heap>;
+
+  /// Create a new combinator to repeat the original combinator
+  /// with the given repetition range, separator, accumulator initializer and folder.
+  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// or reject if the repetition is not satisfied.
+  ///
+  /// `0` is a valid repetition range, which means the combinator is optional.
+  ///
+  /// If there is at least one repetition, then the separator is allowed to be the last match.
+  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
+  ///
+  /// See [`Fold`] for more information.
+  fn mul(self, rhs: (Repeater, char, Initializer, InlineFolder)) -> Self::Output {
+    let (range, sep, init, folder) = rhs;
+    Self::Output::new(Mul::new(
+      self.parser,
+      (range, EatChar::new(sep), init, folder),
+    ))
+  }
+}
+
+impl<
+    State,
+    Heap,
+    Lhs: Parse<State, Heap>,
+    Acc,
+    Repeater: Repeat,
+    Initializer: Fn() -> Acc,
+    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
+  > ops::Mul<(Repeater, String, Initializer, InlineFolder)> for Combinator<Lhs, State, Heap>
+{
+  type Output = Combinator<
+    Mul<Lhs, (Repeater, EatString<State, Heap>, Initializer, InlineFolder)>,
+    State,
+    Heap,
+  >;
+
+  /// Create a new combinator to repeat the original combinator
+  /// with the given repetition range, separator, accumulator initializer and folder.
+  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// or reject if the repetition is not satisfied.
+  ///
+  /// `0` is a valid repetition range, which means the combinator is optional.
+  ///
+  /// If there is at least one repetition, then the separator is allowed to be the last match.
+  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
+  ///
+  /// See [`Fold`] for more information.
+  fn mul(self, rhs: (Repeater, String, Initializer, InlineFolder)) -> Self::Output {
+    let (range, sep, init, folder) = rhs;
+    Self::Output::new(Mul::new(
+      self.parser,
+      (range, EatString::new(sep), init, folder),
+    ))
+  }
+}
+
+impl<
+    'a,
+    State,
+    Heap,
+    Lhs: Parse<State, Heap>,
+    Acc,
+    Repeater: Repeat,
+    Initializer: Fn() -> Acc,
+    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
+  > ops::Mul<(Repeater, &'a str, Initializer, InlineFolder)> for Combinator<Lhs, State, Heap>
+{
+  type Output = Combinator<
+    Mul<Lhs, (Repeater, EatStr<'a, State, Heap>, Initializer, InlineFolder)>,
+    State,
+    Heap,
+  >;
+
+  /// Create a new combinator to repeat the original combinator
+  /// with the given repetition range, separator, accumulator initializer and folder.
+  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// or reject if the repetition is not satisfied.
+  ///
+  /// `0` is a valid repetition range, which means the combinator is optional.
+  ///
+  /// If there is at least one repetition, then the separator is allowed to be the last match.
+  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
+  ///
+  /// See [`Fold`] for more information.
+  fn mul(self, rhs: (Repeater, &'a str, Initializer, InlineFolder)) -> Self::Output {
+    let (range, sep, init, folder) = rhs;
+    Self::Output::new(Mul::new(
+      self.parser,
+      (range, EatStr::new(sep), init, folder),
+    ))
+  }
+}
+
+#[inline]
+fn impl_mul_with_sep<'text, Kind, State, Heap, Acc>(
+  lhs: &impl Parse<State, Heap, Kind = Kind>,
+  range: &impl Repeat,
+  sep: &impl Parse<State, Heap, Kind = ()>,
+  init: impl Fn() -> Acc,
+  folder: impl Fn(Kind, Acc) -> Acc,
+  input: &mut Input<'text, &mut State, &mut Heap>,
+) -> Option<Output<'text, Acc>> {
+  let mut repeated = 0;
+  let mut output = Output {
+    kind: init(),
+    rest: input.rest(),
+  };
+
+  while range.validate(repeated) {
+    let Some(next_output) = input
+      .reload(output.rest)
+      .and_then(|mut input| lhs.parse(&mut input))
+    else {
+      break;
+    };
+    repeated += 1;
+    output.rest = next_output.rest;
+    output.kind = folder(next_output.kind, output.kind);
+    let Some(next_output) = input
+      .reload(next_output.rest)
+      .and_then(|mut input| sep.parse(&mut input))
+    else {
+      break;
+    };
+    output.rest = next_output.rest;
+  }
+
+  range.accept(repeated).then_some(output)
+}
+
+impl<
+    State,
+    Heap,
+    Lhs: Parse<State, Heap>,
+    Sep: Parse<State, Heap, Kind = ()>,
+    Acc,
+    Repeater: Repeat,
+    Initializer: Fn() -> Acc,
+    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
+  > Parse<State, Heap> for Mul<Lhs, (Repeater, Sep, Initializer, InlineFolder)>
+{
+  type Kind = Acc;
+
+  #[inline]
+  fn parse<'text>(
+    &self,
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, Acc>> {
+    let (range, sep, init, folder) = &self.rhs;
+    impl_mul_with_sep(&self.lhs, range, sep, init, folder, input)
   }
 }
 
@@ -289,6 +499,126 @@ impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Rhs: Repeat> Parse<State,
     impl_mul(
       &self.lhs,
       &self.rhs,
+      Self::Kind::default,
+      Lhs::Kind::fold,
+      input,
+    )
+  }
+}
+
+impl<
+    State,
+    Heap,
+    Lhs: Parse<State, Heap, Kind: Fold>,
+    Repeater: Repeat,
+    Sep: Parse<State, Heap, Kind = ()>,
+  > ops::Mul<(Repeater, Combinator<Sep, State, Heap>)> for Combinator<Lhs, State, Heap>
+{
+  type Output = Combinator<Mul<Lhs, (Repeater, Sep)>, State, Heap>;
+
+  /// Create a new combinator to repeat the original combinator
+  /// with the given repetition range, separator, accumulator initializer and folder.
+  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// or reject if the repetition is not satisfied.
+  ///
+  /// `0` is a valid repetition range, which means the combinator is optional.
+  ///
+  /// If there is at least one repetition, then the separator is allowed to be the last match.
+  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
+  ///
+  /// See [`Fold`] for more information.
+  fn mul(self, rhs: (Repeater, Combinator<Sep, State, Heap>)) -> Self::Output {
+    let (range, sep) = rhs;
+    Self::Output::new(Mul::new(self.parser, (range, sep.parser)))
+  }
+}
+
+impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Repeater: Repeat> ops::Mul<(Repeater, char)>
+  for Combinator<Lhs, State, Heap>
+{
+  type Output = Combinator<Mul<Lhs, (Repeater, EatChar<State, Heap>)>, State, Heap>;
+
+  /// Create a new combinator to repeat the original combinator
+  /// with the given repetition range, separator, accumulator initializer and folder.
+  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// or reject if the repetition is not satisfied.
+  ///
+  /// `0` is a valid repetition range, which means the combinator is optional.
+  ///
+  /// If there is at least one repetition, then the separator is allowed to be the last match.
+  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
+  ///
+  /// See [`Fold`] for more information.
+  fn mul(self, rhs: (Repeater, char)) -> Self::Output {
+    let (range, sep) = rhs;
+    Self::Output::new(Mul::new(self.parser, (range, EatChar::new(sep))))
+  }
+}
+
+impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Repeater: Repeat>
+  ops::Mul<(Repeater, String)> for Combinator<Lhs, State, Heap>
+{
+  type Output = Combinator<Mul<Lhs, (Repeater, EatString<State, Heap>)>, State, Heap>;
+
+  /// Create a new combinator to repeat the original combinator
+  /// with the given repetition range, separator, accumulator initializer and folder.
+  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// or reject if the repetition is not satisfied.
+  ///
+  /// `0` is a valid repetition range, which means the combinator is optional.
+  ///
+  /// If there is at least one repetition, then the separator is allowed to be the last match.
+  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
+  ///
+  /// See [`Fold`] for more information.
+  fn mul(self, rhs: (Repeater, String)) -> Self::Output {
+    let (range, sep) = rhs;
+    Self::Output::new(Mul::new(self.parser, (range, EatString::new(sep))))
+  }
+}
+
+impl<'a, State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Repeater: Repeat>
+  ops::Mul<(Repeater, &'a str)> for Combinator<Lhs, State, Heap>
+{
+  type Output = Combinator<Mul<Lhs, (Repeater, EatStr<'a, State, Heap>)>, State, Heap>;
+
+  /// Create a new combinator to repeat the original combinator
+  /// with the given repetition range, separator, accumulator initializer and folder.
+  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// or reject if the repetition is not satisfied.
+  ///
+  /// `0` is a valid repetition range, which means the combinator is optional.
+  ///
+  /// If there is at least one repetition, then the separator is allowed to be the last match.
+  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
+  ///
+  /// See [`Fold`] for more information.
+  fn mul(self, rhs: (Repeater, &'a str)) -> Self::Output {
+    let (range, sep) = rhs;
+    Self::Output::new(Mul::new(self.parser, (range, EatStr::new(sep))))
+  }
+}
+
+impl<
+    State,
+    Heap,
+    Lhs: Parse<State, Heap, Kind: Fold>,
+    Repeater: Repeat,
+    Sep: Parse<State, Heap, Kind = ()>,
+  > Parse<State, Heap> for Mul<Lhs, (Repeater, Sep)>
+{
+  type Kind = <Lhs::Kind as Fold>::Output;
+
+  #[inline]
+  fn parse<'text>(
+    &self,
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, Self::Kind>> {
+    let (range, sep) = &self.rhs;
+    impl_mul_with_sep(
+      &self.lhs,
+      range,
+      sep,
       Self::Kind::default,
       Lhs::Kind::fold,
       input,
@@ -591,5 +921,52 @@ mod tests {
       (accepter() * (..=3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output { kind: 3, rest: "" })
     );
+  }
+
+  #[test]
+  fn combinator_mul_with_sep() {
+    let eat_char = |c| {
+      wrap(move |input| {
+        (input.next() == c).then(|| Output {
+          kind: (),
+          rest: &input.rest()[1..],
+        })
+      })
+    };
+    let eat_a = || eat_char('a');
+    let sep = || eat_char(',');
+
+    assert_eq!(
+      (eat_a() * (1.., sep())).parse(&mut Input::new(",", 0, &mut (), &mut ()).unwrap()),
+      None
+    );
+    assert_eq!(
+      (eat_a() * (1.., sep())).parse(&mut Input::new("a", 0, &mut (), &mut ()).unwrap()),
+      Some(Output { kind: (), rest: "" })
+    );
+    assert_eq!(
+      (eat_a() * (1.., sep())).parse(&mut Input::new("a,", 0, &mut (), &mut ()).unwrap()),
+      Some(Output { kind: (), rest: "" })
+    );
+    assert_eq!(
+      (eat_a() * (1.., sep())).parse(&mut Input::new("a,a", 0, &mut (), &mut ()).unwrap()),
+      Some(Output { kind: (), rest: "" })
+    );
+    assert_eq!(
+      (eat_a() * (1.., sep())).parse(&mut Input::new("a,,", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        rest: ","
+      })
+    );
+    assert_eq!(
+      (eat_a() * (1.., sep())).parse(&mut Input::new("a,aa", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: (),
+        rest: "a"
+      })
+    );
+
+    // TODO: more tests
   }
 }
