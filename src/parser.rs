@@ -1,4 +1,4 @@
-//! [`Parser`] will manage the state, heap and the parsing progress.
+//! Use [`Builder`] to build a parser.
 
 mod builder;
 mod instant;
