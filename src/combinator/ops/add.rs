@@ -1,7 +1,6 @@
 //! Overload `+` operator for [`Combinator`].
 
-use super::{EatChar, EatStr, EatString, EatUsize};
-use crate::combinator::{Combinator, Input, Output, Parse};
+use crate::combinator::{Combinator, EatChar, EatStr, EatString, EatUsize, Input, Output, Parse};
 use std::ops;
 
 /// A helper trait to concat types when performing `+` on [`Combinator`]s.

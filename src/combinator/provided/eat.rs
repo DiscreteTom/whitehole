@@ -1,67 +1,161 @@
 use crate::{
   combinator::{wrap, Input, Output},
+  parse::Parse,
   Combinator,
 };
+use std::marker::PhantomData;
 
 /// A util trait to make [`eat`] generic over different types.
 ///
 /// Built-in implementations are provided for [`String`], `&str`, [`char`] and [`usize`].
 ///
 /// See [`eat`] for more details.
-pub trait Eat {
-  /// Return [`None`] if [`Input::rest`] doesn't starts with this instance.
-  fn parse<'text, State, Heap>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, ()>>;
+pub trait Eat<State, Heap> {
+  fn into_parser(self) -> impl Parse<State, Heap, Kind = ()>;
 }
 
-impl Eat for String {
+#[derive(Debug, Clone, Copy)]
+pub struct EatChar<State, Heap> {
+  c: char,
+  _phantom: PhantomData<(State, Heap)>,
+}
+
+impl<State, Heap> EatChar<State, Heap> {
   #[inline]
-  fn parse<'text, State, Heap>(
+  pub fn new(c: char) -> Self {
+    Self {
+      c,
+      _phantom: PhantomData,
+    }
+  }
+}
+
+impl<State, Heap> Parse<State, Heap> for EatChar<State, Heap> {
+  type Kind = ();
+
+  #[inline]
+  fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
   ) -> Option<Output<'text, ()>> {
     input
       .rest()
-      .starts_with(self)
-      .then(|| unsafe { input.digest_unchecked(self.len()) })
+      .starts_with(self.c)
+      .then(|| unsafe { input.digest_unchecked(self.c.len_utf8()) })
   }
 }
 
-impl Eat for &str {
+impl<State, Heap> Eat<State, Heap> for char {
+  fn into_parser(self) -> impl Parse<State, Heap, Kind = ()> {
+    EatChar::new(self)
+  }
+}
+
+#[derive(Debug, Clone)]
+pub struct EatString<State, Heap> {
+  s: String,
+  _phantom: PhantomData<(State, Heap)>,
+}
+
+impl<State, Heap> EatString<State, Heap> {
   #[inline]
-  fn parse<'text, State, Heap>(
+  pub fn new(s: String) -> Self {
+    Self {
+      s,
+      _phantom: PhantomData,
+    }
+  }
+}
+
+impl<State, Heap> Parse<State, Heap> for EatString<State, Heap> {
+  type Kind = ();
+
+  #[inline]
+  fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
   ) -> Option<Output<'text, ()>> {
     input
       .rest()
-      .starts_with(self)
-      .then(|| unsafe { input.digest_unchecked(self.len()) })
+      .starts_with(&self.s)
+      .then(|| unsafe { input.digest_unchecked(self.s.len()) })
   }
 }
 
-impl Eat for char {
+impl<State, Heap> Eat<State, Heap> for String {
+  fn into_parser(self) -> impl Parse<State, Heap, Kind = ()> {
+    EatString::new(self)
+  }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct EatStr<'a, State, Heap> {
+  s: &'a str,
+  _phantom: PhantomData<(State, Heap)>,
+}
+
+impl<'a, State, Heap> EatStr<'a, State, Heap> {
   #[inline]
-  fn parse<'text, State, Heap>(
+  pub fn new(s: &'a str) -> Self {
+    Self {
+      s,
+      _phantom: PhantomData,
+    }
+  }
+}
+
+impl<'a, State, Heap> Parse<State, Heap> for EatStr<'a, State, Heap> {
+  type Kind = ();
+
+  #[inline]
+  fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
   ) -> Option<Output<'text, ()>> {
     input
       .rest()
-      .starts_with(*self)
-      .then(|| unsafe { input.digest_unchecked(self.len_utf8()) })
+      .starts_with(self.s)
+      .then(|| unsafe { input.digest_unchecked(self.s.len()) })
   }
 }
 
-impl Eat for usize {
+impl<'a, State, Heap> Eat<State, Heap> for &'a str {
+  fn into_parser(self) -> impl Parse<State, Heap, Kind = ()> {
+    EatStr::new(self)
+  }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct EatUsize<State, Heap> {
+  u: usize,
+  _phantom: PhantomData<(State, Heap)>,
+}
+
+impl<State, Heap> EatUsize<State, Heap> {
   #[inline]
-  fn parse<'text, State, Heap>(
+  pub fn new(u: usize) -> Self {
+    Self {
+      u,
+      _phantom: PhantomData,
+    }
+  }
+}
+
+impl<State, Heap> Parse<State, Heap> for EatUsize<State, Heap> {
+  type Kind = ();
+
+  #[inline]
+  fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
   ) -> Option<Output<'text, ()>> {
-    input.digest(*self)
+    input.digest(self.u)
+  }
+}
+
+impl<State, Heap> Eat<State, Heap> for usize {
+  fn into_parser(self) -> impl Parse<State, Heap, Kind = ()> {
+    EatUsize::new(self)
   }
 }
 
@@ -80,8 +174,9 @@ impl Eat for usize {
 /// eat(10); // eat by byte length
 /// ```
 #[inline]
-pub fn eat<State, Heap>(pattern: impl Eat) -> Combinator!((), State, Heap) {
-  wrap(move |input| pattern.parse(input))
+pub fn eat<State, Heap>(pattern: impl Eat<State, Heap>) -> Combinator!((), State, Heap) {
+  let parser = pattern.into_parser();
+  wrap(move |input| parser.parse(input))
 }
 
 /// Returns a combinator to eat `n` bytes from the head of [`Input::rest`],

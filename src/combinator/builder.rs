@@ -16,7 +16,7 @@ impl<State, Heap> Builder<State, Heap> {
   }
 
   #[inline]
-  pub fn eat(&self, pattern: impl Eat) -> Combinator!((), State, Heap) {
+  pub fn eat(&self, pattern: impl Eat<State, Heap>) -> Combinator!((), State, Heap) {
     eat(pattern)
   }
 
