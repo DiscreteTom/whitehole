@@ -4,7 +4,7 @@ use crate::{
   Combinator,
 };
 
-impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
+impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// Create a new combinator to convert [`Output::kind`] to a new kind value.
   ///
   /// You can consume the original [`Output`] in the `converter`.

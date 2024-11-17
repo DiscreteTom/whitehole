@@ -85,26 +85,26 @@ use std::marker::PhantomData;
 ///
 /// See the [module-level documentation](self) for more information.
 #[derive(Debug, Clone, Copy)]
-pub struct Combinator<State, Heap, T> {
+pub struct Combinator<T, State = (), Heap = ()> {
   parser: T,
   _phantom: PhantomData<(State, Heap)>,
 }
 
 /// Simplify the [`Combinator`] struct's signature.
 ///
-/// - `Combinator!(State, Heap)` will be expanded to `Combinator<State, Heap, impl Parse<State, Heap>>`.
-/// - `Combinator!(MyKind, State, Heap)` will be expanded to `Combinator<State, Heap, impl Parse<State, Heap, Kind = MyKind>>`.
+/// - `Combinator!(State, Heap)` will be expanded to `Combinator<impl Parse<State, Heap>, State, Heap>`.
+/// - `Combinator!(MyKind, State, Heap)` will be expanded to `Combinator<impl Parse<State, Heap, Kind = MyKind>, State, Heap>`.
 #[macro_export]
 macro_rules! Combinator {
   ($state:ty, $heap:ty) => {
-    $crate::combinator::Combinator<$state, $heap, impl $crate::parse::Parse<$state, $heap>>
+    $crate::combinator::Combinator<impl $crate::parse::Parse<$state, $heap>, $state, $heap>
   };
   ($kind:ty, $state:ty, $heap:ty) => {
-    $crate::combinator::Combinator<$state, $heap, impl $crate::parse::Parse<$state, $heap, Kind = $kind>>
+    $crate::combinator::Combinator<impl $crate::parse::Parse<$state, $heap, Kind = $kind>, $state, $heap>
   };
 }
 
-impl<State, Heap, T> Combinator<State, Heap, T> {
+impl<T, State, Heap> Combinator<T, State, Heap> {
   /// Create a new instance by wrapping a [`Parse`] implementor.
   ///
   /// To wrap a closure, use [`wrap`] instead.
@@ -135,7 +135,7 @@ pub fn wrap<Kind, State, Heap>(
   Combinator::new(parse)
 }
 
-impl<State, Heap, T: Parse<State, Heap>> Parse<State, Heap> for Combinator<State, Heap, T> {
+impl<T: Parse<State, Heap>, State, Heap> Parse<State, Heap> for Combinator<T, State, Heap> {
   type Kind = T::Kind;
 
   #[inline]

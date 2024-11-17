@@ -175,9 +175,9 @@ impl<
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
     InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
-  > ops::Mul<(Repeater, Initializer, InlineFolder)> for Combinator<State, Heap, Lhs>
+  > ops::Mul<(Repeater, Initializer, InlineFolder)> for Combinator<Lhs, State, Heap>
 {
-  type Output = Combinator<State, Heap, Mul<Lhs, (Repeater, Initializer, InlineFolder)>>;
+  type Output = Combinator<Mul<Lhs, (Repeater, Initializer, InlineFolder)>, State, Heap>;
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, accumulator initializer and folder.
@@ -260,9 +260,9 @@ impl Fold for () {
 }
 
 impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Rhs: Repeat> ops::Mul<Rhs>
-  for Combinator<State, Heap, Lhs>
+  for Combinator<Lhs, State, Heap>
 {
-  type Output = Combinator<State, Heap, Mul<Lhs, Rhs>>;
+  type Output = Combinator<Mul<Lhs, Rhs>, State, Heap>;
 
   /// Create a new combinator to repeat the original combinator for `rhs` times.
   /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
