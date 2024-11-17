@@ -10,7 +10,7 @@ pub struct Node<Kind> {
   /// This can be used to index the input text.
   /// # Example
   /// ```
-  /// # use whitehole::Node;
+  /// # use whitehole::node::Node;
   /// let node = Node {
   ///   kind: (),
   ///   range: 0..5,
