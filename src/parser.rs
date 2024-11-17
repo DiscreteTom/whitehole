@@ -64,7 +64,7 @@ impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
   /// [`Self::instant`] and [`Self::state`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload<'new_text>(self, text: &'new_text str) -> Parser<'new_text, T, State, Heap>
+  pub fn reload(self, text: &str) -> Parser<T, State, Heap>
   where
     State: Default,
   {
@@ -75,11 +75,7 @@ impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
   /// [`Self::instant`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload_with<'new_text>(
-    self,
-    state: State,
-    text: &'new_text str,
-  ) -> Parser<'new_text, T, State, Heap> {
+  pub fn reload_with(self, state: State, text: &str) -> Parser<T, State, Heap> {
     Parser {
       entry: self.entry,
       heap: self.heap,
