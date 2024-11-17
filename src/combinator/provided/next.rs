@@ -1,4 +1,4 @@
-use crate::{combinator::wrap, C};
+use crate::{combinator::wrap, Combinator};
 
 /// Returns a combinator to match
 /// [`Input::next`](crate::parse::Input::next) by the condition.
@@ -14,7 +14,7 @@ use crate::{combinator::wrap, C};
 /// next(in_str!("+-*/"));
 /// ```
 #[inline]
-pub fn next<State, Heap>(condition: impl Fn(char) -> bool) -> C!((), State, Heap) {
+pub fn next<State, Heap>(condition: impl Fn(char) -> bool) -> Combinator!((), State, Heap) {
   wrap(move |input| {
     let next = input.next();
     if !condition(next) {

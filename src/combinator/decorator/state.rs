@@ -1,7 +1,7 @@
 use super::AcceptedOutputContext;
 use crate::{
   combinator::{wrap, Combinator, Input, Output, Parse},
-  C,
+  Combinator,
 };
 
 impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
@@ -16,7 +16,7 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
   pub fn prepare(
     self,
     modifier: impl Fn(&mut Input<&mut State, &mut Heap>),
-  ) -> C!(T::Kind, State, Heap) {
+  ) -> Combinator!(T::Kind, State, Heap) {
     wrap(move |input| {
       modifier(input);
       self.parse(input)
@@ -36,7 +36,7 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
     modifier: impl for<'text> Fn(
       AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, T::Kind>>,
     ),
-  ) -> C!(T::Kind, State, Heap) {
+  ) -> Combinator!(T::Kind, State, Heap) {
     wrap(move |input| {
       self.parse(input).inspect(|output| {
         modifier(AcceptedOutputContext { input, output });
@@ -55,7 +55,7 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
   pub fn rollback(
     self,
     modifier: impl Fn(&mut Input<&mut State, &mut Heap>),
-  ) -> C!(T::Kind, State, Heap) {
+  ) -> Combinator!(T::Kind, State, Heap) {
     wrap(move |input| {
       let output = self.parse(input);
       if output.is_none() {
@@ -76,7 +76,7 @@ mod tests {
     to: i32,
   }
 
-  fn accepter() -> C!((), State, ()) {
+  fn accepter() -> Combinator!((), State, ()) {
     wrap(|input: &mut Input<&mut State, &mut ()>| {
       input.state.to = input.state.from;
       Some(Output {
@@ -86,7 +86,7 @@ mod tests {
     })
   }
 
-  fn rejecter() -> C!((), State, ()) {
+  fn rejecter() -> Combinator!((), State, ()) {
     wrap(|input: &mut Input<&mut State, &mut ()>| {
       input.state.to = input.state.from;
       None

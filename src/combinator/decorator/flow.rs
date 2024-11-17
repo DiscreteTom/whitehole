@@ -3,7 +3,7 @@
 use super::AcceptedOutputContext;
 use crate::{
   combinator::{wrap, Combinator, Input, Output, Parse},
-  C,
+  Combinator,
 };
 
 impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
@@ -19,7 +19,7 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
   pub fn prevent(
     self,
     condition: impl Fn(&mut Input<&mut State, &mut Heap>) -> bool,
-  ) -> C!(T::Kind, State, Heap) {
+  ) -> Combinator!(T::Kind, State, Heap) {
     wrap(move |input| {
       if condition(input) {
         None
@@ -42,7 +42,7 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
     condition: impl for<'text> Fn(
       AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, T::Kind>>,
     ) -> bool,
-  ) -> C!(T::Kind, State, Heap) {
+  ) -> Combinator!(T::Kind, State, Heap) {
     wrap(move |input| {
       self.parse(input).and_then(|output| {
         if condition(AcceptedOutputContext {
@@ -88,7 +88,7 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
   /// combinator.optional()
   /// # ;}
   /// ```
-  pub fn optional(self) -> C!(T::Kind, State, Heap)
+  pub fn optional(self) -> Combinator!(T::Kind, State, Heap)
   where
     T::Kind: Default,
   {
@@ -109,7 +109,7 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
   /// combinator.boundary()
   /// # ;}
   /// ```
-  pub fn boundary(self) -> C!(T::Kind, State, Heap) {
+  pub fn boundary(self) -> Combinator!(T::Kind, State, Heap) {
     self.reject(|ctx| {
       ctx
         .output
@@ -125,7 +125,7 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
 mod tests {
   use super::*;
 
-  fn accepter() -> C!((), bool, ()) {
+  fn accepter() -> Combinator!((), bool, ()) {
     wrap(|input| {
       *input.state = true;
       Some(Output {
@@ -135,7 +135,7 @@ mod tests {
     })
   }
 
-  fn rejecter() -> C!((), bool, ()) {
+  fn rejecter() -> Combinator!((), bool, ()) {
     wrap(|input| {
       *input.state = true;
       None

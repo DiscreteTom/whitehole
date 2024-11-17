@@ -1,7 +1,7 @@
 use super::AcceptedOutputContext;
 use crate::{
   combinator::{wrap, Combinator, Input, Output, Parse},
-  C,
+  Combinator,
 };
 
 impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
@@ -17,7 +17,7 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
   /// combinator.bind(MyKind::A)
   /// # ;}
   /// ```
-  pub fn bind<NewKind>(self, kind: NewKind) -> C!(NewKind, State, Heap)
+  pub fn bind<NewKind>(self, kind: NewKind) -> Combinator!(NewKind, State, Heap)
   where
     NewKind: Clone,
   {
@@ -32,7 +32,7 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
   /// combinator.bind_default()
   /// # }
   /// ```
-  pub fn bind_default<NewKind>(self) -> C!(NewKind, State, Heap)
+  pub fn bind_default<NewKind>(self) -> Combinator!(NewKind, State, Heap)
   where
     NewKind: Default,
   {
@@ -60,7 +60,7 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
     selector: impl for<'text> Fn(
       AcceptedOutputContext<&mut Input<'text, &mut State, &mut Heap>, Output<'text, T::Kind>>,
     ) -> NewKind,
-  ) -> C!(NewKind, State, Heap) {
+  ) -> Combinator!(NewKind, State, Heap) {
     wrap(move |input| {
       self.parse(input).map(|output| Output {
         rest: output.rest,
@@ -79,7 +79,10 @@ impl<State, Heap, T: Parse<State, Heap>> Combinator<State, Heap, T> {
   /// combinator.map(|kind| Some(kind))
   /// # ;}
   /// ```
-  pub fn map<NewKind>(self, converter: impl Fn(T::Kind) -> NewKind) -> C!(NewKind, State, Heap) {
+  pub fn map<NewKind>(
+    self,
+    converter: impl Fn(T::Kind) -> NewKind,
+  ) -> Combinator!(NewKind, State, Heap) {
     wrap(move |input| self.parse(input).map(|output| output.map(&converter)))
   }
 }

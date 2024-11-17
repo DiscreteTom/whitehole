@@ -90,12 +90,12 @@ pub struct Combinator<State, Heap, T> {
   _phantom: PhantomData<(State, Heap)>,
 }
 
-/// A shorthand for [`Combinator`] with a [`Parse`] implementor.
+/// Simplify the [`Combinator`] struct's signature.
 ///
-/// - `C!(State, Heap)` will be expanded to `Combinator<State, Heap, impl Parse<State, Heap>>`.
-/// - `C!(MyKind, State, Heap)` will be expanded to `Combinator<State, Heap, impl Parse<State, Heap, Kind = MyKind>>`.
+/// - `Combinator!(State, Heap)` will be expanded to `Combinator<State, Heap, impl Parse<State, Heap>>`.
+/// - `Combinator!(MyKind, State, Heap)` will be expanded to `Combinator<State, Heap, impl Parse<State, Heap, Kind = MyKind>>`.
 #[macro_export]
-macro_rules! C {
+macro_rules! Combinator {
   ($state:ty, $heap:ty) => {
     $crate::combinator::Combinator<$state, $heap, impl $crate::parse::Parse<$state, $heap>>
   };
@@ -119,7 +119,7 @@ impl<State, Heap, T> Combinator<State, Heap, T> {
   // TODO
   // /// Simplify generic params.
   // #[inline]
-  // pub fn collapse(self) -> C!(State, Heap)
+  // pub fn collapse(self) -> Combinator!(State, Heap)
   // where
   //   T: Parse<State, Heap>,
   // {
@@ -131,7 +131,7 @@ impl<State, Heap, T> Combinator<State, Heap, T> {
 #[inline]
 pub fn wrap<Kind, State, Heap>(
   parse: impl for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>,
-) -> C!(Kind, State, Heap) {
+) -> Combinator!(Kind, State, Heap) {
   Combinator::new(parse)
 }
 
