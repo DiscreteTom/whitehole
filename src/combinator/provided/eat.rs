@@ -10,25 +10,46 @@ use std::marker::PhantomData;
 /// Built-in implementations are provided for [`String`], `&str`, [`char`] and [`usize`].
 ///
 /// See [`eat`] for more details.
-pub trait Eat<State, Heap> {
-  fn into_parser(self) -> impl Parse<State, Heap, Kind = ()>;
+pub trait Eat {
+  /// Convert the implementor to a parser implementor.
+  fn into_parser<State, Heap>(self) -> impl Parse<State, Heap, Kind = ()>;
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct EatChar<State, Heap> {
-  c: char,
-  _phantom: PhantomData<(State, Heap)>,
-}
-
-impl<State, Heap> EatChar<State, Heap> {
-  #[inline]
-  pub fn new(c: char) -> Self {
-    Self {
-      c,
-      _phantom: PhantomData,
+macro_rules! impl_eat {
+  ($name:ident, $inner:ty, ($($derive:ident),*)) => {
+    /// An [`Eat`] implementor.
+    /// For most cases you don't need to use this directly.
+    ///
+    /// See [`eat`] for more details.
+    #[derive(Debug, Clone, $($derive),*)]
+    pub struct $name<State, Heap> {
+      inner: $inner,
+      _phantom: PhantomData<(State, Heap)>,
     }
-  }
+
+    impl<State, Heap> $name<State, Heap> {
+      /// Create a new instance with the inner value.
+      #[inline]
+      pub fn new(inner: $inner) -> Self {
+        Self {
+          inner,
+          _phantom: PhantomData,
+        }
+      }
+    }
+
+    impl Eat for $inner {
+      #[inline]
+      fn into_parser<State, Heap>(self) -> impl Parse<State, Heap, Kind = ()> {
+        $name::new(self)
+      }
+    }
+  };
 }
+
+impl_eat!(EatChar, char, (Copy));
+impl_eat!(EatString, String, ());
+impl_eat!(EatUsize, usize, (Copy));
 
 impl<State, Heap> Parse<State, Heap> for EatChar<State, Heap> {
   type Kind = ();
@@ -40,30 +61,8 @@ impl<State, Heap> Parse<State, Heap> for EatChar<State, Heap> {
   ) -> Option<Output<'text, ()>> {
     input
       .rest()
-      .starts_with(self.c)
-      .then(|| unsafe { input.digest_unchecked(self.c.len_utf8()) })
-  }
-}
-
-impl<State, Heap> Eat<State, Heap> for char {
-  fn into_parser(self) -> impl Parse<State, Heap, Kind = ()> {
-    EatChar::new(self)
-  }
-}
-
-#[derive(Debug, Clone)]
-pub struct EatString<State, Heap> {
-  s: String,
-  _phantom: PhantomData<(State, Heap)>,
-}
-
-impl<State, Heap> EatString<State, Heap> {
-  #[inline]
-  pub fn new(s: String) -> Self {
-    Self {
-      s,
-      _phantom: PhantomData,
-    }
+      .starts_with(self.inner)
+      .then(|| unsafe { input.digest_unchecked(self.inner.len_utf8()) })
   }
 }
 
@@ -77,17 +76,27 @@ impl<State, Heap> Parse<State, Heap> for EatString<State, Heap> {
   ) -> Option<Output<'text, ()>> {
     input
       .rest()
-      .starts_with(&self.s)
-      .then(|| unsafe { input.digest_unchecked(self.s.len()) })
+      .starts_with(&self.inner)
+      .then(|| unsafe { input.digest_unchecked(self.inner.len()) })
   }
 }
 
-impl<State, Heap> Eat<State, Heap> for String {
-  fn into_parser(self) -> impl Parse<State, Heap, Kind = ()> {
-    EatString::new(self)
+impl<State, Heap> Parse<State, Heap> for EatUsize<State, Heap> {
+  type Kind = ();
+
+  #[inline]
+  fn parse<'text>(
+    &self,
+    input: &mut Input<'text, &mut State, &mut Heap>,
+  ) -> Option<Output<'text, ()>> {
+    input.digest(self.inner)
   }
 }
 
+/// An [`Eat`] implementor.
+/// For most cases you don't need to use this directly.
+///
+/// See [`eat`] for more details.
 #[derive(Debug, Clone, Copy)]
 pub struct EatStr<'a, State, Heap> {
   s: &'a str,
@@ -95,12 +104,20 @@ pub struct EatStr<'a, State, Heap> {
 }
 
 impl<'a, State, Heap> EatStr<'a, State, Heap> {
+  /// Create a new instance with the inner value.
   #[inline]
   pub fn new(s: &'a str) -> Self {
     Self {
       s,
       _phantom: PhantomData,
     }
+  }
+}
+
+impl<'a> Eat for &'a str {
+  #[inline]
+  fn into_parser<State, Heap>(self) -> impl Parse<State, Heap, Kind = ()> {
+    EatStr::new(self)
   }
 }
 
@@ -119,46 +136,6 @@ impl<'a, State, Heap> Parse<State, Heap> for EatStr<'a, State, Heap> {
   }
 }
 
-impl<'a, State, Heap> Eat<State, Heap> for &'a str {
-  fn into_parser(self) -> impl Parse<State, Heap, Kind = ()> {
-    EatStr::new(self)
-  }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct EatUsize<State, Heap> {
-  u: usize,
-  _phantom: PhantomData<(State, Heap)>,
-}
-
-impl<State, Heap> EatUsize<State, Heap> {
-  #[inline]
-  pub fn new(u: usize) -> Self {
-    Self {
-      u,
-      _phantom: PhantomData,
-    }
-  }
-}
-
-impl<State, Heap> Parse<State, Heap> for EatUsize<State, Heap> {
-  type Kind = ();
-
-  #[inline]
-  fn parse<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, ()>> {
-    input.digest(self.u)
-  }
-}
-
-impl<State, Heap> Eat<State, Heap> for usize {
-  fn into_parser(self) -> impl Parse<State, Heap, Kind = ()> {
-    EatUsize::new(self)
-  }
-}
-
 /// Returns a combinator to eat from the head of [`Input::rest`] by the provided pattern.
 /// The combinator will reject if [`Output::rest`] can't be built
 /// as a valid UTF-8 string.
@@ -174,7 +151,7 @@ impl<State, Heap> Eat<State, Heap> for usize {
 /// eat(10); // eat by byte length
 /// ```
 #[inline]
-pub fn eat<State, Heap>(pattern: impl Eat<State, Heap>) -> Combinator!((), State, Heap) {
+pub fn eat<State, Heap>(pattern: impl Eat) -> Combinator!((), State, Heap) {
   let parser = pattern.into_parser();
   wrap(move |input| parser.parse(input))
 }
