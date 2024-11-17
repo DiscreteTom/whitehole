@@ -1,72 +1,100 @@
 //! The building block of a lexer or a parser.
 //! # Basic Usage
 //! ## Provided Combinators
-//! To get started, you can use the provided combinators like [`exact`],
-//! which will match a string or a char exactly:
+//! To get started, you can use the provided combinators like [`eat`],
+//! which will eat the provided pattern from the rest of the input text:
 //! ```
-//! # use whitehole::combinator::{Combinator, exact};
-//! let _: Combinator<_> = exact("true");
+//! # use whitehole::combinator::{Combinator, eat};
+//! let _: Combinator<_> = eat("true");
 //! ```
-//! See functions in this module for more provided combinators.
-//! ## Combine
-//! You can use operators to combine multiple combinators
-//! to digest more complex content:
+//! To save the memory of your brain, we have very limited number of provided combinators.
+//! Here is the full list:
+//! - General combinators for most cases.
+//!   - [`eat`]: eat a pattern.
+//!   - [`next`]: eat the next character by a predicate.
+//!   - [`till`]: eat until a pattern.
+//! - Advanced combinators if you want better performance or more customization.
+//!   - [`eat_unchecked`]: eat `n` bytes without checking.
+//!   - [`eater`]: eat by a custom function.
+//!   - [`eater_unchecked`]: eat by a custom function without checking.
+//!   - [`wrap`]: wrap a closure as a combinator.
+//! ## Composition
+//! Use `+` and `|` to compose multiple combinators
+//! for more complex tasks:
 //! ```
-//! # use whitehole::combinator::{Combinator, exact};
+//! # use whitehole::combinator::{Combinator, eat};
 //! // match "true" then match "false"
-//! let _: Combinator<_> = exact("true") + exact("false");
+//! let _: Combinator<_> = eat("true") + eat("false");
 //!
 //! // match "true" or "false"
-//! let _: Combinator<_> = exact("true") | exact("false");
+//! let _: Combinator<_> = eat("true") | eat("false");
 //!
-//! // you can use a string or a char as a shortcut for `exact`
-//! let _: Combinator<_> = exact("true") + "false";
-//! let _: Combinator<_> = exact("true") | "false";
-//!
-//! // you can use an usize number as a shortcut for `eat`
-//! // which will eat the next n bytes
-//! let _: Combinator<_> = exact("true") + 1;
-//! let _: Combinator<_> = exact("true") | 1;
+//! // you can use a String, a &str, a char or an usize as a shortcut for `eat`
+//! // at the right-hand side of `+` or `|`
+//! let _: Combinator<_> = eat("true") + "false";
+//! let _: Combinator<_> = eat("true") | "false";
+//! let _: Combinator<_> = eat("true") + ';';
+//! let _: Combinator<_> = eat("true") | ';';
+//! let _: Combinator<_> = eat("true") + 1;
+//! let _: Combinator<_> = eat("true") | 1;
 //! ```
 //! ## Repeat
-//! To repeat a combinator, just use the `*` operator:
+//! Use `*` to repeat a combinator:
 //! ```
-//! # use whitehole::combinator::{Combinator, exact};
-//! // repeat the combinator 2 times
-//! let _: Combinator<_> = exact("true") * 2;
+//! # use whitehole::combinator::{Combinator, eat};
+//! // repeat the combinator for 2 times
+//! let _: Combinator<_> = eat("true") * 2;
 //! // equals to
-//! let _: Combinator<_> = exact("true") + "true";
+//! let _: Combinator<_> = eat("true") + "true";
 //!
 //! // repeat the combinator with a range, greedy
-//! let _: Combinator<_> = exact("true") * (1..=3);
+//! let _: Combinator<_> = eat("true") * (1..=3);
 //! // similar to but faster than
 //! let _: Combinator<_> =
-//!     (exact("true") + "true" + "true")
-//!   | (exact("true") + "true")
-//!   |  exact("true");
+//!     (eat("true") + "true" + "true")
+//!   | (eat("true") + "true")
+//!   |  eat("true");
 //!
-//! // allowing repeat for 0 or more times
-//! // so that even if the combinator is rejected,
-//! // the whole combinator will still be accepted with 0 bytes digested
-//! let _: Combinator<_> = exact("true") * (..);
-//! let _: Combinator<_> = exact("true") * (..=3);
+//! // repeat for 0 or more times
+//! let _: Combinator<_> = eat("true") * (..);
+//! let _: Combinator<_> = eat("true") * (..=3);
 //!
-//! // repeating for at most 0 times will
-//! // always accept 0 bytes without executing the combinator.
-//! // you shouldn't use this for most cases
-//! let _: Combinator<_> = exact("true") * 0;
-//! let _: Combinator<_> = exact("true") * (..1);
-//! let _: Combinator<_> = exact("true") * (..=0);
+//! // repeating for 0 times will always accept with 0 bytes digested
+//! let _: Combinator<_> = eat("true") * 0;
+//! let _: Combinator<_> = eat("true") * (..1);
+//! let _: Combinator<_> = eat("true") * (..=0);
 //! ```
 //! ## Decorator
-//! You can use combinator decorators to modify the behavior of a combinator.
-//! Unlike combining combinators, decorators won't change the digested content:
+//! [`Combinator`] provides a set of methods as decorators
+//! to modify the behavior of the combinator.
+//! For now let's see 2 of them:
 //! ```
-//! # use whitehole::combinator::{Combinator, exact};
+//! # use whitehole::combinator::{Combinator, eat};
 //! // make the combinator optional
-//! let _: Combinator<_> = exact("true").optional();
+//! let _: Combinator<_> = eat("true").optional();
+//! // require a word boundary after the combinator is accepted
+//! let _: Combinator<_> = eat("true").boundary();
 //! ```
-//! See [`Combinator`]'s methods for more decorators.
+//! ## Kind
+//! You can set [`Output::kind`] to distinguish different output types
+//! or carrying additional data.
+//!
+//! Related decorators:
+//! - [`Combinator::bind`]
+//! - [`Combinator::bind_default`]
+//! - [`Combinator::select`]
+//! - [`Combinator::map`]
+//! ## Stateful
+//! [`Combinator`]s are stateless, but you can access external states
+//! via [`Input::state`] to realize stateful parsing.
+//!
+//! Related decorators:
+//! - [`Combinator::prepare`]
+//! - [`Combinator::then`]
+//! - [`Combinator::rollback`]
+//! - [`Combinator::map`]
+//! - [`Combinator::prevent`]
+//! - [`Combinator::reject`]
 
 mod builder;
 mod decorator;
