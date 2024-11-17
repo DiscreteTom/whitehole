@@ -199,7 +199,7 @@ impl<
 /// ## Inline Fold
 /// For simple cases, you can accumulate the kind values inline, without using this trait.
 /// ```
-/// # use whitehole::{combinator::next, parse::Input};
+/// # use whitehole::{combinator::next, parse::{Input, Parse}};
 /// let combinator =
 ///   // accept one ascii digit at a time
 ///   next(|c| c.is_ascii_digit())
@@ -217,7 +217,7 @@ impl<
 /// ## Fold with Custom Type
 /// If you want to re-use the folder logic, you can implement this trait for a custom type.
 /// ```
-/// # use whitehole::{combinator::{operator::mul::Fold, next}, parse::Input};
+/// # use whitehole::{combinator::{ops::mul::Fold, next}, parse::{Input, Parse}};
 /// // since you can't implement `Fold` for `usize` directly,
 /// // wrap it in a new-type
 /// struct Usize(usize);
