@@ -53,19 +53,24 @@ fn lex_json(s: &str) {
 }
 
 fn bench_lex(c: &mut Criterion) {
-  // json files are from https://github.com/miloyip/nativejson-benchmark/
+  // json files are from https://github.com/miloyip/nativejson-benchmark/tree/478d5727c2a4048e835a29c65adecc7d795360d5/data
   // you may need to download them manually
   let citm_catalog = read_to_string("bench_data/citm_catalog.json").unwrap();
   let twitter = read_to_string("bench_data/twitter.json").unwrap();
   let canada = read_to_string("bench_data/canada.json").unwrap();
 
-  c.bench_function("json_lexer: lex 3 json", |b| {
-    b.iter(|| {
-      lex_json(&citm_catalog);
-      lex_json(&twitter);
-      lex_json(&canada);
-    })
-  });
+  let total_bytes = citm_catalog.len() + twitter.len() + canada.len();
+
+  c.bench_function(
+    &format!("json_lexer: lex 3 json files (total {} bytes)", total_bytes),
+    |b| {
+      b.iter(|| {
+        lex_json(&citm_catalog);
+        lex_json(&twitter);
+        lex_json(&canada);
+      })
+    },
+  );
 }
 
 criterion_group! {
