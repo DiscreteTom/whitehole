@@ -1,11 +1,33 @@
-use super::Parser;
+use super::{Instant, Parser};
 use crate::{combinator, parse::Parse};
 
 /// A builder for [`Parser`].
-pub struct Builder<Entry, State, Heap> {
+/// # Examples
+/// ```
+/// use whitehole::parser::Builder;
+///
+/// # struct MyState;
+/// # impl MyState {
+/// #   fn new() -> Self { MyState }
+/// # }
+/// # struct MyHeap;
+/// # impl MyHeap {
+/// #   fn new() -> Self { MyHeap }
+/// # }
+/// let _ = Builder::new()
+///   // optional
+///   .state(MyState::new())
+///   // optional
+///   .heap(MyHeap::new())
+///   // build the entry combinator with the provided state and heap
+///   .entry(|b| b.eat("hello ") + "world")
+///   // build the parser
+///   .build("hello world");
+/// ```
+pub struct Builder<T, State = (), Heap = ()> {
   state: State,
   heap: Heap,
-  entry: Entry,
+  entry: T,
 }
 
 impl Builder<(), (), ()> {
@@ -25,9 +47,9 @@ impl Default for Builder<(), (), ()> {
   }
 }
 
-impl<Entry, State, Heap> Builder<Entry, State, Heap> {
+impl<T, State, Heap> Builder<T, State, Heap> {
   /// Set [`Parser::state`].
-  pub fn state<NewState>(self, state: NewState) -> Builder<Entry, NewState, Heap> {
+  pub fn state<NewState>(self, state: NewState) -> Builder<T, NewState, Heap> {
     Builder {
       state,
       heap: self.heap,
@@ -36,7 +58,7 @@ impl<Entry, State, Heap> Builder<Entry, State, Heap> {
   }
 
   /// Set [`Parser::heap`].
-  pub fn heap<NewHeap>(self, heap: NewHeap) -> Builder<Entry, State, NewHeap> {
+  pub fn heap<NewHeap>(self, heap: NewHeap) -> Builder<T, State, NewHeap> {
     Builder {
       heap,
       state: self.state,
@@ -45,27 +67,28 @@ impl<Entry, State, Heap> Builder<Entry, State, Heap> {
   }
 
   /// Set [`Parser::entry`].
-  pub fn entry<'a, R: Parse<State, Heap> + 'a>(
+  pub fn entry<R: Parse<State, Heap>>(
     self,
-    builder: impl FnOnce(combinator::Builder<State, Heap>) -> R + 'a,
-  ) -> Builder<Box<dyn Parse<State, Heap, Kind = R::Kind> + 'a>, State, Heap> {
+    builder: impl FnOnce(combinator::Builder<State, Heap>) -> R,
+  ) -> Builder<R, State, Heap> {
     Builder {
-      entry: Box::new(builder(combinator::Builder::new())),
+      entry: builder(combinator::Builder::new()),
       state: self.state,
       heap: self.heap,
     }
   }
 }
 
-impl<'a, Kind, State, Heap> Builder<Box<dyn Parse<State, Heap, Kind = Kind> + 'a>, State, Heap> {
+impl<T: Parse<State, Heap>, State, Heap> Builder<T, State, Heap> {
   /// Build a [`Parser`] with the given text.
-  pub fn build<'text>(self, text: &'text str) -> Parser<'a, 'text, Kind, State, Heap> {
+  pub fn build(self, text: &str) -> Parser<T, State, Heap> {
     Parser {
       state: self.state,
       heap: self.heap,
-      text,
-      rest: text,
       entry: self.entry,
+      instant: Instant::new(text),
     }
   }
 }
+
+// TODO: tests
