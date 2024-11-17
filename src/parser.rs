@@ -13,6 +13,7 @@ use crate::{
   parse::{Input, Parse},
 };
 
+/// Manage [`Input::state`], [`Input::heap`] and the parsing progress.
 #[derive(Debug)]
 pub struct Parser<'text, T, State = (), Heap = ()> {
   /// See [`Input::state`](crate::parse::Input::state).
