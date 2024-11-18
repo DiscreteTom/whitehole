@@ -63,6 +63,13 @@
 //! let _: Combinator<_> = eat("true") * 0;
 //! let _: Combinator<_> = eat("true") * (..1);
 //! let _: Combinator<_> = eat("true") * (..=0);
+//!
+//! // repeat with another combinator as the separator
+//! let _: Combinator<_> = eat("true") * (1.., eat(','));
+//! // you can use a String, a &str or a char as the separator
+//! let _: Combinator<_> = eat("true") * (1.., ',');
+//! let _: Combinator<_> = eat("true") * (1.., ", ");
+//! let _: Combinator<_> = eat("true") * (1.., ", ".to_string());
 //! ```
 //! ## Decorator
 //! [`Combinator`] provides a set of methods as decorators
