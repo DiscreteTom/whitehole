@@ -1,11 +1,10 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::{cell::OnceCell, fs::read_to_string, rc::Rc};
 use whitehole::{
-  combinator::{eat, next, wrap},
+  combinator::{eat, next, wrap, Combinator},
   in_str,
   parse::Parse,
   parser::{Builder, Parser},
-  Combinator,
 };
 
 fn build_parser(s: &str) -> Parser<impl Parse> {
@@ -29,67 +28,54 @@ fn build_parser(s: &str) -> Parser<impl Parse> {
         eat('"') + body.optional() + '"'
       };
 
-      let array = Rc::new(OnceCell::new());
-      let object_item = Rc::new(OnceCell::new());
-      let object = Rc::new(OnceCell::new());
-      // use dyn to prevent recursive type
-      let value: Rc<dyn Parse<Kind = ()>> = Rc::new(wrap({
-        let parser = rc_to_combinator(&array)
-          | rc_to_combinator(&object)
-          | number()
-          | string()
-          | "true"
-          | "false"
-          | "null";
+      macro_rules! rc_combinator {
+        ($name:ident, $rc_name:ident) => {
+          let $rc_name: Rc<OnceCell<Combinator<_>>> = Rc::new(OnceCell::new());
+          let $name = || {
+            let $rc_name = $rc_name.clone();
+            wrap(move |input| unsafe { $rc_name.get().unwrap_unchecked() }.parse(input))
+          };
+        };
+      }
+      rc_combinator!(array, array_rc);
+      rc_combinator!(object_item, object_item_rc);
+      rc_combinator!(object, object_rc);
+
+      let value_rc: Rc<dyn Parse<Kind = ()>> = Rc::new(wrap({
+        let parser = array() | object() | number() | string() | "true" | "false" | "null";
         move |input| parser.parse(input)
       }));
+      let value = || {
+        let value_rc = value_rc.clone();
+        wrap(move |input| value_rc.parse(input))
+      };
 
-      fn rc_to_combinator(rc: &Rc<OnceCell<Combinator!()>>) -> Combinator!() {
-        wrap({
-          let rc = rc.clone();
-          move |input| unsafe { rc.get().unwrap_unchecked() }.parse(input)
-        })
-      }
-      fn value_to_combinator(value: Rc<dyn Parse<Kind = ()>>) -> Combinator!() {
-        wrap(move |input| value.parse(input))
-      }
-
-      array
+      array_rc
         .set(wrap({
           let parser = eat('[')
             + ws().optional()
-            + ((value_to_combinator(value.clone()) + ws().optional())
-              * (.., eat(',') + ws().optional()))
-              .optional()
+            + ((value() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
             + ']';
           move |input| parser.parse(input)
         }))
         .ok();
-
-      object_item
+      object_item_rc
         .set(wrap({
-          let parser = string()
-            + ws().optional()
-            + eat(':')
-            + ws().optional()
-            + value_to_combinator(value.clone());
+          let parser = string() + ws().optional() + eat(':') + ws().optional() + value();
           move |input| parser.parse(input)
         }))
         .ok();
-
-      object
+      object_rc
         .set(wrap({
           let parser = eat('{')
             + ws().optional()
-            + ((rc_to_combinator(&object_item) + ws().optional())
-              * (.., eat(',') + ws().optional()))
-              .optional()
+            + ((object_item() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
             + '}';
           move |input| parser.parse(input)
         }))
         .ok();
 
-      ws() | value_to_combinator(value)
+      ws() | value()
     })
     .build(s)
 }
