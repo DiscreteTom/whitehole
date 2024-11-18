@@ -21,3 +21,7 @@ criterion = { version = "0.5", features = ["html_reports"] }
 [[bench]]
 name = "json_lexer"
 harness = false
+
+[[bench]]
+name = "json_parser"
+harness = false
