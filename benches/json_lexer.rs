@@ -25,7 +25,7 @@ fn build_lexer(s: &str) -> Parser<impl Parse> {
         let non_escape =
           next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..);
         let body = (escape | non_escape) * ..;
-        eat('"') + body.optional() + '"'
+        eat('"') + body + '"'
       };
       let boundary = next(in_str!("[]{}:,"));
       whitespaces | boundary | number | string | "true" | "false" | "null"
