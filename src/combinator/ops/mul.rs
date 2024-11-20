@@ -416,7 +416,7 @@ impl<
 ///     // convert the char to a number
 ///     .select(|ctx| ctx.input.next() as usize - '0' as usize)
 ///     // repeat for 1 or more times, init accumulator with 0, and fold kind values
-///     * (1.., || 0, |kind, acc| acc * 10 + kind);
+///     * (1.., || 0 as usize, |kind, acc| acc * 10 + kind);
 ///
 /// // parse "123" to 123
 /// assert_eq!(
