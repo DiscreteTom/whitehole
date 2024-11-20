@@ -1,8 +1,8 @@
 use criterion::{criterion_group, criterion_main, Criterion};
+use in_str::in_str;
 use std::fs::read_to_string;
 use whitehole::{
   combinator::{eat, next},
-  in_str,
   parse::Parse,
   parser::{Builder, Parser},
 };

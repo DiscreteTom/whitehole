@@ -1,8 +1,8 @@
 use criterion::{criterion_group, criterion_main, Criterion};
+use in_str::in_str;
 use std::{cell::OnceCell, fs::read_to_string, rc::Rc};
 use whitehole::{
   combinator::{eat, next, wrap, Combinator},
-  in_str,
   parse::Parse,
   parser::{Builder, Parser},
 };

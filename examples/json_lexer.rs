@@ -1,6 +1,6 @@
+use in_str::in_str;
 use whitehole::{
   combinator::{eat, next},
-  in_str,
   parse::Parse,
   parser::{Builder, Parser},
 };

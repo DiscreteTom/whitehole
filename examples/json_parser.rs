@@ -1,7 +1,7 @@
+use in_str::in_str;
 use std::{cell::OnceCell, rc::Rc};
 use whitehole::{
   combinator::{eat, next, wrap, Combinator},
-  in_str,
   parse::Parse,
   parser::{Builder, Parser},
 };

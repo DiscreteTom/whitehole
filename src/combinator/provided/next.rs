@@ -3,15 +3,11 @@ use crate::{combinator::wrap, Combinator};
 /// Returns a combinator to match
 /// [`Input::next`](crate::parse::Input::next) by the condition.
 /// The combinator will reject if not matched.
-///
-/// This is usually used with the [`in_str!`](crate::in_str) macro.
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::{Combinator, next}, in_str};
+/// # use whitehole::{combinator::{Combinator, next}};
 /// // match one ascii digit
 /// let _: Combinator<_> = next(|c| c.is_ascii_digit());
-/// // match a char in a literal str
-/// let _: Combinator<_> = next(in_str!("+-*/"));
 /// ```
 #[inline]
 pub fn next<State, Heap>(condition: impl Fn(char) -> bool) -> Combinator!((), State, Heap) {
