@@ -6,10 +6,6 @@
 //! - [`combinator`]
 //! - [`parser`]
 
-// pub mod kind;
-// pub mod lexer;
-// pub mod utils;
-
 pub mod combinator;
 pub mod node;
 pub mod parse;
