@@ -99,7 +99,6 @@
 //! - [`Combinator::prepare`]
 //! - [`Combinator::then`]
 //! - [`Combinator::rollback`]
-//! - [`Combinator::map`]
 //! - [`Combinator::prevent`]
 //! - [`Combinator::reject`]
 
