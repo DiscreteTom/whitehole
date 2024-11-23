@@ -10,24 +10,33 @@ use whitehole::{
 fn build_lexer(s: &str) -> Parser<impl Parse> {
   Builder::new()
     .entry(|b| {
+      // Use `b.next` instead of `next` at the beginning for better type inference. This is optional.
+      // Use `* (1..)` to repeat for one or more times.
       let whitespaces = b.next(in_str!(" \t\r\n")) * (1..);
+
       let number = {
         let digit_1_to_9 = next(|c| matches!(c, '1'..='9'));
+        // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
+        // use a closure to generate the combinator for better runtime performance (via inlining).
         let digits = || next(|c| c.is_ascii_digit()) * (1..);
         let integer = eat('0') | (digit_1_to_9 + digits().optional());
         let fraction = eat('.') + digits();
         let exponent = (eat('e') | 'E') + (eat('-') | '+').optional() + digits();
         eat('-').optional() + integer + fraction.optional() + exponent.optional()
       };
+
       let string = {
         let escape = eat('\\')
           + (next(in_str!("\"\\/bfnrt")) | (eat('u') + next(|c| c.is_ascii_hexdigit()) * 4));
         let non_escape =
           next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..);
-        let body = (escape | non_escape) * ..;
-        eat('"') + body + '"'
+        // Use `* (..)` to repeat for zero or more times.
+        let body_optional = (escape | non_escape) * ..;
+        eat('"') + body_optional + '"'
       };
+
       let boundary = next(in_str!("[]{}:,"));
+
       whitespaces | boundary | number | string | "true" | "false" | "null"
     })
     .build(s)
@@ -46,7 +55,7 @@ fn lex_json(s: &str) {
 
   if !parser.instant().rest().is_empty() {
     panic!(
-      "lexer failed to consume the whole input, remaining: {}",
+      "lexer failed to consume the whole input, remaining: {:?}",
       &parser.instant().rest()[..100.min(parser.instant().rest().len())]
     );
   }

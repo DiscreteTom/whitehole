@@ -2,15 +2,18 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use in_str::in_str;
 use std::{cell::OnceCell, fs::read_to_string, rc::Rc, sync::LazyLock};
 use whitehole::{
-  combinator::{eat, next, wrap, Combinator},
+  combinator::{eat, next, wrap},
   parse::Parse,
   parser::{Builder, Parser},
   Combinator,
 };
 
-fn build_parser_with_inter_mut(s: &str) -> Parser<impl Parse> {
+pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Parse> {
   Builder::new()
     .entry(|b| {
+      // Use `b.next` instead of `next` for better type inference. This is optional.
+      // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
+      // use a closure to generate the combinator for better runtime performance (via inlining).
       let ws = || b.next(in_str!(" \t\r\n")) * (1..);
       let number = || {
         let digit_1_to_9 = next(|c| matches!(c, '1'..='9'));
@@ -29,51 +32,37 @@ fn build_parser_with_inter_mut(s: &str) -> Parser<impl Parse> {
         eat('"') + body.optional() + '"'
       };
 
-      macro_rules! rc_combinator {
-        ($name:ident, $rc_name:ident) => {
-          let $rc_name: Rc<OnceCell<Combinator<_>>> = Rc::new(OnceCell::new());
-          let $name = || {
-            let $rc_name = $rc_name.clone();
-            wrap(move |input| unsafe { $rc_name.get().unwrap_unchecked() }.parse(input))
-          };
-        };
-      }
-      rc_combinator!(array, array_rc);
-      rc_combinator!(object_item, object_item_rc);
-      rc_combinator!(object, object_rc);
-
-      let value_rc: Rc<dyn Parse<Kind = ()>> = Rc::new(wrap({
-        let parser = array() | object() | number() | string() | "true" | "false" | "null";
-        move |input| parser.parse(input)
-      }));
+      // `value` will indirectly recurse to itself, so we need special treatment.
+      // Use `Rc` to make it clone-able, use `OnceCell` to initialize it later,
+      // use `Box<dyn>` to prevent recursive/infinite type.
+      let value_rc: Rc<OnceCell<Box<dyn Parse<Kind = ()>>>> = Rc::new(OnceCell::new());
       let value = || {
         let value_rc = value_rc.clone();
-        wrap(move |input| value_rc.parse(input))
+        // SAFETY: we will initialize `value_rc` later before calling this closure.
+        wrap(move |input| unsafe { value_rc.get().unwrap_unchecked() }.parse(input))
       };
 
-      array_rc
-        .set(wrap({
-          let parser = eat('[')
-            + ws().optional()
-            + ((value() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
-            + ']';
+      // Now we can use `value` in `array` and `object`.
+      let array = || {
+        eat('[')
+          + ws().optional()
+          + ((value() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+          + ']'
+      };
+      let object = || {
+        let object_item = string() + ws().optional() + eat(':') + ws().optional() + value();
+        eat('{')
+          + ws().optional()
+          + ((object_item + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+          + '}'
+      };
+
+      // Finally, init `value` with `array` and `object`.
+      value_rc
+        .set(Box::new(wrap({
+          let parser = array() | object() | number() | string() | "true" | "false" | "null";
           move |input| parser.parse(input)
-        }))
-        .ok();
-      object_item_rc
-        .set(wrap({
-          let parser = string() + ws().optional() + eat(':') + ws().optional() + value();
-          move |input| parser.parse(input)
-        }))
-        .ok();
-      object_rc
-        .set(wrap({
-          let parser = eat('{')
-            + ws().optional()
-            + ((object_item() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
-            + '}';
-          move |input| parser.parse(input)
-        }))
+        })))
         .ok();
 
       ws() | value()
@@ -81,7 +70,9 @@ fn build_parser_with_inter_mut(s: &str) -> Parser<impl Parse> {
     .build(s)
 }
 
-fn build_parser_with_static(s: &str) -> Parser<impl Parse> {
+pub fn build_parser_with_static(s: &str) -> Parser<impl Parse> {
+  // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
+  // use a function to generate the combinator for better runtime performance (via inlining).
   fn ws() -> Combinator!() {
     next(in_str!(" \t\r\n")) * (1..)
   }
@@ -104,41 +95,29 @@ fn build_parser_with_static(s: &str) -> Parser<impl Parse> {
     eat('"') + body.optional() + '"'
   }
 
+  fn array() -> Combinator!() {
+    eat('[')
+      + ws().optional()
+      + ((value() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+      + ']'
+  }
+
+  fn object() -> Combinator!() {
+    let object_item = string() + ws().optional() + eat(':') + ws().optional() + value();
+    eat('{')
+      + ws().optional()
+      + ((object_item + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+      + '}'
+  }
+
+  // `value` will indirectly recurse to itself, so we need special treatment.
+  // Use `LazyLock` to create a static `Parse` implementor,
+  // use `Box<dyn>` to prevent recursive/infinite type.
   fn value() -> Combinator!() {
     static VALUE: LazyLock<Box<dyn Parse<Kind = ()> + Send + Sync>> = LazyLock::new(|| {
       Box::new(array() | object() | number() | string() | "true" | "false" | "null")
     });
     wrap(|input| VALUE.parse(input))
-  }
-
-  fn array() -> Combinator!() {
-    static ARRAY: LazyLock<Box<dyn Parse<Kind = ()> + Send + Sync>> = LazyLock::new(|| {
-      Box::new(
-        eat('[')
-          + ws().optional()
-          + ((value() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
-          + ']',
-      )
-    });
-    wrap(|input| ARRAY.parse(input))
-  }
-
-  fn object_item() -> Combinator!() {
-    static OBJECT_ITEM: LazyLock<Box<dyn Parse<Kind = ()> + Send + Sync>> =
-      LazyLock::new(|| Box::new(string() + ws().optional() + eat(':') + ws().optional() + value()));
-    wrap(|input| OBJECT_ITEM.parse(input))
-  }
-
-  fn object() -> Combinator!() {
-    static OBJECT: LazyLock<Box<dyn Parse<Kind = ()> + Send + Sync>> = LazyLock::new(|| {
-      Box::new(
-        eat('{')
-          + ws().optional()
-          + ((object_item() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
-          + '}',
-      )
-    });
-    wrap(|input| OBJECT.parse(input))
   }
 
   Builder::new().entry(|_| ws() | value()).build(s)
@@ -155,7 +134,7 @@ fn parse_json(mut parser: Parser<impl Parse>) {
 
   if !parser.instant().rest().is_empty() {
     panic!(
-      "parser failed to consume the whole input, remaining: {}",
+      "parser failed to consume the whole input, remaining: {:?}",
       &parser.instant().rest()[..100.min(parser.instant().rest().len())]
     );
   }
