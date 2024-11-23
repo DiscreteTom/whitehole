@@ -1,9 +1,18 @@
 //! Programming language related combinator examples.
 
 use whitehole::{
-  combinator::{eat, till},
+  combinator::{eat, next, till},
   Combinator,
 };
+
+/// Eat one or more unicode whitespaces.
+/// # Caveats
+/// Unicode whitespaces is a huge set so this combinator may not be efficient.
+/// If you don't need to handle all unicode whitespaces, consider using a custom combinator.
+/// E.g. for JSON, you can use `next(in_str!(" \t\r\n")) * (1..)` which is faster than this.
+pub fn whitespaces<State, Heap>() -> Combinator!((), State, Heap) {
+  next(|c| c.is_whitespace()) * (1..)
+}
 
 pub fn singleline_comment<State, Heap>() -> Combinator!((), State, Heap) {
   eat("//") + (till('\n') | till(()))
@@ -21,7 +30,25 @@ mod tests {
   use whitehole::parse::{Input, Parse};
 
   #[test]
-  fn comments() {
+  fn test_whitespaces() {
+    assert_eq!(
+      whitespaces()
+        .parse(&mut Input::new(" \t\r\n", 0, &mut (), &mut ()).unwrap())
+        .unwrap()
+        .rest,
+      ""
+    );
+    assert_eq!(
+      whitespaces()
+        .parse(&mut Input::new(" \t\r\n123", 0, &mut (), &mut ()).unwrap())
+        .unwrap()
+        .rest,
+      "123"
+    );
+  }
+
+  #[test]
+  fn test_comments() {
     assert_eq!(
       singleline_comment()
         .parse(&mut Input::new("//123", 0, &mut (), &mut ()).unwrap())
