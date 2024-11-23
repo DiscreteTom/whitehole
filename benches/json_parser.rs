@@ -1,13 +1,14 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use in_str::in_str;
-use std::{cell::OnceCell, fs::read_to_string, rc::Rc};
+use std::{cell::OnceCell, fs::read_to_string, rc::Rc, sync::LazyLock};
 use whitehole::{
   combinator::{eat, next, wrap, Combinator},
   parse::Parse,
   parser::{Builder, Parser},
+  Combinator,
 };
 
-fn build_parser(s: &str) -> Parser<impl Parse> {
+fn build_parser_with_inter_mut(s: &str) -> Parser<impl Parse> {
   Builder::new()
     .entry(|b| {
       let ws = || b.next(in_str!(" \t\r\n")) * (1..);
@@ -80,9 +81,70 @@ fn build_parser(s: &str) -> Parser<impl Parse> {
     .build(s)
 }
 
-fn parse_json(s: &str) {
-  let mut parser = build_parser(s);
+fn build_parser_with_static(s: &str) -> Parser<impl Parse> {
+  fn ws() -> Combinator!() {
+    next(in_str!(" \t\r\n")) * (1..)
+  }
 
+  fn number() -> Combinator!() {
+    let digit_1_to_9 = next(|c| matches!(c, '1'..='9'));
+    let digits = || next(|c| c.is_ascii_digit()) * (1..);
+    let integer = eat('0') | (digit_1_to_9 + digits().optional());
+    let fraction = eat('.') + digits();
+    let exponent = (eat('e') | 'E') + (eat('-') | '+').optional() + digits();
+    eat('-').optional() + integer + fraction.optional() + exponent.optional()
+  }
+
+  fn string() -> Combinator!() {
+    let escape =
+      eat('\\') + (next(in_str!("\"\\/bfnrt")) | (eat('u') + next(|c| c.is_ascii_hexdigit()) * 4));
+    let non_escape =
+      next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..);
+    let body = (escape | non_escape) * ..;
+    eat('"') + body.optional() + '"'
+  }
+
+  fn value() -> Combinator!() {
+    static VALUE: LazyLock<Box<dyn Parse<Kind = ()> + Send + Sync>> = LazyLock::new(|| {
+      Box::new(array() | object() | number() | string() | "true" | "false" | "null")
+    });
+    wrap(|input| VALUE.parse(input))
+  }
+
+  fn array() -> Combinator!() {
+    static ARRAY: LazyLock<Box<dyn Parse<Kind = ()> + Send + Sync>> = LazyLock::new(|| {
+      Box::new(
+        eat('[')
+          + ws().optional()
+          + ((value() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+          + ']',
+      )
+    });
+    wrap(|input| ARRAY.parse(input))
+  }
+
+  fn object_item() -> Combinator!() {
+    static OBJECT_ITEM: LazyLock<Box<dyn Parse<Kind = ()> + Send + Sync>> =
+      LazyLock::new(|| Box::new(string() + ws().optional() + eat(':') + ws().optional() + value()));
+    wrap(|input| OBJECT_ITEM.parse(input))
+  }
+
+  fn object() -> Combinator!() {
+    static OBJECT: LazyLock<Box<dyn Parse<Kind = ()> + Send + Sync>> = LazyLock::new(|| {
+      Box::new(
+        eat('{')
+          + ws().optional()
+          + ((object_item() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+          + '}',
+      )
+    });
+    wrap(|input| OBJECT.parse(input))
+  }
+
+  Builder::new().entry(|_| ws() | value()).build(s)
+}
+
+fn parse_json(mut parser: Parser<impl Parse>) {
   loop {
     let output = parser.parse();
     if output.is_none() {
@@ -110,14 +172,28 @@ fn bench_parse(c: &mut Criterion) {
 
   c.bench_function(
     &format!(
-      "json_parser: parse 3 json files (total {} bytes)",
+      "json_parser_with_inter_mut: parse 3 json files (total {} bytes)",
       total_bytes
     ),
     |b| {
       b.iter(|| {
-        parse_json(&citm_catalog);
-        parse_json(&twitter);
-        parse_json(&canada);
+        parse_json(build_parser_with_inter_mut(&citm_catalog));
+        parse_json(build_parser_with_inter_mut(&twitter));
+        parse_json(build_parser_with_inter_mut(&canada));
+      })
+    },
+  );
+
+  c.bench_function(
+    &format!(
+      "json_parser_with_static: parse 3 json files (total {} bytes)",
+      total_bytes
+    ),
+    |b| {
+      b.iter(|| {
+        parse_json(build_parser_with_static(&citm_catalog));
+        parse_json(build_parser_with_static(&twitter));
+        parse_json(build_parser_with_static(&canada));
       })
     },
   );
