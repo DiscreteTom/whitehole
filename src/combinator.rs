@@ -1,4 +1,5 @@
 //! The building block of a lexer or a parser.
+//! Provide decorators and operator overloads for [`Parse`] implementors.
 //! # Basic Usage
 //! ## Provided Combinators
 //! To get started, you can use the provided combinators like [`eat`],
