@@ -5,36 +5,50 @@ use whitehole::{
   parser::{Builder, Parser},
 };
 
-fn build_lexer(s: &str) -> Parser<impl Parse<Kind = ()>> {
+pub fn build_lexer(s: &str) -> Parser<impl Parse<Kind = ()>> {
   Builder::new()
     .entry(|b| {
-      // use `b.next` instead of `next` for better type inference
-      let whitespaces = b.next(in_str!(" \t\r\n")) * (1..); // repeat one or more times
+      // Use `b.next` instead of `next` at the beginning for better type inference. This is optional.
+      // Use `* (1..)` to repeat for one or more times.
+      let whitespaces = b.next(in_str!(" \t\r\n")) * (1..);
+
       let number = {
         let digit_1_to_9 = next(|c| matches!(c, '1'..='9'));
-        // use a closure to generate combinator for better performance (via inlining), instead of wrapping the combinator in an Rc
+        // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
+        // use a closure to generate the combinator for better runtime performance (via inlining).
         let digits = || next(|c| c.is_ascii_digit()) * (1..);
         let integer = eat('0') | (digit_1_to_9 + digits().optional());
         let fraction = eat('.') + digits();
         let exponent = (eat('e') | 'E') + (eat('-') | '+').optional() + digits();
         eat('-').optional() + integer + fraction.optional() + exponent.optional()
       };
+
       let string = {
         let escape = eat('\\')
           + (next(in_str!("\"\\/bfnrt")) | (eat('u') + next(|c| c.is_ascii_hexdigit()) * 4));
         let non_escape =
           next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..);
-        let body_optional = (escape | non_escape) * ..; // repeat zero or more times
+        // Use `* (..)` to repeat for zero or more times.
+        let body_optional = (escape | non_escape) * ..;
         eat('"') + body_optional + '"'
       };
+
       let boundary = next(in_str!("[]{}:,"));
+
       whitespaces | boundary | number | string | "true" | "false" | "null"
     })
     .build(s)
 }
 
-fn main() {
-  let s = r#"
+fn main() {}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_json_lexer() {
+    let s = r#"
     {
       "name": "John Doe",
       "age": 30,
@@ -47,27 +61,28 @@ fn main() {
     }
   "#;
 
-  let mut lexer = build_lexer(s);
+    let mut lexer = build_lexer(s);
 
-  loop {
-    let output = lexer.parse();
-    if let Some(node) = output {
-      println!(
-        "{}..{}: {}",
-        node.range.start,
-        node.range.end,
-        &s[node.range.clone()]
-      );
-    } else {
-      break;
+    loop {
+      let output = lexer.parse();
+      if let Some(node) = output {
+        println!(
+          "{}..{}: {:?}",
+          node.range.start,
+          node.range.end,
+          &s[node.range.clone()]
+        );
+      } else {
+        break;
+      }
     }
-  }
 
-  let rest = lexer.instant().rest();
-  if !rest.is_empty() {
-    panic!(
-      "lexer failed to consume the whole input, remaining: {}",
-      &rest[..100.min(rest.len())]
-    );
+    let rest = lexer.instant().rest();
+    if !rest.is_empty() {
+      panic!(
+        "lexer failed to consume the whole input, remaining: {:?}",
+        &rest[..100.min(rest.len())]
+      );
+    }
   }
 }
