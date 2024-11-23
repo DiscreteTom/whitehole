@@ -7,7 +7,7 @@ use crate::{
 impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// Create a new combinator to convert [`Output::kind`] to a new kind value.
   ///
-  /// You can consume the original [`Output`] in the `converter`.
+  /// You can consume the original [`Output::kind`] in the `mapper`.
   /// # Examples
   /// ```
   /// # use whitehole::Combinator;
@@ -18,9 +18,9 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   #[inline]
   pub fn map<NewKind>(
     self,
-    converter: impl Fn(T::Kind) -> NewKind,
+    mapper: impl Fn(T::Kind) -> NewKind,
   ) -> Combinator!(NewKind, State, Heap) {
-    wrap(move |input| self.parse(input).map(|output| output.map(&converter)))
+    wrap(move |input| self.parse(input).map(|output| output.map(&mapper)))
   }
 
   /// Create a new combinator to set [`Output::kind`] to the provided kind value.

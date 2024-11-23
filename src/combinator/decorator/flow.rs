@@ -8,7 +8,7 @@ use crate::{
 
 impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// Create a new combinator to check the [`Input`] before being executed.
-  /// The combinator will reject if the `condition` returns `true`.
+  /// The combinator will reject if the `preventer` returns `true`.
   /// # Examples
   /// ```
   /// # use whitehole::Combinator;
@@ -20,10 +20,10 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   #[inline]
   pub fn prevent(
     self,
-    condition: impl Fn(&mut Input<&mut State, &mut Heap>) -> bool,
+    preventer: impl Fn(&mut Input<&mut State, &mut Heap>) -> bool,
   ) -> Combinator!(T::Kind, State, Heap) {
     wrap(move |input| {
-      if condition(input) {
+      if preventer(input) {
         None
       } else {
         self.parse(input)
@@ -32,7 +32,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   }
 
   /// Create a new combinator to check the [`Input`] and [`Output`] after being executed.
-  /// The combinator will reject if the `condition` returns `true`.
+  /// The combinator will reject if the `rejecter` returns `true`.
   /// # Examples
   /// ```
   /// # use whitehole::Combinator;
@@ -43,13 +43,13 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   #[inline]
   pub fn reject(
     self,
-    condition: impl for<'text> Fn(
+    rejecter: impl for<'text> Fn(
       AcceptedContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, T::Kind>>,
     ) -> bool,
   ) -> Combinator!(T::Kind, State, Heap) {
     wrap(move |input| {
       self.parse(input).and_then(|output| {
-        if condition(AcceptedContext {
+        if rejecter(AcceptedContext {
           input,
           output: &output,
         }) {
