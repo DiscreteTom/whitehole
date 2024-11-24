@@ -18,3 +18,5 @@ tarpaulin-report.html
 
 # bench test data sets
 bench_data/
+
+.vscode
