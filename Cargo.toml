@@ -1,5 +1,6 @@
 [package]
 name = "whitehole"
+description = "A fast parser combinator framework."
 version = "0.0.1"
 edition = "2021"
 license = "MIT"
