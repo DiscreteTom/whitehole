@@ -23,6 +23,22 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
     wrap(move |input| self.parse(input).map(|output| output.map(&mapper)))
   }
 
+  /// Create a new combinator to wrap [`Output::kind`] in a tuple.
+  ///
+  /// This is useful when you use `+` to combine multiple combinators.
+  /// See [`Concat`](crate::combinator::ops::add::Concat) for more details.
+  /// # Examples
+  /// ```
+  /// # use whitehole::Combinator;
+  /// # fn t(combinator: Combinator!()) {
+  /// combinator.map(|kind| Some(kind))
+  /// # ;}
+  /// ```
+  #[inline]
+  pub fn tuple(self) -> Combinator!((T::Kind,), State, Heap) {
+    self.map(|kind| (kind,))
+  }
+
   /// Create a new combinator to set [`Output::kind`] to the provided kind value.
   ///
   /// If your `Kind` doesn't implement the [`Clone`] trait, consider using [`Self::select`] instead.

@@ -92,6 +92,7 @@
 //! - [`Combinator::bind_default`]
 //! - [`Combinator::select`]
 //! - [`Combinator::map`]
+//! - [`Combinator::tuple`]
 //! ## Stateful
 //! [`Combinator`]s are stateless, but you can access external states
 //! via [`Input::state`] to realize stateful parsing.
