@@ -65,7 +65,7 @@ unsafe impl Till for () {
 /// # );
 /// ```
 #[inline]
-pub fn till<State, Heap>(pattern: impl Till) -> Combinator!((), State, Heap) {
+pub const fn till<State, Heap>(pattern: impl Till) -> Combinator!((), State, Heap) {
   wrap(move |input| {
     pattern
       .parse(input.rest())

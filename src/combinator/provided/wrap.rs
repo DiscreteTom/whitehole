@@ -44,7 +44,7 @@ impl<
 
 /// Wrap a closure to create a [`Combinator`].
 #[inline]
-pub fn wrap<
+pub const fn wrap<
   F: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>,
   Kind,
   State,

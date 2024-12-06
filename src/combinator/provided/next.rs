@@ -13,7 +13,7 @@ use crate::{combinator::wrap, Combinator};
 /// # );
 /// ```
 #[inline]
-pub fn next<State, Heap>(condition: impl Fn(char) -> bool) -> Combinator!((), State, Heap) {
+pub const fn next<State, Heap>(condition: impl Fn(char) -> bool) -> Combinator!((), State, Heap) {
   wrap(move |input| {
     let next = input.next();
     if !condition(next) {
