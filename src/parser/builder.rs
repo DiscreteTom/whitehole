@@ -1,5 +1,5 @@
 use super::{Instant, Parser};
-use crate::{combinator, parse::Parse};
+use crate::parse::Parse;
 
 /// A builder for [`Parser`].
 /// # Examples
