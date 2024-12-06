@@ -51,6 +51,7 @@ pub fn build_parser_with_static(s: &str) -> Parser<impl Parse> {
   // Use `LazyLock` to create a static `Parse` implementor,
   // use `Box<dyn>` to prevent recursive/infinite type.
   fn value() -> Combinator!() {
+    // TODO: make combinators const so we don't need LazyLock
     static VALUE: LazyLock<Box<dyn Parse<Kind = (), State = (), Heap = ()> + Send + Sync>> =
       LazyLock::new(|| {
         Box::new(array() | object() | number() | string() | "true" | "false" | "null")
