@@ -7,7 +7,8 @@ use whitehole::{
 
 // TODO: comments
 
-type RcInner<Kind, State, Heap> = Rc<OnceCell<Box<dyn Parse<State, Heap, Kind = Kind>>>>;
+type RcInner<Kind, State, Heap> =
+  Rc<OnceCell<Box<dyn Parse<Kind = Kind, State = State, Heap = Heap>>>>;
 
 pub struct RcCombinatorSetter<Kind, State, Heap> {
   rc: RcInner<Kind, State, Heap>,
@@ -26,11 +27,11 @@ impl<Kind, State, Heap> RcCombinatorSetter<Kind, State, Heap> {
     }
   }
 
-  pub fn set(self, parser: Box<dyn Parse<State, Heap, Kind = Kind>>) {
+  pub fn set(self, parser: Box<dyn Parse<Kind = Kind, State = State, Heap = Heap>>) {
     self.rc.set(parser).ok();
   }
 
-  pub fn boxed(self, p: impl Parse<State, Heap, Kind = Kind> + 'static) {
+  pub fn boxed(self, p: impl Parse<Kind = Kind, State = State, Heap = Heap> + 'static) {
     self.set(Box::new(p));
   }
 }
@@ -39,8 +40,10 @@ pub struct RcParse<Kind, State, Heap> {
   rc: RcInner<Kind, State, Heap>,
 }
 
-impl<Kind, State, Heap> Parse<State, Heap> for RcParse<Kind, State, Heap> {
+impl<Kind, State, Heap> Parse for RcParse<Kind, State, Heap> {
   type Kind = Kind;
+  type State = State;
+  type Heap = Heap;
 
   fn parse<'text>(
     &self,
@@ -51,7 +54,7 @@ impl<Kind, State, Heap> Parse<State, Heap> for RcParse<Kind, State, Heap> {
 }
 
 pub fn rc<Kind, State, Heap>() -> (
-  impl Fn() -> Combinator<RcParse<Kind, State, Heap>, State, Heap>,
+  impl Fn() -> Combinator<RcParse<Kind, State, Heap>>,
   RcCombinatorSetter<Kind, State, Heap>,
 ) {
   let setter = RcCombinatorSetter::new();
@@ -64,7 +67,7 @@ pub fn rc<Kind, State, Heap>() -> (
 
 fn main() {
   let mut parser = Builder::new()
-    .entry(|_| {
+    .entry({
       let number = next(|c| c.is_ascii_digit()) * (1..);
       let (exp, exp_setter) = rc();
       exp_setter.boxed(number | (eat('-') + exp()));

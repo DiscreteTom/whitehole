@@ -8,11 +8,10 @@ use whitehole::{
 
 pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Parse> {
   Builder::new()
-    .entry(|b| {
-      // Use `b.next` instead of `next` for better type inference. This is optional.
+    .entry({
       // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
       // use a closure to generate the combinator for better runtime performance (via inlining).
-      let ws = || b.next(in_str!(" \t\r\n")) * (1..);
+      let ws = || next(in_str!(" \t\r\n")) * (1..);
       let number = || {
         let digit_1_to_9 = next(|c| matches!(c, '1'..='9'));
         let digits = || next(|c| c.is_ascii_digit()) * (1..);
@@ -33,7 +32,8 @@ pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Parse> {
       // `value` will indirectly recurse to itself, so we need special treatment.
       // Use `Rc` to make it clone-able, use `OnceCell` to initialize it later,
       // use `Box<dyn>` to prevent recursive/infinite type.
-      let value_rc: Rc<OnceCell<Box<dyn Parse<Kind = ()>>>> = Rc::new(OnceCell::new());
+      let value_rc: Rc<OnceCell<Box<dyn Parse<Kind = (), State = (), Heap = ()>>>> =
+        Rc::new(OnceCell::new());
       let value = || {
         let value_rc = value_rc.clone();
         // SAFETY: we will initialize `value_rc` later before calling this closure.

@@ -7,10 +7,9 @@ use whitehole::{
 
 pub fn build_lexer(s: &str) -> Parser<impl Parse<Kind = ()>> {
   Builder::new()
-    .entry(|b| {
-      // Use `b.next` instead of `next` at the beginning for better type inference. This is optional.
+    .entry({
       // Use `* (1..)` to repeat for one or more times.
-      let whitespaces = b.next(in_str!(" \t\r\n")) * (1..);
+      let whitespaces = next(in_str!(" \t\r\n")) * (1..);
 
       let number = {
         let digit_1_to_9 = next(|c| matches!(c, '1'..='9'));
