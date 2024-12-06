@@ -29,7 +29,7 @@ pub struct Parser<'text, T: Parse> {
   entry: T,
 }
 
-impl<'text, T: Parse<State: Clone, Heap: Clone> + Clone> Clone for Parser<'text, T> {
+impl<T: Parse<State: Clone, Heap: Clone> + Clone> Clone for Parser<'_, T> {
   /// Clone the parser, including [`Self::state`] and [`Self::heap`].
   /// # Performance
   /// Cloning the [`Self::heap`] might be expensive, you should use [`Parser::snapshot`] to avoid cloning [`Self::heap`],

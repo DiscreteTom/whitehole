@@ -127,7 +127,7 @@ impl<'a> Eat for &'a str {
   }
 }
 
-impl<'a, State, Heap> Parse for EatStr<'a, State, Heap> {
+impl<State, Heap> Parse for EatStr<'_, State, Heap> {
   type Kind = ();
   type State = State;
   type Heap = Heap;
