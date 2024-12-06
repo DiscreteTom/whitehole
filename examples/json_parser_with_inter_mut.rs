@@ -7,65 +7,61 @@ use whitehole::{
 };
 
 pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Parse> {
-  Builder::new()
-    .entry({
-      // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
-      // use a closure to generate the combinator for better runtime performance (via inlining).
-      let ws = || next(in_str!(" \t\r\n")) * (1..);
-      let number = || {
-        let digit_1_to_9 = next(|c| matches!(c, '1'..='9'));
-        let digits = || next(|c| c.is_ascii_digit()) * (1..);
-        let integer = eat('0') | (digit_1_to_9 + digits().optional());
-        let fraction = eat('.') + digits();
-        let exponent = (eat('e') | 'E') + (eat('-') | '+').optional() + digits();
-        eat('-').optional() + integer + fraction.optional() + exponent.optional()
-      };
-      let string = || {
-        let escape = eat('\\')
-          + (next(in_str!("\"\\/bfnrt")) | (eat('u') + next(|c| c.is_ascii_hexdigit()) * 4));
-        let non_escape =
-          next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..);
-        let body = (escape | non_escape) * ..;
-        eat('"') + body.optional() + '"'
-      };
+  // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
+  // use a closure to generate the combinator for better runtime performance (via inlining).
+  let ws = || next(in_str!(" \t\r\n")) * (1..);
+  let number = || {
+    let digit_1_to_9 = next(|c| matches!(c, '1'..='9'));
+    let digits = || next(|c| c.is_ascii_digit()) * (1..);
+    let integer = eat('0') | (digit_1_to_9 + digits().optional());
+    let fraction = eat('.') + digits();
+    let exponent = (eat('e') | 'E') + (eat('-') | '+').optional() + digits();
+    eat('-').optional() + integer + fraction.optional() + exponent.optional()
+  };
+  let string = || {
+    let escape =
+      eat('\\') + (next(in_str!("\"\\/bfnrt")) | (eat('u') + next(|c| c.is_ascii_hexdigit()) * 4));
+    let non_escape =
+      next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..);
+    let body = (escape | non_escape) * ..;
+    eat('"') + body.optional() + '"'
+  };
 
-      // `value` will indirectly recurse to itself, so we need special treatment.
-      // Use `Rc` to make it clone-able, use `OnceCell` to initialize it later,
-      // use `Box<dyn>` to prevent recursive/infinite type.
-      let value_rc: Rc<OnceCell<Box<dyn Parse<Kind = (), State = (), Heap = ()>>>> =
-        Rc::new(OnceCell::new());
-      let value = || {
-        let value_rc = value_rc.clone();
-        // SAFETY: we will initialize `value_rc` later before calling this closure.
-        wrap(move |input| unsafe { value_rc.get().unwrap_unchecked() }.parse(input))
-      };
+  // `value` will indirectly recurse to itself, so we need special treatment.
+  // Use `Rc` to make it clone-able, use `OnceCell` to initialize it later,
+  // use `Box<dyn>` to prevent recursive/infinite type.
+  let value_rc: Rc<OnceCell<Box<dyn Parse<Kind = (), State = (), Heap = ()>>>> =
+    Rc::new(OnceCell::new());
+  let value = || {
+    let value_rc = value_rc.clone();
+    // SAFETY: we will initialize `value_rc` later before calling this closure.
+    wrap(move |input| unsafe { value_rc.get().unwrap_unchecked() }.parse(input))
+  };
 
-      // Now we can use `value` in `array` and `object`.
-      let array = || {
-        eat('[')
-          + ws().optional()
-          + ((value() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
-          + ']'
-      };
-      let object = || {
-        let object_item = string() + ws().optional() + eat(':') + ws().optional() + value();
-        eat('{')
-          + ws().optional()
-          + ((object_item + ws().optional()) * (.., eat(',') + ws().optional())).optional()
-          + '}'
-      };
+  // Now we can use `value` in `array` and `object`.
+  let array = || {
+    eat('[')
+      + ws().optional()
+      + ((value() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+      + ']'
+  };
+  let object = || {
+    let object_item = string() + ws().optional() + eat(':') + ws().optional() + value();
+    eat('{')
+      + ws().optional()
+      + ((object_item + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+      + '}'
+  };
 
-      // Finally, init `value` with `array` and `object`.
-      value_rc
-        .set(Box::new(wrap({
-          let parser = array() | object() | number() | string() | "true" | "false" | "null";
-          move |input| parser.parse(input)
-        })))
-        .ok();
+  // Finally, init `value` with `array` and `object`.
+  value_rc
+    .set(Box::new(wrap({
+      let parser = array() | object() | number() | string() | "true" | "false" | "null";
+      move |input| parser.parse(input)
+    })))
+    .ok();
 
-      ws() | value()
-    })
-    .build(s)
+  Builder::new().entry(ws() | value()).build(s)
 }
 
 fn main() {}
