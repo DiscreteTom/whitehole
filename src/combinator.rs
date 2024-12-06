@@ -203,7 +203,7 @@ macro_rules! Combinator {
 impl<T> Combinator<T> {
   /// Create a new instance by wrapping a [`Parse`] implementor.
   #[inline]
-  pub fn new(parser: T) -> Self {
+  pub const fn new(parser: T) -> Self {
     Self { parser }
   }
 }
