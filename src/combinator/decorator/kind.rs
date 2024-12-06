@@ -4,7 +4,7 @@ use crate::{
   Combinator,
 };
 
-impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
+impl<T: Parse> Combinator<T> {
   /// Create a new combinator to convert [`Output::kind`] to a new kind value.
   ///
   /// You can consume the original [`Output::kind`] in the `mapper`.
@@ -16,10 +16,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn map<NewKind>(
-    self,
-    mapper: impl Fn(T::Kind) -> NewKind,
-  ) -> Combinator!(NewKind, State, Heap) {
+  pub fn map<NewKind>(self, mapper: impl Fn(T::Kind) -> NewKind) -> Combinator!(NewKind, @T) {
     wrap(move |input| self.parse(input).map(|output| output.map(&mapper)))
   }
 
@@ -35,7 +32,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn tuple(self) -> Combinator!((T::Kind,), State, Heap) {
+  pub fn tuple(self) -> Combinator!((T::Kind,), @T) {
     self.map(|kind| (kind,))
   }
 
@@ -52,7 +49,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn bind<NewKind>(self, kind: NewKind) -> Combinator!(NewKind, State, Heap)
+  pub fn bind<NewKind>(self, kind: NewKind) -> Combinator!(NewKind, @T)
   where
     NewKind: Clone,
   {
@@ -68,7 +65,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// # }
   /// ```
   #[inline]
-  pub fn bind_default<NewKind>(self) -> Combinator!(NewKind, State, Heap)
+  pub fn bind_default<NewKind>(self) -> Combinator!(NewKind, @T)
   where
     NewKind: Default,
   {
@@ -91,9 +88,9 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   pub fn select<NewKind>(
     self,
     selector: impl for<'text> Fn(
-      AcceptedContext<&mut Input<'text, &mut State, &mut Heap>, Output<'text, T::Kind>>,
+      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, Output<'text, T::Kind>>,
     ) -> NewKind,
-  ) -> Combinator!(NewKind, State, Heap) {
+  ) -> Combinator!(NewKind, @T) {
     wrap(move |input| {
       self.parse(input).map(|output| Output {
         rest: output.rest,

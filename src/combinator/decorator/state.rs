@@ -4,7 +4,7 @@ use crate::{
   Combinator,
 };
 
-impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
+impl<T: Parse> Combinator<T> {
   /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
   /// before being executed.
   /// # Examples
@@ -18,8 +18,8 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   #[inline]
   pub fn prepare(
     self,
-    modifier: impl Fn(&mut Input<&mut State, &mut Heap>),
-  ) -> Combinator!(T::Kind, State, Heap) {
+    modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>),
+  ) -> Combinator!(@T) {
     wrap(move |input| {
       modifier(input);
       self.parse(input)
@@ -40,9 +40,9 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   pub fn then(
     self,
     modifier: impl for<'text> Fn(
-      AcceptedContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, T::Kind>>,
+      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<'text, T::Kind>>,
     ),
-  ) -> Combinator!(T::Kind, State, Heap) {
+  ) -> Combinator!(@T) {
     wrap(move |input| {
       self.parse(input).inspect(|output| {
         modifier(AcceptedContext { input, output });
@@ -63,8 +63,8 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   #[inline]
   pub fn rollback(
     self,
-    modifier: impl Fn(&mut Input<&mut State, &mut Heap>),
-  ) -> Combinator!(T::Kind, State, Heap) {
+    modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>),
+  ) -> Combinator!(@T) {
     wrap(move |input| {
       let output = self.parse(input);
       if output.is_none() {

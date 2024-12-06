@@ -141,7 +141,7 @@ impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
   #[inline]
   pub fn parse(&mut self) -> Option<Node<T::Kind>>
   where
-    T: Parse<State, Heap>,
+    T: Parse<State = State, Heap = Heap>,
   {
     let output = self.entry.parse(&mut Input::new(
       self.instant.rest(),
@@ -166,7 +166,7 @@ impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
   #[inline]
   pub fn peek(&mut self) -> (Option<Node<T::Kind>>, State)
   where
-    T: Parse<State, Heap>,
+    T: Parse<State = State, Heap = Heap>,
     State: Clone,
   {
     let mut tmp_state = self.state.clone();

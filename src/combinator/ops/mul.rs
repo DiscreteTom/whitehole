@@ -117,16 +117,14 @@ impl<Lhs, Rhs> Mul<Lhs, Rhs> {
 }
 
 impl<
-    State,
-    Heap,
-    Lhs: Parse<State, Heap>,
+    Lhs: Parse,
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
     InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
-  > ops::Mul<(Repeater, Initializer, InlineFolder)> for Combinator<Lhs, State, Heap>
+  > ops::Mul<(Repeater, Initializer, InlineFolder)> for Combinator<Lhs>
 {
-  type Output = Combinator<Mul<Lhs, (Repeater, Initializer, InlineFolder)>, State, Heap>;
+  type Output = Combinator<Mul<Lhs, (Repeater, Initializer, InlineFolder)>>;
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, accumulator initializer and folder.
@@ -143,7 +141,7 @@ impl<
 
 #[inline]
 fn impl_mul<'text, Kind, State, Heap, Acc>(
-  lhs: &impl Parse<State, Heap, Kind = Kind>,
+  lhs: &impl Parse<Kind = Kind, State = State, Heap = Heap>,
   range: &impl Repeat,
   init: impl Fn() -> Acc,
   folder: impl Fn(Kind, Acc) -> Acc,
@@ -171,21 +169,21 @@ fn impl_mul<'text, Kind, State, Heap, Acc>(
 }
 
 impl<
-    State,
-    Heap,
-    Lhs: Parse<State, Heap>,
+    Lhs: Parse,
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
     InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
-  > Parse<State, Heap> for Mul<Lhs, (Repeater, Initializer, InlineFolder)>
+  > Parse for Mul<Lhs, (Repeater, Initializer, InlineFolder)>
 {
   type Kind = Acc;
+  type State = Lhs::State;
+  type Heap = Lhs::Heap;
 
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
+    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Acc>> {
     let (range, init, folder) = &self.rhs;
     impl_mul(&self.lhs, range, init, folder, input)
@@ -193,23 +191,15 @@ impl<
 }
 
 impl<
-    State,
-    Heap,
-    Lhs: Parse<State, Heap>,
-    Sep: Parse<State, Heap, Kind = ()>, // TODO: allow more generic Kind
+    Lhs: Parse,
+    Sep: Parse<Kind = (), State = Lhs::State, Heap = Lhs::Heap>, // TODO: allow more generic Kind
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
     InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
-  >
-  ops::Mul<(
-    Repeater,
-    Combinator<Sep, State, Heap>,
-    Initializer,
-    InlineFolder,
-  )> for Combinator<Lhs, State, Heap>
+  > ops::Mul<(Repeater, Combinator<Sep>, Initializer, InlineFolder)> for Combinator<Lhs>
 {
-  type Output = Combinator<Mul<Lhs, (Repeater, Sep, Initializer, InlineFolder)>, State, Heap>;
+  type Output = Combinator<Mul<Lhs, (Repeater, Sep, Initializer, InlineFolder)>>;
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, separator, accumulator initializer and folder.
@@ -222,32 +212,31 @@ impl<
   /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
   ///
   /// See [`Fold`] for more information.
-  fn mul(
-    self,
-    rhs: (
-      Repeater,
-      Combinator<Sep, State, Heap>,
-      Initializer,
-      InlineFolder,
-    ),
-  ) -> Self::Output {
+  fn mul(self, rhs: (Repeater, Combinator<Sep>, Initializer, InlineFolder)) -> Self::Output {
     let (range, sep, init, folder) = rhs;
     Self::Output::new(Mul::new(self.parser, (range, sep.parser, init, folder)))
   }
 }
 
 impl<
-    State,
-    Heap,
-    Lhs: Parse<State, Heap>,
+    Lhs: Parse,
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
     InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
-  > ops::Mul<(Repeater, char, Initializer, InlineFolder)> for Combinator<Lhs, State, Heap>
+  > ops::Mul<(Repeater, char, Initializer, InlineFolder)> for Combinator<Lhs>
 {
-  type Output =
-    Combinator<Mul<Lhs, (Repeater, EatChar<State, Heap>, Initializer, InlineFolder)>, State, Heap>;
+  type Output = Combinator<
+    Mul<
+      Lhs,
+      (
+        Repeater,
+        EatChar<Lhs::State, Lhs::Heap>,
+        Initializer,
+        InlineFolder,
+      ),
+    >,
+  >;
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, separator, accumulator initializer and folder.
@@ -270,19 +259,23 @@ impl<
 }
 
 impl<
-    State,
-    Heap,
-    Lhs: Parse<State, Heap>,
+    Lhs: Parse,
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
     InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
-  > ops::Mul<(Repeater, String, Initializer, InlineFolder)> for Combinator<Lhs, State, Heap>
+  > ops::Mul<(Repeater, String, Initializer, InlineFolder)> for Combinator<Lhs>
 {
   type Output = Combinator<
-    Mul<Lhs, (Repeater, EatString<State, Heap>, Initializer, InlineFolder)>,
-    State,
-    Heap,
+    Mul<
+      Lhs,
+      (
+        Repeater,
+        EatString<Lhs::State, Lhs::Heap>,
+        Initializer,
+        InlineFolder,
+      ),
+    >,
   >;
 
   /// Create a new combinator to repeat the original combinator
@@ -307,19 +300,23 @@ impl<
 
 impl<
     'a,
-    State,
-    Heap,
-    Lhs: Parse<State, Heap>,
+    Lhs: Parse,
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
     InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
-  > ops::Mul<(Repeater, &'a str, Initializer, InlineFolder)> for Combinator<Lhs, State, Heap>
+  > ops::Mul<(Repeater, &'a str, Initializer, InlineFolder)> for Combinator<Lhs>
 {
   type Output = Combinator<
-    Mul<Lhs, (Repeater, EatStr<'a, State, Heap>, Initializer, InlineFolder)>,
-    State,
-    Heap,
+    Mul<
+      Lhs,
+      (
+        Repeater,
+        EatStr<'a, Lhs::State, Lhs::Heap>,
+        Initializer,
+        InlineFolder,
+      ),
+    >,
   >;
 
   /// Create a new combinator to repeat the original combinator
@@ -344,9 +341,9 @@ impl<
 
 #[inline]
 fn impl_mul_with_sep<'text, Kind, State, Heap, Acc>(
-  lhs: &impl Parse<State, Heap, Kind = Kind>,
+  lhs: &impl Parse<Kind = Kind, State = State, Heap = Heap>,
   range: &impl Repeat,
-  sep: &impl Parse<State, Heap, Kind = ()>,
+  sep: &impl Parse<Kind = (), State = State, Heap = Heap>,
   init: impl Fn() -> Acc,
   folder: impl Fn(Kind, Acc) -> Acc,
   input: &mut Input<'text, &mut State, &mut Heap>,
@@ -380,22 +377,22 @@ fn impl_mul_with_sep<'text, Kind, State, Heap, Acc>(
 }
 
 impl<
-    State,
-    Heap,
-    Lhs: Parse<State, Heap>,
-    Sep: Parse<State, Heap, Kind = ()>,
+    Lhs: Parse,
+    Sep: Parse<Kind = (), State = Lhs::State, Heap = Lhs::Heap>,
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
     InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
-  > Parse<State, Heap> for Mul<Lhs, (Repeater, Sep, Initializer, InlineFolder)>
+  > Parse for Mul<Lhs, (Repeater, Sep, Initializer, InlineFolder)>
 {
   type Kind = Acc;
+  type State = Lhs::State;
+  type Heap = Lhs::Heap;
 
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
+    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Acc>> {
     let (range, sep, init, folder) = &self.rhs;
     impl_mul_with_sep(&self.lhs, range, sep, init, folder, input)
@@ -469,10 +466,8 @@ impl Fold for () {
   fn fold(self, _: Self::Output) -> Self::Output {}
 }
 
-impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Rhs: Repeat> ops::Mul<Rhs>
-  for Combinator<Lhs, State, Heap>
-{
-  type Output = Combinator<Mul<Lhs, Rhs>, State, Heap>;
+impl<Lhs: Parse<Kind: Fold>, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
+  type Output = Combinator<Mul<Lhs, Rhs>>;
 
   /// Create a new combinator to repeat the original combinator for `rhs` times.
   /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
@@ -486,15 +481,15 @@ impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Rhs: Repeat> ops::Mul<Rhs
   }
 }
 
-impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Rhs: Repeat> Parse<State, Heap>
-  for Mul<Lhs, Rhs>
-{
+impl<Lhs: Parse<Kind: Fold>, Rhs: Repeat> Parse for Mul<Lhs, Rhs> {
   type Kind = <Lhs::Kind as Fold>::Output;
+  type State = Lhs::State;
+  type Heap = Lhs::Heap;
 
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
+    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Self::Kind>> {
     impl_mul(
       &self.lhs,
@@ -507,14 +502,12 @@ impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Rhs: Repeat> Parse<State,
 }
 
 impl<
-    State,
-    Heap,
-    Lhs: Parse<State, Heap, Kind: Fold>,
+    Lhs: Parse<Kind: Fold>,
     Repeater: Repeat,
-    Sep: Parse<State, Heap, Kind = ()>,
-  > ops::Mul<(Repeater, Combinator<Sep, State, Heap>)> for Combinator<Lhs, State, Heap>
+    Sep: Parse<Kind = (), State = Lhs::State, Heap = Lhs::Heap>,
+  > ops::Mul<(Repeater, Combinator<Sep>)> for Combinator<Lhs>
 {
-  type Output = Combinator<Mul<Lhs, (Repeater, Sep)>, State, Heap>;
+  type Output = Combinator<Mul<Lhs, (Repeater, Sep)>>;
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, separator, accumulator initializer and folder.
@@ -527,16 +520,14 @@ impl<
   /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
   ///
   /// See [`Fold`] for more information.
-  fn mul(self, rhs: (Repeater, Combinator<Sep, State, Heap>)) -> Self::Output {
+  fn mul(self, rhs: (Repeater, Combinator<Sep>)) -> Self::Output {
     let (range, sep) = rhs;
     Self::Output::new(Mul::new(self.parser, (range, sep.parser)))
   }
 }
 
-impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Repeater: Repeat> ops::Mul<(Repeater, char)>
-  for Combinator<Lhs, State, Heap>
-{
-  type Output = Combinator<Mul<Lhs, (Repeater, EatChar<State, Heap>)>, State, Heap>;
+impl<Lhs: Parse<Kind: Fold>, Repeater: Repeat> ops::Mul<(Repeater, char)> for Combinator<Lhs> {
+  type Output = Combinator<Mul<Lhs, (Repeater, EatChar<Lhs::State, Lhs::Heap>)>>;
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, separator, accumulator initializer and folder.
@@ -555,10 +546,8 @@ impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Repeater: Repeat> ops::Mu
   }
 }
 
-impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Repeater: Repeat>
-  ops::Mul<(Repeater, String)> for Combinator<Lhs, State, Heap>
-{
-  type Output = Combinator<Mul<Lhs, (Repeater, EatString<State, Heap>)>, State, Heap>;
+impl<Lhs: Parse<Kind: Fold>, Repeater: Repeat> ops::Mul<(Repeater, String)> for Combinator<Lhs> {
+  type Output = Combinator<Mul<Lhs, (Repeater, EatString<Lhs::State, Lhs::Heap>)>>;
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, separator, accumulator initializer and folder.
@@ -577,10 +566,10 @@ impl<State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Repeater: Repeat>
   }
 }
 
-impl<'a, State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Repeater: Repeat>
-  ops::Mul<(Repeater, &'a str)> for Combinator<Lhs, State, Heap>
+impl<'a, Lhs: Parse<Kind: Fold>, Repeater: Repeat> ops::Mul<(Repeater, &'a str)>
+  for Combinator<Lhs>
 {
-  type Output = Combinator<Mul<Lhs, (Repeater, EatStr<'a, State, Heap>)>, State, Heap>;
+  type Output = Combinator<Mul<Lhs, (Repeater, EatStr<'a, Lhs::State, Lhs::Heap>)>>;
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, separator, accumulator initializer and folder.
@@ -600,19 +589,19 @@ impl<'a, State, Heap, Lhs: Parse<State, Heap, Kind: Fold>, Repeater: Repeat>
 }
 
 impl<
-    State,
-    Heap,
-    Lhs: Parse<State, Heap, Kind: Fold>,
+    Lhs: Parse<Kind: Fold>,
     Repeater: Repeat,
-    Sep: Parse<State, Heap, Kind = ()>,
-  > Parse<State, Heap> for Mul<Lhs, (Repeater, Sep)>
+    Sep: Parse<Kind = (), State = Lhs::State, Heap = Lhs::Heap>,
+  > Parse for Mul<Lhs, (Repeater, Sep)>
 {
   type Kind = <Lhs::Kind as Fold>::Output;
+  type State = Lhs::State;
+  type Heap = Lhs::Heap;
 
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
+    input: &mut Input<'text, &mut Lhs::State, &mut Lhs::Heap>,
   ) -> Option<Output<'text, Self::Kind>> {
     let (range, sep) = &self.rhs;
     impl_mul_with_sep(

@@ -73,19 +73,16 @@ impl<T, State, Heap> Builder<T, State, Heap> {
 
   /// Set [`Parser::entry`].
   #[inline]
-  pub fn entry<R: Parse<State, Heap>>(
-    self,
-    builder: impl FnOnce(combinator::Builder<State, Heap>) -> R,
-  ) -> Builder<R, State, Heap> {
+  pub fn entry<R: Parse<State = State, Heap = Heap>>(self, entry: R) -> Builder<R, State, Heap> {
     Builder {
-      entry: builder(combinator::Builder::new()),
+      entry,
       state: self.state,
       heap: self.heap,
     }
   }
 }
 
-impl<T: Parse<State, Heap>, State, Heap> Builder<T, State, Heap> {
+impl<T: Parse<State = Heap, Heap = Heap>, State, Heap> Builder<T, State, Heap> {
   /// Build a [`Parser`] with the given text.
   #[inline]
   pub fn build(self, text: &str) -> Parser<T, State, Heap> {

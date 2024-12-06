@@ -104,113 +104,74 @@
 //! - [`Combinator::prevent`]
 //! - [`Combinator::reject`]
 
-mod builder;
 mod decorator;
 mod provided;
 
 pub mod ops;
 
-pub use builder::*;
 pub use decorator::*;
 pub use provided::*;
 
 use crate::parse::{Input, Output, Parse};
-use std::marker::PhantomData;
 
 /// Wrap a [`Parse`] implementor to provide decorators and operator overloads.
 ///
 /// See the [module-level documentation](self) for more information.
 #[derive(Debug, Clone, Copy)]
-pub struct Combinator<T, State = (), Heap = ()> {
+pub struct Combinator<T> {
   parser: T,
-  _phantom: PhantomData<(State, Heap)>,
 }
 
 /// Simplify the [`Combinator`] struct's signature.
 ///
-/// - `Combinator!()` will be expanded to `Combinator<impl Parse<Kind = ()>>`.
-/// - `Combinator!(MyKind)` will be expanded to `Combinator<impl Parse<Kind = MyKind>>`.
-/// - `Combinator!(MyKind, State)` will be expanded to `Combinator<impl Parse<State, Kind = MyKind>, State>`.
-/// - `Combinator!(MyKind, State, Heap)` will be expanded to `Combinator<impl Parse<State, Heap, Kind = MyKind>, State, Heap>`.
-/// - `Combinator!(_, State, Heap)` will be expanded to `Combinator<impl Parse<State, Heap>, State, Heap>`.
+/// - `Combinator!()` => `Combinator<impl Parse<Kind = (), State = (), Heap = ()>>`.
+/// - `Combinator!(MyKind)` => `Combinator<impl Parse<Kind = MyKind, State = (), Heap = ()>>`.
+/// - `Combinator!(MyKind, MyState)` => `Combinator<impl Parse<Kind = MyKind, State = MyState, Heap = ()>>`.
+/// - `Combinator!(MyKind, MyState, MyHeap)` => `Combinator<impl Parse<Kind = MyKind, State = MyState, Heap = MyHeap>>`.
+/// - `Combinator!(@T)` => `Combinator<impl Parse<Kind = T::Kind, State = T::State, Heap = T::Heap>>`.
+/// - `Combinator!(MyKind, @T)` => `Combinator<impl Parse<Kind = MyKind, State = T::State, Heap = T::Heap>>`.
 #[macro_export]
 macro_rules! Combinator {
   () => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = ()>>
+    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = (), State = (), Heap = ()>>
   };
   ($kind:ty) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = $kind>>
+    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = $kind, State = (), Heap = ()>>
   };
   ($kind:ty, $state:ty) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<$state, Kind = $kind>, $state>
+    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = $kind, State = $state, Heap = ()>>
   };
   ($kind:ty, $state:ty, $heap:ty) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<$state, $heap, Kind = $kind>, $state, $heap>
+    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = $kind, State = $state, Heap = $heap>>
   };
-  (_, $state:ty, $heap:ty) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<$state, $heap>, $state, $heap>
+  (@$from:ident) => {
+    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = $from::Kind, State = $from::State, Heap = $from::Heap>>
+  };
+  ($kind:ty, @$from:ident) => {
+    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = $kind, State = $from::State, Heap = $from::Heap>>
   };
 }
 
-impl<T, State, Heap> Combinator<T, State, Heap> {
+// TODO: remove this? just make `parser` public?
+impl<T> Combinator<T> {
   /// Create a new instance by wrapping a [`Parse`] implementor.
-  ///
-  /// To wrap a closure, use [`wrap`] instead.
   #[inline]
   pub fn new(parser: T) -> Self {
-    Self {
-      parser,
-      _phantom: PhantomData,
-    }
+    Self { parser }
   }
-
-  // TODO
-  // /// Simplify generic params.
-  // #[inline]
-  // pub fn collapse(self) -> Combinator!(_, State, Heap)
-  // where
-  //   T: Parse<State, Heap>,
-  // {
-  //   self
-  // }
 }
 
-/// Wrap a closure to create a [`Combinator`].
-#[inline]
-pub fn wrap<Kind, State, Heap>(
-  parse: impl for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Kind>>,
-) -> Combinator!(Kind, State, Heap) {
-  Combinator::new(parse)
-}
-
-impl<T: Parse<State, Heap>, State, Heap> Parse<State, Heap> for Combinator<T, State, Heap> {
+// TODO: remove this?
+impl<T: Parse> Parse for Combinator<T> {
   type Kind = T::Kind;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn parse<'text>(
     &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
+    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, T::Kind>> {
     self.parser.parse(input)
-  }
-}
-
-#[cfg(test)]
-mod tests {
-  use super::*;
-
-  #[test]
-  fn combinator_parse() {
-    assert_eq!(
-      wrap(|input| Some(Output {
-        kind: (),
-        rest: &input.rest()[1..]
-      }))
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        kind: (),
-        rest: "23"
-      })
-    );
   }
 }

@@ -6,7 +6,7 @@ use crate::{
   Combinator,
 };
 
-impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
+impl<T: Parse> Combinator<T> {
   /// Create a new combinator to check the [`Input`] before being executed.
   /// The combinator will reject if the `preventer` returns `true`.
   /// # Examples
@@ -20,8 +20,8 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   #[inline]
   pub fn prevent(
     self,
-    preventer: impl Fn(&mut Input<&mut State, &mut Heap>) -> bool,
-  ) -> Combinator!(T::Kind, State, Heap) {
+    preventer: impl Fn(&mut Input<&mut T::State, &mut T::Heap>) -> bool,
+  ) -> Combinator!(@T) {
     wrap(move |input| {
       if preventer(input) {
         None
@@ -44,9 +44,9 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   pub fn reject(
     self,
     rejecter: impl for<'text> Fn(
-      AcceptedContext<&mut Input<'text, &mut State, &mut Heap>, &Output<'text, T::Kind>>,
+      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<'text, T::Kind>>,
     ) -> bool,
-  ) -> Combinator!(T::Kind, State, Heap) {
+  ) -> Combinator!(@T) {
     wrap(move |input| {
       self.parse(input).and_then(|output| {
         if rejecter(AcceptedContext {
@@ -97,7 +97,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn optional(self) -> Combinator!(T::Kind, State, Heap)
+  pub fn optional(self) -> Combinator!(@T)
   where
     T::Kind: Default,
   {
@@ -120,7 +120,7 @@ impl<T: Parse<State, Heap>, State, Heap> Combinator<T, State, Heap> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn boundary(self) -> Combinator!(T::Kind, State, Heap) {
+  pub fn boundary(self) -> Combinator!(@T) {
     self.reject(|ctx| {
       ctx
         .output
