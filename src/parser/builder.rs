@@ -73,7 +73,10 @@ impl<T, State, Heap> Builder<T, State, Heap> {
 
   /// Set [`Parser::entry`].
   #[inline]
-  pub fn entry<R: Parse<State = State, Heap = Heap>>(self, entry: R) -> Builder<R, State, Heap> {
+  pub fn entry<Entry: Parse<State = State, Heap = Heap>>(
+    self,
+    entry: Entry,
+  ) -> Builder<Entry, State, Heap> {
     Builder {
       entry,
       state: self.state,
