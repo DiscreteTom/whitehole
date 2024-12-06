@@ -111,7 +111,7 @@ pub struct Mul<Lhs, Rhs> {
 
 impl<Lhs, Rhs> Mul<Lhs, Rhs> {
   #[inline]
-  pub fn new(lhs: Lhs, rhs: Rhs) -> Self {
+  pub const fn new(lhs: Lhs, rhs: Rhs) -> Self {
     Self { lhs, rhs }
   }
 }

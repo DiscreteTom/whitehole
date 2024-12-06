@@ -139,7 +139,7 @@ pub struct Add<Lhs, Rhs> {
 impl<Lhs, Rhs> Add<Lhs, Rhs> {
   /// Create a new instance with the left-hand side and right-hand side.
   #[inline]
-  pub fn new(lhs: Lhs, rhs: Rhs) -> Self {
+  pub const fn new(lhs: Lhs, rhs: Rhs) -> Self {
     Self { lhs, rhs }
   }
 }

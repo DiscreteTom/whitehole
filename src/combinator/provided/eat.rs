@@ -30,7 +30,7 @@ macro_rules! impl_eat {
     impl<State, Heap> $name<State, Heap> {
       /// Create a new instance with the inner value.
       #[inline]
-      pub fn new(inner: $inner) -> Self {
+      pub const fn new(inner: $inner) -> Self {
         Self {
           inner,
           _phantom: PhantomData,
@@ -112,7 +112,7 @@ pub struct EatStr<'a, State = (), Heap = ()> {
 impl<'a, State, Heap> EatStr<'a, State, Heap> {
   /// Create a new instance with the inner value.
   #[inline]
-  pub fn new(s: &'a str) -> Self {
+  pub const fn new(s: &'a str) -> Self {
     Self {
       s,
       _phantom: PhantomData,
