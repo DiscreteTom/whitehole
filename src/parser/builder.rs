@@ -4,7 +4,7 @@ use crate::parse::Parse;
 /// A builder for [`Parser`].
 /// # Examples
 /// ```
-/// use whitehole::parser::Builder;
+/// use whitehole::{parser::Builder, combinator::eat};
 ///
 /// # struct MyState;
 /// # impl MyState {
@@ -20,7 +20,7 @@ use crate::parse::Parse;
 ///   // optional
 ///   .heap(MyHeap::new())
 ///   // build the entry combinator with the provided state and heap
-///   .entry(|b| b.eat("hello ") + "world")
+///   .entry(eat("hello ") + "world")
 ///   // build the parser
 ///   .build("hello world");
 /// ```

@@ -49,11 +49,20 @@ unsafe impl Till for () {
 /// Empty string is allowed, but be careful with infinite loops.
 /// # Examples
 /// ```
-/// # use whitehole::combinator::{till, Combinator};
-/// let _: Combinator<_> = till("end".to_string()); // with String
-/// let _: Combinator<_> = till("end"); // with &str
-/// let _: Combinator<_> = till(';'); // with char
-/// let _: Combinator<_> = till(()); // with (), eat all rest
+/// # use whitehole::{combinator::till, Combinator};
+/// # fn t(_: Combinator!()) {}
+/// # t(
+/// till("end".to_string()) // with String
+/// # );
+/// # t(
+/// till("end") // with &str
+/// # );
+/// # t(
+/// till(';') // with char
+/// # );
+/// # t(
+/// till(()) // with (), eat all rest
+/// # );
 /// ```
 #[inline]
 pub fn till<State, Heap>(pattern: impl Till) -> Combinator!((), State, Heap) {

@@ -5,9 +5,12 @@ use crate::{combinator::wrap, Combinator};
 /// The combinator will reject if not matched.
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::{Combinator, next}};
+/// # use whitehole::{combinator::next, Combinator};
+/// # fn t(_: Combinator!()) {}
 /// // match one ascii digit
-/// let _: Combinator<_> = next(|c| c.is_ascii_digit());
+/// # t(
+/// next(|c| c.is_ascii_digit())
+/// # );
 /// ```
 #[inline]
 pub fn next<State, Heap>(condition: impl Fn(char) -> bool) -> Combinator!((), State, Heap) {

@@ -5,8 +5,11 @@
 //! To get started, you can use the provided combinators like [`eat`],
 //! which will eat the provided pattern from the rest of the input text:
 //! ```
-//! # use whitehole::combinator::{Combinator, eat};
-//! let _: Combinator<_> = eat("true");
+//! # use whitehole::{combinator::eat, Combinator};
+//! # fn t(_: Combinator!()) {}
+//! # t(
+//! eat("true")
+//! # );
 //! ```
 //! To save the memory of your brain, we have very limited number of provided combinators.
 //! Here is the full list:
@@ -23,65 +26,110 @@
 //! Use `+` and `|` to compose multiple combinators
 //! for more complex tasks:
 //! ```
-//! # use whitehole::combinator::{Combinator, eat};
+//! # use whitehole::{combinator::eat, Combinator};
+//! # fn t(_: Combinator!()) {}
 //! // match "true" then match "false"
-//! let _: Combinator<_> = eat("true") + eat("false");
-//!
+//! # t(
+//! eat("true") + eat("false")
+//! # );
 //! // match "true" or "false"
-//! let _: Combinator<_> = eat("true") | eat("false");
+//! # t(
+//! eat("true") | eat("false")
+//! # );
 //!
 //! // you can use a String, a &str, a char or an usize as a shortcut for `eat`
 //! // at the right-hand side of `+` or `|`
-//! let _: Combinator<_> = eat("true") + "false";
-//! let _: Combinator<_> = eat("true") | "false";
-//! let _: Combinator<_> = eat("true") + ';';
-//! let _: Combinator<_> = eat("true") | ';';
-//! let _: Combinator<_> = eat("true") + 1;
-//! let _: Combinator<_> = eat("true") | 1;
+//! # t(
+//! eat("true") + "false"
+//! # );
+//! # t(
+//! eat("true") | "false"
+//! # );
+//! # t(
+//! eat("true") + ';'
+//! # );
+//! # t(
+//! eat("true") | ';'
+//! # );
+//! # t(
+//! eat("true") + 1
+//! # );
+//! # t(
+//! eat("true") | 1
+//! # );
 //! ```
 //! ## Repeat
 //! Use `*` to repeat a combinator:
 //! ```
-//! # use whitehole::combinator::{Combinator, eat};
+//! # use whitehole::{combinator::eat, Combinator};
+//! # fn t(_: Combinator!()) {}
 //! // repeat the combinator for 2 times
-//! let _: Combinator<_> = eat("true") * 2;
+//! # t(
+//! eat("true") * 2
+//! # );
 //! // equals to
-//! let _: Combinator<_> = eat("true") + "true";
+//! # t(
+//! eat("true") + "true"
+//! # );
 //!
 //! // repeat the combinator with a range, greedy
-//! let _: Combinator<_> = eat("true") * (1..=3);
+//! # t(
+//! eat("true") * (1..=3)
+//! # );
 //! // similar to but faster than
-//! let _: Combinator<_> =
-//!     (eat("true") + "true" + "true")
-//!   | (eat("true") + "true")
-//!   |  eat("true");
+//! # t(
+//! (eat("true") + "true" + "true") | (eat("true") + "true") |  eat("true")
+//! # );
 //!
 //! // repeat for 0 or more times
-//! let _: Combinator<_> = eat("true") * (..);
-//! let _: Combinator<_> = eat("true") * (..=3);
+//! # t(
+//! eat("true") * (..)
+//! # );
+//! # t(
+//! eat("true") * (..=3)
+//! # );
 //!
 //! // repeating for 0 times will always accept with 0 bytes digested
-//! let _: Combinator<_> = eat("true") * 0;
-//! let _: Combinator<_> = eat("true") * (..1);
-//! let _: Combinator<_> = eat("true") * (..=0);
+//! # t(
+//! eat("true") * 0
+//! # );
+//! # t(
+//! eat("true") * (..1)
+//! # );
+//! # t(
+//! eat("true") * (..=0)
+//! # );
 //!
 //! // repeat with another combinator as the separator
-//! let _: Combinator<_> = eat("true") * (1.., eat(','));
+//! # t(
+//! eat("true") * (1.., eat(','))
+//! # );
 //! // you can use a String, a &str or a char as the separator
-//! let _: Combinator<_> = eat("true") * (1.., ',');
-//! let _: Combinator<_> = eat("true") * (1.., ", ");
-//! let _: Combinator<_> = eat("true") * (1.., ", ".to_string());
+//! # t(
+//! eat("true") * (1.., ',')
+//! # );
+//! # t(
+//! eat("true") * (1.., ", ")
+//! # );
+//! # t(
+//! eat("true") * (1.., ", ".to_string())
+//! # );
 //! ```
 //! ## Decorator
 //! [`Combinator`] provides a set of methods as decorators
 //! to modify the behavior of the combinator.
 //! For now let's see 2 of them:
 //! ```
-//! # use whitehole::combinator::{Combinator, eat};
+//! # use whitehole::{combinator::eat, Combinator};
+//! # fn t(_: Combinator!()) {}
 //! // make the combinator optional
-//! let _: Combinator<_> = eat("true").optional();
+//! # t(
+//! eat("true").optional()
+//! # );
 //! // require a word boundary after the combinator is accepted
-//! let _: Combinator<_> = eat("true").boundary();
+//! # t(
+//! eat("true").boundary()
+//! # );
 //! ```
 //! ## Kind
 //! You can set [`Output::kind`] to distinguish different output types

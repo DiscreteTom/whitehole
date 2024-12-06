@@ -152,11 +152,20 @@ impl<'a, State, Heap> Parse for EatStr<'a, State, Heap> {
 ///
 /// # Examples
 /// ```
-/// # use whitehole::combinator::{Combinator, eat};
-/// let _: Combinator<_> = eat('a'); // eat by char
-/// let _: Combinator<_> = eat("true"); // eat by &str
-/// let _: Combinator<_> = eat("true".to_string()); // eat by String
-/// let _: Combinator<_> = eat(10); // eat by byte length
+/// # use whitehole::{combinator::eat, Combinator};
+/// # fn t(_: Combinator!()) {}
+/// # t(
+/// eat('a') // eat by char
+/// # );
+/// # t(
+/// eat("true") // eat by &str
+/// # );
+/// # t(
+/// eat("true".to_string()) // eat by String
+/// # );
+/// # t(
+/// eat(10) // eat by byte length
+/// # );
 /// ```
 #[inline]
 pub fn eat<State, Heap>(pattern: impl Eat) -> Combinator!((), State, Heap) {
@@ -176,9 +185,12 @@ pub fn eat<State, Heap>(pattern: impl Eat) -> Combinator!((), State, Heap) {
 /// For the checked version, see [`eat`].
 /// # Examples
 /// ```
-/// # use whitehole::combinator::{Combinator, eat_unchecked};
+/// # use whitehole::{combinator::eat_unchecked, Combinator};
+/// # fn t(_: Combinator!()) {}
 /// // eat 10 bytes
-/// let _: Combinator<_> = unsafe { eat_unchecked(10) };
+/// # t(
+/// unsafe { eat_unchecked(10) }
+/// # );
 /// ```
 #[inline]
 pub unsafe fn eat_unchecked<State, Heap>(n: usize) -> Combinator!((), State, Heap) {
@@ -192,9 +204,12 @@ pub unsafe fn eat_unchecked<State, Heap>(n: usize) -> Combinator!((), State, Hea
 /// as a valid UTF-8 string.
 /// # Examples
 /// ```
-/// # use whitehole::combinator::{Combinator, eater};
+/// # use whitehole::{combinator::eater, Combinator};
+/// # fn t(_: Combinator!()) {}
 /// // accept all the rest characters
-/// let _: Combinator<_> = eater(|input| input.rest().len());
+/// # t(
+/// eater(|input| input.rest().len())
+/// # );
 /// ```
 #[inline]
 pub fn eater<State, Heap>(
@@ -216,9 +231,12 @@ pub fn eater<State, Heap>(
 /// For the checked version, see [`eater`].
 /// # Examples
 /// ```
-/// # use whitehole::combinator::{Combinator, eater_unchecked};
+/// # use whitehole::{combinator::eater_unchecked, Combinator};
+/// # fn t(_: Combinator!()) {}
 /// // accept all the rest characters
-/// let _: Combinator<_> = unsafe { eater_unchecked(|input| input.rest().len()) };
+/// # t(
+/// unsafe { eater_unchecked(|input| input.rest().len()) }
+/// # );
 /// ```
 #[inline]
 pub unsafe fn eater_unchecked<State, Heap>(
