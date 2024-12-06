@@ -15,13 +15,13 @@ use crate::{
 
 /// Manage [`Input::state`], [`Input::heap`] and the parsing progress.
 #[derive(Debug)]
-pub struct Parser<'text, T, State = (), Heap = ()> {
+pub struct Parser<'text, T: Parse> {
   /// See [`Input::state`](crate::parse::Input::state).
   /// You can mutate this directly if needed.
-  pub state: State,
+  pub state: T::State,
   /// See [`Input::heap`](crate::parse::Input::heap).
   /// You can mutate this directly if needed.
-  pub heap: Heap,
+  pub heap: T::Heap,
 
   /// See [`Self::instant`].
   instant: Instant<'text>,
@@ -29,7 +29,7 @@ pub struct Parser<'text, T, State = (), Heap = ()> {
   entry: T,
 }
 
-impl<'text, T: Clone, State: Clone, Heap: Clone> Clone for Parser<'text, T, State, Heap> {
+impl<'text, T: Parse<State: Clone, Heap: Clone> + Clone> Clone for Parser<'text, T> {
   /// Clone the parser, including [`Self::state`] and [`Self::heap`].
   /// # Performance
   /// Cloning the [`Self::heap`] might be expensive, you should use [`Parser::snapshot`] to avoid cloning [`Self::heap`],
@@ -46,7 +46,7 @@ impl<'text, T: Clone, State: Clone, Heap: Clone> Clone for Parser<'text, T, Stat
   }
 }
 
-impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
+impl<'text, T: Parse> Parser<'text, T> {
   /// The entry combinator.
   #[inline]
   pub const fn entry(&self) -> &T {
@@ -64,18 +64,18 @@ impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
   /// [`Self::instant`] and [`Self::state`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload(self, text: &str) -> Parser<T, State, Heap>
+  pub fn reload(self, text: &str) -> Parser<T>
   where
-    State: Default,
+    T::State: Default,
   {
-    self.reload_with(State::default(), text)
+    self.reload_with(T::State::default(), text)
   }
 
   /// Consume self, return a new instance with the same combinator, a new text and the given state.
   /// [`Self::instant`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload_with(self, state: State, text: &str) -> Parser<T, State, Heap> {
+  pub fn reload_with(self, state: T::State, text: &str) -> Parser<T> {
     Parser {
       entry: self.entry,
       heap: self.heap,
@@ -86,9 +86,9 @@ impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
 
   /// Take a snapshot of the current [`Self::state`] and [`Self::instant`].
   #[inline]
-  pub fn snapshot(&self) -> Snapshot<'text, State>
+  pub fn snapshot(&self) -> Snapshot<'text, T::State>
   where
-    State: Clone,
+    T::State: Clone,
   {
     Snapshot {
       state: self.state.clone(),
@@ -98,7 +98,7 @@ impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
 
   /// Restore [`Self::state`] and [`Self::instant`] from a [`Snapshot`].
   #[inline]
-  pub fn restore(&mut self, snapshot: Snapshot<'text, State>) {
+  pub fn restore(&mut self, snapshot: Snapshot<'text, T::State>) {
     self.state = snapshot.state;
     self.instant = snapshot.instant;
   }
@@ -139,10 +139,7 @@ impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
   /// Return [`None`] if the text is already fully digested
   /// or the combinator rejects.
   #[inline]
-  pub fn parse(&mut self) -> Option<Node<T::Kind>>
-  where
-    T: Parse<State = State, Heap = Heap>,
-  {
+  pub fn parse(&mut self) -> Option<Node<T::Kind>> {
     let output = self.entry.parse(&mut Input::new(
       self.instant.rest(),
       self.instant.digested(),
@@ -164,10 +161,9 @@ impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
   /// Return [`None`] if the text is already fully digested
   /// or the combinator rejects.
   #[inline]
-  pub fn peek(&mut self) -> (Option<Node<T::Kind>>, State)
+  pub fn peek(&mut self) -> (Option<Node<T::Kind>>, T::State)
   where
-    T: Parse<State = State, Heap = Heap>,
-    State: Clone,
+    T::State: Clone,
   {
     let mut tmp_state = self.state.clone();
     (

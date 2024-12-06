@@ -88,7 +88,7 @@ impl<T, State, Heap> Builder<T, State, Heap> {
 impl<T: Parse<State = State, Heap = Heap>, State, Heap> Builder<T, State, Heap> {
   /// Build a [`Parser`] with the given text.
   #[inline]
-  pub fn build(self, text: &str) -> Parser<T, State, Heap> {
+  pub fn build(self, text: &str) -> Parser<T> {
     Parser {
       state: self.state,
       heap: self.heap,

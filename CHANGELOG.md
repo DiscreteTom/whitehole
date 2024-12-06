@@ -6,6 +6,7 @@
 - **_Breaking Change_**: plain closures are no longer supported as `Parse` trait implementations.
 - **_Breaking Change_**: remove `combinator::Builder`.
 - **_Breaking Change_**: remove `Combinator!(_, State, Heap)` syntax, add `Combinator!(@T)` and `Combinator!(Kind, @T)` syntax.
+- **_Breaking Change_**: simplify generic params of `Parser`.
 
 ## v0.0.1
 
