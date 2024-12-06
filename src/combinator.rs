@@ -152,7 +152,6 @@ macro_rules! Combinator {
   };
 }
 
-// TODO: remove this? just make `parser` public?
 impl<T> Combinator<T> {
   /// Create a new instance by wrapping a [`Parse`] implementor.
   #[inline]
@@ -161,7 +160,6 @@ impl<T> Combinator<T> {
   }
 }
 
-// TODO: remove this?
 impl<T: Parse> Parse for Combinator<T> {
   type Kind = T::Kind;
   type State = T::State;
