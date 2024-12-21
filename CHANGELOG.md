@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Make generic param `State` and `Heap` of the `Parse` trait become associated type.
 - Plain closures are no longer supported as `Parse` trait implementations. Use `wrap` instead to create a `Combinator` from a closure.
 - Simplify generic params of `Combinator` and `Parser`.
+- `Parser::parse` and `Parser::peek` will return `parse::Output` instead of `WithRange`.
 
 ### Removed
 

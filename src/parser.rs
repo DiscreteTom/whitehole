@@ -8,10 +8,7 @@ pub use builder::*;
 pub use instant::*;
 pub use snapshot::*;
 
-use crate::{
-  parse::{Input, Parse},
-  range::WithRange,
-};
+use crate::parse::{Input, Output, Parse};
 
 /// Manage [`Input::state`], [`Input::heap`] and the parsing progress.
 #[derive(Debug)]
@@ -135,33 +132,28 @@ impl<'text, T: Parse> Parser<'text, T> {
   //   self
   // }
 
-  /// Try to yield the next [`WithRange`].
+  /// Try to yield the next [`Output`].
   /// Return [`None`] if the text is already fully digested
   /// or the combinator rejects.
   #[inline]
-  pub fn parse(&mut self) -> Option<WithRange<T::Kind>> {
-    let output = self.entry.parse(&mut Input::new(
-      self.instant.rest(),
-      self.instant.digested(),
-      &mut self.state,
-      &mut self.heap,
-    )?)?;
-
-    let start = self.instant.digested();
-    self.instant.update(output.rest);
-    WithRange {
-      data: output.kind,
-      range: start..self.instant.digested(),
-    }
-    .into()
+  pub fn parse(&mut self) -> Option<Output<T::Kind>> {
+    self
+      .entry
+      .parse(&mut Input::new(
+        self.instant.rest(),
+        self.instant.digested(),
+        &mut self.state,
+        &mut self.heap,
+      )?)
+      .inspect(|output| self.instant.update(output.rest))
   }
 
-  /// Try to yield the next [`WithRange`] without updating [`Self::instant`] and [`Self::state`].
+  /// Try to yield the next [`Output`] without updating [`Self::instant`] and [`Self::state`].
   /// [`Self::state`] will be cloned and returned.
   /// Return [`None`] if the text is already fully digested
   /// or the combinator rejects.
   #[inline]
-  pub fn peek(&mut self) -> (Option<WithRange<T::Kind>>, T::State)
+  pub fn peek(&mut self) -> (Option<Output<T::Kind>>, T::State)
   where
     T::State: Clone,
   {
@@ -173,11 +165,7 @@ impl<'text, T: Parse> Parser<'text, T> {
         &mut tmp_state,
         &mut self.heap,
       )
-      .and_then(|mut input| self.entry.parse(&mut input))
-      .map(|output| WithRange {
-        data: output.kind,
-        range: self.instant.digested()..self.instant.text().len() - output.rest.len(),
-      }),
+      .and_then(|mut input| self.entry.parse(&mut input)),
       tmp_state,
     )
   }
