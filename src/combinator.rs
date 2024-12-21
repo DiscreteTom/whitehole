@@ -201,7 +201,10 @@ macro_rules! C {
 }
 
 impl<T> Combinator<T> {
-  /// Create a new instance by wrapping a [`Action`] implementor.
+  /// Create a new instance.
+  ///
+  /// For most cases you don't need to use this method directly.
+  /// See the [module-level documentation](self) for more information.
   #[inline]
   pub const fn new(action: T) -> Self {
     Self { action }
