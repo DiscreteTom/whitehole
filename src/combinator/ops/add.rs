@@ -3,7 +3,7 @@
 //! `Combinator + Combinator` will create a new combinator
 //! to parse with the left-hand side, then parse with the right-hand side.
 //! The combinator will return the output with [`Concat`]-ed value
-//! and the rest of the input text after the right-hand side is digested,
+//! and the rest of the input text after the right-hand side is executed,
 //! or reject if any of the combinators rejects.
 //! # Basics
 //! ```
