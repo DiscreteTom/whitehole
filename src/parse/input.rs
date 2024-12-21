@@ -83,7 +83,7 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   /// as a valid UTF-8 string.
   #[inline]
   pub fn digest(&self, n: usize) -> Option<Output<'text, ()>> {
-    self.rest.get(n..).map(|rest| Output { kind: (), rest })
+    self.rest.get(n..).map(|rest| Output { value: (), rest })
   }
 
   /// Try to build an [`Output`] by digesting `n` bytes.
@@ -96,7 +96,7 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   pub unsafe fn digest_unchecked(&self, n: usize) -> Output<'text, ()> {
     debug_assert!(self.rest.get(n..).is_some());
     Output {
-      kind: (),
+      value: (),
       rest: self.rest.get_unchecked(n..),
     }
   }

@@ -1,6 +1,6 @@
 mod context;
 mod flow;
-mod kind;
 mod state;
+mod value;
 
 pub use context::*;

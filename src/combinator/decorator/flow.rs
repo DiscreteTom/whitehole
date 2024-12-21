@@ -66,7 +66,7 @@ impl<T: Parse> Combinator<T> {
   pub fn reject(
     self,
     rejecter: impl for<'text> Fn(
-      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<'text, T::Kind>>,
+      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<'text, T::Value>>,
     ) -> bool,
   ) -> Combinator!(@T) {
     wrap(move |input| {
@@ -86,29 +86,27 @@ impl<T: Parse> Combinator<T> {
   /// Make the combinator optional.
   ///
   /// Under the hood, the combinator will be accepted
-  /// with the default kind and zero digested if the original combinator rejects.
+  /// with the default value and zero digested if the original combinator rejects.
   /// # Caveats
-  /// This requires the `Kind` to implement [`Default`],
-  /// thus usually used before setting a custom kind.
+  /// This requires the `Value` to implement [`Default`],
+  /// thus usually used before setting a custom value.
   /// ```
   /// # use whitehole::Combinator;
-  /// # #[derive(Clone)]
-  /// # enum MyKind { A }
+  /// # struct MyValue;
   /// # fn t(combinator: Combinator!()) {
-  /// // make the combinator optional before binding a kind
-  /// combinator.optional().bind(MyKind::A)
+  /// // make the combinator optional before binding a value
+  /// combinator.optional().bind(MyValue)
   /// // instead of
-  /// // combinator.bind(MyKind::A).optional()
+  /// // combinator.bind(MyValue).optional()
   /// # ;}
   /// ```
-  /// Or you can wrap `Kind` with [`Option`] to make it optional
-  /// after setting a custom kind.
+  /// Or you can wrap `Value` with [`Option`] to make it optional
+  /// after setting a custom value.
   /// ```
   /// # use whitehole::Combinator;
-  /// # #[derive(Clone)]
-  /// # enum MyKind { A }
+  /// # struct MyValue;
   /// # fn t(combinator: Combinator!()) {
-  /// combinator.bind(Some(MyKind::A)).optional()
+  /// combinator.bind(Some(MyValue)).optional()
   /// # ;}
   /// ```
   /// # Examples
@@ -121,11 +119,11 @@ impl<T: Parse> Combinator<T> {
   #[inline]
   pub fn optional(self) -> Combinator!(@T)
   where
-    T::Kind: Default,
+    T::Value: Default,
   {
     wrap(move |input| {
       Some(self.parse(input).unwrap_or_else(|| Output {
-        kind: Default::default(),
+        value: Default::default(),
         rest: input.rest(),
       }))
     })
@@ -162,7 +160,7 @@ mod tests {
     wrap(|input| {
       *input.state = true;
       Some(Output {
-        kind: (),
+        value: (),
         rest: &input.rest()[1..],
       })
     })
@@ -217,7 +215,7 @@ mod tests {
         .reject(|input| input.content() != "1")
         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "23"
       })
     );
@@ -241,7 +239,7 @@ mod tests {
         .optional()
         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "23"
       })
     );
@@ -253,7 +251,7 @@ mod tests {
         .optional()
         .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "123"
       })
     );
@@ -267,7 +265,10 @@ mod tests {
       accepter()
         .boundary()
         .parse(&mut Input::new("1", 0, &mut executed, &mut ()).unwrap()),
-      Some(Output { kind: (), rest: "" })
+      Some(Output {
+        value: (),
+        rest: ""
+      })
     );
     assert!(executed);
 

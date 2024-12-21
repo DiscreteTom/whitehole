@@ -18,10 +18,10 @@ impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
   }
 }
 
-impl<Lhs: Parse, Rhs: Parse<Kind = Lhs::Kind, State = Lhs::State, Heap = Lhs::Heap>> Parse
+impl<Lhs: Parse, Rhs: Parse<Value = Lhs::Value, State = Lhs::State, Heap = Lhs::Heap>> Parse
   for BitOr<Lhs, Rhs>
 {
-  type Kind = Lhs::Kind;
+  type Value = Lhs::Value;
   type State = Lhs::State;
   type Heap = Lhs::Heap;
 
@@ -29,12 +29,12 @@ impl<Lhs: Parse, Rhs: Parse<Kind = Lhs::Kind, State = Lhs::State, Heap = Lhs::He
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
+  ) -> Option<Output<'text, Self::Value>> {
     self.lhs.parse(input).or_else(|| self.rhs.parse(input))
   }
 }
 
-impl<Lhs: Parse, Rhs: Parse<Kind = Lhs::Kind, State = Lhs::State, Heap = Lhs::Heap>>
+impl<Lhs: Parse, Rhs: Parse<Value = Lhs::Value, State = Lhs::State, Heap = Lhs::Heap>>
   ops::BitOr<Combinator<Rhs>> for Combinator<Lhs>
 {
   type Output = Combinator<BitOr<Lhs, Rhs>>;
@@ -107,7 +107,7 @@ mod tests {
       wrap(|input| {
         *input.state += 1;
         Some(Output {
-          kind: (),
+          value: (),
           rest: &input.rest()[1..],
         })
       })
@@ -117,7 +117,7 @@ mod tests {
     assert_eq!(
       (rejecter() | accepter()).parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "23",
       })
     );
@@ -129,7 +129,7 @@ mod tests {
     assert_eq!(
       (accepter() | rejecter()).parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "23",
       })
     );

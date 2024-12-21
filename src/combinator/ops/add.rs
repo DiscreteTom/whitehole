@@ -144,10 +144,10 @@ impl<Lhs, Rhs> Add<Lhs, Rhs> {
   }
 }
 
-impl<Lhs: Parse<Kind: Concat<Rhs::Kind>>, Rhs: Parse<State = Lhs::State, Heap = Lhs::Heap>> Parse
+impl<Lhs: Parse<Value: Concat<Rhs::Value>>, Rhs: Parse<State = Lhs::State, Heap = Lhs::Heap>> Parse
   for Add<Lhs, Rhs>
 {
-  type Kind = <Lhs::Kind as Concat<Rhs::Kind>>::Output;
+  type Value = <Lhs::Value as Concat<Rhs::Value>>::Output;
   type State = Lhs::State;
   type Heap = Lhs::Heap;
 
@@ -155,26 +155,26 @@ impl<Lhs: Parse<Kind: Concat<Rhs::Kind>>, Rhs: Parse<State = Lhs::State, Heap = 
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
+  ) -> Option<Output<'text, Self::Value>> {
     self.lhs.parse(input).and_then(|output| {
       input
         .reload(output.rest)
         .and_then(|mut input| self.rhs.parse(&mut input))
         .map(|rhs_output| Output {
-          kind: output.kind.concat(rhs_output.kind),
+          value: output.value.concat(rhs_output.value),
           rest: rhs_output.rest,
         })
     })
   }
 }
 
-impl<Lhs: Parse<Kind: Concat<Rhs::Kind>>, Rhs: Parse<State = Lhs::State, Heap = Lhs::Heap>>
+impl<Lhs: Parse<Value: Concat<Rhs::Value>>, Rhs: Parse<State = Lhs::State, Heap = Lhs::Heap>>
   ops::Add<Combinator<Rhs>> for Combinator<Lhs>
 {
   type Output = Combinator<Add<Lhs, Rhs>>;
 
   /// Create a new combinator to parse with the left-hand side, then parse with the right-hand side.
-  /// The combinator will return the output with [`Concat`]-ed kind and the sum of the digested,
+  /// The combinator will return the output with [`Concat`]-ed value and the sum of the digested,
   /// or reject if any of the parses rejects.
   #[inline]
   fn add(self, rhs: Combinator<Rhs>) -> Self::Output {
@@ -182,7 +182,7 @@ impl<Lhs: Parse<Kind: Concat<Rhs::Kind>>, Rhs: Parse<State = Lhs::State, Heap = 
   }
 }
 
-impl<Lhs: Parse<Kind: Concat<()>>> ops::Add<char> for Combinator<Lhs> {
+impl<Lhs: Parse<Value: Concat<()>>> ops::Add<char> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatChar<Lhs::State, Lhs::Heap>>>;
 
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
@@ -192,7 +192,7 @@ impl<Lhs: Parse<Kind: Concat<()>>> ops::Add<char> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs: Parse<Kind: Concat<()>>> ops::Add<usize> for Combinator<Lhs> {
+impl<Lhs: Parse<Value: Concat<()>>> ops::Add<usize> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatUsize<Lhs::State, Lhs::Heap>>>;
 
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
@@ -202,7 +202,7 @@ impl<Lhs: Parse<Kind: Concat<()>>> ops::Add<usize> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs: Parse<Kind: Concat<()>>> ops::Add<String> for Combinator<Lhs> {
+impl<Lhs: Parse<Value: Concat<()>>> ops::Add<String> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatString<Lhs::State, Lhs::Heap>>>;
 
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
@@ -212,7 +212,7 @@ impl<Lhs: Parse<Kind: Concat<()>>> ops::Add<String> for Combinator<Lhs> {
   }
 }
 
-impl<'a, Lhs: Parse<Kind: Concat<()>>> ops::Add<&'a str> for Combinator<Lhs> {
+impl<'a, Lhs: Parse<Value: Concat<()>>> ops::Add<&'a str> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatStr<'a, Lhs::State, Lhs::Heap>>>;
 
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
@@ -233,7 +233,7 @@ mod tests {
     let accepter_unit = || {
       wrap(|input| {
         Some(Output {
-          kind: (),
+          value: (),
           rest: &input.rest()[1..],
         })
       })
@@ -241,7 +241,7 @@ mod tests {
     let accepter_int = || {
       wrap(|input| {
         Some(Output {
-          kind: (123,),
+          value: (123,),
           rest: &input.rest()[1..],
         })
       })
@@ -258,12 +258,12 @@ mod tests {
       .is_none());
 
     // accept then accept, should return the sum of the digested
-    // with the concat kind
+    // with the concat value
     assert_eq!(
       (accepter_unit() + accepter_int())
         .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (123,),
+        value: (123,),
         rest: "3",
       })
     );
@@ -271,14 +271,14 @@ mod tests {
       (accepter_int() + accepter_unit())
         .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (123,),
+        value: (123,),
         rest: "3",
       })
     );
     assert_eq!(
       (accepter_int() + accepter_int()).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (123, 123),
+        value: (123, 123),
         rest: "3",
       })
     );
@@ -289,7 +289,7 @@ mod tests {
     let eat1 = || {
       wrap(|input| {
         Some(Output {
-          kind: (),
+          value: (),
           rest: &input.rest()[1..],
         })
       })
@@ -308,7 +308,7 @@ mod tests {
     let eat1 = || {
       wrap(|input| {
         Some(Output {
-          kind: (),
+          value: (),
           rest: &input.rest()[1..],
         })
       })
@@ -327,7 +327,7 @@ mod tests {
     let eat1 = || {
       wrap(|input| {
         Some(Output {
-          kind: (),
+          value: (),
           rest: &input.rest()[1..],
         })
       })
@@ -346,7 +346,7 @@ mod tests {
     let eat1 = || {
       wrap(|input| {
         Some(Output {
-          kind: (),
+          value: (),
           rest: &input.rest()[1..],
         })
       })

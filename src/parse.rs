@@ -8,8 +8,8 @@ pub use output::*;
 
 /// Provide the [`parse`](Parse::parse) method.
 pub trait Parse {
-  /// See [`Output::kind`].
-  type Kind;
+  /// See [`Output::value`].
+  type Value;
   /// See [`Input::state`].
   type State;
   /// See [`Input::heap`].
@@ -19,5 +19,5 @@ pub trait Parse {
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Kind>>;
+  ) -> Option<Output<'text, Self::Value>>;
 }

@@ -136,7 +136,7 @@ impl<'text, T: Parse> Parser<'text, T> {
   /// Return [`None`] if the text is already fully digested
   /// or the combinator rejects.
   #[inline]
-  pub fn parse(&mut self) -> Option<Output<T::Kind>> {
+  pub fn parse(&mut self) -> Option<Output<T::Value>> {
     self
       .entry
       .parse(&mut Input::new(
@@ -153,7 +153,7 @@ impl<'text, T: Parse> Parser<'text, T> {
   /// Return [`None`] if the text is already fully digested
   /// or the combinator rejects.
   #[inline]
-  pub fn peek(&mut self) -> (Option<Output<T::Kind>>, T::State)
+  pub fn peek(&mut self) -> (Option<Output<T::Value>>, T::State)
   where
     T::State: Clone,
   {

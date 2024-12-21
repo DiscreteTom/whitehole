@@ -121,14 +121,14 @@ impl<
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
+    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
   > ops::Mul<(Repeater, Initializer, InlineFolder)> for Combinator<Lhs>
 {
   type Output = Combinator<Mul<Lhs, (Repeater, Initializer, InlineFolder)>>;
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
   /// or reject if the repetition is not satisfied.
   ///
   /// `0` is a valid repetition range, which means the combinator is optional.
@@ -140,16 +140,16 @@ impl<
 }
 
 #[inline]
-fn impl_mul<'text, Kind, State, Heap, Acc>(
-  lhs: &impl Parse<Kind = Kind, State = State, Heap = Heap>,
+fn impl_mul<'text, Value, State, Heap, Acc>(
+  lhs: &impl Parse<Value = Value, State = State, Heap = Heap>,
   range: &impl Repeat,
   init: impl Fn() -> Acc,
-  folder: impl Fn(Kind, Acc) -> Acc,
+  folder: impl Fn(Value, Acc) -> Acc,
   input: &mut Input<'text, &mut State, &mut Heap>,
 ) -> Option<Output<'text, Acc>> {
   let mut repeated = 0;
   let mut output = Output {
-    kind: init(),
+    value: init(),
     rest: input.rest(),
   };
 
@@ -161,7 +161,7 @@ fn impl_mul<'text, Kind, State, Heap, Acc>(
       break;
     };
     output.rest = next_output.rest;
-    output.kind = folder(next_output.kind, output.kind);
+    output.value = folder(next_output.value, output.value);
     repeated += 1;
   }
 
@@ -173,10 +173,10 @@ impl<
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
+    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
   > Parse for Mul<Lhs, (Repeater, Initializer, InlineFolder)>
 {
-  type Kind = Acc;
+  type Value = Acc;
   type State = Lhs::State;
   type Heap = Lhs::Heap;
 
@@ -192,18 +192,18 @@ impl<
 
 impl<
     Lhs: Parse,
-    Sep: Parse<Kind = (), State = Lhs::State, Heap = Lhs::Heap>, // TODO: allow more generic Kind
+    Sep: Parse<Value = (), State = Lhs::State, Heap = Lhs::Heap>, // TODO: allow more generic Value
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
+    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
   > ops::Mul<(Repeater, Combinator<Sep>, Initializer, InlineFolder)> for Combinator<Lhs>
 {
   type Output = Combinator<Mul<Lhs, (Repeater, Sep, Initializer, InlineFolder)>>;
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
   /// or reject if the repetition is not satisfied.
   ///
   /// `0` is a valid repetition range, which means the combinator is optional.
@@ -223,7 +223,7 @@ impl<
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
+    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
   > ops::Mul<(Repeater, char, Initializer, InlineFolder)> for Combinator<Lhs>
 {
   type Output = Combinator<
@@ -240,7 +240,7 @@ impl<
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
   /// or reject if the repetition is not satisfied.
   ///
   /// `0` is a valid repetition range, which means the combinator is optional.
@@ -263,7 +263,7 @@ impl<
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
+    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
   > ops::Mul<(Repeater, String, Initializer, InlineFolder)> for Combinator<Lhs>
 {
   type Output = Combinator<
@@ -280,7 +280,7 @@ impl<
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
   /// or reject if the repetition is not satisfied.
   ///
   /// `0` is a valid repetition range, which means the combinator is optional.
@@ -304,7 +304,7 @@ impl<
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
+    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
   > ops::Mul<(Repeater, &'a str, Initializer, InlineFolder)> for Combinator<Lhs>
 {
   type Output = Combinator<
@@ -321,7 +321,7 @@ impl<
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
   /// or reject if the repetition is not satisfied.
   ///
   /// `0` is a valid repetition range, which means the combinator is optional.
@@ -340,17 +340,17 @@ impl<
 }
 
 #[inline]
-fn impl_mul_with_sep<'text, Kind, State, Heap, Acc>(
-  lhs: &impl Parse<Kind = Kind, State = State, Heap = Heap>,
+fn impl_mul_with_sep<'text, Value, State, Heap, Acc>(
+  lhs: &impl Parse<Value = Value, State = State, Heap = Heap>,
   range: &impl Repeat,
-  sep: &impl Parse<Kind = (), State = State, Heap = Heap>,
+  sep: &impl Parse<Value = (), State = State, Heap = Heap>,
   init: impl Fn() -> Acc,
-  folder: impl Fn(Kind, Acc) -> Acc,
+  folder: impl Fn(Value, Acc) -> Acc,
   input: &mut Input<'text, &mut State, &mut Heap>,
 ) -> Option<Output<'text, Acc>> {
   let mut repeated = 0;
   let mut output = Output {
-    kind: init(),
+    value: init(),
     rest: input.rest(),
   };
 
@@ -363,7 +363,7 @@ fn impl_mul_with_sep<'text, Kind, State, Heap, Acc>(
     };
     repeated += 1;
     output.rest = next_output.rest;
-    output.kind = folder(next_output.kind, output.kind);
+    output.value = folder(next_output.value, output.value);
     let Some(next_output) = input
       .reload(next_output.rest)
       .and_then(|mut input| sep.parse(&mut input))
@@ -378,14 +378,14 @@ fn impl_mul_with_sep<'text, Kind, State, Heap, Acc>(
 
 impl<
     Lhs: Parse,
-    Sep: Parse<Kind = (), State = Lhs::State, Heap = Lhs::Heap>,
+    Sep: Parse<Value = (), State = Lhs::State, Heap = Lhs::Heap>,
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Kind, Acc) -> Acc,
+    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
   > Parse for Mul<Lhs, (Repeater, Sep, Initializer, InlineFolder)>
 {
-  type Kind = Acc;
+  type Value = Acc;
   type State = Lhs::State;
   type Heap = Lhs::Heap;
 
@@ -399,12 +399,12 @@ impl<
   }
 }
 
-/// A helper trait to accumulate kind values when performing `*` on [`Combinator`]s.
+/// A helper trait to accumulate values when performing `*` on [`Combinator`]s.
 ///
 /// Built-in implementations are provided for `()`.
 /// # Examples
 /// ## Inline Fold
-/// For simple cases, you can accumulate the kind values inline, without using this trait.
+/// For simple cases, you can accumulate the values inline, without using this trait.
 /// ```
 /// # use whitehole::{combinator::next, parse::{Input, Parse}};
 /// let combinator =
@@ -412,12 +412,12 @@ impl<
 ///   next(|c| c.is_ascii_digit())
 ///     // convert the char to a number
 ///     .select(|ctx| ctx.input.next() as usize - '0' as usize)
-///     // repeat for 1 or more times, init accumulator with 0, and fold kind values
-///     * (1.., || 0 as usize, |kind, acc| acc * 10 + kind);
+///     // repeat for 1 or more times, init accumulator with 0, and fold values
+///     * (1.., || 0 as usize, |value, acc| acc * 10 + value);
 ///
 /// // parse "123" to 123
 /// assert_eq!(
-///   combinator.parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().kind,
+///   combinator.parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().value,
 ///   123
 /// )
 /// ```
@@ -448,7 +448,7 @@ impl<
 ///
 /// // parse "123" to 123
 /// assert_eq!(
-///   combinator.parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().kind,
+///   combinator.parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().value,
 ///   123
 /// )
 /// ```
@@ -466,11 +466,11 @@ impl Fold for () {
   fn fold(self, _: Self::Output) -> Self::Output {}
 }
 
-impl<Lhs: Parse<Kind: Fold>, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
+impl<Lhs: Parse<Value: Fold>, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
   type Output = Combinator<Mul<Lhs, Rhs>>;
 
   /// Create a new combinator to repeat the original combinator for `rhs` times.
-  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
   /// or reject if the repetition is not satisfied.
   ///
   /// `0` is a valid repetition range, which means the combinator is optional.
@@ -481,8 +481,8 @@ impl<Lhs: Parse<Kind: Fold>, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs: Parse<Kind: Fold>, Rhs: Repeat> Parse for Mul<Lhs, Rhs> {
-  type Kind = <Lhs::Kind as Fold>::Output;
+impl<Lhs: Parse<Value: Fold>, Rhs: Repeat> Parse for Mul<Lhs, Rhs> {
+  type Value = <Lhs::Value as Fold>::Output;
   type State = Lhs::State;
   type Heap = Lhs::Heap;
 
@@ -490,28 +490,28 @@ impl<Lhs: Parse<Kind: Fold>, Rhs: Repeat> Parse for Mul<Lhs, Rhs> {
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
+  ) -> Option<Output<'text, Self::Value>> {
     impl_mul(
       &self.lhs,
       &self.rhs,
-      Self::Kind::default,
-      Lhs::Kind::fold,
+      Self::Value::default,
+      Lhs::Value::fold,
       input,
     )
   }
 }
 
 impl<
-    Lhs: Parse<Kind: Fold>,
+    Lhs: Parse<Value: Fold>,
     Repeater: Repeat,
-    Sep: Parse<Kind = (), State = Lhs::State, Heap = Lhs::Heap>,
+    Sep: Parse<Value = (), State = Lhs::State, Heap = Lhs::Heap>,
   > ops::Mul<(Repeater, Combinator<Sep>)> for Combinator<Lhs>
 {
   type Output = Combinator<Mul<Lhs, (Repeater, Sep)>>;
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
   /// or reject if the repetition is not satisfied.
   ///
   /// `0` is a valid repetition range, which means the combinator is optional.
@@ -526,12 +526,12 @@ impl<
   }
 }
 
-impl<Lhs: Parse<Kind: Fold>, Repeater: Repeat> ops::Mul<(Repeater, char)> for Combinator<Lhs> {
+impl<Lhs: Parse<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, char)> for Combinator<Lhs> {
   type Output = Combinator<Mul<Lhs, (Repeater, EatChar<Lhs::State, Lhs::Heap>)>>;
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
   /// or reject if the repetition is not satisfied.
   ///
   /// `0` is a valid repetition range, which means the combinator is optional.
@@ -546,12 +546,12 @@ impl<Lhs: Parse<Kind: Fold>, Repeater: Repeat> ops::Mul<(Repeater, char)> for Co
   }
 }
 
-impl<Lhs: Parse<Kind: Fold>, Repeater: Repeat> ops::Mul<(Repeater, String)> for Combinator<Lhs> {
+impl<Lhs: Parse<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, String)> for Combinator<Lhs> {
   type Output = Combinator<Mul<Lhs, (Repeater, EatString<Lhs::State, Lhs::Heap>)>>;
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
   /// or reject if the repetition is not satisfied.
   ///
   /// `0` is a valid repetition range, which means the combinator is optional.
@@ -566,14 +566,14 @@ impl<Lhs: Parse<Kind: Fold>, Repeater: Repeat> ops::Mul<(Repeater, String)> for 
   }
 }
 
-impl<'a, Lhs: Parse<Kind: Fold>, Repeater: Repeat> ops::Mul<(Repeater, &'a str)>
+impl<'a, Lhs: Parse<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, &'a str)>
   for Combinator<Lhs>
 {
   type Output = Combinator<Mul<Lhs, (Repeater, EatStr<'a, Lhs::State, Lhs::Heap>)>>;
 
   /// Create a new combinator to repeat the original combinator
   /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed kind value and the sum of the digested,
+  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
   /// or reject if the repetition is not satisfied.
   ///
   /// `0` is a valid repetition range, which means the combinator is optional.
@@ -589,12 +589,12 @@ impl<'a, Lhs: Parse<Kind: Fold>, Repeater: Repeat> ops::Mul<(Repeater, &'a str)>
 }
 
 impl<
-    Lhs: Parse<Kind: Fold>,
+    Lhs: Parse<Value: Fold>,
     Repeater: Repeat,
-    Sep: Parse<Kind = (), State = Lhs::State, Heap = Lhs::Heap>,
+    Sep: Parse<Value = (), State = Lhs::State, Heap = Lhs::Heap>,
   > Parse for Mul<Lhs, (Repeater, Sep)>
 {
-  type Kind = <Lhs::Kind as Fold>::Output;
+  type Value = <Lhs::Value as Fold>::Output;
   type State = Lhs::State;
   type Heap = Lhs::Heap;
 
@@ -602,14 +602,14 @@ impl<
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut Lhs::State, &mut Lhs::Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
+  ) -> Option<Output<'text, Self::Value>> {
     let (range, sep) = &self.rhs;
     impl_mul_with_sep(
       &self.lhs,
       range,
       sep,
-      Self::Kind::default,
-      Lhs::Kind::fold,
+      Self::Value::default,
+      Lhs::Value::fold,
       input,
     )
   }
@@ -621,8 +621,8 @@ mod tests {
   use crate::combinator::{wrap, Input, Output};
 
   #[derive(Debug)]
-  struct MyKind(usize);
-  impl Fold for MyKind {
+  struct MyValue(usize);
+  impl Fold for MyValue {
     type Output = usize;
     fn fold(self, current: Self::Output) -> Self::Output {
       self.0 + current
@@ -635,7 +635,7 @@ mod tests {
     let accepter = || {
       wrap(|input| {
         Some(Output {
-          kind: MyKind(input.start()),
+          value: MyValue(input.start()),
           rest: &input.rest()[1..],
         })
       })
@@ -651,7 +651,7 @@ mod tests {
     assert_eq!(
       (rejecter() * n).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "123",
       })
     );
@@ -661,15 +661,15 @@ mod tests {
     assert_eq!(
       (accepter() * n).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: 0,
+        value: 0,
         rest: "123",
       })
     );
 
-    // normal, apply the folded kind value and sum the digested
+    // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * 3).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { kind: 3, rest: "" })
+      Some(Output { value: 3, rest: "" })
     );
 
     // overflow, reject
@@ -684,7 +684,7 @@ mod tests {
     let accepter = || {
       wrap(|input| {
         Some(Output {
-          kind: MyKind(input.start()),
+          value: MyValue(input.start()),
           rest: &input.rest()[1..],
         })
       })
@@ -699,7 +699,7 @@ mod tests {
     assert_eq!(
       (rejecter() * (0..2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "123",
       })
     );
@@ -708,15 +708,18 @@ mod tests {
     assert_eq!(
       (accepter() * (0..1)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: 0,
+        value: 0,
         rest: "123",
       })
     );
 
-    // normal, apply the folded kind value and sum the digested
+    // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (0..3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { kind: 1, rest: "3" })
+      Some(Output {
+        value: 1,
+        rest: "3"
+      })
     );
 
     // too few, reject
@@ -731,7 +734,7 @@ mod tests {
     let accepter = || {
       wrap(|input| {
         Some(Output {
-          kind: MyKind(input.start()),
+          value: MyValue(input.start()),
           rest: &input.rest()[1..],
         })
       })
@@ -746,15 +749,15 @@ mod tests {
     assert_eq!(
       (rejecter() * (0..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "123",
       })
     );
 
-    // normal, apply the folded kind value and sum the digested
+    // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (0..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { kind: 3, rest: "" })
+      Some(Output { value: 3, rest: "" })
     );
 
     // too few, reject
@@ -769,7 +772,7 @@ mod tests {
     let accepter = || {
       wrap(|input| {
         Some(Output {
-          kind: MyKind(input.start()),
+          value: MyValue(input.start()),
           rest: &input.rest()[1..],
         })
       })
@@ -779,15 +782,15 @@ mod tests {
     assert_eq!(
       (rejecter() * (..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "123",
       })
     );
 
-    // normal, apply the folded kind value and sum the digested
+    // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { kind: 3, rest: "" })
+      Some(Output { value: 3, rest: "" })
     );
   }
 
@@ -797,7 +800,7 @@ mod tests {
     let accepter = || {
       wrap(|input| {
         Some(Output {
-          kind: MyKind(input.start()),
+          value: MyValue(input.start()),
           rest: &input.rest()[1..],
         })
       })
@@ -812,7 +815,7 @@ mod tests {
     assert_eq!(
       (rejecter() * (0..=2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "123",
       })
     );
@@ -821,15 +824,15 @@ mod tests {
     assert_eq!(
       (accepter() * (0..=0)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: 0,
+        value: 0,
         rest: "123",
       })
     );
 
-    // normal, apply the folded kind value and sum the digested
+    // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (0..=3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { kind: 3, rest: "" })
+      Some(Output { value: 3, rest: "" })
     );
 
     // too few, reject
@@ -844,7 +847,7 @@ mod tests {
     let accepter = || {
       wrap(|input| {
         Some(Output {
-          kind: MyKind(input.start()),
+          value: MyValue(input.start()),
           rest: &input.rest()[1..],
         })
       })
@@ -854,7 +857,7 @@ mod tests {
     assert_eq!(
       (rejecter() * (..2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "123",
       })
     );
@@ -863,15 +866,18 @@ mod tests {
     assert_eq!(
       (accepter() * (..1)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: 0,
+        value: 0,
         rest: "123",
       })
     );
 
-    // normal, apply the folded kind value and sum the digested
+    // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (..3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { kind: 1, rest: "3" })
+      Some(Output {
+        value: 1,
+        rest: "3"
+      })
     );
   }
 
@@ -881,7 +887,7 @@ mod tests {
     let accepter = || {
       wrap(|input| {
         Some(Output {
-          kind: MyKind(input.start()),
+          value: MyValue(input.start()),
           rest: &input.rest()[1..],
         })
       })
@@ -891,7 +897,7 @@ mod tests {
     assert_eq!(
       (rejecter() * (..=2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "123",
       })
     );
@@ -900,15 +906,15 @@ mod tests {
     assert_eq!(
       (accepter() * (..=0)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: 0,
+        value: 0,
         rest: "123",
       })
     );
 
-    // normal, apply the folded kind value and sum the digested
+    // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (..=3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { kind: 3, rest: "" })
+      Some(Output { value: 3, rest: "" })
     );
   }
 
@@ -917,7 +923,7 @@ mod tests {
     let eat_char = |c| {
       wrap(move |input| {
         (input.next() == c).then(|| Output {
-          kind: (),
+          value: (),
           rest: &input.rest()[1..],
         })
       })
@@ -931,27 +937,36 @@ mod tests {
     );
     assert_eq!(
       (eat_a() * (1.., sep())).parse(&mut Input::new("a", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { kind: (), rest: "" })
+      Some(Output {
+        value: (),
+        rest: ""
+      })
     );
     assert_eq!(
       (eat_a() * (1.., sep())).parse(&mut Input::new("a,", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { kind: (), rest: "" })
+      Some(Output {
+        value: (),
+        rest: ""
+      })
     );
     assert_eq!(
       (eat_a() * (1.., sep())).parse(&mut Input::new("a,a", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { kind: (), rest: "" })
+      Some(Output {
+        value: (),
+        rest: ""
+      })
     );
     assert_eq!(
       (eat_a() * (1.., sep())).parse(&mut Input::new("a,,", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: ","
       })
     );
     assert_eq!(
       (eat_a() * (1.., sep())).parse(&mut Input::new("a,aa", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "a"
       })
     );

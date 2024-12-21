@@ -12,7 +12,7 @@ use std::marker::PhantomData;
 /// See [`eat`] for more details.
 pub trait Eat {
   /// Convert the implementor to a parser implementor.
-  fn into_parser<State, Heap>(self) -> impl Parse<Kind = (), State = State, Heap = Heap>;
+  fn into_parser<State, Heap>(self) -> impl Parse<Value = (), State = State, Heap = Heap>;
 }
 
 macro_rules! impl_eat {
@@ -40,7 +40,7 @@ macro_rules! impl_eat {
 
     impl Eat for $inner {
       #[inline]
-      fn into_parser<State, Heap>(self) -> impl Parse<Kind = (), State=State, Heap=Heap> {
+      fn into_parser<State, Heap>(self) -> impl Parse<Value = (), State=State, Heap=Heap> {
         $name::new(self)
       }
     }
@@ -52,7 +52,7 @@ impl_eat!(EatString, String, ());
 impl_eat!(EatUsize, usize, (Copy));
 
 impl<State, Heap> Parse for EatChar<State, Heap> {
-  type Kind = ();
+  type Value = ();
   type State = State;
   type Heap = Heap;
 
@@ -69,7 +69,7 @@ impl<State, Heap> Parse for EatChar<State, Heap> {
 }
 
 impl<State, Heap> Parse for EatString<State, Heap> {
-  type Kind = ();
+  type Value = ();
   type State = State;
   type Heap = Heap;
 
@@ -86,7 +86,7 @@ impl<State, Heap> Parse for EatString<State, Heap> {
 }
 
 impl<State, Heap> Parse for EatUsize<State, Heap> {
-  type Kind = ();
+  type Value = ();
   type State = State;
   type Heap = Heap;
 
@@ -122,13 +122,13 @@ impl<'a, State, Heap> EatStr<'a, State, Heap> {
 
 impl<'a> Eat for &'a str {
   #[inline]
-  fn into_parser<State, Heap>(self) -> impl Parse<Kind = (), State = State, Heap = Heap> {
+  fn into_parser<State, Heap>(self) -> impl Parse<Value = (), State = State, Heap = Heap> {
     EatStr::new(self)
   }
 }
 
 impl<State, Heap> Parse for EatStr<'_, State, Heap> {
-  type Kind = ();
+  type Value = ();
   type State = State;
   type Heap = Heap;
 

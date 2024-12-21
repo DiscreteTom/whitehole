@@ -15,7 +15,7 @@ pub struct AcceptedContext<InputType, OutputType> {
 
 macro_rules! impl_ctx {
   ($input:ty, $output:ty) => {
-    impl<'text, Kind, StateRef, HeapRef> AcceptedContext<$input, $output> {
+    impl<'text, Value, StateRef, HeapRef> AcceptedContext<$input, $output> {
       /// How many bytes are digested by this combinator.
       #[inline]
       pub fn digested(&self) -> usize {
@@ -50,8 +50,8 @@ macro_rules! impl_ctx {
 
 // Input won't be consumed and is always mutable.
 // Output won't be modified directly in the context, but can be consumed.
-impl_ctx!(&mut Input<'text, StateRef, HeapRef>, Output<'text, Kind>);
-impl_ctx!(&mut Input<'text, StateRef, HeapRef>, &Output<'text, Kind>);
+impl_ctx!(&mut Input<'text, StateRef, HeapRef>, Output<'text, Value>);
+impl_ctx!(&mut Input<'text, StateRef, HeapRef>, &Output<'text, Value>);
 
 #[cfg(test)]
 mod tests {
@@ -62,7 +62,7 @@ mod tests {
   }
   fn create_output() -> Output<'static, ()> {
     Output {
-      kind: (),
+      value: (),
       rest: "23",
     }
   }

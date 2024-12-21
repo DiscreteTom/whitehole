@@ -6,22 +6,22 @@ use crate::{
 };
 
 impl<T: Parse> Combinator<T> {
-  /// Create a new combinator to convert [`Output::kind`] to a new kind value.
+  /// Create a new combinator to convert [`Output::value`] to a new value.
   ///
-  /// You can consume the original [`Output::kind`] in the `mapper`.
+  /// You can consume the original [`Output::value`] in the `mapper`.
   /// # Examples
   /// ```
   /// # use whitehole::Combinator;
   /// # fn t(combinator: Combinator!()) {
-  /// combinator.map(|kind| Some(kind))
+  /// combinator.map(|value| Some(value))
   /// # ;}
   /// ```
   #[inline]
-  pub fn map<NewKind>(self, mapper: impl Fn(T::Kind) -> NewKind) -> Combinator!(NewKind, @T) {
+  pub fn map<NewValue>(self, mapper: impl Fn(T::Value) -> NewValue) -> Combinator!(NewValue, @T) {
     wrap(move |input| self.parse(input).map(|output| output.map(&mapper)))
   }
 
-  /// Create a new combinator to wrap [`Output::kind`] in a tuple.
+  /// Create a new combinator to wrap [`Output::value`] in a tuple.
   ///
   /// This is useful when you use `+` to combine multiple combinators.
   /// See [`Concat`](crate::combinator::ops::add::Concat) for more details.
@@ -29,35 +29,35 @@ impl<T: Parse> Combinator<T> {
   /// ```
   /// # use whitehole::Combinator;
   /// # fn t(combinator: Combinator!()) {
-  /// combinator.map(|kind| Some(kind))
+  /// combinator.map(|value| Some(value))
   /// # ;}
   /// ```
   #[inline]
-  pub fn tuple(self) -> Combinator!((T::Kind,), @T) {
-    self.map(|kind| (kind,))
+  pub fn tuple(self) -> Combinator!((T::Value,), @T) {
+    self.map(|value| (value,))
   }
 
-  /// Create a new combinator to set [`Output::kind`] to the provided kind value.
+  /// Create a new combinator to set [`Output::value`] to the provided value.
   ///
-  /// If your `Kind` doesn't implement the [`Clone`] trait, consider using [`Self::select`] instead.
+  /// If your `Value` doesn't implement the [`Clone`] trait, consider using [`Self::select`] instead.
   /// # Examples
   /// ```
   /// # use whitehole::Combinator;
   /// # #[derive(Clone)]
-  /// # enum MyKind { A }
+  /// # struct MyValue;
   /// # fn t(combinator: Combinator!()) {
-  /// combinator.bind(MyKind::A)
+  /// combinator.bind(MyValue)
   /// # ;}
   /// ```
   #[inline]
-  pub fn bind<NewKind>(self, kind: NewKind) -> Combinator!(NewKind, @T)
+  pub fn bind<NewValue>(self, value: NewValue) -> Combinator!(NewValue, @T)
   where
-    NewKind: Clone,
+    NewValue: Clone,
   {
-    self.map(move |_| kind.clone())
+    self.map(move |_| value.clone())
   }
 
-  /// Create a new combinator to set [`Output::kind`] to the default kind value.
+  /// Create a new combinator to set [`Output::value`] to the default value.
   /// # Examples
   /// ```
   /// # use whitehole::Combinator;
@@ -66,41 +66,41 @@ impl<T: Parse> Combinator<T> {
   /// # }
   /// ```
   #[inline]
-  pub fn bind_default<NewKind>(self) -> Combinator!(NewKind, @T)
+  pub fn bind_default<NewValue>(self) -> Combinator!(NewValue, @T)
   where
-    NewKind: Default,
+    NewValue: Default,
   {
-    self.map(|_| NewKind::default())
+    self.map(|_| NewValue::default())
   }
 
-  /// Create a new combinator to set [`Output::kind`] by the `selector`.
+  /// Create a new combinator to set [`Output::value`] by the `selector`.
   ///
-  /// Use this if you need to calculate the kind value based on the [`Input`] and [`Output`].
+  /// Use this if you need to calculate the value based on the [`Input`] and [`Output`].
   /// You can consume the original [`Output`] in the `selector`.
   /// # Examples
   /// ```
   /// # use whitehole::Combinator;
-  /// # enum MyKind { Num(i32) }
+  /// # struct MyValue(i32);
   /// # fn t(combinator: Combinator!()) {
-  /// combinator.select(|ctx| MyKind::Num(ctx.content().parse().unwrap()))
+  /// combinator.select(|ctx| MyValue(ctx.content().parse().unwrap()))
   /// # ;}
   /// ```
   #[inline]
-  pub fn select<NewKind>(
+  pub fn select<NewValue>(
     self,
     selector: impl for<'text> Fn(
-      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, Output<'text, T::Kind>>,
-    ) -> NewKind,
-  ) -> Combinator!(NewKind, @T) {
+      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, Output<'text, T::Value>>,
+    ) -> NewValue,
+  ) -> Combinator!(NewValue, @T) {
     wrap(move |input| {
       self.parse(input).map(|output| Output {
         rest: output.rest,
-        kind: selector(AcceptedContext { input, output }),
+        value: selector(AcceptedContext { input, output }),
       })
     })
   }
 
-  /// Create a new combinator to wrap [`Output::kind`] in [`WithRange`]
+  /// Create a new combinator to wrap [`Output::value`] in [`WithRange`]
   /// which includes the byte range of the digested text.
   /// # Examples
   /// ```
@@ -109,12 +109,12 @@ impl<T: Parse> Combinator<T> {
   /// combinator.range()
   /// # ;}
   #[inline]
-  pub fn range(self) -> Combinator!(WithRange<T::Kind>, @T) {
+  pub fn range(self) -> Combinator!(WithRange<T::Value>, @T) {
     wrap(move |input| {
       self.parse(input).map(|output| {
         let digested = input.rest().len() - output.rest.len();
-        output.map(|kind| WithRange {
-          data: kind,
+        output.map(|value| WithRange {
+          data: value,
           range: input.start()..(input.start() + digested),
         })
       })
@@ -130,13 +130,13 @@ mod tests {
   fn combinator_map() {
     assert_eq!(
       wrap(|input| Some(Output {
-        kind: 1,
+        value: 1,
         rest: &input.rest()[1..]
       }))
       .map(Some)
       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: Some(1),
+        value: Some(1),
         rest: "23"
       })
     );
@@ -146,13 +146,13 @@ mod tests {
   fn combinator_bind() {
     assert_eq!(
       wrap(|input| Some(Output {
-        kind: (),
+        value: (),
         rest: &input.rest()[1..]
       }))
       .bind(123)
       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: 123,
+        value: 123,
         rest: "23"
       })
     );
@@ -162,13 +162,13 @@ mod tests {
   fn combinator_bind_default() {
     assert_eq!(
       wrap(|input| Some(Output {
-        kind: (),
+        value: (),
         rest: &input.rest()[1..]
       }))
       .bind_default::<i32>()
       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: 0,
+        value: 0,
         rest: "23"
       })
     );
@@ -178,13 +178,13 @@ mod tests {
   fn combinator_select() {
     assert_eq!(
       wrap(|input| Some(Output {
-        kind: (),
+        value: (),
         rest: &input.rest()[1..]
       }))
       .select(|ctx| if ctx.content() == "1" { 1 } else { 2 })
       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: 1,
+        value: 1,
         rest: "23"
       })
     );
@@ -194,13 +194,13 @@ mod tests {
   fn combinator_range() {
     assert_eq!(
       wrap(|input| Some(Output {
-        kind: (),
+        value: (),
         rest: &input.rest()[1..]
       }))
       .range()
       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: WithRange {
+        value: WithRange {
           data: (),
           range: 0..1
         },

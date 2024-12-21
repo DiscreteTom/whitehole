@@ -2,19 +2,19 @@
 ///
 /// Usually built by [`Input::digest`](crate::parse::Input::digest).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Output<'text, Kind> {
-  /// The [`Node::kind`](crate::node::Node::kind).
-  pub kind: Kind,
+pub struct Output<'text, Value> {
+  /// The parsed value.
+  pub value: Value,
   /// The rest of the input text.
   pub rest: &'text str,
 }
 
-impl<'text, Kind> Output<'text, Kind> {
-  /// Convert [`Self::kind`] to a new kind.
+impl<'text, Value> Output<'text, Value> {
+  /// Convert [`Self::value`] to a new value.
   #[inline]
-  pub fn map<NewKind>(self, f: impl FnOnce(Kind) -> NewKind) -> Output<'text, NewKind> {
+  pub fn map<NewValue>(self, f: impl FnOnce(Value) -> NewValue) -> Output<'text, NewValue> {
     Output {
-      kind: f(self.kind),
+      value: f(self.value),
       rest: self.rest,
     }
   }
@@ -28,12 +28,12 @@ mod tests {
   fn output_map() {
     assert_eq!(
       Output {
-        kind: 1,
+        value: 1,
         rest: "123",
       }
-      .map(|kind| kind + 1),
+      .map(|value| value + 1),
       Output {
-        kind: 2,
+        value: 2,
         rest: "123",
       }
     );

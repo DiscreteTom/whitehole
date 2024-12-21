@@ -83,27 +83,27 @@ mod tests {
     assert_eq!(
       till("end".to_string()).parse(&mut Input::new("123end456", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "456"
       })
     );
     assert_eq!(
       till("end").parse(&mut Input::new("123end456", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "456"
       })
     );
     assert_eq!(
       till(';').parse(&mut Input::new("123;456", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
-        kind: (),
+        value: (),
         rest: "456"
       })
     );
     assert_eq!(
       till(()).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { kind: (), rest: "" })
+      Some(Output { value: (), rest: "" })
     );
   }
 }

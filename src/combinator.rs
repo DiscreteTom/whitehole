@@ -131,8 +131,8 @@
 //! eat("true").boundary()
 //! # );
 //! ```
-//! ## Kind
-//! You can set [`Output::kind`] to distinguish different output types
+//! ## Value
+//! You can set [`Output::value`] to distinguish different output types
 //! or carrying additional data.
 //!
 //! Related decorators:
@@ -172,31 +172,31 @@ pub struct Combinator<T> {
 
 /// Simplify the [`Combinator`] struct's signature.
 ///
-/// - `Combinator!()` => `Combinator<impl Parse<Kind = (), State = (), Heap = ()>>`.
-/// - `Combinator!(MyKind)` => `Combinator<impl Parse<Kind = MyKind, State = (), Heap = ()>>`.
-/// - `Combinator!(MyKind, MyState)` => `Combinator<impl Parse<Kind = MyKind, State = MyState, Heap = ()>>`.
-/// - `Combinator!(MyKind, MyState, MyHeap)` => `Combinator<impl Parse<Kind = MyKind, State = MyState, Heap = MyHeap>>`.
-/// - `Combinator!(@T)` => `Combinator<impl Parse<Kind = T::Kind, State = T::State, Heap = T::Heap>>`.
-/// - `Combinator!(MyKind, @T)` => `Combinator<impl Parse<Kind = MyKind, State = T::State, Heap = T::Heap>>`.
+/// - `Combinator!()` => `Combinator<impl Parse<Value = (), State = (), Heap = ()>>`.
+/// - `Combinator!(MyValue)` => `Combinator<impl Parse<Value = MyValue, State = (), Heap = ()>>`.
+/// - `Combinator!(MyValue, MyState)` => `Combinator<impl Parse<Value = MyValue, State = MyState, Heap = ()>>`.
+/// - `Combinator!(MyValue, MyState, MyHeap)` => `Combinator<impl Parse<Value = MyValue, State = MyState, Heap = MyHeap>>`.
+/// - `Combinator!(@T)` => `Combinator<impl Parse<Value = T::Value, State = T::State, Heap = T::Heap>>`.
+/// - `Combinator!(MyValue, @T)` => `Combinator<impl Parse<Value = MyValue, State = T::State, Heap = T::Heap>>`.
 #[macro_export]
 macro_rules! Combinator {
   () => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = (), State = (), Heap = ()>>
+    $crate::combinator::Combinator<impl $crate::parse::Parse<Value = (), State = (), Heap = ()>>
   };
-  ($kind:ty) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = $kind, State = (), Heap = ()>>
+  ($value:ty) => {
+    $crate::combinator::Combinator<impl $crate::parse::Parse<Value = $value, State = (), Heap = ()>>
   };
-  ($kind:ty, $state:ty) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = $kind, State = $state, Heap = ()>>
+  ($value:ty, $state:ty) => {
+    $crate::combinator::Combinator<impl $crate::parse::Parse<Value = $value, State = $state, Heap = ()>>
   };
-  ($kind:ty, $state:ty, $heap:ty) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = $kind, State = $state, Heap = $heap>>
+  ($value:ty, $state:ty, $heap:ty) => {
+    $crate::combinator::Combinator<impl $crate::parse::Parse<Value = $value, State = $state, Heap = $heap>>
   };
   (@$from:ident) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = $from::Kind, State = $from::State, Heap = $from::Heap>>
+    $crate::combinator::Combinator<impl $crate::parse::Parse<Value = $from::Value, State = $from::State, Heap = $from::Heap>>
   };
-  ($kind:ty, @$from:ident) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<Kind = $kind, State = $from::State, Heap = $from::Heap>>
+  ($value:ty, @$from:ident) => {
+    $crate::combinator::Combinator<impl $crate::parse::Parse<Value = $value, State = $from::State, Heap = $from::Heap>>
   };
 }
 
@@ -209,7 +209,7 @@ impl<T> Combinator<T> {
 }
 
 impl<T: Parse> Parse for Combinator<T> {
-  type Kind = T::Kind;
+  type Value = T::Value;
   type State = T::State;
   type Heap = T::Heap;
 
@@ -217,7 +217,7 @@ impl<T: Parse> Parse for Combinator<T> {
   fn parse<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, T::Kind>> {
+  ) -> Option<Output<'text, T::Value>> {
     self.parser.parse(input)
   }
 }

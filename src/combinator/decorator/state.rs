@@ -40,7 +40,7 @@ impl<T: Parse> Combinator<T> {
   pub fn then(
     self,
     modifier: impl for<'text> Fn(
-      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<'text, T::Kind>>,
+      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<'text, T::Value>>,
     ),
   ) -> Combinator!(@T) {
     wrap(move |input| {
@@ -89,7 +89,7 @@ mod tests {
     wrap(|input: &mut Input<&mut State, &mut ()>| {
       input.state.to = input.state.from;
       Some(Output {
-        kind: (),
+        value: (),
         rest: &input.rest()[1..],
       })
     })
