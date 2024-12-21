@@ -17,6 +17,9 @@
 //! // you can use a String, a &str, a char or an usize as a shortcut for `eat`
 //! // at the right-hand side of `+`
 //! # t(
+//! eat("true") + "false".to_string()
+//! # );
+//! # t(
 //! eat("true") + "false"
 //! # );
 //! # t(

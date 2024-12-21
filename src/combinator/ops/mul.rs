@@ -55,15 +55,14 @@
 //! # );
 //! // you can use a String, a &str or a char as the separator
 //! # t(
-//! eat("true") * (1.., ',')
+//! eat("true") * (1.., ", ".to_string())
 //! # );
 //! # t(
 //! eat("true") * (1.., ", ")
 //! # );
 //! # t(
-//! eat("true") * (1.., ", ".to_string())
+//! eat("true") * (1.., ',')
 //! # );
-//!
 //! ```
 //! If there is at least one repetition, then the separator is allowed to be the last match.
 //! E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
