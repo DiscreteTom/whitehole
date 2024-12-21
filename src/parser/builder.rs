@@ -1,5 +1,5 @@
 use super::{Instant, Parser};
-use crate::parse::Parse;
+use crate::action::Action;
 
 /// A builder for [`Parser`].
 /// # Examples
@@ -73,7 +73,7 @@ impl<T, State, Heap> Builder<T, State, Heap> {
 
   /// Set [`Parser::entry`].
   #[inline]
-  pub fn entry<Entry: Parse<State = State, Heap = Heap>>(
+  pub fn entry<Entry: Action<State = State, Heap = Heap>>(
     self,
     entry: Entry,
   ) -> Builder<Entry, State, Heap> {
@@ -85,7 +85,7 @@ impl<T, State, Heap> Builder<T, State, Heap> {
   }
 }
 
-impl<T: Parse<State = State, Heap = Heap>, State, Heap> Builder<T, State, Heap> {
+impl<T: Action<State = State, Heap = Heap>, State, Heap> Builder<T, State, Heap> {
   /// Build a [`Parser`] with the given text.
   #[inline]
   pub fn build(self, text: &str) -> Parser<T> {

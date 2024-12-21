@@ -8,15 +8,15 @@ pub use builder::*;
 pub use instant::*;
 pub use snapshot::*;
 
-use crate::parse::{Input, Output, Parse};
+use crate::action::{Action, Input, Output};
 
 /// Manage [`Input::state`], [`Input::heap`] and the parsing progress.
 #[derive(Debug)]
-pub struct Parser<'text, T: Parse> {
-  /// See [`Input::state`](crate::parse::Input::state).
+pub struct Parser<'text, T: Action> {
+  /// See [`Input::state`](crate::action::Input::state).
   /// You can mutate this directly if needed.
   pub state: T::State,
-  /// See [`Input::heap`](crate::parse::Input::heap).
+  /// See [`Input::heap`](crate::action::Input::heap).
   /// You can mutate this directly if needed.
   pub heap: T::Heap,
 
@@ -26,7 +26,7 @@ pub struct Parser<'text, T: Parse> {
   entry: T,
 }
 
-impl<T: Parse<State: Clone, Heap: Clone> + Clone> Clone for Parser<'_, T> {
+impl<T: Action<State: Clone, Heap: Clone> + Clone> Clone for Parser<'_, T> {
   /// Clone the parser, including [`Self::state`] and [`Self::heap`].
   /// # Performance
   /// Cloning the [`Self::heap`] might be expensive, you should use [`Parser::snapshot`] to avoid cloning [`Self::heap`],
@@ -43,7 +43,7 @@ impl<T: Parse<State: Clone, Heap: Clone> + Clone> Clone for Parser<'_, T> {
   }
 }
 
-impl<'text, T: Parse> Parser<'text, T> {
+impl<'text, T: Action> Parser<'text, T> {
   /// The entry combinator.
   #[inline]
   pub const fn entry(&self) -> &T {
@@ -139,7 +139,7 @@ impl<'text, T: Parse> Parser<'text, T> {
   pub fn parse(&mut self) -> Option<Output<T::Value>> {
     self
       .entry
-      .parse(&mut Input::new(
+      .exec(&mut Input::new(
         self.instant.rest(),
         self.instant.digested(),
         &mut self.state,
@@ -165,7 +165,7 @@ impl<'text, T: Parse> Parser<'text, T> {
         &mut tmp_state,
         &mut self.heap,
       )
-      .and_then(|mut input| self.entry.parse(&mut input)),
+      .and_then(|mut input| self.entry.exec(&mut input)),
       tmp_state,
     )
   }

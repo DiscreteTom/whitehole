@@ -1,9 +1,9 @@
 //! Overload `|` operator for [`Combinator`].
 
-use crate::combinator::{Combinator, EatChar, EatStr, EatString, EatUsize, Input, Output, Parse};
+use crate::combinator::{Action, Combinator, EatChar, EatStr, EatString, EatUsize, Input, Output};
 use std::ops;
 
-/// A [`Parse`] implementor created by `|`.
+/// An [`Action`] created by `|`.
 #[derive(Debug, Clone, Copy)]
 pub struct BitOr<Lhs, Rhs> {
   lhs: Lhs,
@@ -18,7 +18,7 @@ impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
   }
 }
 
-impl<Lhs: Parse, Rhs: Parse<Value = Lhs::Value, State = Lhs::State, Heap = Lhs::Heap>> Parse
+impl<Lhs: Action, Rhs: Action<Value = Lhs::Value, State = Lhs::State, Heap = Lhs::Heap>> Action
   for BitOr<Lhs, Rhs>
 {
   type Value = Lhs::Value;
@@ -26,15 +26,15 @@ impl<Lhs: Parse, Rhs: Parse<Value = Lhs::Value, State = Lhs::State, Heap = Lhs::
   type Heap = Lhs::Heap;
 
   #[inline]
-  fn parse<'text>(
+  fn exec<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Self::Value>> {
-    self.lhs.parse(input).or_else(|| self.rhs.parse(input))
+    self.lhs.exec(input).or_else(|| self.rhs.exec(input))
   }
 }
 
-impl<Lhs: Parse, Rhs: Parse<Value = Lhs::Value, State = Lhs::State, Heap = Lhs::Heap>>
+impl<Lhs: Action, Rhs: Action<Value = Lhs::Value, State = Lhs::State, Heap = Lhs::Heap>>
   ops::BitOr<Combinator<Rhs>> for Combinator<Lhs>
 {
   type Output = Combinator<BitOr<Lhs, Rhs>>;
@@ -48,7 +48,7 @@ impl<Lhs: Parse, Rhs: Parse<Value = Lhs::Value, State = Lhs::State, Heap = Lhs::
   }
 }
 
-impl<Lhs: Parse> ops::BitOr<char> for Combinator<Lhs> {
+impl<Lhs: Action> ops::BitOr<char> for Combinator<Lhs> {
   type Output = Combinator<BitOr<Lhs, EatChar<Lhs::State, Lhs::Heap>>>;
 
   /// Similar to `self | eat(rhs)`. See [`eat`](crate::combinator::eat).
@@ -58,7 +58,7 @@ impl<Lhs: Parse> ops::BitOr<char> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs: Parse> ops::BitOr<usize> for Combinator<Lhs> {
+impl<Lhs: Action> ops::BitOr<usize> for Combinator<Lhs> {
   type Output = Combinator<BitOr<Lhs, EatUsize<Lhs::State, Lhs::Heap>>>;
 
   /// Similar to `self | eat(rhs)`. See [`eat`](crate::combinator::eat).
@@ -68,7 +68,7 @@ impl<Lhs: Parse> ops::BitOr<usize> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs: Parse> ops::BitOr<String> for Combinator<Lhs> {
+impl<Lhs: Action> ops::BitOr<String> for Combinator<Lhs> {
   type Output = Combinator<BitOr<Lhs, EatString<Lhs::State, Lhs::Heap>>>;
 
   /// Similar to `self | eat(rhs)`. See [`eat`](crate::combinator::eat).
@@ -78,7 +78,7 @@ impl<Lhs: Parse> ops::BitOr<String> for Combinator<Lhs> {
   }
 }
 
-impl<'a, Lhs: Parse> ops::BitOr<&'a str> for Combinator<Lhs> {
+impl<'a, Lhs: Action> ops::BitOr<&'a str> for Combinator<Lhs> {
   type Output = Combinator<BitOr<Lhs, EatStr<'a, Lhs::State, Lhs::Heap>>>;
 
   /// Similar to `self | eat(rhs)`. See [`eat`](crate::combinator::eat).
@@ -115,7 +115,7 @@ mod tests {
 
     // reject then accept, both should increment the state
     assert_eq!(
-      (rejecter() | accepter()).parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
+      (rejecter() | accepter()).exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "23",
@@ -127,7 +127,7 @@ mod tests {
 
     // accept then reject, only the first should increment the state
     assert_eq!(
-      (accepter() | rejecter()).parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
+      (accepter() | rejecter()).exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "23",
@@ -141,7 +141,7 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | '1')
-        .parse(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       Some("")
     );
@@ -152,7 +152,7 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | 1)
-        .parse(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       Some("")
     );
@@ -163,7 +163,7 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | "1")
-        .parse(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       Some("")
     );
@@ -174,7 +174,7 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | "1".to_string())
-        .parse(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       Some("")
     );

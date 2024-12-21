@@ -1,6 +1,6 @@
 //! Overload `+` operator for [`Combinator`].
 
-use crate::combinator::{Combinator, EatChar, EatStr, EatString, EatUsize, Input, Output, Parse};
+use crate::combinator::{Action, Combinator, EatChar, EatStr, EatString, EatUsize, Input, Output};
 use std::ops;
 
 /// A helper trait to concat types when performing `+` on [`Combinator`]s.
@@ -129,7 +129,7 @@ impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8, _9, _10), (_11));
 impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8, _9, _10), (_11, _12));
 impl_concat_tuple!((_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11), (_12));
 
-/// A [`Parse`] implementor created by `+`.
+/// An [`Action`] created by `+`.
 #[derive(Debug, Clone, Copy)]
 pub struct Add<Lhs, Rhs> {
   lhs: Lhs,
@@ -144,22 +144,22 @@ impl<Lhs, Rhs> Add<Lhs, Rhs> {
   }
 }
 
-impl<Lhs: Parse<Value: Concat<Rhs::Value>>, Rhs: Parse<State = Lhs::State, Heap = Lhs::Heap>> Parse
-  for Add<Lhs, Rhs>
+impl<Lhs: Action<Value: Concat<Rhs::Value>>, Rhs: Action<State = Lhs::State, Heap = Lhs::Heap>>
+  Action for Add<Lhs, Rhs>
 {
   type Value = <Lhs::Value as Concat<Rhs::Value>>::Output;
   type State = Lhs::State;
   type Heap = Lhs::Heap;
 
   #[inline]
-  fn parse<'text>(
+  fn exec<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Self::Value>> {
-    self.lhs.parse(input).and_then(|output| {
+    self.lhs.exec(input).and_then(|output| {
       input
         .reload(output.rest)
-        .and_then(|mut input| self.rhs.parse(&mut input))
+        .and_then(|mut input| self.rhs.exec(&mut input))
         .map(|rhs_output| Output {
           value: output.value.concat(rhs_output.value),
           rest: rhs_output.rest,
@@ -168,7 +168,7 @@ impl<Lhs: Parse<Value: Concat<Rhs::Value>>, Rhs: Parse<State = Lhs::State, Heap 
   }
 }
 
-impl<Lhs: Parse<Value: Concat<Rhs::Value>>, Rhs: Parse<State = Lhs::State, Heap = Lhs::Heap>>
+impl<Lhs: Action<Value: Concat<Rhs::Value>>, Rhs: Action<State = Lhs::State, Heap = Lhs::Heap>>
   ops::Add<Combinator<Rhs>> for Combinator<Lhs>
 {
   type Output = Combinator<Add<Lhs, Rhs>>;
@@ -182,7 +182,7 @@ impl<Lhs: Parse<Value: Concat<Rhs::Value>>, Rhs: Parse<State = Lhs::State, Heap 
   }
 }
 
-impl<Lhs: Parse<Value: Concat<()>>> ops::Add<char> for Combinator<Lhs> {
+impl<Lhs: Action<Value: Concat<()>>> ops::Add<char> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatChar<Lhs::State, Lhs::Heap>>>;
 
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
@@ -192,7 +192,7 @@ impl<Lhs: Parse<Value: Concat<()>>> ops::Add<char> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs: Parse<Value: Concat<()>>> ops::Add<usize> for Combinator<Lhs> {
+impl<Lhs: Action<Value: Concat<()>>> ops::Add<usize> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatUsize<Lhs::State, Lhs::Heap>>>;
 
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
@@ -202,7 +202,7 @@ impl<Lhs: Parse<Value: Concat<()>>> ops::Add<usize> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs: Parse<Value: Concat<()>>> ops::Add<String> for Combinator<Lhs> {
+impl<Lhs: Action<Value: Concat<()>>> ops::Add<String> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatString<Lhs::State, Lhs::Heap>>>;
 
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
@@ -212,7 +212,7 @@ impl<Lhs: Parse<Value: Concat<()>>> ops::Add<String> for Combinator<Lhs> {
   }
 }
 
-impl<'a, Lhs: Parse<Value: Concat<()>>> ops::Add<&'a str> for Combinator<Lhs> {
+impl<'a, Lhs: Action<Value: Concat<()>>> ops::Add<&'a str> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatStr<'a, Lhs::State, Lhs::Heap>>>;
 
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
@@ -249,34 +249,32 @@ mod tests {
 
     // reject then accept, should return None
     assert!((rejecter() + accepter_unit())
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
 
     // accept then reject, should return None
     assert!((accepter_unit() + rejecter())
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
 
     // accept then accept, should return the sum of the digested
     // with the concat value
     assert_eq!(
-      (accepter_unit() + accepter_int())
-        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter_unit() + accepter_int()).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (123,),
         rest: "3",
       })
     );
     assert_eq!(
-      (accepter_int() + accepter_unit())
-        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter_int() + accepter_unit()).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (123,),
         rest: "3",
       })
     );
     assert_eq!(
-      (accepter_int() + accepter_int()).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter_int() + accepter_int()).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (123, 123),
         rest: "3",
@@ -297,7 +295,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + '2')
-        .parse(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
+        .exec(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       Some("")
     );
@@ -316,7 +314,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + "23".to_string())
-        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       Some("")
     );
@@ -335,7 +333,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + "23")
-        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       Some("")
     );
@@ -355,21 +353,21 @@ mod tests {
     // normal
     assert_eq!(
       (eat1() + 2)
-        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       Some("")
     );
     // overflow
     assert_eq!(
       (eat1() + 3)
-        .parse(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       None
     );
     // 0
     assert_eq!(
       (eat1() + 0)
-        .parse(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
+        .exec(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       Some("2")
     );

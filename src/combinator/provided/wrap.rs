@@ -1,6 +1,6 @@
 use crate::{
+  action::{Action, Input, Output},
   combinator::Combinator,
-  parse::{Input, Output, Parse},
   Combinator,
 };
 use std::marker::PhantomData;
@@ -27,14 +27,14 @@ impl<
     State,
     Heap,
     F: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Value>>,
-  > Parse for Wrap<F, State, Heap>
+  > Action for Wrap<F, State, Heap>
 {
   type Value = Value;
   type State = State;
   type Heap = Heap;
 
   #[inline]
-  fn parse<'text>(
+  fn exec<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Self::Value>> {
@@ -50,9 +50,9 @@ pub const fn wrap<
   State,
   Heap,
 >(
-  parse: F,
+  f: F,
 ) -> Combinator!(Value, State, Heap) {
-  Combinator::new(Wrap::new(parse))
+  Combinator::new(Wrap::new(f))
 }
 
 #[cfg(test)]
@@ -66,7 +66,7 @@ mod tests {
         value: (),
         rest: &input.rest()[1..]
       }))
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "23"

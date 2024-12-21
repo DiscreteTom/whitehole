@@ -1,10 +1,10 @@
 use super::AcceptedContext;
 use crate::{
-  combinator::{wrap, Combinator, Input, Output, Parse},
+  combinator::{wrap, Action, Combinator, Input, Output},
   Combinator,
 };
 
-impl<T: Parse> Combinator<T> {
+impl<T: Action> Combinator<T> {
   /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
   /// before being executed.
   /// # Examples
@@ -22,7 +22,7 @@ impl<T: Parse> Combinator<T> {
   ) -> Combinator!(@T) {
     wrap(move |input| {
       modifier(input);
-      self.parse(input)
+      self.exec(input)
     })
   }
 
@@ -44,7 +44,7 @@ impl<T: Parse> Combinator<T> {
     ),
   ) -> Combinator!(@T) {
     wrap(move |input| {
-      self.parse(input).inspect(|output| {
+      self.exec(input).inspect(|output| {
         modifier(AcceptedContext { input, output });
       })
     })
@@ -66,7 +66,7 @@ impl<T: Parse> Combinator<T> {
     modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>),
   ) -> Combinator!(@T) {
     wrap(move |input| {
-      let output = self.parse(input);
+      let output = self.exec(input);
       if output.is_none() {
         modifier(input);
       }
@@ -109,7 +109,7 @@ mod tests {
       .prepare(|input| {
         input.state.from = 1;
       })
-      .parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_some());
     assert_eq!(state, State { from: 1, to: 1 });
   }
@@ -121,7 +121,7 @@ mod tests {
       .then(|ctx| {
         ctx.input.state.from = 1;
       })
-      .parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_some());
     assert_eq!(state, State { from: 1, to: 0 });
 
@@ -130,7 +130,7 @@ mod tests {
       .then(|ctx| {
         ctx.input.state.from = 1;
       })
-      .parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_none());
     assert_eq!(state, State { from: 0, to: 0 });
   }
@@ -142,7 +142,7 @@ mod tests {
       .rollback(|input| {
         input.state.from = 1;
       })
-      .parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_some());
     assert_eq!(state, State { from: 0, to: 0 });
 
@@ -151,7 +151,7 @@ mod tests {
       .rollback(|input| {
         input.state.from = 1;
       })
-      .parse(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_none());
     assert_eq!(state, State { from: 1, to: 0 });
   }

@@ -2,11 +2,11 @@
 
 use super::AcceptedContext;
 use crate::{
-  combinator::{wrap, Combinator, Input, Output, Parse},
+  combinator::{wrap, Action, Combinator, Input, Output},
   Combinator,
 };
 
-impl<T: Parse> Combinator<T> {
+impl<T: Action> Combinator<T> {
   /// Create a new combinator to check the [`Input`] before being executed.
   /// The combinator will be executed only if the `condition` returns `true`.
   ///
@@ -26,7 +26,7 @@ impl<T: Parse> Combinator<T> {
   ) -> Combinator!(@T) {
     wrap(move |input| {
       if condition(input) {
-        self.parse(input)
+        self.exec(input)
       } else {
         None
       }
@@ -70,7 +70,7 @@ impl<T: Parse> Combinator<T> {
     ) -> bool,
   ) -> Combinator!(@T) {
     wrap(move |input| {
-      self.parse(input).and_then(|output| {
+      self.exec(input).and_then(|output| {
         if rejecter(AcceptedContext {
           input,
           output: &output,
@@ -122,7 +122,7 @@ impl<T: Parse> Combinator<T> {
     T::Value: Default,
   {
     wrap(move |input| {
-      Some(self.parse(input).unwrap_or_else(|| Output {
+      Some(self.exec(input).unwrap_or_else(|| Output {
         value: Default::default(),
         rest: input.rest(),
       }))
@@ -178,14 +178,14 @@ mod tests {
     let mut executed = false;
     assert!(accepter()
       .when(|_| false)
-      .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
       .is_none());
     assert!(!executed);
 
     let mut executed = false;
     assert!(accepter()
       .when(|_| true)
-      .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
       .is_some());
     assert!(executed);
   }
@@ -195,14 +195,14 @@ mod tests {
     let mut executed = false;
     assert!(accepter()
       .prevent(|_| true)
-      .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
       .is_none());
     assert!(!executed);
 
     let mut executed = false;
     assert!(accepter()
       .prevent(|_| false)
-      .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
       .is_some());
     assert!(executed);
   }
@@ -213,7 +213,7 @@ mod tests {
     assert_eq!(
       accepter()
         .reject(|input| input.content() != "1")
-        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+        .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "23"
@@ -225,7 +225,7 @@ mod tests {
     assert_eq!(
       accepter()
         .reject(|input| input.content() == "1")
-        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+        .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       None
     );
     assert!(executed);
@@ -237,7 +237,7 @@ mod tests {
     assert_eq!(
       accepter()
         .optional()
-        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+        .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "23"
@@ -249,7 +249,7 @@ mod tests {
     assert_eq!(
       rejecter()
         .optional()
-        .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+        .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "123"
@@ -264,7 +264,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .parse(&mut Input::new("1", 0, &mut executed, &mut ()).unwrap()),
+        .exec(&mut Input::new("1", 0, &mut executed, &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: ""
@@ -276,7 +276,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .parse(&mut Input::new("12", 0, &mut executed, &mut ()).unwrap()),
+        .exec(&mut Input::new("12", 0, &mut executed, &mut ()).unwrap()),
       None
     );
     assert!(executed);
@@ -285,7 +285,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .parse(&mut Input::new("1a", 0, &mut executed, &mut ()).unwrap()),
+        .exec(&mut Input::new("1a", 0, &mut executed, &mut ()).unwrap()),
       None
     );
     assert!(executed);
@@ -294,7 +294,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .parse(&mut Input::new("1_", 0, &mut executed, &mut ()).unwrap()),
+        .exec(&mut Input::new("1_", 0, &mut executed, &mut ()).unwrap()),
       None
     );
     assert!(executed);

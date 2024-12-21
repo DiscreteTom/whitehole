@@ -1,11 +1,11 @@
 use super::AcceptedContext;
 use crate::{
-  combinator::{wrap, Combinator, Input, Output, Parse},
+  combinator::{wrap, Action, Combinator, Input, Output},
   range::WithRange,
   Combinator,
 };
 
-impl<T: Parse> Combinator<T> {
+impl<T: Action> Combinator<T> {
   /// Create a new combinator to convert [`Output::value`] to a new value.
   ///
   /// You can consume the original [`Output::value`] in the `mapper`.
@@ -18,7 +18,7 @@ impl<T: Parse> Combinator<T> {
   /// ```
   #[inline]
   pub fn map<NewValue>(self, mapper: impl Fn(T::Value) -> NewValue) -> Combinator!(NewValue, @T) {
-    wrap(move |input| self.parse(input).map(|output| output.map(&mapper)))
+    wrap(move |input| self.exec(input).map(|output| output.map(&mapper)))
   }
 
   /// Create a new combinator to wrap [`Output::value`] in a tuple.
@@ -82,7 +82,7 @@ impl<T: Parse> Combinator<T> {
   /// # use whitehole::Combinator;
   /// # struct MyValue(i32);
   /// # fn t(combinator: Combinator!()) {
-  /// combinator.select(|ctx| MyValue(ctx.content().parse().unwrap()))
+  /// combinator.select(|ctx| MyValue(ctx.content().exec().unwrap()))
   /// # ;}
   /// ```
   #[inline]
@@ -93,7 +93,7 @@ impl<T: Parse> Combinator<T> {
     ) -> NewValue,
   ) -> Combinator!(NewValue, @T) {
     wrap(move |input| {
-      self.parse(input).map(|output| Output {
+      self.exec(input).map(|output| Output {
         rest: output.rest,
         value: selector(AcceptedContext { input, output }),
       })
@@ -111,7 +111,7 @@ impl<T: Parse> Combinator<T> {
   #[inline]
   pub fn range(self) -> Combinator!(WithRange<T::Value>, @T) {
     wrap(move |input| {
-      self.parse(input).map(|output| {
+      self.exec(input).map(|output| {
         let digested = input.rest().len() - output.rest.len();
         output.map(|value| WithRange {
           data: value,
@@ -134,7 +134,7 @@ mod tests {
         rest: &input.rest()[1..]
       }))
       .map(Some)
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: Some(1),
         rest: "23"
@@ -150,7 +150,7 @@ mod tests {
         rest: &input.rest()[1..]
       }))
       .bind(123)
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 123,
         rest: "23"
@@ -166,7 +166,7 @@ mod tests {
         rest: &input.rest()[1..]
       }))
       .bind_default::<i32>()
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 0,
         rest: "23"
@@ -182,7 +182,7 @@ mod tests {
         rest: &input.rest()[1..]
       }))
       .select(|ctx| if ctx.content() == "1" { 1 } else { 2 })
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 1,
         rest: "23"
@@ -198,7 +198,7 @@ mod tests {
         rest: &input.rest()[1..]
       }))
       .range()
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: WithRange {
           data: (),

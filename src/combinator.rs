@@ -1,5 +1,5 @@
 //! The building block of a lexer or a parser.
-//! Provide decorators and operator overloads for [`Parse`] implementors.
+//! Provide decorators and operator overloads for [`Action`]s.
 //! # Basic Usage
 //! ## Provided Combinators
 //! To get started, you can use the provided combinators like [`eat`],
@@ -160,9 +160,9 @@ pub mod ops;
 pub use decorator::*;
 pub use provided::*;
 
-use crate::parse::{Input, Output, Parse};
+use crate::action::{Action, Input, Output};
 
-/// Wrap a [`Parse`] implementor to provide decorators and operator overloads.
+/// Wrap an [`Action`] to provide decorators and operator overloads.
 ///
 /// See the [module-level documentation](self) for more information.
 #[derive(Debug, Clone, Copy)]
@@ -172,52 +172,52 @@ pub struct Combinator<T> {
 
 /// Simplify the [`Combinator`] struct's signature.
 ///
-/// - `Combinator!()` => `Combinator<impl Parse<Value = (), State = (), Heap = ()>>`.
-/// - `Combinator!(MyValue)` => `Combinator<impl Parse<Value = MyValue, State = (), Heap = ()>>`.
-/// - `Combinator!(MyValue, MyState)` => `Combinator<impl Parse<Value = MyValue, State = MyState, Heap = ()>>`.
-/// - `Combinator!(MyValue, MyState, MyHeap)` => `Combinator<impl Parse<Value = MyValue, State = MyState, Heap = MyHeap>>`.
-/// - `Combinator!(@T)` => `Combinator<impl Parse<Value = T::Value, State = T::State, Heap = T::Heap>>`.
-/// - `Combinator!(MyValue, @T)` => `Combinator<impl Parse<Value = MyValue, State = T::State, Heap = T::Heap>>`.
+/// - `Combinator!()` => `Combinator<impl Action<Value = (), State = (), Heap = ()>>`.
+/// - `Combinator!(MyValue)` => `Combinator<impl Action<Value = MyValue, State = (), Heap = ()>>`.
+/// - `Combinator!(MyValue, MyState)` => `Combinator<impl Action<Value = MyValue, State = MyState, Heap = ()>>`.
+/// - `Combinator!(MyValue, MyState, MyHeap)` => `Combinator<impl Action<Value = MyValue, State = MyState, Heap = MyHeap>>`.
+/// - `Combinator!(@T)` => `Combinator<impl Action<Value = T::Value, State = T::State, Heap = T::Heap>>`.
+/// - `Combinator!(MyValue, @T)` => `Combinator<impl Action<Value = MyValue, State = T::State, Heap = T::Heap>>`.
 #[macro_export]
 macro_rules! Combinator {
   () => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<Value = (), State = (), Heap = ()>>
+    $crate::combinator::Combinator<impl $crate::action::Action<Value = (), State = (), Heap = ()>>
   };
   ($value:ty) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<Value = $value, State = (), Heap = ()>>
+    $crate::combinator::Combinator<impl $crate::action::Action<Value = $value, State = (), Heap = ()>>
   };
   ($value:ty, $state:ty) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<Value = $value, State = $state, Heap = ()>>
+    $crate::combinator::Combinator<impl $crate::action::Action<Value = $value, State = $state, Heap = ()>>
   };
   ($value:ty, $state:ty, $heap:ty) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<Value = $value, State = $state, Heap = $heap>>
+    $crate::combinator::Combinator<impl $crate::action::Action<Value = $value, State = $state, Heap = $heap>>
   };
   (@$from:ident) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<Value = $from::Value, State = $from::State, Heap = $from::Heap>>
+    $crate::combinator::Combinator<impl $crate::action::Action<Value = $from::Value, State = $from::State, Heap = $from::Heap>>
   };
   ($value:ty, @$from:ident) => {
-    $crate::combinator::Combinator<impl $crate::parse::Parse<Value = $value, State = $from::State, Heap = $from::Heap>>
+    $crate::combinator::Combinator<impl $crate::action::Action<Value = $value, State = $from::State, Heap = $from::Heap>>
   };
 }
 
 impl<T> Combinator<T> {
-  /// Create a new instance by wrapping a [`Parse`] implementor.
+  /// Create a new instance by wrapping a [`Action`] implementor.
   #[inline]
   pub const fn new(parser: T) -> Self {
     Self { parser }
   }
 }
 
-impl<T: Parse> Parse for Combinator<T> {
+impl<T: Action> Action for Combinator<T> {
   type Value = T::Value;
   type State = T::State;
   type Heap = T::Heap;
 
   #[inline]
-  fn parse<'text>(
+  fn exec<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, T::Value>> {
-    self.parser.parse(input)
+    self.parser.exec(input)
   }
 }

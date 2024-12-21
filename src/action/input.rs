@@ -1,6 +1,6 @@
 use super::Output;
 
-/// The input of [`Parse::parse`](crate::parse::Parse::parse).
+/// The input of [`Action::exec`](crate::action::Action::exec).
 ///
 /// Once created, only [`Self::state`] and [`Self::heap`] can be mutated.
 #[derive(Debug)]

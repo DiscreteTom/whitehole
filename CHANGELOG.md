@@ -16,9 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Rename `Node` to `WithRange`, rename its field `kind` to `data`.
+- Rename `Parse` to `Action`, rename its method `parse` to `exec`.
 - Make generic param `State` and `Heap` of the `Parse` trait become associated type.
-- Rename `Parse::Kind` to `Parse::Value`, rename `Output::kind` to `Output::value`.
-- Plain closures are no longer supported as `Parse` trait implementations. Use `wrap` instead to create a `Combinator` from a closure.
+- Rename `Action::Kind` to `Action::Value`, rename `Output::kind` to `Output::value`.
+- Plain closures are no longer supported as `Action` trait implementations. Use `wrap` instead to create a `Combinator` from a closure.
 - Simplify generic params of `Combinator` and `Parser`.
 - `Parser::parse` and `Parser::peek` will return `parse::Output` instead of `WithRange`.
 

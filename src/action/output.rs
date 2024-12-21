@@ -1,6 +1,6 @@
-/// The output of [`Parse::parse`](crate::parse::Parse::parse).
+/// The output of [`Action::action`](crate::action::Action::action).
 ///
-/// Usually built by [`Input::digest`](crate::parse::Input::digest).
+/// Usually built by [`Input::digest`](crate::action::Input::digest).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Output<'text, Value> {
   /// The parsed value.

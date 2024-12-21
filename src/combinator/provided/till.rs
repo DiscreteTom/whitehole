@@ -76,34 +76,37 @@ pub const fn till<State, Heap>(pattern: impl Till) -> Combinator!((), State, Hea
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::parse::{Input, Output, Parse};
+  use crate::action::{Action, Input, Output};
 
   #[test]
   fn till_parse() {
     assert_eq!(
-      till("end".to_string()).parse(&mut Input::new("123end456", 0, &mut (), &mut ()).unwrap()),
+      till("end".to_string()).exec(&mut Input::new("123end456", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "456"
       })
     );
     assert_eq!(
-      till("end").parse(&mut Input::new("123end456", 0, &mut (), &mut ()).unwrap()),
+      till("end").exec(&mut Input::new("123end456", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "456"
       })
     );
     assert_eq!(
-      till(';').parse(&mut Input::new("123;456", 0, &mut (), &mut ()).unwrap()),
+      till(';').exec(&mut Input::new("123;456", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "456"
       })
     );
     assert_eq!(
-      till(()).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { value: (), rest: "" })
+      till(()).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        value: (),
+        rest: ""
+      })
     );
   }
 }

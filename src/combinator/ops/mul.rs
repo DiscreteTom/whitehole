@@ -1,6 +1,6 @@
 //! Overload `*` operator for [`Combinator`].
 
-use crate::combinator::{Combinator, EatChar, EatStr, EatString, Input, Output, Parse};
+use crate::combinator::{Action, Combinator, EatChar, EatStr, EatString, Input, Output};
 use std::ops::{self, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 
 /// A helper trait to represent repetition when performing `*` on [`Combinator`]s.
@@ -102,7 +102,7 @@ impl Repeat for RangeToInclusive<usize> {
   }
 }
 
-/// A [`Parse`] implementor created by `*`.
+/// An [`Action`] created by `*`.
 #[derive(Debug, Clone, Copy)]
 pub struct Mul<Lhs, Rhs> {
   pub lhs: Lhs,
@@ -117,7 +117,7 @@ impl<Lhs, Rhs> Mul<Lhs, Rhs> {
 }
 
 impl<
-    Lhs: Parse,
+    Lhs: Action,
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
@@ -141,7 +141,7 @@ impl<
 
 #[inline]
 fn impl_mul<'text, Value, State, Heap, Acc>(
-  lhs: &impl Parse<Value = Value, State = State, Heap = Heap>,
+  lhs: &impl Action<Value = Value, State = State, Heap = Heap>,
   range: &impl Repeat,
   init: impl Fn() -> Acc,
   folder: impl Fn(Value, Acc) -> Acc,
@@ -156,7 +156,7 @@ fn impl_mul<'text, Value, State, Heap, Acc>(
   while range.validate(repeated) {
     let Some(next_output) = input
       .reload(output.rest)
-      .and_then(|mut input| lhs.parse(&mut input))
+      .and_then(|mut input| lhs.exec(&mut input))
     else {
       break;
     };
@@ -169,19 +169,19 @@ fn impl_mul<'text, Value, State, Heap, Acc>(
 }
 
 impl<
-    Lhs: Parse,
+    Lhs: Action,
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
     InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
-  > Parse for Mul<Lhs, (Repeater, Initializer, InlineFolder)>
+  > Action for Mul<Lhs, (Repeater, Initializer, InlineFolder)>
 {
   type Value = Acc;
   type State = Lhs::State;
   type Heap = Lhs::Heap;
 
   #[inline]
-  fn parse<'text>(
+  fn exec<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Acc>> {
@@ -191,8 +191,8 @@ impl<
 }
 
 impl<
-    Lhs: Parse,
-    Sep: Parse<Value = (), State = Lhs::State, Heap = Lhs::Heap>, // TODO: allow more generic Value
+    Lhs: Action,
+    Sep: Action<Value = (), State = Lhs::State, Heap = Lhs::Heap>, // TODO: allow more generic Value
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
@@ -219,7 +219,7 @@ impl<
 }
 
 impl<
-    Lhs: Parse,
+    Lhs: Action,
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
@@ -259,7 +259,7 @@ impl<
 }
 
 impl<
-    Lhs: Parse,
+    Lhs: Action,
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
@@ -300,7 +300,7 @@ impl<
 
 impl<
     'a,
-    Lhs: Parse,
+    Lhs: Action,
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
@@ -341,9 +341,9 @@ impl<
 
 #[inline]
 fn impl_mul_with_sep<'text, Value, State, Heap, Acc>(
-  lhs: &impl Parse<Value = Value, State = State, Heap = Heap>,
+  lhs: &impl Action<Value = Value, State = State, Heap = Heap>,
   range: &impl Repeat,
-  sep: &impl Parse<Value = (), State = State, Heap = Heap>,
+  sep: &impl Action<Value = (), State = State, Heap = Heap>,
   init: impl Fn() -> Acc,
   folder: impl Fn(Value, Acc) -> Acc,
   input: &mut Input<'text, &mut State, &mut Heap>,
@@ -357,7 +357,7 @@ fn impl_mul_with_sep<'text, Value, State, Heap, Acc>(
   while range.validate(repeated) {
     let Some(next_output) = input
       .reload(output.rest)
-      .and_then(|mut input| lhs.parse(&mut input))
+      .and_then(|mut input| lhs.exec(&mut input))
     else {
       break;
     };
@@ -366,7 +366,7 @@ fn impl_mul_with_sep<'text, Value, State, Heap, Acc>(
     output.value = folder(next_output.value, output.value);
     let Some(next_output) = input
       .reload(next_output.rest)
-      .and_then(|mut input| sep.parse(&mut input))
+      .and_then(|mut input| sep.exec(&mut input))
     else {
       break;
     };
@@ -377,20 +377,20 @@ fn impl_mul_with_sep<'text, Value, State, Heap, Acc>(
 }
 
 impl<
-    Lhs: Parse,
-    Sep: Parse<Value = (), State = Lhs::State, Heap = Lhs::Heap>,
+    Lhs: Action,
+    Sep: Action<Value = (), State = Lhs::State, Heap = Lhs::Heap>,
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
     InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
-  > Parse for Mul<Lhs, (Repeater, Sep, Initializer, InlineFolder)>
+  > Action for Mul<Lhs, (Repeater, Sep, Initializer, InlineFolder)>
 {
   type Value = Acc;
   type State = Lhs::State;
   type Heap = Lhs::Heap;
 
   #[inline]
-  fn parse<'text>(
+  fn exec<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Acc>> {
@@ -406,7 +406,7 @@ impl<
 /// ## Inline Fold
 /// For simple cases, you can accumulate the values inline, without using this trait.
 /// ```
-/// # use whitehole::{combinator::next, parse::{Input, Parse}};
+/// # use whitehole::{combinator::next, action::{Input, Action}};
 /// let combinator =
 ///   // accept one ascii digit at a time
 ///   next(|c| c.is_ascii_digit())
@@ -417,14 +417,14 @@ impl<
 ///
 /// // parse "123" to 123
 /// assert_eq!(
-///   combinator.parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().value,
+///   combinator.exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().value,
 ///   123
 /// )
 /// ```
 /// ## Fold with Custom Type
 /// If you want to re-use the folder logic, you can implement this trait for a custom type.
 /// ```
-/// # use whitehole::{combinator::{ops::mul::Fold, next}, parse::{Input, Parse}};
+/// # use whitehole::{combinator::{ops::mul::Fold, next}, action::{Input, Action}};
 /// // since you can't implement `Fold` for `usize` directly,
 /// // wrap it in a new-type
 /// struct Usize(usize);
@@ -448,7 +448,7 @@ impl<
 ///
 /// // parse "123" to 123
 /// assert_eq!(
-///   combinator.parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().value,
+///   combinator.exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().value,
 ///   123
 /// )
 /// ```
@@ -466,7 +466,7 @@ impl Fold for () {
   fn fold(self, _: Self::Output) -> Self::Output {}
 }
 
-impl<Lhs: Parse<Value: Fold>, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
+impl<Lhs: Action<Value: Fold>, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
   type Output = Combinator<Mul<Lhs, Rhs>>;
 
   /// Create a new combinator to repeat the original combinator for `rhs` times.
@@ -481,13 +481,13 @@ impl<Lhs: Parse<Value: Fold>, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs: Parse<Value: Fold>, Rhs: Repeat> Parse for Mul<Lhs, Rhs> {
+impl<Lhs: Action<Value: Fold>, Rhs: Repeat> Action for Mul<Lhs, Rhs> {
   type Value = <Lhs::Value as Fold>::Output;
   type State = Lhs::State;
   type Heap = Lhs::Heap;
 
   #[inline]
-  fn parse<'text>(
+  fn exec<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, Self::Value>> {
@@ -502,9 +502,9 @@ impl<Lhs: Parse<Value: Fold>, Rhs: Repeat> Parse for Mul<Lhs, Rhs> {
 }
 
 impl<
-    Lhs: Parse<Value: Fold>,
+    Lhs: Action<Value: Fold>,
     Repeater: Repeat,
-    Sep: Parse<Value = (), State = Lhs::State, Heap = Lhs::Heap>,
+    Sep: Action<Value = (), State = Lhs::State, Heap = Lhs::Heap>,
   > ops::Mul<(Repeater, Combinator<Sep>)> for Combinator<Lhs>
 {
   type Output = Combinator<Mul<Lhs, (Repeater, Sep)>>;
@@ -526,7 +526,7 @@ impl<
   }
 }
 
-impl<Lhs: Parse<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, char)> for Combinator<Lhs> {
+impl<Lhs: Action<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, char)> for Combinator<Lhs> {
   type Output = Combinator<Mul<Lhs, (Repeater, EatChar<Lhs::State, Lhs::Heap>)>>;
 
   /// Create a new combinator to repeat the original combinator
@@ -546,7 +546,7 @@ impl<Lhs: Parse<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, char)> for C
   }
 }
 
-impl<Lhs: Parse<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, String)> for Combinator<Lhs> {
+impl<Lhs: Action<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, String)> for Combinator<Lhs> {
   type Output = Combinator<Mul<Lhs, (Repeater, EatString<Lhs::State, Lhs::Heap>)>>;
 
   /// Create a new combinator to repeat the original combinator
@@ -566,7 +566,7 @@ impl<Lhs: Parse<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, String)> for
   }
 }
 
-impl<'a, Lhs: Parse<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, &'a str)>
+impl<'a, Lhs: Action<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, &'a str)>
   for Combinator<Lhs>
 {
   type Output = Combinator<Mul<Lhs, (Repeater, EatStr<'a, Lhs::State, Lhs::Heap>)>>;
@@ -589,17 +589,17 @@ impl<'a, Lhs: Parse<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, &'a str)
 }
 
 impl<
-    Lhs: Parse<Value: Fold>,
+    Lhs: Action<Value: Fold>,
     Repeater: Repeat,
-    Sep: Parse<Value = (), State = Lhs::State, Heap = Lhs::Heap>,
-  > Parse for Mul<Lhs, (Repeater, Sep)>
+    Sep: Action<Value = (), State = Lhs::State, Heap = Lhs::Heap>,
+  > Action for Mul<Lhs, (Repeater, Sep)>
 {
   type Value = <Lhs::Value as Fold>::Output;
   type State = Lhs::State;
   type Heap = Lhs::Heap;
 
   #[inline]
-  fn parse<'text>(
+  fn exec<'text>(
     &self,
     input: &mut Input<'text, &mut Lhs::State, &mut Lhs::Heap>,
   ) -> Option<Output<'text, Self::Value>> {
@@ -643,13 +643,13 @@ mod tests {
 
     // repeat a rejecter will reject
     assert!((rejecter() * 3)
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
 
     // repeat rejecter 0 times will accept
     let n = 0;
     assert_eq!(
-      (rejecter() * n).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (rejecter() * n).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "123",
@@ -659,7 +659,7 @@ mod tests {
     // repeat an accepter 0 times will accept
     let n = 0;
     assert_eq!(
-      (accepter() * n).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter() * n).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 0,
         rest: "123",
@@ -668,13 +668,13 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * 3).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter() * 3).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output { value: 3, rest: "" })
     );
 
     // overflow, reject
     assert!((accepter() * 4)
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
   }
 
@@ -692,12 +692,12 @@ mod tests {
 
     // repeat a rejecter will reject
     assert!((rejecter() * (1..2))
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (0..2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (rejecter() * (0..2)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "123",
@@ -706,7 +706,7 @@ mod tests {
 
     // repeat an accepter 0 times will accept
     assert_eq!(
-      (accepter() * (0..1)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter() * (0..1)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 0,
         rest: "123",
@@ -715,7 +715,7 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (0..3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter() * (0..3)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 1,
         rest: "3"
@@ -724,7 +724,7 @@ mod tests {
 
     // too few, reject
     assert!((accepter() * (4..6))
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
   }
 
@@ -742,12 +742,12 @@ mod tests {
 
     // repeat a rejecter will reject
     assert!((rejecter() * (1..))
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (0..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (rejecter() * (0..)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "123",
@@ -756,13 +756,13 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (0..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter() * (0..)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output { value: 3, rest: "" })
     );
 
     // too few, reject
     assert!((accepter() * (4..))
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
   }
 
@@ -780,7 +780,7 @@ mod tests {
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (rejecter() * (..)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "123",
@@ -789,7 +789,7 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (..)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter() * (..)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output { value: 3, rest: "" })
     );
   }
@@ -808,12 +808,12 @@ mod tests {
 
     // repeat a rejecter will reject
     assert!((rejecter() * (1..=3))
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (0..=2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (rejecter() * (0..=2)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "123",
@@ -822,7 +822,7 @@ mod tests {
 
     // repeat an accepter 0 times will accept
     assert_eq!(
-      (accepter() * (0..=0)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter() * (0..=0)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 0,
         rest: "123",
@@ -831,13 +831,13 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (0..=3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter() * (0..=3)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output { value: 3, rest: "" })
     );
 
     // too few, reject
     assert!((accepter() * (4..=6))
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
   }
 
@@ -855,7 +855,7 @@ mod tests {
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (..2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (rejecter() * (..2)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "123",
@@ -864,7 +864,7 @@ mod tests {
 
     // repeat an accepter 0 times will accept
     assert_eq!(
-      (accepter() * (..1)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter() * (..1)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 0,
         rest: "123",
@@ -873,7 +873,7 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (..3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter() * (..3)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 1,
         rest: "3"
@@ -895,7 +895,7 @@ mod tests {
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (..=2)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (rejecter() * (..=2)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "123",
@@ -904,7 +904,7 @@ mod tests {
 
     // repeat an accepter 0 times will accept
     assert_eq!(
-      (accepter() * (..=0)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter() * (..=0)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 0,
         rest: "123",
@@ -913,7 +913,7 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (..=3)).parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter() * (..=3)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output { value: 3, rest: "" })
     );
   }
@@ -932,39 +932,39 @@ mod tests {
     let sep = || eat_char(',');
 
     assert_eq!(
-      (eat_a() * (1.., sep())).parse(&mut Input::new(",", 0, &mut (), &mut ()).unwrap()),
+      (eat_a() * (1.., sep())).exec(&mut Input::new(",", 0, &mut (), &mut ()).unwrap()),
       None
     );
     assert_eq!(
-      (eat_a() * (1.., sep())).parse(&mut Input::new("a", 0, &mut (), &mut ()).unwrap()),
+      (eat_a() * (1.., sep())).exec(&mut Input::new("a", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: ""
       })
     );
     assert_eq!(
-      (eat_a() * (1.., sep())).parse(&mut Input::new("a,", 0, &mut (), &mut ()).unwrap()),
+      (eat_a() * (1.., sep())).exec(&mut Input::new("a,", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: ""
       })
     );
     assert_eq!(
-      (eat_a() * (1.., sep())).parse(&mut Input::new("a,a", 0, &mut (), &mut ()).unwrap()),
+      (eat_a() * (1.., sep())).exec(&mut Input::new("a,a", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: ""
       })
     );
     assert_eq!(
-      (eat_a() * (1.., sep())).parse(&mut Input::new("a,,", 0, &mut (), &mut ()).unwrap()),
+      (eat_a() * (1.., sep())).exec(&mut Input::new("a,,", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: ","
       })
     );
     assert_eq!(
-      (eat_a() * (1.., sep())).parse(&mut Input::new("a,aa", 0, &mut (), &mut ()).unwrap()),
+      (eat_a() * (1.., sep())).exec(&mut Input::new("a,aa", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "a"

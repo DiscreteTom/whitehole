@@ -1,7 +1,7 @@
 use crate::{combinator::wrap, Combinator};
 
 /// Returns a combinator to match
-/// [`Input::next`](crate::parse::Input::next) by the condition.
+/// [`Input::next`](crate::action::Input::next) by the condition.
 /// The combinator will reject if not matched.
 /// # Examples
 /// ```
@@ -26,20 +26,20 @@ pub const fn next<State, Heap>(condition: impl Fn(char) -> bool) -> Combinator!(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::parse::{Input, Parse};
+  use crate::action::{Action, Input};
 
   #[test]
   fn combinator_next() {
     // normal
     assert_eq!(
       next(|c| c.is_ascii_digit())
-        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       Some("23")
     );
     // reject
     assert!(next(|c| c.is_ascii_alphabetic())
-      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
   }
 }

@@ -4,7 +4,7 @@
 //!
 //! Here is the recommended order of learning this project:
 //!
-//! - [`parse`] (optional)
+//! - [`action`] (optional)
 //! - [`combinator`]
 //! - [`parser`]
 //!
@@ -14,7 +14,7 @@
 //!   A procedural macro to generate a closure that checks
 //!   if a character is in the provided literal string.
 
+pub mod action;
 pub mod combinator;
-pub mod parse;
 pub mod parser;
 pub mod range;
