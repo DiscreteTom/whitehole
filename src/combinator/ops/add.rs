@@ -178,7 +178,7 @@ impl<Lhs: Action<Value: Concat<Rhs::Value>>, Rhs: Action<State = Lhs::State, Hea
   /// or reject if any of the parses rejects.
   #[inline]
   fn add(self, rhs: Combinator<Rhs>) -> Self::Output {
-    Self::Output::new(Add::new(self.parser, rhs.parser))
+    Self::Output::new(Add::new(self.action, rhs.action))
   }
 }
 
@@ -188,7 +188,7 @@ impl<Lhs: Action<Value: Concat<()>>> ops::Add<char> for Combinator<Lhs> {
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
   fn add(self, rhs: char) -> Self::Output {
-    Self::Output::new(Add::new(self.parser, EatChar::new(rhs)))
+    Self::Output::new(Add::new(self.action, EatChar::new(rhs)))
   }
 }
 
@@ -198,7 +198,7 @@ impl<Lhs: Action<Value: Concat<()>>> ops::Add<usize> for Combinator<Lhs> {
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
   fn add(self, rhs: usize) -> Self::Output {
-    Self::Output::new(Add::new(self.parser, EatUsize::new(rhs)))
+    Self::Output::new(Add::new(self.action, EatUsize::new(rhs)))
   }
 }
 
@@ -208,7 +208,7 @@ impl<Lhs: Action<Value: Concat<()>>> ops::Add<String> for Combinator<Lhs> {
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
   fn add(self, rhs: String) -> Self::Output {
-    Self::Output::new(Add::new(self.parser, EatString::new(rhs)))
+    Self::Output::new(Add::new(self.action, EatString::new(rhs)))
   }
 }
 
@@ -218,7 +218,7 @@ impl<'a, Lhs: Action<Value: Concat<()>>> ops::Add<&'a str> for Combinator<Lhs> {
   /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
   #[inline]
   fn add(self, rhs: &'a str) -> Self::Output {
-    Self::Output::new(Add::new(self.parser, EatStr::new(rhs)))
+    Self::Output::new(Add::new(self.action, EatStr::new(rhs)))
   }
 }
 

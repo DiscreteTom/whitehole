@@ -167,7 +167,7 @@ use crate::action::{Action, Input, Output};
 /// See the [module-level documentation](self) for more information.
 #[derive(Debug, Clone, Copy)]
 pub struct Combinator<T> {
-  parser: T,
+  action: T,
 }
 
 /// Simplify the [`Combinator`] struct's signature.
@@ -203,8 +203,8 @@ macro_rules! C {
 impl<T> Combinator<T> {
   /// Create a new instance by wrapping a [`Action`] implementor.
   #[inline]
-  pub const fn new(parser: T) -> Self {
-    Self { parser }
+  pub const fn new(action: T) -> Self {
+    Self { action }
   }
 }
 
@@ -218,6 +218,6 @@ impl<T: Action> Action for Combinator<T> {
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<'text, T::Value>> {
-    self.parser.exec(input)
+    self.action.exec(input)
   }
 }

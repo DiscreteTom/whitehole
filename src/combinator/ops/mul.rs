@@ -135,7 +135,7 @@ impl<
   ///
   /// See [`Fold`] for more information.
   fn mul(self, rhs: (Repeater, Initializer, InlineFolder)) -> Self::Output {
-    Self::Output::new(Mul::new(self.parser, rhs))
+    Self::Output::new(Mul::new(self.action, rhs))
   }
 }
 
@@ -214,7 +214,7 @@ impl<
   /// See [`Fold`] for more information.
   fn mul(self, rhs: (Repeater, Combinator<Sep>, Initializer, InlineFolder)) -> Self::Output {
     let (range, sep, init, folder) = rhs;
-    Self::Output::new(Mul::new(self.parser, (range, sep.parser, init, folder)))
+    Self::Output::new(Mul::new(self.action, (range, sep.action, init, folder)))
   }
 }
 
@@ -252,7 +252,7 @@ impl<
   fn mul(self, rhs: (Repeater, char, Initializer, InlineFolder)) -> Self::Output {
     let (range, sep, init, folder) = rhs;
     Self::Output::new(Mul::new(
-      self.parser,
+      self.action,
       (range, EatChar::new(sep), init, folder),
     ))
   }
@@ -292,7 +292,7 @@ impl<
   fn mul(self, rhs: (Repeater, String, Initializer, InlineFolder)) -> Self::Output {
     let (range, sep, init, folder) = rhs;
     Self::Output::new(Mul::new(
-      self.parser,
+      self.action,
       (range, EatString::new(sep), init, folder),
     ))
   }
@@ -333,7 +333,7 @@ impl<
   fn mul(self, rhs: (Repeater, &'a str, Initializer, InlineFolder)) -> Self::Output {
     let (range, sep, init, folder) = rhs;
     Self::Output::new(Mul::new(
-      self.parser,
+      self.action,
       (range, EatStr::new(sep), init, folder),
     ))
   }
@@ -477,7 +477,7 @@ impl<Lhs: Action<Value: Fold>, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
   ///
   /// See [`Fold`] for more information.
   fn mul(self, rhs: Rhs) -> Self::Output {
-    Self::Output::new(Mul::new(self.parser, rhs))
+    Self::Output::new(Mul::new(self.action, rhs))
   }
 }
 
@@ -522,7 +522,7 @@ impl<
   /// See [`Fold`] for more information.
   fn mul(self, rhs: (Repeater, Combinator<Sep>)) -> Self::Output {
     let (range, sep) = rhs;
-    Self::Output::new(Mul::new(self.parser, (range, sep.parser)))
+    Self::Output::new(Mul::new(self.action, (range, sep.action)))
   }
 }
 
@@ -542,7 +542,7 @@ impl<Lhs: Action<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, char)> for 
   /// See [`Fold`] for more information.
   fn mul(self, rhs: (Repeater, char)) -> Self::Output {
     let (range, sep) = rhs;
-    Self::Output::new(Mul::new(self.parser, (range, EatChar::new(sep))))
+    Self::Output::new(Mul::new(self.action, (range, EatChar::new(sep))))
   }
 }
 
@@ -562,7 +562,7 @@ impl<Lhs: Action<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, String)> fo
   /// See [`Fold`] for more information.
   fn mul(self, rhs: (Repeater, String)) -> Self::Output {
     let (range, sep) = rhs;
-    Self::Output::new(Mul::new(self.parser, (range, EatString::new(sep))))
+    Self::Output::new(Mul::new(self.action, (range, EatString::new(sep))))
   }
 }
 
@@ -584,7 +584,7 @@ impl<'a, Lhs: Action<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, &'a str
   /// See [`Fold`] for more information.
   fn mul(self, rhs: (Repeater, &'a str)) -> Self::Output {
     let (range, sep) = rhs;
-    Self::Output::new(Mul::new(self.parser, (range, EatStr::new(sep))))
+    Self::Output::new(Mul::new(self.action, (range, EatStr::new(sep))))
   }
 }
 
