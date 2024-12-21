@@ -43,6 +43,16 @@ impl<
 }
 
 /// Wrap a closure to create a [`Combinator`].
+/// # Examples
+/// ```
+/// # use whitehole::C;
+/// # use whitehole::combinator::wrap;
+/// # use whitehole::action::{Input, Output};
+/// # fn t() -> C!() {
+/// // eat the next character
+/// wrap(|input| input.digest(input.next().len_utf8()))
+/// # }
+/// ```
 #[inline]
 pub const fn wrap<
   F: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Value>>,
@@ -62,11 +72,7 @@ mod tests {
   #[test]
   fn combinator_wrap() {
     assert_eq!(
-      wrap(|input| Some(Output {
-        value: (),
-        rest: &input.rest()[1..]
-      }))
-      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      wrap(|input| input.digest(1)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         rest: "23"
