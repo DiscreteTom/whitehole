@@ -1,9 +1,36 @@
 //! Overload `|` operator for [`Combinator`].
+//!
+//! `Combinator | Combinator` will create a new combinator
+//! to try to parse with the left-hand side,
+//! and if it fails, try to parse with the right-hand side.
+//! The new combinator will reject if both of the combinators reject.
+//! # Basics
+//! ```
+//! # use whitehole::{combinator::eat, C};
+//! # fn t(_: C!()) {}
+//! // match "true" or "false"
+//! # t(
+//! eat("true") | eat("false")
+//! # );
+//!
+//! // you can use a String, a &str, a char or an usize as a shortcut for `eat`
+//! // at the right-hand side of `|`
+//! # t(
+//! eat("true") | "false"
+//! # );
+//! # t(
+//! eat("true") | ';'
+//! # );
+//! # t(
+//! eat("true") | 1
+//! # );
+//! ```
 
 use crate::combinator::{Action, Combinator, EatChar, EatStr, EatString, EatUsize, Input, Output};
 use std::ops;
 
-/// An [`Action`] created by `|`.
+/// An [`Action`] created by the `|` operator.
+/// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
 #[derive(Debug, Clone, Copy)]
 pub struct BitOr<Lhs, Rhs> {
   lhs: Lhs,
@@ -39,9 +66,7 @@ impl<Lhs: Action, Rhs: Action<Value = Lhs::Value, State = Lhs::State, Heap = Lhs
 {
   type Output = Combinator<BitOr<Lhs, Rhs>>;
 
-  /// Create a new combinator to try to parse with the left-hand side,
-  /// and if it fails, try to parse with the right-hand side.
-  /// The combinator will reject if all of the parses reject.
+  /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: Combinator<Rhs>) -> Self::Output {
     Self::Output::new(BitOr::new(self.action, rhs.action))
@@ -51,7 +76,7 @@ impl<Lhs: Action, Rhs: Action<Value = Lhs::Value, State = Lhs::State, Heap = Lhs
 impl<Lhs: Action> ops::BitOr<char> for Combinator<Lhs> {
   type Output = Combinator<BitOr<Lhs, EatChar<Lhs::State, Lhs::Heap>>>;
 
-  /// Similar to `self | eat(rhs)`. See [`eat`](crate::combinator::eat).
+  /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: char) -> Self::Output {
     Self::Output::new(BitOr::new(self.action, EatChar::new(rhs)))
@@ -61,7 +86,7 @@ impl<Lhs: Action> ops::BitOr<char> for Combinator<Lhs> {
 impl<Lhs: Action> ops::BitOr<usize> for Combinator<Lhs> {
   type Output = Combinator<BitOr<Lhs, EatUsize<Lhs::State, Lhs::Heap>>>;
 
-  /// Similar to `self | eat(rhs)`. See [`eat`](crate::combinator::eat).
+  /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: usize) -> Self::Output {
     Self::Output::new(BitOr::new(self.action, EatUsize::new(rhs)))
@@ -71,7 +96,7 @@ impl<Lhs: Action> ops::BitOr<usize> for Combinator<Lhs> {
 impl<Lhs: Action> ops::BitOr<String> for Combinator<Lhs> {
   type Output = Combinator<BitOr<Lhs, EatString<Lhs::State, Lhs::Heap>>>;
 
-  /// Similar to `self | eat(rhs)`. See [`eat`](crate::combinator::eat).
+  /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: String) -> Self::Output {
     Self::Output::new(BitOr::new(self.action, EatString::new(rhs)))
@@ -81,7 +106,7 @@ impl<Lhs: Action> ops::BitOr<String> for Combinator<Lhs> {
 impl<'a, Lhs: Action> ops::BitOr<&'a str> for Combinator<Lhs> {
   type Output = Combinator<BitOr<Lhs, EatStr<'a, Lhs::State, Lhs::Heap>>>;
 
-  /// Similar to `self | eat(rhs)`. See [`eat`](crate::combinator::eat).
+  /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: &'a str) -> Self::Output {
     Self::Output::new(BitOr::new(self.action, EatStr::new(rhs)))
