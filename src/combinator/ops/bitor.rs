@@ -33,8 +33,8 @@ use std::ops;
 /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
 #[derive(Debug, Clone, Copy)]
 pub struct BitOr<Lhs, Rhs> {
-  lhs: Lhs,
-  rhs: Rhs,
+  pub lhs: Lhs,
+  pub rhs: Rhs,
 }
 
 impl<Lhs, Rhs> BitOr<Lhs, Rhs> {

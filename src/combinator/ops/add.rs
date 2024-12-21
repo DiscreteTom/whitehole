@@ -63,8 +63,8 @@ use std::ops;
 /// See [`ops::add`](crate::combinator::ops::add) for more information.
 #[derive(Debug, Clone, Copy)]
 pub struct Add<Lhs, Rhs> {
-  lhs: Lhs,
-  rhs: Rhs,
+  pub lhs: Lhs,
+  pub rhs: Rhs,
 }
 
 impl<Lhs, Rhs> Add<Lhs, Rhs> {

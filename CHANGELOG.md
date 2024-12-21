@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Combinator::range` to include the byte range of digested text in the output.
 - Add `Combinator::when` as the opposite of `Combinator::prevent`.
 - Add `Combinator::finally` to modify `Input` after execution.
+- Expose `Add::lhs`, `Add::rhs`, `BitOr::lhs` and `BitOr::rhs`.
 
 ### Changed
 
