@@ -10,7 +10,7 @@ pub struct WithRange<Data> {
   /// This can be used to index a string.
   /// # Example
   /// ```
-  /// # use whitehole::with_range::WithRange;
+  /// # use whitehole::range::WithRange;
   /// let value = WithRange {
   ///   data: (),
   ///   range: 0..5,

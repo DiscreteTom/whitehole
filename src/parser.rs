@@ -10,7 +10,7 @@ pub use snapshot::*;
 
 use crate::{
   parse::{Input, Parse},
-  with_range::WithRange,
+  range::WithRange,
 };
 
 /// Manage [`Input::state`], [`Input::heap`] and the parsing progress.

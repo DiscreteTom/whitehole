@@ -17,4 +17,4 @@
 pub mod combinator;
 pub mod parse;
 pub mod parser;
-pub mod with_range;
+pub mod range;

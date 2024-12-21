@@ -1,7 +1,7 @@
 use super::AcceptedContext;
 use crate::{
   combinator::{wrap, Combinator, Input, Output, Parse},
-  with_range::WithRange,
+  range::WithRange,
   Combinator,
 };
 
