@@ -8,7 +8,35 @@ use crate::{
 
 impl<T: Parse> Combinator<T> {
   /// Create a new combinator to check the [`Input`] before being executed.
+  /// The combinator will be executed only if the `condition` returns `true`.
+  ///
+  /// This is the opposite of [`Combinator::prevent`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::Combinator;
+  /// # struct MyState { execute: bool }
+  /// # fn t(combinator: Combinator!((), MyState)) {
+  /// combinator.when(|input| input.state.execute)
+  /// # ;}
+  /// ```
+  #[inline]
+  pub fn when(
+    self,
+    condition: impl Fn(&mut Input<&mut T::State, &mut T::Heap>) -> bool,
+  ) -> Combinator!(@T) {
+    wrap(move |input| {
+      if condition(input) {
+        self.parse(input)
+      } else {
+        None
+      }
+    })
+  }
+
+  /// Create a new combinator to check the [`Input`] before being executed.
   /// The combinator will reject if the `preventer` returns `true`.
+  ///
+  /// This is the opposite of [`Combinator::when`].
   /// # Examples
   /// ```
   /// # use whitehole::Combinator;
@@ -22,13 +50,7 @@ impl<T: Parse> Combinator<T> {
     self,
     preventer: impl Fn(&mut Input<&mut T::State, &mut T::Heap>) -> bool,
   ) -> Combinator!(@T) {
-    wrap(move |input| {
-      if preventer(input) {
-        None
-      } else {
-        self.parse(input)
-      }
-    })
+    self.when(move |input| !preventer(input))
   }
 
   /// Create a new combinator to check the [`Input`] and [`Output`] after being executed.
@@ -151,6 +173,23 @@ mod tests {
       *input.state = true;
       None
     })
+  }
+
+  #[test]
+  fn combinator_when() {
+    let mut executed = false;
+    assert!(accepter()
+      .when(|_| false)
+      .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .is_none());
+    assert!(!executed);
+
+    let mut executed = false;
+    assert!(accepter()
+      .when(|_| true)
+      .parse(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .is_some());
+    assert!(executed);
   }
 
   #[test]
