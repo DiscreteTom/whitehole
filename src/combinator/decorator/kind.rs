@@ -1,6 +1,7 @@
 use super::AcceptedContext;
 use crate::{
   combinator::{wrap, Combinator, Input, Output, Parse},
+  with_range::WithRange,
   Combinator,
 };
 
@@ -98,6 +99,27 @@ impl<T: Parse> Combinator<T> {
       })
     })
   }
+
+  /// Create a new combinator to wrap [`Output::kind`] in [`WithRange`]
+  /// which includes the byte range of the digested text.
+  /// # Examples
+  /// ```
+  /// # use whitehole::Combinator;
+  /// # fn t(combinator: Combinator!()) {
+  /// combinator.range()
+  /// # ;}
+  #[inline]
+  pub fn range(self) -> Combinator!(WithRange<T::Kind>, @T) {
+    wrap(move |input| {
+      self.parse(input).map(|output| {
+        let digested = input.rest().len() - output.rest.len();
+        output.map(|kind| WithRange {
+          data: kind,
+          range: input.start()..(input.start() + digested),
+        })
+      })
+    })
+  }
 }
 
 #[cfg(test)]
@@ -163,6 +185,25 @@ mod tests {
       .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         kind: 1,
+        rest: "23"
+      })
+    );
+  }
+
+  #[test]
+  fn combinator_range() {
+    assert_eq!(
+      wrap(|input| Some(Output {
+        kind: (),
+        rest: &input.rest()[1..]
+      }))
+      .range()
+      .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        kind: WithRange {
+          data: (),
+          range: 0..1
+        },
         rest: "23"
       })
     );

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `Combinator!(@T)` and `Combinator!(Kind, @T)` syntax.
+- Add `Combinator::range` to include the byte range of digested text in the output.
 
 ### Changed
 
