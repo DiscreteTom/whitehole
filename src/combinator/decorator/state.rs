@@ -54,11 +54,11 @@ impl<T: Action> Combinator<T> {
   /// # use whitehole::C;
   /// # struct MyState { value: i32 }
   /// # fn t(combinator: C!((), MyState)) {
-  /// combinator.rollback(|input| input.state.value += 1)
+  /// combinator.catch(|input| input.state.value += 1)
   /// # ;}
   /// ```
   #[inline]
-  pub fn rollback(self, modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
+  pub fn catch(self, modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
     wrap(move |input| {
       let output = self.exec(input);
       if output.is_none() {
@@ -130,7 +130,7 @@ mod tests {
   fn combinator_rollback() {
     let mut state = State::default();
     assert!(accepter()
-      .rollback(|input| {
+      .catch(|input| {
         input.state.from = 1;
       })
       .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
@@ -139,7 +139,7 @@ mod tests {
 
     let mut state = State::default();
     assert!(rejecter()
-      .rollback(|input| {
+      .catch(|input| {
         input.state.from = 1;
       })
       .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
