@@ -1,55 +1,123 @@
 //! Overload `*` operator for [`Combinator`].
 //!
-/// # Fold Values
-/// ## Inline Fold
-/// For simple cases, you can accumulate the values inline.
-/// ```
-/// # use whitehole::{combinator::next, action::{Input, Action}};
-/// let combinator =
-///   // accept one ascii digit at a time
-///   next(|c| c.is_ascii_digit())
-///     // convert the char to a number
-///     .select(|ctx| ctx.input.next() as usize - '0' as usize)
-///     // repeat for 1 or more times, init accumulator with 0, and fold values
-///     * (1.., || 0 as usize, |value, acc| acc * 10 + value);
-///
-/// // parse "123" to 123
-/// assert_eq!(
-///   combinator.exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().value,
-///   123
-/// )
-/// ```
-/// ## Fold with Custom Type
-/// If you want to re-use the folder logic, you can implement [`Fold`] for a custom type.
-/// ```
-/// # use whitehole::{combinator::{ops::mul::Fold, next}, action::{Input, Action}};
-/// // since you can't implement `Fold` for `usize` directly,
-/// // wrap it in a new-type
-/// struct Usize(usize);
-///
-/// impl Fold for Usize {
-///   type Output = usize;
-///
-///   fn fold(self, acc: Self::Output) -> Self::Output {
-///     acc * 10 + self.0
-///   }
-/// }
-///
-/// let combinator =
-///   // accept one ascii digit at a time
-///   next(|c| c.is_ascii_digit())
-///     // convert the char to a number, wrapped in `Usize`
-///     .select(|ctx| Usize(ctx.input.next() as usize - '0' as usize))
-///     // repeat for 1 or more times, fold `Usize` to `usize`
-///     * (1..);
-///     // equals to: `* (1.., Usize::Output::default, Usize::fold)`
-///
-/// // parse "123" to 123
-/// assert_eq!(
-///   combinator.exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().value,
-///   123
-/// )
-/// ```
+//! `Combinator * Repeat` will create a new combinator to repeat the original combinator
+//! with the given [`Repeat`] range.
+//! The new combinator will return the output with the [`Fold`]-ed value
+//! and the rest of the input text after the last repetition is executed,
+//! or reject if the repetition is not satisfied.
+//!
+//! `0` is a valid repetition range, which means the combinator is optional.
+//! # Basics
+//! Use `*` to repeat a combinator:
+//! ```
+//! # use whitehole::{combinator::eat, Combinator};
+//! # fn t(_: C!()) {}
+//! // repeat the combinator for 2 times
+//! # t(
+//! eat("true") * 2
+//! # );
+//! // equals to
+//! # t(
+//! eat("true") + "true"
+//! # );
+//!
+//! // repeat the combinator with a range, greedy
+//! # t(
+//! eat("true") * (1..=3)
+//! # );
+//! // similar to but faster than
+//! # t(
+//! (eat("true") + "true" + "true") | (eat("true") + "true") |  eat("true")
+//! # );
+//!
+//! // repeat for 0 or more times
+//! # t(
+//! eat("true") * (..)
+//! # );
+//! # t(
+//! eat("true") * (..=3)
+//! # );
+//!
+//! // repeating for 0 times will always accept with 0 bytes digested
+//! # t(
+//! eat("true") * 0
+//! # );
+//! # t(
+//! eat("true") * (..1)
+//! # );
+//! # t(
+//! eat("true") * (..=0)
+//! # );
+//!
+//! // repeat with another combinator as the separator
+//! # t(
+//! eat("true") * (1.., eat(','))
+//! # );
+//! // you can use a String, a &str or a char as the separator
+//! # t(
+//! eat("true") * (1.., ',')
+//! # );
+//! # t(
+//! eat("true") * (1.., ", ")
+//! # );
+//! # t(
+//! eat("true") * (1.., ", ".to_string())
+//! # );
+//!
+//! ```
+//! If there is at least one repetition, then the separator is allowed to be the last match.
+//! E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
+//! You have to check if the last match is a separator by yourself.
+//! # Fold Values
+//! ## Inline Fold
+//! For simple cases, you can accumulate values inline.
+//! ```
+//! # use whitehole::{combinator::next, action::{Input, Action}};
+//! let combinator =
+//!   // accept one ascii digit at a time
+//!   next(|c| c.is_ascii_digit())
+//!     // convert the char to a number
+//!     .select(|ctx| ctx.input.next() as usize - '0' as usize)
+//!     // repeat for 1 or more times, init accumulator with 0, and fold values
+//!     * (1.., || 0 as usize, |value, acc| acc * 10 + value);
+//!
+//! // parse "123" to 123
+//! assert_eq!(
+//!   combinator.exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().value,
+//!   123
+//! )
+//! ```
+//! ## Fold with Custom Type
+//! If you want to re-use the fold logic, you can implement [`Fold`] for a custom type.
+//! ```
+//! # use whitehole::{combinator::{ops::mul::Fold, next}, action::{Input, Action}};
+//! // since you can't implement `Fold` for `usize` directly,
+//! // wrap it in a new-type
+//! struct Usize(usize);
+//!
+//! impl Fold for Usize {
+//!   type Output = usize;
+//!
+//!   fn fold(self, acc: Self::Output) -> Self::Output {
+//!     acc * 10 + self.0
+//!   }
+//! }
+//!
+//! let combinator =
+//!   // accept one ascii digit at a time
+//!   next(|c| c.is_ascii_digit())
+//!     // convert the char to a number, wrapped in `Usize`
+//!     .select(|ctx| Usize(ctx.input.next() as usize - '0' as usize))
+//!     // repeat for 1 or more times, fold `Usize` to `usize`
+//!     * (1..);
+//!     // equals to: `* (1.., Usize::Output::default, Usize::fold)`
+//!
+//! // parse "123" to 123
+//! assert_eq!(
+//!   combinator.exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().value,
+//!   123
+//! )
+//! ```
 mod fold;
 mod repeat;
 
@@ -59,7 +127,8 @@ pub use repeat::*;
 use crate::combinator::{Action, Combinator, EatChar, EatStr, EatString, Input, Output};
 use std::ops;
 
-/// An [`Action`] created by `*`.
+/// An [`Action`] created by the `*` operator.
+/// See [`ops::mul`](crate::combinator::ops::mul) for more information.
 #[derive(Debug, Clone, Copy)]
 pub struct Mul<Lhs, Rhs> {
   pub lhs: Lhs,
@@ -83,14 +152,7 @@ impl<
 {
   type Output = Combinator<Mul<Lhs, (Repeater, Initializer, InlineFolder)>>;
 
-  /// Create a new combinator to repeat the original combinator
-  /// with the given repetition range, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
-  /// or reject if the repetition is not satisfied.
-  ///
-  /// `0` is a valid repetition range, which means the combinator is optional.
-  ///
-  /// See [`Fold`] for more information.
+  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   fn mul(self, rhs: (Repeater, Initializer, InlineFolder)) -> Self::Output {
     Self::Output::new(Mul::new(self.action, rhs))
   }
@@ -158,17 +220,7 @@ impl<
 {
   type Output = Combinator<Mul<Lhs, (Repeater, Sep, Initializer, InlineFolder)>>;
 
-  /// Create a new combinator to repeat the original combinator
-  /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
-  /// or reject if the repetition is not satisfied.
-  ///
-  /// `0` is a valid repetition range, which means the combinator is optional.
-  ///
-  /// If there is at least one repetition, then the separator is allowed to be the last match.
-  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
-  ///
-  /// See [`Fold`] for more information.
+  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   fn mul(self, rhs: (Repeater, Combinator<Sep>, Initializer, InlineFolder)) -> Self::Output {
     let (range, sep, init, folder) = rhs;
     Self::Output::new(Mul::new(self.action, (range, sep.action, init, folder)))
@@ -195,17 +247,7 @@ impl<
     >,
   >;
 
-  /// Create a new combinator to repeat the original combinator
-  /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
-  /// or reject if the repetition is not satisfied.
-  ///
-  /// `0` is a valid repetition range, which means the combinator is optional.
-  ///
-  /// If there is at least one repetition, then the separator is allowed to be the last match.
-  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
-  ///
-  /// See [`Fold`] for more information.
+  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   fn mul(self, rhs: (Repeater, char, Initializer, InlineFolder)) -> Self::Output {
     let (range, sep, init, folder) = rhs;
     Self::Output::new(Mul::new(
@@ -235,17 +277,7 @@ impl<
     >,
   >;
 
-  /// Create a new combinator to repeat the original combinator
-  /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
-  /// or reject if the repetition is not satisfied.
-  ///
-  /// `0` is a valid repetition range, which means the combinator is optional.
-  ///
-  /// If there is at least one repetition, then the separator is allowed to be the last match.
-  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
-  ///
-  /// See [`Fold`] for more information.
+  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   fn mul(self, rhs: (Repeater, String, Initializer, InlineFolder)) -> Self::Output {
     let (range, sep, init, folder) = rhs;
     Self::Output::new(Mul::new(
@@ -276,17 +308,7 @@ impl<
     >,
   >;
 
-  /// Create a new combinator to repeat the original combinator
-  /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
-  /// or reject if the repetition is not satisfied.
-  ///
-  /// `0` is a valid repetition range, which means the combinator is optional.
-  ///
-  /// If there is at least one repetition, then the separator is allowed to be the last match.
-  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
-  ///
-  /// See [`Fold`] for more information.
+  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   fn mul(self, rhs: (Repeater, &'a str, Initializer, InlineFolder)) -> Self::Output {
     let (range, sep, init, folder) = rhs;
     Self::Output::new(Mul::new(
@@ -359,13 +381,7 @@ impl<
 impl<Lhs: Action<Value: Fold>, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
   type Output = Combinator<Mul<Lhs, Rhs>>;
 
-  /// Create a new combinator to repeat the original combinator for `rhs` times.
-  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
-  /// or reject if the repetition is not satisfied.
-  ///
-  /// `0` is a valid repetition range, which means the combinator is optional.
-  ///
-  /// See [`Fold`] for more information.
+  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   fn mul(self, rhs: Rhs) -> Self::Output {
     Self::Output::new(Mul::new(self.action, rhs))
   }
@@ -399,17 +415,7 @@ impl<
 {
   type Output = Combinator<Mul<Lhs, (Repeater, Sep)>>;
 
-  /// Create a new combinator to repeat the original combinator
-  /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
-  /// or reject if the repetition is not satisfied.
-  ///
-  /// `0` is a valid repetition range, which means the combinator is optional.
-  ///
-  /// If there is at least one repetition, then the separator is allowed to be the last match.
-  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
-  ///
-  /// See [`Fold`] for more information.
+  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   fn mul(self, rhs: (Repeater, Combinator<Sep>)) -> Self::Output {
     let (range, sep) = rhs;
     Self::Output::new(Mul::new(self.action, (range, sep.action)))
@@ -419,17 +425,7 @@ impl<
 impl<Lhs: Action<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, char)> for Combinator<Lhs> {
   type Output = Combinator<Mul<Lhs, (Repeater, EatChar<Lhs::State, Lhs::Heap>)>>;
 
-  /// Create a new combinator to repeat the original combinator
-  /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
-  /// or reject if the repetition is not satisfied.
-  ///
-  /// `0` is a valid repetition range, which means the combinator is optional.
-  ///
-  /// If there is at least one repetition, then the separator is allowed to be the last match.
-  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
-  ///
-  /// See [`Fold`] for more information.
+  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   fn mul(self, rhs: (Repeater, char)) -> Self::Output {
     let (range, sep) = rhs;
     Self::Output::new(Mul::new(self.action, (range, EatChar::new(sep))))
@@ -439,17 +435,7 @@ impl<Lhs: Action<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, char)> for 
 impl<Lhs: Action<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, String)> for Combinator<Lhs> {
   type Output = Combinator<Mul<Lhs, (Repeater, EatString<Lhs::State, Lhs::Heap>)>>;
 
-  /// Create a new combinator to repeat the original combinator
-  /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
-  /// or reject if the repetition is not satisfied.
-  ///
-  /// `0` is a valid repetition range, which means the combinator is optional.
-  ///
-  /// If there is at least one repetition, then the separator is allowed to be the last match.
-  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
-  ///
-  /// See [`Fold`] for more information.
+  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   fn mul(self, rhs: (Repeater, String)) -> Self::Output {
     let (range, sep) = rhs;
     Self::Output::new(Mul::new(self.action, (range, EatString::new(sep))))
@@ -461,17 +447,7 @@ impl<'a, Lhs: Action<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, &'a str
 {
   type Output = Combinator<Mul<Lhs, (Repeater, EatStr<'a, Lhs::State, Lhs::Heap>)>>;
 
-  /// Create a new combinator to repeat the original combinator
-  /// with the given repetition range, separator, accumulator initializer and folder.
-  /// The combinator will return the output with the [`Fold`]-ed value and the sum of the digested,
-  /// or reject if the repetition is not satisfied.
-  ///
-  /// `0` is a valid repetition range, which means the combinator is optional.
-  ///
-  /// If there is at least one repetition, then the separator is allowed to be the last match.
-  /// E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
-  ///
-  /// See [`Fold`] for more information.
+  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   fn mul(self, rhs: (Repeater, &'a str)) -> Self::Output {
     let (range, sep) = rhs;
     Self::Output::new(Mul::new(self.action, (range, EatStr::new(sep))))
