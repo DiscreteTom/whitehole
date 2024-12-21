@@ -119,13 +119,13 @@
 //! )
 //! ```
 mod fold;
+mod inline;
 mod repeat;
 
 pub use fold::*;
 pub use repeat::*;
 
-use crate::combinator::{Action, Combinator, EatChar, EatStr, EatString, Input, Output};
-use std::ops;
+use crate::combinator::{Action, Input, Output};
 
 /// An [`Action`] created by the `*` operator.
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
@@ -139,22 +139,6 @@ impl<Lhs, Rhs> Mul<Lhs, Rhs> {
   #[inline]
   pub const fn new(lhs: Lhs, rhs: Rhs) -> Self {
     Self { lhs, rhs }
-  }
-}
-
-impl<
-    Lhs: Action,
-    Acc,
-    Repeater: Repeat,
-    Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
-  > ops::Mul<(Repeater, Initializer, InlineFolder)> for Combinator<Lhs>
-{
-  type Output = Combinator<Mul<Lhs, (Repeater, Initializer, InlineFolder)>>;
-
-  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
-  fn mul(self, rhs: (Repeater, Initializer, InlineFolder)) -> Self::Output {
-    Self::Output::new(Mul::new(self.action, rhs))
   }
 }
 
@@ -185,137 +169,6 @@ fn impl_mul<'text, Value, State, Heap, Acc>(
   }
 
   range.accept(repeated).then_some(output)
-}
-
-impl<
-    Lhs: Action,
-    Acc,
-    Repeater: Repeat,
-    Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
-  > Action for Mul<Lhs, (Repeater, Initializer, InlineFolder)>
-{
-  type Value = Acc;
-  type State = Lhs::State;
-  type Heap = Lhs::Heap;
-
-  #[inline]
-  fn exec<'text>(
-    &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Acc>> {
-    let (range, init, folder) = &self.rhs;
-    impl_mul(&self.lhs, range, init, folder, input)
-  }
-}
-
-impl<
-    Lhs: Action,
-    Sep: Action<Value = (), State = Lhs::State, Heap = Lhs::Heap>, // TODO: allow more generic Value
-    Acc,
-    Repeater: Repeat,
-    Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
-  > ops::Mul<(Repeater, Combinator<Sep>, Initializer, InlineFolder)> for Combinator<Lhs>
-{
-  type Output = Combinator<Mul<Lhs, (Repeater, Sep, Initializer, InlineFolder)>>;
-
-  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
-  fn mul(self, rhs: (Repeater, Combinator<Sep>, Initializer, InlineFolder)) -> Self::Output {
-    let (range, sep, init, folder) = rhs;
-    Self::Output::new(Mul::new(self.action, (range, sep.action, init, folder)))
-  }
-}
-
-impl<
-    Lhs: Action,
-    Acc,
-    Repeater: Repeat,
-    Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
-  > ops::Mul<(Repeater, char, Initializer, InlineFolder)> for Combinator<Lhs>
-{
-  type Output = Combinator<
-    Mul<
-      Lhs,
-      (
-        Repeater,
-        EatChar<Lhs::State, Lhs::Heap>,
-        Initializer,
-        InlineFolder,
-      ),
-    >,
-  >;
-
-  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
-  fn mul(self, rhs: (Repeater, char, Initializer, InlineFolder)) -> Self::Output {
-    let (range, sep, init, folder) = rhs;
-    Self::Output::new(Mul::new(
-      self.action,
-      (range, EatChar::new(sep), init, folder),
-    ))
-  }
-}
-
-impl<
-    Lhs: Action,
-    Acc,
-    Repeater: Repeat,
-    Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
-  > ops::Mul<(Repeater, String, Initializer, InlineFolder)> for Combinator<Lhs>
-{
-  type Output = Combinator<
-    Mul<
-      Lhs,
-      (
-        Repeater,
-        EatString<Lhs::State, Lhs::Heap>,
-        Initializer,
-        InlineFolder,
-      ),
-    >,
-  >;
-
-  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
-  fn mul(self, rhs: (Repeater, String, Initializer, InlineFolder)) -> Self::Output {
-    let (range, sep, init, folder) = rhs;
-    Self::Output::new(Mul::new(
-      self.action,
-      (range, EatString::new(sep), init, folder),
-    ))
-  }
-}
-
-impl<
-    'a,
-    Lhs: Action,
-    Acc,
-    Repeater: Repeat,
-    Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
-  > ops::Mul<(Repeater, &'a str, Initializer, InlineFolder)> for Combinator<Lhs>
-{
-  type Output = Combinator<
-    Mul<
-      Lhs,
-      (
-        Repeater,
-        EatStr<'a, Lhs::State, Lhs::Heap>,
-        Initializer,
-        InlineFolder,
-      ),
-    >,
-  >;
-
-  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
-  fn mul(self, rhs: (Repeater, &'a str, Initializer, InlineFolder)) -> Self::Output {
-    let (range, sep, init, folder) = rhs;
-    Self::Output::new(Mul::new(
-      self.action,
-      (range, EatStr::new(sep), init, folder),
-    ))
-  }
 }
 
 #[inline]
@@ -353,132 +206,6 @@ fn impl_mul_with_sep<'text, Value, State, Heap, Acc>(
   }
 
   range.accept(repeated).then_some(output)
-}
-
-impl<
-    Lhs: Action,
-    Sep: Action<Value = (), State = Lhs::State, Heap = Lhs::Heap>,
-    Acc,
-    Repeater: Repeat,
-    Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
-  > Action for Mul<Lhs, (Repeater, Sep, Initializer, InlineFolder)>
-{
-  type Value = Acc;
-  type State = Lhs::State;
-  type Heap = Lhs::Heap;
-
-  #[inline]
-  fn exec<'text>(
-    &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Acc>> {
-    let (range, sep, init, folder) = &self.rhs;
-    impl_mul_with_sep(&self.lhs, range, sep, init, folder, input)
-  }
-}
-
-impl<Lhs: Action<Value: Fold>, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
-  type Output = Combinator<Mul<Lhs, Rhs>>;
-
-  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
-  fn mul(self, rhs: Rhs) -> Self::Output {
-    Self::Output::new(Mul::new(self.action, rhs))
-  }
-}
-
-impl<Lhs: Action<Value: Fold>, Rhs: Repeat> Action for Mul<Lhs, Rhs> {
-  type Value = <Lhs::Value as Fold>::Output;
-  type State = Lhs::State;
-  type Heap = Lhs::Heap;
-
-  #[inline]
-  fn exec<'text>(
-    &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Value>> {
-    impl_mul(
-      &self.lhs,
-      &self.rhs,
-      Self::Value::default,
-      Lhs::Value::fold,
-      input,
-    )
-  }
-}
-
-impl<
-    Lhs: Action<Value: Fold>,
-    Repeater: Repeat,
-    Sep: Action<Value = (), State = Lhs::State, Heap = Lhs::Heap>,
-  > ops::Mul<(Repeater, Combinator<Sep>)> for Combinator<Lhs>
-{
-  type Output = Combinator<Mul<Lhs, (Repeater, Sep)>>;
-
-  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
-  fn mul(self, rhs: (Repeater, Combinator<Sep>)) -> Self::Output {
-    let (range, sep) = rhs;
-    Self::Output::new(Mul::new(self.action, (range, sep.action)))
-  }
-}
-
-impl<Lhs: Action<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, char)> for Combinator<Lhs> {
-  type Output = Combinator<Mul<Lhs, (Repeater, EatChar<Lhs::State, Lhs::Heap>)>>;
-
-  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
-  fn mul(self, rhs: (Repeater, char)) -> Self::Output {
-    let (range, sep) = rhs;
-    Self::Output::new(Mul::new(self.action, (range, EatChar::new(sep))))
-  }
-}
-
-impl<Lhs: Action<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, String)> for Combinator<Lhs> {
-  type Output = Combinator<Mul<Lhs, (Repeater, EatString<Lhs::State, Lhs::Heap>)>>;
-
-  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
-  fn mul(self, rhs: (Repeater, String)) -> Self::Output {
-    let (range, sep) = rhs;
-    Self::Output::new(Mul::new(self.action, (range, EatString::new(sep))))
-  }
-}
-
-impl<'a, Lhs: Action<Value: Fold>, Repeater: Repeat> ops::Mul<(Repeater, &'a str)>
-  for Combinator<Lhs>
-{
-  type Output = Combinator<Mul<Lhs, (Repeater, EatStr<'a, Lhs::State, Lhs::Heap>)>>;
-
-  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
-  fn mul(self, rhs: (Repeater, &'a str)) -> Self::Output {
-    let (range, sep) = rhs;
-    Self::Output::new(Mul::new(self.action, (range, EatStr::new(sep))))
-  }
-}
-
-impl<
-    Lhs: Action<Value: Fold>,
-    Repeater: Repeat,
-    Sep: Action<Value = (), State = Lhs::State, Heap = Lhs::Heap>,
-  > Action for Mul<Lhs, (Repeater, Sep)>
-{
-  type Value = <Lhs::Value as Fold>::Output;
-  type State = Lhs::State;
-  type Heap = Lhs::Heap;
-
-  #[inline]
-  fn exec<'text>(
-    &self,
-    input: &mut Input<'text, &mut Lhs::State, &mut Lhs::Heap>,
-  ) -> Option<Output<'text, Self::Value>> {
-    let (range, sep) = &self.rhs;
-    impl_mul_with_sep(
-      &self.lhs,
-      range,
-      sep,
-      Self::Value::default,
-      Lhs::Value::fold,
-      input,
-    )
-  }
 }
 
 #[cfg(test)]
