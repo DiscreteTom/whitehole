@@ -2,7 +2,7 @@ use super::AcceptedContext;
 use crate::{
   combinator::{wrap, Action, Combinator, Input, Output},
   range::WithRange,
-  Combinator,
+  C,
 };
 
 impl<T: Action> Combinator<T> {
@@ -11,13 +11,13 @@ impl<T: Action> Combinator<T> {
   /// You can consume the original [`Output::value`] in the `mapper`.
   /// # Examples
   /// ```
-  /// # use whitehole::Combinator;
-  /// # fn t(combinator: Combinator!()) {
+  /// # use whitehole::C;
+  /// # fn t(combinator: C!()) {
   /// combinator.map(|value| Some(value))
   /// # ;}
   /// ```
   #[inline]
-  pub fn map<NewValue>(self, mapper: impl Fn(T::Value) -> NewValue) -> Combinator!(NewValue, @T) {
+  pub fn map<NewValue>(self, mapper: impl Fn(T::Value) -> NewValue) -> C!(NewValue, @T) {
     wrap(move |input| self.exec(input).map(|output| output.map(&mapper)))
   }
 
@@ -27,13 +27,13 @@ impl<T: Action> Combinator<T> {
   /// See [`Concat`](crate::combinator::ops::add::Concat) for more details.
   /// # Examples
   /// ```
-  /// # use whitehole::Combinator;
-  /// # fn t(combinator: Combinator!()) {
+  /// # use whitehole::C;
+  /// # fn t(combinator: C!()) {
   /// combinator.tuple()
   /// # ;}
   /// ```
   #[inline]
-  pub fn tuple(self) -> Combinator!((T::Value,), @T) {
+  pub fn tuple(self) -> C!((T::Value,), @T) {
     self.map(|value| (value,))
   }
 
@@ -42,15 +42,15 @@ impl<T: Action> Combinator<T> {
   /// If your `Value` doesn't implement the [`Clone`] trait, consider using [`Self::select`] instead.
   /// # Examples
   /// ```
-  /// # use whitehole::Combinator;
+  /// # use whitehole::C;
   /// # #[derive(Clone)]
   /// # struct MyValue;
-  /// # fn t(combinator: Combinator!()) {
+  /// # fn t(combinator: C!()) {
   /// combinator.bind(MyValue)
   /// # ;}
   /// ```
   #[inline]
-  pub fn bind<NewValue>(self, value: NewValue) -> Combinator!(NewValue, @T)
+  pub fn bind<NewValue>(self, value: NewValue) -> C!(NewValue, @T)
   where
     NewValue: Clone,
   {
@@ -60,13 +60,13 @@ impl<T: Action> Combinator<T> {
   /// Create a new combinator to set [`Output::value`] to the default value.
   /// # Examples
   /// ```
-  /// # use whitehole::Combinator;
-  /// # fn t(combinator: Combinator!()) -> Combinator!(i32) {
+  /// # use whitehole::C;
+  /// # fn t(combinator: C!()) -> C!(i32) {
   /// combinator.bind_default()
   /// # }
   /// ```
   #[inline]
-  pub fn bind_default<NewValue>(self) -> Combinator!(NewValue, @T)
+  pub fn bind_default<NewValue>(self) -> C!(NewValue, @T)
   where
     NewValue: Default,
   {
@@ -79,9 +79,9 @@ impl<T: Action> Combinator<T> {
   /// You can consume the original [`Output`] in the `selector`.
   /// # Examples
   /// ```
-  /// # use whitehole::Combinator;
+  /// # use whitehole::C;
   /// # struct MyValue(i32);
-  /// # fn t(combinator: Combinator!()) {
+  /// # fn t(combinator: C!()) {
   /// combinator.select(|ctx| MyValue(ctx.content().exec().unwrap()))
   /// # ;}
   /// ```
@@ -91,7 +91,7 @@ impl<T: Action> Combinator<T> {
     selector: impl for<'text> Fn(
       AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, Output<'text, T::Value>>,
     ) -> NewValue,
-  ) -> Combinator!(NewValue, @T) {
+  ) -> C!(NewValue, @T) {
     wrap(move |input| {
       self.exec(input).map(|output| Output {
         rest: output.rest,
@@ -104,12 +104,12 @@ impl<T: Action> Combinator<T> {
   /// which includes the byte range of the digested text.
   /// # Examples
   /// ```
-  /// # use whitehole::Combinator;
-  /// # fn t(combinator: Combinator!()) {
+  /// # use whitehole::C;
+  /// # fn t(combinator: C!()) {
   /// combinator.range()
   /// # ;}
   #[inline]
-  pub fn range(self) -> Combinator!(WithRange<T::Value>, @T) {
+  pub fn range(self) -> C!(WithRange<T::Value>, @T) {
     wrap(move |input| {
       self.exec(input).map(|output| {
         let digested = input.rest().len() - output.rest.len();

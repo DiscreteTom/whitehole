@@ -1,4 +1,4 @@
-use crate::{combinator::wrap, Combinator};
+use crate::{combinator::wrap, C};
 
 /// Returns a combinator to match
 /// [`Input::next`](crate::action::Input::next) by the condition.
@@ -6,14 +6,14 @@ use crate::{combinator::wrap, Combinator};
 /// # Examples
 /// ```
 /// # use whitehole::{combinator::next, Combinator};
-/// # fn t(_: Combinator!()) {}
+/// # fn t(_: C!()) {}
 /// // match one ascii digit
 /// # t(
 /// next(|c| c.is_ascii_digit())
 /// # );
 /// ```
 #[inline]
-pub const fn next<State, Heap>(condition: impl Fn(char) -> bool) -> Combinator!((), State, Heap) {
+pub const fn next<State, Heap>(condition: impl Fn(char) -> bool) -> C!((), State, Heap) {
   wrap(move |input| {
     let next = input.next();
     if !condition(next) {

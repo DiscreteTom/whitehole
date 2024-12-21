@@ -6,7 +6,7 @@
 //! which will eat the provided pattern from the rest of the input text:
 //! ```
 //! # use whitehole::{combinator::eat, Combinator};
-//! # fn t(_: Combinator!()) {}
+//! # fn t(_: C!()) {}
 //! # t(
 //! eat("true")
 //! # );
@@ -27,7 +27,7 @@
 //! for more complex tasks:
 //! ```
 //! # use whitehole::{combinator::eat, Combinator};
-//! # fn t(_: Combinator!()) {}
+//! # fn t(_: C!()) {}
 //! // match "true" then match "false"
 //! # t(
 //! eat("true") + eat("false")
@@ -62,7 +62,7 @@
 //! Use `*` to repeat a combinator:
 //! ```
 //! # use whitehole::{combinator::eat, Combinator};
-//! # fn t(_: Combinator!()) {}
+//! # fn t(_: C!()) {}
 //! // repeat the combinator for 2 times
 //! # t(
 //! eat("true") * 2
@@ -121,7 +121,7 @@
 //! For now let's see 2 of them:
 //! ```
 //! # use whitehole::{combinator::eat, Combinator};
-//! # fn t(_: Combinator!()) {}
+//! # fn t(_: C!()) {}
 //! // make the combinator optional
 //! # t(
 //! eat("true").optional()
@@ -172,14 +172,14 @@ pub struct Combinator<T> {
 
 /// Simplify the [`Combinator`] struct's signature.
 ///
-/// - `Combinator!()` => `Combinator<impl Action<Value = (), State = (), Heap = ()>>`.
-/// - `Combinator!(MyValue)` => `Combinator<impl Action<Value = MyValue, State = (), Heap = ()>>`.
-/// - `Combinator!(MyValue, MyState)` => `Combinator<impl Action<Value = MyValue, State = MyState, Heap = ()>>`.
-/// - `Combinator!(MyValue, MyState, MyHeap)` => `Combinator<impl Action<Value = MyValue, State = MyState, Heap = MyHeap>>`.
-/// - `Combinator!(@T)` => `Combinator<impl Action<Value = T::Value, State = T::State, Heap = T::Heap>>`.
-/// - `Combinator!(MyValue, @T)` => `Combinator<impl Action<Value = MyValue, State = T::State, Heap = T::Heap>>`.
+/// - `C!()` => `Combinator<impl Action<Value = (), State = (), Heap = ()>>`.
+/// - `C!(MyValue)` => `Combinator<impl Action<Value = MyValue, State = (), Heap = ()>>`.
+/// - `C!(MyValue, MyState)` => `Combinator<impl Action<Value = MyValue, State = MyState, Heap = ()>>`.
+/// - `C!(MyValue, MyState, MyHeap)` => `Combinator<impl Action<Value = MyValue, State = MyState, Heap = MyHeap>>`.
+/// - `C!(@T)` => `Combinator<impl Action<Value = T::Value, State = T::State, Heap = T::Heap>>`.
+/// - `C!(MyValue, @T)` => `Combinator<impl Action<Value = MyValue, State = T::State, Heap = T::Heap>>`.
 #[macro_export]
-macro_rules! Combinator {
+macro_rules! C {
   () => {
     $crate::combinator::Combinator<impl $crate::action::Action<Value = (), State = (), Heap = ()>>
   };

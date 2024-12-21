@@ -1,4 +1,4 @@
-use crate::{combinator::wrap, Combinator};
+use crate::{combinator::wrap, C};
 
 /// A util trait to make [`till`] generic over different types.
 ///
@@ -50,7 +50,7 @@ unsafe impl Till for () {
 /// # Examples
 /// ```
 /// # use whitehole::{combinator::till, Combinator};
-/// # fn t(_: Combinator!()) {}
+/// # fn t(_: C!()) {}
 /// # t(
 /// till("end".to_string()) // with String
 /// # );
@@ -65,7 +65,7 @@ unsafe impl Till for () {
 /// # );
 /// ```
 #[inline]
-pub const fn till<State, Heap>(pattern: impl Till) -> Combinator!((), State, Heap) {
+pub const fn till<State, Heap>(pattern: impl Till) -> C!((), State, Heap) {
   wrap(move |input| {
     pattern
       .parse(input.rest())

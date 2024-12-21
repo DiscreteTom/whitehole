@@ -3,7 +3,7 @@
 use super::AcceptedContext;
 use crate::{
   combinator::{wrap, Action, Combinator, Input, Output},
-  Combinator,
+  C,
 };
 
 impl<T: Action> Combinator<T> {
@@ -13,17 +13,14 @@ impl<T: Action> Combinator<T> {
   /// This is the opposite of [`Combinator::prevent`].
   /// # Examples
   /// ```
-  /// # use whitehole::Combinator;
+  /// # use whitehole::C;
   /// # struct MyState { execute: bool }
-  /// # fn t(combinator: Combinator!((), MyState)) {
+  /// # fn t(combinator: C!((), MyState)) {
   /// combinator.when(|input| input.state.execute)
   /// # ;}
   /// ```
   #[inline]
-  pub fn when(
-    self,
-    condition: impl Fn(&mut Input<&mut T::State, &mut T::Heap>) -> bool,
-  ) -> Combinator!(@T) {
+  pub fn when(self, condition: impl Fn(&mut Input<&mut T::State, &mut T::Heap>) -> bool) -> C!(@T) {
     wrap(move |input| {
       if condition(input) {
         self.exec(input)
@@ -39,9 +36,9 @@ impl<T: Action> Combinator<T> {
   /// This is the opposite of [`Combinator::when`].
   /// # Examples
   /// ```
-  /// # use whitehole::Combinator;
+  /// # use whitehole::C;
   /// # struct MyState { reject: bool }
-  /// # fn t(combinator: Combinator!((), MyState)) {
+  /// # fn t(combinator: C!((), MyState)) {
   /// combinator.prevent(|input| input.state.reject)
   /// # ;}
   /// ```
@@ -49,7 +46,7 @@ impl<T: Action> Combinator<T> {
   pub fn prevent(
     self,
     preventer: impl Fn(&mut Input<&mut T::State, &mut T::Heap>) -> bool,
-  ) -> Combinator!(@T) {
+  ) -> C!(@T) {
     self.when(move |input| !preventer(input))
   }
 
@@ -57,8 +54,8 @@ impl<T: Action> Combinator<T> {
   /// The combinator will reject if the `rejecter` returns `true`.
   /// # Examples
   /// ```
-  /// # use whitehole::Combinator;
-  /// # fn t(combinator: Combinator!()) {
+  /// # use whitehole::C;
+  /// # fn t(combinator: C!()) {
   /// combinator.reject(|ctx| ctx.content() != "123")
   /// # ;}
   /// ```
@@ -68,7 +65,7 @@ impl<T: Action> Combinator<T> {
     rejecter: impl for<'text> Fn(
       AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<'text, T::Value>>,
     ) -> bool,
-  ) -> Combinator!(@T) {
+  ) -> C!(@T) {
     wrap(move |input| {
       self.exec(input).and_then(|output| {
         if rejecter(AcceptedContext {
@@ -91,9 +88,9 @@ impl<T: Action> Combinator<T> {
   /// This requires the `Value` to implement [`Default`],
   /// thus usually used before setting a custom value.
   /// ```
-  /// # use whitehole::Combinator;
+  /// # use whitehole::C;
   /// # struct MyValue;
-  /// # fn t(combinator: Combinator!()) {
+  /// # fn t(combinator: C!()) {
   /// // make the combinator optional before binding a value
   /// combinator.optional().bind(MyValue)
   /// // instead of
@@ -103,21 +100,21 @@ impl<T: Action> Combinator<T> {
   /// Or you can wrap `Value` with [`Option`] to make it optional
   /// after setting a custom value.
   /// ```
-  /// # use whitehole::Combinator;
+  /// # use whitehole::C;
   /// # struct MyValue;
-  /// # fn t(combinator: Combinator!()) {
+  /// # fn t(combinator: C!()) {
   /// combinator.bind(Some(MyValue)).optional()
   /// # ;}
   /// ```
   /// # Examples
   /// ```
-  /// # use whitehole::Combinator;
-  /// # fn t(combinator: Combinator!()) {
+  /// # use whitehole::C;
+  /// # fn t(combinator: C!()) {
   /// combinator.optional()
   /// # ;}
   /// ```
   #[inline]
-  pub fn optional(self) -> Combinator!(@T)
+  pub fn optional(self) -> C!(@T)
   where
     T::Value: Default,
   {
@@ -134,13 +131,13 @@ impl<T: Action> Combinator<T> {
   /// See [`char::is_alphanumeric`].
   /// # Examples
   /// ```
-  /// # use whitehole::Combinator;
-  /// # fn t(combinator: Combinator!()) {
+  /// # use whitehole::C;
+  /// # fn t(combinator: C!()) {
   /// combinator.boundary()
   /// # ;}
   /// ```
   #[inline]
-  pub fn boundary(self) -> Combinator!(@T) {
+  pub fn boundary(self) -> C!(@T) {
     self.reject(|ctx| {
       ctx
         .output
@@ -156,7 +153,7 @@ impl<T: Action> Combinator<T> {
 mod tests {
   use super::*;
 
-  fn accepter() -> Combinator!((), bool) {
+  fn accepter() -> C!((), bool) {
     wrap(|input| {
       *input.state = true;
       Some(Output {
@@ -166,7 +163,7 @@ mod tests {
     })
   }
 
-  fn rejecter() -> Combinator!((), bool) {
+  fn rejecter() -> C!((), bool) {
     wrap(|input| {
       *input.state = true;
       None

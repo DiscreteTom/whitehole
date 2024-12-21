@@ -1,7 +1,7 @@
 use crate::{
   action::{Action, Input, Output},
   combinator::Combinator,
-  Combinator,
+  C,
 };
 use std::marker::PhantomData;
 
@@ -51,7 +51,7 @@ pub const fn wrap<
   Heap,
 >(
   f: F,
-) -> Combinator!(Value, State, Heap) {
+) -> C!(Value, State, Heap) {
   Combinator::new(Wrap::new(f))
 }
 

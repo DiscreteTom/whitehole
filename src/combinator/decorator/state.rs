@@ -1,7 +1,7 @@
 use super::AcceptedContext;
 use crate::{
   combinator::{wrap, Action, Combinator, Input, Output},
-  Combinator,
+  C,
 };
 
 impl<T: Action> Combinator<T> {
@@ -9,17 +9,14 @@ impl<T: Action> Combinator<T> {
   /// before being executed.
   /// # Examples
   /// ```
-  /// # use whitehole::Combinator;
+  /// # use whitehole::C;
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: Combinator!((), MyState)) {
+  /// # fn t(combinator: C!((), MyState)) {
   /// combinator.prepare(|input| input.state.value += 1)
   /// # ;}
   /// ```
   #[inline]
-  pub fn prepare(
-    self,
-    modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>),
-  ) -> Combinator!(@T) {
+  pub fn prepare(self, modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
     wrap(move |input| {
       modifier(input);
       self.exec(input)
@@ -30,9 +27,9 @@ impl<T: Action> Combinator<T> {
   /// after being accepted.
   /// # Examples
   /// ```
-  /// # use whitehole::Combinator;
+  /// # use whitehole::C;
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: Combinator!((), MyState)) {
+  /// # fn t(combinator: C!((), MyState)) {
   /// combinator.then(|ctx| ctx.input.state.value += 1)
   /// # ;}
   /// ```
@@ -42,7 +39,7 @@ impl<T: Action> Combinator<T> {
     modifier: impl for<'text> Fn(
       AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<'text, T::Value>>,
     ),
-  ) -> Combinator!(@T) {
+  ) -> C!(@T) {
     wrap(move |input| {
       self.exec(input).inspect(|output| {
         modifier(AcceptedContext { input, output });
@@ -54,17 +51,14 @@ impl<T: Action> Combinator<T> {
   /// after being rejected.
   /// # Examples
   /// ```
-  /// # use whitehole::Combinator;
+  /// # use whitehole::C;
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: Combinator!((), MyState)) {
+  /// # fn t(combinator: C!((), MyState)) {
   /// combinator.rollback(|input| input.state.value += 1)
   /// # ;}
   /// ```
   #[inline]
-  pub fn rollback(
-    self,
-    modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>),
-  ) -> Combinator!(@T) {
+  pub fn rollback(self, modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
     wrap(move |input| {
       let output = self.exec(input);
       if output.is_none() {
@@ -85,7 +79,7 @@ mod tests {
     to: i32,
   }
 
-  fn accepter() -> Combinator!((), State) {
+  fn accepter() -> C!((), State) {
     wrap(|input: &mut Input<&mut State, &mut ()>| {
       input.state.to = input.state.from;
       Some(Output {
@@ -95,7 +89,7 @@ mod tests {
     })
   }
 
-  fn rejecter() -> Combinator!((), State) {
+  fn rejecter() -> C!((), State) {
     wrap(|input: &mut Input<&mut State, &mut ()>| {
       input.state.to = input.state.from;
       None
