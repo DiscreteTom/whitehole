@@ -106,10 +106,7 @@ mod tests {
     let accepter = || {
       wrap(|input| {
         *input.state += 1;
-        Some(Output {
-          value: (),
-          rest: &input.rest()[1..],
-        })
+        input.digest(1)
       })
     };
 

@@ -82,10 +82,7 @@ mod tests {
   fn accepter() -> C!((), State) {
     wrap(|input: &mut Input<&mut State, &mut ()>| {
       input.state.to = input.state.from;
-      Some(Output {
-        value: (),
-        rest: &input.rest()[1..],
-      })
+      input.digest(1)
     })
   }
 

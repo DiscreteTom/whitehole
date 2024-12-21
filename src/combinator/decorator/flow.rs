@@ -156,10 +156,7 @@ mod tests {
   fn accepter() -> C!((), bool) {
     wrap(|input| {
       *input.state = true;
-      Some(Output {
-        value: (),
-        rest: &input.rest()[1..],
-      })
+      input.digest(1)
     })
   }
 
