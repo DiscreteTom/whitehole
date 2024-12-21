@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename `Action::Kind` to `Action::Value`, rename `Output::kind` to `Output::value`.
 - Plain closures are no longer supported as `Action` trait implementations. Use `wrap` instead to create a `Combinator` from a closure.
 - Rename `Combinator!` to `C!`.
+- Rename `Combinator::rollback` to `Combinator::catch`.
 - Simplify generic params of `Combinator` and `Parser`.
 - `Parser::parse` and `Parser::peek` will return `parse::Output` instead of `WithRange`.
 
