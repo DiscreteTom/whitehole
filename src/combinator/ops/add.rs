@@ -1,4 +1,56 @@
 //! Overload `+` operator for [`Combinator`].
+//!
+//! `Combinator + Combinator` will create a new combinator
+//! to parse with the left-hand side, then parse with the right-hand side.
+//! The combinator will return the output with [`Concat`]-ed value
+//! and the rest of the input text after the right-hand side is digested,
+//! or reject if any of the combinators rejects.
+//! # Basics
+//! ```
+//! # use whitehole::{combinator::eat, C};
+//! # fn t(_: C!()) {}
+//! // match "123" then match "456"
+//! # t(
+//! eat("123") + eat("456")
+//! # );
+//!
+//! // you can use a String, a &str, a char or an usize as a shortcut for `eat`
+//! // at the right-hand side of `+`
+//! # t(
+//! eat("true") + "false"
+//! # );
+//! # t(
+//! eat("true") + ';'
+//! # );
+//! # t(
+//! eat("true") + 1
+//! # );
+//! ```
+//! # Concat Values
+//! If your combinators' values are tuples, they can be concatenated,
+//! and all unit tuples will be ignored.
+//! ```
+//! # use whitehole::{combinator::{next, eat}, C, parser::Builder};
+//! let integer = || {
+//!   (next(|c| c.is_ascii_digit(c)) * 1..) // eat one or more digits
+//!     .select(|ctx| ctx.content().parse::<usize>().unwrap()) // parse the digits
+//!     .tuple() // wrap the parsed digits in a tuple
+//! };
+//! let dot = eat('.'); // the value is `()`
+//!
+//! // (usize,) + () + (usize,)
+//! // unit tuples will be ignored
+//! // so the value will be `(usize, usize)`
+//! let entry = integer() + dot + integer();
+//!
+//! let output = Builder::new()
+//!   .entry(entry)
+//!   .build("123.456")
+//!   .parse()
+//!   .unwrap();
+//! assert_eq!(output.value, (123, 456));
+//! ```
+//! See [`Concat`] for more information.
 
 mod concat;
 
@@ -7,7 +59,8 @@ pub use concat::*;
 use crate::combinator::{Action, Combinator, EatChar, EatStr, EatString, EatUsize, Input, Output};
 use std::ops;
 
-/// An [`Action`] created by `+`.
+/// An [`Action`] created by the `+` operator.
+/// See [`ops::add`](crate::combinator::ops::add) for more information.
 #[derive(Debug, Clone, Copy)]
 pub struct Add<Lhs, Rhs> {
   lhs: Lhs,
@@ -51,9 +104,7 @@ impl<Lhs: Action<Value: Concat<Rhs::Value>>, Rhs: Action<State = Lhs::State, Hea
 {
   type Output = Combinator<Add<Lhs, Rhs>>;
 
-  /// Create a new combinator to parse with the left-hand side, then parse with the right-hand side.
-  /// The combinator will return the output with [`Concat`]-ed value and the sum of the digested,
-  /// or reject if any of the parses rejects.
+  /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
   fn add(self, rhs: Combinator<Rhs>) -> Self::Output {
     Self::Output::new(Add::new(self.action, rhs.action))
@@ -63,7 +114,7 @@ impl<Lhs: Action<Value: Concat<Rhs::Value>>, Rhs: Action<State = Lhs::State, Hea
 impl<Lhs: Action<Value: Concat<()>>> ops::Add<char> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatChar<Lhs::State, Lhs::Heap>>>;
 
-  /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
+  /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
   fn add(self, rhs: char) -> Self::Output {
     Self::Output::new(Add::new(self.action, EatChar::new(rhs)))
@@ -73,7 +124,7 @@ impl<Lhs: Action<Value: Concat<()>>> ops::Add<char> for Combinator<Lhs> {
 impl<Lhs: Action<Value: Concat<()>>> ops::Add<usize> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatUsize<Lhs::State, Lhs::Heap>>>;
 
-  /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
+  /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
   fn add(self, rhs: usize) -> Self::Output {
     Self::Output::new(Add::new(self.action, EatUsize::new(rhs)))
@@ -83,7 +134,7 @@ impl<Lhs: Action<Value: Concat<()>>> ops::Add<usize> for Combinator<Lhs> {
 impl<Lhs: Action<Value: Concat<()>>> ops::Add<String> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatString<Lhs::State, Lhs::Heap>>>;
 
-  /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
+  /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
   fn add(self, rhs: String) -> Self::Output {
     Self::Output::new(Add::new(self.action, EatString::new(rhs)))
@@ -93,7 +144,7 @@ impl<Lhs: Action<Value: Concat<()>>> ops::Add<String> for Combinator<Lhs> {
 impl<'a, Lhs: Action<Value: Concat<()>>> ops::Add<&'a str> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, EatStr<'a, Lhs::State, Lhs::Heap>>>;
 
-  /// Similar to `self + eat(rhs)`. See [`eat`](crate::combinator::eat).
+  /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
   fn add(self, rhs: &'a str) -> Self::Output {
     Self::Output::new(Add::new(self.action, EatStr::new(rhs)))
