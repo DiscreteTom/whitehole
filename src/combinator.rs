@@ -148,7 +148,7 @@
 //! Related decorators:
 //! - [`Combinator::prepare`]
 //! - [`Combinator::then`]
-//! - [`Combinator::rollback`]
+//! - [`Combinator::catch`]
 //! - [`Combinator::prevent`]
 //! - [`Combinator::reject`]
 

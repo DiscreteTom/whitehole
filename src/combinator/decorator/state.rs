@@ -158,7 +158,7 @@ mod tests {
   }
 
   #[test]
-  fn combinator_rollback() {
+  fn combinator_catch() {
     let mut state = State::default();
     assert!(accepter()
       .catch(|input| {
