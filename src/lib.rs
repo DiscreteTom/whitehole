@@ -15,6 +15,6 @@
 //!   if a character is in the provided literal string.
 
 pub mod combinator;
-pub mod node;
 pub mod parse;
 pub mod parser;
+pub mod with_range;

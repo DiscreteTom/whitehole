@@ -9,8 +9,8 @@ pub use instant::*;
 pub use snapshot::*;
 
 use crate::{
-  node::Node,
   parse::{Input, Parse},
+  with_range::WithRange,
 };
 
 /// Manage [`Input::state`], [`Input::heap`] and the parsing progress.
@@ -135,11 +135,11 @@ impl<'text, T: Parse> Parser<'text, T> {
   //   self
   // }
 
-  /// Try to yield the next [`Node`].
+  /// Try to yield the next [`WithRange`].
   /// Return [`None`] if the text is already fully digested
   /// or the combinator rejects.
   #[inline]
-  pub fn parse(&mut self) -> Option<Node<T::Kind>> {
+  pub fn parse(&mut self) -> Option<WithRange<T::Kind>> {
     let output = self.entry.parse(&mut Input::new(
       self.instant.rest(),
       self.instant.digested(),
@@ -149,19 +149,19 @@ impl<'text, T: Parse> Parser<'text, T> {
 
     let start = self.instant.digested();
     self.instant.update(output.rest);
-    Node {
-      kind: output.kind,
+    WithRange {
+      data: output.kind,
       range: start..self.instant.digested(),
     }
     .into()
   }
 
-  /// Try to yield the next [`Node`] without updating [`Self::instant`] and [`Self::state`].
+  /// Try to yield the next [`WithRange`] without updating [`Self::instant`] and [`Self::state`].
   /// [`Self::state`] will be cloned and returned.
   /// Return [`None`] if the text is already fully digested
   /// or the combinator rejects.
   #[inline]
-  pub fn peek(&mut self) -> (Option<Node<T::Kind>>, T::State)
+  pub fn peek(&mut self) -> (Option<WithRange<T::Kind>>, T::State)
   where
     T::State: Clone,
   {
@@ -174,8 +174,8 @@ impl<'text, T: Parse> Parser<'text, T> {
         &mut self.heap,
       )
       .and_then(|mut input| self.entry.parse(&mut input))
-      .map(|output| Node {
-        kind: output.kind,
+      .map(|output| WithRange {
+        data: output.kind,
         range: self.instant.digested()..self.instant.text().len() - output.rest.len(),
       }),
       tmp_state,
