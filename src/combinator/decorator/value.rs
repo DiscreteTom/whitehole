@@ -21,10 +21,10 @@ impl<T: Action> Combinator<T> {
     wrap(move |input| self.exec(input).map(|output| output.map(&mapper)))
   }
 
-  /// Create a new combinator to wrap [`Output::value`] in a tuple.
+  /// Create a new combinator to wrap [`Output::value`] in an one-element tuple.
   ///
   /// This is useful when you use `+` to combine multiple combinators.
-  /// See [`Concat`](crate::combinator::ops::add::Concat) for more details.
+  /// See [`ops::add`](crate::combinator::ops::add) for more details.
   /// # Examples
   /// ```
   /// # use whitehole::C;
