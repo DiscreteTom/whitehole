@@ -7,16 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `Combinator!(@T)` and `Combinator!(Kind, @T)` syntax.
+
 ### Changed
 
 - Make generic param `State` and `Heap` of the `Parse` trait become associated type.
+- Plain closures are no longer supported as `Parse` trait implementations. Use `wrap` instead to create a `Combinator` from a closure.
 - Simplify generic params of `Combinator` and `Parser`.
 
 ### Removed
 
-- Plain closures are no longer supported as `Parse` trait implementations. Use `wrap` instead to create a `Combinator` from a closure.
 - Remove `combinator::Builder`.
-- Remove `Combinator!(_, State, Heap)` syntax, add `Combinator!(@T)` and `Combinator!(Kind, @T)` syntax.
+- Remove `Combinator!(_, State, Heap)` syntax.
 
 ## [0.0.1] - 2024-11-24
 
