@@ -1,4 +1,4 @@
-//! Overload `*` operator for [`Combinator`].
+//! Overload `*` operator for [`Combinator`](crate::combinator::Combinator).
 //!
 //! `Combinator * Repeat` will create a new combinator to repeat the original combinator
 //! with the given [`Repeat`] range.
