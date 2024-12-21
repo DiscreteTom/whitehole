@@ -102,7 +102,6 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   }
 }
 
-// TODO: is this function's lifetime correct?
 impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
   /// Try to construct a new [`Input`] with the provided `rest`.
   /// The [`start`](Self::start) of the new instance will be auto calculated.
