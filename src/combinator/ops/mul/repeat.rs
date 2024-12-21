@@ -100,3 +100,107 @@ impl Repeat for RangeToInclusive<usize> {
     self.contains(&repeated)
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn repeat_usize() {
+    assert_eq!(0.validate(0), false);
+    assert_eq!(0.validate(1), false);
+    assert_eq!(0.accept(0), true);
+    assert_eq!(0.accept(1), false);
+
+    assert_eq!(1.validate(0), true);
+    assert_eq!(1.validate(1), false);
+    assert_eq!(1.validate(2), false);
+    assert_eq!(1.accept(0), false);
+    assert_eq!(1.accept(1), true);
+    assert_eq!(1.accept(2), false);
+  }
+
+  #[test]
+  fn repeat_range() {
+    assert_eq!((1..3).validate(0), true);
+    assert_eq!((1..3).validate(1), true);
+    assert_eq!((1..3).validate(2), false);
+    assert_eq!((1..3).validate(3), false);
+    assert_eq!((1..3).validate(4), false);
+    assert_eq!((1..3).accept(0), false);
+    assert_eq!((1..3).accept(1), true);
+    assert_eq!((1..3).accept(2), true);
+    assert_eq!((1..3).accept(3), false);
+    assert_eq!((1..3).accept(4), false);
+  }
+
+  #[test]
+  fn repeat_range_from() {
+    assert_eq!((1..).validate(0), true);
+    assert_eq!((1..).validate(1), true);
+    assert_eq!((1..).validate(2), true);
+    assert_eq!((1..).validate(3), true);
+    assert_eq!((1..).validate(4), true);
+    assert_eq!((1..).accept(0), false);
+    assert_eq!((1..).accept(1), true);
+    assert_eq!((1..).accept(2), true);
+    assert_eq!((1..).accept(3), true);
+    assert_eq!((1..).accept(4), true);
+  }
+
+  #[test]
+  fn repeat_range_full() {
+    assert_eq!((..).validate(0), true);
+    assert_eq!((..).validate(1), true);
+    assert_eq!((..).validate(2), true);
+    assert_eq!((..).validate(3), true);
+    assert_eq!((..).validate(4), true);
+    assert_eq!((..).accept(0), true);
+    assert_eq!((..).accept(1), true);
+    assert_eq!((..).accept(2), true);
+    assert_eq!((..).accept(3), true);
+    assert_eq!((..).accept(4), true);
+  }
+
+  #[test]
+  fn repeat_range_inclusive() {
+    assert_eq!((1..=3).validate(0), true);
+    assert_eq!((1..=3).validate(1), true);
+    assert_eq!((1..=3).validate(2), true);
+    assert_eq!((1..=3).validate(3), false);
+    assert_eq!((1..=3).validate(4), false);
+    assert_eq!((1..=3).accept(0), false);
+    assert_eq!((1..=3).accept(1), true);
+    assert_eq!((1..=3).accept(2), true);
+    assert_eq!((1..=3).accept(3), true);
+    assert_eq!((1..=3).accept(4), false);
+  }
+
+  #[test]
+  fn repeat_range_to() {
+    assert_eq!((..3).validate(0), true);
+    assert_eq!((..3).validate(1), true);
+    assert_eq!((..3).validate(2), false);
+    assert_eq!((..3).validate(3), false);
+    assert_eq!((..3).validate(4), false);
+    assert_eq!((..3).accept(0), true);
+    assert_eq!((..3).accept(1), true);
+    assert_eq!((..3).accept(2), true);
+    assert_eq!((..3).accept(3), false);
+    assert_eq!((..3).accept(4), false);
+  }
+
+  #[test]
+  fn repeat_range_to_inclusive() {
+    assert_eq!((..=3).validate(0), true);
+    assert_eq!((..=3).validate(1), true);
+    assert_eq!((..=3).validate(2), true);
+    assert_eq!((..=3).validate(3), false);
+    assert_eq!((..=3).validate(4), false);
+    assert_eq!((..=3).accept(0), true);
+    assert_eq!((..=3).accept(1), true);
+    assert_eq!((..=3).accept(2), true);
+    assert_eq!((..=3).accept(3), true);
+    assert_eq!((..=3).accept(4), false);
+  }
+}
