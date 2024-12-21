@@ -67,6 +67,37 @@ impl<T: Action> Combinator<T> {
       output
     })
   }
+
+  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
+  /// after the combinator is executed,
+  /// no matter whether it is accepted or rejected.
+  /// # Examples
+  /// ```
+  /// # use whitehole::C;
+  /// # struct MyState { value: i32 }
+  /// # fn t(combinator: C!((), MyState)) {
+  /// combinator.finally(|ctx| ctx.input.state.value += 1)
+  /// # ;}
+  /// ```
+  #[inline]
+  pub fn finally(
+    self,
+    modifier: impl for<'text> Fn(
+      AcceptedContext<
+        &mut Input<'text, &mut T::State, &mut T::Heap>,
+        &Option<Output<'text, T::Value>>,
+      >,
+    ),
+  ) -> C!(@T) {
+    wrap(move |input| {
+      let output = self.exec(input);
+      modifier(AcceptedContext {
+        input,
+        output: &output,
+      });
+      output
+    })
+  }
 }
 
 #[cfg(test)]
@@ -145,5 +176,26 @@ mod tests {
       .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_none());
     assert_eq!(state, State { from: 1, to: 0 });
+  }
+
+  #[test]
+  fn combinator_finally() {
+    let mut state = State::default();
+    assert!(accepter()
+      .finally(|ctx| {
+        ctx.input.state.to = 1;
+      })
+      .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .is_some());
+    assert_eq!(state, State { from: 0, to: 1 });
+
+    let mut state = State::default();
+    assert!(rejecter()
+      .finally(|ctx| {
+        ctx.input.state.to = 1;
+      })
+      .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .is_none());
+    assert_eq!(state, State { from: 0, to: 1 });
   }
 }
