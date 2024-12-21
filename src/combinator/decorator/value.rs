@@ -29,7 +29,7 @@ impl<T: Parse> Combinator<T> {
   /// ```
   /// # use whitehole::Combinator;
   /// # fn t(combinator: Combinator!()) {
-  /// combinator.map(|value| Some(value))
+  /// combinator.tuple()
   /// # ;}
   /// ```
   #[inline]
