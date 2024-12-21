@@ -1,9 +1,8 @@
-/// The output of [`Action::action`](crate::action::Action::action).
-///
+/// The output of [`Action::exec`](crate::action::Action::exec).
 /// Usually built by [`Input::digest`](crate::action::Input::digest).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Output<'text, Value> {
-  /// The parsed value.
+  /// The yielded value.
   pub value: Value,
   /// The rest of the input text.
   pub rest: &'text str,

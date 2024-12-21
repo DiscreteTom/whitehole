@@ -6,7 +6,6 @@ use super::Output;
 #[derive(Debug)]
 pub struct Input<'text, StateRef, HeapRef> {
   /// The `&mut State`.
-  ///
   /// This is public, so you can mutate the `State` directly.
   ///
   /// With the `State`, you can construct stateful parsers,
@@ -18,7 +17,6 @@ pub struct Input<'text, StateRef, HeapRef> {
   /// it should be stored in [`Self::heap`].
   pub state: StateRef,
   /// The `&mut Heap`.
-  ///
   /// This is public, so you can mutate this directly.
   ///
   /// With the `Heap`, you can re-use allocated memory
