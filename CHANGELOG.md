@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `Input::new_unchecked`.
 - Add `C!(@T)` and `C!(Kind, @T)` syntax.
 - Add `Combinator::range` to include the byte range of digested text in the output.
 - Add `Combinator::when` as the opposite of `Combinator::prevent`.

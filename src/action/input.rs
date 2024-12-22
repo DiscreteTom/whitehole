@@ -36,6 +36,26 @@ pub struct Input<'text, StateRef, HeapRef> {
 }
 
 impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
+  /// # Safety
+  /// You should ensure that `rest` is not empty.
+  /// This will be checked using [`debug_assert!`].
+  /// For the checked version, see [`Self::new`].
+  #[inline]
+  pub const unsafe fn new_unchecked(
+    rest: &'text str,
+    start: usize,
+    state: StateRef,
+    heap: HeapRef,
+  ) -> Self {
+    debug_assert!(!rest.is_empty());
+    Self {
+      rest,
+      start,
+      state,
+      heap,
+    }
+  }
+
   /// Return [`Some`] if `rest` is not empty.
   #[inline]
   pub fn new(rest: &'text str, start: usize, state: StateRef, heap: HeapRef) -> Option<Self> {
@@ -119,6 +139,17 @@ impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn input_new_unchecked() {
+    let _ = unsafe { Input::new_unchecked("123", 0, &mut (), &mut ()) };
+  }
+
+  #[test]
+  #[should_panic]
+  fn input_new_unchecked_empty() {
+    let _ = unsafe { Input::new_unchecked("", 0, &mut (), &mut ()) };
+  }
 
   #[test]
   fn input_new() {
