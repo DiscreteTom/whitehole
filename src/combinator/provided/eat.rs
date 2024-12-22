@@ -1,6 +1,6 @@
 use crate::{
   action::Action,
-  combinator::{wrap, Input, Output},
+  combinator::{wrap, Combinator, Input, Output},
   C,
 };
 use std::marker::PhantomData;
@@ -42,6 +42,13 @@ macro_rules! impl_eat {
       #[inline]
       fn into_parser<State, Heap>(self) -> impl Action<Value = (), State=State, Heap=Heap> {
         $name::new(self)
+      }
+    }
+
+    impl<State, Heap> Into<Combinator<$name<State, Heap>>> for $inner {
+      #[inline]
+      fn into(self) -> Combinator<$name<State, Heap>> {
+        Combinator::new($name::new(self))
       }
     }
   };
@@ -141,6 +148,13 @@ impl<State, Heap> Action for EatStr<'_, State, Heap> {
       .rest()
       .starts_with(self.s)
       .then(|| unsafe { input.digest_unchecked(self.s.len()) })
+  }
+}
+
+impl<'a, State, Heap> Into<Combinator<EatStr<'a, State, Heap>>> for &'a str {
+  #[inline]
+  fn into(self) -> Combinator<EatStr<'a, State, Heap>> {
+    Combinator::new(EatStr::new(self))
   }
 }
 
