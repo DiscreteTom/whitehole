@@ -21,7 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename `Parse` to `Action`, rename its method `parse` to `exec`.
 - Make generic param `State` and `Heap` of the `Parse` trait become associated type.
 - Rename `Action::Kind` to `Action::Value`, rename `Output::kind` to `Output::value`.
-- Plain closures are no longer supported as `Action` trait implementations. Use `wrap` instead to create a `Combinator` from a closure.
 - Rename `Combinator!` to `C!`.
 - Rename `Combinator::rollback` to `Combinator::catch`.
 - Simplify generic params of `Combinator` and `Parser`.
@@ -29,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove `Action` trait implementation for plain closures. Use `wrap` instead to create a `Combinator` from a closure.
 - Remove `combinator::Builder`.
 - Remove `C!(_, State, Heap)` syntax.
 - Remove `combinator * (repeat, sep)` syntax.
