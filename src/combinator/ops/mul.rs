@@ -49,9 +49,6 @@
 //! eat("true") * (..=0)
 //! # );
 //! ```
-//! If there is at least one repetition, then the separator is allowed to be the last match.
-//! E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
-//! You have to check if the last match is a separator by yourself.
 //! # Fold Values
 //! ## Inline Fold
 //! For simple cases, you can accumulate values inline.
