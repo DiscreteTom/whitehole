@@ -37,7 +37,7 @@ impl<
   fn exec<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Acc>> {
+  ) -> Option<Output<'text, Self::Value>> {
     let (range, init, folder) = &self.rhs;
     let mut repeated = 0;
     let mut output = Output {
