@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Remove `combinator::Builder`.
 - Remove `C!(_, State, Heap)` syntax.
+- Remove `combinator * (repeat, sep)` syntax.
 
 ## [0.0.1] - 2024-11-24
 

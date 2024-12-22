@@ -48,21 +48,6 @@
 //! # t(
 //! eat("true") * (..=0)
 //! # );
-//!
-//! // repeat with another combinator as the separator
-//! # t(
-//! eat("true") * (1.., eat(','))
-//! # );
-//! // you can use a String, a &str or a char as the separator
-//! # t(
-//! eat("true") * (1.., ", ".to_string())
-//! # );
-//! # t(
-//! eat("true") * (1.., ", ")
-//! # );
-//! # t(
-//! eat("true") * (1.., ',')
-//! # );
 //! ```
 //! If there is at least one repetition, then the separator is allowed to be the last match.
 //! E.g. `eat('a') * (1.., eat(','))` will accept `"a"`, `"a,"`, `"a,a"` but reject `","`.
@@ -124,9 +109,7 @@ mod repeat;
 pub use fold::*;
 pub use repeat::*;
 
-use crate::combinator::{Action, Input, Output};
-
-/// An [`Action`] created by the `*` operator.
+/// An [`Action`](crate::action::Action) created by the `*` operator.
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
 #[derive(Debug, Clone, Copy)]
 pub struct Mul<Lhs, Rhs> {
@@ -141,76 +124,13 @@ impl<Lhs, Rhs> Mul<Lhs, Rhs> {
   }
 }
 
-#[inline]
-fn impl_mul<'text, Value, State, Heap, Acc>(
-  lhs: &impl Action<Value = Value, State = State, Heap = Heap>,
-  range: &impl Repeat,
-  init: impl Fn() -> Acc,
-  folder: impl Fn(Value, Acc) -> Acc,
-  input: &mut Input<'text, &mut State, &mut Heap>,
-) -> Option<Output<'text, Acc>> {
-  let mut repeated = 0;
-  let mut output = Output {
-    value: init(),
-    rest: input.rest(),
-  };
-
-  while range.validate(repeated) {
-    let Some(next_output) = input
-      .reload(output.rest)
-      .and_then(|mut input| lhs.exec(&mut input))
-    else {
-      break;
-    };
-    output.rest = next_output.rest;
-    output.value = folder(next_output.value, output.value);
-    repeated += 1;
-  }
-
-  range.accept(repeated).then_some(output)
-}
-
-#[inline]
-fn impl_mul_with_sep<'text, Value, State, Heap, Acc>(
-  lhs: &impl Action<Value = Value, State = State, Heap = Heap>,
-  range: &impl Repeat,
-  sep: &impl Action<Value = (), State = State, Heap = Heap>,
-  init: impl Fn() -> Acc,
-  folder: impl Fn(Value, Acc) -> Acc,
-  input: &mut Input<'text, &mut State, &mut Heap>,
-) -> Option<Output<'text, Acc>> {
-  let mut repeated = 0;
-  let mut output = Output {
-    value: init(),
-    rest: input.rest(),
-  };
-
-  while range.validate(repeated) {
-    let Some(next_output) = input
-      .reload(output.rest)
-      .and_then(|mut input| lhs.exec(&mut input))
-    else {
-      break;
-    };
-    repeated += 1;
-    output.rest = next_output.rest;
-    output.value = folder(next_output.value, output.value);
-    let Some(next_output) = input
-      .reload(next_output.rest)
-      .and_then(|mut input| sep.exec(&mut input))
-    else {
-      break;
-    };
-    output.rest = next_output.rest;
-  }
-
-  range.accept(repeated).then_some(output)
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::combinator::{wrap, Input, Output};
+  use crate::{
+    action::Action,
+    combinator::{wrap, Input, Output},
+  };
 
   #[derive(Debug)]
   struct MyValue(usize);
@@ -508,61 +428,5 @@ mod tests {
       (accepter() * (..=3)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output { value: 3, rest: "" })
     );
-  }
-
-  #[test]
-  fn combinator_mul_with_sep() {
-    let eat_char = |c| {
-      wrap(move |input| {
-        (input.next() == c).then(|| Output {
-          value: (),
-          rest: &input.rest()[1..],
-        })
-      })
-    };
-    let eat_a = || eat_char('a');
-    let sep = || eat_char(',');
-
-    assert_eq!(
-      (eat_a() * (1.., sep())).exec(&mut Input::new(",", 0, &mut (), &mut ()).unwrap()),
-      None
-    );
-    assert_eq!(
-      (eat_a() * (1.., sep())).exec(&mut Input::new("a", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        value: (),
-        rest: ""
-      })
-    );
-    assert_eq!(
-      (eat_a() * (1.., sep())).exec(&mut Input::new("a,", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        value: (),
-        rest: ""
-      })
-    );
-    assert_eq!(
-      (eat_a() * (1.., sep())).exec(&mut Input::new("a,a", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        value: (),
-        rest: ""
-      })
-    );
-    assert_eq!(
-      (eat_a() * (1.., sep())).exec(&mut Input::new("a,,", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        value: (),
-        rest: ","
-      })
-    );
-    assert_eq!(
-      (eat_a() * (1.., sep())).exec(&mut Input::new("a,aa", 0, &mut (), &mut ()).unwrap()),
-      Some(Output {
-        value: (),
-        rest: "a"
-      })
-    );
-
-    // TODO: more tests
   }
 }
