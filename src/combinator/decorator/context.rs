@@ -42,6 +42,10 @@ macro_rules! impl_ctx {
       #[inline]
       pub fn content(&self) -> &'text str {
         // we don't cache this slice since it might not be used frequently
+        // SAFETY: for normal cases, the `output.rest` and `input.rest` are slices of the same string
+        // and the `output.rest` is always a suffix of `input.rest` so it's safe to get the slice unchecked.
+        // but in case the user gives a wrong output, we still use `debug_assert!` to check it.
+        debug_assert!(self.digested() <= self.input.rest().len());
         unsafe { self.input.rest().get_unchecked(..self.digested()) }
       }
     }
@@ -110,5 +114,19 @@ mod tests {
       .content(),
       "1"
     );
+  }
+
+  #[test]
+  #[should_panic]
+  fn wrong_output() {
+    // ensure the panic when the output is wrong
+    AcceptedContext {
+      input: &mut create_input(),
+      output: Output {
+        value: (),
+        rest: "4567",
+      },
+    }
+    .content();
   }
 }
