@@ -10,7 +10,7 @@
 //! # Basics
 //! Use `*` to repeat a combinator:
 //! ```
-//! # use whitehole::{combinator::eat, Combinator};
+//! # use whitehole::{combinator::eat, C};
 //! # fn t(_: C!()) {}
 //! // repeat the combinator for 2 times
 //! # t(
