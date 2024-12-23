@@ -5,19 +5,9 @@ use crate::{
 };
 use std::marker::PhantomData;
 
-/// A util trait to make [`eat`] generic over different types.
-///
-/// Built-in implementations are provided for [`String`], `&str`, [`char`] and [`usize`].
-///
-/// See [`eat`] for more details.
-pub trait Eat {
-  /// Convert the implementor to a parser implementor.
-  fn into_parser<State, Heap>(self) -> impl Action<Value = (), State = State, Heap = Heap>;
-}
-
 macro_rules! impl_eat {
   ($name:ident, $inner:ty, ($($derive:ident),*)) => {
-    /// An [`Eat`] implementor.
+    /// An [`Action`] implementor.
     /// For most cases you don't need to use this directly.
     ///
     /// See [`eat`] for more details.
@@ -35,13 +25,6 @@ macro_rules! impl_eat {
           inner,
           _phantom: PhantomData,
         }
-      }
-    }
-
-    impl Eat for $inner {
-      #[inline]
-      fn into_parser<State, Heap>(self) -> impl Action<Value = (), State=State, Heap=Heap> {
-        $name::new(self)
       }
     }
 
@@ -106,7 +89,7 @@ impl<State, Heap> Action for EatUsize<State, Heap> {
   }
 }
 
-/// An [`Eat`] implementor.
+/// An [`Action`] implementor.
 /// For most cases you don't need to use this directly.
 ///
 /// See [`eat`] for more details.
@@ -124,13 +107,6 @@ impl<'a, State, Heap> EatStr<'a, State, Heap> {
       s,
       _phantom: PhantomData,
     }
-  }
-}
-
-impl<'a> Eat for &'a str {
-  #[inline]
-  fn into_parser<State, Heap>(self) -> impl Action<Value = (), State = State, Heap = Heap> {
-    EatStr::new(self)
   }
 }
 
@@ -182,9 +158,8 @@ impl<'a, State, Heap> Into<Combinator<EatStr<'a, State, Heap>>> for &'a str {
 /// # );
 /// ```
 #[inline]
-pub fn eat<State, Heap>(pattern: impl Eat) -> C!((), State, Heap) {
-  let parser = pattern.into_parser();
-  wrap(move |input| parser.exec(input))
+pub fn eat<T>(pattern: impl Into<Combinator<T>>) -> Combinator<T> {
+  pattern.into()
 }
 
 /// Returns a combinator to eat `n` bytes from the head of [`Input::rest`],
