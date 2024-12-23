@@ -5,11 +5,15 @@ use crate::{combinator::wrap, C};
 /// The combinator will reject if not matched.
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::next, Combinator};
+/// # use whitehole::{combinator::next, C};
 /// # fn t(_: C!()) {}
 /// // match one ascii digit
 /// # t(
 /// next(|c| c.is_ascii_digit())
+/// # );
+/// // match one or more ascii digit
+/// # t(
+/// next(|c| c.is_ascii_digit()) * (1..)
 /// # );
 /// ```
 #[inline]
@@ -40,6 +44,21 @@ mod tests {
     // reject
     assert!(next(|c| c.is_ascii_alphabetic())
       .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .is_none());
+  }
+
+  #[test]
+  fn one_or_more_next() {
+    // normal
+    assert_eq!(
+      (next(|c| c.is_ascii_digit()) * (1..))
+        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("")
+    );
+    // reject
+    assert!(next(|c| c.is_ascii_digit())
+      .exec(&mut Input::new("abc", 0, &mut (), &mut ()).unwrap())
       .is_none());
   }
 }
