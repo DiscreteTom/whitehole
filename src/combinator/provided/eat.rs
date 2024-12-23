@@ -161,7 +161,7 @@ impl<'a, State, Heap> Into<Combinator<EatStr<'a, State, Heap>>> for &'a str {
 ///
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::eat, Combinator};
+/// # use whitehole::{combinator::eat, C};
 /// # fn t(_: C!()) {}
 /// # t(
 /// eat('a') // eat by char
@@ -193,7 +193,7 @@ pub fn eat<T>(pattern: impl Into<Combinator<T>>) -> Combinator<T> {
 /// For the checked version, see [`eat`].
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::eat_unchecked, Combinator};
+/// # use whitehole::{combinator::eat_unchecked, C};
 /// # fn t(_: C!()) {}
 /// // eat 10 bytes
 /// # t(
@@ -212,7 +212,7 @@ pub unsafe fn eat_unchecked<State, Heap>(n: usize) -> C!((), State, Heap) {
 /// as a valid UTF-8 string.
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::eater, Combinator};
+/// # use whitehole::{combinator::eater, C};
 /// # fn t(_: C!()) {}
 /// // accept all the rest characters
 /// # t(
@@ -239,7 +239,7 @@ pub fn eater<State, Heap>(
 /// For the checked version, see [`eater`].
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::eater_unchecked, Combinator};
+/// # use whitehole::{combinator::eater_unchecked, C};
 /// # fn t(_: C!()) {}
 /// // accept all the rest characters
 /// # t(

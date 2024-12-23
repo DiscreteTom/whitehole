@@ -5,7 +5,7 @@
 //! To get started, you can use the provided combinators like [`eat`],
 //! which will eat the provided pattern from the rest of the input text:
 //! ```
-//! # use whitehole::{combinator::eat, Combinator};
+//! # use whitehole::{combinator::eat, C};
 //! # fn t(_: C!()) {}
 //! # t(
 //! eat("true")
@@ -26,7 +26,7 @@
 //! Use `+` and `|` to compose multiple combinators
 //! for more complex tasks:
 //! ```
-//! # use whitehole::{combinator::eat, Combinator};
+//! # use whitehole::{combinator::eat, C};
 //! # fn t(_: C!()) {}
 //! // match "true" then match "false"
 //! # t(
@@ -61,7 +61,7 @@
 //! ## Repeat
 //! Use `*` to repeat a combinator:
 //! ```
-//! # use whitehole::{combinator::eat, Combinator};
+//! # use whitehole::{combinator::eat, C};
 //! # fn t(_: C!()) {}
 //! // repeat the combinator for 2 times
 //! # t(
@@ -120,7 +120,7 @@
 //! to modify the behavior of the combinator.
 //! For now let's see 2 of them:
 //! ```
-//! # use whitehole::{combinator::eat, Combinator};
+//! # use whitehole::{combinator::eat, C};
 //! # fn t(_: C!()) {}
 //! // make the combinator optional
 //! # t(

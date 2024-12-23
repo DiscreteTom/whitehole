@@ -89,6 +89,7 @@ impl<T: Action> Combinator<T> {
   /// thus usually used before setting a custom value.
   /// ```
   /// # use whitehole::C;
+  /// # #[derive(Clone)]
   /// # struct MyValue;
   /// # fn t(combinator: C!()) {
   /// // make the combinator optional before binding a value
@@ -101,6 +102,7 @@ impl<T: Action> Combinator<T> {
   /// after setting a custom value.
   /// ```
   /// # use whitehole::C;
+  /// # #[derive(Clone)]
   /// # struct MyValue;
   /// # fn t(combinator: C!()) {
   /// combinator.bind(Some(MyValue)).optional()

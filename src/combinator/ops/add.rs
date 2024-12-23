@@ -35,7 +35,7 @@
 //! ```
 //! # use whitehole::{combinator::{next, eat}, C, parser::Builder};
 //! let integer = || {
-//!   (next(|c| c.is_ascii_digit(c)) * 1..) // eat one or more digits
+//!   (next(|c| c.is_ascii_digit()) * (1..)) // eat one or more digits
 //!     .select(|ctx| ctx.content().parse::<usize>().unwrap()) // parse the digits
 //!     .tuple() // wrap the parsed digits in a tuple
 //! };
@@ -46,11 +46,8 @@
 //! // so the value will be `(usize, usize)`
 //! let entry = integer() + dot + integer();
 //!
-//! let output = Builder::new()
-//!   .entry(entry)
-//!   .build("123.456")
-//!   .parse()
-//!   .unwrap();
+//! let mut parser = Builder::new().entry(entry).build("123.456");
+//! let output = parser.parse().unwrap();
 //! assert_eq!(output.value, (123, 456));
 //! ```
 //! See [`Concat`] for more information.

@@ -70,7 +70,7 @@ impl<State, Heap> Till<State, Heap> for () {
 /// Empty string is allowed, but be careful with infinite loops.
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::till, Combinator};
+/// # use whitehole::{combinator::till, C};
 /// # fn t(_: C!()) {}
 /// # t(
 /// till("end".to_string()) // with String

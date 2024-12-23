@@ -82,7 +82,7 @@ impl<T: Action> Combinator<T> {
   /// # use whitehole::C;
   /// # struct MyValue(i32);
   /// # fn t(combinator: C!()) {
-  /// combinator.select(|ctx| MyValue(ctx.content().exec().unwrap()))
+  /// combinator.select(|ctx| MyValue(ctx.content().parse().unwrap()))
   /// # ;}
   /// ```
   #[inline]
