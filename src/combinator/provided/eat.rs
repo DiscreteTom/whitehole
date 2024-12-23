@@ -85,7 +85,26 @@ impl<State, Heap> Action for EatUsize<State, Heap> {
     &self,
     input: &mut Input<'text, &mut State, &mut Heap>,
   ) -> Option<Output<'text, ()>> {
-    input.digest(self.inner)
+    // if eat 1 char, just eat the `input.next` which always exists
+    if self.inner == 1 {
+      return unsafe { input.digest_unchecked(input.next().len_utf8()) }.into();
+    }
+
+    let mut digested = 0;
+    let mut count = 0;
+    let mut chars = input.rest().chars();
+    while count < self.inner {
+      // no enough chars, try to digest more
+      if let Some(c) = chars.next() {
+        digested += c.len_utf8();
+        count += 1;
+      } else {
+        // no enough chars, reject
+        return None;
+      }
+    }
+    // enough chars
+    unsafe { input.digest_unchecked(digested) }.into()
   }
 }
 
@@ -154,7 +173,7 @@ impl<'a, State, Heap> Into<Combinator<EatStr<'a, State, Heap>>> for &'a str {
 /// eat("true".to_string()) // eat by String
 /// # );
 /// # t(
-/// eat(10) // eat by byte length
+/// eat(10) // eat by char count (not byte length)
 /// # );
 /// ```
 #[inline]
@@ -162,7 +181,7 @@ pub fn eat<T>(pattern: impl Into<Combinator<T>>) -> Combinator<T> {
   pattern.into()
 }
 
-/// Returns a combinator to eat `n` bytes from the head of [`Input::rest`],
+/// Returns a combinator to eat `n` bytes (not chars) from the head of [`Input::rest`],
 /// without checking `n`.
 /// The combinator will never reject.
 ///
@@ -187,7 +206,7 @@ pub unsafe fn eat_unchecked<State, Heap>(n: usize) -> C!((), State, Heap) {
 }
 
 /// Returns a combinator by the provided function that
-/// eats [`Input::rest`] and returns the number of digested bytes.
+/// eats [`Input::rest`] and returns the number of digested bytes (not chars).
 /// The combinator will reject if the function returns `0`
 /// or [`Output::rest`] can't be built
 /// as a valid UTF-8 string.
@@ -211,7 +230,7 @@ pub fn eater<State, Heap>(
 }
 
 /// Returns a combinator by the provided function that
-/// eats [`Input::rest`] and returns the number of digested bytes.
+/// eats [`Input::rest`] and returns the number of digested bytes (not chars).
 /// The combinator will reject if the function returns `0`.
 /// # Safety
 /// You should ensure that [`Output::rest`] can be built
@@ -286,26 +305,32 @@ mod tests {
     assert!(eat('1')
       .exec(&mut Input::new("abc", 0, &mut (), &mut ()).unwrap())
       .is_none());
-    // invalid code point
-    assert_eq!(
-      eat(1)
-        .exec(&mut Input::new("好", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      None
-    );
-    // 0 is allowed
+    // 0 is allowed and always accept
     assert_eq!(
       eat(0)
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       Some("123")
     );
-    // empty is allowed
+    // empty string is allowed and always accept
     assert_eq!(
       eat("")
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.rest),
       Some("123")
+    );
+    // eat by chars not bytes
+    assert_eq!(
+      eat(1)
+        .exec(&mut Input::new("好", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("")
+    );
+    assert_eq!(
+      eat(2)
+        .exec(&mut Input::new("好好", 0, &mut (), &mut ()).unwrap())
+        .map(|output| output.rest),
+      Some("")
     );
   }
 

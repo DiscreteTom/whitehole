@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename `Action::Kind` to `Action::Value`, rename `Output::kind` to `Output::value`.
 - Rename `Combinator!` to `C!`.
 - Rename `Combinator::rollback` to `Combinator::catch`.
+- `EatUsize` will eat by chars instead of bytes.
 - Rewrite `Till` trait to make it safe.
 - Combinator repetition with `Fold` will be implemented by using inline fold.
 - Simplify generic params of `Combinator` and `Parser`.
