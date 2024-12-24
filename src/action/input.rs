@@ -11,7 +11,7 @@ pub struct Input<'text, StateRef, HeapRef> {
   /// This is public, so you can mutate the `State` directly.
   ///
   /// With the `State`, you can construct stateful parsers,
-  /// while combinators remain stateless and clone-able.
+  /// while actions remain stateless and clone-able.
   ///
   /// All vars that control the flow of the parsing should be stored here.
   /// This should be small and cheap to clone (maybe just a bunch of integers or booleans).
@@ -22,7 +22,7 @@ pub struct Input<'text, StateRef, HeapRef> {
   /// This is public, so you can mutate this directly.
   ///
   /// With the `Heap`, you can re-use allocated memory
-  /// across combinator and parsings.
+  /// across actions and parsings.
   ///
   /// All vars that doesn't count as a part of [`Self::state`] should be stored here.
   /// If a var is used to control the flow of the parsing,
