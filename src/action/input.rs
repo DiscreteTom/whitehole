@@ -1,6 +1,10 @@
 /// The input of [`Action::exec`](crate::action::Action::exec).
 ///
 /// Once created, only [`Self::state`] and [`Self::heap`] can be mutated.
+///
+/// For simplicity, there is no `Input::text` to get the whole input text,
+/// you can only use [`Input::rest`] to get the undigested part.
+/// If you do need the whole input text, you can store it in [`Self::heap`].
 #[derive(Debug)]
 pub struct Input<'text, StateRef, HeapRef> {
   /// The `&mut State`.
