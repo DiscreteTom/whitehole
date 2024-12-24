@@ -89,13 +89,14 @@ impl<T: Action> Combinator<T> {
   pub fn select<NewValue>(
     self,
     selector: impl for<'text> Fn(
-      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, Output<'text, T::Value>>,
+      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, Output<T::Value>>,
     ) -> NewValue,
   ) -> C!(NewValue, @T) {
     wrap(move |input| {
-      self.exec(input).map(|output| Output {
-        rest: output.rest,
-        value: selector(AcceptedContext { input, output }),
+      self.exec(input).map(|output| {
+        // SAFETY: `output.digested` is guaranteed to be valid
+        unsafe { input.digest_unchecked(output.digested) }
+          .map(|_| selector(AcceptedContext { input, output }))
       })
     })
   }
@@ -112,7 +113,7 @@ impl<T: Action> Combinator<T> {
   pub fn range(self) -> C!(WithRange<T::Value>, @T) {
     wrap(move |input| {
       self.exec(input).map(|output| {
-        let digested = input.rest().len() - output.rest.len();
+        let digested = output.digested;
         output.map(|value| WithRange {
           data: value,
           range: input.start()..(input.start() + digested),
@@ -134,7 +135,7 @@ mod tests {
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: Some(1),
-        rest: "23"
+        digested: 1
       })
     );
   }
@@ -147,7 +148,7 @@ mod tests {
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 123,
-        rest: "23"
+        digested: 1
       })
     );
   }
@@ -160,7 +161,7 @@ mod tests {
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 0,
-        rest: "23"
+        digested: 1
       })
     );
   }
@@ -173,7 +174,7 @@ mod tests {
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 1,
-        rest: "23"
+        digested: 1
       })
     );
   }
@@ -189,7 +190,7 @@ mod tests {
           data: (),
           range: 0..1
         },
-        rest: "23"
+        digested: 1
       })
     );
   }

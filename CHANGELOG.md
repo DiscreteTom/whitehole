@@ -10,17 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `Input::new_unchecked`.
+- Add `Output::digested`.
 - Add `C!(@T)` and `C!(Kind, @T)` syntax.
+- Add `AcceptedContext::rest`.
 - Add `Combinator::range` to include the byte range of digested text in the output.
 - Add `Combinator::when` as the opposite of `Combinator::prevent`.
 - Add `Combinator::finally` to modify `Input` after execution.
 - Expose `Add::lhs`, `Add::rhs`, `BitOr::lhs` and `BitOr::rhs`.
 - Implement `Into<Combinator>` for `char`, `&str`, `String`, `usize`.
+- Add `Instant::digest_unchecked`.
 
 ### Changed
 
 - Rename `Node` to `WithRange`, rename its field `kind` to `data`.
 - Rename `Parse` to `Action`, rename its method `parse` to `exec`.
+- Rewrite `Output`, remove it's lifetime param.
 - Make generic param `State` and `Heap` of the `Parse` trait become associated type.
 - Rename `Action::Kind` to `Action::Value`, rename `Output::kind` to `Output::value`.
 - Rename `Combinator!` to `C!`.
@@ -33,11 +37,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove `Output::rest`.
 - Remove `Action` trait implementation for plain closures. Use `wrap` instead to create a `Combinator` from a closure.
+- Remove `AcceptedContext::digested`.
 - Remove `combinator::Builder`.
 - Remove `C!(_, State, Heap)` syntax.
 - Remove `combinator * (repeat, sep)` syntax.
 - Remove `Eat` trait.
+- Remove `Instant::update`.
 
 ## [0.0.1] - 2024-11-24
 

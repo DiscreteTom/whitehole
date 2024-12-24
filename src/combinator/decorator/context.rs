@@ -13,21 +13,20 @@ pub struct AcceptedContext<InputType, OutputType> {
   pub output: OutputType,
 }
 
+// TODO: optimize design
 macro_rules! impl_ctx {
   ($input:ty, $output:ty) => {
     impl<'text, Value, StateRef, HeapRef> AcceptedContext<$input, $output> {
-      /// How many bytes are digested by this combinator.
+      /// The rest of the input text after accepting this combinator.
       #[inline]
-      pub fn digested(&self) -> usize {
-        self.input.rest().len() - self.output.rest.len()
+      pub fn rest(&self) -> &'text str {
+        unsafe { self.input.rest().get_unchecked(self.output.digested..) }
       }
 
       /// The end index in bytes in the whole input text.
-      ///
-      /// Shortcut for `self.input.start() + self.digested()`.
       #[inline]
       pub fn end(&self) -> usize {
-        self.input.start() + self.digested()
+        self.input.start() + self.output.digested
       }
 
       /// The byte range of the digested text in the whole input text.
@@ -45,8 +44,8 @@ macro_rules! impl_ctx {
         // SAFETY: for normal cases, the `output.rest` and `input.rest` are slices of the same string
         // and the `output.rest` is always a suffix of `input.rest` so it's safe to get the slice unchecked.
         // but in case the user gives a wrong output, we still use `debug_assert!` to check it.
-        debug_assert!(self.digested() <= self.input.rest().len());
-        unsafe { self.input.rest().get_unchecked(..self.digested()) }
+        debug_assert!(self.output.digested <= self.input.rest().len());
+        unsafe { self.input.rest().get_unchecked(..self.output.digested) }
       }
     }
   };
@@ -54,8 +53,8 @@ macro_rules! impl_ctx {
 
 // Input won't be consumed and is always mutable.
 // Output won't be modified directly in the context, but can be consumed.
-impl_ctx!(&mut Input<'text, StateRef, HeapRef>, Output<'text, Value>);
-impl_ctx!(&mut Input<'text, StateRef, HeapRef>, &Output<'text, Value>);
+impl_ctx!(&mut Input<'text, StateRef, HeapRef>, Output<Value>);
+impl_ctx!(&mut Input<'text, StateRef, HeapRef>, &Output<Value>);
 
 #[cfg(test)]
 mod tests {
@@ -64,11 +63,8 @@ mod tests {
   fn create_input() -> Input<'static, (), ()> {
     Input::new("123", 1, (), ()).unwrap()
   }
-  fn create_output() -> Output<'static, ()> {
-    Output {
-      value: (),
-      rest: "23",
-    }
+  fn create_output() -> Output<()> {
+    create_input().digest(1).unwrap()
   }
 
   #[test]
@@ -95,8 +91,8 @@ mod tests {
         input: &mut create_input(),
         output: create_output(),
       }
-      .digested(),
-      1
+      .rest(),
+      "23"
     );
     assert_eq!(
       AcceptedContext {
@@ -122,10 +118,7 @@ mod tests {
     // ensure the panic when the output is wrong
     AcceptedContext {
       input: &mut create_input(),
-      output: Output {
-        value: (),
-        rest: "4567",
-      },
+      output: Input::new("123456", 1, (), ()).unwrap().digest(6).unwrap(),
     }
     .content();
   }

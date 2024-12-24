@@ -63,7 +63,7 @@ impl<T: Action> Combinator<T> {
   pub fn reject(
     self,
     rejecter: impl for<'text> Fn(
-      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<'text, T::Value>>,
+      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<T::Value>>,
     ) -> bool,
   ) -> C!(@T) {
     wrap(move |input| {
@@ -121,10 +121,11 @@ impl<T: Action> Combinator<T> {
     T::Value: Default,
   {
     wrap(move |input| {
-      Some(self.exec(input).unwrap_or_else(|| Output {
-        value: Default::default(),
-        rest: input.rest(),
-      }))
+      Some(
+        self
+          .exec(input)
+          .unwrap_or_else(|| unsafe { input.digest_unchecked(0).map(|_| Default::default()) }),
+      )
     })
   }
 
@@ -142,8 +143,7 @@ impl<T: Action> Combinator<T> {
   pub fn boundary(self) -> C!(@T) {
     self.reject(|ctx| {
       ctx
-        .output
-        .rest
+        .rest()
         .chars()
         .next()
         .map_or(false, |c| c.is_alphanumeric() || c == '_')
@@ -209,11 +209,10 @@ mod tests {
     assert_eq!(
       accepter()
         .reject(|input| input.content() != "1")
-        .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
-      Some(Output {
-        value: (),
-        rest: "23"
-      })
+        .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+        .unwrap()
+        .digested,
+      1
     );
     assert!(executed);
 
@@ -233,11 +232,10 @@ mod tests {
     assert_eq!(
       accepter()
         .optional()
-        .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
-      Some(Output {
-        value: (),
-        rest: "23"
-      })
+        .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+        .unwrap()
+        .digested,
+      1
     );
     assert!(executed);
 
@@ -245,11 +243,10 @@ mod tests {
     assert_eq!(
       rejecter()
         .optional()
-        .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
-      Some(Output {
-        value: (),
-        rest: "123"
-      })
+        .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+        .unwrap()
+        .digested,
+      0
     );
     assert!(executed);
   }
@@ -260,11 +257,10 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .exec(&mut Input::new("1", 0, &mut executed, &mut ()).unwrap()),
-      Some(Output {
-        value: (),
-        rest: ""
-      })
+        .exec(&mut Input::new("1", 0, &mut executed, &mut ()).unwrap())
+        .unwrap()
+        .digested,
+      1
     );
     assert!(executed);
 

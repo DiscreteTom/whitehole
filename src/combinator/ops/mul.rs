@@ -143,10 +143,9 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     let accepter = || {
       wrap(|input| {
-        Some(Output {
-          value: MyValue(input.start()),
-          rest: &input.rest()[1..],
-        })
+        input
+          .digest(1)
+          .map(|output| output.map(|_| MyValue(input.start())))
       })
     };
 
@@ -161,7 +160,7 @@ mod tests {
       (rejecter() * n).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
-        rest: "123",
+        digested: 0,
       })
     );
 
@@ -171,14 +170,17 @@ mod tests {
       (accepter() * n).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 0,
-        rest: "123",
+        digested: 0,
       })
     );
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * 3).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { value: 3, rest: "" })
+      Some(Output {
+        value: 3,
+        digested: 3
+      })
     );
 
     // overflow, reject
@@ -192,10 +194,9 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     let accepter = || {
       wrap(|input| {
-        Some(Output {
-          value: MyValue(input.start()),
-          rest: &input.rest()[1..],
-        })
+        input
+          .digest(1)
+          .map(|output| output.map(|_| MyValue(input.start())))
       })
     };
 
@@ -209,7 +210,7 @@ mod tests {
       (rejecter() * (0..2)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
-        rest: "123",
+        digested: 0,
       })
     );
 
@@ -218,7 +219,7 @@ mod tests {
       (accepter() * (0..1)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 0,
-        rest: "123",
+        digested: 0,
       })
     );
 
@@ -227,7 +228,7 @@ mod tests {
       (accepter() * (0..3)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 1,
-        rest: "3"
+        digested: 2
       })
     );
 
@@ -242,10 +243,9 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     let accepter = || {
       wrap(|input| {
-        Some(Output {
-          value: MyValue(input.start()),
-          rest: &input.rest()[1..],
-        })
+        input
+          .digest(1)
+          .map(|output| output.map(|_| MyValue(input.start())))
       })
     };
 
@@ -259,14 +259,17 @@ mod tests {
       (rejecter() * (0..)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
-        rest: "123",
+        digested: 0,
       })
     );
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (0..)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { value: 3, rest: "" })
+      Some(Output {
+        value: 3,
+        digested: 3
+      })
     );
 
     // too few, reject
@@ -280,10 +283,9 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     let accepter = || {
       wrap(|input| {
-        Some(Output {
-          value: MyValue(input.start()),
-          rest: &input.rest()[1..],
-        })
+        input
+          .digest(1)
+          .map(|output| output.map(|_| MyValue(input.start())))
       })
     };
 
@@ -292,14 +294,17 @@ mod tests {
       (rejecter() * (..)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
-        rest: "123",
+        digested: 0,
       })
     );
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (..)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { value: 3, rest: "" })
+      Some(Output {
+        value: 3,
+        digested: 3
+      })
     );
   }
 
@@ -308,10 +313,9 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     let accepter = || {
       wrap(|input| {
-        Some(Output {
-          value: MyValue(input.start()),
-          rest: &input.rest()[1..],
-        })
+        input
+          .digest(1)
+          .map(|output| output.map(|_| MyValue(input.start())))
       })
     };
 
@@ -325,7 +329,7 @@ mod tests {
       (rejecter() * (0..=2)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
-        rest: "123",
+        digested: 0,
       })
     );
 
@@ -334,14 +338,17 @@ mod tests {
       (accepter() * (0..=0)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 0,
-        rest: "123",
+        digested: 0,
       })
     );
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (0..=3)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { value: 3, rest: "" })
+      Some(Output {
+        value: 3,
+        digested: 3
+      })
     );
 
     // too few, reject
@@ -355,10 +362,9 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     let accepter = || {
       wrap(|input| {
-        Some(Output {
-          value: MyValue(input.start()),
-          rest: &input.rest()[1..],
-        })
+        input
+          .digest(1)
+          .map(|output| output.map(|_| MyValue(input.start())))
       })
     };
 
@@ -367,7 +373,7 @@ mod tests {
       (rejecter() * (..2)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
-        rest: "123",
+        digested: 0,
       })
     );
 
@@ -376,7 +382,7 @@ mod tests {
       (accepter() * (..1)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 0,
-        rest: "123",
+        digested: 0,
       })
     );
 
@@ -385,7 +391,7 @@ mod tests {
       (accepter() * (..3)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 1,
-        rest: "3"
+        digested: 2
       })
     );
   }
@@ -395,10 +401,9 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     let accepter = || {
       wrap(|input| {
-        Some(Output {
-          value: MyValue(input.start()),
-          rest: &input.rest()[1..],
-        })
+        input
+          .digest(1)
+          .map(|output| output.map(|_| MyValue(input.start())))
       })
     };
 
@@ -407,7 +412,7 @@ mod tests {
       (rejecter() * (..=2)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
-        rest: "123",
+        digested: 0,
       })
     );
 
@@ -416,14 +421,17 @@ mod tests {
       (accepter() * (..=0)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 0,
-        rest: "123",
+        digested: 0,
       })
     );
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (..=3)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
-      Some(Output { value: 3, rest: "" })
+      Some(Output {
+        value: 3,
+        digested: 3
+      })
     );
   }
 }

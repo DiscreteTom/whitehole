@@ -108,18 +108,42 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
 }
 
 impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
-  /// Try to construct a new [`Input`] with the provided `rest`.
+  /// Construct a new [`Input`] by digesting `n` bytes.
   /// The [`start`](Self::start) of the new instance will be auto calculated.
-  ///
-  /// Return [`Some`] if `rest` not empty.
+  /// # Safety
+  /// You should ensure that `n` is a valid UTF-8 boundary
+  /// and smaller than the length of [`Self::rest`].
+  /// This will be checked using [`debug_assert!`].
+  /// For the checked version, see [`Self::reload`].
   #[inline]
-  pub fn reload(&mut self, rest: &'text str) -> Option<Input<'text, &mut State, &mut Heap>> {
-    Input::new(
-      rest,
-      self.rest.len() - rest.len() + self.start,
+  pub unsafe fn reload_unchecked(&mut self, n: usize) -> Input<'text, &mut State, &mut Heap> {
+    debug_assert!(self.rest.is_char_boundary(n));
+    debug_assert!(n < self.rest.len());
+    Input::new_unchecked(
+      self.rest.get_unchecked(n..),
+      self.start.unchecked_add(n),
       &mut *self.state,
       &mut *self.heap,
     )
+  }
+
+  /// Try to construct a new [`Input`] by digesting `n` bytes.
+  /// The [`start`](Self::start) of the new instance will be auto calculated.
+  ///
+  /// Return [`Some`] if `n` is a valid UTF-8 boundary
+  /// and smaller than the length of [`Self::rest`].
+  // TODO: better name
+  #[inline]
+  pub fn reload(&mut self, n: usize) -> Option<Input<'text, &mut State, &mut Heap>> {
+    if n >= self.rest.len() {
+      return None;
+    }
+
+    self
+      .rest
+      .get(n..)
+      .and_then(|_| unsafe { self.reload_unchecked(n) }.into())
+    // TODO: optimize code?
   }
 }
 
@@ -158,8 +182,10 @@ mod tests {
     let mut state = ();
     let mut heap = ();
     let mut input = Input::new("123", 0, &mut state, &mut heap).unwrap();
-    assert_eq!(input.reload("23").unwrap().start(), 1);
-    assert_eq!(input.reload("3").unwrap().start(), 2);
-    assert!(input.reload("").is_none());
+    assert_eq!(input.reload(1).unwrap().start(), 1);
+    assert_eq!(input.reload(2).unwrap().start(), 2);
+    assert!(input.reload(3).is_none());
   }
+
+  // TODO: add tests for reload_unchecked
 }

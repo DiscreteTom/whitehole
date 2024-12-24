@@ -26,7 +26,7 @@ impl<
     Value,
     State,
     Heap,
-    F: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Value>>,
+    F: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<Value>>,
   > Action for Wrap<F, State, Heap>
 {
   type Value = Value;
@@ -37,7 +37,7 @@ impl<
   fn exec<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Value>> {
+  ) -> Option<Output<Self::Value>> {
     (self.inner)(input)
   }
 }
@@ -55,7 +55,7 @@ impl<
 /// ```
 #[inline]
 pub const fn wrap<
-  F: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<'text, Value>>,
+  F: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<Value>>,
   Value,
   State,
   Heap,
@@ -75,7 +75,7 @@ mod tests {
       wrap(|input| input.digest(1)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
-        rest: "23"
+        digested: 1
       })
     );
   }

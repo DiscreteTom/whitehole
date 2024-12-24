@@ -39,13 +39,19 @@ impl<'text> Instant<'text> {
     self.rest
   }
 
-  /// Update with the provided rest.
-  /// [`Self::digested`] will be auto calculated.
+  /// Digest the next `n` bytes.
+  /// [`Self::rest`] will be updated automatically.
+  /// # Safety
+  /// You should ensure that `n` is a valid UTF-8 boundary.
+  /// This will be checked using [`debug_assert!`].
   #[inline]
-  pub fn update(&mut self, rest: &'text str) {
-    self.rest = rest;
-    self.digested = self.text.len() - rest.len();
+  pub unsafe fn digest_unchecked(&mut self, digested: usize) {
+    debug_assert!(self.rest.is_char_boundary(digested));
+    self.digested = digested;
+    self.rest = self.text.get_unchecked(digested..);
   }
+
+  // TODO: add digest
 }
 
 #[cfg(test)]
@@ -61,11 +67,12 @@ mod tests {
   }
 
   #[test]
-  fn instant_update() {
+  fn instant_digest_unchecked() {
     let mut state = Instant::new("123");
-    state.update("3");
+    unsafe { state.digest_unchecked(2) };
     assert_eq!(state.digested(), 2);
     assert_eq!(state.rest(), "3");
     assert_eq!(state.text(), "123");
+    // TODO: more tests
   }
 }

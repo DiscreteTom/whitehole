@@ -37,22 +37,19 @@ impl<
   fn exec<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Value>> {
+  ) -> Option<Output<Self::Value>> {
     let (range, init, folder) = &self.rhs;
     let mut repeated = 0;
-    let mut output = Output {
-      value: init(),
-      rest: input.rest(),
-    };
+    let mut output = unsafe { input.digest_unchecked(0) }.map(|_| init());
 
     while range.validate(repeated) {
       let Some(next_output) = input
-        .reload(output.rest)
+        .reload(output.digested)
         .and_then(|mut input| self.lhs.exec(&mut input))
       else {
         break;
       };
-      output.rest = next_output.rest;
+      output.digested = next_output.digested;
       output.value = folder(next_output.value, output.value);
       repeated += 1;
     }

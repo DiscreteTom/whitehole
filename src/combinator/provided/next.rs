@@ -38,8 +38,8 @@ mod tests {
     assert_eq!(
       next(|c| c.is_ascii_digit())
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("23")
+        .map(|output| output.digested),
+      Some(1)
     );
     // reject
     assert!(next(|c| c.is_ascii_alphabetic())
@@ -53,8 +53,8 @@ mod tests {
     assert_eq!(
       (next(|c| c.is_ascii_digit()) * (1..))
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(3)
     );
     // reject
     assert!(next(|c| c.is_ascii_digit())

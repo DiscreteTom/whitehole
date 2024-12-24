@@ -37,7 +37,7 @@ impl<T: Action> Combinator<T> {
   pub fn then(
     self,
     modifier: impl for<'text> Fn(
-      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<'text, T::Value>>,
+      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<T::Value>>,
     ),
   ) -> C!(@T) {
     wrap(move |input| {
@@ -83,10 +83,7 @@ impl<T: Action> Combinator<T> {
   pub fn finally(
     self,
     modifier: impl for<'text> Fn(
-      AcceptedContext<
-        &mut Input<'text, &mut T::State, &mut T::Heap>,
-        &Option<Output<'text, T::Value>>,
-      >,
+      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Option<Output<T::Value>>>,
     ),
   ) -> C!(@T) {
     wrap(move |input| {

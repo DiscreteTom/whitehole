@@ -3,45 +3,54 @@ use super::Input;
 /// The output of [`Action::exec`](crate::action::Action::exec).
 /// Usually built by [`Input::digest`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Output<'text, Value> {
+pub struct Output<Value> {
   /// The yielded value.
   pub value: Value,
-  /// The rest of the input text.
-  pub rest: &'text str,
+  /// How many bytes are digested by this action.
+  ///
+  /// This is guaranteed to be no greater than the length of [`Input::rest`]
+  /// and is always a valid UTF-8 boundary for the corresponding [`Input`].
+  /// `0` is always a valid value.
+  pub digested: usize,
 }
 
-impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
-  /// Try to build an [`Output`] by digesting `n` bytes.
-  /// Return [`None`] if the [`Output::rest`] can't be built
-  /// as a valid UTF-8 string.
-  #[inline]
-  pub fn digest(&self, n: usize) -> Option<Output<'text, ()>> {
-    self.rest().get(n..).map(|rest| Output { value: (), rest })
-  }
-
+impl<StateRef, HeapRef> Input<'_, StateRef, HeapRef> {
   /// Try to build an [`Output`] by digesting `n` bytes.
   /// # Safety
-  /// You should ensure that [`Output::rest`] can be built
-  /// as a valid UTF-8 string.
+  /// You should ensure that `n` is a valid UTF-8 boundary.
   /// This will be checked using [`debug_assert!`].
   /// For the checked version, see [`Self::digest`].
+  ///
+  /// See [`Output::digested`] for more information.
   #[inline]
-  pub unsafe fn digest_unchecked(&self, n: usize) -> Output<'text, ()> {
-    debug_assert!(self.rest().get(n..).is_some());
+  pub unsafe fn digest_unchecked(&self, n: usize) -> Output<()> {
+    debug_assert!(self.rest().is_char_boundary(n));
     Output {
       value: (),
-      rest: self.rest().get_unchecked(n..),
+      digested: n,
     }
+  }
+
+  /// Try to build an [`Output`] by digesting `n` bytes.
+  /// Return [`Some`] if `n` is a valid UTF-8 boundary.
+  ///
+  /// See [`Output::digested`] for more information.
+  #[inline]
+  pub fn digest(&self, n: usize) -> Option<Output<()>> {
+    self
+      .rest()
+      .is_char_boundary(n)
+      .then(|| unsafe { self.digest_unchecked(n) })
   }
 }
 
-impl<'text, Value> Output<'text, Value> {
+impl<Value> Output<Value> {
   /// Convert [`Self::value`] to a new value.
   #[inline]
-  pub fn map<NewValue>(self, f: impl FnOnce(Value) -> NewValue) -> Output<'text, NewValue> {
+  pub fn map<NewValue>(self, f: impl FnOnce(Value) -> NewValue) -> Output<NewValue> {
     Output {
       value: f(self.value),
-      rest: self.rest,
+      digested: self.digested,
     }
   }
 }
@@ -55,11 +64,19 @@ mod tests {
     let mut state = ();
     let mut heap = ();
     let input = Input::new("123", 0, &mut state, &mut heap).unwrap();
-    assert_eq!(input.digest(3).map(|output| output.rest), Some(""));
-    assert_eq!(input.digest(2).map(|output| output.rest), Some("3"));
-    assert_eq!(input.digest(1).map(|output| output.rest), Some("23"));
-    assert_eq!(input.digest(0).map(|output| output.rest), Some("123"));
+    assert_eq!(input.digest(3).map(|output| output.digested), Some(3));
+    assert_eq!(input.digest(2).map(|output| output.digested), Some(2));
+    assert_eq!(input.digest(1).map(|output| output.digested), Some(1));
+    assert_eq!(input.digest(0).map(|output| output.digested), Some(0));
     assert!(input.digest(4).is_none());
+  }
+
+  #[test]
+  fn input_digest_invalid_code_point() {
+    let mut state = ();
+    let mut heap = ();
+    let input = Input::new("好", 0, &mut state, &mut heap).unwrap();
+    assert!(input.digest(1).is_none());
   }
 
   #[test]
@@ -67,10 +84,10 @@ mod tests {
     let mut state = ();
     let mut heap = ();
     let input = Input::new("123", 0, &mut state, &mut heap).unwrap();
-    assert_eq!(unsafe { input.digest_unchecked(3).rest }, "");
-    assert_eq!(unsafe { input.digest_unchecked(2).rest }, "3");
-    assert_eq!(unsafe { input.digest_unchecked(1).rest }, "23");
-    assert_eq!(unsafe { input.digest_unchecked(0).rest }, "123");
+    assert_eq!(unsafe { input.digest_unchecked(3).digested }, 3);
+    assert_eq!(unsafe { input.digest_unchecked(2).digested }, 2);
+    assert_eq!(unsafe { input.digest_unchecked(1).digested }, 1);
+    assert_eq!(unsafe { input.digest_unchecked(0).digested }, 0);
   }
 
   #[test]
@@ -96,12 +113,12 @@ mod tests {
     assert_eq!(
       Output {
         value: 1,
-        rest: "123",
+        digested: 0,
       }
       .map(|value| value + 1),
       Output {
         value: 2,
-        rest: "123",
+        digested: 0,
       }
     );
   }

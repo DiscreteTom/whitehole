@@ -47,10 +47,7 @@ impl<State, Heap> Action for EatChar<State, Heap> {
   type Heap = Heap;
 
   #[inline]
-  fn exec<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, ()>> {
+  fn exec<'text>(&self, input: &mut Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .rest()
       .starts_with(self.inner)
@@ -64,10 +61,7 @@ impl<State, Heap> Action for EatString<State, Heap> {
   type Heap = Heap;
 
   #[inline]
-  fn exec<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, ()>> {
+  fn exec<'text>(&self, input: &mut Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .rest()
       .starts_with(&self.inner)
@@ -81,10 +75,7 @@ impl<State, Heap> Action for EatUsize<State, Heap> {
   type Heap = Heap;
 
   #[inline]
-  fn exec<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, ()>> {
+  fn exec<'text>(&self, input: &mut Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
     // if eat 1 char, just eat the `input.next` which always exists
     if self.inner == 1 {
       return unsafe { input.digest_unchecked(input.next().len_utf8()) }.into();
@@ -135,10 +126,7 @@ impl<State, Heap> Action for EatStr<'_, State, Heap> {
   type Heap = Heap;
 
   #[inline]
-  fn exec<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, ()>> {
+  fn exec<'text>(&self, input: &mut Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .rest()
       .starts_with(self.s)
@@ -267,35 +255,35 @@ mod tests {
     assert_eq!(
       eat(3)
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(3)
     );
     // normal str
     assert_eq!(
       eat("123")
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(3)
     );
     // normal String
     assert_eq!(
       eat("123".to_string())
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(3)
     );
     // normal char
     assert_eq!(
       eat(';')
         .exec(&mut Input::new(";", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(3)
     );
     // overflow
     assert_eq!(
       eat(3)
         .exec(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
+        .map(|output| output.digested),
       None
     );
     // reject
@@ -309,28 +297,28 @@ mod tests {
     assert_eq!(
       eat(0)
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("123")
+        .map(|output| output.digested),
+      Some(0)
     );
     // empty string is allowed and always accept
     assert_eq!(
       eat("")
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("123")
+        .map(|output| output.digested),
+      Some(0)
     );
     // eat by chars not bytes
     assert_eq!(
       eat(1)
         .exec(&mut Input::new("好", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(3)
     );
     assert_eq!(
       eat(2)
         .exec(&mut Input::new("好好", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(3)
     );
   }
 
@@ -340,15 +328,15 @@ mod tests {
     assert_eq!(
       unsafe { eat_unchecked(3) }
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(3)
     );
     // 0
     assert_eq!(
       unsafe { eat_unchecked(0) }
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("123")
+        .map(|output| output.digested),
+      Some(0)
     );
   }
 
@@ -370,28 +358,28 @@ mod tests {
     assert_eq!(
       eater(|input| input.rest().len())
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(3)
     );
     // overflow
     assert_eq!(
       eater(|input| input.rest().len() + 1)
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
+        .map(|output| output.digested),
       None
     );
     // invalid code point
     assert_eq!(
       eater(|_| 1)
         .exec(&mut Input::new("好", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
+        .map(|output| output.digested),
       None
     );
     // 0
     assert_eq!(
       eater(|_| 0)
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
+        .map(|output| output.digested),
       None
     );
   }
@@ -402,14 +390,14 @@ mod tests {
     assert_eq!(
       unsafe { eater_unchecked(|input| input.rest().len()) }
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(3)
     );
     // 0
     assert_eq!(
       unsafe { eater_unchecked(|_| 0) }
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
+        .map(|output| output.digested),
       None
     );
   }

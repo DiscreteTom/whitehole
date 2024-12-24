@@ -86,15 +86,12 @@ impl<Lhs: Action<Value: Concat<Rhs::Value>>, Rhs: Action<State = Lhs::State, Hea
   fn exec<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Value>> {
+  ) -> Option<Output<Self::Value>> {
     self.lhs.exec(input).and_then(|output| {
       input
-        .reload(output.rest)
+        .reload(output.digested)
         .and_then(|mut input| self.rhs.exec(&mut input))
-        .map(|rhs_output| Output {
-          value: output.value.concat(rhs_output.value),
-          rest: rhs_output.rest,
-        })
+        .map(|rhs_output| rhs_output.map(|rhs_value| output.value.concat(rhs_value)))
     })
   }
 }
@@ -178,21 +175,21 @@ mod tests {
       (accepter_unit() + accepter_int()).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (123,),
-        rest: "3",
+        digested: 2,
       })
     );
     assert_eq!(
       (accepter_int() + accepter_unit()).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (123,),
-        rest: "3",
+        digested: 2,
       })
     );
     assert_eq!(
       (accepter_int() + accepter_int()).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (123, 123),
-        rest: "3",
+        digested: 2,
       })
     );
   }
@@ -204,8 +201,8 @@ mod tests {
     assert_eq!(
       (eat1() + '2')
         .exec(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(2)
     );
   }
 
@@ -216,8 +213,8 @@ mod tests {
     assert_eq!(
       (eat1() + "23".to_string())
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(3)
     );
   }
 
@@ -228,8 +225,8 @@ mod tests {
     assert_eq!(
       (eat1() + "23")
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(3)
     );
   }
 
@@ -241,22 +238,22 @@ mod tests {
     assert_eq!(
       (eat1() + 2)
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(3)
     );
     // overflow
     assert_eq!(
       (eat1() + 3)
         .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
+        .map(|output| output.digested),
       None
     );
     // 0
     assert_eq!(
       (eat1() + 0)
         .exec(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("2")
+        .map(|output| output.digested),
+      Some(1)
     );
   }
 }

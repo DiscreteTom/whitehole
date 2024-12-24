@@ -145,7 +145,7 @@ impl<'text, T: Action> Parser<'text, T> {
         &mut self.state,
         &mut self.heap,
       )?)
-      .inspect(|output| self.instant.update(output.rest))
+      .inspect(|output| unsafe { self.instant.digest_unchecked(output.digested) })
   }
 
   /// Try to yield the next [`Output`] without updating [`Self::instant`] and [`Self::state`].

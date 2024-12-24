@@ -30,5 +30,5 @@ pub trait Action {
   fn exec<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Value>>;
+  ) -> Option<Output<Self::Value>>;
 }

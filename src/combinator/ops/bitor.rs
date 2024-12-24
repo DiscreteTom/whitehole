@@ -59,7 +59,7 @@ impl<Lhs: Action, Rhs: Action<Value = Lhs::Value, State = Lhs::State, Heap = Lhs
   fn exec<'text>(
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<'text, Self::Value>> {
+  ) -> Option<Output<Self::Value>> {
     self.lhs.exec(input).or_else(|| self.rhs.exec(input))
   }
 }
@@ -143,7 +143,7 @@ mod tests {
       (rejecter() | accepter()).exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
       Some(Output {
         value: (),
-        rest: "23",
+        digested: 1,
       })
     );
     assert_eq!(state, 2);
@@ -155,7 +155,7 @@ mod tests {
       (accepter() | rejecter()).exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
       Some(Output {
         value: (),
-        rest: "23",
+        digested: 1,
       })
     );
     assert_eq!(state, 1);
@@ -167,8 +167,8 @@ mod tests {
     assert_eq!(
       (rejecter() | '1')
         .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(1)
     );
   }
 
@@ -178,8 +178,8 @@ mod tests {
     assert_eq!(
       (rejecter() | 1)
         .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(1)
     );
   }
 
@@ -189,8 +189,8 @@ mod tests {
     assert_eq!(
       (rejecter() | "1")
         .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(1)
     );
   }
 
@@ -200,8 +200,8 @@ mod tests {
     assert_eq!(
       (rejecter() | "1".to_string())
         .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
-        .map(|output| output.rest),
-      Some("")
+        .map(|output| output.digested),
+      Some(1)
     );
   }
 }
