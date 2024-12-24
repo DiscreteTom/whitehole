@@ -24,11 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Rename `Node` to `WithRange`, rename its field `kind` to `data`.
 - Rename `Parse` to `Action`, rename its method `parse` to `exec`.
+- Mark `Action` unsafe.
 - Rewrite `Output`, remove it's lifetime param.
 - Make generic param `State` and `Heap` of the `Parse` trait become associated type.
 - Rename `Action::Kind` to `Action::Value`, rename `Output::kind` to `Output::value`.
 - Rename `Combinator!` to `C!`.
 - Rename `Combinator::rollback` to `Combinator::catch`.
+- Mark `wrap` unsafe.
 - `EatUsize` will eat by chars instead of bytes.
 - Rewrite `Till` trait to make it safe.
 - Combinator repetition with `Fold` will be implemented by using inline fold.

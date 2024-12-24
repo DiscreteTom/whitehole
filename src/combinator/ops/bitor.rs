@@ -48,8 +48,8 @@ impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
   }
 }
 
-impl<Lhs: Action, Rhs: Action<Value = Lhs::Value, State = Lhs::State, Heap = Lhs::Heap>> Action
-  for BitOr<Lhs, Rhs>
+unsafe impl<Lhs: Action, Rhs: Action<Value = Lhs::Value, State = Lhs::State, Heap = Lhs::Heap>>
+  Action for BitOr<Lhs, Rhs>
 {
   type Value = Lhs::Value;
   type State = Lhs::State;
@@ -125,13 +125,13 @@ mod tests {
   fn combinator_bit_or() {
     let mut state = 0;
 
-    let rejecter = || {
+    let rejecter = || unsafe {
       wrap(|input| {
         *input.state += 1;
         None
       })
     };
-    let accepter = || {
+    let accepter = || unsafe {
       wrap(|input| {
         *input.state += 1;
         input.digest(1)
@@ -163,7 +163,7 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_char() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | '1')
         .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
@@ -174,7 +174,7 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_usize() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | 1)
         .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
@@ -185,7 +185,7 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_str() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | "1")
         .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
@@ -196,7 +196,7 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_string() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | "1".to_string())
         .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())

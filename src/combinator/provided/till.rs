@@ -72,7 +72,7 @@ impl<State, Heap> Till<State, Heap> for () {
 /// ```
 #[inline]
 pub const fn till<State, Heap>(pattern: impl Till<State, Heap>) -> C!((), State, Heap) {
-  wrap(move |input| pattern.exec(input))
+  unsafe { wrap(move |input| pattern.exec(input)) }
 }
 
 #[cfg(test)]

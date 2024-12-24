@@ -18,7 +18,7 @@ impl<T: Action> Combinator<T> {
   /// ```
   #[inline]
   pub fn map<NewValue>(self, mapper: impl Fn(T::Value) -> NewValue) -> C!(NewValue, @T) {
-    wrap(move |input| self.exec(input).map(|output| output.map(&mapper)))
+    unsafe { wrap(move |input| self.exec(input).map(|output| output.map(&mapper))) }
   }
 
   /// Create a new combinator to wrap [`Output::value`] in an one-element tuple.
@@ -92,13 +92,15 @@ impl<T: Action> Combinator<T> {
       AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, Output<T::Value>>,
     ) -> NewValue,
   ) -> C!(NewValue, @T) {
-    wrap(move |input| {
-      self.exec(input).map(|output| {
-        // SAFETY: `output.digested` is guaranteed to be valid
-        unsafe { input.digest_unchecked(output.digested) }
-          .map(|_| selector(AcceptedContext { input, output }))
+    unsafe {
+      wrap(move |input| {
+        self.exec(input).map(|output| {
+          input
+            .digest_unchecked(output.digested)
+            .map(|_| selector(AcceptedContext { input, output }))
+        })
       })
-    })
+    }
   }
 
   /// Create a new combinator to wrap [`Output::value`] in [`WithRange`]
@@ -111,15 +113,17 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   #[inline]
   pub fn range(self) -> C!(WithRange<T::Value>, @T) {
-    wrap(move |input| {
-      self.exec(input).map(|output| {
-        let digested = output.digested;
-        output.map(|value| WithRange {
-          data: value,
-          range: input.start()..(input.start() + digested),
+    unsafe {
+      wrap(move |input| {
+        self.exec(input).map(|output| {
+          let digested = output.digested;
+          output.map(|value| WithRange {
+            data: value,
+            range: input.start()..(input.start() + digested),
+          })
         })
       })
-    })
+    }
   }
 }
 
@@ -130,7 +134,7 @@ mod tests {
   #[test]
   fn combinator_map() {
     assert_eq!(
-      wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
+      unsafe { wrap(|input| input.digest(1).map(|output| output.map(|_| 1))) }
         .map(Some)
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
@@ -143,7 +147,7 @@ mod tests {
   #[test]
   fn combinator_bind() {
     assert_eq!(
-      wrap(|input| input.digest(1))
+      unsafe { wrap(|input| input.digest(1)) }
         .bind(123)
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
@@ -156,7 +160,7 @@ mod tests {
   #[test]
   fn combinator_bind_default() {
     assert_eq!(
-      wrap(|input| input.digest(1))
+      unsafe { wrap(|input| input.digest(1)) }
         .bind_default::<i32>()
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
@@ -169,7 +173,7 @@ mod tests {
   #[test]
   fn combinator_select() {
     assert_eq!(
-      wrap(|input| input.digest(1))
+      unsafe { wrap(|input| input.digest(1)) }
         .select(|ctx| if ctx.content() == "1" { 1 } else { 2 })
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
@@ -182,7 +186,7 @@ mod tests {
   #[test]
   fn combinator_range() {
     assert_eq!(
-      wrap(|input| input.digest(1))
+      unsafe { wrap(|input| input.digest(1)) }
         .range()
         .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {

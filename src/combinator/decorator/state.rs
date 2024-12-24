@@ -17,10 +17,12 @@ impl<T: Action> Combinator<T> {
   /// ```
   #[inline]
   pub fn prepare(self, modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
-    wrap(move |input| {
-      modifier(input);
-      self.exec(input)
-    })
+    unsafe {
+      wrap(move |input| {
+        modifier(input);
+        self.exec(input)
+      })
+    }
   }
 
   /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
@@ -40,11 +42,13 @@ impl<T: Action> Combinator<T> {
       AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<T::Value>>,
     ),
   ) -> C!(@T) {
-    wrap(move |input| {
-      self.exec(input).inspect(|output| {
-        modifier(AcceptedContext { input, output });
+    unsafe {
+      wrap(move |input| {
+        self.exec(input).inspect(|output| {
+          modifier(AcceptedContext { input, output });
+        })
       })
-    })
+    }
   }
 
   /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
@@ -59,13 +63,15 @@ impl<T: Action> Combinator<T> {
   /// ```
   #[inline]
   pub fn catch(self, modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
-    wrap(move |input| {
-      let output = self.exec(input);
-      if output.is_none() {
-        modifier(input);
-      }
-      output
-    })
+    unsafe {
+      wrap(move |input| {
+        let output = self.exec(input);
+        if output.is_none() {
+          modifier(input);
+        }
+        output
+      })
+    }
   }
 
   /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
@@ -86,14 +92,16 @@ impl<T: Action> Combinator<T> {
       AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Option<Output<T::Value>>>,
     ),
   ) -> C!(@T) {
-    wrap(move |input| {
-      let output = self.exec(input);
-      modifier(AcceptedContext {
-        input,
-        output: &output,
-      });
-      output
-    })
+    unsafe {
+      wrap(move |input| {
+        let output = self.exec(input);
+        modifier(AcceptedContext {
+          input,
+          output: &output,
+        });
+        output
+      })
+    }
   }
 }
 
@@ -108,17 +116,21 @@ mod tests {
   }
 
   fn accepter() -> C!((), State) {
-    wrap(|input: &mut Input<&mut State, &mut ()>| {
-      input.state.to = input.state.from;
-      input.digest(1)
-    })
+    unsafe {
+      wrap(|input: &mut Input<&mut State, &mut ()>| {
+        input.state.to = input.state.from;
+        input.digest(1)
+      })
+    }
   }
 
   fn rejecter() -> C!((), State) {
-    wrap(|input: &mut Input<&mut State, &mut ()>| {
-      input.state.to = input.state.from;
-      None
-    })
+    unsafe {
+      wrap(|input: &mut Input<&mut State, &mut ()>| {
+        input.state.to = input.state.from;
+        None
+      })
+    }
   }
 
   #[test]

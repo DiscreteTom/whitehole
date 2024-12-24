@@ -21,13 +21,15 @@ impl<T: Action> Combinator<T> {
   /// ```
   #[inline]
   pub fn when(self, condition: impl Fn(&mut Input<&mut T::State, &mut T::Heap>) -> bool) -> C!(@T) {
-    wrap(move |input| {
-      if condition(input) {
-        self.exec(input)
-      } else {
-        None
-      }
-    })
+    unsafe {
+      wrap(move |input| {
+        if condition(input) {
+          self.exec(input)
+        } else {
+          None
+        }
+      })
+    }
   }
 
   /// Create a new combinator to check the [`Input`] before being executed.
@@ -66,18 +68,20 @@ impl<T: Action> Combinator<T> {
       AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<T::Value>>,
     ) -> bool,
   ) -> C!(@T) {
-    wrap(move |input| {
-      self.exec(input).and_then(|output| {
-        if rejecter(AcceptedContext {
-          input,
-          output: &output,
-        }) {
-          None
-        } else {
-          output.into()
-        }
+    unsafe {
+      wrap(move |input| {
+        self.exec(input).and_then(|output| {
+          if rejecter(AcceptedContext {
+            input,
+            output: &output,
+          }) {
+            None
+          } else {
+            output.into()
+          }
+        })
       })
-    })
+    }
   }
 
   /// Make the combinator optional.
@@ -120,13 +124,15 @@ impl<T: Action> Combinator<T> {
   where
     T::Value: Default,
   {
-    wrap(move |input| {
-      Some(
-        self
-          .exec(input)
-          .unwrap_or_else(|| unsafe { input.digest_unchecked(0).map(|_| Default::default()) }),
-      )
-    })
+    unsafe {
+      wrap(move |input| {
+        Some(
+          self
+            .exec(input)
+            .unwrap_or_else(|| input.digest_unchecked(0).map(|_| Default::default())),
+        )
+      })
+    }
   }
 
   /// Create a new combinator to reject after execution
@@ -156,17 +162,21 @@ mod tests {
   use super::*;
 
   fn accepter() -> C!((), bool) {
-    wrap(|input| {
-      *input.state = true;
-      input.digest(1)
-    })
+    unsafe {
+      wrap(|input| {
+        *input.state = true;
+        input.digest(1)
+      })
+    }
   }
 
   fn rejecter() -> C!((), bool) {
-    wrap(|input| {
-      *input.state = true;
-      None
-    })
+    unsafe {
+      wrap(|input| {
+        *input.state = true;
+        None
+      })
+    }
   }
 
   #[test]

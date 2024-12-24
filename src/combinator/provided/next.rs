@@ -18,13 +18,15 @@ use crate::{combinator::wrap, C};
 /// ```
 #[inline]
 pub const fn next<State, Heap>(condition: impl Fn(char) -> bool) -> C!((), State, Heap) {
-  wrap(move |input| {
-    let next = input.next();
-    if !condition(next) {
-      return None;
-    }
-    Some(unsafe { input.digest_unchecked(next.len_utf8()) })
-  })
+  unsafe {
+    wrap(move |input| {
+      let next = input.next();
+      if !condition(next) {
+        return None;
+      }
+      Some(input.digest_unchecked(next.len_utf8()))
+    })
+  }
 }
 
 #[cfg(test)]

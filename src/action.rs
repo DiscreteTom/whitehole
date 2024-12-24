@@ -16,7 +16,9 @@ pub use output::*;
 
 /// The basic building block of a parser.
 /// See the [module level documentation](crate::action) for more information.
-pub trait Action {
+/// # Safety
+/// The [`Output`] of [`Action::exec`] should satisfy the requirement of [`Output::digested`].
+pub unsafe trait Action {
   /// See [`Output::value`].
   type Value;
   /// See [`Input::state`].

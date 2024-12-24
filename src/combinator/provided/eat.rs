@@ -41,7 +41,7 @@ impl_eat!(EatChar, char, (Copy));
 impl_eat!(EatString, String, ());
 impl_eat!(EatUsize, usize, (Copy));
 
-impl<State, Heap> Action for EatChar<State, Heap> {
+unsafe impl<State, Heap> Action for EatChar<State, Heap> {
   type Value = ();
   type State = State;
   type Heap = Heap;
@@ -55,7 +55,7 @@ impl<State, Heap> Action for EatChar<State, Heap> {
   }
 }
 
-impl<State, Heap> Action for EatString<State, Heap> {
+unsafe impl<State, Heap> Action for EatString<State, Heap> {
   type Value = ();
   type State = State;
   type Heap = Heap;
@@ -69,7 +69,7 @@ impl<State, Heap> Action for EatString<State, Heap> {
   }
 }
 
-impl<State, Heap> Action for EatUsize<State, Heap> {
+unsafe impl<State, Heap> Action for EatUsize<State, Heap> {
   type Value = ();
   type State = State;
   type Heap = Heap;
@@ -120,7 +120,7 @@ impl<'a, State, Heap> EatStr<'a, State, Heap> {
   }
 }
 
-impl<State, Heap> Action for EatStr<'_, State, Heap> {
+unsafe impl<State, Heap> Action for EatStr<'_, State, Heap> {
   type Value = ();
   type State = State;
   type Heap = Heap;
@@ -211,10 +211,12 @@ pub unsafe fn eat_unchecked<State, Heap>(n: usize) -> C!((), State, Heap) {
 pub fn eater<State, Heap>(
   f: impl Fn(&mut Input<&mut State, &mut Heap>) -> usize,
 ) -> C!((), State, Heap) {
-  wrap(move |input| match f(input) {
-    0 => None,
-    digested => input.digest(digested),
-  })
+  unsafe {
+    wrap(move |input| match f(input) {
+      0 => None,
+      digested => input.digest(digested),
+    })
+  }
 }
 
 /// Returns a combinator by the provided function that

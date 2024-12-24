@@ -75,7 +75,7 @@ impl<Lhs, Rhs> Add<Lhs, Rhs> {
   }
 }
 
-impl<Lhs: Action<Value: Concat<Rhs::Value>>, Rhs: Action<State = Lhs::State, Heap = Lhs::Heap>>
+unsafe impl<Lhs: Action<Value: Concat<Rhs::Value>>, Rhs: Action<State = Lhs::State, Heap = Lhs::Heap>>
   Action for Add<Lhs, Rhs>
 {
   type Value = <Lhs::Value as Concat<Rhs::Value>>::Output;
@@ -155,9 +155,10 @@ mod tests {
 
   #[test]
   fn combinator_add() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter_unit = || wrap(|input| input.digest(1));
-    let accepter_int = || wrap(|input| input.digest(1).map(|output| output.map(|_| (123,))));
+    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let accepter_unit = || unsafe { wrap(|input| input.digest(1)) };
+    let accepter_int =
+      || unsafe { wrap(|input| input.digest(1).map(|output| output.map(|_| (123,)))) };
 
     // reject then accept, should return None
     assert!((rejecter() + accepter_unit())
@@ -196,7 +197,7 @@ mod tests {
 
   #[test]
   fn combinator_add_char() {
-    let eat1 = || wrap(|input| input.digest(1));
+    let eat1 = || unsafe { wrap(|input| input.digest(1)) };
 
     assert_eq!(
       (eat1() + '2')
@@ -208,7 +209,7 @@ mod tests {
 
   #[test]
   fn combinator_add_string() {
-    let eat1 = || wrap(|input| input.digest(1));
+    let eat1 = || unsafe { wrap(|input| input.digest(1)) };
 
     assert_eq!(
       (eat1() + "23".to_string())
@@ -220,7 +221,7 @@ mod tests {
 
   #[test]
   fn combinator_add_str() {
-    let eat1 = || wrap(|input| input.digest(1));
+    let eat1 = || unsafe { wrap(|input| input.digest(1)) };
 
     assert_eq!(
       (eat1() + "23")
@@ -232,7 +233,7 @@ mod tests {
 
   #[test]
   fn combinator_add_usize() {
-    let eat1 = || wrap(|input| input.digest(1));
+    let eat1 = || unsafe { wrap(|input| input.digest(1)) };
 
     // normal
     assert_eq!(

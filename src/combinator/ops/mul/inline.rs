@@ -21,7 +21,7 @@ impl<
   }
 }
 
-impl<
+unsafe impl<
     Lhs: Action,
     Acc,
     Repeater: Repeat,

@@ -22,7 +22,7 @@ impl<T, State, Heap> Wrap<T, State, Heap> {
   }
 }
 
-impl<
+unsafe impl<
     Value,
     State,
     Heap,
@@ -38,11 +38,20 @@ impl<
     &self,
     input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    (self.inner)(input)
+    let output = (self.inner)(input);
+    debug_assert!(output
+      .as_ref()
+      .map(|output| output.digested <= input.rest().len()
+        && input.rest().is_char_boundary(output.digested))
+      .unwrap_or(true));
+    output
   }
 }
 
 /// Wrap a closure to create a [`Combinator`].
+/// # Safety
+/// The returned [`Output`] should satisfy the requirement of [`Output::digested`].
+/// This will be checked using [`debug_assert!`].
 /// # Examples
 /// ```
 /// # use whitehole::C;
@@ -54,7 +63,7 @@ impl<
 /// # }
 /// ```
 #[inline]
-pub const fn wrap<
+pub const unsafe fn wrap<
   F: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<Value>>,
   Value,
   State,
@@ -72,7 +81,8 @@ mod tests {
   #[test]
   fn combinator_wrap() {
     assert_eq!(
-      wrap(|input| input.digest(1)).exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      unsafe { wrap(|input| input.digest(1)) }
+        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         digested: 1

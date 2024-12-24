@@ -212,7 +212,7 @@ impl<T> Combinator<T> {
   }
 }
 
-impl<T: Action> Action for Combinator<T> {
+unsafe impl<T: Action> Action for Combinator<T> {
   type Value = T::Value;
   type State = T::State;
   type Heap = T::Heap;

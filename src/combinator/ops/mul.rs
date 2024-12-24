@@ -140,8 +140,8 @@ mod tests {
 
   #[test]
   fn combinator_mul_usize() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter = || {
+    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let accepter = || unsafe {
       wrap(|input| {
         input
           .digest(1)
@@ -191,8 +191,8 @@ mod tests {
 
   #[test]
   fn combinator_mul_range() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter = || {
+    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let accepter = || unsafe {
       wrap(|input| {
         input
           .digest(1)
@@ -240,8 +240,8 @@ mod tests {
 
   #[test]
   fn combinator_mul_range_from() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter = || {
+    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let accepter = || unsafe {
       wrap(|input| {
         input
           .digest(1)
@@ -280,8 +280,8 @@ mod tests {
 
   #[test]
   fn combinator_mul_range_full() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter = || {
+    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let accepter = || unsafe {
       wrap(|input| {
         input
           .digest(1)
@@ -310,8 +310,8 @@ mod tests {
 
   #[test]
   fn combinator_mul_range_inclusive() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter = || {
+    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let accepter = || unsafe {
       wrap(|input| {
         input
           .digest(1)
@@ -359,8 +359,8 @@ mod tests {
 
   #[test]
   fn combinator_mul_range_to() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter = || {
+    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let accepter = || unsafe {
       wrap(|input| {
         input
           .digest(1)
@@ -398,8 +398,8 @@ mod tests {
 
   #[test]
   fn combinator_mul_range_to_inclusive() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter = || {
+    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let accepter = || unsafe {
       wrap(|input| {
         input
           .digest(1)
