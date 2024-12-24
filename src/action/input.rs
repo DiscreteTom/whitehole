@@ -69,6 +69,7 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
 
   /// The index of the whole input text, in bytes.
   ///
+  /// This is cheap to call because the value is stored in this struct.
   /// This will never be mutated after the creation of this instance.
   #[inline]
   pub const fn start(&self) -> usize {
@@ -77,6 +78,9 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
 
   /// The undigested part of the input text.
   /// This is guaranteed to be non-empty.
+  ///
+  /// This is cheap to call because the value is stored in this struct.
+  /// This will never be mutated after the creation of this instance.
   ///
   /// If you just want to get the next char, use [`Self::next`] instead.
   #[inline]
@@ -90,6 +94,10 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   /// the next char is guaranteed to be available.
   ///
   /// This is faster than `self.rest().chars().next().unwrap()`.
+  ///
+  /// This value is not stored in this struct
+  /// because the value is not always needed.
+  /// You can cache the return value as needed.
   #[inline]
   pub fn next(&self) -> char {
     // SAFETY: `self.rest()` is guaranteed to be not empty.
