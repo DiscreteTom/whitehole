@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `wrap_unchecked`.
 - Expose `Add::lhs`, `Add::rhs`, `BitOr::lhs` and `BitOr::rhs`.
 - Implement `Into<Combinator>` for `char`, `&str`, `String`, `usize`.
-- Add `Instant::digest_unchecked`.
+- Add `Instant::digest_unchecked`.and `Instant::digest`.
 
 ### Changed
 

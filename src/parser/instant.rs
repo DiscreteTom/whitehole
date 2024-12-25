@@ -52,13 +52,23 @@ impl<'text> Instant<'text> {
   /// You should ensure that `n` is a valid UTF-8 boundary.
   /// This will be checked using [`debug_assert!`].
   #[inline]
-  pub unsafe fn digest_unchecked(&mut self, digested: usize) {
-    debug_assert!(self.rest.is_char_boundary(digested));
-    self.digested = digested;
-    self.rest = self.text.get_unchecked(digested..);
+  pub unsafe fn digest_unchecked(&mut self, n: usize) {
+    debug_assert!(self.rest.is_char_boundary(n));
+    self.rest = self.rest.get_unchecked(n..);
+    self.digested = self.digested.unchecked_add(n);
   }
 
-  // TODO: add digest
+  /// Digest the next `n` bytes.
+  /// [`Self::rest`] will be updated automatically.
+  /// # Panics
+  /// You should ensure that `n` is a valid UTF-8 boundary,
+  /// otherwise this will panic.
+  #[inline]
+  pub fn digest(&mut self, n: usize) {
+    self.rest = self.rest.get(n..).unwrap();
+    // SAFETY: since the new `self.rest` is a valid `&str`, the new digested is always a valid `usize`.
+    self.digested = unsafe { self.digested.unchecked_add(n) };
+  }
 }
 
 #[cfg(test)]
@@ -76,10 +86,29 @@ mod tests {
   #[test]
   fn instant_digest_unchecked() {
     let mut state = Instant::new("123");
-    unsafe { state.digest_unchecked(2) };
+    unsafe { state.digest_unchecked(1) };
+    assert_eq!(state.digested(), 1);
+    assert_eq!(state.rest(), "23");
+    assert_eq!(state.text(), "123");
+    unsafe { state.digest_unchecked(1) };
     assert_eq!(state.digested(), 2);
     assert_eq!(state.rest(), "3");
     assert_eq!(state.text(), "123");
-    // TODO: more tests
   }
+
+  #[test]
+  #[should_panic]
+  fn instant_digest_unchecked_overflow() {
+    let mut state = Instant::new("123");
+    unsafe { state.digest_unchecked(4) };
+  }
+
+  #[test]
+  #[should_panic]
+  fn instant_digest_unchecked_invalid_code_point() {
+    let mut state = Instant::new("好");
+    unsafe { state.digest_unchecked(1) };
+  }
+
+  // TODO: add tests for digested
 }
