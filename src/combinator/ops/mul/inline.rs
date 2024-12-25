@@ -52,7 +52,7 @@ unsafe impl<
       else {
         break;
       };
-      output.digested = next_output.digested;
+      output.digested += next_output.digested; // TODO: use unsafe?
       output.value = folder(next_output.value, output.value);
       repeated += 1;
     }

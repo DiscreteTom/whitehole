@@ -91,7 +91,10 @@ unsafe impl<Lhs: Action<Value: Concat<Rhs::Value>>, Rhs: Action<State = Lhs::Sta
       input
         .reload(output.digested)
         .and_then(|input| self.rhs.exec(input))
-        .map(|rhs_output| rhs_output.map(|rhs_value| output.value.concat(rhs_value)))
+        .map(|rhs_output| Output {
+          value: output.value.concat(rhs_output.value),
+          digested: output.digested + rhs_output.digested, // TODO: use unsafe?
+        })
     })
   }
 }
