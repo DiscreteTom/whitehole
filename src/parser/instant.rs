@@ -38,7 +38,7 @@ impl<'text> Instant<'text> {
   pub const fn digested(&self) -> usize {
     self.digested
   }
-  /// The undigested text.
+  /// The undigested text. This might be an empty string.
   ///
   /// This is cheap to call because the value is stored in this struct.
   #[inline]
