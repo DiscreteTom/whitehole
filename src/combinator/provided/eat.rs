@@ -279,7 +279,7 @@ mod tests {
       eat(';')
         .exec(Input::new(";", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
-      Some(3)
+      Some(1)
     );
     // overflow
     assert_eq!(
@@ -320,7 +320,7 @@ mod tests {
       eat(2)
         .exec(Input::new("好好", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
-      Some(3)
+      Some(6)
     );
   }
 
