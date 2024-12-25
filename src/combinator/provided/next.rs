@@ -1,4 +1,4 @@
-use crate::{combinator::wrap, C};
+use crate::{combinator::wrap_unchecked, C};
 
 /// Returns a combinator to match
 /// [`Input::next`](crate::action::Input::next) by the condition.
@@ -19,7 +19,7 @@ use crate::{combinator::wrap, C};
 #[inline]
 pub const fn next<State, Heap>(condition: impl Fn(char) -> bool) -> C!((), State, Heap) {
   unsafe {
-    wrap(move |input| {
+    wrap_unchecked(move |input| {
       let next = input.next();
       if !condition(next) {
         return None;

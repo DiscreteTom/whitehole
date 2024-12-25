@@ -154,14 +154,14 @@ impl<'a, Lhs: Action<Value: Concat<()>>> ops::Add<&'a str> for Combinator<Lhs> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::combinator::{wrap, Input};
+  use crate::combinator::{wrap_unchecked, Input};
 
   #[test]
   fn combinator_add() {
-    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
-    let accepter_unit = || unsafe { wrap(|input| input.digest(1)) };
+    let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
+    let accepter_unit = || unsafe { wrap_unchecked(|input| input.digest(1)) };
     let accepter_int =
-      || unsafe { wrap(|input| input.digest(1).map(|output| output.map(|_| (123,)))) };
+      || unsafe { wrap_unchecked(|input| input.digest(1).map(|output| output.map(|_| (123,)))) };
 
     // reject then accept, should return None
     assert!((rejecter() + accepter_unit())
@@ -200,7 +200,7 @@ mod tests {
 
   #[test]
   fn combinator_add_char() {
-    let eat1 = || unsafe { wrap(|input| input.digest(1)) };
+    let eat1 = || unsafe { wrap_unchecked(|input| input.digest(1)) };
 
     assert_eq!(
       (eat1() + '2')
@@ -212,7 +212,7 @@ mod tests {
 
   #[test]
   fn combinator_add_string() {
-    let eat1 = || unsafe { wrap(|input| input.digest(1)) };
+    let eat1 = || unsafe { wrap_unchecked(|input| input.digest(1)) };
 
     assert_eq!(
       (eat1() + "23".to_string())
@@ -224,7 +224,7 @@ mod tests {
 
   #[test]
   fn combinator_add_str() {
-    let eat1 = || unsafe { wrap(|input| input.digest(1)) };
+    let eat1 = || unsafe { wrap_unchecked(|input| input.digest(1)) };
 
     assert_eq!(
       (eat1() + "23")
@@ -236,7 +236,7 @@ mod tests {
 
   #[test]
   fn combinator_add_usize() {
-    let eat1 = || unsafe { wrap(|input| input.digest(1)) };
+    let eat1 = || unsafe { wrap_unchecked(|input| input.digest(1)) };
 
     // normal
     assert_eq!(

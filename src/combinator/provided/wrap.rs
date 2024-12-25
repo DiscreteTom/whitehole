@@ -5,14 +5,14 @@ use crate::{
 };
 use std::marker::PhantomData;
 
-/// See [`wrap`].
+/// See [`wrap_unchecked`] and [`wrap`].
 #[derive(Debug, Clone, Copy)]
-struct Wrap<F, State = (), Heap = ()> {
+struct WrapUnchecked<F, State = (), Heap = ()> {
   inner: F,
   _phantom: PhantomData<(State, Heap)>,
 }
 
-impl<T, State, Heap> Wrap<T, State, Heap> {
+impl<T, State, Heap> WrapUnchecked<T, State, Heap> {
   #[inline]
   const fn new(inner: T) -> Self {
     Self {
@@ -27,7 +27,7 @@ unsafe impl<
     State,
     Heap,
     F: for<'text> Fn(Input<'text, &mut State, &mut Heap>) -> Option<Output<Value>>,
-  > Action for Wrap<F, State, Heap>
+  > Action for WrapUnchecked<F, State, Heap>
 {
   type Value = Value;
   type State = State;
@@ -38,12 +38,12 @@ unsafe impl<
     &self,
     input: Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    let rest = input.rest();
+    let input_rest = input.rest();
     let output = (self.inner)(input);
     debug_assert!(output
       .as_ref()
-      .map(|output| output.digested <= rest.len() && rest.is_char_boundary(output.digested))
-      .unwrap_or(true));
+      .map_or(true, |output| output.digested <= input_rest.len()
+        && input_rest.is_char_boundary(output.digested)));
     output
   }
 }
@@ -52,6 +52,33 @@ unsafe impl<
 /// # Safety
 /// The returned [`Output`] should satisfy the requirement of [`Output::digested`].
 /// This will be checked using [`debug_assert!`].
+/// For the checked version, see [`wrap`].
+/// # Examples
+/// ```
+/// # use whitehole::C;
+/// # use whitehole::combinator::wrap_unchecked;
+/// # use whitehole::action::{Input, Output};
+/// # fn t() -> C!() {
+/// // eat the next character
+/// unsafe { wrap_unchecked(|input| input.digest(input.next().len_utf8())) }
+/// # }
+/// ```
+#[inline]
+pub const unsafe fn wrap_unchecked<
+  F: for<'text> Fn(Input<'text, &mut State, &mut Heap>) -> Option<Output<Value>>,
+  Value,
+  State,
+  Heap,
+>(
+  f: F,
+) -> C!(Value, State, Heap) {
+  Combinator::new(WrapUnchecked::new(f))
+}
+
+/// Wrap a closure to create a [`Combinator`].
+/// # Panics
+/// The returned [`Output`] should satisfy the requirement of [`Output::digested`],
+/// otherwise the combinator will panic when executed.
 /// # Examples
 /// ```
 /// # use whitehole::C;
@@ -63,8 +90,7 @@ unsafe impl<
 /// # }
 /// ```
 #[inline]
-pub const unsafe fn wrap<
-  // TODO: rename to wrap_unchecked
+pub const fn wrap<
   F: for<'text> Fn(Input<'text, &mut State, &mut Heap>) -> Option<Output<Value>>,
   Value,
   State,
@@ -72,7 +98,17 @@ pub const unsafe fn wrap<
 >(
   f: F,
 ) -> C!(Value, State, Heap) {
-  Combinator::new(Wrap::new(f))
+  unsafe {
+    wrap_unchecked(move |input| {
+      let rest = input.rest();
+      let output = f(input);
+      assert!(output
+        .as_ref()
+        .map(|output| output.digested <= rest.len() && rest.is_char_boundary(output.digested))
+        .unwrap_or(true));
+      output
+    })
+  }
 }
 
 #[cfg(test)]
@@ -80,14 +116,53 @@ mod tests {
   use super::*;
 
   #[test]
-  fn combinator_wrap() {
+  fn combinator_wrap_unchecked() {
     assert_eq!(
-      unsafe { wrap(|input| input.digest(1)) }
-        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      unsafe { wrap_unchecked(|input| input.digest(1)) }
+        .exec(Input::new("1", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         digested: 1
       })
     );
+  }
+
+  #[test]
+  #[should_panic]
+  fn combinator_wrap_unchecked_overflow() {
+    unsafe { wrap_unchecked(|input| input.digest_unchecked(4).into()) }
+      .exec(Input::new("1", 0, &mut (), &mut ()).unwrap());
+  }
+
+  #[test]
+  #[should_panic]
+  fn combinator_wrap_unchecked_invalid_code_point() {
+    unsafe { wrap_unchecked(|input| input.digest_unchecked(1).into()) }
+      .exec(Input::new("好", 0, &mut (), &mut ()).unwrap());
+  }
+
+  #[test]
+  fn combinator_wrap() {
+    assert_eq!(
+      wrap(|input| input.digest(1)).exec(Input::new("1", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        value: (),
+        digested: 1
+      })
+    );
+  }
+
+  #[test]
+  #[should_panic]
+  fn combinator_wrap_overflow() {
+    wrap(|input| unsafe { input.digest_unchecked(4) }.into())
+      .exec(Input::new("1", 0, &mut (), &mut ()).unwrap());
+  }
+
+  #[test]
+  #[should_panic]
+  fn combinator_wrap_invalid_code_point() {
+    wrap(|input| unsafe { input.digest_unchecked(1) }.into())
+      .exec(Input::new("好", 0, &mut (), &mut ()).unwrap());
   }
 }

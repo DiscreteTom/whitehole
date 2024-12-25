@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Combinator::range` to include the byte range of digested text in the output.
 - Add `Combinator::when` as the opposite of `Combinator::prevent`.
 - Add `Combinator::finally` to modify `Input` after execution.
+- Add `wrap_unchecked`.
 - Expose `Add::lhs`, `Add::rhs`, `BitOr::lhs` and `BitOr::rhs`.
 - Implement `Into<Combinator>` for `char`, `&str`, `String`, `usize`.
 - Add `Instant::digest_unchecked`.
@@ -32,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename `Action::Kind` to `Action::Value`, rename `Output::kind` to `Output::value`.
 - Rename `Combinator!` to `C!`.
 - Rename `Combinator::rollback` to `Combinator::catch`.
-- Mark `wrap` unsafe.
+- `wrap` will check if the `Output::digested` is valid. Use `wrap_unchecked` for the unchecked version.
 - `EatUsize` will eat by chars instead of bytes.
 - Rewrite `Till` trait to make it safe.
 - Combinator repetition with `Fold` will be implemented by using inline fold.

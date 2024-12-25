@@ -2,7 +2,7 @@
 
 use super::AcceptedContext;
 use crate::{
-  combinator::{wrap, Action, Combinator, Input, Output},
+  combinator::{wrap_unchecked, Action, Combinator, Input, Output},
   C,
 };
 
@@ -22,7 +22,7 @@ impl<T: Action> Combinator<T> {
   #[inline]
   pub fn when(self, condition: impl Fn(Input<&mut T::State, &mut T::Heap>) -> bool) -> C!(@T) {
     unsafe {
-      wrap(move |mut input| {
+      wrap_unchecked(move |mut input| {
         if condition(input.reborrow()) {
           self.exec(input)
         } else {
@@ -66,7 +66,7 @@ impl<T: Action> Combinator<T> {
     ) -> bool,
   ) -> C!(@T) {
     unsafe {
-      wrap(move |mut input| {
+      wrap_unchecked(move |mut input| {
         self.exec(input.reborrow()).and_then(|output| {
           if rejecter(AcceptedContext {
             input,
@@ -122,7 +122,7 @@ impl<T: Action> Combinator<T> {
     T::Value: Default,
   {
     unsafe {
-      wrap(move |input| {
+      wrap_unchecked(move |input| {
         Some(self.exec(input).unwrap_or_else(|| Output {
           value: Default::default(),
           digested: 0,
@@ -159,7 +159,7 @@ mod tests {
 
   fn accepter() -> C!((), bool) {
     unsafe {
-      wrap(|input| {
+      wrap_unchecked(|input| {
         *input.state = true;
         input.digest(1)
       })
@@ -168,7 +168,7 @@ mod tests {
 
   fn rejecter() -> C!((), bool) {
     unsafe {
-      wrap(|input| {
+      wrap_unchecked(|input| {
         *input.state = true;
         None
       })

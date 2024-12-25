@@ -126,7 +126,7 @@ mod tests {
   use super::*;
   use crate::{
     action::Action,
-    combinator::{wrap, Input, Output},
+    combinator::{wrap_unchecked, Input, Output},
   };
 
   #[derive(Debug)]
@@ -140,9 +140,9 @@ mod tests {
 
   #[test]
   fn combinator_mul_usize() {
-    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     let accepter = || unsafe {
-      wrap(|input| {
+      wrap_unchecked(|input| {
         input
           .digest(1)
           .map(|output| output.map(|_| MyValue(input.start())))
@@ -191,9 +191,9 @@ mod tests {
 
   #[test]
   fn combinator_mul_range() {
-    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     let accepter = || unsafe {
-      wrap(|input| {
+      wrap_unchecked(|input| {
         input
           .digest(1)
           .map(|output| output.map(|_| MyValue(input.start())))
@@ -240,9 +240,9 @@ mod tests {
 
   #[test]
   fn combinator_mul_range_from() {
-    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     let accepter = || unsafe {
-      wrap(|input| {
+      wrap_unchecked(|input| {
         input
           .digest(1)
           .map(|output| output.map(|_| MyValue(input.start())))
@@ -280,9 +280,9 @@ mod tests {
 
   #[test]
   fn combinator_mul_range_full() {
-    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     let accepter = || unsafe {
-      wrap(|input| {
+      wrap_unchecked(|input| {
         input
           .digest(1)
           .map(|output| output.map(|_| MyValue(input.start())))
@@ -310,9 +310,9 @@ mod tests {
 
   #[test]
   fn combinator_mul_range_inclusive() {
-    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     let accepter = || unsafe {
-      wrap(|input| {
+      wrap_unchecked(|input| {
         input
           .digest(1)
           .map(|output| output.map(|_| MyValue(input.start())))
@@ -359,9 +359,9 @@ mod tests {
 
   #[test]
   fn combinator_mul_range_to() {
-    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     let accepter = || unsafe {
-      wrap(|input| {
+      wrap_unchecked(|input| {
         input
           .digest(1)
           .map(|output| output.map(|_| MyValue(input.start())))
@@ -398,9 +398,9 @@ mod tests {
 
   #[test]
   fn combinator_mul_range_to_inclusive() {
-    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     let accepter = || unsafe {
-      wrap(|input| {
+      wrap_unchecked(|input| {
         input
           .digest(1)
           .map(|output| output.map(|_| MyValue(input.start())))

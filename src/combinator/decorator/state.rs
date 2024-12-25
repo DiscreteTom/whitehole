@@ -1,6 +1,6 @@
 use super::AcceptedContext;
 use crate::{
-  combinator::{wrap, Action, Combinator, Input, Output},
+  combinator::{wrap_unchecked, Action, Combinator, Input, Output},
   C,
 };
 
@@ -18,7 +18,7 @@ impl<T: Action> Combinator<T> {
   #[inline]
   pub fn prepare(self, modifier: impl Fn(Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
     unsafe {
-      wrap(move |mut input| {
+      wrap_unchecked(move |mut input| {
         modifier(input.reborrow());
         self.exec(input)
       })
@@ -43,7 +43,7 @@ impl<T: Action> Combinator<T> {
     ),
   ) -> C!(@T) {
     unsafe {
-      wrap(move |mut input| {
+      wrap_unchecked(move |mut input| {
         self.exec(input.reborrow()).inspect(|output| {
           modifier(AcceptedContext { input, output });
         })
@@ -64,7 +64,7 @@ impl<T: Action> Combinator<T> {
   #[inline]
   pub fn catch(self, modifier: impl Fn(Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
     unsafe {
-      wrap(move |mut input| {
+      wrap_unchecked(move |mut input| {
         let output = self.exec(input.reborrow());
         if output.is_none() {
           modifier(input);
@@ -93,7 +93,7 @@ impl<T: Action> Combinator<T> {
     ),
   ) -> C!(@T) {
     unsafe {
-      wrap(move |mut input| {
+      wrap_unchecked(move |mut input| {
         let output = self.exec(input.reborrow());
         modifier(AcceptedContext {
           input,
@@ -117,7 +117,7 @@ mod tests {
 
   fn accepter() -> C!((), State) {
     unsafe {
-      wrap(|input: Input<&mut State, &mut ()>| {
+      wrap_unchecked(|input: Input<&mut State, &mut ()>| {
         input.state.to = input.state.from;
         input.digest(1)
       })
@@ -126,7 +126,7 @@ mod tests {
 
   fn rejecter() -> C!((), State) {
     unsafe {
-      wrap(|input: Input<&mut State, &mut ()>| {
+      wrap_unchecked(|input: Input<&mut State, &mut ()>| {
         input.state.to = input.state.from;
         None
       })

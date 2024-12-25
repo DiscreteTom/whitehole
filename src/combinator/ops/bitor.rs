@@ -122,20 +122,20 @@ impl<'a, Lhs: Action> ops::BitOr<&'a str> for Combinator<Lhs> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::combinator::{wrap, Input, Output};
+  use crate::combinator::{wrap_unchecked, Input, Output};
 
   #[test]
   fn combinator_bit_or() {
     let mut state = 0;
 
     let rejecter = || unsafe {
-      wrap(|input| {
+      wrap_unchecked(|input| {
         *input.state += 1;
         None
       })
     };
     let accepter = || unsafe {
-      wrap(|input| {
+      wrap_unchecked(|input| {
         *input.state += 1;
         input.digest(1)
       })
@@ -166,7 +166,7 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_char() {
-    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | '1')
         .exec(Input::new("1", 0, &mut (), &mut ()).unwrap())
@@ -177,7 +177,7 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_usize() {
-    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | 1)
         .exec(Input::new("1", 0, &mut (), &mut ()).unwrap())
@@ -188,7 +188,7 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_str() {
-    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | "1")
         .exec(Input::new("1", 0, &mut (), &mut ()).unwrap())
@@ -199,7 +199,7 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_string() {
-    let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
+    let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | "1".to_string())
         .exec(Input::new("1", 0, &mut (), &mut ()).unwrap())

@@ -1,6 +1,6 @@
 use super::AcceptedContext;
 use crate::{
-  combinator::{wrap, Action, Combinator, Input, Output},
+  combinator::{wrap_unchecked, Action, Combinator, Input, Output},
   range::WithRange,
   C,
 };
@@ -18,7 +18,7 @@ impl<T: Action> Combinator<T> {
   /// ```
   #[inline]
   pub fn map<NewValue>(self, mapper: impl Fn(T::Value) -> NewValue) -> C!(NewValue, @T) {
-    unsafe { wrap(move |input| self.exec(input).map(|output| output.map(&mapper))) }
+    unsafe { wrap_unchecked(move |input| self.exec(input).map(|output| output.map(&mapper))) }
   }
 
   /// Create a new combinator to wrap [`Output::value`] in an one-element tuple.
@@ -93,7 +93,7 @@ impl<T: Action> Combinator<T> {
     ) -> NewValue,
   ) -> C!(NewValue, @T) {
     unsafe {
-      wrap(move |mut input| {
+      wrap_unchecked(move |mut input| {
         self.exec(input.reborrow()).map(|output| {
           input
             .digest_unchecked(output.digested)
@@ -114,7 +114,7 @@ impl<T: Action> Combinator<T> {
   #[inline]
   pub fn range(self) -> C!(WithRange<T::Value>, @T) {
     unsafe {
-      wrap(move |mut input| {
+      wrap_unchecked(move |mut input| {
         self.exec(input.reborrow()).map(|output| {
           let digested = output.digested;
           output.map(|value| WithRange {
@@ -134,7 +134,7 @@ mod tests {
   #[test]
   fn combinator_map() {
     assert_eq!(
-      unsafe { wrap(|input| input.digest(1).map(|output| output.map(|_| 1))) }
+      unsafe { wrap_unchecked(|input| input.digest(1).map(|output| output.map(|_| 1))) }
         .map(Some)
         .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
@@ -147,7 +147,7 @@ mod tests {
   #[test]
   fn combinator_bind() {
     assert_eq!(
-      unsafe { wrap(|input| input.digest(1)) }
+      unsafe { wrap_unchecked(|input| input.digest(1)) }
         .bind(123)
         .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
@@ -160,7 +160,7 @@ mod tests {
   #[test]
   fn combinator_bind_default() {
     assert_eq!(
-      unsafe { wrap(|input| input.digest(1)) }
+      unsafe { wrap_unchecked(|input| input.digest(1)) }
         .bind_default::<i32>()
         .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
@@ -173,7 +173,7 @@ mod tests {
   #[test]
   fn combinator_select() {
     assert_eq!(
-      unsafe { wrap(|input| input.digest(1)) }
+      unsafe { wrap_unchecked(|input| input.digest(1)) }
         .select(|ctx| if ctx.content() == "1" { 1 } else { 2 })
         .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
@@ -186,7 +186,7 @@ mod tests {
   #[test]
   fn combinator_range() {
     assert_eq!(
-      unsafe { wrap(|input| input.digest(1)) }
+      unsafe { wrap_unchecked(|input| input.digest(1)) }
         .range()
         .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {

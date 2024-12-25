@@ -1,6 +1,6 @@
 use crate::{
   action::{Input, Output},
-  combinator::wrap,
+  combinator::wrap_unchecked,
   C,
 };
 
@@ -72,7 +72,7 @@ impl<State, Heap> Till<State, Heap> for () {
 /// ```
 #[inline]
 pub const fn till<State, Heap>(pattern: impl Till<State, Heap>) -> C!((), State, Heap) {
-  unsafe { wrap(move |input| pattern.exec(input)) }
+  unsafe { wrap_unchecked(move |input| pattern.exec(input)) }
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 use crate::{
   action::Action,
-  combinator::{wrap, Combinator, Input, Output},
+  combinator::{wrap_unchecked, Combinator, Input, Output},
   C,
 };
 use std::marker::PhantomData;
@@ -190,7 +190,7 @@ pub fn eat<T>(pattern: impl Into<Combinator<T>>) -> Combinator<T> {
 /// ```
 #[inline]
 pub unsafe fn eat_unchecked<State, Heap>(n: usize) -> C!((), State, Heap) {
-  wrap(move |input| input.digest_unchecked(n).into())
+  wrap_unchecked(move |input| input.digest_unchecked(n).into())
 }
 
 /// Returns a combinator by the provided function that
@@ -212,7 +212,7 @@ pub fn eater<State, Heap>(
   f: impl Fn(Input<&mut State, &mut Heap>) -> usize,
 ) -> C!((), State, Heap) {
   unsafe {
-    wrap(move |mut input| match f(input.reborrow()) {
+    wrap_unchecked(move |mut input| match f(input.reborrow()) {
       0 => None,
       digested => input.digest(digested),
     })
@@ -240,7 +240,7 @@ pub fn eater<State, Heap>(
 pub unsafe fn eater_unchecked<State, Heap>(
   f: impl Fn(Input<&mut State, &mut Heap>) -> usize,
 ) -> C!((), State, Heap) {
-  wrap(move |mut input| match f(input.reborrow()) {
+  wrap_unchecked(move |mut input| match f(input.reborrow()) {
     0 => None,
     digested => input.digest_unchecked(digested).into(),
   })
