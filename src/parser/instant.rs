@@ -24,16 +24,23 @@ impl<'text> Instant<'text> {
   }
 
   /// The whole input text.
+  ///
+  /// This is cheap to call because the value is stored in this struct.
+  /// This will never be mutated after the creation of this instance.
   #[inline]
   pub const fn text(&self) -> &'text str {
     self.text
   }
   /// How many bytes are already digested.
+  ///
+  /// This is cheap to call because the value is stored in this struct.
   #[inline]
   pub const fn digested(&self) -> usize {
     self.digested
   }
   /// The undigested text.
+  ///
+  /// This is cheap to call because the value is stored in this struct.
   #[inline]
   pub const fn rest(&self) -> &'text str {
     self.rest
