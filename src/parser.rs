@@ -139,7 +139,7 @@ impl<'text, T: Action> Parser<'text, T> {
   pub fn parse(&mut self) -> Option<Output<T::Value>> {
     self
       .entry
-      .exec(&mut Input::new(
+      .exec(Input::new(
         self.instant.rest(),
         self.instant.digested(),
         &mut self.state,
@@ -165,7 +165,7 @@ impl<'text, T: Action> Parser<'text, T> {
         &mut tmp_state,
         &mut self.heap,
       )
-      .and_then(|mut input| self.entry.exec(&mut input)),
+      .and_then(|input| self.entry.exec(input)),
       tmp_state,
     )
   }

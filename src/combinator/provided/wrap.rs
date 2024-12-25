@@ -26,7 +26,7 @@ unsafe impl<
     Value,
     State,
     Heap,
-    F: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<Value>>,
+    F: for<'text> Fn(Input<'text, &mut State, &mut Heap>) -> Option<Output<Value>>,
   > Action for Wrap<F, State, Heap>
 {
   type Value = Value;
@@ -36,13 +36,13 @@ unsafe impl<
   #[inline]
   fn exec<'text>(
     &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
+    input: Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
+    let rest = input.rest();
     let output = (self.inner)(input);
     debug_assert!(output
       .as_ref()
-      .map(|output| output.digested <= input.rest().len()
-        && input.rest().is_char_boundary(output.digested))
+      .map(|output| output.digested <= rest.len() && rest.is_char_boundary(output.digested))
       .unwrap_or(true));
     output
   }
@@ -64,7 +64,8 @@ unsafe impl<
 /// ```
 #[inline]
 pub const unsafe fn wrap<
-  F: for<'text> Fn(&mut Input<'text, &mut State, &mut Heap>) -> Option<Output<Value>>,
+  // TODO: rename to wrap_unchecked
+  F: for<'text> Fn(Input<'text, &mut State, &mut Heap>) -> Option<Output<Value>>,
   Value,
   State,
   Heap,
@@ -82,7 +83,7 @@ mod tests {
   fn combinator_wrap() {
     assert_eq!(
       unsafe { wrap(|input| input.digest(1)) }
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         digested: 1

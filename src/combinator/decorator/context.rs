@@ -5,7 +5,7 @@ use std::ops::Range;
 /// in combinator decorators when the combinator is accepted.
 #[derive(Debug)]
 pub struct AcceptedContext<InputType, OutputType> {
-  /// The `&mut Input`.
+  /// The [`Input`].
   pub input: InputType,
   /// The [`Output`].
   ///
@@ -13,7 +13,7 @@ pub struct AcceptedContext<InputType, OutputType> {
   pub output: OutputType,
 }
 
-// TODO: optimize design
+// TODO: optimize design to make this safer
 macro_rules! impl_ctx {
   ($input:ty, $output:ty) => {
     impl<'text, Value, StateRef, HeapRef> AcceptedContext<$input, $output> {
@@ -51,10 +51,10 @@ macro_rules! impl_ctx {
   };
 }
 
-// Input won't be consumed and is always mutable.
+// Input will always be consumed.
 // Output won't be modified directly in the context, but can be consumed.
-impl_ctx!(&mut Input<'text, StateRef, HeapRef>, Output<Value>);
-impl_ctx!(&mut Input<'text, StateRef, HeapRef>, &Output<Value>);
+impl_ctx!(Input<'text, StateRef, HeapRef>, Output<Value>);
+impl_ctx!(Input<'text, StateRef, HeapRef>, &Output<Value>);
 
 #[cfg(test)]
 mod tests {
@@ -71,16 +71,16 @@ mod tests {
   fn accepted_decorator_context() {
     // ensure the methods are working
 
-    // &mut input and output
+    // input and output
     AcceptedContext {
-      input: &mut create_input(),
+      input: create_input(),
       output: create_output(),
     }
     .end();
 
-    // &mut input and &output
+    // input and &output
     AcceptedContext {
-      input: &mut create_input(),
+      input: create_input(),
       output: &create_output(),
     }
     .end();
@@ -88,7 +88,7 @@ mod tests {
     // ensure the value is correct
     assert_eq!(
       AcceptedContext {
-        input: &mut create_input(),
+        input: create_input(),
         output: create_output(),
       }
       .rest(),
@@ -96,7 +96,7 @@ mod tests {
     );
     assert_eq!(
       AcceptedContext {
-        input: &mut create_input(),
+        input: create_input(),
         output: create_output(),
       }
       .end(),
@@ -104,7 +104,7 @@ mod tests {
     );
     assert_eq!(
       AcceptedContext {
-        input: &mut create_input(),
+        input: create_input(),
         output: create_output(),
       }
       .content(),
@@ -117,7 +117,7 @@ mod tests {
   fn wrong_output() {
     // ensure the panic when the output is wrong
     AcceptedContext {
-      input: &mut create_input(),
+      input: create_input(),
       output: Input::new("123456", 1, (), ()).unwrap().digest(6).unwrap(),
     }
     .content();

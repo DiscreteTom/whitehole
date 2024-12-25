@@ -220,7 +220,7 @@ unsafe impl<T: Action> Action for Combinator<T> {
   #[inline]
   fn exec<'text>(
     &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
+    input: Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<T::Value>> {
     self.action.exec(input)
   }

@@ -20,10 +20,10 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn when(self, condition: impl Fn(&mut Input<&mut T::State, &mut T::Heap>) -> bool) -> C!(@T) {
+  pub fn when(self, condition: impl Fn(Input<&mut T::State, &mut T::Heap>) -> bool) -> C!(@T) {
     unsafe {
-      wrap(move |input| {
-        if condition(input) {
+      wrap(move |mut input| {
+        if condition(input.reborrow()) {
           self.exec(input)
         } else {
           None
@@ -45,10 +45,7 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn prevent(
-    self,
-    preventer: impl Fn(&mut Input<&mut T::State, &mut T::Heap>) -> bool,
-  ) -> C!(@T) {
+  pub fn prevent(self, preventer: impl Fn(Input<&mut T::State, &mut T::Heap>) -> bool) -> C!(@T) {
     self.when(move |input| !preventer(input))
   }
 
@@ -65,12 +62,12 @@ impl<T: Action> Combinator<T> {
   pub fn reject(
     self,
     rejecter: impl for<'text> Fn(
-      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<T::Value>>,
+      AcceptedContext<Input<'text, &mut T::State, &mut T::Heap>, &Output<T::Value>>,
     ) -> bool,
   ) -> C!(@T) {
     unsafe {
-      wrap(move |input| {
-        self.exec(input).and_then(|output| {
+      wrap(move |mut input| {
+        self.exec(input.reborrow()).and_then(|output| {
           if rejecter(AcceptedContext {
             input,
             output: &output,
@@ -126,11 +123,10 @@ impl<T: Action> Combinator<T> {
   {
     unsafe {
       wrap(move |input| {
-        Some(
-          self
-            .exec(input)
-            .unwrap_or_else(|| input.digest_unchecked(0).map(|_| Default::default())),
-        )
+        Some(self.exec(input).unwrap_or_else(|| Output {
+          value: Default::default(),
+          digested: 0,
+        }))
       })
     }
   }
@@ -184,14 +180,14 @@ mod tests {
     let mut executed = false;
     assert!(accepter()
       .when(|_| false)
-      .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap())
       .is_none());
     assert!(!executed);
 
     let mut executed = false;
     assert!(accepter()
       .when(|_| true)
-      .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap())
       .is_some());
     assert!(executed);
   }
@@ -201,14 +197,14 @@ mod tests {
     let mut executed = false;
     assert!(accepter()
       .prevent(|_| true)
-      .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap())
       .is_none());
     assert!(!executed);
 
     let mut executed = false;
     assert!(accepter()
       .prevent(|_| false)
-      .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap())
       .is_some());
     assert!(executed);
   }
@@ -219,7 +215,7 @@ mod tests {
     assert_eq!(
       accepter()
         .reject(|input| input.content() != "1")
-        .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap())
         .unwrap()
         .digested,
       1
@@ -230,7 +226,7 @@ mod tests {
     assert_eq!(
       accepter()
         .reject(|input| input.content() == "1")
-        .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+        .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap()),
       None
     );
     assert!(executed);
@@ -242,7 +238,7 @@ mod tests {
     assert_eq!(
       accepter()
         .optional()
-        .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap())
         .unwrap()
         .digested,
       1
@@ -253,7 +249,7 @@ mod tests {
     assert_eq!(
       rejecter()
         .optional()
-        .exec(&mut Input::new("123", 0, &mut executed, &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap())
         .unwrap()
         .digested,
       0
@@ -267,7 +263,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .exec(&mut Input::new("1", 0, &mut executed, &mut ()).unwrap())
+        .exec(Input::new("1", 0, &mut executed, &mut ()).unwrap())
         .unwrap()
         .digested,
       1
@@ -278,7 +274,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .exec(&mut Input::new("12", 0, &mut executed, &mut ()).unwrap()),
+        .exec(Input::new("12", 0, &mut executed, &mut ()).unwrap()),
       None
     );
     assert!(executed);
@@ -287,7 +283,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .exec(&mut Input::new("1a", 0, &mut executed, &mut ()).unwrap()),
+        .exec(Input::new("1a", 0, &mut executed, &mut ()).unwrap()),
       None
     );
     assert!(executed);
@@ -296,7 +292,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .exec(&mut Input::new("1_", 0, &mut executed, &mut ()).unwrap()),
+        .exec(Input::new("1_", 0, &mut executed, &mut ()).unwrap()),
       None
     );
     assert!(executed);

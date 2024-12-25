@@ -58,9 +58,12 @@ unsafe impl<Lhs: Action, Rhs: Action<Value = Lhs::Value, State = Lhs::State, Hea
   #[inline]
   fn exec<'text>(
     &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
+    mut input: Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    self.lhs.exec(input).or_else(|| self.rhs.exec(input))
+    self
+      .lhs
+      .exec(input.reborrow())
+      .or_else(|| self.rhs.exec(input))
   }
 }
 
@@ -140,7 +143,7 @@ mod tests {
 
     // reject then accept, both should increment the state
     assert_eq!(
-      (rejecter() | accepter()).exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
+      (rejecter() | accepter()).exec(Input::new("123", 0, &mut state, &mut ()).unwrap()),
       Some(Output {
         value: (),
         digested: 1,
@@ -152,7 +155,7 @@ mod tests {
 
     // accept then reject, only the first should increment the state
     assert_eq!(
-      (accepter() | rejecter()).exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap()),
+      (accepter() | rejecter()).exec(Input::new("123", 0, &mut state, &mut ()).unwrap()),
       Some(Output {
         value: (),
         digested: 1,
@@ -166,7 +169,7 @@ mod tests {
     let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | '1')
-        .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("1", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(1)
     );
@@ -177,7 +180,7 @@ mod tests {
     let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | 1)
-        .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("1", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(1)
     );
@@ -188,7 +191,7 @@ mod tests {
     let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | "1")
-        .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("1", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(1)
     );
@@ -199,7 +202,7 @@ mod tests {
     let rejecter = || unsafe { wrap(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | "1".to_string())
-        .exec(&mut Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("1", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(1)
     );

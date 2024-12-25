@@ -89,12 +89,12 @@ impl<T: Action> Combinator<T> {
   pub fn select<NewValue>(
     self,
     selector: impl for<'text> Fn(
-      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, Output<T::Value>>,
+      AcceptedContext<Input<'text, &mut T::State, &mut T::Heap>, Output<T::Value>>,
     ) -> NewValue,
   ) -> C!(NewValue, @T) {
     unsafe {
-      wrap(move |input| {
-        self.exec(input).map(|output| {
+      wrap(move |mut input| {
+        self.exec(input.reborrow()).map(|output| {
           input
             .digest_unchecked(output.digested)
             .map(|_| selector(AcceptedContext { input, output }))
@@ -114,8 +114,8 @@ impl<T: Action> Combinator<T> {
   #[inline]
   pub fn range(self) -> C!(WithRange<T::Value>, @T) {
     unsafe {
-      wrap(move |input| {
-        self.exec(input).map(|output| {
+      wrap(move |mut input| {
+        self.exec(input.reborrow()).map(|output| {
           let digested = output.digested;
           output.map(|value| WithRange {
             data: value,
@@ -136,7 +136,7 @@ mod tests {
     assert_eq!(
       unsafe { wrap(|input| input.digest(1).map(|output| output.map(|_| 1))) }
         .map(Some)
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: Some(1),
         digested: 1
@@ -149,7 +149,7 @@ mod tests {
     assert_eq!(
       unsafe { wrap(|input| input.digest(1)) }
         .bind(123)
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 123,
         digested: 1
@@ -162,7 +162,7 @@ mod tests {
     assert_eq!(
       unsafe { wrap(|input| input.digest(1)) }
         .bind_default::<i32>()
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 0,
         digested: 1
@@ -175,7 +175,7 @@ mod tests {
     assert_eq!(
       unsafe { wrap(|input| input.digest(1)) }
         .select(|ctx| if ctx.content() == "1" { 1 } else { 2 })
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 1,
         digested: 1
@@ -188,7 +188,7 @@ mod tests {
     assert_eq!(
       unsafe { wrap(|input| input.digest(1)) }
         .range()
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap()),
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
         value: WithRange {
           data: (),

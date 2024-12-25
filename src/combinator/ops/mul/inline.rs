@@ -36,16 +36,19 @@ unsafe impl<
   #[inline]
   fn exec<'text>(
     &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
+    mut input: Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let (range, init, folder) = &self.rhs;
     let mut repeated = 0;
-    let mut output = unsafe { input.digest_unchecked(0) }.map(|_| init());
+    let mut output = Output {
+      digested: 0,
+      value: init(),
+    };
 
     while range.validate(repeated) {
       let Some(next_output) = input
         .reload(output.digested)
-        .and_then(|mut input| self.lhs.exec(&mut input))
+        .and_then(|input| self.lhs.exec(input))
       else {
         break;
       };

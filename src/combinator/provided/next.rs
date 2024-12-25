@@ -39,13 +39,13 @@ mod tests {
     // normal
     assert_eq!(
       next(|c| c.is_ascii_digit())
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(1)
     );
     // reject
     assert!(next(|c| c.is_ascii_alphabetic())
-      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
       .is_none());
   }
 
@@ -54,13 +54,13 @@ mod tests {
     // normal
     assert_eq!(
       (next(|c| c.is_ascii_digit()) * (1..))
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(next(|c| c.is_ascii_digit())
-      .exec(&mut Input::new("abc", 0, &mut (), &mut ()).unwrap())
+      .exec(Input::new("abc", 0, &mut (), &mut ()).unwrap())
       .is_none());
   }
 }

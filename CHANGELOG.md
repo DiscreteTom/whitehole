@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `Input::new_unchecked`.
+- Add `Input::reborrow`.
 - Add `Output::digested`.
 - Add `C!(@T)` and `C!(Kind, @T)` syntax.
 - Add `AcceptedContext::rest`.
@@ -24,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Rename `Node` to `WithRange`, rename its field `kind` to `data`.
 - Rename `Parse` to `Action`, rename its method `parse` to `exec`.
+- `Action::exec` will consume the `Input`.
 - Mark `Action` unsafe.
 - Rewrite `Output`, remove it's lifetime param.
 - Make generic param `State` and `Heap` of the `Parse` trait become associated type.

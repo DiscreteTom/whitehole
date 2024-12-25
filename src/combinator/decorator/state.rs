@@ -16,10 +16,10 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn prepare(self, modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
+  pub fn prepare(self, modifier: impl Fn(Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
     unsafe {
-      wrap(move |input| {
-        modifier(input);
+      wrap(move |mut input| {
+        modifier(input.reborrow());
         self.exec(input)
       })
     }
@@ -39,12 +39,12 @@ impl<T: Action> Combinator<T> {
   pub fn then(
     self,
     modifier: impl for<'text> Fn(
-      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Output<T::Value>>,
+      AcceptedContext<Input<'text, &mut T::State, &mut T::Heap>, &Output<T::Value>>,
     ),
   ) -> C!(@T) {
     unsafe {
-      wrap(move |input| {
-        self.exec(input).inspect(|output| {
+      wrap(move |mut input| {
+        self.exec(input.reborrow()).inspect(|output| {
           modifier(AcceptedContext { input, output });
         })
       })
@@ -62,10 +62,10 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn catch(self, modifier: impl Fn(&mut Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
+  pub fn catch(self, modifier: impl Fn(Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
     unsafe {
-      wrap(move |input| {
-        let output = self.exec(input);
+      wrap(move |mut input| {
+        let output = self.exec(input.reborrow());
         if output.is_none() {
           modifier(input);
         }
@@ -89,12 +89,12 @@ impl<T: Action> Combinator<T> {
   pub fn finally(
     self,
     modifier: impl for<'text> Fn(
-      AcceptedContext<&mut Input<'text, &mut T::State, &mut T::Heap>, &Option<Output<T::Value>>>,
+      AcceptedContext<Input<'text, &mut T::State, &mut T::Heap>, &Option<Output<T::Value>>>,
     ),
   ) -> C!(@T) {
     unsafe {
-      wrap(move |input| {
-        let output = self.exec(input);
+      wrap(move |mut input| {
+        let output = self.exec(input.reborrow());
         modifier(AcceptedContext {
           input,
           output: &output,
@@ -117,7 +117,7 @@ mod tests {
 
   fn accepter() -> C!((), State) {
     unsafe {
-      wrap(|input: &mut Input<&mut State, &mut ()>| {
+      wrap(|input: Input<&mut State, &mut ()>| {
         input.state.to = input.state.from;
         input.digest(1)
       })
@@ -126,7 +126,7 @@ mod tests {
 
   fn rejecter() -> C!((), State) {
     unsafe {
-      wrap(|input: &mut Input<&mut State, &mut ()>| {
+      wrap(|input: Input<&mut State, &mut ()>| {
         input.state.to = input.state.from;
         None
       })
@@ -140,7 +140,7 @@ mod tests {
       .prepare(|input| {
         input.state.from = 1;
       })
-      .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_some());
     assert_eq!(state, State { from: 1, to: 1 });
   }
@@ -152,7 +152,7 @@ mod tests {
       .then(|ctx| {
         ctx.input.state.from = 1;
       })
-      .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_some());
     assert_eq!(state, State { from: 1, to: 0 });
 
@@ -161,7 +161,7 @@ mod tests {
       .then(|ctx| {
         ctx.input.state.from = 1;
       })
-      .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_none());
     assert_eq!(state, State { from: 0, to: 0 });
   }
@@ -173,7 +173,7 @@ mod tests {
       .catch(|input| {
         input.state.from = 1;
       })
-      .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_some());
     assert_eq!(state, State { from: 0, to: 0 });
 
@@ -182,7 +182,7 @@ mod tests {
       .catch(|input| {
         input.state.from = 1;
       })
-      .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_none());
     assert_eq!(state, State { from: 1, to: 0 });
   }
@@ -194,7 +194,7 @@ mod tests {
       .finally(|ctx| {
         ctx.input.state.to = 1;
       })
-      .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_some());
     assert_eq!(state, State { from: 0, to: 1 });
 
@@ -203,7 +203,7 @@ mod tests {
       .finally(|ctx| {
         ctx.input.state.to = 1;
       })
-      .exec(&mut Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_none());
     assert_eq!(state, State { from: 0, to: 1 });
   }

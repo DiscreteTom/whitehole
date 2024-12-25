@@ -31,6 +31,6 @@ pub unsafe trait Action {
   /// Return [`None`] to reject.
   fn exec<'text>(
     &self,
-    input: &mut Input<'text, &mut Self::State, &mut Self::Heap>,
+    input: Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>>;
 }

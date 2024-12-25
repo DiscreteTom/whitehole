@@ -108,6 +108,20 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
 }
 
 impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
+  /// Re-borrow [`Self::state`] and [`Self::heap`] to construct a new [`Input`]
+  /// (similar to cloning this instance).
+  ///
+  /// This is cheap to call.
+  #[inline]
+  pub const fn reborrow(&mut self) -> Input<'text, &mut State, &mut Heap> {
+    Input {
+      state: &mut *self.state,
+      heap: &mut *self.heap,
+      start: self.start,
+      rest: self.rest,
+    }
+  }
+
   /// Construct a new [`Input`] by digesting `n` bytes.
   /// The [`start`](Self::start) of the new instance will be auto calculated.
   /// # Safety

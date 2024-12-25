@@ -47,7 +47,7 @@ unsafe impl<State, Heap> Action for EatChar<State, Heap> {
   type Heap = Heap;
 
   #[inline]
-  fn exec<'text>(&self, input: &mut Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .rest()
       .starts_with(self.inner)
@@ -61,7 +61,7 @@ unsafe impl<State, Heap> Action for EatString<State, Heap> {
   type Heap = Heap;
 
   #[inline]
-  fn exec<'text>(&self, input: &mut Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .rest()
       .starts_with(&self.inner)
@@ -75,7 +75,7 @@ unsafe impl<State, Heap> Action for EatUsize<State, Heap> {
   type Heap = Heap;
 
   #[inline]
-  fn exec<'text>(&self, input: &mut Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
     // if eat 1 char, just eat the `input.next` which always exists
     if self.inner == 1 {
       return unsafe { input.digest_unchecked(input.next().len_utf8()) }.into();
@@ -126,7 +126,7 @@ unsafe impl<State, Heap> Action for EatStr<'_, State, Heap> {
   type Heap = Heap;
 
   #[inline]
-  fn exec<'text>(&self, input: &mut Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .rest()
       .starts_with(self.s)
@@ -209,10 +209,10 @@ pub unsafe fn eat_unchecked<State, Heap>(n: usize) -> C!((), State, Heap) {
 /// ```
 #[inline]
 pub fn eater<State, Heap>(
-  f: impl Fn(&mut Input<&mut State, &mut Heap>) -> usize,
+  f: impl Fn(Input<&mut State, &mut Heap>) -> usize,
 ) -> C!((), State, Heap) {
   unsafe {
-    wrap(move |input| match f(input) {
+    wrap(move |mut input| match f(input.reborrow()) {
       0 => None,
       digested => input.digest(digested),
     })
@@ -238,9 +238,9 @@ pub fn eater<State, Heap>(
 /// ```
 #[inline]
 pub unsafe fn eater_unchecked<State, Heap>(
-  f: impl Fn(&mut Input<&mut State, &mut Heap>) -> usize,
+  f: impl Fn(Input<&mut State, &mut Heap>) -> usize,
 ) -> C!((), State, Heap) {
-  wrap(move |input| match f(input) {
+  wrap(move |mut input| match f(input.reborrow()) {
     0 => None,
     digested => input.digest_unchecked(digested).into(),
   })
@@ -256,69 +256,69 @@ mod tests {
     // normal usize
     assert_eq!(
       eat(3)
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
     // normal str
     assert_eq!(
       eat("123")
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
     // normal String
     assert_eq!(
       eat("123".to_string())
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
     // normal char
     assert_eq!(
       eat(';')
-        .exec(&mut Input::new(";", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(";", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
     // overflow
     assert_eq!(
       eat(3)
-        .exec(&mut Input::new("12", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("12", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       None
     );
     // reject
     assert!(eat("123")
-      .exec(&mut Input::new("abc", 0, &mut (), &mut ()).unwrap())
+      .exec(Input::new("abc", 0, &mut (), &mut ()).unwrap())
       .is_none());
     assert!(eat('1')
-      .exec(&mut Input::new("abc", 0, &mut (), &mut ()).unwrap())
+      .exec(Input::new("abc", 0, &mut (), &mut ()).unwrap())
       .is_none());
     // 0 is allowed and always accept
     assert_eq!(
       eat(0)
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(0)
     );
     // empty string is allowed and always accept
     assert_eq!(
       eat("")
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(0)
     );
     // eat by chars not bytes
     assert_eq!(
       eat(1)
-        .exec(&mut Input::new("好", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("好", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
     assert_eq!(
       eat(2)
-        .exec(&mut Input::new("好好", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("好好", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
@@ -329,14 +329,14 @@ mod tests {
     // normal
     assert_eq!(
       unsafe { eat_unchecked(3) }
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
     // 0
     assert_eq!(
       unsafe { eat_unchecked(0) }
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(0)
     );
@@ -345,13 +345,13 @@ mod tests {
   #[test]
   #[should_panic]
   fn combinator_eat_unchecked_overflow() {
-    unsafe { eat_unchecked(3) }.exec(&mut Input::new("12", 0, &mut (), &mut ()).unwrap());
+    unsafe { eat_unchecked(3) }.exec(Input::new("12", 0, &mut (), &mut ()).unwrap());
   }
 
   #[test]
   #[should_panic]
   fn combinator_eat_unchecked_invalid_code_point() {
-    unsafe { eat_unchecked(1) }.exec(&mut Input::new("好", 0, &mut (), &mut ()).unwrap());
+    unsafe { eat_unchecked(1) }.exec(Input::new("好", 0, &mut (), &mut ()).unwrap());
   }
 
   #[test]
@@ -359,28 +359,28 @@ mod tests {
     // normal
     assert_eq!(
       eater(|input| input.rest().len())
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
     // overflow
     assert_eq!(
       eater(|input| input.rest().len() + 1)
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       None
     );
     // invalid code point
     assert_eq!(
       eater(|_| 1)
-        .exec(&mut Input::new("好", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("好", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       None
     );
     // 0
     assert_eq!(
       eater(|_| 0)
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       None
     );
@@ -391,14 +391,14 @@ mod tests {
     // normal
     assert_eq!(
       unsafe { eater_unchecked(|input| input.rest().len()) }
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
     // 0
     assert_eq!(
       unsafe { eater_unchecked(|_| 0) }
-        .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       None
     );
@@ -408,12 +408,12 @@ mod tests {
   #[should_panic]
   fn combinator_eater_unchecked_overflow() {
     unsafe { eater_unchecked(|input| input.rest().len() + 1) }
-      .exec(&mut Input::new("123", 0, &mut (), &mut ()).unwrap());
+      .exec(Input::new("123", 0, &mut (), &mut ()).unwrap());
   }
 
   #[test]
   #[should_panic]
   fn combinator_eater_unchecked_invalid_code_point() {
-    unsafe { eater_unchecked(|_| 1) }.exec(&mut Input::new("好", 0, &mut (), &mut ()).unwrap());
+    unsafe { eater_unchecked(|_| 1) }.exec(Input::new("好", 0, &mut (), &mut ()).unwrap());
   }
 }
