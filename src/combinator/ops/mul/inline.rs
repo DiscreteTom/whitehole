@@ -38,25 +38,39 @@ unsafe impl<
     &self,
     mut input: Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    let (range, init, folder) = &self.rhs;
-    let mut repeated = 0;
-    let mut output = Output {
-      digested: 0,
-      value: init(),
+    let (repeat, init, fold) = &self.rhs;
+
+    if !repeat.validate(0) {
+      return repeat.accept(0).then(|| Output {
+        value: init(),
+        digested: 0,
+      });
+    }
+
+    // the first occurrence
+    let (mut repeated, mut output) = if let Some(output) = self.lhs.exec(input.reborrow()) {
+      (1, output.map(|value| fold(value, init())))
+    } else {
+      return repeat.accept(0).then(|| Output {
+        value: init(),
+        digested: 0,
+      });
     };
 
-    while range.validate(repeated) {
-      let Some(next_output) = input
+    // the rest of the occurrences
+    while repeat.validate(repeated) {
+      let Some(new_output) = input
         .reload(output.digested)
         .and_then(|input| self.lhs.exec(input))
       else {
         break;
       };
-      output.digested += next_output.digested; // TODO: use unsafe?
-      output.value = folder(next_output.value, output.value);
+
       repeated += 1;
+      output.digested += new_output.digested;
+      output.value = fold(new_output.value, output.value);
     }
 
-    range.accept(repeated).then_some(output)
+    repeat.accept(repeated).then_some(output)
   }
 }
