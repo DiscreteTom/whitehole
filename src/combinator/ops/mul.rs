@@ -99,12 +99,26 @@
 //!   123
 //! )
 //! ```
+//! # Separator
+//! You can use [`Combinator::sep`](crate::combinator::Combinator::sep)
+//! to specify an other combinator as the separator, then perform `*` on the pair.
+//! ```
+//! # use whitehole::{combinator::eat, action::{Input, Action}};
+//! let combinator = eat('a').sep(',') * (1..);
+//!
+//! assert_eq!(
+//!   combinator.exec(Input::new("a,a,a", 0, &mut (), &mut ()).unwrap()).unwrap().digested,
+//!   5
+//! )
+//! ```
 mod fold;
 mod inline;
 mod repeat;
+mod sep;
 
 pub use fold::*;
 pub use repeat::*;
+pub use sep::*;
 
 /// An [`Action`](crate::action::Action) created by the `*` operator.
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
