@@ -1,7 +1,7 @@
 use in_str::in_str;
 use whitehole::{
+  action::{Action, Input},
   combinator::{eat, next, AcceptedContext},
-  parse::{Input, Parse},
   parser::{Builder, Parser},
 };
 
@@ -9,7 +9,7 @@ pub struct MyState {
   pub nested: usize,
 }
 
-pub fn build_lexer(s: &str) -> Parser<impl Parse> {
+pub fn build_lexer(s: &str) -> Parser<impl Action> {
   let escape = || {
     let simple = next(in_str!("0'\"\\nrvtbf\u{000a}\u{000d}\u{2028}\u{2029}"));
     let hex = eat('x') + next(|c| c.is_ascii_hexdigit()) * 2;
@@ -23,7 +23,7 @@ pub fn build_lexer(s: &str) -> Parser<impl Parse> {
 
   macro_rules! Input {
     () => {
-      &mut Input<&mut MyState, _>
+      Input<&mut MyState, _>
     };
   }
 

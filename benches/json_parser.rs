@@ -2,13 +2,13 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use in_str::in_str;
 use std::{cell::OnceCell, fs::read_to_string, rc::Rc, sync::LazyLock};
 use whitehole::{
+  action::Action,
   combinator::{eat, next, wrap},
-  parse::Parse,
   parser::{Builder, Parser},
-  Combinator,
+  C,
 };
 
-pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Parse> {
+pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action> {
   // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
   // use a closure to generate the combinator for better runtime performance (via inlining).
   let ws = || next(in_str!(" \t\r\n")) * (1..);
@@ -32,26 +32,26 @@ pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Parse> {
   // `value` will indirectly recurse to itself, so we need special treatment.
   // Use `Rc` to make it clone-able, use `OnceCell` to initialize it later,
   // use `Box<dyn>` to prevent recursive/infinite type.
-  let value_rc: Rc<OnceCell<Box<dyn Parse<Kind = (), State = (), Heap = ()>>>> =
+  let value_rc: Rc<OnceCell<Box<dyn Action<Value = (), State = (), Heap = ()>>>> =
     Rc::new(OnceCell::new());
   let value = || {
     let value_rc = value_rc.clone();
     // SAFETY: we will initialize `value_rc` later before calling this closure.
-    wrap(move |input| unsafe { value_rc.get().unwrap_unchecked() }.parse(input))
+    wrap(move |input| unsafe { value_rc.get().unwrap_unchecked() }.exec(input))
   };
 
   // Now we can use `value` in `array` and `object`.
   let array = || {
     eat('[')
       + ws().optional()
-      + ((value() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+      + ((value() + ws().optional()).sep(eat(',') + ws().optional()) * (..)).optional()
       + ']'
   };
   let object = || {
     let object_item = string() + ws().optional() + eat(':') + ws().optional() + value();
     eat('{')
       + ws().optional()
-      + ((object_item + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+      + ((object_item + ws().optional()).sep(eat(',') + ws().optional()) * (..)).optional()
       + '}'
   };
 
@@ -59,21 +59,21 @@ pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Parse> {
   value_rc
     .set(Box::new(wrap({
       let parser = array() | object() | number() | string() | "true" | "false" | "null";
-      move |input| parser.parse(input)
+      move |input| parser.exec(input)
     })))
     .ok();
 
   Builder::new().entry(ws() | value()).build(s)
 }
 
-pub fn build_parser_with_static(s: &str) -> Parser<impl Parse> {
+pub fn build_parser_with_static(s: &str) -> Parser<impl Action> {
   // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
   // use a function to generate the combinator for better runtime performance (via inlining).
-  fn ws() -> Combinator!() {
+  fn ws() -> C!() {
     next(in_str!(" \t\r\n")) * (1..)
   }
 
-  fn number() -> Combinator!() {
+  fn number() -> C!() {
     let digit_1_to_9 = next(|c| matches!(c, '1'..='9'));
     let digits = || next(|c| c.is_ascii_digit()) * (1..);
     let integer = eat('0') | (digit_1_to_9 + digits().optional());
@@ -82,7 +82,7 @@ pub fn build_parser_with_static(s: &str) -> Parser<impl Parse> {
     eat('-').optional() + integer + fraction.optional() + exponent.optional()
   }
 
-  fn string() -> Combinator!() {
+  fn string() -> C!() {
     let escape =
       eat('\\') + (next(in_str!("\"\\/bfnrt")) | (eat('u') + next(|c| c.is_ascii_hexdigit()) * 4));
     let non_escape =
@@ -91,36 +91,36 @@ pub fn build_parser_with_static(s: &str) -> Parser<impl Parse> {
     eat('"') + body.optional() + '"'
   }
 
-  fn array() -> Combinator!() {
+  fn array() -> C!() {
     eat('[')
       + ws().optional()
-      + ((value() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+      + ((value() + ws().optional()).sep(eat(',') + ws().optional()) * (..)).optional()
       + ']'
   }
 
-  fn object() -> Combinator!() {
+  fn object() -> C!() {
     let object_item = string() + ws().optional() + eat(':') + ws().optional() + value();
     eat('{')
       + ws().optional()
-      + ((object_item + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+      + ((object_item + ws().optional()).sep(eat(',') + ws().optional()) * (..)).optional()
       + '}'
   }
 
   // `value` will indirectly recurse to itself, so we need special treatment.
   // Use `LazyLock` to create a static `Parse` implementor,
   // use `Box<dyn>` to prevent recursive/infinite type.
-  fn value() -> Combinator!() {
-    static VALUE: LazyLock<Box<dyn Parse<Kind = (), State = (), Heap = ()> + Send + Sync>> =
+  fn value() -> C!() {
+    static VALUE: LazyLock<Box<dyn Action<Value = (), State = (), Heap = ()> + Send + Sync>> =
       LazyLock::new(|| {
         Box::new(array() | object() | number() | string() | "true" | "false" | "null")
       });
-    wrap(|input| VALUE.parse(input))
+    wrap(|input| VALUE.exec(input))
   }
 
   Builder::new().entry(ws() | value()).build(s)
 }
 
-fn parse_json(mut parser: Parser<impl Parse>) {
+fn parse_json(mut parser: Parser<impl Action>) {
   loop {
     let output = parser.parse();
     if output.is_none() {

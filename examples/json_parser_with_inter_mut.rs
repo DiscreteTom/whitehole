@@ -1,12 +1,12 @@
 use in_str::in_str;
 use std::{cell::OnceCell, rc::Rc};
 use whitehole::{
+  action::Action,
   combinator::{eat, next, wrap},
-  parse::Parse,
   parser::{Builder, Parser},
 };
 
-pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Parse> {
+pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action> {
   // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
   // use a closure to generate the combinator for better runtime performance (via inlining).
   let ws = || next(in_str!(" \t\r\n")) * (1..);
@@ -30,26 +30,26 @@ pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Parse> {
   // `value` will indirectly recurse to itself, so we need special treatment.
   // Use `Rc` to make it clone-able, use `OnceCell` to initialize it later,
   // use `Box<dyn>` to prevent recursive/infinite type.
-  let value_rc: Rc<OnceCell<Box<dyn Parse<Kind = (), State = (), Heap = ()>>>> =
+  let value_rc: Rc<OnceCell<Box<dyn Action<Value = (), State = (), Heap = ()>>>> =
     Rc::new(OnceCell::new());
   let value = || {
     let value_rc = value_rc.clone();
     // SAFETY: we will initialize `value_rc` later before calling this closure.
-    wrap(move |input| unsafe { value_rc.get().unwrap_unchecked() }.parse(input))
+    wrap(move |input| unsafe { value_rc.get().unwrap_unchecked() }.exec(input))
   };
 
   // Now we can use `value` in `array` and `object`.
   let array = || {
     eat('[')
       + ws().optional()
-      + ((value() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+      + ((value() + ws().optional()).sep(eat(',') + ws().optional()) * (..)).optional()
       + ']'
   };
   let object = || {
     let object_item = string() + ws().optional() + eat(':') + ws().optional() + value();
     eat('{')
       + ws().optional()
-      + ((object_item + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+      + ((object_item + ws().optional()).sep(eat(',') + ws().optional()) * (..)).optional()
       + '}'
   };
 
@@ -57,7 +57,7 @@ pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Parse> {
   value_rc
     .set(Box::new(wrap({
       let parser = array() | object() | number() | string() | "true" | "false" | "null";
-      move |input| parser.parse(input)
+      move |input| parser.exec(input)
     })))
     .ok();
 

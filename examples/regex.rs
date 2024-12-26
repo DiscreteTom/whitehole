@@ -1,8 +1,8 @@
 use regex::Regex;
-use whitehole::{combinator::eater_unchecked, Combinator};
+use whitehole::{combinator::eater_unchecked, C};
 
 /// Create a combinator from a regex.
-pub fn regex<State, Heap>(s: &str) -> Combinator!((), State, Heap) {
+pub fn regex<State, Heap>(s: &str) -> C!((), State, Heap) {
   let re = Regex::new(s).unwrap();
   unsafe { eater_unchecked(move |input| re.find(input.rest()).map(|m| m.len()).unwrap_or(0)) }
 }
@@ -12,7 +12,7 @@ fn main() {}
 #[cfg(test)]
 mod tests {
   use super::*;
-  use whitehole::parse::{Input, Parse};
+  use whitehole::action::{Input, Action};
 
   #[test]
   fn test_regex() {

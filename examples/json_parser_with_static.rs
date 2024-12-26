@@ -1,20 +1,20 @@
 use in_str::in_str;
 use std::sync::LazyLock;
 use whitehole::{
+  action::Action,
   combinator::{eat, next, wrap},
-  parse::Parse,
   parser::{Builder, Parser},
-  Combinator,
+  C,
 };
 
-pub fn build_parser_with_static(s: &str) -> Parser<impl Parse> {
+pub fn build_parser_with_static(s: &str) -> Parser<impl Action> {
   // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
   // use a function to generate the combinator for better runtime performance (via inlining).
-  fn ws() -> Combinator!() {
+  fn ws() -> C!() {
     next(in_str!(" \t\r\n")) * (1..)
   }
 
-  fn number() -> Combinator!() {
+  fn number() -> C!() {
     let digit_1_to_9 = next(|c| matches!(c, '1'..='9'));
     let digits = || next(|c| c.is_ascii_digit()) * (1..);
     let integer = eat('0') | (digit_1_to_9 + digits().optional());
@@ -23,7 +23,7 @@ pub fn build_parser_with_static(s: &str) -> Parser<impl Parse> {
     eat('-').optional() + integer + fraction.optional() + exponent.optional()
   }
 
-  fn string() -> Combinator!() {
+  fn string() -> C!() {
     let escape =
       eat('\\') + (next(in_str!("\"\\/bfnrt")) | (eat('u') + next(|c| c.is_ascii_hexdigit()) * 4));
     let non_escape =
@@ -32,31 +32,31 @@ pub fn build_parser_with_static(s: &str) -> Parser<impl Parse> {
     eat('"') + body.optional() + '"'
   }
 
-  fn array() -> Combinator!() {
+  fn array() -> C!() {
     eat('[')
       + ws().optional()
-      + ((value() + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+      + ((value() + ws().optional()).sep(eat(',') + ws().optional()) * (..)).optional()
       + ']'
   }
 
-  fn object() -> Combinator!() {
+  fn object() -> C!() {
     let object_item = string() + ws().optional() + eat(':') + ws().optional() + value();
     eat('{')
       + ws().optional()
-      + ((object_item + ws().optional()) * (.., eat(',') + ws().optional())).optional()
+      + ((object_item + ws().optional()).sep(eat(',') + ws().optional()) * (..)).optional()
       + '}'
   }
 
   // `value` will indirectly recurse to itself, so we need special treatment.
   // Use `LazyLock` to create a static `Parse` implementor,
   // use `Box<dyn>` to prevent recursive/infinite type.
-  fn value() -> Combinator!() {
+  fn value() -> C!() {
     // TODO: make combinators const so we don't need LazyLock
-    static VALUE: LazyLock<Box<dyn Parse<Kind = (), State = (), Heap = ()> + Send + Sync>> =
+    static VALUE: LazyLock<Box<dyn Action<Value = (), State = (), Heap = ()> + Send + Sync>> =
       LazyLock::new(|| {
         Box::new(array() | object() | number() | string() | "true" | "false" | "null")
       });
-    wrap(|input| VALUE.parse(input))
+    wrap(|input| VALUE.exec(input))
   }
 
   Builder::new().entry(ws() | value()).build(s)

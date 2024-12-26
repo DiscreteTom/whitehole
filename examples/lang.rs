@@ -2,7 +2,7 @@
 
 use whitehole::{
   combinator::{eat, next, till},
-  Combinator,
+  C,
 };
 
 /// Eat one or more unicode whitespaces.
@@ -10,15 +10,15 @@ use whitehole::{
 /// Unicode whitespaces is a huge set so this combinator may not be efficient.
 /// If you don't need to handle all unicode whitespaces, consider using a custom combinator.
 /// E.g. for JSON, you can use `next(in_str!(" \t\r\n")) * (1..)` which is faster than this.
-pub fn whitespaces<State, Heap>() -> Combinator!((), State, Heap) {
+pub fn whitespaces<State, Heap>() -> C!((), State, Heap) {
   next(|c| c.is_whitespace()) * (1..)
 }
 
-pub fn singleline_comment<State, Heap>() -> Combinator!((), State, Heap) {
+pub fn singleline_comment<State, Heap>() -> C!((), State, Heap) {
   eat("//") + (till('\n') | till(()))
 }
 
-pub fn multiline_comment<State, Heap>() -> Combinator!((), State, Heap) {
+pub fn multiline_comment<State, Heap>() -> C!((), State, Heap) {
   eat("/*") + (till("*/") | till(()))
 }
 
@@ -27,7 +27,7 @@ fn main() {}
 #[cfg(test)]
 mod tests {
   use super::*;
-  use whitehole::parse::{Input, Parse};
+  use whitehole::action::{Action, Input};
 
   #[test]
   fn test_whitespaces() {

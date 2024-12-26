@@ -1,11 +1,11 @@
 use in_str::in_str;
 use whitehole::{
+  action::Action,
   combinator::{eat, next},
-  parse::Parse,
   parser::{Builder, Parser},
 };
 
-pub fn build_lexer(s: &str) -> Parser<impl Parse> {
+pub fn build_lexer(s: &str) -> Parser<impl Action> {
   // Use `* (1..)` to repeat for one or more times.
   let whitespaces = next(in_str!(" \t\r\n")) * (1..);
 
@@ -21,8 +21,11 @@ pub fn build_lexer(s: &str) -> Parser<impl Parse> {
   };
 
   let string = {
-    let escape =
-      eat('\\') + (next(in_str!("\"\\/bfnrt")) | (eat('u') + next(|c| c.is_ascii_hexdigit()) * 4));
+    let escape = {
+      let simple = next(in_str!("\"\\/bfnrt"));
+      let hex = eat('u') + next(|c| c.is_ascii_hexdigit()) * 4;
+      eat('\\') + (simple | hex)
+    };
     let non_escape =
       next(|c| c != '"' && c != '\\' && matches!(c, '\u{0020}'..='\u{10ffff}')) * (1..);
     // Use `* (..)` to repeat for zero or more times.

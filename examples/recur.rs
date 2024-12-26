@@ -1,7 +1,7 @@
 use std::{cell::OnceCell, rc::Rc};
 use whitehole::{
+  action::{Action, Input, Output},
   combinator::{eat, next, Combinator},
-  parse::{Input, Output, Parse},
   parser::Builder,
 };
 
@@ -10,7 +10,7 @@ use whitehole::{
 // Use `Rc` to make it clone-able, use `OnceCell` to initialize it later,
 // use `Box<dyn>` to prevent recursive/infinite type.
 type RecurInner<Kind, State, Heap> =
-  Rc<OnceCell<Box<dyn Parse<Kind = Kind, State = State, Heap = Heap>>>>;
+  Rc<OnceCell<Box<dyn Action<Value = Kind, State = State, Heap = Heap>>>>;
 
 /// See [`recur`] and [`recur_unchecked`].
 ///
@@ -25,14 +25,14 @@ pub struct RecurSetter<Kind, State, Heap> {
 impl<Kind, State, Heap> RecurSetter<Kind, State, Heap> {
   /// Consume self, set the parser.
   #[inline]
-  pub fn set(self, parser: Box<dyn Parse<Kind = Kind, State = State, Heap = Heap>>) {
+  pub fn set(self, parser: Box<dyn Action<Value = Kind, State = State, Heap = Heap>>) {
     // we can use `ok` here because the setter will be dropped after this call
     self.inner.set(parser).ok();
   }
 
   /// Consume self, set the parser by boxing the parser.
   #[inline]
-  pub fn boxed(self, p: impl Parse<Kind = Kind, State = State, Heap = Heap> + 'static) {
+  pub fn boxed(self, p: impl Action<Value = Kind, State = State, Heap = Heap> + 'static) {
     self.set(Box::new(p));
   }
 }
@@ -42,16 +42,13 @@ pub struct Recur<Kind, State, Heap> {
   rc: RecurInner<Kind, State, Heap>,
 }
 
-impl<Kind, State, Heap> Parse for Recur<Kind, State, Heap> {
-  type Kind = Kind;
+unsafe impl<Kind, State, Heap> Action for Recur<Kind, State, Heap> {
+  type Value = Kind;
   type State = State;
   type Heap = Heap;
 
-  fn parse<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
-    self.rc.get().unwrap().parse(input)
+  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+    self.rc.get().unwrap().exec(input)
   }
 }
 
@@ -76,16 +73,13 @@ pub struct RecurUnchecked<Kind, State, Heap> {
   rc: RecurInner<Kind, State, Heap>,
 }
 
-impl<Kind, State, Heap> Parse for RecurUnchecked<Kind, State, Heap> {
-  type Kind = Kind;
+unsafe impl<Kind, State, Heap> Action for RecurUnchecked<Kind, State, Heap> {
+  type Value = Kind;
   type State = State;
   type Heap = Heap;
 
-  fn parse<'text>(
-    &self,
-    input: &mut Input<'text, &mut State, &mut Heap>,
-  ) -> Option<Output<'text, Self::Kind>> {
-    unsafe { self.rc.get().unwrap_unchecked() }.parse(input)
+  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+    unsafe { self.rc.get().unwrap_unchecked() }.exec(input)
   }
 }
 
