@@ -81,14 +81,15 @@ unsafe impl<State, Heap> Action for EatUsize<State, Heap> {
       return unsafe { input.digest_unchecked(input.next().len_utf8()) }.into();
     }
 
-    let mut digested = 0;
-    let mut count = 0;
+    let mut digested: usize = 0;
+    let mut count: usize = 0;
     let mut chars = input.rest().chars();
     while count < self.inner {
       // no enough chars, try to digest more
       if let Some(c) = chars.next() {
-        digested += c.len_utf8();
-        count += 1;
+        digested = unsafe { digested.unchecked_add(c.len_utf8()) };
+        // SAFETY: count is always smaller than self.inner which is a usize
+        count = unsafe { count.unchecked_add(1) };
       } else {
         // no enough chars, reject
         return None;
