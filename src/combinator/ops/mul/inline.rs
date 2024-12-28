@@ -86,7 +86,11 @@ unsafe impl<
       };
 
       repeated += 1;
-      output.digested += new_output.digested;
+      {
+        // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
+        debug_assert!(usize::MAX - output.digested > new_output.digested);
+        output.digested = unsafe { output.digested.unchecked_add(new_output.digested) };
+      }
       output.value = fold(new_output.value, output.value);
     }
 
