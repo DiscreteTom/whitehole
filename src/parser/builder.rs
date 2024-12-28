@@ -19,7 +19,7 @@ use crate::action::Action;
 ///   .state(MyState::new())
 ///   // optional
 ///   .heap(MyHeap::new())
-///   // build the entry combinator with the provided state and heap
+///   // set the entry action
 ///   .entry(eat("hello ") + "world")
 ///   // build the parser
 ///   .build("hello world");
