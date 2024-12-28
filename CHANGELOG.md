@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Input::reborrow`.
 - Add `Input::shift` and `Input::shift_unchecked`.
 - Add `Output::digested`.
+- Implement `Action` for `Box<Action>`, `Rc<Action>`.
 - Add `C!(@T)` and `C!(Kind, @T)` syntax.
 - Add `AcceptedContext::input`, `AcceptedContext::start`, `AcceptedContext::state`, `AcceptedContext::heap`, `AcceptedContext::rest`, `AcceptedContext::take`, `AcceptedContext::split`.
 - Add `Combinator::range` to include the byte range of digested text in the output.

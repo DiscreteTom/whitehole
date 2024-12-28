@@ -29,6 +29,8 @@
 mod input;
 mod output;
 
+use std::rc::Rc;
+
 pub use input::*;
 pub use output::*;
 
@@ -51,4 +53,30 @@ pub unsafe trait Action {
     &self,
     input: Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>>;
+}
+
+unsafe impl<T: Action> Action for Box<T> {
+  type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  fn exec<'text>(
+    &self,
+    input: Input<'text, &mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<Self::Value>> {
+    self.as_ref().exec(input)
+  }
+}
+
+unsafe impl<T: Action> Action for Rc<T> {
+  type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  fn exec<'text>(
+    &self,
+    input: Input<'text, &mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<Self::Value>> {
+    self.as_ref().exec(input)
+  }
 }
