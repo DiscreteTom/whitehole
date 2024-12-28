@@ -76,38 +76,49 @@ mod tests {
 
   #[test]
   fn instant_new() {
-    let state = Instant::new("123");
-    assert_eq!(state.digested(), 0);
-    assert_eq!(state.rest(), "123");
-    assert_eq!(state.text(), "123");
+    let i = Instant::new("123");
+    assert_eq!(i.digested(), 0);
+    assert_eq!(i.rest(), "123");
+    assert_eq!(i.text(), "123");
   }
 
   #[test]
   fn instant_digest_unchecked() {
-    let mut state = Instant::new("123");
-    unsafe { state.digest_unchecked(1) };
-    assert_eq!(state.digested(), 1);
-    assert_eq!(state.rest(), "23");
-    assert_eq!(state.text(), "123");
-    unsafe { state.digest_unchecked(1) };
-    assert_eq!(state.digested(), 2);
-    assert_eq!(state.rest(), "3");
-    assert_eq!(state.text(), "123");
+    let mut i = Instant::new("123");
+    unsafe { i.digest_unchecked(1) };
+    assert_eq!(i.digested(), 1);
+    assert_eq!(i.rest(), "23");
+    assert_eq!(i.text(), "123");
+    unsafe { i.digest_unchecked(1) };
+    assert_eq!(i.digested(), 2);
+    assert_eq!(i.rest(), "3");
+    assert_eq!(i.text(), "123");
   }
 
   #[test]
   #[should_panic]
   fn instant_digest_unchecked_overflow() {
-    let mut state = Instant::new("123");
-    unsafe { state.digest_unchecked(4) };
+    let mut i = Instant::new("123");
+    unsafe { i.digest_unchecked(4) };
   }
 
   #[test]
   #[should_panic]
   fn instant_digest_unchecked_invalid_code_point() {
-    let mut state = Instant::new("好");
-    unsafe { state.digest_unchecked(1) };
+    let mut i = Instant::new("好");
+    unsafe { i.digest_unchecked(1) };
   }
 
-  // TODO: add tests for digested
+  #[test]
+  fn instant_digest() {
+    let mut i = Instant::new("123");
+    assert!(i.digest(4).is_err());
+    let mut i = Instant::new("好");
+    assert!(i.digest(1).is_err());
+    let mut i = Instant::new("123");
+    assert!(i.digest(2).is_ok());
+    assert_eq!(i.digested(), 2);
+    assert_eq!(i.rest(), "3");
+    assert_eq!(i.text(), "123");
+  }
 }
