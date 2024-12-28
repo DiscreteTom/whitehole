@@ -77,7 +77,7 @@ unsafe impl<
     // the rest of the occurrences
     while repeat.validate(repeated) {
       let Some(new_output) = input
-        .reload(output.digested)
+        .shift(output.digested)
         .and_then(|input| self.lhs.exec(input))
       else {
         break;
@@ -132,13 +132,13 @@ unsafe impl<
     // the rest of the occurrences
     while repeat.validate(repeated) {
       let Some(sep_output) = input
-        .reload(output.digested)
+        .shift(output.digested)
         .and_then(|input| self.lhs.sep.exec(input))
       else {
         break;
       };
       let Some(value_output) = input
-        .reload(output.digested + sep_output.digested)
+        .shift(output.digested + sep_output.digested)
         .and_then(|input| self.lhs.value.exec(input))
       else {
         break;

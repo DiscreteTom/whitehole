@@ -122,15 +122,15 @@ impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
     }
   }
 
-  /// Construct a new [`Input`] by digesting `n` bytes.
-  /// The [`start`](Self::start) of the new instance will be auto calculated.
+  /// Construct a new [`Input`] by shifting [`Self::start`] forward by `n` bytes.
+  /// [`Self::rest`] of the new instance will be auto calculated.
   /// # Safety
   /// You should ensure that `n` is a valid UTF-8 boundary
   /// and smaller than the length of [`Self::rest`].
   /// This will be checked using [`debug_assert!`].
-  /// For the checked version, see [`Self::reload`].
+  /// For the checked version, see [`Self::shift`].
   #[inline]
-  pub unsafe fn reload_unchecked(&mut self, n: usize) -> Input<'text, &mut State, &mut Heap> {
+  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<'text, &mut State, &mut Heap> {
     debug_assert!(self.rest.is_char_boundary(n));
     debug_assert!(n < self.rest.len());
     Input::new_unchecked(
@@ -141,14 +141,13 @@ impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
     )
   }
 
-  /// Try to construct a new [`Input`] by digesting `n` bytes.
-  /// The [`start`](Self::start) of the new instance will be auto calculated.
+  /// Try to construct a new [`Input`] by shifting [`Self::start`] forward by `n` bytes.
+  /// [`Self::rest`] of the new instance will be auto calculated.
   ///
   /// Return [`Some`] if `n` is a valid UTF-8 boundary
   /// and smaller than the length of [`Self::rest`].
-  // TODO: better name
   #[inline]
-  pub fn reload(&mut self, n: usize) -> Option<Input<'text, &mut State, &mut Heap>> {
+  pub fn shift(&mut self, n: usize) -> Option<Input<'text, &mut State, &mut Heap>> {
     if n >= self.rest.len() {
       return None;
     }
@@ -156,7 +155,7 @@ impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
     self
       .rest
       .get(n..)
-      .and_then(|_| unsafe { self.reload_unchecked(n) }.into())
+      .and_then(|_| unsafe { self.shift_unchecked(n) }.into())
     // TODO: optimize code?
   }
 }
@@ -192,14 +191,14 @@ mod tests {
   }
 
   #[test]
-  fn input_reload() {
+  fn input_shift() {
     let mut state = ();
     let mut heap = ();
     let mut input = Input::new("123", 0, &mut state, &mut heap).unwrap();
-    assert_eq!(input.reload(1).unwrap().start(), 1);
-    assert_eq!(input.reload(2).unwrap().start(), 2);
-    assert!(input.reload(3).is_none());
+    assert_eq!(input.shift(1).unwrap().start(), 1);
+    assert_eq!(input.shift(2).unwrap().start(), 2);
+    assert!(input.shift(3).is_none());
   }
 
-  // TODO: add tests for reload_unchecked
+  // TODO: add tests for shift_unchecked
 }

@@ -89,7 +89,7 @@ unsafe impl<Lhs: Action<Value: Concat<Rhs::Value>>, Rhs: Action<State = Lhs::Sta
   ) -> Option<Output<Self::Value>> {
     self.lhs.exec(input.reborrow()).and_then(|output| {
       input
-        .reload(output.digested)
+        .shift(output.digested)
         .and_then(|input| self.rhs.exec(input))
         .map(|rhs_output| Output {
           value: output.value.concat(rhs_output.value),

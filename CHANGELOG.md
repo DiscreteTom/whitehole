@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `Input::new_unchecked`.
 - Add `Input::reborrow`.
+- Add `Input::shift` and `Input::shift_unchecked`.
 - Add `Output::digested`.
 - Add `C!(@T)` and `C!(Kind, @T)` syntax.
 - Add `AcceptedContext::rest`.
@@ -43,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove `Input::reload`, use `Input::shift` instead.
 - Remove `Output::rest`.
 - Remove `Action` trait implementation for plain closures. Use `wrap` instead to create a `Combinator` from a closure.
 - Remove `AcceptedContext::digested`.
