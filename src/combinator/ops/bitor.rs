@@ -36,14 +36,14 @@ use std::ops;
 /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
 #[derive(Debug, Clone, Copy)]
 pub struct BitOr<Lhs, Rhs> {
-  pub lhs: Lhs,
-  pub rhs: Rhs,
+  lhs: Lhs,
+  rhs: Rhs,
 }
 
 impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
   /// Create a new instance with the left-hand side and right-hand side.
   #[inline]
-  pub const fn new(lhs: Lhs, rhs: Rhs) -> Self {
+  const fn new(lhs: Lhs, rhs: Rhs) -> Self {
     Self { lhs, rhs }
   }
 }

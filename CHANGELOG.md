@@ -19,7 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Combinator::when` as the opposite of `Combinator::prevent`.
 - Add `Combinator::finally` to modify `Input` after execution.
 - Add `wrap_unchecked`.
-- Expose `Add::lhs`, `Add::rhs`, `BitOr::lhs` and `BitOr::rhs`.
 - Implement `Into<Combinator>` for `char`, `&str`, `String`, `usize`.
 - Add `Combinator::sep`.
 - Add `Instant::digest_unchecked`.and `Instant::digest`.

@@ -3,8 +3,8 @@ use crate::combinator::Combinator;
 /// See [`Combinator::sep`].
 #[derive(Debug, Clone, Copy)]
 pub struct Sep<T, S> {
-  pub value: T,
-  pub sep: S,
+  pub(super) value: T,
+  pub(super) sep: S,
 }
 
 impl<T> Combinator<T> {

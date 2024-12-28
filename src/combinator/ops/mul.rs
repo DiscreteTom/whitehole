@@ -124,13 +124,13 @@ pub use sep::*;
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
 #[derive(Debug, Clone, Copy)]
 pub struct Mul<Lhs, Rhs> {
-  pub lhs: Lhs,
-  pub rhs: Rhs,
+  lhs: Lhs,
+  rhs: Rhs,
 }
 
 impl<Lhs, Rhs> Mul<Lhs, Rhs> {
   #[inline]
-  pub const fn new(lhs: Lhs, rhs: Rhs) -> Self {
+  const fn new(lhs: Lhs, rhs: Rhs) -> Self {
     Self { lhs, rhs }
   }
 }

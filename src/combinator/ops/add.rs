@@ -63,14 +63,14 @@ use std::ops;
 /// See [`ops::add`](crate::combinator::ops::add) for more information.
 #[derive(Debug, Clone, Copy)]
 pub struct Add<Lhs, Rhs> {
-  pub lhs: Lhs,
-  pub rhs: Rhs,
+  lhs: Lhs,
+  rhs: Rhs,
 }
 
 impl<Lhs, Rhs> Add<Lhs, Rhs> {
   /// Create a new instance with the left-hand side and right-hand side.
   #[inline]
-  pub const fn new(lhs: Lhs, rhs: Rhs) -> Self {
+  const fn new(lhs: Lhs, rhs: Rhs) -> Self {
     Self { lhs, rhs }
   }
 }
