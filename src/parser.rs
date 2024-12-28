@@ -44,7 +44,7 @@ impl<T: Action<State: Clone, Heap: Clone> + Clone> Clone for Parser<'_, T> {
 }
 
 impl<'text, T: Action> Parser<'text, T> {
-  /// The entry combinator.
+  /// The entry action.
   #[inline]
   pub const fn entry(&self) -> &T {
     &self.entry
@@ -57,7 +57,7 @@ impl<'text, T: Action> Parser<'text, T> {
     &self.instant
   }
 
-  /// Consume self, return a new instance with the same combinator and a new text.
+  /// Consume self, return a new instance with the same action and a new text.
   /// [`Self::instant`] and [`Self::state`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
@@ -68,7 +68,7 @@ impl<'text, T: Action> Parser<'text, T> {
     self.reload_with(T::State::default(), text)
   }
 
-  /// Consume self, return a new instance with the same combinator, a new text and the given state.
+  /// Consume self, return a new instance with the same action, a new text and the given state.
   /// [`Self::instant`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
@@ -161,7 +161,7 @@ impl<'text, T: Action> Parser<'text, T> {
 
   /// Try to yield the next [`Output`].
   /// Return [`None`] if the text is already fully digested
-  /// or the combinator rejects.
+  /// or the action rejects.
   #[inline]
   pub fn parse(&mut self) -> Option<Output<T::Value>> {
     self
@@ -178,7 +178,7 @@ impl<'text, T: Action> Parser<'text, T> {
   /// Try to yield the next [`Output`] without updating [`Self::instant`] and [`Self::state`].
   /// [`Self::state`] will be cloned and returned.
   /// Return [`None`] if the text is already fully digested
-  /// or the combinator rejects.
+  /// or the action rejects.
   #[inline]
   pub fn peek(&mut self) -> (Option<Output<T::Value>>, T::State)
   where
