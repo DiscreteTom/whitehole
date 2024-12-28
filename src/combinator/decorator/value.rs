@@ -139,6 +139,19 @@ mod tests {
   }
 
   #[test]
+  fn combinator_tuple() {
+    assert_eq!(
+      wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
+        .tuple()
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      Some(Output {
+        value: (1,),
+        digested: 1
+      })
+    );
+  }
+
+  #[test]
   fn combinator_bind() {
     assert_eq!(
       wrap(|input| input.digest(1))
