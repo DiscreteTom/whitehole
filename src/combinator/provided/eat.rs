@@ -143,8 +143,7 @@ impl<'a, State, Heap> Into<Combinator<EatStr<'a, State, Heap>>> for &'a str {
 }
 
 /// Returns a combinator to eat from the head of [`Input::rest`] by the provided pattern.
-/// The combinator will reject if [`Output::rest`] can't be built
-/// as a valid UTF-8 string.
+/// The combinator will reject if the pattern is not found.
 ///
 /// `0` and `""` (empty string) are allowed but be careful with infinite loops.
 ///
@@ -176,8 +175,7 @@ pub fn eat<T>(pattern: impl Into<Combinator<T>>) -> Combinator<T> {
 ///
 /// `0` is allowed but be careful with infinite loops.
 /// # Safety
-/// You should ensure that [`Output::rest`] can be built
-/// as a valid UTF-8 string.
+/// You should ensure that the [`Output::digested`] is valid.
 /// This will be checked using [`debug_assert!`].
 /// For the checked version, see [`eat`].
 /// # Examples
