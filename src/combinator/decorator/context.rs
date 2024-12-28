@@ -79,12 +79,16 @@ macro_rules! impl_ctx {
       }
 
       /// Take the [`Output`].
+      ///
+      /// To get the [`Input`] as well, use [`Self::split`].
       #[inline]
       pub fn take(self) -> $output {
         self.output
       }
 
       /// Split the instance into the [`Input`] and [`Output`].
+      ///
+      /// To get the [`Output`] only, use [`Self::take`].
       #[inline]
       pub fn split(self) -> ($input, $output) {
         (self.input, self.output)
