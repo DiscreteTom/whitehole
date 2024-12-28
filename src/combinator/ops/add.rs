@@ -88,12 +88,12 @@ unsafe impl<Lhs: Action<Value: Concat<Rhs::Value>>, Rhs: Action<State = Lhs::Sta
     mut input: Input<'text, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self.lhs.exec(input.reborrow()).and_then(|output| {
-      input
-        .shift(output.digested)
+      (output.digested < input.rest().len())
+        .then(|| unsafe { input.shift_unchecked(output.digested) })
         .and_then(|input| self.rhs.exec(input))
         .map(|rhs_output| Output {
           value: output.value.concat(rhs_output.value),
-          digested: output.digested + rhs_output.digested, // TODO: use unsafe?
+          digested: unsafe { output.digested.unchecked_add(rhs_output.digested) },
         })
     })
   }
