@@ -156,23 +156,20 @@ impl<T: Action> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::combinator::wrap;
 
   fn accepter() -> C!((), bool) {
-    unsafe {
-      wrap_unchecked(|input| {
-        *input.state = true;
-        input.digest(1)
-      })
-    }
+    wrap(|input| {
+      *input.state = true;
+      input.digest(1)
+    })
   }
 
   fn rejecter() -> C!((), bool) {
-    unsafe {
-      wrap_unchecked(|input| {
-        *input.state = true;
-        None
-      })
-    }
+    wrap(|input| {
+      *input.state = true;
+      None
+    })
   }
 
   #[test]

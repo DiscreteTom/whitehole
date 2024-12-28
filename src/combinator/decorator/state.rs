@@ -100,6 +100,7 @@ impl<T: Action> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::combinator::wrap;
 
   #[derive(Debug, Default, PartialEq, Eq)]
   struct State {
@@ -108,21 +109,17 @@ mod tests {
   }
 
   fn accepter() -> C!((), State) {
-    unsafe {
-      wrap_unchecked(|input: Input<&mut State, &mut ()>| {
-        input.state.to = input.state.from;
-        input.digest(1)
-      })
-    }
+    wrap(|input: Input<&mut State, &mut ()>| {
+      input.state.to = input.state.from;
+      input.digest(1)
+    })
   }
 
   fn rejecter() -> C!((), State) {
-    unsafe {
-      wrap_unchecked(|input: Input<&mut State, &mut ()>| {
-        input.state.to = input.state.from;
-        None
-      })
-    }
+    wrap(|input: Input<&mut State, &mut ()>| {
+      input.state.to = input.state.from;
+      None
+    })
   }
 
   #[test]

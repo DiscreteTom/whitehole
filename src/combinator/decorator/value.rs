@@ -123,11 +123,12 @@ impl<T: Action> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::combinator::wrap;
 
   #[test]
   fn combinator_map() {
     assert_eq!(
-      unsafe { wrap_unchecked(|input| input.digest(1).map(|output| output.map(|_| 1))) }
+      wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
         .map(Some)
         .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
@@ -140,7 +141,7 @@ mod tests {
   #[test]
   fn combinator_bind() {
     assert_eq!(
-      unsafe { wrap_unchecked(|input| input.digest(1)) }
+      wrap(|input| input.digest(1))
         .bind(123)
         .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
@@ -153,7 +154,7 @@ mod tests {
   #[test]
   fn combinator_bind_default() {
     assert_eq!(
-      unsafe { wrap_unchecked(|input| input.digest(1)) }
+      wrap(|input| input.digest(1))
         .bind_default::<i32>()
         .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
@@ -166,7 +167,7 @@ mod tests {
   #[test]
   fn combinator_select() {
     assert_eq!(
-      unsafe { wrap_unchecked(|input| input.digest(1)) }
+      wrap(|input| input.digest(1))
         .select(|ctx| if ctx.content() == "1" { 1 } else { 2 })
         .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
@@ -179,7 +180,7 @@ mod tests {
   #[test]
   fn combinator_range() {
     assert_eq!(
-      unsafe { wrap_unchecked(|input| input.digest(1)) }
+      wrap(|input| input.digest(1))
         .range()
         .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
       Some(Output {
