@@ -4,8 +4,7 @@ use crate::{action::Input, C};
 /// Returns a combinator by the provided function that
 /// eats [`Input::rest`] and returns the number of digested bytes (not chars).
 /// The combinator will reject if the function returns `0`
-/// or [`Output::rest`] can't be built
-/// as a valid UTF-8 string.
+/// or [`Output::digested`](crate::action::Output::digested) is invalid.
 /// # Examples
 /// ```
 /// # use whitehole::{combinator::eater, C};
@@ -31,8 +30,7 @@ pub fn eater<State, Heap>(
 /// eats [`Input::rest`] and returns the number of digested bytes (not chars).
 /// The combinator will reject if the function returns `0`.
 /// # Safety
-/// You should ensure that [`Output::rest`] can be built
-/// as a valid UTF-8 string.
+/// You should ensure that the [`Output::digested`](crate::action::Output::digested) is valid.
 /// This will be checked using [`debug_assert!`].
 /// For the checked version, see [`eater`].
 /// # Examples
