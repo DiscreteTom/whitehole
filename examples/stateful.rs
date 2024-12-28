@@ -36,14 +36,14 @@ pub fn build_lexer(s: &str) -> Parser<impl Action> {
   let left = {
     eat('`')
       + body_optional()
-      + (eat('`') | eat("${").then(|ctx: Ctx!()| ctx.input.state.nested += 1))
+      + (eat('`') | eat("${").then(|mut ctx: Ctx!()| ctx.state().nested += 1))
   };
 
   let middle_or_right = {
     eat('}')
       + body_optional()
-      + (eat('`').then(|ctx: Ctx!()| ctx.input.state.nested -= 1)
-        | eat("${").then(|ctx: Ctx!()| ctx.input.state.nested += 1))
+      + (eat('`').then(|mut ctx: Ctx!()| ctx.state().nested -= 1)
+        | eat("${").then(|mut ctx: Ctx!()| ctx.state().nested += 1))
   }
   .prevent(|input| input.state.nested == 0);
 

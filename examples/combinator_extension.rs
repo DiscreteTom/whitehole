@@ -13,7 +13,7 @@ pub trait CombinatorExt<T: Action> {
 
 impl<T: Action> CombinatorExt<T> for Combinator<T> {
   fn print(self) -> C!(@T) {
-    self.then(|ctx| println!("{}..{}: {:?}", ctx.input.start(), ctx.end(), ctx.content()))
+    self.then(|ctx| println!("{}..{}: {:?}", ctx.start(), ctx.end(), ctx.content()))
   }
 }
 
