@@ -70,7 +70,7 @@ impl<T: Action> Combinator<T> {
   where
     NewValue: Default,
   {
-    self.map(|_| NewValue::default())
+    self.map(|_| Default::default())
   }
 
   /// Create a new combinator to set [`Output::value`] by the `selector`.
@@ -113,17 +113,10 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   #[inline]
   pub fn range(self) -> C!(WithRange<T::Value>, @T) {
-    unsafe {
-      wrap_unchecked(move |mut input| {
-        self.exec(input.reborrow()).map(|output| {
-          let digested = output.digested;
-          output.map(|value| WithRange {
-            data: value,
-            range: input.start()..(input.start() + digested),
-          })
-        })
-      })
-    }
+    self.select(|ctx| {
+      let range = ctx.range();
+      ctx.take().map(|data| WithRange { data, range })
+    })
   }
 }
 
