@@ -82,23 +82,15 @@ impl<T: Action> Combinator<T> {
   /// # use whitehole::C;
   /// # struct MyState { value: i32 }
   /// # fn t(combinator: C!((), MyState)) {
-  /// combinator.finally(|mut ctx| ctx.state().value += 1)
+  /// combinator.finally(|input| input.state.value += 1)
   /// # ;}
   /// ```
   #[inline]
-  pub fn finally(
-    self,
-    modifier: impl for<'text> Fn(
-      AcceptedContext<Input<'text, &mut T::State, &mut T::Heap>, &Option<Output<T::Value>>>,
-    ),
-  ) -> C!(@T) {
+  pub fn finally(self, modifier: impl Fn(Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
     unsafe {
       wrap_unchecked(move |mut input| {
         let output = self.exec(input.reborrow());
-        modifier(AcceptedContext {
-          input,
-          output: &output,
-        });
+        modifier(input);
         output
       })
     }
@@ -191,8 +183,8 @@ mod tests {
   fn combinator_finally() {
     let mut state = State::default();
     assert!(accepter()
-      .finally(|ctx| {
-        ctx.input.state.to = 1;
+      .finally(|input| {
+        input.state.to = 1;
       })
       .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_some());
@@ -200,8 +192,8 @@ mod tests {
 
     let mut state = State::default();
     assert!(rejecter()
-      .finally(|ctx| {
-        ctx.input.state.to = 1;
+      .finally(|input| {
+        input.state.to = 1;
       })
       .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
       .is_none());
