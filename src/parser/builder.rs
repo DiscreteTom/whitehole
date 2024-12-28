@@ -105,7 +105,7 @@ mod tests {
 
   #[test]
   fn parser_builder_default() {
-    let mut parser = Builder::new()
+    let mut parser = Builder::default()
       .entry(eat("hello ") + "world")
       .build("hello world");
 
@@ -121,7 +121,7 @@ mod tests {
 
   #[test]
   fn parser_builder_with_state_heap() {
-    let mut parser = Builder::new()
+    let mut parser = Builder::default()
       .state(1)
       .heap(1)
       .entry((eat("hello ") + "world").then(|mut ctx| {
