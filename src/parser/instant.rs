@@ -60,14 +60,13 @@ impl<'text> Instant<'text> {
 
   /// Digest the next `n` bytes.
   /// [`Self::rest`] will be updated automatically.
-  /// # Panics
-  /// You should ensure that `n` is a valid UTF-8 boundary,
-  /// otherwise this will panic.
+  /// Return [`Ok`] if `n` is a valid UTF-8 boundary.
   #[inline]
-  pub fn digest(&mut self, n: usize) {
-    self.rest = self.rest.get(n..).unwrap();
+  pub fn digest(&mut self, n: usize) -> Result<(), ()> {
+    self.rest = self.rest.get(n..).ok_or(())?;
     // SAFETY: since the new `self.rest` is a valid `&str`, the new digested is always a valid `usize`.
     self.digested = unsafe { self.digested.unchecked_add(n) };
+    Ok(())
   }
 }
 
