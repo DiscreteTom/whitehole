@@ -58,7 +58,7 @@
 //!   // accept one ascii digit at a time
 //!   next(|c| c.is_ascii_digit())
 //!     // convert the char to a number
-//!     .select(|ctx| ctx.input.next() as usize - '0' as usize)
+//!     .select(|ctx| ctx.input().next() as usize - '0' as usize)
 //!     // repeat for 1 or more times, init accumulator with 0, and fold values
 //!     * (1.., || 0 as usize, |value, acc| acc * 10 + value);
 //!
@@ -88,7 +88,7 @@
 //!   // accept one ascii digit at a time
 //!   next(|c| c.is_ascii_digit())
 //!     // convert the char to a number, wrapped in `Usize`
-//!     .select(|ctx| Usize(ctx.input.next() as usize - '0' as usize))
+//!     .select(|ctx| Usize(ctx.input().next() as usize - '0' as usize))
 //!     // repeat for 1 or more times, fold `Usize` to `usize`
 //!     * (1..);
 //!     // equals to: `* (1.., Usize::Output::default, Usize::fold)`

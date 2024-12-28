@@ -102,17 +102,17 @@
 //!
 //! // repeat with another combinator as the separator
 //! # t(
-//! eat("true") * (1.., eat(','))
+//! eat("true").sep(eat(',')) * (1..)
 //! # );
 //! // you can use a String, a &str or a char as the separator
 //! # t(
-//! eat("true") * (1.., ',')
+//! eat("true").sep(',') * (1..)
 //! # );
 //! # t(
-//! eat("true") * (1.., ", ")
+//! eat("true").sep(", ") * (1..)
 //! # );
 //! # t(
-//! eat("true") * (1.., ", ".to_string())
+//! eat("true").sep(", ".to_string()) * (1..)
 //! # );
 //! ```
 //! ## Decorator

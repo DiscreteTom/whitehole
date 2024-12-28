@@ -32,7 +32,7 @@ impl<T: Action> Combinator<T> {
   /// # use whitehole::C;
   /// # struct MyState { value: i32 }
   /// # fn t(combinator: C!((), MyState)) {
-  /// combinator.then(|ctx| ctx.input.state.value += 1)
+  /// combinator.then(|mut ctx| ctx.state().value += 1)
   /// # ;}
   /// ```
   #[inline]
@@ -82,7 +82,7 @@ impl<T: Action> Combinator<T> {
   /// # use whitehole::C;
   /// # struct MyState { value: i32 }
   /// # fn t(combinator: C!((), MyState)) {
-  /// combinator.finally(|ctx| ctx.input.state.value += 1)
+  /// combinator.finally(|mut ctx| ctx.state().value += 1)
   /// # ;}
   /// ```
   #[inline]
