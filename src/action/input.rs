@@ -159,13 +159,18 @@ mod tests {
 
   #[test]
   fn input_new_unchecked() {
-    let _ = unsafe { Input::new_unchecked("123", 0, &mut (), &mut ()) };
+    let mut state = ();
+    let mut heap = ();
+    let input = unsafe { Input::new_unchecked("123", 0, &mut state, &mut heap) };
+    assert_eq!(input.start(), 0);
+    assert_eq!(input.rest(), "123");
+    assert_eq!(input.next(), '1');
   }
 
   #[test]
   #[should_panic]
   fn input_new_unchecked_empty() {
-    let _ = unsafe { Input::new_unchecked("", 0, &mut (), &mut ()) };
+    unsafe { Input::new_unchecked("", 0, &mut (), &mut ()) };
   }
 
   #[test]
@@ -184,6 +189,70 @@ mod tests {
   }
 
   #[test]
+  fn input_reborrow() {
+    let mut state = 123;
+    let mut heap = 123;
+    let mut input = Input::new("123", 0, &mut state, &mut heap).unwrap();
+    {
+      let input = input.reborrow();
+      assert_eq!(input.start(), 0);
+      assert_eq!(input.rest(), "123");
+      assert_eq!(input.next(), '1');
+      *input.state = 456;
+      *input.heap = 456;
+    }
+    assert_eq!(state, 456);
+    assert_eq!(heap, 456);
+  }
+
+  #[test]
+  fn input_shift_unchecked() {
+    let mut state = 1;
+    let mut heap = 1;
+    let mut input = Input::new("123", 0, &mut state, &mut heap).unwrap();
+    {
+      let input = unsafe { input.shift_unchecked(1) };
+      assert_eq!(input.start(), 1);
+      assert_eq!(input.rest(), "23");
+      assert_eq!(input.next(), '2');
+      *input.state = 2;
+      *input.heap = 2;
+    }
+    assert_eq!(*input.state, 2);
+    assert_eq!(*input.heap, 2);
+    {
+      let input = unsafe { input.shift_unchecked(2) };
+      assert_eq!(input.start(), 2);
+      assert_eq!(input.rest(), "3");
+      assert_eq!(input.next(), '3');
+      *input.state = 3;
+      *input.heap = 3;
+    }
+    assert_eq!(state, 3);
+    assert_eq!(heap, 3);
+  }
+
+  #[test]
+  #[should_panic]
+  fn input_shift_unchecked_empty() {
+    unsafe {
+      Input::new("123", 0, &mut (), &mut ())
+        .unwrap()
+        .shift_unchecked(3);
+    }
+  }
+
+  #[test]
+  #[should_panic]
+  fn input_shift_unchecked_invalid_code_point() {
+    unsafe {
+      Input::new("好", 0, &mut (), &mut ())
+        .unwrap()
+        .shift_unchecked(1);
+    }
+  }
+
+  #[test]
   fn input_shift() {
     let mut state = ();
     let mut heap = ();
@@ -191,7 +260,11 @@ mod tests {
     assert_eq!(input.shift(1).unwrap().start(), 1);
     assert_eq!(input.shift(2).unwrap().start(), 2);
     assert!(input.shift(3).is_none());
-  }
 
-  // TODO: add tests for shift_unchecked
+    // invalid code point
+    assert!(Input::new("好", 0, &mut (), &mut ())
+      .unwrap()
+      .shift(1)
+      .is_none());
+  }
 }
