@@ -10,7 +10,11 @@ use std::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToIncl
 pub trait Repeat {
   /// Check if the repetition should continue
   /// based on the current repeated times.
-  fn validate(&self, repeated: usize) -> bool;
+  /// # Safety
+  /// The caller should ensure the `repeated` is increased by 1 from `0`,
+  /// and stop calling this with greater `repeated` if this returns `false`.
+  /// This will be checked using [`debug_assert!`].
+  unsafe fn validate(&self, repeated: usize) -> bool;
 
   /// Check if the repetition should be accepted
   /// based on the current repeated times.
@@ -19,7 +23,7 @@ pub trait Repeat {
 
 impl Repeat for usize {
   #[inline]
-  fn validate(&self, repeated: usize) -> bool {
+  unsafe fn validate(&self, repeated: usize) -> bool {
     repeated < *self
   }
 
@@ -31,8 +35,9 @@ impl Repeat for usize {
 
 impl Repeat for Range<usize> {
   #[inline]
-  fn validate(&self, repeated: usize) -> bool {
-    repeated + 1 < self.end
+  unsafe fn validate(&self, repeated: usize) -> bool {
+    debug_assert!(self.end >= repeated);
+    self.end.unchecked_sub(repeated) > 1
   }
 
   #[inline]
@@ -43,7 +48,7 @@ impl Repeat for Range<usize> {
 
 impl Repeat for RangeFrom<usize> {
   #[inline]
-  fn validate(&self, _: usize) -> bool {
+  unsafe fn validate(&self, _: usize) -> bool {
     true
   }
 
@@ -55,7 +60,7 @@ impl Repeat for RangeFrom<usize> {
 
 impl Repeat for RangeFull {
   #[inline]
-  fn validate(&self, _: usize) -> bool {
+  unsafe fn validate(&self, _: usize) -> bool {
     true
   }
 
@@ -67,7 +72,7 @@ impl Repeat for RangeFull {
 
 impl Repeat for RangeInclusive<usize> {
   #[inline]
-  fn validate(&self, repeated: usize) -> bool {
+  unsafe fn validate(&self, repeated: usize) -> bool {
     repeated < *self.end()
   }
 
@@ -79,8 +84,9 @@ impl Repeat for RangeInclusive<usize> {
 
 impl Repeat for RangeTo<usize> {
   #[inline]
-  fn validate(&self, repeated: usize) -> bool {
-    repeated + 1 < self.end
+  unsafe fn validate(&self, repeated: usize) -> bool {
+    debug_assert!(self.end >= repeated);
+    self.end.unchecked_sub(repeated) > 1
   }
 
   #[inline]
@@ -91,7 +97,7 @@ impl Repeat for RangeTo<usize> {
 
 impl Repeat for RangeToInclusive<usize> {
   #[inline]
-  fn validate(&self, repeated: usize) -> bool {
+  unsafe fn validate(&self, repeated: usize) -> bool {
     repeated < self.end
   }
 
@@ -107,14 +113,14 @@ mod tests {
 
   #[test]
   fn repeat_usize() {
-    assert_eq!(0.validate(0), false);
-    assert_eq!(0.validate(1), false);
+    assert_eq!(unsafe { 0.validate(0) }, false);
+    assert_eq!(unsafe { 0.validate(1) }, false);
     assert_eq!(0.accept(0), true);
     assert_eq!(0.accept(1), false);
 
-    assert_eq!(1.validate(0), true);
-    assert_eq!(1.validate(1), false);
-    assert_eq!(1.validate(2), false);
+    assert_eq!(unsafe { 1.validate(0) }, true);
+    assert_eq!(unsafe { 1.validate(1) }, false);
+    assert_eq!(unsafe { 1.validate(2) }, false);
     assert_eq!(1.accept(0), false);
     assert_eq!(1.accept(1), true);
     assert_eq!(1.accept(2), false);
@@ -122,11 +128,10 @@ mod tests {
 
   #[test]
   fn repeat_range() {
-    assert_eq!((1..3).validate(0), true);
-    assert_eq!((1..3).validate(1), true);
-    assert_eq!((1..3).validate(2), false);
-    assert_eq!((1..3).validate(3), false);
-    assert_eq!((1..3).validate(4), false);
+    assert_eq!(unsafe { (1..3).validate(0) }, true);
+    assert_eq!(unsafe { (1..3).validate(1) }, true);
+    assert_eq!(unsafe { (1..3).validate(2) }, false);
+    assert_eq!(unsafe { (1..3).validate(3) }, false);
     assert_eq!((1..3).accept(0), false);
     assert_eq!((1..3).accept(1), true);
     assert_eq!((1..3).accept(2), true);
@@ -135,12 +140,18 @@ mod tests {
   }
 
   #[test]
+  #[should_panic]
+  fn repeat_range_overflow() {
+    unsafe { (1..3).validate(4) };
+  }
+
+  #[test]
   fn repeat_range_from() {
-    assert_eq!((1..).validate(0), true);
-    assert_eq!((1..).validate(1), true);
-    assert_eq!((1..).validate(2), true);
-    assert_eq!((1..).validate(3), true);
-    assert_eq!((1..).validate(4), true);
+    assert_eq!(unsafe { (1..).validate(0) }, true);
+    assert_eq!(unsafe { (1..).validate(1) }, true);
+    assert_eq!(unsafe { (1..).validate(2) }, true);
+    assert_eq!(unsafe { (1..).validate(3) }, true);
+    assert_eq!(unsafe { (1..).validate(4) }, true);
     assert_eq!((1..).accept(0), false);
     assert_eq!((1..).accept(1), true);
     assert_eq!((1..).accept(2), true);
@@ -150,11 +161,11 @@ mod tests {
 
   #[test]
   fn repeat_range_full() {
-    assert_eq!((..).validate(0), true);
-    assert_eq!((..).validate(1), true);
-    assert_eq!((..).validate(2), true);
-    assert_eq!((..).validate(3), true);
-    assert_eq!((..).validate(4), true);
+    assert_eq!(unsafe { (..).validate(0) }, true);
+    assert_eq!(unsafe { (..).validate(1) }, true);
+    assert_eq!(unsafe { (..).validate(2) }, true);
+    assert_eq!(unsafe { (..).validate(3) }, true);
+    assert_eq!(unsafe { (..).validate(4) }, true);
     assert_eq!((..).accept(0), true);
     assert_eq!((..).accept(1), true);
     assert_eq!((..).accept(2), true);
@@ -164,11 +175,11 @@ mod tests {
 
   #[test]
   fn repeat_range_inclusive() {
-    assert_eq!((1..=3).validate(0), true);
-    assert_eq!((1..=3).validate(1), true);
-    assert_eq!((1..=3).validate(2), true);
-    assert_eq!((1..=3).validate(3), false);
-    assert_eq!((1..=3).validate(4), false);
+    assert_eq!(unsafe { (1..=3).validate(0) }, true);
+    assert_eq!(unsafe { (1..=3).validate(1) }, true);
+    assert_eq!(unsafe { (1..=3).validate(2) }, true);
+    assert_eq!(unsafe { (1..=3).validate(3) }, false);
+    assert_eq!(unsafe { (1..=3).validate(4) }, false);
     assert_eq!((1..=3).accept(0), false);
     assert_eq!((1..=3).accept(1), true);
     assert_eq!((1..=3).accept(2), true);
@@ -178,11 +189,10 @@ mod tests {
 
   #[test]
   fn repeat_range_to() {
-    assert_eq!((..3).validate(0), true);
-    assert_eq!((..3).validate(1), true);
-    assert_eq!((..3).validate(2), false);
-    assert_eq!((..3).validate(3), false);
-    assert_eq!((..3).validate(4), false);
+    assert_eq!(unsafe { (..3).validate(0) }, true);
+    assert_eq!(unsafe { (..3).validate(1) }, true);
+    assert_eq!(unsafe { (..3).validate(2) }, false);
+    assert_eq!(unsafe { (..3).validate(3) }, false);
     assert_eq!((..3).accept(0), true);
     assert_eq!((..3).accept(1), true);
     assert_eq!((..3).accept(2), true);
@@ -191,12 +201,18 @@ mod tests {
   }
 
   #[test]
+  #[should_panic]
+  fn repeat_range_to_overflow() {
+    unsafe { (..3).validate(4) };
+  }
+
+  #[test]
   fn repeat_range_to_inclusive() {
-    assert_eq!((..=3).validate(0), true);
-    assert_eq!((..=3).validate(1), true);
-    assert_eq!((..=3).validate(2), true);
-    assert_eq!((..=3).validate(3), false);
-    assert_eq!((..=3).validate(4), false);
+    assert_eq!(unsafe { (..=3).validate(0) }, true);
+    assert_eq!(unsafe { (..=3).validate(1) }, true);
+    assert_eq!(unsafe { (..=3).validate(2) }, true);
+    assert_eq!(unsafe { (..=3).validate(3) }, false);
+    assert_eq!(unsafe { (..=3).validate(4) }, false);
     assert_eq!((..=3).accept(0), true);
     assert_eq!((..=3).accept(1), true);
     assert_eq!((..=3).accept(2), true);

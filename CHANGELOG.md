@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `EatUsize` will eat by chars instead of bytes.
 - Rewrite `Till` trait to make it safe.
 - Combinator repetition with `Fold` will be implemented by using inline fold.
+- Make `Repeat::validate` unsafe.
 - Simplify generic params of `Combinator` and `Parser`.
 - `Parser::parse` and `Parser::peek` will return `parse::Output` instead of `WithRange`.
 

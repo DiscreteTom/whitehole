@@ -59,7 +59,7 @@ unsafe impl<
   ) -> Option<Output<Self::Value>> {
     let (repeat, init, fold) = &self.rhs;
 
-    if !repeat.validate(0) {
+    if !unsafe { repeat.validate(0) } {
       return repeat.accept(0).then(|| Output {
         value: init(),
         digested: 0,
@@ -77,7 +77,7 @@ unsafe impl<
     };
 
     // the rest of the occurrences
-    while repeat.validate(repeated) {
+    while unsafe { repeat.validate(repeated) } {
       let Some(new_output) = input
         .shift(output.digested)
         .and_then(|input| self.lhs.exec(input))
@@ -114,7 +114,7 @@ unsafe impl<
   ) -> Option<Output<Self::Value>> {
     let (repeat, init, fold) = &self.rhs;
 
-    if !repeat.validate(0) {
+    if !unsafe { repeat.validate(0) } {
       return repeat.accept(0).then(|| Output {
         value: init(),
         digested: 0,
@@ -132,7 +132,7 @@ unsafe impl<
     };
 
     // the rest of the occurrences
-    while repeat.validate(repeated) {
+    while unsafe { repeat.validate(repeated) } {
       let Some(sep_output) = input
         .shift(output.digested)
         .and_then(|input| self.lhs.sep.exec(input))
