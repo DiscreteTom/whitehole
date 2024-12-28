@@ -100,37 +100,64 @@ impl<'text, T: Action> Parser<'text, T> {
     self.instant = snapshot.instant;
   }
 
-  // TODO
-  // /// Digest the next `n` bytes and set [`Self::state`] to the default.
-  // ///
-  // /// Usually when you digest some bytes from outside of the parser
-  // /// (e.g. by an error recovery strategy),
-  // /// the state should be reset to the default.
-  // /// If you want to keep the state, use [`Self::digest_with`] instead.
-  // /// # Caveats
-  // /// The caller should make sure `n` is no greater than the rest text length,
-  // /// this will be checked using [`debug_assert`].
-  // #[inline]
-  // pub fn digest(&mut self, n: usize) -> &mut Self
-  // where
-  //   State: Default,
-  // {
-  //   self.digest_with(State::default(), n)
-  // }
+  /// Digest the next `n` bytes and set [`Self::state`] to the default.
+  /// The result is the same as [`Instant::digest`].
+  ///
+  /// [`Self::state`] will be set only if the digest is successful.
+  ///
+  /// Usually when you digest some bytes from outside of the parser
+  /// (e.g. by an error recovery strategy),
+  /// the state should be reset to the default.
+  /// If you want to keep the state, use [`Self::digest_with`] instead.
+  #[inline]
+  pub fn digest(&mut self, n: usize) -> Result<(), ()>
+  where
+    T::State: Default,
+  {
+    self.digest_with(T::State::default(), n)
+  }
 
-  // /// Digest the next `n` chars and optionally set [`Self::state`].
-  // /// # Caveats
-  // /// The caller should make sure `n` is no greater than the rest text length,
-  // /// this will be checked using [`debug_assert`].
-  // #[inline]
-  // pub fn digest_with(&mut self, state: impl Into<Option<State>>, n: usize) -> &mut Self {
-  //   debug_assert!(self.digested + n <= self.text.len());
-  //   self.digested += n;
-  //   if let Some(state) = state.into() {
-  //     self.state = state;
-  //   }
-  //   self
-  // }
+  /// Digest the next `n` bytes and set [`Self::state`] to the default.
+  ///
+  /// Usually when you digest some bytes from outside of the parser
+  /// (e.g. by an error recovery strategy),
+  /// the state should be reset to the default.
+  /// If you want to keep the state, use [`Self::digest_with_unchecked`] instead.
+  /// # Safety
+  /// See [`Instant::digest_unchecked`].
+  /// For the checked version, see [`Self::digest`].
+  #[inline]
+  pub unsafe fn digest_unchecked(&mut self, n: usize)
+  where
+    T::State: Default,
+  {
+    self.digest_with_unchecked(T::State::default(), n)
+  }
+
+  /// Digest the next `n` chars and optionally set [`Self::state`].
+  /// The result is the same as [`Instant::digest`].
+  ///
+  /// [`Self::state`] will be set only if the digest is successful.
+  #[inline]
+  pub fn digest_with(&mut self, state: impl Into<Option<T::State>>, n: usize) -> Result<(), ()> {
+    self.instant.digest(n).inspect(|_| {
+      if let Some(state) = state.into() {
+        self.state = state;
+      }
+    })
+  }
+
+  /// Digest the next `n` chars and optionally set [`Self::state`].
+  /// # Safety
+  /// See [`Instant::digest_unchecked`].
+  /// For the checked version, see [`Self::digest_with`].
+  #[inline]
+  pub unsafe fn digest_with_unchecked(&mut self, state: impl Into<Option<T::State>>, n: usize) {
+    self.instant.digest_unchecked(n);
+    if let Some(state) = state.into() {
+      self.state = state;
+    }
+  }
 
   /// Try to yield the next [`Output`].
   /// Return [`None`] if the text is already fully digested

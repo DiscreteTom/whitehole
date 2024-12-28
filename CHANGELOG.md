@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implement `Into<Combinator>` for `char`, `&str`, `String`, `usize`.
 - Add `Combinator::sep`.
 - Add `Instant::digest_unchecked`.and `Instant::digest`.
+- Add `Parser::digest`, `Parser::digest_unchecked`, `Parser::digest_with`, `Parser::digest_with_unchecked`.
 
 ### Changed
 
