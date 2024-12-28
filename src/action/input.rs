@@ -131,8 +131,8 @@ impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
   /// For the checked version, see [`Self::shift`].
   #[inline]
   pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<'text, &mut State, &mut Heap> {
-    debug_assert!(self.rest.is_char_boundary(n));
     debug_assert!(n < self.rest.len());
+    debug_assert!(self.rest.is_char_boundary(n));
     Input::new_unchecked(
       self.rest.get_unchecked(n..),
       self.start.unchecked_add(n),
@@ -148,15 +148,8 @@ impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
   /// and smaller than the length of [`Self::rest`].
   #[inline]
   pub fn shift(&mut self, n: usize) -> Option<Input<'text, &mut State, &mut Heap>> {
-    if n >= self.rest.len() {
-      return None;
-    }
-
-    self
-      .rest
-      .get(n..)
-      .and_then(|_| unsafe { self.shift_unchecked(n) }.into())
-    // TODO: optimize code?
+    (n < self.rest.len() && self.rest.is_char_boundary(n))
+      .then(|| unsafe { self.shift_unchecked(n) })
   }
 }
 
