@@ -34,6 +34,7 @@ impl<Lhs: Action<Value: Fold>, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
   >;
 
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
+  #[inline]
   fn mul(self, rhs: Rhs) -> Self::Output {
     Self::Output::new(Mul::new(self.action, (rhs, Default::default, Fold::fold)))
   }
@@ -54,6 +55,7 @@ impl<T: Action<Value: Fold>, S: Action<State = T::State, Heap = T::Heap>, Rhs: R
   >;
 
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
+  #[inline]
   fn mul(self, rhs: Rhs) -> Self::Output {
     Self::Output::new(Mul::new(self, (rhs, Default::default, Fold::fold)))
   }

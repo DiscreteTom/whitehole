@@ -16,6 +16,7 @@ impl<
   type Output = Combinator<Mul<Lhs, (Repeater, Initializer, InlineFolder)>>;
 
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
+  #[inline]
   fn mul(self, rhs: (Repeater, Initializer, InlineFolder)) -> Self::Output {
     Self::Output::new(Mul::new(self.action, rhs))
   }
@@ -33,6 +34,7 @@ impl<
   type Output = Combinator<Mul<Sep<T, S>, (Repeater, Initializer, InlineFolder)>>;
 
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
+  #[inline]
   fn mul(self, rhs: (Repeater, Initializer, InlineFolder)) -> Self::Output {
     Self::Output::new(Mul::new(self.action, rhs))
   }
