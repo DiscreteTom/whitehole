@@ -98,4 +98,45 @@ impl<T: Action<State = State, Heap = Heap>, State, Heap> Builder<T, State, Heap>
   }
 }
 
-// TODO: tests
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::combinator::eat;
+
+  #[test]
+  fn parser_builder_default() {
+    let mut parser = Builder::new()
+      .entry(eat("hello ") + "world")
+      .build("hello world");
+
+    let output = parser.parse().unwrap();
+    assert_eq!(output.digested, 11);
+    let _: () = output.value;
+
+    assert!(parser.parse().is_none());
+
+    let _: () = parser.heap;
+    let _: () = parser.state;
+  }
+
+  #[test]
+  fn parser_builder_with_state_heap() {
+    let mut parser = Builder::new()
+      .state(1)
+      .heap(1)
+      .entry((eat("hello ") + "world").then(|mut ctx| {
+        *ctx.state() = 1;
+        *ctx.heap() = 1;
+      }))
+      .build("hello world");
+
+    let output = parser.parse().unwrap();
+    assert_eq!(output.digested, 11);
+    let _: () = output.value;
+
+    assert!(parser.parse().is_none());
+
+    assert_eq!(parser.heap, 1);
+    assert_eq!(parser.state, 1);
+  }
+}
