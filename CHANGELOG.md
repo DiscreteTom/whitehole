@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Input::shift` and `Input::shift_unchecked`.
 - Add `Output::digested`.
 - Add `C!(@T)` and `C!(Kind, @T)` syntax.
-- Add `AcceptedContext::rest`.
+- Add `AcceptedContext::input`, `AcceptedContext::start`, `AcceptedContext::state`, `AcceptedContext::heap`, `AcceptedContext::rest`, `AcceptedContext::take`, `AcceptedContext::split`.
 - Add `Combinator::range` to include the byte range of digested text in the output.
 - Add `Combinator::when` as the opposite of `Combinator::prevent`.
 - Add `Combinator::finally` to modify `Input` after execution.
@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename `Action::Kind` to `Action::Value`, rename `Output::kind` to `Output::value`.
 - Rename `Combinator!` to `C!`.
 - Rename `Combinator::rollback` to `Combinator::catch`.
+- Make fields of `AcceptedContext` private.
 - `wrap` will check if the `Output::digested` is valid. Use `wrap_unchecked` for the unchecked version.
 - `EatUsize` will eat by chars instead of bytes.
 - Rewrite `Till` trait to make it safe.
@@ -47,7 +48,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove `Input::reload`, use `Input::shift` instead.
 - Remove `Output::rest`.
 - Remove `Action` trait implementation for plain closures. Use `wrap` instead to create a `Combinator` from a closure.
-- Remove `AcceptedContext::digested`.
 - Remove `combinator::Builder`.
 - Remove `C!(_, State, Heap)` syntax.
 - Remove `combinator * (repeat, sep)` syntax.
