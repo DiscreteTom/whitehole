@@ -113,9 +113,9 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   #[inline]
   pub fn range(self) -> C!(WithRange<T::Value>, @T) {
-    self.select(|ctx| {
-      let range = ctx.range();
-      ctx.take().map(|data| WithRange { data, range })
+    self.select(|ctx| WithRange {
+      range: ctx.range(),
+      data: ctx.take().value,
     })
   }
 }
