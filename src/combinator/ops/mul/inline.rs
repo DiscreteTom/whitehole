@@ -78,8 +78,8 @@ unsafe impl<
 
     // the rest of the occurrences
     while unsafe { repeat.validate(repeated) } {
-      let Some(new_output) = input
-        .shift(output.digested)
+      let Some(new_output) = (output.digested < input.rest().len())
+        .then(|| unsafe { input.shift_unchecked(output.digested) })
         .and_then(|input| self.lhs.exec(input))
       else {
         break;
@@ -137,14 +137,19 @@ unsafe impl<
 
     // the rest of the occurrences
     while unsafe { repeat.validate(repeated) } {
-      let Some(sep_output) = input
-        .shift(output.digested)
+      let Some(sep_output) = (output.digested < input.rest().len())
+        .then(|| unsafe { input.shift_unchecked(output.digested) })
         .and_then(|input| self.lhs.sep.exec(input))
       else {
         break;
       };
-      let Some(value_output) = input
-        .shift(output.digested + sep_output.digested)
+      let digested_with_sep = {
+        // SAFETY: since `slice::len` is usize, so `digested_with_sep` must be a valid usize
+        debug_assert!(usize::MAX - output.digested > sep_output.digested);
+        unsafe { output.digested.unchecked_add(sep_output.digested) }
+      };
+      let Some(value_output) = (digested_with_sep < input.rest().len())
+        .then(|| unsafe { input.shift_unchecked(digested_with_sep) })
         .and_then(|input| self.lhs.value.exec(input))
       else {
         break;
@@ -152,7 +157,11 @@ unsafe impl<
 
       // now we have both `value` and `sep`, update `output` and `repeated`
       repeated += 1;
-      output.digested += sep_output.digested + value_output.digested;
+      {
+        // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
+        debug_assert!(usize::MAX - digested_with_sep > sep_output.digested);
+        output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
+      }
       output.value = fold(value_output.value, output.value);
     }
 
