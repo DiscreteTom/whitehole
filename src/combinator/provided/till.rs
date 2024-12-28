@@ -21,7 +21,7 @@ impl<State, Heap> Till<State, Heap> for &str {
     input
       .rest()
       .find(self)
-      .map(|i| unsafe { input.digest_unchecked(i + self.len()) })
+      .map(|i| unsafe { input.digest_unchecked(i.unchecked_add(self.len())) })
   }
 }
 
@@ -38,7 +38,7 @@ impl<State, Heap> Till<State, Heap> for char {
     input
       .rest()
       .find(*self)
-      .map(|i| unsafe { input.digest_unchecked(i + self.len_utf8()) })
+      .map(|i| unsafe { input.digest_unchecked(i.unchecked_add(self.len_utf8())) })
   }
 }
 
