@@ -11,7 +11,7 @@ on:
         required: true
 
 jobs:
-  coverage:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
