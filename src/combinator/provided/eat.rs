@@ -188,7 +188,7 @@ pub fn eat<T>(pattern: impl Into<Combinator<T>>) -> Combinator<T> {
 /// # );
 /// ```
 #[inline]
-pub unsafe fn eat_unchecked<State, Heap>(n: usize) -> C!((), State, Heap) {
+pub const unsafe fn eat_unchecked<State, Heap>(n: usize) -> C!((), State, Heap) {
   wrap_unchecked(move |input| input.digest_unchecked(n).into())
 }
 

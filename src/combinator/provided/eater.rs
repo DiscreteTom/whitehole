@@ -15,7 +15,7 @@ use crate::{action::Input, C};
 /// # );
 /// ```
 #[inline]
-pub fn eater<State, Heap>(
+pub const fn eater<State, Heap>(
   f: impl Fn(Input<&mut State, &mut Heap>) -> usize,
 ) -> C!((), State, Heap) {
   unsafe {
@@ -43,7 +43,7 @@ pub fn eater<State, Heap>(
 /// # );
 /// ```
 #[inline]
-pub unsafe fn eater_unchecked<State, Heap>(
+pub const unsafe fn eater_unchecked<State, Heap>(
   f: impl Fn(Input<&mut State, &mut Heap>) -> usize,
 ) -> C!((), State, Heap) {
   wrap_unchecked(move |mut input| match f(input.reborrow()) {
