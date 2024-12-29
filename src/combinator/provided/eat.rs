@@ -330,4 +330,26 @@ mod tests {
   fn combinator_eat_unchecked_invalid_code_point() {
     unsafe { eat_unchecked(1) }.exec(Input::new("好", 0, &mut (), &mut ()).unwrap());
   }
+
+  #[test]
+  fn eat_into_combinator() {
+    fn test(c: C!()) {
+      c.exec(Input::new("a", 0, &mut (), &mut ()).unwrap());
+    }
+    test(1.into());
+    test('a'.into());
+    test("a".into());
+    test("a".to_string().into());
+  }
+
+  #[test]
+  fn eat_eat() {
+    fn test(c: C!()) {
+      c.exec(Input::new("a", 0, &mut (), &mut ()).unwrap());
+    }
+    test(eat(EatUsize::new(1)));
+    test(eat(EatChar::new('a')));
+    test(eat(EatStr::new("a")));
+    test(eat(EatString::new("a".to_string())));
+  }
 }
