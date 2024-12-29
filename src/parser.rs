@@ -228,7 +228,7 @@ mod tests {
     };
     assert_eq!(
       parser
-        .entry
+        .entry()
         .exec(Input::new("123", 0, &mut 0, &mut 0).unwrap())
         .unwrap()
         .digested,
@@ -377,6 +377,17 @@ mod tests {
     assert_eq!(parser.state, 123);
     assert_eq!(parser.instant().digested(), 1);
     assert_eq!(parser.instant().rest(), "23");
+
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: eat("123"),
+    };
+    assert!(parser.digest_with(456, 1).is_ok());
+    assert_eq!(parser.state, 456);
+    assert_eq!(parser.instant().digested(), 1);
+    assert_eq!(parser.instant().rest(), "23");
   }
 
   #[test]
@@ -389,6 +400,17 @@ mod tests {
     };
     unsafe { parser.digest_with_unchecked(None, 1) };
     assert_eq!(parser.state, 123);
+    assert_eq!(parser.instant().digested(), 1);
+    assert_eq!(parser.instant().rest(), "23");
+
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: eat("123"),
+    };
+    unsafe { parser.digest_with_unchecked(456, 1) };
+    assert_eq!(parser.state, 456);
     assert_eq!(parser.instant().digested(), 1);
     assert_eq!(parser.instant().rest(), "23");
   }
