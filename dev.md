@@ -28,3 +28,8 @@ cargo install flamegraph
 
 cargo flamegraph --bench json_lexer -- --bench
 ```
+
+## Publish
+
+GitHub Actions will be triggered when a new tag with pattern `v*.*.*` is pushed.
+See [`.github/workflows/release.yml`](.github/workflows/release.yml) for more details.
