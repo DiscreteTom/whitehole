@@ -199,4 +199,231 @@ impl<'text, T: Action> Parser<'text, T> {
   }
 }
 
-// TODO: tests
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::combinator::eat;
+  use std::rc::Rc;
+
+  #[test]
+  fn parser_clone() {
+    let parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: Rc::new(eat("123")),
+    }
+    .clone();
+    assert_eq!(parser.state, 123);
+    assert_eq!(parser.heap, 123);
+  }
+
+  #[test]
+  fn parser_getters() {
+    let parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: eat("123"),
+    };
+    assert_eq!(
+      parser
+        .entry
+        .exec(Input::new("123", 0, &mut 0, &mut 0).unwrap())
+        .unwrap()
+        .digested,
+      3
+    );
+    assert_eq!(parser.instant().digested(), 0);
+  }
+
+  #[test]
+  fn parser_reload() {
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: eat("123"),
+    };
+    parser.parse();
+    assert_eq!(parser.instant().digested(), 3);
+    assert_eq!(parser.instant().rest(), "");
+    let parser = parser.reload("456");
+    assert_eq!(parser.instant().text(), "456");
+    assert_eq!(parser.instant().rest(), "456");
+    assert_eq!(parser.instant().digested(), 0);
+    assert_eq!(parser.state, 0);
+    assert_eq!(parser.heap, 123);
+  }
+
+  #[test]
+  fn parser_reload_with() {
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: eat("123"),
+    };
+    parser.parse();
+    assert_eq!(parser.instant().digested(), 3);
+    assert_eq!(parser.instant().rest(), "");
+    let parser = parser.reload_with(None, "456");
+    assert_eq!(parser.instant().text(), "456");
+    assert_eq!(parser.instant().rest(), "456");
+    assert_eq!(parser.instant().digested(), 0);
+    assert_eq!(parser.state, 123);
+    assert_eq!(parser.heap, 123);
+  }
+
+  #[test]
+  fn parser_snapshot_restore() {
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: eat("123"),
+    };
+    parser.parse();
+    let snapshot = parser.snapshot();
+    assert_eq!(snapshot.state, 123);
+    assert_eq!(snapshot.instant().text(), "123");
+    assert_eq!(snapshot.instant().digested(), 3);
+    assert_eq!(snapshot.instant().rest(), "");
+
+    let mut parser = Parser {
+      state: 0,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: eat("123"),
+    };
+    parser.restore(snapshot);
+    assert_eq!(parser.state, 123);
+    assert_eq!(parser.instant().text(), "123");
+    assert_eq!(parser.instant().digested(), 3);
+    assert_eq!(parser.instant().rest(), "");
+  }
+
+  #[test]
+  fn parser_digest() {
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: eat("123"),
+    };
+    assert!(parser.digest(1).is_ok());
+    assert_eq!(parser.state, 0);
+    assert_eq!(parser.instant().digested(), 1);
+    assert_eq!(parser.instant().rest(), "23");
+
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("好"),
+      entry: eat("123"),
+    };
+    assert!(parser.digest(1).is_err());
+    assert_eq!(parser.state, 123);
+    assert_eq!(parser.instant().digested(), 0);
+    assert_eq!(parser.instant().rest(), "好");
+  }
+  #[test]
+  fn parser_digest_unchecked() {
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: eat("123"),
+    };
+    unsafe { parser.digest_unchecked(1) };
+    assert_eq!(parser.state, 0);
+    assert_eq!(parser.instant().digested(), 1);
+    assert_eq!(parser.instant().rest(), "23");
+  }
+
+  #[test]
+  #[should_panic]
+  fn parser_digest_unchecked_overflow() {
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: eat("123"),
+    };
+    unsafe { parser.digest_unchecked(4) };
+  }
+
+  #[test]
+  #[should_panic]
+  fn parser_digest_unchecked_invalid_code_point() {
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("好"),
+      entry: eat("123"),
+    };
+    unsafe { parser.digest_unchecked(1) };
+  }
+
+  #[test]
+  fn parser_digest_with() {
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: eat("123"),
+    };
+    assert!(parser.digest_with(None, 1).is_ok());
+    assert_eq!(parser.state, 123);
+    assert_eq!(parser.instant().digested(), 1);
+    assert_eq!(parser.instant().rest(), "23");
+  }
+
+  #[test]
+  fn parser_digest_with_unchecked() {
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: eat("123"),
+    };
+    unsafe { parser.digest_with_unchecked(None, 1) };
+    assert_eq!(parser.state, 123);
+    assert_eq!(parser.instant().digested(), 1);
+    assert_eq!(parser.instant().rest(), "23");
+  }
+
+  #[test]
+  fn parser_parse() {
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: eat("123"),
+    };
+    let output = parser.parse().unwrap();
+    assert_eq!(output.digested, 3);
+    assert_eq!(output.value, ());
+    assert_eq!(parser.instant().digested(), 3);
+    assert_eq!(parser.instant().rest(), "");
+    assert!(parser.parse().is_none());
+  }
+
+  #[test]
+  fn parser_peek() {
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123"),
+      entry: eat("123"),
+    };
+    let (output, state) = parser.peek();
+    let output = output.unwrap();
+    assert_eq!(state, 123);
+    assert_eq!(output.digested, 3);
+    assert_eq!(output.value, ());
+    assert_eq!(parser.instant().digested(), 0);
+    assert_eq!(parser.instant().rest(), "123");
+    assert!(parser.parse().is_some());
+  }
+}
