@@ -59,39 +59,25 @@ unsafe impl<
   ) -> Option<Output<Self::Value>> {
     let (repeat, init, fold) = &self.rhs;
 
-    if !unsafe { repeat.validate(0) } {
-      return repeat.accept(0).then(|| Output {
-        value: init(),
-        digested: 0,
-      });
-    }
-
-    // the first occurrence
-    let (mut repeated, mut output) = if let Some(output) = self.lhs.exec(input.reborrow()) {
-      (1, output.map(|value| fold(value, init())))
-    } else {
-      return repeat.accept(0).then(|| Output {
-        value: init(),
-        digested: 0,
-      });
+    let mut repeated = 0;
+    let mut output = Output {
+      value: init(),
+      digested: 0,
     };
 
-    // the rest of the occurrences
     while unsafe { repeat.validate(repeated) } {
-      let Some(new_output) = (output.digested < input.rest().len())
+      let Some(next_output) = (output.digested < input.rest().len())
         .then(|| unsafe { input.shift_unchecked(output.digested) })
         .and_then(|input| self.lhs.exec(input))
       else {
         break;
       };
 
+      output.value = fold(next_output.value, output.value);
       repeated += 1;
-      {
-        // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
-        debug_assert!(usize::MAX - output.digested > new_output.digested);
-        output.digested = unsafe { output.digested.unchecked_add(new_output.digested) };
-      }
-      output.value = fold(new_output.value, output.value);
+      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
+      debug_assert!(usize::MAX - output.digested > next_output.digested);
+      output.digested = unsafe { output.digested.unchecked_add(next_output.digested) };
     }
 
     repeat.accept(repeated).then_some(output)
@@ -118,51 +104,35 @@ unsafe impl<
   ) -> Option<Output<Self::Value>> {
     let (repeat, init, fold) = &self.rhs;
 
-    if !unsafe { repeat.validate(0) } {
-      return repeat.accept(0).then(|| Output {
-        value: init(),
-        digested: 0,
-      });
-    }
-
-    // the first occurrence of `value`
-    let (mut repeated, mut output) = if let Some(output) = self.lhs.value.exec(input.reborrow()) {
-      (1, output.map(|value| fold(value, init())))
-    } else {
-      return repeat.accept(0).then(|| Output {
-        value: init(),
-        digested: 0,
-      });
+    let mut repeated = 0;
+    let mut output = Output {
+      value: init(),
+      digested: 0,
     };
 
-    // the rest of the occurrences
+    let mut digested_with_sep = 0;
     while unsafe { repeat.validate(repeated) } {
-      let Some(sep_output) = (output.digested < input.rest().len())
-        .then(|| unsafe { input.shift_unchecked(output.digested) })
-        .and_then(|input| self.lhs.sep.exec(input))
-      else {
-        break;
-      };
-      let digested_with_sep = {
-        // SAFETY: since `slice::len` is usize, so `digested_with_sep` must be a valid usize
-        debug_assert!(usize::MAX - output.digested > sep_output.digested);
-        unsafe { output.digested.unchecked_add(sep_output.digested) }
-      };
       let Some(value_output) = (digested_with_sep < input.rest().len())
         .then(|| unsafe { input.shift_unchecked(digested_with_sep) })
         .and_then(|input| self.lhs.value.exec(input))
       else {
         break;
       };
-
-      // now we have both `value` and `sep`, update `output` and `repeated`
       repeated += 1;
-      {
-        // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
-        debug_assert!(usize::MAX - digested_with_sep > sep_output.digested);
-        output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
-      }
       output.value = fold(value_output.value, output.value);
+      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
+      debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
+      output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
+
+      let Some(sep_output) = (output.digested < input.rest().len())
+        .then(|| unsafe { input.shift_unchecked(output.digested) })
+        .and_then(|input| self.lhs.sep.exec(input))
+      else {
+        break;
+      };
+      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
+      debug_assert!(usize::MAX - output.digested > sep_output.digested);
+      digested_with_sep = unsafe { output.digested.unchecked_add(sep_output.digested) };
     }
 
     repeat.accept(repeated).then_some(output)
