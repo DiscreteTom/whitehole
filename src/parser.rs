@@ -68,15 +68,16 @@ impl<'text, T: Action> Parser<'text, T> {
     self.reload_with(T::State::default(), text)
   }
 
-  /// Consume self, return a new instance with the same action, a new text and the given state.
+  /// Consume self, return a new instance with the same action, a new text and an optional new state.
+  /// If the state is not provided, current [`Self::state`] will be kept.
   /// [`Self::instant`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload_with(self, state: T::State, text: &str) -> Parser<T> {
+  pub fn reload_with(self, state: impl Into<Option<T::State>>, text: &str) -> Parser<T> {
     Parser {
       entry: self.entry,
       heap: self.heap,
-      state,
+      state: state.into().unwrap_or_else(|| self.state),
       instant: Instant::new(text),
     }
   }

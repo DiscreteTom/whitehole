@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Combinator::sep`.
 - Add `Instant::digest_unchecked`.and `Instant::digest`.
 - Add `Parser::digest`, `Parser::digest_unchecked`, `Parser::digest_with`, `Parser::digest_with_unchecked`.
+- `Parser::reload_with` can accept `None` as the new state.
 
 ### Changed
 
