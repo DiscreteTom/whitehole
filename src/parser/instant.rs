@@ -57,17 +57,6 @@ impl<'text> Instant<'text> {
     self.rest = self.rest.get_unchecked(n..);
     self.digested = self.digested.unchecked_add(n);
   }
-
-  /// Digest the next `n` bytes.
-  /// [`Self::rest`] will be updated automatically.
-  /// Return [`Ok`] if `n` is a valid UTF-8 boundary.
-  #[inline]
-  pub fn digest(&mut self, n: usize) -> Result<(), ()> {
-    self.rest = self.rest.get(n..).ok_or(())?;
-    // SAFETY: since the new `self.rest` is a valid `&str`, the new digested is always a valid `usize`.
-    self.digested = unsafe { self.digested.unchecked_add(n) };
-    Ok(())
-  }
 }
 
 #[cfg(test)]
@@ -107,18 +96,5 @@ mod tests {
   fn instant_digest_unchecked_invalid_code_point() {
     let mut i = Instant::new("好");
     unsafe { i.digest_unchecked(1) };
-  }
-
-  #[test]
-  fn instant_digest() {
-    let mut i = Instant::new("123");
-    assert!(i.digest(4).is_err());
-    let mut i = Instant::new("好");
-    assert!(i.digest(1).is_err());
-    let mut i = Instant::new("123");
-    assert!(i.digest(2).is_ok());
-    assert_eq!(i.digested(), 2);
-    assert_eq!(i.rest(), "3");
-    assert_eq!(i.text(), "123");
   }
 }

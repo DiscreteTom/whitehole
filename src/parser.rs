@@ -102,23 +102,6 @@ impl<'text, T: Action> Parser<'text, T> {
   }
 
   /// Digest the next `n` bytes and set [`Self::state`] to the default.
-  /// The result is the same as [`Instant::digest`].
-  ///
-  /// [`Self::state`] will be set only if the digest is successful.
-  ///
-  /// Usually when you digest some bytes from outside of the parser
-  /// (e.g. by an error recovery strategy),
-  /// the state should be reset to the default.
-  /// If you want to keep the state, use [`Self::digest_with`] instead.
-  #[inline]
-  pub fn digest(&mut self, n: usize) -> Result<(), ()>
-  where
-    T::State: Default,
-  {
-    self.digest_with(T::State::default(), n)
-  }
-
-  /// Digest the next `n` bytes and set [`Self::state`] to the default.
   ///
   /// Usually when you digest some bytes from outside of the parser
   /// (e.g. by an error recovery strategy),
@@ -126,7 +109,6 @@ impl<'text, T: Action> Parser<'text, T> {
   /// If you want to keep the state, use [`Self::digest_with_unchecked`] instead.
   /// # Safety
   /// See [`Instant::digest_unchecked`].
-  /// For the checked version, see [`Self::digest`].
   #[inline]
   pub unsafe fn digest_unchecked(&mut self, n: usize)
   where
@@ -136,22 +118,8 @@ impl<'text, T: Action> Parser<'text, T> {
   }
 
   /// Digest the next `n` chars and optionally set [`Self::state`].
-  /// The result is the same as [`Instant::digest`].
-  ///
-  /// [`Self::state`] will be set only if the digest is successful.
-  #[inline]
-  pub fn digest_with(&mut self, state: impl Into<Option<T::State>>, n: usize) -> Result<(), ()> {
-    self.instant.digest(n).inspect(|_| {
-      if let Some(state) = state.into() {
-        self.state = state;
-      }
-    })
-  }
-
-  /// Digest the next `n` chars and optionally set [`Self::state`].
   /// # Safety
   /// See [`Instant::digest_unchecked`].
-  /// For the checked version, see [`Self::digest_with`].
   #[inline]
   pub unsafe fn digest_with_unchecked(&mut self, state: impl Into<Option<T::State>>, n: usize) {
     self.instant.digest_unchecked(n);
@@ -304,30 +272,6 @@ mod tests {
   }
 
   #[test]
-  fn parser_digest() {
-    let mut parser = Parser {
-      state: 123,
-      heap: 123,
-      instant: Instant::new("123"),
-      entry: eat("123"),
-    };
-    assert!(parser.digest(1).is_ok());
-    assert_eq!(parser.state, 0);
-    assert_eq!(parser.instant().digested(), 1);
-    assert_eq!(parser.instant().rest(), "23");
-
-    let mut parser = Parser {
-      state: 123,
-      heap: 123,
-      instant: Instant::new("好"),
-      entry: eat("123"),
-    };
-    assert!(parser.digest(1).is_err());
-    assert_eq!(parser.state, 123);
-    assert_eq!(parser.instant().digested(), 0);
-    assert_eq!(parser.instant().rest(), "好");
-  }
-  #[test]
   fn parser_digest_unchecked() {
     let mut parser = Parser {
       state: 123,
@@ -363,31 +307,6 @@ mod tests {
       entry: eat("123"),
     };
     unsafe { parser.digest_unchecked(1) };
-  }
-
-  #[test]
-  fn parser_digest_with() {
-    let mut parser = Parser {
-      state: 123,
-      heap: 123,
-      instant: Instant::new("123"),
-      entry: eat("123"),
-    };
-    assert!(parser.digest_with(None, 1).is_ok());
-    assert_eq!(parser.state, 123);
-    assert_eq!(parser.instant().digested(), 1);
-    assert_eq!(parser.instant().rest(), "23");
-
-    let mut parser = Parser {
-      state: 123,
-      heap: 123,
-      instant: Instant::new("123"),
-      entry: eat("123"),
-    };
-    assert!(parser.digest_with(456, 1).is_ok());
-    assert_eq!(parser.state, 456);
-    assert_eq!(parser.instant().digested(), 1);
-    assert_eq!(parser.instant().rest(), "23");
   }
 
   #[test]

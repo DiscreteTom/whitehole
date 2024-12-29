@@ -24,8 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implement `Eat` for `EatChar`, `EatStr`, `EatString`, `EatUsize`.
 - Add `Combinator::sep`.
 - All provided combinators are now `const`.
-- Add `Instant::digest_unchecked`.and `Instant::digest`.
-- Add `Parser::digest`, `Parser::digest_unchecked`, `Parser::digest_with`, `Parser::digest_with_unchecked`.
+- Add `Instant::digest_unchecked`.
+- Add `Parser::digest_unchecked`, `Parser::digest_with_unchecked`.
 - `Parser::reload_with` can accept `None` as the new state.
 
 ### Changed
