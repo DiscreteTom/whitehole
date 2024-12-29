@@ -56,9 +56,9 @@ unsafe impl<Lhs: Action, Rhs: Action<Value = Lhs::Value, State = Lhs::State, Hea
   type Heap = Lhs::Heap;
 
   #[inline]
-  fn exec<'text>(
+  fn exec(
     &self,
-    mut input: Input<'text, &mut Self::State, &mut Self::Heap>,
+    mut input: Input<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .lhs

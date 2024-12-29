@@ -77,7 +77,7 @@ impl<'text, T: Action> Parser<'text, T> {
     Parser {
       entry: self.entry,
       heap: self.heap,
-      state: state.into().unwrap_or_else(|| self.state),
+      state: state.into().unwrap_or(self.state),
       instant: Instant::new(text),
     }
   }

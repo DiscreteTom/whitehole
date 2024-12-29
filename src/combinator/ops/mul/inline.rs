@@ -53,9 +53,9 @@ unsafe impl<
   type Heap = Lhs::Heap;
 
   #[inline]
-  fn exec<'text>(
+  fn exec(
     &self,
-    mut input: Input<'text, &mut Self::State, &mut Self::Heap>,
+    mut input: Input<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let (repeat, init, fold) = &self.rhs;
 
@@ -98,9 +98,9 @@ unsafe impl<
   type Heap = T::Heap;
 
   #[inline]
-  fn exec<'text>(
+  fn exec(
     &self,
-    mut input: Input<'text, &mut Self::State, &mut Self::Heap>,
+    mut input: Input<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let (repeat, init, fold) = &self.rhs;
 

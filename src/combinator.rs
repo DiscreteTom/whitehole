@@ -154,10 +154,7 @@ unsafe impl<T: Action> Action for Combinator<T> {
   type Heap = T::Heap;
 
   #[inline]
-  fn exec<'text>(
-    &self,
-    input: Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<T::Value>> {
+  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<T::Value>> {
     self.action.exec(input)
   }
 }

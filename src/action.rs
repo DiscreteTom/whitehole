@@ -49,10 +49,7 @@ pub unsafe trait Action {
   /// Try to digest some bytes from the input, optionally change the state of the parsing,
   /// and yield a value.
   /// Return [`None`] to reject.
-  fn exec<'text>(
-    &self,
-    input: Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<Self::Value>>;
+  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>>;
 }
 
 unsafe impl<T: Action> Action for Box<T> {
@@ -60,10 +57,7 @@ unsafe impl<T: Action> Action for Box<T> {
   type State = T::State;
   type Heap = T::Heap;
 
-  fn exec<'text>(
-    &self,
-    input: Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
     self.as_ref().exec(input)
   }
 }
@@ -73,10 +67,7 @@ unsafe impl<T: Action> Action for Rc<T> {
   type State = T::State;
   type Heap = T::Heap;
 
-  fn exec<'text>(
-    &self,
-    input: Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
     self.as_ref().exec(input)
   }
 }

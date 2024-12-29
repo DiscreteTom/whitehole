@@ -13,7 +13,7 @@ use std::marker::PhantomData;
 pub trait Eat<State, Heap> {
   /// Check if the rest of input text starts with this instance.
   /// Return the output after digesting the instance if found.
-  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>>;
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>>;
 }
 
 macro_rules! impl_eat {
@@ -52,14 +52,14 @@ macro_rules! impl_eat {
       type Heap = Heap;
 
       #[inline]
-      fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+      fn exec(&self, input: Input< &mut State, &mut Heap>) -> Option<Output<()>> {
         Eat::exec(&self.inner, input)
       }
     }
 
     impl<State, Heap> Eat<State, Heap> for $name<State, Heap> {
       #[inline]
-      fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+      fn exec(&self, input: Input< &mut State, &mut Heap>) -> Option<Output<()>> {
         Action::exec(self, input)
       }
     }
@@ -72,7 +72,7 @@ impl_eat!(EatUsize, usize, (Copy));
 
 impl<State, Heap> Eat<State, Heap> for char {
   #[inline]
-  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .rest()
       .starts_with(*self)
@@ -82,7 +82,7 @@ impl<State, Heap> Eat<State, Heap> for char {
 
 impl<State, Heap> Eat<State, Heap> for String {
   #[inline]
-  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .rest()
       .starts_with(self)
@@ -92,7 +92,7 @@ impl<State, Heap> Eat<State, Heap> for String {
 
 impl<State, Heap> Eat<State, Heap> for usize {
   #[inline]
-  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     // if eat 1 char, just eat the `input.next` which always exists
     if *self == 1 {
       return unsafe { input.digest_unchecked(input.next().len_utf8()) }.into();
@@ -147,7 +147,7 @@ impl<'a, State, Heap> Into<Combinator<EatStr<'a, State, Heap>>> for &'a str {
 
 impl<State, Heap> Eat<State, Heap> for &str {
   #[inline]
-  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .rest()
       .starts_with(self)
@@ -161,14 +161,14 @@ unsafe impl<State, Heap> Action for EatStr<'_, State, Heap> {
   type Heap = Heap;
 
   #[inline]
-  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     Eat::exec(&self.inner, input)
   }
 }
 
 impl<State, Heap> Eat<State, Heap> for EatStr<'_, State, Heap> {
   #[inline]
-  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     Action::exec(self, input)
   }
 }

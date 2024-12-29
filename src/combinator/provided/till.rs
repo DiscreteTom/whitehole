@@ -12,12 +12,12 @@ use crate::{
 pub trait Till<State, Heap> {
   /// Check if the rest of input text contains this instance.
   /// Return the output after digesting the instance if found.
-  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>>;
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>>;
 }
 
 impl<State, Heap> Till<State, Heap> for &str {
   #[inline]
-  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .rest()
       .find(self)
@@ -27,14 +27,14 @@ impl<State, Heap> Till<State, Heap> for &str {
 
 impl<State, Heap> Till<State, Heap> for String {
   #[inline]
-  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     self.as_str().exec(input)
   }
 }
 
 impl<State, Heap> Till<State, Heap> for char {
   #[inline]
-  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .rest()
       .find(*self)
@@ -44,7 +44,7 @@ impl<State, Heap> Till<State, Heap> for char {
 
 impl<State, Heap> Till<State, Heap> for () {
   #[inline]
-  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     unsafe { input.digest_unchecked(input.rest().len()) }.into()
   }
 }

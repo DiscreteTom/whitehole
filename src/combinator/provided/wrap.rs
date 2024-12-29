@@ -22,22 +22,15 @@ impl<T, State, Heap> WrapUnchecked<T, State, Heap> {
   }
 }
 
-unsafe impl<
-    Value,
-    State,
-    Heap,
-    F: for<'text> Fn(Input<'text, &mut State, &mut Heap>) -> Option<Output<Value>>,
-  > Action for WrapUnchecked<F, State, Heap>
+unsafe impl<Value, State, Heap, F: Fn(Input<&mut State, &mut Heap>) -> Option<Output<Value>>> Action
+  for WrapUnchecked<F, State, Heap>
 {
   type Value = Value;
   type State = State;
   type Heap = Heap;
 
   #[inline]
-  fn exec<'text>(
-    &self,
-    input: Input<'text, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
     let input_rest = input.rest();
     let output = (self.inner)(input);
     debug_assert!(output
@@ -65,7 +58,7 @@ unsafe impl<
 /// ```
 #[inline]
 pub const unsafe fn wrap_unchecked<
-  F: for<'text> Fn(Input<'text, &mut State, &mut Heap>) -> Option<Output<Value>>,
+  F: Fn(Input<&mut State, &mut Heap>) -> Option<Output<Value>>,
   Value,
   State,
   Heap,

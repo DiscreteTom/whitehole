@@ -83,9 +83,9 @@ unsafe impl<Lhs: Action<Value: Concat<Rhs::Value>>, Rhs: Action<State = Lhs::Sta
   type Heap = Lhs::Heap;
 
   #[inline]
-  fn exec<'text>(
+  fn exec(
     &self,
-    mut input: Input<'text, &mut Self::State, &mut Self::Heap>,
+    mut input: Input<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self.lhs.exec(input.reborrow()).and_then(|output| {
       (output.digested < input.rest().len())
