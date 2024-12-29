@@ -3,8 +3,7 @@
 ![license](https://img.shields.io/github/license/DiscreteTom/whitehole?style=flat-square)
 [![Crates.io Version](https://img.shields.io/crates/v/whitehole?style=flat-square)](https://crates.io/crates/whitehole)
 [![docs.rs](https://img.shields.io/docsrs/whitehole?style=flat-square)](https://docs.rs/whitehole/)
-
-<!-- TODO: coverage -->
+[![Codecov](https://img.shields.io/codecov/c/github/DiscreteTom/whitehole?style=flat-square)](https://codecov.io/gh/DiscreteTom/whitehole)
 
 A simple, fast, intuitive parser combinator framework for Rust.
 
@@ -25,9 +24,42 @@ cargo add whitehole
 
 ## [Examples](./examples)
 
-TODO: put a simple example here.
+Here is a simple example to parse [hexadecimal color codes](./examples/hex_color.rs):
+
+```rust
+use whitehole::{
+  combinator::{eat, next},
+  parser::Builder,
+};
+
+fn main() {
+  let double_hex = || {
+    // Repeat a combinator with `*`.
+    (next(|c| c.is_ascii_hexdigit()) * 2)
+      // Convert the matched content to `u8`.
+      .select(|ctx| u8::from_str_radix(ctx.content(), 16).unwrap())
+      // Wrap `u8` to `(u8,)`, this is required by `+` below.
+      .tuple()
+  };
+
+  // Concat multiple combinators with `+`.
+  // Tuple values will be concatenated into a single tuple.
+  // Here `() + (u8,) + (u8,) + (u8,)` will be `(u8, u8, u8)`.
+  let entry = eat('#') + double_hex() + double_hex() + double_hex();
+
+  let mut parser = Builder::new().entry(entry).build("#FFA500");
+  let output = parser.parse().unwrap();
+  assert_eq!(output.digested, 7);
+  assert_eq!(output.value, (255, 165, 0));
+}
+
+```
 
 ## [Documentation](https://docs.rs/whitehole/)
+
+## Related
+
+- [`in_str`](https://github.com/DiscreteTom/in_str/): a procedural macro to generate a closure that checks if a character is in the provided literal string.
 
 ## Credits
 
@@ -35,7 +67,7 @@ This project is inspired by:
 
 - [nom](https://github.com/rust-bakery/nom)
 - [combine](https://github.com/Marwes/combine)
-- [retsac](https://github.com/DiscreteTom/retsac)
 - [tree-sitter](https://github.com/tree-sitter/tree-sitter)
+- [retsac](https://github.com/DiscreteTom/retsac)
 
 ## [CHANGELOG](./CHANGELOG.md)
