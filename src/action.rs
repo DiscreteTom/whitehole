@@ -80,3 +80,37 @@ unsafe impl<T: Action> Action for Rc<T> {
     self.as_ref().exec(input)
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::combinator::wrap;
+
+  fn helper(t: impl Action<Value = (), State = (), Heap = ()>) -> Option<Output<()>> {
+    t.exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
+  }
+
+  #[test]
+  fn boxed_action() {
+    let output = helper(Box::new(wrap(|input| input.digest(1))));
+    assert_eq!(
+      output,
+      Some(Output {
+        value: (),
+        digested: 1
+      })
+    );
+  }
+
+  #[test]
+  fn rc_action() {
+    let output = helper(Rc::new(wrap(|input| input.digest(1))));
+    assert_eq!(
+      output,
+      Some(Output {
+        value: (),
+        digested: 1
+      })
+    );
+  }
+}
