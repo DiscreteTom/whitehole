@@ -22,6 +22,7 @@ jobs:
       - run: |
           cargo metadata --format-version=1 --no-deps | jq '.packages[0].version' | tr -d '"' > version
           [ "v$(cat version)" = "${{ env.VERSION }}" ] || (echo "Version mismatch" && exit 1)
+          rm version
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
 
