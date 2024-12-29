@@ -1,0 +1,45 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version of the release, should match an existing tag name. E.g. v0.1.0"
+        required: true
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # set the version to the input. if the input is not set (triggered by tag), it will be the tag name
+      - run: echo "VERSION=${{ inputs.version || github.ref_name }}" >> $GITHUB_ENV
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - run: cargo fmt --check
+
+      - run: cargo clippy -- -D warnings
+
+      - run: cargo test
+
+      - run: cargo doc
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+      - run: gh workflow run coverage.yml
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_TOKEN }}
+
+      # create the release
+      - run: gh release create ${{ env.VERSION }} -t ${{ env.VERSION }} --verify-tag -n "See [CHANGELOG.md](https://github.com/DiscreteTom/whitehole/blob/main/CHANGELOG.md)."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
