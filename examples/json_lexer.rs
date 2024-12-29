@@ -3,9 +3,10 @@ use whitehole::{
   action::Action,
   combinator::{eat, next},
   parser::{Builder, Parser},
+  range::WithRange,
 };
 
-pub fn build_lexer(s: &str) -> Parser<impl Action> {
+pub fn build_lexer(s: &str) -> Parser<impl Action<Value = WithRange<()>>> {
   // Use `* (1..)` to repeat for one or more times.
   let whitespaces = next(in_str!(" \t\r\n")) * (1..);
 
@@ -36,7 +37,7 @@ pub fn build_lexer(s: &str) -> Parser<impl Action> {
   let boundary = next(in_str!("[]{}:,"));
 
   Builder::new()
-    .entry(whitespaces | boundary | number | string | "true" | "false" | "null")
+    .entry((whitespaces | boundary | number | string | "true" | "false" | "null").range())
     .build(s)
 }
 
@@ -68,9 +69,9 @@ mod tests {
       if let Some(node) = output {
         println!(
           "{}..{}: {:?}",
-          node.range.start,
-          node.range.end,
-          &s[node.range.clone()]
+          node.value.range.start,
+          node.value.range.end,
+          &s[node.value.range.clone()]
         );
       } else {
         break;

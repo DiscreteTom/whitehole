@@ -4,9 +4,10 @@ use whitehole::{
   action::Action,
   combinator::{eat, next, wrap},
   parser::{Builder, Parser},
+  range::WithRange,
 };
 
-pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action> {
+pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action<Value = WithRange<()>>> {
   // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
   // use a closure to generate the combinator for better runtime performance (via inlining).
   let ws = || next(in_str!(" \t\r\n")) * (1..);
@@ -61,7 +62,7 @@ pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action> {
     })))
     .ok();
 
-  Builder::new().entry(ws() | value()).build(s)
+  Builder::new().entry((ws() | value()).range()).build(s)
 }
 
 fn main() {}
@@ -92,9 +93,9 @@ mod tests {
       if let Some(node) = output {
         println!(
           "{}..{}: {:?}",
-          node.range.start,
-          node.range.end,
-          &s[node.range.clone()]
+          node.value.range.start,
+          node.value.range.end,
+          &s[node.value.range.clone()]
         );
       } else {
         break;

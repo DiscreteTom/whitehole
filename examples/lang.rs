@@ -33,17 +33,17 @@ mod tests {
   fn test_whitespaces() {
     assert_eq!(
       whitespaces()
-        .parse(&mut Input::new(" \t\r\n", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(" \t\r\n", 0, &mut (), &mut ()).unwrap())
         .unwrap()
-        .rest,
-      ""
+        .digested,
+      4
     );
     assert_eq!(
       whitespaces()
-        .parse(&mut Input::new(" \t\r\n123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(" \t\r\n123", 0, &mut (), &mut ()).unwrap())
         .unwrap()
-        .rest,
-      "123"
+        .digested,
+      4
     );
   }
 
@@ -51,46 +51,46 @@ mod tests {
   fn test_comments() {
     assert_eq!(
       singleline_comment()
-        .parse(&mut Input::new("//123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("//123", 0, &mut (), &mut ()).unwrap())
         .unwrap()
-        .rest,
-      ""
+        .digested,
+      5
     );
     assert_eq!(
       singleline_comment()
-        .parse(&mut Input::new("//123\n", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("//123\n", 0, &mut (), &mut ()).unwrap())
         .unwrap()
-        .rest,
-      ""
+        .digested,
+      6
     );
     assert_eq!(
       singleline_comment()
-        .parse(&mut Input::new("//123\n456", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("//123\n456", 0, &mut (), &mut ()).unwrap())
         .unwrap()
-        .rest,
-      "456"
+        .digested,
+      6
     );
 
     assert_eq!(
       multiline_comment()
-        .parse(&mut Input::new("/*123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("/*123", 0, &mut (), &mut ()).unwrap())
         .unwrap()
-        .rest,
-      ""
+        .digested,
+      5
     );
     assert_eq!(
       multiline_comment()
-        .parse(&mut Input::new("/*123\n*/", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("/*123\n*/", 0, &mut (), &mut ()).unwrap())
         .unwrap()
-        .rest,
-      ""
+        .digested,
+      8
     );
     assert_eq!(
       multiline_comment()
-        .parse(&mut Input::new("/*123\n*/456", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("/*123\n*/456", 0, &mut (), &mut ()).unwrap())
         .unwrap()
-        .rest,
-      "456"
+        .digested,
+      8
     );
   }
 }

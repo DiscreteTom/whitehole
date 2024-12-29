@@ -18,17 +18,17 @@ mod tests {
   fn test_regex() {
     assert_eq!(
       regex(r"\d+")
-        .parse(&mut Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
         .unwrap()
-        .rest,
-      ""
+        .digested,
+      3
     );
     assert_eq!(
       regex(r"\d+")
-        .parse(&mut Input::new("123abc", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new("123abc", 0, &mut (), &mut ()).unwrap())
         .unwrap()
-        .rest,
-      "abc"
+        .digested,
+      3
     );
   }
 }
