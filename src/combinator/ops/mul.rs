@@ -6,7 +6,7 @@
 //! and the rest of the input text after the last repetition is executed,
 //! or reject if the repetition is not satisfied.
 //!
-//! `0` is a valid repetition range, which means the combinator is optional.
+//! `0` is a valid repetition value.
 //! # Basics
 //! Use `*` to repeat a combinator:
 //! ```
@@ -105,12 +105,37 @@
 //! ```
 //! # use whitehole::{combinator::eat, action::{Input, Action}};
 //! let combinator = eat('a').sep(',') * (1..);
-//!
 //! assert_eq!(
 //!   combinator.exec(Input::new("a,a,a", 0, &mut (), &mut ()).unwrap()).unwrap().digested,
 //!   5
 //! )
 //! ```
+//! You can fold the values with the separator.
+//! ```
+//! // inline fold
+//! # use whitehole::{combinator::{ops::mul::Fold, eat}, action::{Input, Action}};
+//! let combinator = eat('a').bind(1).sep(',') * (1.., || 0, |v, acc| acc + v);
+//! assert_eq!(
+//!   combinator.exec(Input::new("a,a,a", 0, &mut (), &mut ()).unwrap()).unwrap().value,
+//!   3
+//! );
+//!
+//! // with custom type
+//! #[derive(Clone)]
+//! struct Usize(usize);
+//! impl Fold for Usize {
+//!   type Output = usize;
+//!   fn fold(self, acc: Self::Output) -> Self::Output {
+//!     acc + self.0
+//!   }
+//! }
+//! let combinator = eat('a').bind(Usize(1)).sep(',') * (1..);
+//! assert_eq!(
+//!   combinator.exec(Input::new("a,a,a", 0, &mut (), &mut ()).unwrap()).unwrap().value,
+//!   3
+//! )
+//! ```
+//! See [`Combinator::sep`](crate::combinator::Combinator::sep) for more information.
 mod fold;
 mod inline;
 mod repeat;
