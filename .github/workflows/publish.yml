@@ -41,7 +41,7 @@ jobs:
 
       - run: cargo publish
         env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
       # create the release
       - run: gh release create ${{ env.VERSION }} -t ${{ env.VERSION }} --verify-tag -n "See [CHANGELOG.md](https://github.com/DiscreteTom/whitehole/blob/main/CHANGELOG.md)."
