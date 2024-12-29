@@ -9,7 +9,7 @@ pub struct Sep<T, S> {
 
 impl<T> Combinator<T> {
   /// Specify an other combinator as the separator
-  /// before performing `*` on [`Combinator`](crate::combinator::Combinator)s.
+  /// before performing `*` on [`Combinator`]s.
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   /// # Examples
   /// ```
