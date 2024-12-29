@@ -12,7 +12,7 @@ fn main() {}
 #[cfg(test)]
 mod tests {
   use super::*;
-  use whitehole::action::{Input, Action};
+  use whitehole::action::{Action, Input};
 
   #[test]
   fn test_regex() {
