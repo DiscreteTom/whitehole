@@ -21,7 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Combinator::finally` to modify `Input` after execution.
 - Add `wrap_unchecked`.
 - Implement `Into<Combinator>` for `char`, `&str`, `String`, `usize`.
+- Implement `Eat` for `EatChar`, `EatStr`, `EatString`, `EatUsize`.
 - Add `Combinator::sep`.
+- All provided combinators are now `const`.
 - Add `Instant::digest_unchecked`.and `Instant::digest`.
 - Add `Parser::digest`, `Parser::digest_unchecked`, `Parser::digest_with`, `Parser::digest_with_unchecked`.
 - `Parser::reload_with` can accept `None` as the new state.
@@ -54,7 +56,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove `combinator::Builder`.
 - Remove `C!(_, State, Heap)` syntax.
 - Remove `combinator * (repeat, sep)` syntax.
-- Remove `Eat` trait.
 - Remove `Instant::update`.
 
 ## [0.0.1] - 2024-11-24

@@ -5,9 +5,20 @@ use crate::{
 };
 use std::marker::PhantomData;
 
+/// A util trait to make [`eat`] generic over different types.
+///
+/// Built-in implementations are provided for [`String`], `&str`, [`char`] and [`usize`].
+///
+/// See [`eat`] for more details.
+pub trait Eat<State, Heap> {
+  /// Check if the rest of input text starts with this instance.
+  /// Return the output after digesting the instance if found.
+  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>>;
+}
+
 macro_rules! impl_eat {
   ($name:ident, $inner:ty, ($($derive:ident),*)) => {
-    /// An [`Action`] implementor.
+    /// An [`Action`] and [`Eat`] implementor.
     /// For most cases you don't need to use this directly.
     ///
     /// See [`eat`] for more details.
@@ -34,6 +45,24 @@ macro_rules! impl_eat {
         Combinator::new($name::new(self))
       }
     }
+
+    unsafe impl<State, Heap> Action for $name<State, Heap> {
+      type Value = ();
+      type State = State;
+      type Heap = Heap;
+
+      #[inline]
+      fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+        Eat::exec(&self.inner, input)
+      }
+    }
+
+    impl<State, Heap> Eat<State, Heap> for $name<State, Heap> {
+      #[inline]
+      fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+        Action::exec(self, input)
+      }
+    }
   };
 }
 
@@ -41,54 +70,42 @@ impl_eat!(EatChar, char, (Copy));
 impl_eat!(EatString, String, ());
 impl_eat!(EatUsize, usize, (Copy));
 
-unsafe impl<State, Heap> Action for EatChar<State, Heap> {
-  type Value = ();
-  type State = State;
-  type Heap = Heap;
-
+impl<State, Heap> Eat<State, Heap> for char {
   #[inline]
   fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .rest()
-      .starts_with(self.inner)
-      .then(|| unsafe { input.digest_unchecked(self.inner.len_utf8()) })
+      .starts_with(*self)
+      .then(|| unsafe { input.digest_unchecked(self.len_utf8()) })
   }
 }
 
-unsafe impl<State, Heap> Action for EatString<State, Heap> {
-  type Value = ();
-  type State = State;
-  type Heap = Heap;
-
+impl<State, Heap> Eat<State, Heap> for String {
   #[inline]
   fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .rest()
-      .starts_with(&self.inner)
-      .then(|| unsafe { input.digest_unchecked(self.inner.len()) })
+      .starts_with(self)
+      .then(|| unsafe { input.digest_unchecked(self.len()) })
   }
 }
 
-unsafe impl<State, Heap> Action for EatUsize<State, Heap> {
-  type Value = ();
-  type State = State;
-  type Heap = Heap;
-
+impl<State, Heap> Eat<State, Heap> for usize {
   #[inline]
   fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
     // if eat 1 char, just eat the `input.next` which always exists
-    if self.inner == 1 {
+    if *self == 1 {
       return unsafe { input.digest_unchecked(input.next().len_utf8()) }.into();
     }
 
     let mut digested: usize = 0;
     let mut count: usize = 0;
     let mut chars = input.rest().chars();
-    while count < self.inner {
+    while count < *self {
       // no enough chars, try to digest more
       if let Some(c) = chars.next() {
         digested = unsafe { digested.unchecked_add(c.len_utf8()) };
-        // SAFETY: count is always smaller than self.inner which is a usize
+        // SAFETY: count is always smaller than self which is a usize
         count = unsafe { count.unchecked_add(1) };
       } else {
         // no enough chars, reject
@@ -106,18 +123,35 @@ unsafe impl<State, Heap> Action for EatUsize<State, Heap> {
 /// See [`eat`] for more details.
 #[derive(Debug, Clone, Copy)]
 pub struct EatStr<'a, State = (), Heap = ()> {
-  s: &'a str,
+  inner: &'a str,
   _phantom: PhantomData<(State, Heap)>,
 }
 
 impl<'a, State, Heap> EatStr<'a, State, Heap> {
   /// Create a new instance with the inner value.
   #[inline]
-  pub const fn new(s: &'a str) -> Self {
+  pub const fn new(inner: &'a str) -> Self {
     Self {
-      s,
+      inner,
       _phantom: PhantomData,
     }
+  }
+}
+
+impl<'a, State, Heap> Into<Combinator<EatStr<'a, State, Heap>>> for &'a str {
+  #[inline]
+  fn into(self) -> Combinator<EatStr<'a, State, Heap>> {
+    Combinator::new(EatStr::new(self))
+  }
+}
+
+impl<State, Heap> Eat<State, Heap> for &str {
+  #[inline]
+  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+    input
+      .rest()
+      .starts_with(self)
+      .then(|| unsafe { input.digest_unchecked(self.len()) })
   }
 }
 
@@ -128,17 +162,14 @@ unsafe impl<State, Heap> Action for EatStr<'_, State, Heap> {
 
   #[inline]
   fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
-    input
-      .rest()
-      .starts_with(self.s)
-      .then(|| unsafe { input.digest_unchecked(self.s.len()) })
+    Eat::exec(&self.inner, input)
   }
 }
 
-impl<'a, State, Heap> Into<Combinator<EatStr<'a, State, Heap>>> for &'a str {
+impl<State, Heap> Eat<State, Heap> for EatStr<'_, State, Heap> {
   #[inline]
-  fn into(self) -> Combinator<EatStr<'a, State, Heap>> {
-    Combinator::new(EatStr::new(self))
+  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<()>> {
+    Action::exec(self, input)
   }
 }
 
@@ -165,8 +196,8 @@ impl<'a, State, Heap> Into<Combinator<EatStr<'a, State, Heap>>> for &'a str {
 /// # );
 /// ```
 #[inline]
-pub fn eat<T>(pattern: impl Into<Combinator<T>>) -> Combinator<T> {
-  pattern.into()
+pub const fn eat<State, Heap>(pattern: impl Eat<State, Heap>) -> C!((), State, Heap) {
+  unsafe { wrap_unchecked(move |input| pattern.exec(input)) }
 }
 
 /// Returns a combinator to eat `n` bytes (not chars) from the head of [`Input::rest`],
