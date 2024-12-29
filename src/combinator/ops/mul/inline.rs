@@ -138,3 +138,29 @@ unsafe impl<
     repeat.accept(repeated).then_some(output)
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::combinator::eat;
+
+  #[test]
+  fn test_inline_fold() {
+    let combinator = eat('a').bind(1) * (1.., || 0, |v, acc| acc + v);
+    let output = combinator
+      .exec(Input::new("aaa", 0, &mut (), &mut ()).unwrap())
+      .unwrap();
+    assert_eq!(output.value, 3);
+    assert_eq!(output.digested, 3);
+  }
+
+  #[test]
+  fn test_inline_fold_with_sep() {
+    let combinator = eat('a').bind(1).sep(',') * (1.., || 0, |v, acc| acc + v);
+    let output = combinator
+      .exec(Input::new("a,a,a", 0, &mut (), &mut ()).unwrap())
+      .unwrap();
+    assert_eq!(output.value, 3);
+    assert_eq!(output.digested, 5);
+  }
+}
