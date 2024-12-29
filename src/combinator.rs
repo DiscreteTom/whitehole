@@ -1,5 +1,4 @@
-//! The building block of a lexer or a parser.
-//! Provide decorators and operator overloads for [`Action`]s.
+//! [`Combinator`] is a wrapper around [`Action`] to provide decorators and operator overloads.
 //! # Basic Usage
 //! ## Provided Combinators
 //! To get started, you can use the provided combinators like [`eat`],
@@ -13,15 +12,13 @@
 //! ```
 //! To save the memory of your brain, we have very limited number of provided combinators.
 //! Here is the full list:
-//! - General combinators for most cases.
-//!   - [`eat`]: eat a pattern.
-//!   - [`next`]: eat the next character by a predicate.
-//!   - [`till`]: eat until a pattern.
-//! - Advanced combinators if you want better performance or more customization.
-//!   - [`eat_unchecked`]: eat `n` bytes without checking.
-//!   - [`eater`]: eat by a custom function.
-//!   - [`eater_unchecked`]: eat by a custom function without checking.
-//!   - [`wrap`]: wrap a closure as a combinator.
+//! - [`eat`]: eat a pattern.
+//! - [`eater`]: eat by a custom function.
+//! - [`next`]: eat the next character by a predicate.
+//! - [`till`]: eat until a pattern, inclusive.
+//! - [`wrap`]: wrap a closure as a combinator.
+//!
+//! Tips: Some of them may have faster `unsafe` variants named with suffix `_unchecked`.
 //! ## Composition
 //! Use `+` and `|` to compose multiple combinators
 //! for more complex tasks:
@@ -36,29 +33,9 @@
 //! # t(
 //! eat("true") | eat("false")
 //! # );
-//!
-//! // you can use a String, a &str, a char or an usize as a shortcut for `eat`
-//! // at the right-hand side of `+` or `|`
-//! # t(
-//! eat("true") + "false"
-//! # );
-//! # t(
-//! eat("true") | "false"
-//! # );
-//! # t(
-//! eat("true") + ';'
-//! # );
-//! # t(
-//! eat("true") | ';'
-//! # );
-//! # t(
-//! eat("true") + 1
-//! # );
-//! # t(
-//! eat("true") | 1
-//! # );
 //! ```
-//! ## Repeat
+//! See [`ops::add`] and [`ops::bitor`] for more information.
+//! ## Repetition
 //! Use `*` to repeat a combinator:
 //! ```
 //! # use whitehole::{combinator::eat, C};
@@ -78,80 +55,39 @@
 //! # );
 //! // similar to but faster than
 //! # t(
-//! (eat("true") + "true" + "true") | (eat("true") + "true") |  eat("true")
-//! # );
-//!
-//! // repeat for 0 or more times
-//! # t(
-//! eat("true") * (..)
-//! # );
-//! # t(
-//! eat("true") * (..=3)
-//! # );
-//!
-//! // repeating for 0 times will always accept with 0 bytes digested
-//! # t(
-//! eat("true") * 0
-//! # );
-//! # t(
-//! eat("true") * (..1)
-//! # );
-//! # t(
-//! eat("true") * (..=0)
-//! # );
-//!
-//! // repeat with another combinator as the separator
-//! # t(
-//! eat("true").sep(eat(',')) * (1..)
-//! # );
-//! // you can use a String, a &str or a char as the separator
-//! # t(
-//! eat("true").sep(',') * (1..)
-//! # );
-//! # t(
-//! eat("true").sep(", ") * (1..)
-//! # );
-//! # t(
-//! eat("true").sep(", ".to_string()) * (1..)
+//! (eat("true") + "true" + "true") | (eat("true") + "true") | eat("true")
 //! # );
 //! ```
+//! See [`ops::mul`] for more information.
 //! ## Decorator
 //! [`Combinator`] provides a set of methods as decorators
 //! to modify the behavior of the combinator.
-//! For now let's see 2 of them:
-//! ```
-//! # use whitehole::{combinator::eat, C};
-//! # fn t(_: C!()) {}
-//! // make the combinator optional
-//! # t(
-//! eat("true").optional()
-//! # );
-//! // require a word boundary after the combinator is accepted
-//! # t(
-//! eat("true").boundary()
-//! # );
-//! ```
-//! ## Value
+//! ### Flow Control
+//! - [`Combinator::optional`] to make a combinator optional.
+//! - [`Combinator::boundary`] to require a word boundary after the action is accepted.
+//! - [`Combinator::when`] to conditionally execute the combinator.
+//! - [`Combinator::prevent`] to conditionally reject the combinator before it is executed.
+//! - [`Combinator::reject`] to conditionally reject the combinator after it is executed.
+//! ### Value Transformation
 //! You can set [`Output::value`] to distinguish different output types
 //! or carrying additional data.
 //!
 //! Related decorators:
-//! - [`Combinator::bind`]
-//! - [`Combinator::bind_default`]
-//! - [`Combinator::select`]
-//! - [`Combinator::map`]
-//! - [`Combinator::tuple`]
-//! - [`Combinator::range`]
-//! ## Stateful
+//! - [`Combinator::map`] to convert the value to a new value.
+//! - [`Combinator::tuple`] to wrap the value in an one-element tuple.
+//! - [`Combinator::bind`] to set the value to a provided value.
+//! - [`Combinator::bind_default`] to set the value to the default value.
+//! - [`Combinator::select`] to calculate the value with a closure.
+//! - [`Combinator::range`] to wrap the value in a [`WithRange`](crate::range::WithRange) struct.
+//! ### State Manipulation
 //! [`Combinator`]s are stateless, but you can access external states
 //! via [`Input::state`] to realize stateful parsing.
 //!
 //! Related decorators:
-//! - [`Combinator::prepare`]
-//! - [`Combinator::then`]
-//! - [`Combinator::catch`]
-//! - [`Combinator::prevent`]
-//! - [`Combinator::reject`]
+//! - [`Combinator::prepare`] to modify states before being executed.
+//! - [`Combinator::then`] to modify states after being accepted.
+//! - [`Combinator::catch`] to modify states after being rejected.
+//! - [`Combinator::finally`] to modify states after being executed.
 
 mod decorator;
 mod provided;
