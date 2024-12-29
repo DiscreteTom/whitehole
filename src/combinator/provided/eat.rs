@@ -52,14 +52,14 @@ macro_rules! impl_eat {
       type Heap = Heap;
 
       #[inline]
-      fn exec(&self, input: Input< &mut State, &mut Heap>) -> Option<Output<()>> {
+      fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
         Eat::exec(&self.inner, input)
       }
     }
 
     impl<State, Heap> Eat<State, Heap> for $name<State, Heap> {
       #[inline]
-      fn exec(&self, input: Input< &mut State, &mut Heap>) -> Option<Output<()>> {
+      fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
         Action::exec(self, input)
       }
     }
