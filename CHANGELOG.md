@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Combinator::when` as the opposite of `Combinator::prevent`.
 - Add `Combinator::finally` to modify `Input` after execution.
 - Add `wrap_unchecked`.
-- Implement `Into<Combinator>` for `char`, `&str`, `String`, `usize`.
+- Implement `From<char>`, `From<String>`, `From<usize>` and `From<&str>` for `Combinator`.
 - Implement `Eat` for `EatChar`, `EatStr`, `EatString`, `EatUsize`.
 - Add `Combinator::sep`.
 - All provided combinators are now `const`.

@@ -39,10 +39,10 @@ macro_rules! impl_eat {
       }
     }
 
-    impl<State, Heap> Into<Combinator<$name<State, Heap>>> for $inner {
+    impl<State, Heap> From<$inner> for Combinator<$name<State, Heap>> {
       #[inline]
-      fn into(self) -> Combinator<$name<State, Heap>> {
-        Combinator::new($name::new(self))
+      fn from(v: $inner) -> Combinator<$name<State, Heap>> {
+        Combinator::new($name::new(v))
       }
     }
 
@@ -138,10 +138,10 @@ impl<'a, State, Heap> EatStr<'a, State, Heap> {
   }
 }
 
-impl<'a, State, Heap> Into<Combinator<EatStr<'a, State, Heap>>> for &'a str {
+impl<'a, State, Heap> From<&'a str> for Combinator<EatStr<'a, State, Heap>> {
   #[inline]
-  fn into(self) -> Combinator<EatStr<'a, State, Heap>> {
-    Combinator::new(EatStr::new(self))
+  fn from(v: &'a str) -> Combinator<EatStr<'a, State, Heap>> {
+    Combinator::new(EatStr::new(v))
   }
 }
 
