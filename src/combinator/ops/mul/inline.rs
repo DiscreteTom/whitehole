@@ -29,14 +29,14 @@ impl<
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
     InlineFolder: Fn(T::Value, Acc) -> Acc,
-  > ops::Mul<(Repeater, Initializer, InlineFolder)> for Combinator<Sep<T, S>>
+  > ops::Mul<(Repeater, Initializer, InlineFolder)> for Sep<T, S>
 {
   type Output = Combinator<Mul<Sep<T, S>, (Repeater, Initializer, InlineFolder)>>;
 
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   #[inline]
   fn mul(self, rhs: (Repeater, Initializer, InlineFolder)) -> Self::Output {
-    Self::Output::new(Mul::new(self.action, rhs))
+    Self::Output::new(Mul::new(self, rhs))
   }
 }
 
