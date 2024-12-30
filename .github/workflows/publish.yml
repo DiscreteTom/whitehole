@@ -19,10 +19,10 @@ jobs:
       # set the version to the input. if the input is not set (triggered by tag), it will be the tag name
       - run: echo "VERSION=${{ inputs.version || github.ref_name }}" >> $GITHUB_ENV
 
+      # validate crate version
       - run: |
-          cargo metadata --format-version=1 --no-deps | jq '.packages[0].version' | tr -d '"' > version
-          [ "v$(cat version)" = "${{ env.VERSION }}" ] || (echo "Version mismatch" && exit 1)
-          rm version
+          VERSION=`cargo metadata --format-version=1 --no-deps | jq '.packages[0].version' | tr -d '"'`
+          [ "v$VERSION" = "${{ env.VERSION }}" ] || (echo "Version mismatch" && exit 1)
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
 
