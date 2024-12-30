@@ -27,7 +27,7 @@
 //! # );
 //! // similar to but faster than
 //! # t(
-//! (eat("true") + "true" + "true") | (eat("true") + "true") |  eat("true")
+//! (eat("true") + "true" + "true") | (eat("true") + "true") | eat("true")
 //! # );
 //!
 //! // repeat for 0 or more times
