@@ -24,6 +24,12 @@ jobs:
           VERSION=`cargo metadata --format-version=1 --no-deps | jq '.packages[0].version' | tr -d '"'`
           [ "v$VERSION" = "${{ env.VERSION }}" ] || (echo "Version mismatch" && exit 1)
 
+      # validate CHANGELOG version
+      # TODO: use a CHANGELOG linter
+      - run: |
+          VERSION=`cargo metadata --format-version=1 --no-deps | jq '.packages[0].version' | tr -d '"'`
+          grep -q "## \[$VERSION\]" CHANGELOG.md || (echo "Version not found in CHANGELOG" && exit 1)
+
       - uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - run: cargo fmt --check
