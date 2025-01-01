@@ -66,7 +66,7 @@ unsafe impl<
     };
 
     while unsafe { repeat.validate(repeated) } {
-      let Some(next_output) = (output.digested < input.rest().len())
+      let Some(next_output) = (output.digested < input.instant().rest().len())
         .then(|| unsafe { input.shift_unchecked(output.digested) })
         .and_then(|input| self.lhs.exec(input))
       else {
@@ -112,7 +112,7 @@ unsafe impl<
 
     let mut digested_with_sep = 0;
     while unsafe { repeat.validate(repeated) } {
-      let Some(value_output) = (digested_with_sep < input.rest().len())
+      let Some(value_output) = (digested_with_sep < input.instant().rest().len())
         .then(|| unsafe { input.shift_unchecked(digested_with_sep) })
         .and_then(|input| self.lhs.value.exec(input))
       else {
@@ -124,7 +124,7 @@ unsafe impl<
       debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
       output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
 
-      let Some(sep_output) = (output.digested < input.rest().len())
+      let Some(sep_output) = (output.digested < input.instant().rest().len())
         .then(|| unsafe { input.shift_unchecked(output.digested) })
         .and_then(|input| self.lhs.sep.exec(input))
       else {
@@ -142,13 +142,13 @@ unsafe impl<
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::combinator::eat;
+  use crate::{combinator::eat, instant::Instant};
 
   #[test]
   fn test_inline_fold() {
     let combinator = eat('a').bind(1) * (1.., || 0, |v, acc, _| acc + v);
     let output = combinator
-      .exec(Input::new("aaa", 0, &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("aaa"), &mut (), &mut ()).unwrap())
       .unwrap();
     assert_eq!(output.value, 3);
     assert_eq!(output.digested, 3);
@@ -158,7 +158,7 @@ mod tests {
   fn test_inline_fold_with_sep() {
     let combinator = eat('a').bind(1).sep(',') * (1.., || 0, |v, acc, _| acc + v);
     let output = combinator
-      .exec(Input::new("a,a,a", 0, &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()).unwrap())
       .unwrap();
     assert_eq!(output.value, 3);
     assert_eq!(output.digested, 5);

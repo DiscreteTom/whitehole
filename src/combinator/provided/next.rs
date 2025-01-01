@@ -32,20 +32,23 @@ pub const fn next<State, Heap>(condition: impl Fn(char) -> bool) -> C!((), State
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::action::{Action, Input};
+  use crate::{
+    action::{Action, Input},
+    instant::Instant,
+  };
 
   #[test]
   fn combinator_next() {
     // normal
     assert_eq!(
       next(|c| c.is_ascii_digit())
-        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(1)
     );
     // reject
     assert!(next(|c| c.is_ascii_alphabetic())
-      .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
       .is_none());
   }
 
@@ -54,13 +57,13 @@ mod tests {
     // normal
     assert_eq!(
       (next(|c| c.is_ascii_digit()) * (1..))
-        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(next(|c| c.is_ascii_digit())
-      .exec(Input::new("abc", 0, &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("abc"), &mut (), &mut ()).unwrap())
       .is_none());
   }
 }

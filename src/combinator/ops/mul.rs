@@ -53,7 +53,7 @@
 //! ## Inline Fold
 //! For simple cases, you can accumulate values inline.
 //! ```
-//! # use whitehole::{combinator::next, action::{Input, Action}};
+//! # use whitehole::{combinator::next, action::{Input, Action}, instant::Instant};
 //! let combinator =
 //!   // accept one ascii digit at a time
 //!   next(|c| c.is_ascii_digit())
@@ -64,14 +64,14 @@
 //!
 //! // parse "123" to 123
 //! assert_eq!(
-//!   combinator.exec(Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().value,
+//!   combinator.exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()).unwrap().value,
 //!   123
 //! )
 //! ```
 //! ## Fold with Custom Type
 //! If you want to re-use the fold logic, you can implement [`Fold`] for a custom type.
 //! ```
-//! # use whitehole::{combinator::{ops::mul::Fold, next}, action::{Input, Action}};
+//! # use whitehole::{combinator::{ops::mul::Fold, next}, action::{Input, Action}, instant::Instant};
 //! // since you can't implement `Fold` for `usize` directly,
 //! // wrap it in a new-type
 //! struct Usize(usize);
@@ -95,14 +95,14 @@
 //!
 //! // parse "123" to 123
 //! assert_eq!(
-//!   combinator.exec(Input::new("123", 0, &mut (), &mut ()).unwrap()).unwrap().value,
+//!   combinator.exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()).unwrap().value,
 //!   123
 //! )
 //! ```
 //! ## Fold to Heap
 //! You can fold the values to [`Input::heap`](crate::action::Input::heap) to prevent re-allocation.
 //! ```
-//! # use whitehole::{combinator::eat, action::{Input, Action}};
+//! # use whitehole::{combinator::eat, action::{Input, Action}, instant::Instant};
 //! let combinator = {
 //!   // eat one char, use the start index as the value
 //!   eat(1).select(|ctx| ctx.start())
@@ -112,27 +112,27 @@
 //!
 //! // create a re-usable heap
 //! let mut heap = vec![];
-//! combinator.exec(Input::new("123", 0, &mut (), &mut heap).unwrap());
+//! combinator.exec(Input::new(Instant::new("123"), &mut (), &mut heap).unwrap());
 //! assert_eq!(heap, vec![0, 1, 2]);
 //! ```
 //! # Separator
 //! You can use [`Combinator::sep`](crate::combinator::Combinator::sep)
 //! to specify an other combinator as the separator, then perform `*` on the pair.
 //! ```
-//! # use whitehole::{combinator::eat, action::{Input, Action}};
+//! # use whitehole::{combinator::eat, action::{Input, Action}, instant::Instant};
 //! let combinator = eat('a').sep(',') * (1..);
 //! assert_eq!(
-//!   combinator.exec(Input::new("a,a,a", 0, &mut (), &mut ()).unwrap()).unwrap().digested,
+//!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()).unwrap()).unwrap().digested,
 //!   5
 //! )
 //! ```
 //! You can fold the values with the separator.
 //! ```
 //! // inline fold
-//! # use whitehole::{combinator::{ops::mul::Fold, eat}, action::{Input, Action}};
+//! # use whitehole::{combinator::{ops::mul::Fold, eat}, action::{Input, Action}, instant::Instant};
 //! let combinator = eat('a').bind(1).sep(',') * (1.., || 0, |v, acc, _input| acc + v);
 //! assert_eq!(
-//!   combinator.exec(Input::new("a,a,a", 0, &mut (), &mut ()).unwrap()).unwrap().value,
+//!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()).unwrap()).unwrap().value,
 //!   3
 //! );
 //!
@@ -147,7 +147,7 @@
 //! }
 //! let combinator = eat('a').bind(Usize(1)).sep(',') * (1..);
 //! assert_eq!(
-//!   combinator.exec(Input::new("a,a,a", 0, &mut (), &mut ()).unwrap()).unwrap().value,
+//!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()).unwrap()).unwrap().value,
 //!   3
 //! )
 //! ```

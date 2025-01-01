@@ -100,7 +100,7 @@ impl<T: Action> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::combinator::wrap;
+  use crate::{combinator::wrap, instant::Instant};
 
   #[derive(Debug, Default, PartialEq, Eq)]
   struct State {
@@ -129,7 +129,7 @@ mod tests {
       .prepare(|input| {
         input.state.from = 1;
       })
-      .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut state, &mut ()).unwrap())
       .is_some());
     assert_eq!(state, State { from: 1, to: 1 });
   }
@@ -141,7 +141,7 @@ mod tests {
       .then(|ctx| {
         ctx.input.state.from = 1;
       })
-      .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut state, &mut ()).unwrap())
       .is_some());
     assert_eq!(state, State { from: 1, to: 0 });
 
@@ -150,7 +150,7 @@ mod tests {
       .then(|ctx| {
         ctx.input.state.from = 1;
       })
-      .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut state, &mut ()).unwrap())
       .is_none());
     assert_eq!(state, State { from: 0, to: 0 });
   }
@@ -162,7 +162,7 @@ mod tests {
       .catch(|input| {
         input.state.from = 1;
       })
-      .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut state, &mut ()).unwrap())
       .is_some());
     assert_eq!(state, State { from: 0, to: 0 });
 
@@ -171,7 +171,7 @@ mod tests {
       .catch(|input| {
         input.state.from = 1;
       })
-      .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut state, &mut ()).unwrap())
       .is_none());
     assert_eq!(state, State { from: 1, to: 0 });
   }
@@ -183,7 +183,7 @@ mod tests {
       .finally(|input| {
         input.state.to = 1;
       })
-      .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut state, &mut ()).unwrap())
       .is_some());
     assert_eq!(state, State { from: 0, to: 1 });
 
@@ -192,7 +192,7 @@ mod tests {
       .finally(|input| {
         input.state.to = 1;
       })
-      .exec(Input::new("123", 0, &mut state, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut state, &mut ()).unwrap())
       .is_none());
     assert_eq!(state, State { from: 0, to: 1 });
   }

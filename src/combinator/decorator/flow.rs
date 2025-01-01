@@ -156,7 +156,7 @@ impl<T: Action> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::combinator::wrap;
+  use crate::{combinator::wrap, instant::Instant};
 
   fn accepter() -> C!((), bool) {
     wrap(|input| {
@@ -177,14 +177,14 @@ mod tests {
     let mut executed = false;
     assert!(accepter()
       .when(|_| false)
-      .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap())
       .is_none());
     assert!(!executed);
 
     let mut executed = false;
     assert!(accepter()
       .when(|_| true)
-      .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap())
       .is_some());
     assert!(executed);
   }
@@ -194,14 +194,14 @@ mod tests {
     let mut executed = false;
     assert!(accepter()
       .prevent(|_| true)
-      .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap())
       .is_none());
     assert!(!executed);
 
     let mut executed = false;
     assert!(accepter()
       .prevent(|_| false)
-      .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap())
       .is_some());
     assert!(executed);
   }
@@ -212,7 +212,7 @@ mod tests {
     assert_eq!(
       accepter()
         .reject(|input| input.content() != "1")
-        .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap())
         .unwrap()
         .digested,
       1
@@ -223,7 +223,7 @@ mod tests {
     assert_eq!(
       accepter()
         .reject(|input| input.content() == "1")
-        .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap()),
       None
     );
     assert!(executed);
@@ -235,7 +235,7 @@ mod tests {
     assert_eq!(
       accepter()
         .optional()
-        .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap())
         .unwrap()
         .digested,
       1
@@ -246,7 +246,7 @@ mod tests {
     assert_eq!(
       rejecter()
         .optional()
-        .exec(Input::new("123", 0, &mut executed, &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap())
         .unwrap()
         .digested,
       0
@@ -260,7 +260,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .exec(Input::new("1", 0, &mut executed, &mut ()).unwrap())
+        .exec(Input::new(Instant::new("1"), &mut executed, &mut ()).unwrap())
         .unwrap()
         .digested,
       1
@@ -271,7 +271,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .exec(Input::new("12", 0, &mut executed, &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("12"), &mut executed, &mut ()).unwrap()),
       None
     );
     assert!(executed);
@@ -280,7 +280,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .exec(Input::new("1a", 0, &mut executed, &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("1a"), &mut executed, &mut ()).unwrap()),
       None
     );
     assert!(executed);
@@ -289,7 +289,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .exec(Input::new("1_", 0, &mut executed, &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("1_"), &mut executed, &mut ()).unwrap()),
       None
     );
     assert!(executed);

@@ -21,14 +21,14 @@ macro_rules! impl_ctx {
       /// Get the [`Input`] of this execution.
       #[inline]
       pub fn input(&self) -> &$input {
-        // return non-mutable reference to prevent mem::swap and override `Input::start` and `Input::rest`.
+        // return non-mutable reference to prevent mem::swap and override `Input::instant`.
         &self.input
       }
 
-      /// See [`Input::start`].
+      /// The `self.input().instant().digested()`.
       #[inline]
       pub const fn start(&self) -> usize {
-        self.input.start()
+        self.input.instant().digested()
       }
 
       /// See [`Input::state`].
@@ -52,8 +52,8 @@ macro_rules! impl_ctx {
       /// Get the rest of the input text after accepting this combinator.
       #[inline]
       pub fn rest(&self) -> &'text str {
-        debug_assert!(self.output.digested <= self.input.rest().len());
-        unsafe { self.input.rest().get_unchecked(self.digested()..) }
+        debug_assert!(self.output.digested <= self.input.instant().rest().len());
+        unsafe { self.input.instant().rest().get_unchecked(self.digested()..) }
       }
 
       /// The end index in bytes in the whole input text.
@@ -74,8 +74,8 @@ macro_rules! impl_ctx {
       /// The text content accepted by this combinator.
       #[inline]
       pub fn content(&self) -> &'text str {
-        debug_assert!(self.digested() <= self.input.rest().len());
-        unsafe { self.input.rest().get_unchecked(..self.digested()) }
+        debug_assert!(self.digested() <= self.input.instant().rest().len());
+        unsafe { self.input.instant().rest().get_unchecked(..self.digested()) }
       }
 
       /// Take the [`Output`].
@@ -111,6 +111,7 @@ impl_ctx!(
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::instant::Instant;
 
   macro_rules! ctx {
     () => {
@@ -118,7 +119,16 @@ mod tests {
     };
     ($state:expr, $heap:expr) => {
       AcceptedContext {
-        input: Input::new("123", 1, &mut $state, &mut $heap).unwrap(),
+        input: Input::new(
+          {
+            let mut instant = Instant::new("0123");
+            unsafe { instant.digest_unchecked(1) };
+            instant
+          },
+          &mut $state,
+          &mut $heap,
+        )
+        .unwrap(),
         output: Output {
           value: (),
           digested: 1,
@@ -133,7 +143,16 @@ mod tests {
     };
     ($state:expr, $heap:expr) => {
       AcceptedContext {
-        input: Input::new("123", 1, &mut $state, &mut $heap).unwrap(),
+        input: Input::new(
+          {
+            let mut instant = Instant::new("0123");
+            unsafe { instant.digest_unchecked(1) };
+            instant
+          },
+          &mut $state,
+          &mut $heap,
+        )
+        .unwrap(),
         output: &Output {
           value: (),
           digested: 1,
@@ -145,7 +164,7 @@ mod tests {
   #[test]
   fn accepted_decorator_context() {
     // getters
-    assert_eq!(ctx!().input().rest(), "123");
+    assert_eq!(ctx!().input().instant().rest(), "123");
     assert_eq!(ctx!().input().next(), '1');
     assert_eq!(ctx!().start(), 1);
     assert_eq!(ctx!().digested(), 1);
@@ -153,7 +172,7 @@ mod tests {
     assert_eq!(ctx!().end(), 2);
     assert_eq!(ctx!().range(), 1..2);
     assert_eq!(ctx!().content(), "1");
-    assert_eq!(ctx_ref!().input().rest(), "123");
+    assert_eq!(ctx_ref!().input().instant().rest(), "123");
     assert_eq!(ctx_ref!().input().next(), '1');
     assert_eq!(ctx_ref!().start(), 1);
     assert_eq!(ctx_ref!().digested(), 1);
@@ -180,8 +199,8 @@ mod tests {
     assert_eq!(ctx!().take().digested, 1);
     assert_eq!(ctx!().take().map(|_| 1).value, 1);
     assert_eq!(ctx!().split().1.map(|_| 1).value, 1);
-    assert_eq!(ctx!().split().0.reborrow().start(), 1);
+    assert_eq!(ctx!().split().0.reborrow().instant().digested(), 1);
     assert_eq!(ctx_ref!().take().digested, 1);
-    assert_eq!(ctx_ref!().split().0.reborrow().start(), 1);
+    assert_eq!(ctx_ref!().split().0.reborrow().instant().digested(), 1);
   }
 }

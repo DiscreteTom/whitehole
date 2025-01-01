@@ -31,7 +31,7 @@ unsafe impl<Value, State, Heap, F: Fn(Input<&mut State, &mut Heap>) -> Option<Ou
 
   #[inline]
   fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
-    let input_rest = input.rest();
+    let input_rest = input.instant().rest();
     let output = (self.inner)(input);
     debug_assert!(output
       .as_ref()
@@ -93,7 +93,7 @@ pub const fn wrap<
 ) -> C!(Value, State, Heap) {
   unsafe {
     wrap_unchecked(move |input| {
-      let rest = input.rest();
+      let rest = input.instant().rest();
       let output = f(input);
       assert!(output
         .as_ref()
@@ -107,12 +107,13 @@ pub const fn wrap<
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::instant::Instant;
 
   #[test]
   fn combinator_wrap_unchecked() {
     assert_eq!(
       unsafe { wrap_unchecked(|input| input.digest(1)) }
-        .exec(Input::new("1", 0, &mut (), &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         digested: 1
@@ -124,20 +125,20 @@ mod tests {
   #[should_panic]
   fn combinator_wrap_unchecked_overflow() {
     unsafe { wrap_unchecked(|input| input.digest_unchecked(4).into()) }
-      .exec(Input::new("1", 0, &mut (), &mut ()).unwrap());
+      .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap());
   }
 
   #[test]
   #[should_panic]
   fn combinator_wrap_unchecked_invalid_code_point() {
     unsafe { wrap_unchecked(|input| input.digest_unchecked(1).into()) }
-      .exec(Input::new("好", 0, &mut (), &mut ()).unwrap());
+      .exec(Input::new(Instant::new("好"), &mut (), &mut ()).unwrap());
   }
 
   #[test]
   fn combinator_wrap() {
     assert_eq!(
-      wrap(|input| input.digest(1)).exec(Input::new("1", 0, &mut (), &mut ()).unwrap()),
+      wrap(|input| input.digest(1)).exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         digested: 1
@@ -149,13 +150,13 @@ mod tests {
   #[should_panic]
   fn combinator_wrap_overflow() {
     wrap(|input| unsafe { input.digest_unchecked(4) }.into())
-      .exec(Input::new("1", 0, &mut (), &mut ()).unwrap());
+      .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap());
   }
 
   #[test]
   #[should_panic]
   fn combinator_wrap_invalid_code_point() {
     wrap(|input| unsafe { input.digest_unchecked(1) }.into())
-      .exec(Input::new("好", 0, &mut (), &mut ()).unwrap());
+      .exec(Input::new(Instant::new("好"), &mut (), &mut ()).unwrap());
   }
 }

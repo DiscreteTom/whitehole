@@ -137,8 +137,7 @@ impl<'text, T: Action> Parser<'text, T> {
     self
       .entry
       .exec(Input::new(
-        self.instant.rest(),
-        self.instant.digested(),
+        self.instant.clone(),
         &mut self.state,
         &mut self.heap,
       )?)
@@ -156,13 +155,8 @@ impl<'text, T: Action> Parser<'text, T> {
   {
     let mut tmp_state = self.state.clone();
     (
-      Input::new(
-        self.instant.text(),
-        self.instant.digested(),
-        &mut tmp_state,
-        &mut self.heap,
-      )
-      .and_then(|input| self.entry.exec(input)),
+      Input::new(self.instant.clone(), &mut tmp_state, &mut self.heap)
+        .and_then(|input| self.entry.exec(input)),
       tmp_state,
     )
   }
@@ -198,7 +192,7 @@ mod tests {
     assert_eq!(
       parser
         .entry()
-        .exec(Input::new("123", 0, &mut 0, &mut 0).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut 0, &mut 0).unwrap())
         .unwrap()
         .digested,
       3

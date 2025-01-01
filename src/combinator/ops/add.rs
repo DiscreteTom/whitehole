@@ -88,7 +88,7 @@ unsafe impl<Lhs: Action<Value: Concat<Rhs::Value>>, Rhs: Action<State = Lhs::Sta
     mut input: Input<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self.lhs.exec(input.reborrow()).and_then(|output| {
-      (output.digested < input.rest().len())
+      (output.digested < input.instant().rest().len())
         .then(|| unsafe { input.shift_unchecked(output.digested) })
         .and_then(|input| self.rhs.exec(input))
         .map(|rhs_output| Output {
@@ -154,7 +154,10 @@ impl<'a, Lhs: Action<Value: Concat<()>>> ops::Add<&'a str> for Combinator<Lhs> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::combinator::{wrap_unchecked, Input};
+  use crate::{
+    combinator::{wrap_unchecked, Input},
+    instant::Instant,
+  };
 
   #[test]
   fn combinator_add() {
@@ -165,32 +168,35 @@ mod tests {
 
     // reject then accept, should return None
     assert!((rejecter() + accepter_unit())
-      .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
       .is_none());
 
     // accept then reject, should return None
     assert!((accepter_unit() + rejecter())
-      .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
       .is_none());
 
     // accept then accept, should return the sum of the digested
     // with the concat value
     assert_eq!(
-      (accepter_unit() + accepter_int()).exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter_unit() + accepter_int())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (123,),
         digested: 2,
       })
     );
     assert_eq!(
-      (accepter_int() + accepter_unit()).exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter_int() + accepter_unit())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (123,),
         digested: 2,
       })
     );
     assert_eq!(
-      (accepter_int() + accepter_int()).exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      (accepter_int() + accepter_int())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (123, 123),
         digested: 2,
@@ -204,7 +210,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + '2')
-        .exec(Input::new("12", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("12"), &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(2)
     );
@@ -216,7 +222,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + "23".to_string())
-        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
@@ -228,7 +234,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + "23")
-        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
@@ -241,21 +247,21 @@ mod tests {
     // normal
     assert_eq!(
       (eat1() + 2)
-        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
     );
     // overflow
     assert_eq!(
       (eat1() + 3)
-        .exec(Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       None
     );
     // 0
     assert_eq!(
       (eat1() + 0)
-        .exec(Input::new("12", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("12"), &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(1)
     );

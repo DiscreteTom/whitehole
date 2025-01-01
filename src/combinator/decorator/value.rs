@@ -123,14 +123,14 @@ impl<T: Action> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::combinator::wrap;
+  use crate::{combinator::wrap, instant::Instant};
 
   #[test]
   fn combinator_map() {
     assert_eq!(
       wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
         .map(Some)
-        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: Some(1),
         digested: 1
@@ -143,7 +143,7 @@ mod tests {
     assert_eq!(
       wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
         .tuple()
-        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (1,),
         digested: 1
@@ -156,7 +156,7 @@ mod tests {
     assert_eq!(
       wrap(|input| input.digest(1))
         .bind(123)
-        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 123,
         digested: 1
@@ -169,7 +169,7 @@ mod tests {
     assert_eq!(
       wrap(|input| input.digest(1))
         .bind_default::<i32>()
-        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 0,
         digested: 1
@@ -182,7 +182,7 @@ mod tests {
     assert_eq!(
       wrap(|input| input.digest(1))
         .select(|ctx| if ctx.content() == "1" { 1 } else { 2 })
-        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 1,
         digested: 1
@@ -195,7 +195,7 @@ mod tests {
     assert_eq!(
       wrap(|input| input.digest(1))
         .range()
-        .exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: WithRange {
           data: (),

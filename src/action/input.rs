@@ -1,10 +1,11 @@
+use crate::instant::Instant;
+
 /// The input of [`Action::exec`](crate::action::Action::exec).
+/// `self.instant().rest()` is guaranteed to be non-empty.
 ///
 /// Once created, only [`Self::state`] and [`Self::heap`] can be mutated.
 ///
-/// For simplicity, there is no `Input::text` to get the whole input text,
-/// you can only use [`Input::rest`] to get the undigested part.
-/// If you do need the whole input text, you can store it in [`Self::heap`].
+/// If you want to clone this, see [`Self::reborrow`].
 #[derive(Debug)]
 pub struct Input<'text, StateRef, HeapRef> {
   /// The `&mut State`.
@@ -31,79 +32,56 @@ pub struct Input<'text, StateRef, HeapRef> {
   /// it should be stored here.
   pub heap: HeapRef,
 
-  /// See [`Self::start`].
-  start: usize,
-  /// See [`Input::rest`].
-  rest: &'text str,
+  /// See [`Self::instant`].
+  instant: Instant<'text>,
 }
 
 impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
   /// # Safety
-  /// You should ensure that `rest` is not empty.
+  /// You should ensure that [`Instant::rest`] is not empty.
   /// This will be checked using [`debug_assert!`].
   /// For the checked version, see [`Self::new`].
   #[inline]
   pub const unsafe fn new_unchecked(
-    rest: &'text str,
-    start: usize,
+    instant: Instant<'text>,
     state: StateRef,
     heap: HeapRef,
   ) -> Self {
-    debug_assert!(!rest.is_empty());
+    debug_assert!(!instant.rest().is_empty());
     Self {
-      rest,
-      start,
+      instant,
       state,
       heap,
     }
   }
 
-  /// Return [`Some`] if `rest` is not empty.
+  /// Return [`Some`] if [`Instant::rest`] is not empty.
   #[inline]
-  pub fn new(rest: &'text str, start: usize, state: StateRef, heap: HeapRef) -> Option<Self> {
-    (!rest.is_empty()).then(|| Self {
-      rest,
-      start,
-      state,
-      heap,
-    })
+  pub fn new(instant: Instant<'text>, state: StateRef, heap: HeapRef) -> Option<Self> {
+    (!instant.rest().is_empty()).then(|| unsafe { Self::new_unchecked(instant, state, heap) })
   }
 
-  /// The index of the whole input text, in bytes.
-  ///
-  /// This is cheap to call because the value is stored in this struct.
-  /// This will never be mutated after the creation of this instance.
+  /// The [`Instant`] before this action is executed.
+  /// [`Instant::rest`] is guaranteed to be non-empty.
   #[inline]
-  pub const fn start(&self) -> usize {
-    self.start
+  pub const fn instant(&self) -> &Instant<'text> {
+    &self.instant
   }
 
-  /// The undigested part of the input text.
-  /// This is guaranteed to be non-empty.
+  /// The first char in [`Instant::rest`].
   ///
-  /// This is cheap to call because the value is stored in this struct.
-  /// This will never be mutated after the creation of this instance.
+  /// Since `self.instant().rest()` is guaranteed to be non-empty,
+  /// the next char is guaranteed to exist.
   ///
-  /// If you just want to get the next char, use [`Self::next`] instead.
-  #[inline]
-  pub const fn rest(&self) -> &'text str {
-    self.rest
-  }
-
-  /// The first char in [`Self::rest`].
-  ///
-  /// Since [`Self::rest`] is guaranteed to be non-empty,
-  /// the next char is guaranteed to be available.
-  ///
-  /// This is faster than `self.rest().chars().next().unwrap()`.
+  /// This is faster than `self.instant().rest().chars().next().unwrap()`.
   ///
   /// This value is not stored in this struct
   /// because the value is not always needed.
   /// You can cache the return value as needed.
   #[inline]
   pub fn next(&self) -> char {
-    // SAFETY: `self.rest()` is guaranteed to be not empty.
-    unsafe { self.rest().chars().next().unwrap_unchecked() }
+    // SAFETY: `self.instant.rest()` is guaranteed to be not empty.
+    unsafe { self.instant.rest().chars().next().unwrap_unchecked() }
   }
 }
 
@@ -113,42 +91,35 @@ impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
   ///
   /// This is cheap to call.
   #[inline]
-  pub const fn reborrow(&mut self) -> Input<'text, &mut State, &mut Heap> {
+  pub fn reborrow(&mut self) -> Input<'text, &mut State, &mut Heap> {
     Input {
       state: &mut *self.state,
       heap: &mut *self.heap,
-      start: self.start,
-      rest: self.rest,
+      instant: self.instant.clone(),
     }
   }
 
-  /// Construct a new [`Input`] by shifting [`Self::start`] forward by `n` bytes.
-  /// [`Self::rest`] of the new instance will be auto calculated.
+  /// Construct a new [`Input`] by digesting `n` bytes from [`Self::instant`].
   /// # Safety
   /// You should ensure that `n` is a valid UTF-8 boundary
-  /// and smaller than the length of [`Self::rest`].
+  /// and smaller than the length of [`Instant::rest`].
   /// This will be checked using [`debug_assert!`].
   /// For the checked version, see [`Self::shift`].
   #[inline]
   pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<'text, &mut State, &mut Heap> {
-    debug_assert!(n < self.rest.len());
-    debug_assert!(self.rest.is_char_boundary(n));
-    Input::new_unchecked(
-      self.rest.get_unchecked(n..),
-      self.start.unchecked_add(n),
-      &mut *self.state,
-      &mut *self.heap,
-    )
+    debug_assert!(n < self.instant.rest().len());
+    let mut instant = self.instant.clone();
+    instant.digest_unchecked(n);
+    Input::new_unchecked(instant, &mut *self.state, &mut *self.heap)
   }
 
-  /// Try to construct a new [`Input`] by shifting [`Self::start`] forward by `n` bytes.
-  /// [`Self::rest`] of the new instance will be auto calculated.
+  /// Try to construct a new [`Input`] by digesting `n` bytes from [`Self::instant`].
   ///
   /// Return [`Some`] if `n` is a valid UTF-8 boundary
-  /// and smaller than the length of [`Self::rest`].
+  /// and smaller than the length of [`Instant::rest`].
   #[inline]
   pub fn shift(&mut self, n: usize) -> Option<Input<'text, &mut State, &mut Heap>> {
-    (n < self.rest.len() && self.rest.is_char_boundary(n))
+    (n < self.instant.rest().len() && self.instant.rest().is_char_boundary(n))
       .then(|| unsafe { self.shift_unchecked(n) })
   }
 }
@@ -161,42 +132,43 @@ mod tests {
   fn input_new_unchecked() {
     let mut state = ();
     let mut heap = ();
-    let input = unsafe { Input::new_unchecked("123", 0, &mut state, &mut heap) };
-    assert_eq!(input.start(), 0);
-    assert_eq!(input.rest(), "123");
+    let input = unsafe { Input::new_unchecked(Instant::new("123"), &mut state, &mut heap) };
+    assert_eq!(input.instant().text(), "123");
+    assert_eq!(input.instant().rest(), "123");
+    assert_eq!(input.instant().digested(), 0);
     assert_eq!(input.next(), '1');
   }
 
   #[test]
   #[should_panic]
   fn input_new_unchecked_empty() {
-    unsafe { Input::new_unchecked("", 0, &mut (), &mut ()) };
+    unsafe { Input::new_unchecked(Instant::new(""), &mut (), &mut ()) };
   }
 
   #[test]
   fn input_new() {
     let mut state = ();
     let mut heap = ();
-    let input = Input::new("123", 0, &mut state, &mut heap).unwrap();
-    assert_eq!(input.start(), 0);
-    assert_eq!(input.rest(), "123");
+    let input = Input::new(Instant::new("123"), &mut state, &mut heap).unwrap();
+    assert_eq!(input.instant().digested(), 0);
+    assert_eq!(input.instant().rest(), "123");
     assert_eq!(input.next(), '1');
   }
 
   #[test]
   fn input_new_no_rest() {
-    assert!(Input::new("", 0, &mut (), &mut ()).is_none());
+    assert!(Input::new(Instant::new(""), &mut (), &mut ()).is_none());
   }
 
   #[test]
   fn input_reborrow() {
     let mut state = 123;
     let mut heap = 123;
-    let mut input = Input::new("123", 0, &mut state, &mut heap).unwrap();
+    let mut input = Input::new(Instant::new("123"), &mut state, &mut heap).unwrap();
     {
       let input = input.reborrow();
-      assert_eq!(input.start(), 0);
-      assert_eq!(input.rest(), "123");
+      assert_eq!(input.instant().digested(), 0);
+      assert_eq!(input.instant().rest(), "123");
       assert_eq!(input.next(), '1');
       *input.state = 456;
       *input.heap = 456;
@@ -209,11 +181,11 @@ mod tests {
   fn input_shift_unchecked() {
     let mut state = 1;
     let mut heap = 1;
-    let mut input = Input::new("123", 0, &mut state, &mut heap).unwrap();
+    let mut input = Input::new(Instant::new("123"), &mut state, &mut heap).unwrap();
     {
       let input = unsafe { input.shift_unchecked(1) };
-      assert_eq!(input.start(), 1);
-      assert_eq!(input.rest(), "23");
+      assert_eq!(input.instant().digested(), 1);
+      assert_eq!(input.instant().rest(), "23");
       assert_eq!(input.next(), '2');
       *input.state = 2;
       *input.heap = 2;
@@ -222,8 +194,8 @@ mod tests {
     assert_eq!(*input.heap, 2);
     {
       let input = unsafe { input.shift_unchecked(2) };
-      assert_eq!(input.start(), 2);
-      assert_eq!(input.rest(), "3");
+      assert_eq!(input.instant().digested(), 2);
+      assert_eq!(input.instant().rest(), "3");
       assert_eq!(input.next(), '3');
       *input.state = 3;
       *input.heap = 3;
@@ -236,7 +208,7 @@ mod tests {
   #[should_panic]
   fn input_shift_unchecked_empty() {
     unsafe {
-      Input::new("123", 0, &mut (), &mut ())
+      Input::new(Instant::new("123"), &mut (), &mut ())
         .unwrap()
         .shift_unchecked(3);
     }
@@ -246,7 +218,7 @@ mod tests {
   #[should_panic]
   fn input_shift_unchecked_invalid_code_point() {
     unsafe {
-      Input::new("好", 0, &mut (), &mut ())
+      Input::new(Instant::new("好"), &mut (), &mut ())
         .unwrap()
         .shift_unchecked(1);
     }
@@ -256,13 +228,13 @@ mod tests {
   fn input_shift() {
     let mut state = ();
     let mut heap = ();
-    let mut input = Input::new("123", 0, &mut state, &mut heap).unwrap();
-    assert_eq!(input.shift(1).unwrap().start(), 1);
-    assert_eq!(input.shift(2).unwrap().start(), 2);
+    let mut input = Input::new(Instant::new("123"), &mut state, &mut heap).unwrap();
+    assert_eq!(input.shift(1).unwrap().instant().digested(), 1);
+    assert_eq!(input.shift(2).unwrap().instant().digested(), 2);
     assert!(input.shift(3).is_none());
 
     // invalid code point
-    assert!(Input::new("好", 0, &mut (), &mut ())
+    assert!(Input::new(Instant::new("好"), &mut (), &mut ())
       .unwrap()
       .shift(1)
       .is_none());

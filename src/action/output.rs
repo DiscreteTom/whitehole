@@ -8,7 +8,7 @@ pub struct Output<Value> {
   pub value: Value,
   /// How many bytes are digested by this action.
   ///
-  /// This is guaranteed to be no greater than the length of [`Input::rest`]
+  /// This is guaranteed to be no greater than the length of `input.instant().rest()`
   /// and is always a valid UTF-8 boundary for the corresponding [`Input`].
   /// `0` is always a valid value.
   pub digested: usize,
@@ -24,7 +24,7 @@ impl<StateRef, HeapRef> Input<'_, StateRef, HeapRef> {
   /// See [`Output::digested`] for more information.
   #[inline]
   pub unsafe fn digest_unchecked(&self, n: usize) -> Output<()> {
-    debug_assert!(self.rest().is_char_boundary(n));
+    debug_assert!(self.instant().rest().is_char_boundary(n));
     Output {
       value: (),
       digested: n,
@@ -38,6 +38,7 @@ impl<StateRef, HeapRef> Input<'_, StateRef, HeapRef> {
   #[inline]
   pub fn digest(&self, n: usize) -> Option<Output<()>> {
     self
+      .instant()
       .rest()
       .is_char_boundary(n)
       .then(|| unsafe { self.digest_unchecked(n) })
@@ -58,12 +59,13 @@ impl<Value> Output<Value> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::instant::Instant;
 
   #[test]
   fn input_digest() {
     let mut state = ();
     let mut heap = ();
-    let input = Input::new("123", 0, &mut state, &mut heap).unwrap();
+    let input = Input::new(Instant::new("123"), &mut state, &mut heap).unwrap();
     assert_eq!(input.digest(3).map(|output| output.digested), Some(3));
     assert_eq!(input.digest(2).map(|output| output.digested), Some(2));
     assert_eq!(input.digest(1).map(|output| output.digested), Some(1));
@@ -75,7 +77,7 @@ mod tests {
   fn input_digest_invalid_code_point() {
     let mut state = ();
     let mut heap = ();
-    let input = Input::new("好", 0, &mut state, &mut heap).unwrap();
+    let input = Input::new(Instant::new("好"), &mut state, &mut heap).unwrap();
     assert!(input.digest(1).is_none());
   }
 
@@ -83,7 +85,7 @@ mod tests {
   fn input_digest_unchecked() {
     let mut state = ();
     let mut heap = ();
-    let input = Input::new("123", 0, &mut state, &mut heap).unwrap();
+    let input = Input::new(Instant::new("123"), &mut state, &mut heap).unwrap();
     assert_eq!(unsafe { input.digest_unchecked(3).digested }, 3);
     assert_eq!(unsafe { input.digest_unchecked(2).digested }, 2);
     assert_eq!(unsafe { input.digest_unchecked(1).digested }, 1);
@@ -95,7 +97,7 @@ mod tests {
   fn input_digest_unchecked_overflow() {
     let mut state = ();
     let mut heap = ();
-    let input = Input::new("123", 0, &mut state, &mut heap).unwrap();
+    let input = Input::new(Instant::new("123"), &mut state, &mut heap).unwrap();
     unsafe { input.digest_unchecked(4) };
   }
 
@@ -104,7 +106,7 @@ mod tests {
   fn input_digest_unchecked_invalid_code_point() {
     let mut state = ();
     let mut heap = ();
-    let input = Input::new("好", 0, &mut state, &mut heap).unwrap();
+    let input = Input::new(Instant::new("好"), &mut state, &mut heap).unwrap();
     unsafe { input.digest_unchecked(1) };
   }
 

@@ -19,6 +19,7 @@ impl<State, Heap> Till<State, Heap> for &str {
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     input
+      .instant()
       .rest()
       .find(self)
       .map(|i| unsafe { input.digest_unchecked(i.unchecked_add(self.len())) })
@@ -36,6 +37,7 @@ impl<State, Heap> Till<State, Heap> for char {
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     input
+      .instant()
       .rest()
       .find(*self)
       .map(|i| unsafe { input.digest_unchecked(i.unchecked_add(self.len_utf8())) })
@@ -45,7 +47,7 @@ impl<State, Heap> Till<State, Heap> for char {
 impl<State, Heap> Till<State, Heap> for () {
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
-    unsafe { input.digest_unchecked(input.rest().len()) }.into()
+    unsafe { input.digest_unchecked(input.instant().rest().len()) }.into()
   }
 }
 
@@ -78,33 +80,37 @@ pub const fn till<State, Heap>(pattern: impl Till<State, Heap>) -> C!((), State,
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::action::{Action, Input, Output};
+  use crate::{
+    action::{Action, Input, Output},
+    instant::Instant,
+  };
 
   #[test]
   fn until_exec() {
     assert_eq!(
-      till("end".to_string()).exec(Input::new("123end456", 0, &mut (), &mut ()).unwrap()),
+      till("end".to_string())
+        .exec(Input::new(Instant::new("123end456"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till("end").exec(Input::new("123end456", 0, &mut (), &mut ()).unwrap()),
+      till("end").exec(Input::new(Instant::new("123end456"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till(';').exec(Input::new("123;456", 0, &mut (), &mut ()).unwrap()),
+      till(';').exec(Input::new(Instant::new("123;456"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         digested: 4
       })
     );
     assert_eq!(
-      till(()).exec(Input::new("123", 0, &mut (), &mut ()).unwrap()),
+      till(()).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (),
         digested: 3

@@ -122,7 +122,10 @@ impl<'a, Lhs: Action> ops::BitOr<&'a str> for Combinator<Lhs> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::combinator::{wrap_unchecked, Input, Output};
+  use crate::{
+    combinator::{wrap_unchecked, Input, Output},
+    instant::Instant,
+  };
 
   #[test]
   fn combinator_bit_or() {
@@ -143,7 +146,7 @@ mod tests {
 
     // reject then accept, both should increment the state
     assert_eq!(
-      (rejecter() | accepter()).exec(Input::new("123", 0, &mut state, &mut ()).unwrap()),
+      (rejecter() | accepter()).exec(Input::new(Instant::new("123"), &mut state, &mut ()).unwrap()),
       Some(Output {
         value: (),
         digested: 1,
@@ -155,7 +158,7 @@ mod tests {
 
     // accept then reject, only the first should increment the state
     assert_eq!(
-      (accepter() | rejecter()).exec(Input::new("123", 0, &mut state, &mut ()).unwrap()),
+      (accepter() | rejecter()).exec(Input::new(Instant::new("123"), &mut state, &mut ()).unwrap()),
       Some(Output {
         value: (),
         digested: 1,
@@ -169,7 +172,7 @@ mod tests {
     let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | '1')
-        .exec(Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(1)
     );
@@ -180,7 +183,7 @@ mod tests {
     let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | 1)
-        .exec(Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(1)
     );
@@ -191,7 +194,7 @@ mod tests {
     let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | "1")
-        .exec(Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(1)
     );
@@ -202,7 +205,7 @@ mod tests {
     let rejecter = || unsafe { wrap_unchecked(|_| Option::<Output<()>>::None) };
     assert_eq!(
       (rejecter() | "1".to_string())
-        .exec(Input::new("1", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(1)
     );

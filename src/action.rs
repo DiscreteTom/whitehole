@@ -95,10 +95,10 @@ unsafe impl<T: Action> Action for Rc<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::combinator::wrap;
+  use crate::{combinator::wrap, instant::Instant};
 
   fn helper(t: impl Action<Value = (), State = (), Heap = ()>) -> Option<Output<()>> {
-    t.exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
+    t.exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
   }
 
   #[test]

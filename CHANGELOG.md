@@ -9,13 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `Input::instant`.
 - Implement `Action` for `&Action` and `&mut Action`.
 
 ### Changed
 
+- `Input::new` and `Input::new_unchecked` will require `Instant` instead of `start` and `rest`.
 - `Fold` requires 2 generic params: `State` and `Heap`.
 - `Fold::fold` and inline fold will provide `input`.
 - Move `parser::Instant` to `instant::Instant`.
+
+### Removed
+
+- Remove `Input::start` and `Input::rest`, use `Input::instant` instead.
 
 ## [0.1.0] - 2024-12-29
 
