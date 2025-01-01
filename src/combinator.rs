@@ -75,6 +75,7 @@
 //! Related decorators:
 //! - [`Combinator::map`] to convert the value to a new value.
 //! - [`Combinator::tuple`] to wrap the value in an one-element tuple.
+//! - [`Combinator::pop`] to unwrap the value from the one-element tuple.
 //! - [`Combinator::bind`] to set the value to a provided value.
 //! - [`Combinator::bind_default`] to set the value to the default value.
 //! - [`Combinator::select`] to calculate the value with a closure.

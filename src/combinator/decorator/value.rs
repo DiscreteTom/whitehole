@@ -25,6 +25,8 @@ impl<T: Action> Combinator<T> {
   ///
   /// This is useful when you use `+` to combine multiple combinators.
   /// See [`ops::add`](crate::combinator::ops::add) for more details.
+  ///
+  /// The reverse operation is [`Self::pop`].
   /// # Examples
   /// ```
   /// # use whitehole::C;
@@ -120,6 +122,23 @@ impl<T: Action> Combinator<T> {
   }
 }
 
+impl<V, T: Action<Value = (V,)>> Combinator<T> {
+  /// Create a new combinator to take the value from an one-element tuple as [`Output::value`].
+  ///
+  /// This is reverse to [`Self::tuple`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::C;
+  /// # fn t(combinator: C!((i32,))) {
+  /// combinator.pop()
+  /// # ;}
+  /// ```
+  #[inline]
+  pub fn pop(self) -> C!(V, @T) {
+    self.map(|(value,)| value)
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -146,6 +165,20 @@ mod tests {
         .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: (1,),
+        digested: 1
+      })
+    );
+  }
+
+  #[test]
+  fn combinator_pop() {
+    assert_eq!(
+      wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
+        .tuple()
+        .pop()
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      Some(Output {
+        value: 1,
         digested: 1
       })
     );

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `Input::instant`.
 - Implement `Action` for `&Action` and `&mut Action`.
+- Add `Combinator::pop`.
 
 ### Changed
 
