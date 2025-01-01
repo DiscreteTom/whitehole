@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-01-01
+
 ### Added
 
 - Add `Input::instant`.
@@ -87,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Overloaded operators: `|`, `+` and `*` for `Combinator`.
 - The basic `Parser`, with `Builder`, `Instant` and `Snapshot` support.
 
-[unreleased]: https://github.com/DiscreteTom/whitehole/compare/v0.1.0...HEAD
+[unreleased]: https://github.com/DiscreteTom/whitehole/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/DiscreteTom/whitehole/releases/tag/v0.2.0
 [0.1.0]: https://github.com/DiscreteTom/whitehole/releases/tag/v0.1.0
 [0.0.1]: https://github.com/DiscreteTom/whitehole/releases/tag/v0.0.1
