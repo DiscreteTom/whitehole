@@ -27,20 +27,23 @@ fn main() {}
 #[cfg(test)]
 mod tests {
   use super::*;
-  use whitehole::action::{Action, Input};
+  use whitehole::{
+    action::{Action, Input},
+    instant::Instant,
+  };
 
   #[test]
   fn test_whitespaces() {
     assert_eq!(
       whitespaces()
-        .exec(Input::new(" \t\r\n", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new(" \t\r\n"), &mut (), &mut ()).unwrap())
         .unwrap()
         .digested,
       4
     );
     assert_eq!(
       whitespaces()
-        .exec(Input::new(" \t\r\n123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new(" \t\r\n123"), &mut (), &mut ()).unwrap())
         .unwrap()
         .digested,
       4
@@ -51,21 +54,21 @@ mod tests {
   fn test_comments() {
     assert_eq!(
       singleline_comment()
-        .exec(Input::new("//123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("//123"), &mut (), &mut ()).unwrap())
         .unwrap()
         .digested,
       5
     );
     assert_eq!(
       singleline_comment()
-        .exec(Input::new("//123\n", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("//123\n"), &mut (), &mut ()).unwrap())
         .unwrap()
         .digested,
       6
     );
     assert_eq!(
       singleline_comment()
-        .exec(Input::new("//123\n456", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("//123\n456"), &mut (), &mut ()).unwrap())
         .unwrap()
         .digested,
       6
@@ -73,21 +76,21 @@ mod tests {
 
     assert_eq!(
       multiline_comment()
-        .exec(Input::new("/*123", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("/*123"), &mut (), &mut ()).unwrap())
         .unwrap()
         .digested,
       5
     );
     assert_eq!(
       multiline_comment()
-        .exec(Input::new("/*123\n*/", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("/*123\n*/"), &mut (), &mut ()).unwrap())
         .unwrap()
         .digested,
       8
     );
     assert_eq!(
       multiline_comment()
-        .exec(Input::new("/*123\n*/456", 0, &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("/*123\n*/456"), &mut (), &mut ()).unwrap())
         .unwrap()
         .digested,
       8
