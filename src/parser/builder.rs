@@ -139,4 +139,15 @@ mod tests {
     assert_eq!(parser.heap, 1);
     assert_eq!(parser.state, 1);
   }
+
+  #[test]
+  fn re_use_entry_with_ref() {
+    let entry = eat("hello ") + "world";
+
+    let mut p1 = Builder::default().entry(&entry).build("hello world");
+    let mut p2 = Builder::default().entry(&entry).build("hello");
+
+    assert!(p1.parse().is_some());
+    assert!(p2.parse().is_none());
+  }
 }

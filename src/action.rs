@@ -52,6 +52,26 @@ pub unsafe trait Action {
   fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>>;
 }
 
+unsafe impl<T: Action> Action for &T {
+  type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+    (**self).exec(input)
+  }
+}
+
+unsafe impl<T: Action> Action for &mut T {
+  type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+    (**self).exec(input)
+  }
+}
+
 unsafe impl<T: Action> Action for Box<T> {
   type Value = T::Value;
   type State = T::State;
@@ -79,6 +99,12 @@ mod tests {
 
   fn helper(t: impl Action<Value = (), State = (), Heap = ()>) -> Option<Output<()>> {
     t.exec(Input::new("123", 0, &mut (), &mut ()).unwrap())
+  }
+
+  #[test]
+  fn action_ref() {
+    assert!(helper(&wrap(|input| input.digest(1))).is_some());
+    assert!(helper(&mut wrap(|input| input.digest(1))).is_some());
   }
 
   #[test]
