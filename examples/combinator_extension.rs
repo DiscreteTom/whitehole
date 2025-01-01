@@ -1,6 +1,7 @@
 use whitehole::{
   action::{Action, Input},
   combinator::{eat, Combinator},
+  instant::Instant,
   C,
 };
 
@@ -20,5 +21,5 @@ impl<T: Action> CombinatorExt<T> for Combinator<T> {
 fn main() {
   eat("hello")
     .print()
-    .exec(Input::new("hello world", 0, &mut (), &mut ()).unwrap());
+    .exec(Input::new(Instant::new("hello world"), &mut (), &mut ()).unwrap());
 }
