@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `Fold` requires 2 generic params: `State` and `Heap`.
 - `Fold::fold` and inline fold will provide `input`.
+- Move `parser::Instant` to `instant::Instant`.
 
 ## [0.1.0] - 2024-12-29
 

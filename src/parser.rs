@@ -1,14 +1,15 @@
 //! Use [`Builder`] to build a parser.
 
 mod builder;
-mod instant;
 mod snapshot;
 
 pub use builder::*;
-pub use instant::*;
 pub use snapshot::*;
 
-use crate::action::{Action, Input, Output};
+use crate::{
+  action::{Action, Input, Output},
+  instant::Instant,
+};
 
 /// Manage [`Input::state`], [`Input::heap`] and the parsing progress.
 #[derive(Debug)]
