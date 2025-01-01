@@ -1,5 +1,8 @@
 use super::{Mul, Repeat, Sep};
-use crate::{action::Action, combinator::Combinator};
+use crate::{
+  action::{Action, Input},
+  combinator::Combinator,
+};
 use std::ops;
 
 /// A helper trait to accumulate values when performing `*`
@@ -7,28 +10,34 @@ use std::ops;
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
 ///
 /// Built-in implementations are provided for `()`.
-pub trait Fold {
+pub trait Fold<State, Heap> {
   /// The accumulator type.
   type Output: Default;
 
   /// Fold self with the accumulator.
-  fn fold(self, acc: Self::Output) -> Self::Output;
+  fn fold(self, acc: Self::Output, input: Input<&mut State, &mut Heap>) -> Self::Output;
 }
 
-impl Fold for () {
+impl<State, Heap> Fold<State, Heap> for () {
   type Output = ();
   #[inline]
-  fn fold(self, _: Self::Output) -> Self::Output {}
+  fn fold(self, _: Self::Output, _: Input<&mut State, &mut Heap>) -> Self::Output {}
 }
 
-impl<Lhs: Action<Value: Fold>, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
+impl<Lhs: Action<Value: Fold<Lhs::State, Lhs::Heap>>, Rhs: Repeat> ops::Mul<Rhs>
+  for Combinator<Lhs>
+{
   type Output = Combinator<
     Mul<
       Lhs,
       (
         Rhs,
-        fn() -> <Lhs::Value as Fold>::Output,
-        fn(Lhs::Value, <Lhs::Value as Fold>::Output) -> <Lhs::Value as Fold>::Output,
+        fn() -> <Lhs::Value as Fold<Lhs::State, Lhs::Heap>>::Output,
+        fn(
+          Lhs::Value,
+          <Lhs::Value as Fold<Lhs::State, Lhs::Heap>>::Output,
+          Input<&mut Lhs::State, &mut Lhs::Heap>,
+        ) -> <Lhs::Value as Fold<Lhs::State, Lhs::Heap>>::Output,
       ),
     >,
   >;
@@ -40,16 +49,23 @@ impl<Lhs: Action<Value: Fold>, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
   }
 }
 
-impl<T: Action<Value: Fold>, S: Action<State = T::State, Heap = T::Heap>, Rhs: Repeat> ops::Mul<Rhs>
-  for Sep<T, S>
+impl<
+    T: Action<Value: Fold<T::State, T::Heap>>,
+    S: Action<State = T::State, Heap = T::Heap>,
+    Rhs: Repeat,
+  > ops::Mul<Rhs> for Sep<T, S>
 {
   type Output = Combinator<
     Mul<
       Sep<T, S>,
       (
         Rhs,
-        fn() -> <T::Value as Fold>::Output,
-        fn(T::Value, <T::Value as Fold>::Output) -> <T::Value as Fold>::Output,
+        fn() -> <T::Value as Fold<T::State, T::Heap>>::Output,
+        fn(
+          T::Value,
+          <T::Value as Fold<T::State, T::Heap>>::Output,
+          Input<&mut T::State, &mut T::Heap>,
+        ) -> <T::Value as Fold<T::State, T::Heap>>::Output,
       ),
     >,
   >;
@@ -71,14 +87,14 @@ mod tests {
 
   #[test]
   fn fold_unit() {
-    let _: () = ().fold(());
+    let _: () = ().fold((), Input::new("a", 0, &mut (), &mut ()).unwrap());
   }
 
   #[derive(Debug)]
   struct MyValue(usize);
-  impl Fold for MyValue {
+  impl<State, Heap> Fold<State, Heap> for MyValue {
     type Output = usize;
-    fn fold(self, current: Self::Output) -> Self::Output {
+    fn fold(self, current: Self::Output, _: Input<&mut State, &mut Heap>) -> Self::Output {
       self.0 + current
     }
   }

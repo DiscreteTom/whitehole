@@ -10,7 +10,7 @@ impl<
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
+    InlineFolder: Fn(Lhs::Value, Acc, Input<&mut Lhs::State, &mut Lhs::Heap>) -> Acc,
   > ops::Mul<(Repeater, Initializer, InlineFolder)> for Combinator<Lhs>
 {
   type Output = Combinator<Mul<Lhs, (Repeater, Initializer, InlineFolder)>>;
@@ -28,7 +28,7 @@ impl<
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
-    InlineFolder: Fn(T::Value, Acc) -> Acc,
+    InlineFolder: Fn(T::Value, Acc, Input<&mut T::State, &mut T::Heap>) -> Acc,
   > ops::Mul<(Repeater, Initializer, InlineFolder)> for Sep<T, S>
 {
   type Output = Combinator<Mul<Sep<T, S>, (Repeater, Initializer, InlineFolder)>>;
@@ -45,7 +45,7 @@ unsafe impl<
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Value, Acc) -> Acc,
+    InlineFolder: Fn(Lhs::Value, Acc, Input<&mut Lhs::State, &mut Lhs::Heap>) -> Acc,
   > Action for Mul<Lhs, (Repeater, Initializer, InlineFolder)>
 {
   type Value = Acc;
@@ -73,7 +73,7 @@ unsafe impl<
         break;
       };
 
-      output.value = fold(next_output.value, output.value);
+      output.value = fold(next_output.value, output.value, input.reborrow());
       repeated += 1;
       // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
       debug_assert!(usize::MAX - output.digested > next_output.digested);
@@ -90,7 +90,7 @@ unsafe impl<
     Acc,
     Repeater: Repeat,
     Initializer: Fn() -> Acc,
-    InlineFolder: Fn(T::Value, Acc) -> Acc,
+    InlineFolder: Fn(T::Value, Acc, Input<&mut T::State, &mut T::Heap>) -> Acc,
   > Action for Mul<Sep<T, S>, (Repeater, Initializer, InlineFolder)>
 {
   type Value = Acc;
@@ -119,7 +119,7 @@ unsafe impl<
         break;
       };
       repeated += 1;
-      output.value = fold(value_output.value, output.value);
+      output.value = fold(value_output.value, output.value, input.reborrow());
       // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
       debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
       output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
@@ -146,7 +146,7 @@ mod tests {
 
   #[test]
   fn test_inline_fold() {
-    let combinator = eat('a').bind(1) * (1.., || 0, |v, acc| acc + v);
+    let combinator = eat('a').bind(1) * (1.., || 0, |v, acc, _| acc + v);
     let output = combinator
       .exec(Input::new("aaa", 0, &mut (), &mut ()).unwrap())
       .unwrap();
@@ -156,7 +156,7 @@ mod tests {
 
   #[test]
   fn test_inline_fold_with_sep() {
-    let combinator = eat('a').bind(1).sep(',') * (1.., || 0, |v, acc| acc + v);
+    let combinator = eat('a').bind(1).sep(',') * (1.., || 0, |v, acc, _| acc + v);
     let output = combinator
       .exec(Input::new("a,a,a", 0, &mut (), &mut ()).unwrap())
       .unwrap();

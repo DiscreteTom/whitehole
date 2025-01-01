@@ -60,7 +60,7 @@
 //!     // convert the char to a number
 //!     .select(|ctx| ctx.input().next() as usize - '0' as usize)
 //!     // repeat for 1 or more times, init accumulator with 0, and fold values
-//!     * (1.., || 0 as usize, |value, acc| acc * 10 + value);
+//!     * (1.., || 0 as usize, |value, acc, _input| acc * 10 + value);
 //!
 //! // parse "123" to 123
 //! assert_eq!(
@@ -76,10 +76,10 @@
 //! // wrap it in a new-type
 //! struct Usize(usize);
 //!
-//! impl Fold for Usize {
+//! impl<State, Heap> Fold<State, Heap> for Usize {
 //!   type Output = usize;
 //!
-//!   fn fold(self, acc: Self::Output) -> Self::Output {
+//!   fn fold(self, acc: Self::Output, _input: Input<&mut State, &mut Heap>) -> Self::Output {
 //!     acc * 10 + self.0
 //!   }
 //! }
@@ -99,6 +99,22 @@
 //!   123
 //! )
 //! ```
+//! ## Fold to Heap
+//! You can fold the values to [`Input::heap`](crate::action::Input::heap) to prevent re-allocation.
+//! ```
+//! # use whitehole::{combinator::eat, action::{Input, Action}};
+//! let combinator = {
+//!   // eat one char, use the start index as the value
+//!   eat(1).select(|ctx| ctx.start())
+//!     // repeat for 1 or more times, fold values to a vec, no need to init or use the accumulator
+//!     * (1.., || {}, |value, _acc, input: Input<_, &mut Vec<_>>| input.heap.push(value))
+//! }.prepare(|input| input.heap.clear()); // clear the vec before executing this combinator
+//!
+//! // create a re-usable heap
+//! let mut heap = vec![];
+//! combinator.exec(Input::new("123", 0, &mut (), &mut heap).unwrap());
+//! assert_eq!(heap, vec![0, 1, 2]);
+//! ```
 //! # Separator
 //! You can use [`Combinator::sep`](crate::combinator::Combinator::sep)
 //! to specify an other combinator as the separator, then perform `*` on the pair.
@@ -114,7 +130,7 @@
 //! ```
 //! // inline fold
 //! # use whitehole::{combinator::{ops::mul::Fold, eat}, action::{Input, Action}};
-//! let combinator = eat('a').bind(1).sep(',') * (1.., || 0, |v, acc| acc + v);
+//! let combinator = eat('a').bind(1).sep(',') * (1.., || 0, |v, acc, _input| acc + v);
 //! assert_eq!(
 //!   combinator.exec(Input::new("a,a,a", 0, &mut (), &mut ()).unwrap()).unwrap().value,
 //!   3
@@ -123,9 +139,9 @@
 //! // with custom type
 //! #[derive(Clone)]
 //! struct Usize(usize);
-//! impl Fold for Usize {
+//! impl<State, Heap> Fold<State, Heap> for Usize {
 //!   type Output = usize;
-//!   fn fold(self, acc: Self::Output) -> Self::Output {
+//!   fn fold(self, acc: Self::Output, _input: Input<&mut State, &mut Heap>) -> Self::Output {
 //!     acc + self.0
 //!   }
 //! }
