@@ -98,31 +98,28 @@ impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
       instant: self.instant.clone(),
     }
   }
-
-  /// Construct a new [`Input`] by digesting `n` bytes from [`Self::instant`].
-  /// # Safety
-  /// You should ensure that `n` is a valid UTF-8 boundary
-  /// and smaller than the length of [`Instant::rest`].
-  /// This will be checked using [`debug_assert!`].
-  /// For the checked version, see [`Self::shift`].
-  #[inline]
-  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<'text, &mut State, &mut Heap> {
-    debug_assert!(n < self.instant.rest().len());
-    let mut instant = self.instant.clone();
-    instant.digest_unchecked(n);
-    Input::new_unchecked(instant, &mut *self.state, &mut *self.heap)
-  }
-
-  /// Try to construct a new [`Input`] by digesting `n` bytes from [`Self::instant`].
-  ///
-  /// Return [`Some`] if `n` is a valid UTF-8 boundary
-  /// and smaller than the length of [`Instant::rest`].
-  #[inline]
-  pub fn shift(&mut self, n: usize) -> Option<Input<'text, &mut State, &mut Heap>> {
-    (n < self.instant.rest().len() && self.instant.rest().is_char_boundary(n))
-      .then(|| unsafe { self.shift_unchecked(n) })
-  }
 }
+/// Construct a new [`Input`] by digesting `n` bytes from [`Input::instant`].
+///
+/// Return [`Some`] if [`Instant::rest`] of the new instant is not empty.
+/// # Safety
+/// You should ensure that `n` is a valid UTF-8 boundary.
+/// This will be checked using [`debug_assert!`].
+/// # Performance
+/// This is a macro to make sure this is always inlined.
+macro_rules! shift_input {
+  ($input:expr, $n:expr) => {
+    // perf: check the len first to prevent unnecessary clone of instant
+    ($n < $input.instant().rest().len()).then(|| {
+      let mut instant = $input.instant().clone();
+      unsafe {
+        instant.digest_unchecked($n);
+        Input::new_unchecked(instant, &mut *$input.state, &mut *$input.heap)
+      }
+    })
+  };
+}
+pub(crate) use shift_input;
 
 #[cfg(test)]
 mod tests {
@@ -175,68 +172,5 @@ mod tests {
     }
     assert_eq!(state, 456);
     assert_eq!(heap, 456);
-  }
-
-  #[test]
-  fn input_shift_unchecked() {
-    let mut state = 1;
-    let mut heap = 1;
-    let mut input = Input::new(Instant::new("123"), &mut state, &mut heap).unwrap();
-    {
-      let input = unsafe { input.shift_unchecked(1) };
-      assert_eq!(input.instant().digested(), 1);
-      assert_eq!(input.instant().rest(), "23");
-      assert_eq!(input.next(), '2');
-      *input.state = 2;
-      *input.heap = 2;
-    }
-    assert_eq!(*input.state, 2);
-    assert_eq!(*input.heap, 2);
-    {
-      let input = unsafe { input.shift_unchecked(2) };
-      assert_eq!(input.instant().digested(), 2);
-      assert_eq!(input.instant().rest(), "3");
-      assert_eq!(input.next(), '3');
-      *input.state = 3;
-      *input.heap = 3;
-    }
-    assert_eq!(state, 3);
-    assert_eq!(heap, 3);
-  }
-
-  #[test]
-  #[should_panic]
-  fn input_shift_unchecked_empty() {
-    unsafe {
-      Input::new(Instant::new("123"), &mut (), &mut ())
-        .unwrap()
-        .shift_unchecked(3);
-    }
-  }
-
-  #[test]
-  #[should_panic]
-  fn input_shift_unchecked_invalid_code_point() {
-    unsafe {
-      Input::new(Instant::new("好"), &mut (), &mut ())
-        .unwrap()
-        .shift_unchecked(1);
-    }
-  }
-
-  #[test]
-  fn input_shift() {
-    let mut state = ();
-    let mut heap = ();
-    let mut input = Input::new(Instant::new("123"), &mut state, &mut heap).unwrap();
-    assert_eq!(input.shift(1).unwrap().instant().digested(), 1);
-    assert_eq!(input.shift(2).unwrap().instant().digested(), 2);
-    assert!(input.shift(3).is_none());
-
-    // invalid code point
-    assert!(Input::new(Instant::new("好"), &mut (), &mut ())
-      .unwrap()
-      .shift(1)
-      .is_none());
   }
 }

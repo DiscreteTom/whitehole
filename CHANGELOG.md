@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement `Action` for `&dyn Action`, `&mut dyn Action`, `Box<dyn Action>` and `Rc<dyn Action>`.
 
+### Removed
+
+- Remove `Input::shift_unchecked` and `Input::shift`.
+
 ## [0.2.0] - 2025-01-01
 
 ### Added

@@ -1,6 +1,6 @@
 use super::{Mul, Repeat, Sep};
 use crate::{
-  action::{Action, Input, Output},
+  action::{shift_input, Action, Input, Output},
   combinator::Combinator,
 };
 use std::ops;
@@ -66,9 +66,8 @@ unsafe impl<
     };
 
     while unsafe { repeat.validate(repeated) } {
-      let Some(next_output) = (output.digested < input.instant().rest().len())
-        .then(|| unsafe { input.shift_unchecked(output.digested) })
-        .and_then(|input| self.lhs.exec(input))
+      let Some(next_output) =
+        shift_input!(input, output.digested).and_then(|input| self.lhs.exec(input))
       else {
         break;
       };
@@ -112,9 +111,8 @@ unsafe impl<
 
     let mut digested_with_sep = 0;
     while unsafe { repeat.validate(repeated) } {
-      let Some(value_output) = (digested_with_sep < input.instant().rest().len())
-        .then(|| unsafe { input.shift_unchecked(digested_with_sep) })
-        .and_then(|input| self.lhs.value.exec(input))
+      let Some(value_output) =
+        shift_input!(input, digested_with_sep).and_then(|input| self.lhs.value.exec(input))
       else {
         break;
       };
@@ -124,9 +122,8 @@ unsafe impl<
       debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
       output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
 
-      let Some(sep_output) = (output.digested < input.instant().rest().len())
-        .then(|| unsafe { input.shift_unchecked(output.digested) })
-        .and_then(|input| self.lhs.sep.exec(input))
+      let Some(sep_output) =
+        shift_input!(input, output.digested).and_then(|input| self.lhs.sep.exec(input))
       else {
         break;
       };
