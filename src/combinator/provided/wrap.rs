@@ -84,7 +84,7 @@ pub const unsafe fn wrap_unchecked<
 /// ```
 #[inline]
 pub const fn wrap<
-  F: for<'text> Fn(Input<'text, &mut State, &mut Heap>) -> Option<Output<Value>>,
+  F: Fn(Input<&mut State, &mut Heap>) -> Option<Output<Value>>,
   Value,
   State,
   Heap,
