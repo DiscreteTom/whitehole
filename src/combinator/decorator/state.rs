@@ -38,9 +38,7 @@ impl<T: Action> Combinator<T> {
   #[inline]
   pub fn then(
     self,
-    modifier: impl for<'text> Fn(
-      AcceptedContext<Input<'text, &mut T::State, &mut T::Heap>, &Output<T::Value>>,
-    ),
+    modifier: impl Fn(AcceptedContext<Input<&mut T::State, &mut T::Heap>, &Output<T::Value>>),
   ) -> C!(@T) {
     unsafe {
       wrap_unchecked(move |mut input| {

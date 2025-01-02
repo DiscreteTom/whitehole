@@ -90,9 +90,7 @@ impl<T: Action> Combinator<T> {
   #[inline]
   pub fn select<NewValue>(
     self,
-    selector: impl for<'text> Fn(
-      AcceptedContext<Input<'text, &mut T::State, &mut T::Heap>, Output<T::Value>>,
-    ) -> NewValue,
+    selector: impl Fn(AcceptedContext<Input<&mut T::State, &mut T::Heap>, Output<T::Value>>) -> NewValue,
   ) -> C!(NewValue, @T) {
     unsafe {
       wrap_unchecked(move |mut input| {
