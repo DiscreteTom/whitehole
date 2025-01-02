@@ -52,7 +52,7 @@ pub unsafe trait Action {
   fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>>;
 }
 
-unsafe impl<T: Action> Action for &T {
+unsafe impl<T: Action + ?Sized> Action for &T {
   type Value = T::Value;
   type State = T::State;
   type Heap = T::Heap;
@@ -62,7 +62,7 @@ unsafe impl<T: Action> Action for &T {
   }
 }
 
-unsafe impl<T: Action> Action for &mut T {
+unsafe impl<T: Action + ?Sized> Action for &mut T {
   type Value = T::Value;
   type State = T::State;
   type Heap = T::Heap;
@@ -72,7 +72,7 @@ unsafe impl<T: Action> Action for &mut T {
   }
 }
 
-unsafe impl<T: Action> Action for Box<T> {
+unsafe impl<T: Action + ?Sized> Action for Box<T> {
   type Value = T::Value;
   type State = T::State;
   type Heap = T::Heap;
@@ -82,7 +82,7 @@ unsafe impl<T: Action> Action for Box<T> {
   }
 }
 
-unsafe impl<T: Action> Action for Rc<T> {
+unsafe impl<T: Action + ?Sized> Action for Rc<T> {
   type Value = T::Value;
   type State = T::State;
   type Heap = T::Heap;
@@ -108,6 +108,18 @@ mod tests {
   }
 
   #[test]
+  fn action_dyn_ref() {
+    assert!(helper(
+      &wrap(|input| input.digest(1)) as &dyn Action<Value = (), State = (), Heap = ()>
+    )
+    .is_some());
+    assert!(helper(
+      &mut wrap(|input| input.digest(1)) as &mut dyn Action<Value = (), State = (), Heap = ()>
+    )
+    .is_some());
+  }
+
+  #[test]
   fn boxed_action() {
     let output = helper(Box::new(wrap(|input| input.digest(1))));
     assert_eq!(
@@ -120,6 +132,14 @@ mod tests {
   }
 
   #[test]
+  fn boxed_dyn_action() {
+    assert!(helper(
+      Box::new(wrap(|input| input.digest(1))) as Box<dyn Action<Value = (), State = (), Heap = ()>>
+    )
+    .is_some());
+  }
+
+  #[test]
   fn rc_action() {
     let output = helper(Rc::new(wrap(|input| input.digest(1))));
     assert_eq!(
@@ -129,5 +149,13 @@ mod tests {
         digested: 1
       })
     );
+  }
+
+  #[test]
+  fn rc_dyn_action() {
+    assert!(helper(
+      Rc::new(wrap(|input| input.digest(1))) as Rc<dyn Action<Value = (), State = (), Heap = ()>>
+    )
+    .is_some());
   }
 }

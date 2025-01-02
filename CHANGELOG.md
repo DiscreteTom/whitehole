@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Implement `Action` for `&dyn Action`, `&mut dyn Action`, `Box<dyn Action>` and `Rc<dyn Action>`.
+
 ## [0.2.0] - 2025-01-01
 
 ### Added
