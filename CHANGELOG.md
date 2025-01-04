@@ -21,11 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Provided combinator constructors will return concrete types instead of `impl` types to retain trait information.
+- `Eat` is now a struct instead of a trait.
 
 ### Removed
 
 - Remove `Input::shift_unchecked` and `Input::shift`.
 - Remove `eater` and `eater_unchecked`. Use `wrap` instead.
+- Remove `EatChar`, `EatStr`, `EatString`, `EatUsize`. Use `Eat<T>` instead.
 
 ## [0.2.0] - 2025-01-01
 

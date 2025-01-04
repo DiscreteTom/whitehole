@@ -58,7 +58,7 @@ pub use concat::*;
 
 use crate::{
   action::shift_input,
-  combinator::{Action, Combinator, EatChar, EatStr, EatString, EatUsize, Input, Output},
+  combinator::{eat, Action, Combinator, Eat, Input, Output},
 };
 use std::ops;
 
@@ -114,42 +114,42 @@ impl<Lhs: Action<Value: Concat<Rhs::Value>>, Rhs: Action<State = Lhs::State, Hea
 }
 
 impl<Lhs: Action<Value: Concat<()>>> ops::Add<char> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, EatChar<Lhs::State, Lhs::Heap>>>;
+  type Output = Combinator<Add<Lhs, Eat<char, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
   fn add(self, rhs: char) -> Self::Output {
-    Self::Output::new(Add::new(self.action, EatChar::new(rhs)))
+    Self::Output::new(Add::new(self.action, eat(rhs).action))
   }
 }
 
 impl<Lhs: Action<Value: Concat<()>>> ops::Add<usize> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, EatUsize<Lhs::State, Lhs::Heap>>>;
+  type Output = Combinator<Add<Lhs, Eat<usize, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
   fn add(self, rhs: usize) -> Self::Output {
-    Self::Output::new(Add::new(self.action, EatUsize::new(rhs)))
+    Self::Output::new(Add::new(self.action, eat(rhs).action))
   }
 }
 
 impl<Lhs: Action<Value: Concat<()>>> ops::Add<String> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, EatString<Lhs::State, Lhs::Heap>>>;
+  type Output = Combinator<Add<Lhs, Eat<String, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
   fn add(self, rhs: String) -> Self::Output {
-    Self::Output::new(Add::new(self.action, EatString::new(rhs)))
+    Self::Output::new(Add::new(self.action, eat(rhs).action))
   }
 }
 
 impl<'a, Lhs: Action<Value: Concat<()>>> ops::Add<&'a str> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, EatStr<'a, Lhs::State, Lhs::Heap>>>;
+  type Output = Combinator<Add<Lhs, Eat<&'a str, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
   fn add(self, rhs: &'a str) -> Self::Output {
-    Self::Output::new(Add::new(self.action, EatStr::new(rhs)))
+    Self::Output::new(Add::new(self.action, eat(rhs).action))
   }
 }
 

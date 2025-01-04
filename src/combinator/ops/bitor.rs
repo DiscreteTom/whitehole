@@ -29,7 +29,7 @@
 //! # );
 //! ```
 
-use crate::combinator::{Action, Combinator, EatChar, EatStr, EatString, EatUsize, Input, Output};
+use crate::combinator::{eat, Action, Combinator, Eat, Input, Output};
 use std::ops;
 
 /// An [`Action`] created by the `|` operator.
@@ -80,42 +80,42 @@ impl<Lhs: Action, Rhs: Action<Value = Lhs::Value, State = Lhs::State, Heap = Lhs
 }
 
 impl<Lhs: Action> ops::BitOr<char> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, EatChar<Lhs::State, Lhs::Heap>>>;
+  type Output = Combinator<BitOr<Lhs, Eat<char, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: char) -> Self::Output {
-    Self::Output::new(BitOr::new(self.action, EatChar::new(rhs)))
+    Self::Output::new(BitOr::new(self.action, eat(rhs).action))
   }
 }
 
 impl<Lhs: Action> ops::BitOr<usize> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, EatUsize<Lhs::State, Lhs::Heap>>>;
+  type Output = Combinator<BitOr<Lhs, Eat<usize, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: usize) -> Self::Output {
-    Self::Output::new(BitOr::new(self.action, EatUsize::new(rhs)))
+    Self::Output::new(BitOr::new(self.action, eat(rhs).action))
   }
 }
 
 impl<Lhs: Action> ops::BitOr<String> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, EatString<Lhs::State, Lhs::Heap>>>;
+  type Output = Combinator<BitOr<Lhs, Eat<String, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: String) -> Self::Output {
-    Self::Output::new(BitOr::new(self.action, EatString::new(rhs)))
+    Self::Output::new(BitOr::new(self.action, eat(rhs).action))
   }
 }
 
 impl<'a, Lhs: Action> ops::BitOr<&'a str> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, EatStr<'a, Lhs::State, Lhs::Heap>>>;
+  type Output = Combinator<BitOr<Lhs, Eat<&'a str, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: &'a str) -> Self::Output {
-    Self::Output::new(BitOr::new(self.action, EatStr::new(rhs)))
+    Self::Output::new(BitOr::new(self.action, eat(rhs).action))
   }
 }
 

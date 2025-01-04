@@ -241,6 +241,23 @@ macro_rules! create_combinator {
 }
 pub(self) use create_combinator;
 
+macro_rules! create_value_combinator {
+  ($name:ident, $usage:literal) => {
+    $crate::combinator::create_combinator!($name, $usage);
+
+    impl<T: core::fmt::Debug, State, Heap> core::fmt::Debug for $name<T, State, Heap> {
+      #[inline]
+      fn fmt(&self, inner: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        inner
+          .debug_struct(stringify!($name))
+          .field("inner", &self.inner)
+          .finish()
+      }
+    }
+  };
+}
+pub(self) use create_value_combinator;
+
 macro_rules! create_closure_combinator {
   ($name:ident, $usage:literal) => {
     $crate::combinator::create_combinator!($name, $usage);
