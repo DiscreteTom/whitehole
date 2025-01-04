@@ -1,50 +1,60 @@
 use crate::{
-  action::{Input, Output},
-  combinator::wrap_unchecked,
-  C,
+  action::{Action, Input, Output},
+  combinator::{create_value_combinator, Combinator},
 };
 
-/// A util trait to make [`till`] generic over different types.
-///
-/// Built-in implementations are provided for [`String`], `&str`, [`char`] and `()`.
-///
-/// See [`till`] for more details.
-pub trait Till<State, Heap> {
-  /// Check if the rest of input text contains this instance.
-  /// Return the output after digesting the instance if found.
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>>;
-}
+create_value_combinator!(Till, "See [`till`].");
 
-impl<State, Heap> Till<State, Heap> for &str {
+unsafe impl<State, Heap> Action for Till<&str, State, Heap> {
+  type Value = ();
+  type State = State;
+  type Heap = Heap;
+
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .instant()
       .rest()
-      .find(self)
-      .map(|i| unsafe { input.digest_unchecked(i.unchecked_add(self.len())) })
+      .find(self.inner)
+      .map(|i| unsafe { input.digest_unchecked(i.unchecked_add(self.inner.len())) })
   }
 }
 
-impl<State, Heap> Till<State, Heap> for String {
-  #[inline]
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
-    self.as_str().exec(input)
-  }
-}
+unsafe impl<State, Heap> Action for Till<String, State, Heap> {
+  type Value = ();
+  type State = State;
+  type Heap = Heap;
 
-impl<State, Heap> Till<State, Heap> for char {
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .instant()
       .rest()
-      .find(*self)
-      .map(|i| unsafe { input.digest_unchecked(i.unchecked_add(self.len_utf8())) })
+      .find(&self.inner)
+      .map(|i| unsafe { input.digest_unchecked(i.unchecked_add(self.inner.len())) })
   }
 }
 
-impl<State, Heap> Till<State, Heap> for () {
+unsafe impl<State, Heap> Action for Till<char, State, Heap> {
+  type Value = ();
+  type State = State;
+  type Heap = Heap;
+
+  #[inline]
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
+    input
+      .instant()
+      .rest()
+      .find(self.inner)
+      .map(|i| unsafe { input.digest_unchecked(i.unchecked_add(self.inner.len_utf8())) })
+  }
+}
+
+unsafe impl<State, Heap> Action for Till<(), State, Heap> {
+  type Value = ();
+  type State = State;
+  type Heap = Heap;
+
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
     unsafe { input.digest_unchecked(input.instant().rest().len()) }.into()
@@ -73,8 +83,8 @@ impl<State, Heap> Till<State, Heap> for () {
 /// # );
 /// ```
 #[inline]
-pub const fn till<State, Heap>(pattern: impl Till<State, Heap>) -> C!((), State, Heap) {
-  unsafe { wrap_unchecked(move |input| pattern.exec(input)) }
+pub const fn till<State, Heap, T>(pattern: T) -> Combinator<Till<T, State, Heap>> {
+  Combinator::new(Till::new(pattern))
 }
 
 #[cfg(test)]
