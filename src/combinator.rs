@@ -208,23 +208,42 @@ macro_rules! C {
   };
 }
 
-macro_rules! closure_combinator {
+macro_rules! create_combinator {
   ($name:ident, $usage:literal) => {
     #[doc = $usage]
-    pub struct $name<F, State = (), Heap = ()> {
-      f: F,
+    pub struct $name<T, State = (), Heap = ()> {
+      inner: T,
       _phantom: core::marker::PhantomData<(State, Heap)>,
     }
 
-    impl<F, State, Heap> $name<F, State, Heap> {
+    impl<T, State, Heap> $name<T, State, Heap> {
       #[inline]
-      const fn new(f: F) -> Self {
+      const fn new(inner: T) -> Self {
         Self {
-          f,
+          inner,
           _phantom: core::marker::PhantomData,
         }
       }
     }
+
+    impl<T: Copy, State, Heap> Copy for $name<T, State, Heap> {}
+
+    impl<T: Clone, State, Heap> Clone for $name<T, State, Heap> {
+      #[inline]
+      fn clone(&self) -> Self {
+        Self {
+          inner: self.inner.clone(),
+          _phantom: core::marker::PhantomData,
+        }
+      }
+    }
+  };
+}
+pub(self) use create_combinator;
+
+macro_rules! create_closure_combinator {
+  ($name:ident, $usage:literal) => {
+    $crate::combinator::create_combinator!($name, $usage);
 
     impl<F, State, Heap> core::fmt::Debug for $name<F, State, Heap> {
       #[inline]
@@ -232,18 +251,6 @@ macro_rules! closure_combinator {
         f.debug_struct(stringify!($name)).finish()
       }
     }
-
-    impl<F: Copy, State, Heap> Copy for $name<F, State, Heap> {}
-
-    impl<F: Clone, State, Heap> Clone for $name<F, State, Heap> {
-      #[inline]
-      fn clone(&self) -> Self {
-        Self {
-          f: self.f.clone(),
-          _phantom: core::marker::PhantomData,
-        }
-      }
-    }
   };
 }
-pub(self) use closure_combinator;
+pub(self) use create_closure_combinator;

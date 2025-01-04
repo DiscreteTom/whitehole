@@ -1,10 +1,10 @@
 use crate::{
   action::{Action, Input, Output},
-  combinator::{closure_combinator, Combinator},
+  combinator::{create_closure_combinator, Combinator},
 };
 
-closure_combinator!(WrapUnchecked, "See [`wrap_unchecked`].");
-closure_combinator!(Wrap, "See [`wrap`].");
+create_closure_combinator!(WrapUnchecked, "See [`wrap_unchecked`].");
+create_closure_combinator!(Wrap, "See [`wrap`].");
 
 macro_rules! impl_wrap {
   ($name:ident, $assert:ident) => {
@@ -20,7 +20,7 @@ macro_rules! impl_wrap {
         &self,
         mut input: Input<&mut Self::State, &mut Self::Heap>,
       ) -> Option<Output<Self::Value>> {
-        let output = (self.f)(input.reborrow());
+        let output = (self.inner)(input.reborrow());
         $assert!(output
           .as_ref()
           .map_or(true, |output| input.validate(output.digested)));

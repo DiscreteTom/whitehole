@@ -1,9 +1,9 @@
 use crate::{
   action::{Action, Input, Output},
-  combinator::{closure_combinator, Combinator},
+  combinator::{create_closure_combinator, Combinator},
 };
 
-closure_combinator!(Next, "See [`next`].");
+create_closure_combinator!(Next, "See [`next`].");
 
 unsafe impl<State, Heap, F: Fn(char) -> bool> Action for Next<F, State, Heap> {
   type Value = ();
@@ -13,7 +13,7 @@ unsafe impl<State, Heap, F: Fn(char) -> bool> Action for Next<F, State, Heap> {
   #[inline]
   fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
     let next = input.next();
-    if !(self.f)(next) {
+    if !(self.inner)(next) {
       return None;
     }
     Some(unsafe { input.digest_unchecked(next.len_utf8()) })
