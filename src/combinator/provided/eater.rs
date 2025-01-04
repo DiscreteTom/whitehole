@@ -1,5 +1,44 @@
-use super::wrap_unchecked;
-use crate::{action::Input, C};
+use crate::{
+  action::{Action, Input, Output},
+  combinator::{closure_combinator, Combinator},
+};
+
+closure_combinator!(Eater, "See [`eater`].");
+closure_combinator!(EaterUnchecked, "See [`eater_unchecked`].");
+
+macro_rules! impl_eater {
+  ($name:ident, $output:expr) => {
+    unsafe impl<State, Heap, F: Fn(Input<&mut State, &mut Heap>) -> usize> Action
+      for $name<F, State, Heap>
+    {
+      type Value = ();
+      type State = State;
+      type Heap = Heap;
+
+      #[inline]
+      fn exec(
+        &self,
+        mut input: Input<&mut Self::State, &mut Self::Heap>,
+      ) -> Option<Output<Self::Value>> {
+        match (self.f)(input.reborrow()) {
+          0 => None,
+          digested => $output(&input, digested),
+        }
+      }
+    }
+  };
+}
+
+#[inline(always)]
+fn build_output_unchecked<State, Heap>(
+  input: &Input<&mut State, &mut Heap>,
+  digested: usize,
+) -> Option<Output<()>> {
+  unsafe { input.digest_unchecked(digested) }.into()
+}
+
+impl_eater!(Eater, Input::digest);
+impl_eater!(EaterUnchecked, build_output_unchecked);
 
 /// Returns a combinator by the provided function that
 /// eats [`Instant::rest`](crate::instant::Instant::rest) and returns the number of digested bytes (not chars).
@@ -15,15 +54,10 @@ use crate::{action::Input, C};
 /// # );
 /// ```
 #[inline]
-pub const fn eater<State, Heap>(
-  f: impl Fn(Input<&mut State, &mut Heap>) -> usize,
-) -> C!((), State, Heap) {
-  unsafe {
-    wrap_unchecked(move |mut input| match f(input.reborrow()) {
-      0 => None,
-      digested => input.digest(digested),
-    })
-  }
+pub const fn eater<State, Heap, F: Fn(Input<&mut State, &mut Heap>) -> usize>(
+  f: F,
+) -> Combinator<Eater<F, State, Heap>> {
+  Combinator::new(Eater::new(f))
 }
 
 /// Returns a combinator by the provided function that
@@ -43,13 +77,10 @@ pub const fn eater<State, Heap>(
 /// # );
 /// ```
 #[inline]
-pub const unsafe fn eater_unchecked<State, Heap>(
-  f: impl Fn(Input<&mut State, &mut Heap>) -> usize,
-) -> C!((), State, Heap) {
-  wrap_unchecked(move |mut input| match f(input.reborrow()) {
-    0 => None,
-    digested => input.digest_unchecked(digested).into(),
-  })
+pub const unsafe fn eater_unchecked<State, Heap, F: Fn(Input<&mut State, &mut Heap>) -> usize>(
+  f: F,
+) -> Combinator<EaterUnchecked<F, State, Heap>> {
+  Combinator::new(EaterUnchecked::new(f))
 }
 
 #[cfg(test)]
@@ -87,6 +118,14 @@ mod tests {
         .map(|output| output.digested),
       None
     );
+
+    // ensure the combinator is copyable and clone-able
+    let c = eater::<(), (), _>(|_| 1);
+    let _ = c;
+    let _ = c.clone();
+
+    // ensure the combinator is debuggable
+    assert_eq!(format!("{:?}", c), "Combinator { action: Eater }");
   }
 
   #[test]
@@ -105,6 +144,14 @@ mod tests {
         .map(|output| output.digested),
       None
     );
+
+    // ensure the combinator is copyable and clone-able
+    let c = unsafe { eater_unchecked::<(), (), _>(|_| 1) };
+    let _ = c;
+    let _ = c.clone();
+
+    // ensure the combinator is debuggable
+    assert_eq!(format!("{:?}", c), "Combinator { action: EaterUnchecked }");
   }
 
   #[test]
