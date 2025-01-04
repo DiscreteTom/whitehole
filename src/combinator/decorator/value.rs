@@ -5,14 +5,48 @@ use crate::{
   combinator::{Action, Combinator, Input, Output},
   range::WithRange,
 };
+use core::fmt;
+use std::marker::PhantomData;
 
 create_closure_decorator!(Map, "See [`Combinator::map`].");
 create_simple_decorator!(Tuple, "See [`Combinator::tuple`].");
 create_value_decorator!(Bind, "See [`Combinator::bind`].");
-create_value_decorator!(BindDefault, "See [`Combinator::bind_default`].");
 create_closure_decorator!(Select, "See [`Combinator::select`].");
 create_simple_decorator!(Range, "See [`Combinator::range`].");
 create_simple_decorator!(Pop, "See [`Combinator::pop`].");
+
+/// See [`Combinator::bind_default`].
+pub struct BindDefault<T, D> {
+  action: T,
+  inner: PhantomData<D>,
+}
+
+impl<T: Copy, D> Copy for BindDefault<T, D> {}
+impl<T: Clone, D> Clone for BindDefault<T, D> {
+  fn clone(&self) -> Self {
+    Self {
+      action: self.action.clone(),
+      inner: PhantomData,
+    }
+  }
+}
+impl<T: fmt::Debug, D> fmt::Debug for BindDefault<T, D> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.debug_struct("BindDefault")
+      .field("action", &self.action)
+      .finish()
+  }
+}
+
+impl<T, D> BindDefault<T, D> {
+  #[inline]
+  const fn new(action: T) -> Self {
+    Self {
+      action,
+      inner: PhantomData,
+    }
+  }
+}
 
 unsafe impl<NewValue, T: Action, D: Fn(T::Value) -> NewValue> Action for Map<T, D> {
   type Value = NewValue;
@@ -185,7 +219,7 @@ impl<T: Action> Combinator<T> {
   where
     NewValue: Default,
   {
-    Combinator::new(BindDefault::new(self.action, Default::default()))
+    Combinator::new(BindDefault::new(self.action))
   }
 
   /// Create a new combinator to set [`Output::value`] by the `selector`.
