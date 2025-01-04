@@ -262,7 +262,7 @@ macro_rules! create_closure_combinator {
   ($name:ident, $usage:literal) => {
     $crate::combinator::create_combinator!($name, $usage);
 
-    impl<F, State, Heap> core::fmt::Debug for $name<F, State, Heap> {
+    impl<T, State, Heap> core::fmt::Debug for $name<T, State, Heap> {
       #[inline]
       fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct(stringify!($name)).finish()
