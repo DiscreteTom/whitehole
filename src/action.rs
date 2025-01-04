@@ -257,7 +257,7 @@ mod tests {
   use super::*;
   use crate::{combinator::wrap, instant::Instant};
 
-  fn helper(t: impl Action<Value = (), State = (), Heap = ()>) -> Option<Output<()>> {
+  fn helper(t: A!()) -> Option<Output<()>> {
     t.exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
   }
 
@@ -269,14 +269,8 @@ mod tests {
 
   #[test]
   fn action_dyn_ref() {
-    assert!(helper(
-      &wrap(|input| input.digest(1)) as &dyn Action<Value = (), State = (), Heap = ()>
-    )
-    .is_some());
-    assert!(helper(
-      &mut wrap(|input| input.digest(1)) as &mut dyn Action<Value = (), State = (), Heap = ()>
-    )
-    .is_some());
+    assert!(helper(&wrap(|input| input.digest(1)) as &A_dyn!()).is_some());
+    assert!(helper(&mut wrap(|input| input.digest(1)) as &mut A_dyn!()).is_some());
   }
 
   #[test]
@@ -293,10 +287,7 @@ mod tests {
 
   #[test]
   fn boxed_dyn_action() {
-    assert!(helper(
-      Box::new(wrap(|input| input.digest(1))) as Box<dyn Action<Value = (), State = (), Heap = ()>>
-    )
-    .is_some());
+    assert!(helper(Box::new(wrap(|input| input.digest(1))) as Box<A_dyn!()>).is_some());
   }
 
   #[test]
@@ -313,9 +304,6 @@ mod tests {
 
   #[test]
   fn rc_dyn_action() {
-    assert!(helper(
-      Rc::new(wrap(|input| input.digest(1))) as Rc<dyn Action<Value = (), State = (), Heap = ()>>
-    )
-    .is_some());
+    assert!(helper(Rc::new(wrap(|input| input.digest(1))) as Rc<A_dyn!()>).is_some());
   }
 }
