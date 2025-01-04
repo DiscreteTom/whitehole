@@ -110,12 +110,61 @@ pub struct Combinator<T> {
 
 /// Simplify the [`Combinator`] struct's signature.
 ///
-/// - `C!()` => `Combinator<impl Action<Value = (), State = (), Heap = ()>>`.
-/// - `C!(MyValue)` => `Combinator<impl Action<Value = MyValue, State = (), Heap = ()>>`.
-/// - `C!(MyValue, MyState)` => `Combinator<impl Action<Value = MyValue, State = MyState, Heap = ()>>`.
-/// - `C!(MyValue, MyState, MyHeap)` => `Combinator<impl Action<Value = MyValue, State = MyState, Heap = MyHeap>>`.
-/// - `C!(@T)` => `Combinator<impl Action<Value = T::Value, State = T::State, Heap = T::Heap>>`.
-/// - `C!(MyValue, @T)` => `Combinator<impl Action<Value = MyValue, State = T::State, Heap = T::Heap>>`.
+/// Here are the expanded forms:
+/// ```
+/// # use whitehole::{action::{Action, Input, Output}, C, combinator::{wrap, Combinator}};
+/// # #[derive(Default)]
+/// # struct MyValue;
+/// # struct MyHeap;
+/// # struct MyState;
+/// # struct T;
+/// # unsafe impl Action for T {
+/// #   type Value = ();
+/// #   type State = ();
+/// #   type Heap = ();
+/// #   fn exec(&self, _: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+/// #     None
+/// #   }
+/// # }
+/// # macro_rules! assert_type_match {
+/// #   ($t:ty => $expected:ty) => {{
+/// #     fn receiver(_: $expected) {}
+/// #     fn generator() -> $t {
+/// #       wrap(|input| input.digest(1)).select(|_| Default::default())
+/// #     }
+/// #     receiver(generator());
+/// #   }};
+/// # }
+/// # assert_type_match!(
+/// C!()
+/// => Combinator<impl Action<Value = (), State = (), Heap = ()>>
+/// # );
+///
+/// # assert_type_match!(
+/// C!(MyValue)
+/// => Combinator<impl Action<Value = MyValue, State = (), Heap = ()>>
+/// # );
+///
+/// # assert_type_match!(
+/// C!(MyValue, MyState)
+/// => Combinator<impl Action<Value = MyValue, State = MyState, Heap = ()>>
+/// # );
+///
+/// # assert_type_match!(
+/// C!(MyValue, MyState, MyHeap)
+/// => Combinator<impl Action<Value = MyValue, State = MyState, Heap = MyHeap>>
+/// # );
+///
+/// # assert_type_match!(
+/// C!(@T)
+/// => Combinator<impl Action<Value = <T as Action>::Value, State = <T as Action>::State, Heap = <T as Action>::Heap>>
+/// # );
+///
+/// # assert_type_match!(
+/// C!(MyValue, @T)
+/// => Combinator<impl Action<Value = MyValue, State = <T as Action>::State, Heap = <T as Action>::Heap>>
+/// # );
+/// ```
 #[macro_export]
 macro_rules! C {
   () => {
