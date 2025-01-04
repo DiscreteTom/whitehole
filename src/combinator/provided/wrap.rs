@@ -6,7 +6,7 @@ use crate::{
 use core::{fmt, marker::PhantomData};
 
 /// See [`wrap_unchecked`] and [`wrap`].
-struct WrapUnchecked<F, State = (), Heap = ()> {
+pub struct WrapUnchecked<F, State = (), Heap = ()> {
   inner: F,
   _phantom: PhantomData<(State, Heap)>,
 }
@@ -81,7 +81,7 @@ pub const unsafe fn wrap_unchecked<
   Heap,
 >(
   f: F,
-) -> C!(Value, State, Heap) {
+) -> Combinator<WrapUnchecked<F, State, Heap>> {
   Combinator::new(WrapUnchecked::new(f))
 }
 
