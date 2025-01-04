@@ -100,7 +100,7 @@ unsafe impl<T: Action> Action for Boundary<T> {
       unsafe { input.instant().rest().get_unchecked(output.digested..) }
         .chars()
         .next()
-        .map_or(false, |c| c.is_alphanumeric() || c == '_')
+        .map_or(true, |c| !c.is_alphanumeric() && c != '_')
         .then_some(output)
     })
   }
