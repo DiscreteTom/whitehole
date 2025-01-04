@@ -3,10 +3,9 @@ use crate::{
   combinator::Combinator,
   C,
 };
-use std::marker::PhantomData;
+use core::{fmt, marker::PhantomData};
 
 /// See [`wrap_unchecked`] and [`wrap`].
-#[derive(Debug, Clone, Copy)]
 struct WrapUnchecked<F, State = (), Heap = ()> {
   inner: F,
   _phantom: PhantomData<(State, Heap)>,
@@ -17,6 +16,24 @@ impl<T, State, Heap> WrapUnchecked<T, State, Heap> {
   const fn new(inner: T) -> Self {
     Self {
       inner,
+      _phantom: PhantomData,
+    }
+  }
+}
+
+impl<F, State, Heap> fmt::Debug for WrapUnchecked<F, State, Heap> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.debug_struct("WrapUnchecked").finish()
+  }
+}
+
+impl<F: Copy, State, Heap> Copy for WrapUnchecked<F, State, Heap> {}
+
+impl<F: Clone, State, Heap> Clone for WrapUnchecked<F, State, Heap> {
+  #[inline]
+  fn clone(&self) -> Self {
+    Self {
+      inner: self.inner.clone(),
       _phantom: PhantomData,
     }
   }
