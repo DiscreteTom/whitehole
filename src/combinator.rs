@@ -13,7 +13,6 @@
 //! To save the memory of your brain, we have very limited number of provided combinators.
 //! Here is the full list:
 //! - [`eat`]: eat a pattern.
-//! - [`eater`]: eat by a custom function.
 //! - [`next`]: eat the next character by a predicate.
 //! - [`till`]: eat until a pattern, inclusive.
 //! - [`wrap`]: wrap a closure as a combinator.

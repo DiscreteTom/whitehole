@@ -9,7 +9,7 @@ A simple, fast, intuitive parser combinator framework for Rust.
 
 ## Features
 
-- Simple: only a handful of combinators to remember: `eat`, `eater`, `next`, `till`, `wrap`.
+- Simple: only a handful of combinators to remember: `eat`, `next`, `till`, `wrap`.
 - Operator overloading: use `+` and `|` to compose combinators, use `*` to repeat a combinator.
 - Zero heap allocation: this framework only uses stack memory.
 - Re-usable heap memory: if you need allocation, never clone or reallocate it.

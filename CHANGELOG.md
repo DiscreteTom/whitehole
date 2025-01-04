@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add macro `A!` and `A_dyn!` to simplify the signature of `Action`.
 - Implement `Action` for `&dyn Action`, `&mut dyn Action`, `Box<dyn Action>` and `Rc<dyn Action>`.
-- Add `WrapUnchecked`, `Wrap`, `Next`, `EaterUnchecked`, `Eater`.
+- Add `WrapUnchecked`, `Wrap`, `Next`.
 
 ### Fixed
 
@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Remove `Input::shift_unchecked` and `Input::shift`.
+- Remove `eater` and `eater_unchecked`. Use `wrap` instead.
 
 ## [0.2.0] - 2025-01-01
 
