@@ -11,20 +11,28 @@ pub struct Output<Value> {
   /// This is guaranteed to be no greater than the length of `input.instant().rest()`
   /// and is always a valid UTF-8 boundary for the corresponding [`Input`].
   /// `0` is always a valid value.
+  ///
+  /// You can use [`Input::validate`] to check if a value is valid.
   pub digested: usize,
 }
 
 impl<StateRef, HeapRef> Input<'_, StateRef, HeapRef> {
+  /// Validate if it is ok to digest `n` bytes.
+  #[inline]
+  pub fn validate(&self, n: usize) -> bool {
+    self.instant().rest().is_char_boundary(n)
+  }
+
   /// Try to build an [`Output`] by digesting `n` bytes.
   /// # Safety
   /// You should ensure that `n` is a valid UTF-8 boundary.
-  /// This will be checked using [`debug_assert!`].
+  /// This will be checked using [`debug_assert!`] with [`Self::validate`].
   /// For the checked version, see [`Self::digest`].
   ///
-  /// See [`Output::digested`] for more information.
+  /// See [`Output::digested`] and [`Self::validate`] for more information.
   #[inline]
   pub unsafe fn digest_unchecked(&self, n: usize) -> Output<()> {
-    debug_assert!(self.instant().rest().is_char_boundary(n));
+    debug_assert!(self.validate(n));
     Output {
       value: (),
       digested: n,
@@ -34,13 +42,11 @@ impl<StateRef, HeapRef> Input<'_, StateRef, HeapRef> {
   /// Try to build an [`Output`] by digesting `n` bytes.
   /// Return [`Some`] if `n` is a valid UTF-8 boundary.
   ///
-  /// See [`Output::digested`] for more information.
+  /// See [`Output::digested`] and [`Self::validate`] for more information.
   #[inline]
   pub fn digest(&self, n: usize) -> Option<Output<()>> {
     self
-      .instant()
-      .rest()
-      .is_char_boundary(n)
+      .validate(n)
       .then(|| unsafe { self.digest_unchecked(n) })
   }
 }

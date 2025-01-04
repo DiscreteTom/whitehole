@@ -18,14 +18,12 @@ macro_rules! impl_wrap {
       #[inline]
       fn exec(
         &self,
-        input: Input<&mut Self::State, &mut Self::Heap>,
+        mut input: Input<&mut Self::State, &mut Self::Heap>,
       ) -> Option<Output<Self::Value>> {
-        let input_rest = input.instant().rest();
-        let output = (self.f)(input);
+        let output = (self.f)(input.reborrow());
         $assert!(output
           .as_ref()
-          .map_or(true, |output| output.digested <= input_rest.len()
-            && input_rest.is_char_boundary(output.digested)));
+          .map_or(true, |output| input.validate(output.digested)));
         output
       }
     }
