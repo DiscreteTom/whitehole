@@ -3,14 +3,14 @@ use whitehole::{
   action::{Action, Input, Output},
   combinator::{eat, next, Combinator},
   parser::Builder,
+  A_dyn,
 };
 
 // TODO: comments
 
 // Use `Rc` to make it clone-able, use `OnceCell` to initialize it later,
 // use `Box<dyn>` to prevent recursive/infinite type.
-type RecurInner<Kind, State, Heap> =
-  Rc<OnceCell<Box<dyn Action<Value = Kind, State = State, Heap = Heap>>>>;
+type RecurInner<Value, State, Heap> = Rc<OnceCell<Box<A_dyn!(Value, State, Heap)>>>;
 
 /// See [`recur`] and [`recur_unchecked`].
 ///
@@ -18,32 +18,32 @@ type RecurInner<Kind, State, Heap> =
 /// This is not [`Clone`] because you can only set the parser once.
 /// This must be used to set the parser.
 #[must_use = "Setter must be used to set the parser"]
-pub struct RecurSetter<Kind, State, Heap> {
-  inner: RecurInner<Kind, State, Heap>,
+pub struct RecurSetter<Value, State, Heap> {
+  inner: RecurInner<Value, State, Heap>,
 }
 
-impl<Kind, State, Heap> RecurSetter<Kind, State, Heap> {
+impl<Value, State, Heap> RecurSetter<Value, State, Heap> {
   /// Consume self, set the parser.
   #[inline]
-  pub fn set(self, parser: Box<dyn Action<Value = Kind, State = State, Heap = Heap>>) {
+  pub fn set(self, parser: Box<A_dyn!(Value, State, Heap)>) {
     // we can use `ok` here because the setter will be dropped after this call
     self.inner.set(parser).ok();
   }
 
   /// Consume self, set the parser by boxing the parser.
   #[inline]
-  pub fn boxed(self, p: impl Action<Value = Kind, State = State, Heap = Heap> + 'static) {
+  pub fn boxed(self, p: impl Action<Value = Value, State = State, Heap = Heap> + 'static) {
     self.set(Box::new(p));
   }
 }
 
 /// See [`recur`].
-pub struct Recur<Kind, State, Heap> {
-  rc: RecurInner<Kind, State, Heap>,
+pub struct Recur<Value, State, Heap> {
+  rc: RecurInner<Value, State, Heap>,
 }
 
-unsafe impl<Kind, State, Heap> Action for Recur<Kind, State, Heap> {
-  type Value = Kind;
+unsafe impl<Value, State, Heap> Action for Recur<Value, State, Heap> {
+  type Value = Value;
   type State = State;
   type Heap = Heap;
 
@@ -54,9 +54,9 @@ unsafe impl<Kind, State, Heap> Action for Recur<Kind, State, Heap> {
 
 /// # Caveats
 /// The setter must be used to set the parser before calling `getter().parse`.
-pub fn recur<Kind, State, Heap>() -> (
-  impl Fn() -> Combinator<Recur<Kind, State, Heap>>,
-  RecurSetter<Kind, State, Heap>,
+pub fn recur<Value, State, Heap>() -> (
+  impl Fn() -> Combinator<Recur<Value, State, Heap>>,
+  RecurSetter<Value, State, Heap>,
 ) {
   let setter = RecurSetter {
     inner: Rc::new(OnceCell::new()),
@@ -69,12 +69,12 @@ pub fn recur<Kind, State, Heap>() -> (
 }
 
 /// See [`recur_unchecked`].
-pub struct RecurUnchecked<Kind, State, Heap> {
-  rc: RecurInner<Kind, State, Heap>,
+pub struct RecurUnchecked<Value, State, Heap> {
+  rc: RecurInner<Value, State, Heap>,
 }
 
-unsafe impl<Kind, State, Heap> Action for RecurUnchecked<Kind, State, Heap> {
-  type Value = Kind;
+unsafe impl<Value, State, Heap> Action for RecurUnchecked<Value, State, Heap> {
+  type Value = Value;
   type State = State;
   type Heap = Heap;
 
@@ -85,9 +85,9 @@ unsafe impl<Kind, State, Heap> Action for RecurUnchecked<Kind, State, Heap> {
 
 /// # Safety
 /// The setter must be used to set the parser before calling `getter().parse`.
-pub unsafe fn recur_unchecked<Kind, State, Heap>() -> (
-  impl Fn() -> Combinator<RecurUnchecked<Kind, State, Heap>>,
-  RecurSetter<Kind, State, Heap>,
+pub unsafe fn recur_unchecked<Value, State, Heap>() -> (
+  impl Fn() -> Combinator<RecurUnchecked<Value, State, Heap>>,
+  RecurSetter<Value, State, Heap>,
 ) {
   let setter = RecurSetter {
     inner: Rc::new(OnceCell::new()),
