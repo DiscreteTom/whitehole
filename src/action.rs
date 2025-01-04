@@ -93,7 +93,7 @@ unsafe impl<T: Action + ?Sized> Action for Rc<T> {
 }
 
 /// Simplify [`Action`]'s signature with `impl`.
-/// To use `dyn`, see [`A_dyn`].
+/// To use `dyn`, see [`A_dyn`](crate::A_dyn).
 ///
 /// Here are the expanded forms:
 /// ```
