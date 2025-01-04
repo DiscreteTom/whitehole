@@ -1,8 +1,77 @@
-use super::AcceptedContext;
-use crate::{
-  combinator::{wrap_unchecked, Action, Combinator, Input, Output},
-  C,
-};
+use super::{create_closure_decorator, AcceptedContext};
+use crate::combinator::{Action, Combinator, Input, Output};
+
+create_closure_decorator!(Prepare, "See [`Combinator::prepare`].");
+create_closure_decorator!(Then, "See [`Combinator::then`].");
+create_closure_decorator!(Catch, "See [`Combinator::catch`].");
+create_closure_decorator!(Finally, "See [`Combinator::finally`].");
+
+unsafe impl<T: Action, D: Fn(Input<&mut T::State, &mut T::Heap>)> Action for Prepare<T, D> {
+  type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  #[inline]
+  fn exec(
+    &self,
+    mut input: Input<&mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<Self::Value>> {
+    (self.inner)(input.reborrow());
+    self.action.exec(input)
+  }
+}
+
+unsafe impl<T: Action, D: Fn(AcceptedContext<Input<&mut T::State, &mut T::Heap>, &Output<T::Value>>)>
+  Action for Then<T, D>
+{
+  type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  #[inline]
+  fn exec(
+    &self,
+    mut input: Input<&mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<Self::Value>> {
+    self.action.exec(input.reborrow()).inspect(|output| {
+      (self.inner)(AcceptedContext { input, output });
+    })
+  }
+}
+
+unsafe impl<T: Action, D: Fn(Input<&mut T::State, &mut T::Heap>)> Action for Catch<T, D> {
+  type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  #[inline]
+  fn exec(
+    &self,
+    mut input: Input<&mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<Self::Value>> {
+    let output = self.action.exec(input.reborrow());
+    if output.is_none() {
+      (self.inner)(input);
+    }
+    output
+  }
+}
+
+unsafe impl<T: Action, D: Fn(Input<&mut T::State, &mut T::Heap>)> Action for Finally<T, D> {
+  type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  #[inline]
+  fn exec(
+    &self,
+    mut input: Input<&mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<Self::Value>> {
+    let output = self.action.exec(input.reborrow());
+    (self.inner)(input);
+    output
+  }
+}
 
 impl<T: Action> Combinator<T> {
   /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
@@ -16,13 +85,11 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn prepare(self, modifier: impl Fn(Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
-    unsafe {
-      wrap_unchecked(move |mut input| {
-        modifier(input.reborrow());
-        self.exec(input)
-      })
-    }
+  pub fn prepare<F: Fn(Input<&mut T::State, &mut T::Heap>)>(
+    self,
+    modifier: F,
+  ) -> Combinator<Prepare<T, F>> {
+    Combinator::new(Prepare::new(self.action, modifier))
   }
 
   /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
@@ -36,17 +103,11 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn then(
+  pub fn then<F: Fn(AcceptedContext<Input<&mut T::State, &mut T::Heap>, &Output<T::Value>>)>(
     self,
-    modifier: impl Fn(AcceptedContext<Input<&mut T::State, &mut T::Heap>, &Output<T::Value>>),
-  ) -> C!(@T) {
-    unsafe {
-      wrap_unchecked(move |mut input| {
-        self.exec(input.reborrow()).inspect(|output| {
-          modifier(AcceptedContext { input, output });
-        })
-      })
-    }
+    modifier: F,
+  ) -> Combinator<Then<T, F>> {
+    Combinator::new(Then::new(self.action, modifier))
   }
 
   /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
@@ -60,16 +121,11 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn catch(self, modifier: impl Fn(Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
-    unsafe {
-      wrap_unchecked(move |mut input| {
-        let output = self.exec(input.reborrow());
-        if output.is_none() {
-          modifier(input);
-        }
-        output
-      })
-    }
+  pub fn catch<F: Fn(Input<&mut T::State, &mut T::Heap>)>(
+    self,
+    modifier: F,
+  ) -> Combinator<Catch<T, F>> {
+    Combinator::new(Catch::new(self.action, modifier))
   }
 
   /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
@@ -84,21 +140,18 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn finally(self, modifier: impl Fn(Input<&mut T::State, &mut T::Heap>)) -> C!(@T) {
-    unsafe {
-      wrap_unchecked(move |mut input| {
-        let output = self.exec(input.reborrow());
-        modifier(input);
-        output
-      })
-    }
+  pub fn finally<F: Fn(Input<&mut T::State, &mut T::Heap>)>(
+    self,
+    modifier: F,
+  ) -> Combinator<Finally<T, F>> {
+    Combinator::new(Finally::new(self.action, modifier))
   }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{combinator::wrap, instant::Instant};
+  use crate::{combinator::wrap, instant::Instant, C};
 
   #[derive(Debug, Default, PartialEq, Eq)]
   struct State {

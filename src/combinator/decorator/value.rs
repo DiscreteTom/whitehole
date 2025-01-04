@@ -1,9 +1,122 @@
-use super::AcceptedContext;
-use crate::{
-  combinator::{wrap_unchecked, Action, Combinator, Input, Output},
-  range::WithRange,
-  C,
+use super::{
+  create_closure_decorator, create_simple_decorator, create_value_decorator, AcceptedContext,
 };
+use crate::{
+  combinator::{Action, Combinator, Input, Output},
+  range::WithRange,
+};
+
+create_closure_decorator!(Map, "See [`Combinator::map`].");
+create_simple_decorator!(Tuple, "See [`Combinator::tuple`].");
+create_value_decorator!(Bind, "See [`Combinator::bind`].");
+create_value_decorator!(BindDefault, "See [`Combinator::bind_default`].");
+create_closure_decorator!(Select, "See [`Combinator::select`].");
+create_simple_decorator!(Range, "See [`Combinator::range`].");
+create_simple_decorator!(Pop, "See [`Combinator::pop`].");
+
+unsafe impl<NewValue, T: Action, D: Fn(T::Value) -> NewValue> Action for Map<T, D> {
+  type Value = NewValue;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  #[inline]
+  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+    self
+      .action
+      .exec(input)
+      .map(|output| output.map(&self.inner))
+  }
+}
+
+unsafe impl<T: Action> Action for Tuple<T> {
+  type Value = (T::Value,);
+  type State = T::State;
+  type Heap = T::Heap;
+
+  #[inline]
+  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+    self.action.exec(input).map(|output| output.map(|v| (v,)))
+  }
+}
+
+unsafe impl<T: Action, D: Clone> Action for Bind<T, D> {
+  type Value = D;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  #[inline]
+  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+    self
+      .action
+      .exec(input)
+      .map(|output| output.map(|_| self.inner.clone()))
+  }
+}
+
+unsafe impl<T: Action, D: Default> Action for BindDefault<T, D> {
+  type Value = D;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  #[inline]
+  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+    self
+      .action
+      .exec(input)
+      .map(|output| output.map(|_| Default::default()))
+  }
+}
+
+unsafe impl<
+    NewValue,
+    T: Action,
+    D: Fn(AcceptedContext<Input<&mut T::State, &mut T::Heap>, Output<T::Value>>) -> NewValue,
+  > Action for Select<T, D>
+{
+  type Value = NewValue;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  #[inline]
+  fn exec(
+    &self,
+    mut input: Input<&mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<Self::Value>> {
+    self.action.exec(input.reborrow()).map(|output| {
+      unsafe { input.digest_unchecked(output.digested) }
+        .map(|_| (self.inner)(AcceptedContext { input, output }))
+    })
+  }
+}
+
+unsafe impl<T: Action> Action for Range<T> {
+  type Value = WithRange<T::Value>;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  #[inline]
+  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+    let start = input.instant().digested();
+    self.action.exec(input).map(|output| {
+      let digested = output.digested;
+      output.map(|data| WithRange {
+        range: start..start + digested,
+        data,
+      })
+    })
+  }
+}
+
+unsafe impl<V, T: Action<Value = (V,)>> Action for Pop<T> {
+  type Value = V;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  #[inline]
+  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+    self.action.exec(input).map(|output| output.map(|(v,)| v))
+  }
+}
 
 impl<T: Action> Combinator<T> {
   /// Create a new combinator to convert [`Output::value`] to a new value.
@@ -17,8 +130,8 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn map<NewValue>(self, mapper: impl Fn(T::Value) -> NewValue) -> C!(NewValue, @T) {
-    unsafe { wrap_unchecked(move |input| self.exec(input).map(|output| output.map(&mapper))) }
+  pub fn map<NewValue, F: Fn(T::Value) -> NewValue>(self, mapper: F) -> Combinator<Map<T, F>> {
+    Combinator::new(Map::new(self.action, mapper))
   }
 
   /// Create a new combinator to wrap [`Output::value`] in an one-element tuple.
@@ -35,8 +148,8 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn tuple(self) -> C!((T::Value,), @T) {
-    self.map(|value| (value,))
+  pub fn tuple(self) -> Combinator<Tuple<T>> {
+    Combinator::new(Tuple::new(self.action))
   }
 
   /// Create a new combinator to set [`Output::value`] to the provided value.
@@ -52,11 +165,11 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn bind<NewValue>(self, value: NewValue) -> C!(NewValue, @T)
+  pub fn bind<NewValue>(self, value: NewValue) -> Combinator<Bind<T, NewValue>>
   where
     NewValue: Clone,
   {
-    self.map(move |_| value.clone())
+    Combinator::new(Bind::new(self.action, value))
   }
 
   /// Create a new combinator to set [`Output::value`] to the default value.
@@ -68,11 +181,11 @@ impl<T: Action> Combinator<T> {
   /// # }
   /// ```
   #[inline]
-  pub fn bind_default<NewValue>(self) -> C!(NewValue, @T)
+  pub fn bind_default<NewValue>(self) -> Combinator<BindDefault<T, NewValue>>
   where
     NewValue: Default,
   {
-    self.map(|_| Default::default())
+    Combinator::new(BindDefault::new(self.action, Default::default()))
   }
 
   /// Create a new combinator to set [`Output::value`] by the `selector`.
@@ -88,19 +201,14 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn select<NewValue>(
+  pub fn select<
+    NewValue,
+    F: Fn(AcceptedContext<Input<&mut T::State, &mut T::Heap>, Output<T::Value>>) -> NewValue,
+  >(
     self,
-    selector: impl Fn(AcceptedContext<Input<&mut T::State, &mut T::Heap>, Output<T::Value>>) -> NewValue,
-  ) -> C!(NewValue, @T) {
-    unsafe {
-      wrap_unchecked(move |mut input| {
-        self.exec(input.reborrow()).map(|output| {
-          input
-            .digest_unchecked(output.digested)
-            .map(|_| selector(AcceptedContext { input, output }))
-        })
-      })
-    }
+    selector: F,
+  ) -> Combinator<Select<T, F>> {
+    Combinator::new(Select::new(self.action, selector))
   }
 
   /// Create a new combinator to wrap [`Output::value`] in [`WithRange`]
@@ -112,11 +220,8 @@ impl<T: Action> Combinator<T> {
   /// combinator.range()
   /// # ;}
   #[inline]
-  pub fn range(self) -> C!(WithRange<T::Value>, @T) {
-    self.select(|ctx| WithRange {
-      range: ctx.range(),
-      data: ctx.take().value,
-    })
+  pub fn range(self) -> Combinator<Range<T>> {
+    Combinator::new(Range::new(self.action))
   }
 }
 
@@ -132,8 +237,8 @@ impl<V, T: Action<Value = (V,)>> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn pop(self) -> C!(V, @T) {
-    self.map(|(value,)| value)
+  pub fn pop(self) -> Combinator<Pop<T>> {
+    Combinator::new(Pop::new(self.action))
   }
 }
 

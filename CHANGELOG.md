@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add macro `A!` and `A_dyn!` to simplify the signature of `Action`.
 - Implement `Action` for `&dyn Action`, `&mut dyn Action`, `Box<dyn Action>` and `Rc<dyn Action>`.
 - Add `WrapUnchecked`, `Wrap`, `Next`, `EatUnchecked`.
+- Add `When`, `Prevent`, `Reject`, `Optional`, `Boundary`, `Prepare`, `Then`, `Catch`, `Finally`, `Map`, `Tuple`, `Bind`, `BindDefault`, `Select`, `Range`, `Pop`.
 
 ### Fixed
 
