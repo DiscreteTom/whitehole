@@ -208,3 +208,43 @@ macro_rules! C {
     $crate::combinator::Combinator<impl $crate::action::Action<Value = $value, State = <$from as $crate::action::Action>::State, Heap = <$from as $crate::action::Action>::Heap>>
   };
 }
+
+macro_rules! closure_combinator {
+  ($name:ident, $usage:literal) => {
+    #[doc = $usage]
+    pub struct $name<F, State = (), Heap = ()> {
+      f: F,
+      _phantom: core::marker::PhantomData<(State, Heap)>,
+    }
+
+    impl<F, State, Heap> $name<F, State, Heap> {
+      #[inline]
+      const fn new(f: F) -> Self {
+        Self {
+          f,
+          _phantom: core::marker::PhantomData,
+        }
+      }
+    }
+
+    impl<F, State, Heap> core::fmt::Debug for $name<F, State, Heap> {
+      #[inline]
+      fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct(stringify!($name)).finish()
+      }
+    }
+
+    impl<F: Copy, State, Heap> Copy for $name<F, State, Heap> {}
+
+    impl<F: Clone, State, Heap> Clone for $name<F, State, Heap> {
+      #[inline]
+      fn clone(&self) -> Self {
+        Self {
+          f: self.f.clone(),
+          _phantom: core::marker::PhantomData,
+        }
+      }
+    }
+  };
+}
+pub(self) use closure_combinator;

@@ -1,40 +1,13 @@
 use crate::{
   action::{Action, Input, Output},
-  combinator::Combinator,
+  combinator::{closure_combinator, Combinator},
 };
-use core::{fmt, marker::PhantomData};
+
+closure_combinator!(WrapUnchecked, "See [`wrap_unchecked`].");
+closure_combinator!(Wrap, "See [`wrap`].");
 
 macro_rules! impl_wrap {
   ($name:ident, $assert:ident) => {
-    impl<T, State, Heap> $name<T, State, Heap> {
-      #[inline]
-      const fn new(inner: T) -> Self {
-        Self {
-          inner,
-          _phantom: PhantomData,
-        }
-      }
-    }
-
-    impl<T, State, Heap> fmt::Debug for $name<T, State, Heap> {
-      #[inline]
-      fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct(stringify!($name)).finish()
-      }
-    }
-
-    impl<T: Copy, State, Heap> Copy for $name<T, State, Heap> {}
-
-    impl<T: Clone, State, Heap> Clone for $name<T, State, Heap> {
-      #[inline]
-      fn clone(&self) -> Self {
-        Self {
-          inner: self.inner.clone(),
-          _phantom: PhantomData,
-        }
-      }
-    }
-
     unsafe impl<Value, State, Heap, F: Fn(Input<&mut State, &mut Heap>) -> Option<Output<Value>>>
       Action for $name<F, State, Heap>
     {
@@ -48,7 +21,7 @@ macro_rules! impl_wrap {
         input: Input<&mut Self::State, &mut Self::Heap>,
       ) -> Option<Output<Self::Value>> {
         let input_rest = input.instant().rest();
-        let output = (self.inner)(input);
+        let output = (self.f)(input);
         $assert!(output
           .as_ref()
           .map_or(true, |output| output.digested <= input_rest.len()
@@ -59,13 +32,8 @@ macro_rules! impl_wrap {
   };
 }
 
-/// See [`wrap_unchecked`].
-pub struct WrapUnchecked<F, State = (), Heap = ()> {
-  inner: F,
-  _phantom: PhantomData<(State, Heap)>,
-}
-
 impl_wrap!(WrapUnchecked, debug_assert);
+impl_wrap!(Wrap, assert);
 
 /// Wrap a closure to create a [`Combinator`].
 /// # Safety
@@ -93,14 +61,6 @@ pub const unsafe fn wrap_unchecked<
 ) -> Combinator<WrapUnchecked<F, State, Heap>> {
   Combinator::new(WrapUnchecked::new(f))
 }
-
-/// See [`wrap`].
-pub struct Wrap<F, State = (), Heap = ()> {
-  inner: F,
-  _phantom: PhantomData<(State, Heap)>,
-}
-
-impl_wrap!(Wrap, assert);
 
 /// Wrap a closure to create a [`Combinator`].
 /// # Panics
