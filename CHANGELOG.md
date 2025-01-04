@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add macro `A!` and `A_dyn!` to simplify the signature of `Action`.
 - Implement `Action` for `&dyn Action`, `&mut dyn Action`, `Box<dyn Action>` and `Rc<dyn Action>`.
 
+### Fixed
+
+- Fix `C!(@T)` and `C!(Kind, @T)` when `T` is a concrete type.
+
 ### Removed
 
 - Remove `Input::shift_unchecked` and `Input::shift`.

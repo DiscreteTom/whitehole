@@ -131,10 +131,10 @@ macro_rules! C {
     $crate::combinator::Combinator<impl $crate::action::Action<Value = $value, State = $state, Heap = $heap>>
   };
   (@$from:ident) => {
-    $crate::combinator::Combinator<impl $crate::action::Action<Value = $from::Value, State = $from::State, Heap = $from::Heap>>
+    $crate::combinator::Combinator<impl $crate::action::Action<Value = <$from as $crate::action::Action>::Value, State = <$from as $crate::action::Action>::State, Heap = <$from as $crate::action::Action>::Heap>>
   };
   ($value:ty, @$from:ident) => {
-    $crate::combinator::Combinator<impl $crate::action::Action<Value = $value, State = $from::State, Heap = $from::Heap>>
+    $crate::combinator::Combinator<impl $crate::action::Action<Value = $value, State = <$from as $crate::action::Action>::State, Heap = <$from as $crate::action::Action>::Heap>>
   };
 }
 
