@@ -108,6 +108,28 @@ pub struct Combinator<T> {
   action: T,
 }
 
+impl<T> Combinator<T> {
+  /// Create a new instance.
+  ///
+  /// For most cases you don't need to use this method directly.
+  /// See the [module-level documentation](self) for more information.
+  #[inline]
+  pub const fn new(action: T) -> Self {
+    Self { action }
+  }
+}
+
+unsafe impl<T: Action> Action for Combinator<T> {
+  type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  #[inline]
+  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<T::Value>> {
+    self.action.exec(input)
+  }
+}
+
 /// Simplify the [`Combinator`] struct's signature.
 ///
 /// Here are the expanded forms:
@@ -185,26 +207,4 @@ macro_rules! C {
   ($value:ty, @$from:ident) => {
     $crate::combinator::Combinator<impl $crate::action::Action<Value = $value, State = <$from as $crate::action::Action>::State, Heap = <$from as $crate::action::Action>::Heap>>
   };
-}
-
-impl<T> Combinator<T> {
-  /// Create a new instance.
-  ///
-  /// For most cases you don't need to use this method directly.
-  /// See the [module-level documentation](self) for more information.
-  #[inline]
-  pub const fn new(action: T) -> Self {
-    Self { action }
-  }
-}
-
-unsafe impl<T: Action> Action for Combinator<T> {
-  type Value = T::Value;
-  type State = T::State;
-  type Heap = T::Heap;
-
-  #[inline]
-  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<T::Value>> {
-    self.action.exec(input)
-  }
 }
