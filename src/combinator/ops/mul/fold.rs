@@ -13,7 +13,7 @@ use std::ops;
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
 ///
 /// Built-in implementations are provided for `()`.
-pub trait Fold<State, Heap> {
+pub trait Fold<State = (), Heap = ()> {
   /// The accumulator type.
   type Output: Default;
 
