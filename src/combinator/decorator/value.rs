@@ -32,8 +32,9 @@ impl<T: Clone, D> Clone for BindDefault<T, D> {
 }
 impl<T: fmt::Debug, D> fmt::Debug for BindDefault<T, D> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let action = &self.action;
     f.debug_struct(stringify!(BindDefault))
-      .field("action", &self.action)
+      .field(stringify!(action), action)
       .finish()
   }
 }

@@ -62,8 +62,9 @@ macro_rules! create_closure_decorator {
     impl<T: core::fmt::Debug, D> core::fmt::Debug for $name<T, D> {
       #[inline]
       fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let action = &self.action;
         f.debug_struct(stringify!($name))
-          .field("action", &self.action)
+          .field(stringify!(action), action)
           .finish()
       }
     }
