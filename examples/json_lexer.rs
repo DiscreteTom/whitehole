@@ -1,12 +1,12 @@
 use in_str::in_str;
 use whitehole::{
+  action::Action,
   combinator::{eat, next},
   parser::{Builder, Parser},
   range::WithRange,
-  A,
 };
 
-pub fn build_lexer(s: &str) -> Parser<A!(WithRange<()>)> {
+pub fn build_lexer(s: &str) -> Parser<impl Action<Value = WithRange<()>>> {
   // Use `* (1..)` to repeat for one or more times.
   let whitespaces = next(in_str!(" \t\r\n")) * (1..);
 

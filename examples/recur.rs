@@ -3,14 +3,13 @@ use whitehole::{
   action::{Action, Input, Output},
   combinator::{eat, next, Combinator},
   parser::Builder,
-  A_dyn,
 };
 
 // TODO: comments
 
 // Use `Rc` to make it clone-able, use `OnceCell` to initialize it later,
 // use `Box<dyn>` to prevent recursive/infinite type.
-type RecurInner<Value, State, Heap> = Rc<OnceCell<Box<A_dyn!(Value, State, Heap)>>>;
+type RecurInner<Value, State, Heap> = Rc<OnceCell<Box<dyn Action<State, Heap, Value = Value>>>>;
 
 /// See [`recur`] and [`recur_unchecked`].
 ///
@@ -25,14 +24,14 @@ pub struct RecurSetter<Value, State, Heap> {
 impl<Value, State, Heap> RecurSetter<Value, State, Heap> {
   /// Consume self, set the parser.
   #[inline]
-  pub fn set(self, parser: Box<A_dyn!(Value, State, Heap)>) {
+  pub fn set(self, parser: Box<dyn Action<State, Heap, Value = Value>>) {
     // we can use `ok` here because the setter will be dropped after this call
     self.inner.set(parser).ok();
   }
 
   /// Consume self, set the parser by boxing the parser.
   #[inline]
-  pub fn boxed(self, p: impl Action<Value = Value, State = State, Heap = Heap> + 'static) {
+  pub fn boxed(self, p: impl Action<State, Heap, Value = Value> + 'static) {
     self.set(Box::new(p));
   }
 }
@@ -42,10 +41,8 @@ pub struct Recur<Value, State, Heap> {
   rc: RecurInner<Value, State, Heap>,
 }
 
-unsafe impl<Value, State, Heap> Action for Recur<Value, State, Heap> {
+unsafe impl<Value, State, Heap> Action<State, Heap> for Recur<Value, State, Heap> {
   type Value = Value;
-  type State = State;
-  type Heap = Heap;
 
   fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.rc.get().unwrap().exec(input)
@@ -73,10 +70,8 @@ pub struct RecurUnchecked<Value, State, Heap> {
   rc: RecurInner<Value, State, Heap>,
 }
 
-unsafe impl<Value, State, Heap> Action for RecurUnchecked<Value, State, Heap> {
+unsafe impl<Value, State, Heap> Action<State, Heap> for RecurUnchecked<Value, State, Heap> {
   type Value = Value;
-  type State = State;
-  type Heap = Heap;
 
   fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     unsafe { self.rc.get().unwrap_unchecked() }.exec(input)

@@ -3,12 +3,11 @@ use in_str::in_str;
 use std::{cell::OnceCell, fs::read_to_string, rc::Rc, sync::LazyLock};
 use whitehole::{
   action::Action,
-  combinator::{eat, next, wrap},
+  combinator::{eat, next, wrap, Combinator},
   parser::{Builder, Parser},
-  A_dyn, A, C,
 };
 
-pub fn build_parser_with_inter_mut(s: &str) -> Parser<A!()> {
+pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action> {
   // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
   // use a closure to generate the combinator for better runtime performance (via inlining).
   let ws = || next(in_str!(" \t\r\n")) * (1..);
@@ -32,7 +31,7 @@ pub fn build_parser_with_inter_mut(s: &str) -> Parser<A!()> {
   // `value` will indirectly recurse to itself, so we need special treatment.
   // Use `Rc` to make it clone-able, use `OnceCell` to initialize it later,
   // use `Box<dyn>` to prevent recursive/infinite type.
-  let value_rc: Rc<OnceCell<Box<A_dyn!()>>> = Rc::new(OnceCell::new());
+  let value_rc: Rc<OnceCell<Box<dyn Action<Value = ()>>>> = Rc::new(OnceCell::new());
   let value = || {
     let value_rc = value_rc.clone();
     // SAFETY: we will initialize `value_rc` later before calling this closure.
@@ -65,14 +64,14 @@ pub fn build_parser_with_inter_mut(s: &str) -> Parser<A!()> {
   Builder::new().entry(ws() | value()).build(s)
 }
 
-pub fn build_parser_with_static(s: &str) -> Parser<A!()> {
+pub fn build_parser_with_static(s: &str) -> Parser<impl Action> {
   // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
   // use a function to generate the combinator for better runtime performance (via inlining).
-  fn ws() -> C!() {
+  fn ws() -> Combinator<impl Action<Value = ()>> {
     next(in_str!(" \t\r\n")) * (1..)
   }
 
-  fn number() -> C!() {
+  fn number() -> Combinator<impl Action<Value = ()>> {
     let digit_1_to_9 = next(|c| matches!(c, '1'..='9'));
     let digits = || next(|c| c.is_ascii_digit()) * (1..);
     let integer = eat('0') | (digit_1_to_9 + digits().optional());
@@ -81,7 +80,7 @@ pub fn build_parser_with_static(s: &str) -> Parser<A!()> {
     eat('-').optional() + integer + fraction.optional() + exponent.optional()
   }
 
-  fn string() -> C!() {
+  fn string() -> Combinator<impl Action<Value = ()>> {
     let escape =
       eat('\\') + (next(in_str!("\"\\/bfnrt")) | (eat('u') + next(|c| c.is_ascii_hexdigit()) * 4));
     let non_escape =
@@ -90,14 +89,14 @@ pub fn build_parser_with_static(s: &str) -> Parser<A!()> {
     eat('"') + body.optional() + '"'
   }
 
-  fn array() -> C!() {
+  fn array() -> Combinator<impl Action<Value = ()>> {
     eat('[')
       + ws().optional()
       + ((value() + ws().optional()).sep(eat(',') + ws().optional()) * (..)).optional()
       + ']'
   }
 
-  fn object() -> C!() {
+  fn object() -> Combinator<impl Action<Value = ()>> {
     let object_item = string() + ws().optional() + eat(':') + ws().optional() + value();
     eat('{')
       + ws().optional()
@@ -108,11 +107,10 @@ pub fn build_parser_with_static(s: &str) -> Parser<A!()> {
   // `value` will indirectly recurse to itself, so we need special treatment.
   // Use `LazyLock` to create a static `Parse` implementor,
   // use `Box<dyn>` to prevent recursive/infinite type.
-  fn value() -> C!() {
-    static VALUE: LazyLock<Box<dyn Action<Value = (), State = (), Heap = ()> + Send + Sync>> =
-      LazyLock::new(|| {
-        Box::new(array() | object() | number() | string() | "true" | "false" | "null")
-      });
+  fn value() -> Combinator<impl Action<Value = ()>> {
+    static VALUE: LazyLock<Box<dyn Action<Value = ()> + Send + Sync>> = LazyLock::new(|| {
+      Box::new(array() | object() | number() | string() | "true" | "false" | "null")
+    });
     wrap(|input| VALUE.exec(input))
   }
 

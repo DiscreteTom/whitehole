@@ -1,8 +1,8 @@
 //! Programming language related combinator examples.
 
 use whitehole::{
-  combinator::{eat, next, till},
-  C,
+  action::Action,
+  combinator::{eat, next, till, Combinator},
 };
 
 /// Eat one or more unicode whitespaces.
@@ -10,15 +10,15 @@ use whitehole::{
 /// Unicode whitespaces is a huge set so this combinator may not be efficient.
 /// If you don't need to handle all unicode whitespaces, consider using a custom combinator.
 /// E.g. for JSON, you can use `next(in_str!(" \t\r\n")) * (1..)` which is faster than this.
-pub fn whitespaces<State, Heap>() -> C!((), State, Heap) {
+pub fn whitespaces<State, Heap>() -> Combinator<impl Action<State, Heap, Value = ()>> {
   next(|c| c.is_whitespace()) * (1..)
 }
 
-pub fn singleline_comment<State, Heap>() -> C!((), State, Heap) {
+pub fn singleline_comment<State, Heap>() -> Combinator<impl Action<State, Heap, Value = ()>> {
   eat("//") + (till('\n') | till(()))
 }
 
-pub fn multiline_comment<State, Heap>() -> C!((), State, Heap) {
+pub fn multiline_comment<State, Heap>() -> Combinator<impl Action<State, Heap, Value = ()>> {
   eat("/*") + (till("*/") | till(()))
 }
 

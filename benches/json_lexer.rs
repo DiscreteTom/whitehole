@@ -2,12 +2,12 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use in_str::in_str;
 use std::fs::read_to_string;
 use whitehole::{
+  action::Action,
   combinator::{eat, next},
   parser::{Builder, Parser},
-  A,
 };
 
-pub fn build_lexer(s: &str) -> Parser<A!()> {
+pub fn build_lexer(s: &str) -> Parser<impl Action> {
   // Use `* (1..)` to repeat for one or more times.
   let whitespaces = next(in_str!(" \t\r\n")) * (1..);
 

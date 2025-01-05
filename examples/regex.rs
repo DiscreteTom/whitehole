@@ -1,8 +1,11 @@
 use regex::Regex;
-use whitehole::{combinator::wrap_unchecked, C};
+use whitehole::{
+  action::Action,
+  combinator::{wrap_unchecked, Combinator},
+};
 
 /// Create a combinator from a regex.
-pub fn regex<State, Heap>(s: &str) -> C!((), State, Heap) {
+pub fn regex<State, Heap>(s: &str) -> Combinator<impl Action<State, Heap, Value = ()>> {
   let re = Regex::new(s).unwrap();
   unsafe {
     wrap_unchecked(move |input| {

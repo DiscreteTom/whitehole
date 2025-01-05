@@ -5,10 +5,9 @@ use whitehole::{
   combinator::{eat, next, wrap},
   parser::{Builder, Parser},
   range::WithRange,
-  A_dyn, A,
 };
 
-pub fn build_parser_with_inter_mut(s: &str) -> Parser<A!(WithRange<()>)> {
+pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action<Value = WithRange<()>>> {
   // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
   // use a closure to generate the combinator for better runtime performance (via inlining).
   let ws = || next(in_str!(" \t\r\n")) * (1..);
@@ -32,7 +31,7 @@ pub fn build_parser_with_inter_mut(s: &str) -> Parser<A!(WithRange<()>)> {
   // `value` will indirectly recurse to itself, so we need special treatment.
   // Use `Rc` to make it clone-able, use `OnceCell` to initialize it later,
   // use `Box<dyn>` to prevent recursive/infinite type.
-  let value_rc: Rc<OnceCell<Box<A_dyn!()>>> = Rc::new(OnceCell::new());
+  let value_rc: Rc<OnceCell<Box<dyn Action<Value = ()>>>> = Rc::new(OnceCell::new());
   let value = || {
     let value_rc = value_rc.clone();
     // SAFETY: we will initialize `value_rc` later before calling this closure.
