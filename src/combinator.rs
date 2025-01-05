@@ -104,7 +104,7 @@ use crate::action::{Action, Input, Output};
 /// See the [module-level documentation](self) for more information.
 #[derive(Debug, Clone, Copy)]
 pub struct Combinator<T> {
-  action: T,
+  pub action: T,
 }
 
 impl<T> Combinator<T> {
