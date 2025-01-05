@@ -1,7 +1,10 @@
 use super::{Mul, Repeat, Sep};
 use crate::{
-  action::{Action, Input},
-  combinator::Combinator,
+  action::{shift_input, Action, Input, Output},
+  combinator::{
+    ops::mul::{impl_mul, impl_mul_with_sep},
+    Combinator,
+  },
 };
 use std::ops;
 
@@ -27,25 +30,12 @@ impl<State, Heap> Fold<State, Heap> for () {
 impl<Lhs: Action<Value: Fold<Lhs::State, Lhs::Heap>>, Rhs: Repeat> ops::Mul<Rhs>
   for Combinator<Lhs>
 {
-  type Output = Combinator<
-    Mul<
-      Lhs,
-      (
-        Rhs,
-        fn() -> <Lhs::Value as Fold<Lhs::State, Lhs::Heap>>::Output,
-        fn(
-          Lhs::Value,
-          <Lhs::Value as Fold<Lhs::State, Lhs::Heap>>::Output,
-          Input<&mut Lhs::State, &mut Lhs::Heap>,
-        ) -> <Lhs::Value as Fold<Lhs::State, Lhs::Heap>>::Output,
-      ),
-    >,
-  >;
+  type Output = Combinator<Mul<Lhs, Rhs>>;
 
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   #[inline]
   fn mul(self, rhs: Rhs) -> Self::Output {
-    Self::Output::new(Mul::new(self.action, (rhs, Default::default, Fold::fold)))
+    Self::Output::new(Mul::new(self.action, rhs))
   }
 }
 
@@ -55,25 +45,52 @@ impl<
     Rhs: Repeat,
   > ops::Mul<Rhs> for Sep<T, S>
 {
-  type Output = Combinator<
-    Mul<
-      Sep<T, S>,
-      (
-        Rhs,
-        fn() -> <T::Value as Fold<T::State, T::Heap>>::Output,
-        fn(
-          T::Value,
-          <T::Value as Fold<T::State, T::Heap>>::Output,
-          Input<&mut T::State, &mut T::Heap>,
-        ) -> <T::Value as Fold<T::State, T::Heap>>::Output,
-      ),
-    >,
-  >;
+  type Output = Combinator<Mul<Sep<T, S>, Rhs>>;
 
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   #[inline]
   fn mul(self, rhs: Rhs) -> Self::Output {
-    Self::Output::new(Mul::new(self, (rhs, Default::default, Fold::fold)))
+    Self::Output::new(Mul::new(self, rhs))
+  }
+}
+
+unsafe impl<Lhs: Action<Value: Fold<Lhs::State, Lhs::Heap>>, Rhs: Repeat> Action for Mul<Lhs, Rhs> {
+  type Value = <Lhs::Value as Fold<Lhs::State, Lhs::Heap>>::Output;
+  type State = Lhs::State;
+  type Heap = Lhs::Heap;
+
+  #[inline]
+  fn exec(
+    &self,
+    mut input: Input<&mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<Self::Value>> {
+    impl_mul!(input, self.rhs, Default::default, Fold::fold, self.lhs)
+  }
+}
+
+unsafe impl<
+    T: Action<Value: Fold<T::State, T::Heap>>,
+    S: Action<State = T::State, Heap = T::Heap>,
+    Rhs: Repeat,
+  > Action for Mul<Sep<T, S>, Rhs>
+{
+  type Value = <T::Value as Fold<T::State, T::Heap>>::Output;
+  type State = T::State;
+  type Heap = T::Heap;
+
+  #[inline]
+  fn exec(
+    &self,
+    mut input: Input<&mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<Self::Value>> {
+    impl_mul_with_sep!(
+      input,
+      self.rhs,
+      Default::default,
+      Fold::fold,
+      self.lhs.value,
+      self.lhs.sep
+    )
   }
 }
 

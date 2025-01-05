@@ -1,4 +1,4 @@
-use super::{Mul, Repeat, Sep};
+use super::{impl_mul, impl_mul_with_sep, Mul, Repeat, Sep};
 use crate::{
   action::{shift_input, Action, Input, Output},
   combinator::Combinator,
@@ -58,28 +58,7 @@ unsafe impl<
     mut input: Input<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let (repeat, init, fold) = &self.rhs;
-
-    let mut repeated = 0;
-    let mut output = Output {
-      value: init(),
-      digested: 0,
-    };
-
-    while unsafe { repeat.validate(repeated) } {
-      let Some(next_output) =
-        shift_input!(input, output.digested).and_then(|input| self.lhs.exec(input))
-      else {
-        break;
-      };
-
-      output.value = fold(next_output.value, output.value, input.reborrow());
-      repeated += 1;
-      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
-      debug_assert!(usize::MAX - output.digested > next_output.digested);
-      output.digested = unsafe { output.digested.unchecked_add(next_output.digested) };
-    }
-
-    repeat.accept(repeated).then_some(output)
+    impl_mul!(input, repeat, init, fold, self.lhs)
   }
 }
 
@@ -102,37 +81,7 @@ unsafe impl<
     mut input: Input<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let (repeat, init, fold) = &self.rhs;
-
-    let mut repeated = 0;
-    let mut output = Output {
-      value: init(),
-      digested: 0,
-    };
-
-    let mut digested_with_sep = 0;
-    while unsafe { repeat.validate(repeated) } {
-      let Some(value_output) =
-        shift_input!(input, digested_with_sep).and_then(|input| self.lhs.value.exec(input))
-      else {
-        break;
-      };
-      repeated += 1;
-      output.value = fold(value_output.value, output.value, input.reborrow());
-      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
-      debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
-      output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
-
-      let Some(sep_output) =
-        shift_input!(input, output.digested).and_then(|input| self.lhs.sep.exec(input))
-      else {
-        break;
-      };
-      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
-      debug_assert!(usize::MAX - output.digested > sep_output.digested);
-      digested_with_sep = unsafe { output.digested.unchecked_add(sep_output.digested) };
-    }
-
-    repeat.accept(repeated).then_some(output)
+    impl_mul_with_sep!(input, repeat, init, fold, self.lhs.value, self.lhs.sep)
   }
 }
 

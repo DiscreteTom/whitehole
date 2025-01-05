@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Provided combinator constructors will return concrete types instead of `impl` types to retain trait information.
 - `Eat` and `Till` are now structs instead of traits.
+- Combinator repetition with `Fold` will be implemented separately to improve performance and simplify type signature.
 
 ### Removed
 
