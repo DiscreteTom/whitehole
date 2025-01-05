@@ -44,6 +44,19 @@ unsafe impl<State, Heap> Action<State, Heap> for Eat<&str> {
   }
 }
 
+unsafe impl<State, Heap> Action<State, Heap> for Eat<&String> {
+  type Value = ();
+
+  #[inline]
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
+    input
+      .instant()
+      .rest()
+      .starts_with(self.inner)
+      .then(|| unsafe { input.digest_unchecked(self.inner.len()) })
+  }
+}
+
 unsafe impl<State, Heap> Action<State, Heap> for Eat<usize> {
   type Value = ();
 
@@ -121,6 +134,12 @@ impl<'a> From<&'a str> for Combinator<Eat<&'a str>> {
     eat(v)
   }
 }
+impl<'a> From<&'a String> for Combinator<Eat<&'a String>> {
+  #[inline]
+  fn from(v: &String) -> Combinator<Eat<&String>> {
+    eat(v)
+  }
+}
 
 create_value_combinator!(EatUnchecked, "See [`eat_unchecked`].");
 
@@ -170,7 +189,7 @@ mod tests {
         .map(|output| output.digested),
       Some(3)
     );
-    // normal str
+    // normal &str
     assert_eq!(
       eat("123")
         .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
@@ -180,6 +199,13 @@ mod tests {
     // normal String
     assert_eq!(
       eat("123".to_string())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .map(|output| output.digested),
+      Some(3)
+    );
+    // normal &String
+    assert_eq!(
+      eat(&"123".to_string())
         .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
@@ -273,5 +299,6 @@ mod tests {
     test('a'.into());
     test("a".into());
     test("a".to_string().into());
+    test((&"a".to_string()).into());
   }
 }

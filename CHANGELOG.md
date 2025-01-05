@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Input::validate`.
 - Implement `Action` for `&dyn Action`, `&mut dyn Action`, `Box<dyn Action>` and `Rc<dyn Action>`.
 - Add `WrapUnchecked`, `Wrap`, `Next`, `EatUnchecked`.
+- `eat`, `add` and `bitor` can accept `&String`.
 - Add `When`, `Prevent`, `Reject`, `Optional`, `Boundary`, `Prepare`, `Then`, `Catch`, `Finally`, `Map`, `Tuple`, `Bind`, `BindDefault`, `Select`, `Range`, `Pop`.
 
 ### Changed

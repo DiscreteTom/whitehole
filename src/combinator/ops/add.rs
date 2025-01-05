@@ -145,6 +145,15 @@ impl<'a, Lhs: Action<Value: Concat<()>>> ops::Add<&'a str> for Combinator<Lhs> {
     Self::Output::new(Add::new(self.action, eat(rhs).action))
   }
 }
+impl<'a, Lhs: Action<Value: Concat<()>>> ops::Add<&'a String> for Combinator<Lhs> {
+  type Output = Combinator<Add<Lhs, Eat<&'a String>>>;
+
+  /// See [`ops::add`](crate::combinator::ops::add) for more information.
+  #[inline]
+  fn add(self, rhs: &'a String) -> Self::Output {
+    Self::Output::new(Add::new(self.action, eat(rhs).action))
+  }
+}
 
 #[cfg(test)]
 mod tests {
@@ -216,6 +225,18 @@ mod tests {
 
     assert_eq!(
       (eat1() + "23".to_string())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .map(|output| output.digested),
+      Some(3)
+    );
+  }
+
+  #[test]
+  fn combinator_add_string_ref() {
+    let eat1 = || wrap(|input| input.digest(1));
+
+    assert_eq!(
+      (eat1() + &"23".to_string())
         .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
         .map(|output| output.digested),
       Some(3)
