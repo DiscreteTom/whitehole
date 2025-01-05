@@ -73,10 +73,7 @@ impl<T, State, Heap> Builder<T, State, Heap> {
 
   /// Set [`Parser::entry`].
   #[inline]
-  pub fn entry<Entry: Action<State = State, Heap = Heap>>(
-    self,
-    entry: Entry,
-  ) -> Builder<Entry, State, Heap> {
+  pub fn entry<Entry: Action<State, Heap>>(self, entry: Entry) -> Builder<Entry, State, Heap> {
     Builder {
       entry,
       state: self.state,
@@ -85,10 +82,10 @@ impl<T, State, Heap> Builder<T, State, Heap> {
   }
 }
 
-impl<T: Action<State = State, Heap = Heap>, State, Heap> Builder<T, State, Heap> {
+impl<T: Action<State, Heap>, State, Heap> Builder<T, State, Heap> {
   /// Build a [`Parser`] with the given text.
   #[inline]
-  pub fn build(self, text: &str) -> Parser<T> {
+  pub fn build(self, text: &str) -> Parser<T, State, Heap> {
     Parser {
       state: self.state,
       heap: self.heap,

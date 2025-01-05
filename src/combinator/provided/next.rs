@@ -5,13 +5,11 @@ use crate::{
 
 create_closure_combinator!(Next, "See [`next`].");
 
-unsafe impl<State, Heap, F: Fn(char) -> bool> Action for Next<F, State, Heap> {
+unsafe impl<State, Heap, F: Fn(char) -> bool> Action<State, Heap> for Next<F> {
   type Value = ();
-  type State = State;
-  type Heap = Heap;
 
   #[inline]
-  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     let next = input.next();
     if !(self.inner)(next) {
       return None;
@@ -37,9 +35,7 @@ unsafe impl<State, Heap, F: Fn(char) -> bool> Action for Next<F, State, Heap> {
 /// # );
 /// ```
 #[inline]
-pub const fn next<State, Heap, F: Fn(char) -> bool>(
-  condition: F,
-) -> Combinator<Next<F, State, Heap>> {
+pub const fn next<F: Fn(char) -> bool>(condition: F) -> Combinator<Next<F>> {
   Combinator::new(Next::new(condition))
 }
 
@@ -66,7 +62,7 @@ mod tests {
       .is_none());
 
     // ensure the combinator is copyable and clone-able
-    let c = next::<(), (), _>(|c| c.is_ascii_digit());
+    let c = next(|c| c.is_ascii_digit());
     let _ = c;
     let _ = c.clone();
 

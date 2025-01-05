@@ -49,13 +49,13 @@ impl<T, D> BindDefault<T, D> {
   }
 }
 
-unsafe impl<NewValue, T: Action, D: Fn(T::Value) -> NewValue> Action for Map<T, D> {
+unsafe impl<State, Heap, NewValue, T: Action<State, Heap>, D: Fn(T::Value) -> NewValue>
+  Action<State, Heap> for Map<T, D>
+{
   type Value = NewValue;
-  type State = T::State;
-  type Heap = T::Heap;
 
   #[inline]
-  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self
       .action
       .exec(input)
@@ -63,24 +63,20 @@ unsafe impl<NewValue, T: Action, D: Fn(T::Value) -> NewValue> Action for Map<T, 
   }
 }
 
-unsafe impl<T: Action> Action for Tuple<T> {
+unsafe impl<State, Heap, T: Action<State, Heap>> Action<State, Heap> for Tuple<T> {
   type Value = (T::Value,);
-  type State = T::State;
-  type Heap = T::Heap;
 
   #[inline]
-  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input).map(|output| output.map(|v| (v,)))
   }
 }
 
-unsafe impl<T: Action, D: Clone> Action for Bind<T, D> {
+unsafe impl<State, Heap, T: Action<State, Heap>, D: Clone> Action<State, Heap> for Bind<T, D> {
   type Value = D;
-  type State = T::State;
-  type Heap = T::Heap;
 
   #[inline]
-  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self
       .action
       .exec(input)
@@ -88,13 +84,13 @@ unsafe impl<T: Action, D: Clone> Action for Bind<T, D> {
   }
 }
 
-unsafe impl<T: Action, D: Default> Action for BindDefault<T, D> {
+unsafe impl<State, Heap, T: Action<State, Heap>, D: Default> Action<State, Heap>
+  for BindDefault<T, D>
+{
   type Value = D;
-  type State = T::State;
-  type Heap = T::Heap;
 
   #[inline]
-  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self
       .action
       .exec(input)
@@ -103,20 +99,17 @@ unsafe impl<T: Action, D: Default> Action for BindDefault<T, D> {
 }
 
 unsafe impl<
+    State,
+    Heap,
     NewValue,
-    T: Action,
-    D: Fn(AcceptedContext<Input<&mut T::State, &mut T::Heap>, Output<T::Value>>) -> NewValue,
-  > Action for Select<T, D>
+    T: Action<State, Heap>,
+    D: Fn(AcceptedContext<Input<&mut State, &mut Heap>, Output<T::Value>>) -> NewValue,
+  > Action<State, Heap> for Select<T, D>
 {
   type Value = NewValue;
-  type State = T::State;
-  type Heap = T::Heap;
 
   #[inline]
-  fn exec(
-    &self,
-    mut input: Input<&mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).map(|output| {
       unsafe { input.digest_unchecked(output.digested) }
         .map(|_| (self.inner)(AcceptedContext { input, output }))
@@ -124,13 +117,11 @@ unsafe impl<
   }
 }
 
-unsafe impl<T: Action> Action for Range<T> {
+unsafe impl<State, Heap, T: Action<State, Heap>> Action<State, Heap> for Range<T> {
   type Value = WithRange<T::Value>;
-  type State = T::State;
-  type Heap = T::Heap;
 
   #[inline]
-  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     let start = input.instant().digested();
     self.action.exec(input).map(|output| {
       let digested = output.digested;
@@ -142,18 +133,16 @@ unsafe impl<T: Action> Action for Range<T> {
   }
 }
 
-unsafe impl<V, T: Action<Value = (V,)>> Action for Pop<T> {
+unsafe impl<State, Heap, V, T: Action<State, Heap, Value = (V,)>> Action<State, Heap> for Pop<T> {
   type Value = V;
-  type State = T::State;
-  type Heap = T::Heap;
 
   #[inline]
-  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input).map(|output| output.map(|(v,)| v))
   }
 }
 
-impl<T: Action> Combinator<T> {
+impl<T> Combinator<T> {
   /// Create a new combinator to convert [`Output::value`] to a new value.
   ///
   /// You can consume the original [`Output::value`] in the `mapper`.
@@ -165,7 +154,13 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn map<NewValue, F: Fn(T::Value) -> NewValue>(self, mapper: F) -> Combinator<Map<T, F>> {
+  pub fn map<State, Heap, NewValue, F: Fn(T::Value) -> NewValue>(
+    self,
+    mapper: F,
+  ) -> Combinator<Map<T, F>>
+  where
+    T: Action<State, Heap>,
+  {
     Combinator::new(Map::new(self.action, mapper))
   }
 
@@ -237,12 +232,17 @@ impl<T: Action> Combinator<T> {
   /// ```
   #[inline]
   pub fn select<
+    State,
+    Heap,
     NewValue,
-    F: Fn(AcceptedContext<Input<&mut T::State, &mut T::Heap>, Output<T::Value>>) -> NewValue,
+    F: Fn(AcceptedContext<Input<&mut State, &mut Heap>, Output<T::Value>>) -> NewValue,
   >(
     self,
     selector: F,
-  ) -> Combinator<Select<T, F>> {
+  ) -> Combinator<Select<T, F>>
+  where
+    T: Action<State, Heap>,
+  {
     Combinator::new(Select::new(self.action, selector))
   }
 
@@ -258,9 +258,7 @@ impl<T: Action> Combinator<T> {
   pub fn range(self) -> Combinator<Range<T>> {
     Combinator::new(Range::new(self.action))
   }
-}
 
-impl<V, T: Action<Value = (V,)>> Combinator<T> {
   /// Create a new combinator to take the value from an one-element tuple as [`Output::value`].
   ///
   /// This is reverse to [`Self::tuple`].

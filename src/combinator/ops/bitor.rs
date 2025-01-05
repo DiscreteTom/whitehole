@@ -48,18 +48,13 @@ impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
   }
 }
 
-unsafe impl<Lhs: Action, Rhs: Action<Value = Lhs::Value, State = Lhs::State, Heap = Lhs::Heap>>
-  Action for BitOr<Lhs, Rhs>
+unsafe impl<State, Heap, Lhs: Action<State, Heap>, Rhs: Action<State, Heap, Value = Lhs::Value>>
+  Action<State, Heap> for BitOr<Lhs, Rhs>
 {
   type Value = Lhs::Value;
-  type State = Lhs::State;
-  type Heap = Lhs::Heap;
 
   #[inline]
-  fn exec(
-    &self,
-    mut input: Input<&mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self
       .lhs
       .exec(input.reborrow())
@@ -67,9 +62,7 @@ unsafe impl<Lhs: Action, Rhs: Action<Value = Lhs::Value, State = Lhs::State, Hea
   }
 }
 
-impl<Lhs: Action, Rhs: Action<Value = Lhs::Value, State = Lhs::State, Heap = Lhs::Heap>>
-  ops::BitOr<Combinator<Rhs>> for Combinator<Lhs>
-{
+impl<Lhs, Rhs> ops::BitOr<Combinator<Rhs>> for Combinator<Lhs> {
   type Output = Combinator<BitOr<Lhs, Rhs>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
@@ -79,8 +72,8 @@ impl<Lhs: Action, Rhs: Action<Value = Lhs::Value, State = Lhs::State, Heap = Lhs
   }
 }
 
-impl<Lhs: Action> ops::BitOr<char> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, Eat<char, Lhs::State, Lhs::Heap>>>;
+impl<Lhs> ops::BitOr<char> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Eat<char>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
@@ -89,8 +82,8 @@ impl<Lhs: Action> ops::BitOr<char> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs: Action> ops::BitOr<usize> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, Eat<usize, Lhs::State, Lhs::Heap>>>;
+impl<Lhs> ops::BitOr<usize> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Eat<usize>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
@@ -99,8 +92,8 @@ impl<Lhs: Action> ops::BitOr<usize> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs: Action> ops::BitOr<String> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, Eat<String, Lhs::State, Lhs::Heap>>>;
+impl<Lhs> ops::BitOr<String> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Eat<String>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
@@ -109,8 +102,8 @@ impl<Lhs: Action> ops::BitOr<String> for Combinator<Lhs> {
   }
 }
 
-impl<'a, Lhs: Action> ops::BitOr<&'a str> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, Eat<&'a str, Lhs::State, Lhs::Heap>>>;
+impl<'a, Lhs> ops::BitOr<&'a str> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Eat<&'a str>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]

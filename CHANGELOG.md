@@ -10,17 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `Input::validate`.
-- Add macro `A!` and `A_dyn!` to simplify the signature of `Action`.
 - Implement `Action` for `&dyn Action`, `&mut dyn Action`, `Box<dyn Action>` and `Rc<dyn Action>`.
 - Add `WrapUnchecked`, `Wrap`, `Next`, `EatUnchecked`.
 - Add `When`, `Prevent`, `Reject`, `Optional`, `Boundary`, `Prepare`, `Then`, `Catch`, `Finally`, `Map`, `Tuple`, `Bind`, `BindDefault`, `Select`, `Range`, `Pop`.
 
-### Fixed
-
-- Fix `C!(@T)` and `C!(Kind, @T)` when `T` is a concrete type.
-
 ### Changed
 
+- Make `Action::State` and `Action::Heap` become generic params.
 - Provided combinator constructors will return concrete types instead of `impl` types to retain trait information.
 - `Eat` and `Till` are now structs instead of traits.
 - Combinator repetition with `Fold` will be implemented separately to improve performance and simplify type signature.
@@ -28,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Remove `Input::shift_unchecked` and `Input::shift`.
+- Remove `C!` macro.
 - Remove `eater` and `eater_unchecked`. Use `wrap` instead.
 - Remove `EatChar`, `EatStr`, `EatString`, `EatUsize`. Use `Eat<T>` instead.
 

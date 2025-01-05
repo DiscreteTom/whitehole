@@ -5,10 +5,8 @@ use crate::{
 
 create_value_combinator!(Eat, "See [`eat`].");
 
-unsafe impl<State, Heap> Action for Eat<char, State, Heap> {
+unsafe impl<State, Heap> Action<State, Heap> for Eat<char> {
   type Value = ();
-  type State = State;
-  type Heap = Heap;
 
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
@@ -20,10 +18,8 @@ unsafe impl<State, Heap> Action for Eat<char, State, Heap> {
   }
 }
 
-unsafe impl<State, Heap> Action for Eat<String, State, Heap> {
+unsafe impl<State, Heap> Action<State, Heap> for Eat<String> {
   type Value = ();
-  type State = State;
-  type Heap = Heap;
 
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
@@ -35,10 +31,8 @@ unsafe impl<State, Heap> Action for Eat<String, State, Heap> {
   }
 }
 
-unsafe impl<State, Heap> Action for Eat<&str, State, Heap> {
+unsafe impl<State, Heap> Action<State, Heap> for Eat<&str> {
   type Value = ();
-  type State = State;
-  type Heap = Heap;
 
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
@@ -50,10 +44,8 @@ unsafe impl<State, Heap> Action for Eat<&str, State, Heap> {
   }
 }
 
-unsafe impl<State, Heap> Action for Eat<usize, State, Heap> {
+unsafe impl<State, Heap> Action<State, Heap> for Eat<usize> {
   type Value = ();
-  type State = State;
-  type Heap = Heap;
 
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
@@ -104,15 +96,15 @@ unsafe impl<State, Heap> Action for Eat<usize, State, Heap> {
 /// # );
 /// ```
 #[inline]
-pub const fn eat<State, Heap, T>(pattern: T) -> Combinator<Eat<T, State, Heap>> {
+pub const fn eat<T>(pattern: T) -> Combinator<Eat<T>> {
   Combinator::new(Eat::new(pattern))
 }
 
 macro_rules! impl_into_eat_combinator {
   ($inner:ty) => {
-    impl<State, Heap> From<$inner> for Combinator<Eat<$inner, State, Heap>> {
+    impl From<$inner> for Combinator<Eat<$inner>> {
       #[inline]
-      fn from(v: $inner) -> Combinator<Eat<$inner, State, Heap>> {
+      fn from(v: $inner) -> Combinator<Eat<$inner>> {
         eat(v)
       }
     }
@@ -123,19 +115,17 @@ impl_into_eat_combinator!(char);
 impl_into_eat_combinator!(String);
 impl_into_eat_combinator!(usize);
 
-impl<'a, State, Heap> From<&'a str> for Combinator<Eat<&'a str, State, Heap>> {
+impl<'a> From<&'a str> for Combinator<Eat<&'a str>> {
   #[inline]
-  fn from(v: &str) -> Combinator<Eat<&str, State, Heap>> {
+  fn from(v: &str) -> Combinator<Eat<&str>> {
     eat(v)
   }
 }
 
 create_value_combinator!(EatUnchecked, "See [`eat_unchecked`].");
 
-unsafe impl<State, Heap> Action for EatUnchecked<usize, State, Heap> {
+unsafe impl<State, Heap> Action<State, Heap> for EatUnchecked<usize> {
   type Value = ();
-  type State = State;
-  type Heap = Heap;
 
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
@@ -162,16 +152,14 @@ unsafe impl<State, Heap> Action for EatUnchecked<usize, State, Heap> {
 /// # );
 /// ```
 #[inline]
-pub const unsafe fn eat_unchecked<State, Heap>(
-  n: usize,
-) -> Combinator<EatUnchecked<usize, State, Heap>> {
+pub const unsafe fn eat_unchecked(n: usize) -> Combinator<EatUnchecked<usize>> {
   Combinator::new(EatUnchecked::new(n))
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{action::Action, instant::Instant, C};
+  use crate::{action::Action, instant::Instant};
 
   #[test]
   fn combinator_eat() {
@@ -278,7 +266,7 @@ mod tests {
 
   #[test]
   fn eat_into_combinator() {
-    fn test(c: C!()) {
+    fn test(c: Combinator<impl Action>) {
       c.exec(Input::new(Instant::new("a"), &mut (), &mut ()).unwrap());
     }
     test(1.into());

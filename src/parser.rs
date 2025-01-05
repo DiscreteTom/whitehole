@@ -12,14 +12,14 @@ use crate::{
 };
 
 /// Manage [`Input::state`], [`Input::heap`] and the parsing progress.
-#[derive(Debug)]
-pub struct Parser<'text, T: Action> {
+#[derive(Debug, Clone)]
+pub struct Parser<'text, T, State = (), Heap = ()> {
   /// See [`Input::state`](crate::action::Input::state).
   /// You can mutate this directly if needed.
-  pub state: T::State,
+  pub state: State,
   /// See [`Input::heap`](crate::action::Input::heap).
   /// You can mutate this directly if needed.
-  pub heap: T::Heap,
+  pub heap: Heap,
 
   /// See [`Self::instant`].
   instant: Instant<'text>,
@@ -27,24 +27,7 @@ pub struct Parser<'text, T: Action> {
   entry: T,
 }
 
-impl<T: Action<State: Clone, Heap: Clone> + Clone> Clone for Parser<'_, T> {
-  /// Clone the parser, including [`Self::state`] and [`Self::heap`].
-  /// # Performance
-  /// Cloning the [`Self::heap`] might be expensive, you should use [`Parser::snapshot`] to avoid cloning [`Self::heap`],
-  /// and re-use one `heap` as much as possible.
-  /// If you want to prevent users from cloning this, don't implement [`Clone`] for `Heap`.
-  #[inline]
-  fn clone(&self) -> Self {
-    Self {
-      state: self.state.clone(),
-      heap: self.heap.clone(),
-      entry: self.entry.clone(),
-      instant: self.instant.clone(),
-    }
-  }
-}
-
-impl<'text, T: Action> Parser<'text, T> {
+impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
   /// The entry action.
   #[inline]
   pub const fn entry(&self) -> &T {
@@ -62,11 +45,11 @@ impl<'text, T: Action> Parser<'text, T> {
   /// [`Self::instant`] and [`Self::state`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload(self, text: &str) -> Parser<T>
+  pub fn reload(self, text: &str) -> Parser<T, State, Heap>
   where
-    T::State: Default,
+    State: Default,
   {
-    self.reload_with(T::State::default(), text)
+    self.reload_with(State::default(), text)
   }
 
   /// Consume self, return a new instance with the same action, a new text and an optional new state.
@@ -74,7 +57,7 @@ impl<'text, T: Action> Parser<'text, T> {
   /// [`Self::instant`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload_with(self, state: impl Into<Option<T::State>>, text: &str) -> Parser<T> {
+  pub fn reload_with(self, state: impl Into<Option<State>>, text: &str) -> Parser<T, State, Heap> {
     Parser {
       entry: self.entry,
       heap: self.heap,
@@ -85,9 +68,9 @@ impl<'text, T: Action> Parser<'text, T> {
 
   /// Take a snapshot of the current [`Self::state`] and [`Self::instant`].
   #[inline]
-  pub fn snapshot(&self) -> Snapshot<'text, T::State>
+  pub fn snapshot(&self) -> Snapshot<'text, State>
   where
-    T::State: Clone,
+    State: Clone,
   {
     Snapshot {
       state: self.state.clone(),
@@ -97,7 +80,7 @@ impl<'text, T: Action> Parser<'text, T> {
 
   /// Restore [`Self::state`] and [`Self::instant`] from a [`Snapshot`].
   #[inline]
-  pub fn restore(&mut self, snapshot: Snapshot<'text, T::State>) {
+  pub fn restore(&mut self, snapshot: Snapshot<'text, State>) {
     self.state = snapshot.state;
     self.instant = snapshot.instant;
   }
@@ -113,16 +96,16 @@ impl<'text, T: Action> Parser<'text, T> {
   #[inline]
   pub unsafe fn digest_unchecked(&mut self, n: usize)
   where
-    T::State: Default,
+    State: Default,
   {
-    self.digest_with_unchecked(T::State::default(), n)
+    self.digest_with_unchecked(State::default(), n)
   }
 
   /// Digest the next `n` chars and optionally set [`Self::state`].
   /// # Safety
   /// See [`Instant::digest_unchecked`].
   #[inline]
-  pub unsafe fn digest_with_unchecked(&mut self, state: impl Into<Option<T::State>>, n: usize) {
+  pub unsafe fn digest_with_unchecked(&mut self, state: impl Into<Option<State>>, n: usize) {
     self.instant.digest_unchecked(n);
     if let Some(state) = state.into() {
       self.state = state;
@@ -133,7 +116,10 @@ impl<'text, T: Action> Parser<'text, T> {
   /// Return [`None`] if the text is already fully digested
   /// or the action rejects.
   #[inline]
-  pub fn parse(&mut self) -> Option<Output<T::Value>> {
+  pub fn parse(&mut self) -> Option<Output<T::Value>>
+  where
+    T: Action<State, Heap>,
+  {
     self
       .entry
       .exec(Input::new(
@@ -149,9 +135,10 @@ impl<'text, T: Action> Parser<'text, T> {
   /// Return [`None`] if the text is already fully digested
   /// or the action rejects.
   #[inline]
-  pub fn peek(&mut self) -> (Option<Output<T::Value>>, T::State)
+  pub fn peek(&mut self) -> (Option<Output<T::Value>>, State)
   where
-    T::State: Clone,
+    T: Action<State, Heap>,
+    State: Clone,
   {
     let mut tmp_state = self.state.clone();
     (

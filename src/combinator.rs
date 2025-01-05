@@ -118,123 +118,27 @@ impl<T> Combinator<T> {
   }
 }
 
-unsafe impl<T: Action> Action for Combinator<T> {
+unsafe impl<State, Heap, T: Action<State, Heap>> Action<State, Heap> for Combinator<T> {
   type Value = T::Value;
-  type State = T::State;
-  type Heap = T::Heap;
 
   #[inline]
-  fn exec(&self, input: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<T::Value>> {
+  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<T::Value>> {
     self.action.exec(input)
   }
 }
 
-/// Simplify the [`Combinator`] struct's signature.
-///
-/// Here are the expanded forms:
-/// ```
-/// # use whitehole::{action::{Action, Input, Output}, C, combinator::{wrap, Combinator}};
-/// # #[derive(Default)]
-/// # struct MyValue;
-/// # struct MyHeap;
-/// # struct MyState;
-/// # struct T;
-/// # unsafe impl Action for T {
-/// #   type Value = ();
-/// #   type State = ();
-/// #   type Heap = ();
-/// #   fn exec(&self, _: Input<&mut Self::State, &mut Self::Heap>) -> Option<Output<Self::Value>> {
-/// #     None
-/// #   }
-/// # }
-/// # macro_rules! assert_type_match {
-/// #   ($t:ty => $expected:ty) => {{
-/// #     fn receiver(_: $expected) {}
-/// #     fn generator() -> $t {
-/// #       wrap(|input| input.digest(1)).select(|_| Default::default())
-/// #     }
-/// #     receiver(generator());
-/// #   }};
-/// # }
-/// # assert_type_match!(
-/// C!()
-/// => Combinator<impl Action<Value = (), State = (), Heap = ()>>
-/// # );
-///
-/// # assert_type_match!(
-/// C!(MyValue)
-/// => Combinator<impl Action<Value = MyValue, State = (), Heap = ()>>
-/// # );
-///
-/// # assert_type_match!(
-/// C!(MyValue, MyState)
-/// => Combinator<impl Action<Value = MyValue, State = MyState, Heap = ()>>
-/// # );
-///
-/// # assert_type_match!(
-/// C!(MyValue, MyState, MyHeap)
-/// => Combinator<impl Action<Value = MyValue, State = MyState, Heap = MyHeap>>
-/// # );
-///
-/// # assert_type_match!(
-/// C!(@T)
-/// => Combinator<impl Action<Value = <T as Action>::Value, State = <T as Action>::State, Heap = <T as Action>::Heap>>
-/// # );
-///
-/// # assert_type_match!(
-/// C!(MyValue, @T)
-/// => Combinator<impl Action<Value = MyValue, State = <T as Action>::State, Heap = <T as Action>::Heap>>
-/// # );
-/// ```
-#[macro_export]
-macro_rules! C {
-  () => {
-    $crate::combinator::Combinator<impl $crate::action::Action<Value = (), State = (), Heap = ()>>
-  };
-  ($value:ty) => {
-    $crate::combinator::Combinator<impl $crate::action::Action<Value = $value, State = (), Heap = ()>>
-  };
-  ($value:ty, $state:ty) => {
-    $crate::combinator::Combinator<impl $crate::action::Action<Value = $value, State = $state, Heap = ()>>
-  };
-  ($value:ty, $state:ty, $heap:ty) => {
-    $crate::combinator::Combinator<impl $crate::action::Action<Value = $value, State = $state, Heap = $heap>>
-  };
-  (@$from:ident) => {
-    $crate::combinator::Combinator<impl $crate::action::Action<Value = <$from as $crate::action::Action>::Value, State = <$from as $crate::action::Action>::State, Heap = <$from as $crate::action::Action>::Heap>>
-  };
-  ($value:ty, @$from:ident) => {
-    $crate::combinator::Combinator<impl $crate::action::Action<Value = $value, State = <$from as $crate::action::Action>::State, Heap = <$from as $crate::action::Action>::Heap>>
-  };
-}
-
 macro_rules! create_combinator {
-  ($name:ident, $usage:literal) => {
+  ($name:ident, $usage:literal, ($($derives:ident),*)) => {
     #[doc = $usage]
-    pub struct $name<T, State = (), Heap = ()> {
+    #[derive(Copy, Clone, $($derives),*)]
+    pub struct $name<T> {
       inner: T,
-      _phantom: core::marker::PhantomData<(State, Heap)>,
     }
 
-    impl<T, State, Heap> $name<T, State, Heap> {
+    impl<T> $name<T> {
       #[inline]
       const fn new(inner: T) -> Self {
-        Self {
-          inner,
-          _phantom: core::marker::PhantomData,
-        }
-      }
-    }
-
-    impl<T: Copy, State, Heap> Copy for $name<T, State, Heap> {}
-
-    impl<T: Clone, State, Heap> Clone for $name<T, State, Heap> {
-      #[inline]
-      fn clone(&self) -> Self {
-        Self {
-          inner: self.inner.clone(),
-          _phantom: core::marker::PhantomData,
-        }
+        Self { inner }
       }
     }
   };
@@ -243,26 +147,16 @@ pub(self) use create_combinator;
 
 macro_rules! create_value_combinator {
   ($name:ident, $usage:literal) => {
-    $crate::combinator::create_combinator!($name, $usage);
-
-    impl<T: core::fmt::Debug, State, Heap> core::fmt::Debug for $name<T, State, Heap> {
-      #[inline]
-      fn fmt(&self, inner: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        inner
-          .debug_struct(stringify!($name))
-          .field("inner", &self.inner)
-          .finish()
-      }
-    }
+    $crate::combinator::create_combinator!($name, $usage, (Debug));
   };
 }
 pub(self) use create_value_combinator;
 
 macro_rules! create_closure_combinator {
   ($name:ident, $usage:literal) => {
-    $crate::combinator::create_combinator!($name, $usage);
+    $crate::combinator::create_combinator!($name, $usage, ());
 
-    impl<T, State, Heap> core::fmt::Debug for $name<T, State, Heap> {
+    impl<T> core::fmt::Debug for $name<T> {
       #[inline]
       fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct(stringify!($name)).finish()

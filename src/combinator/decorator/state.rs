@@ -6,49 +6,42 @@ create_closure_decorator!(Then, "See [`Combinator::then`].");
 create_closure_decorator!(Catch, "See [`Combinator::catch`].");
 create_closure_decorator!(Finally, "See [`Combinator::finally`].");
 
-unsafe impl<T: Action, D: Fn(Input<&mut T::State, &mut T::Heap>)> Action for Prepare<T, D> {
+unsafe impl<State, Heap, T: Action<State, Heap>, D: Fn(Input<&mut State, &mut Heap>)>
+  Action<State, Heap> for Prepare<T, D>
+{
   type Value = T::Value;
-  type State = T::State;
-  type Heap = T::Heap;
 
   #[inline]
-  fn exec(
-    &self,
-    mut input: Input<&mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     (self.inner)(input.reborrow());
     self.action.exec(input)
   }
 }
 
-unsafe impl<T: Action, D: Fn(AcceptedContext<Input<&mut T::State, &mut T::Heap>, &Output<T::Value>>)>
-  Action for Then<T, D>
+unsafe impl<
+    State,
+    Heap,
+    T: Action<State, Heap>,
+    D: Fn(AcceptedContext<Input<&mut State, &mut Heap>, &Output<T::Value>>),
+  > Action<State, Heap> for Then<T, D>
 {
   type Value = T::Value;
-  type State = T::State;
-  type Heap = T::Heap;
 
   #[inline]
-  fn exec(
-    &self,
-    mut input: Input<&mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).inspect(|output| {
       (self.inner)(AcceptedContext { input, output });
     })
   }
 }
 
-unsafe impl<T: Action, D: Fn(Input<&mut T::State, &mut T::Heap>)> Action for Catch<T, D> {
+unsafe impl<State, Heap, T: Action<State, Heap>, D: Fn(Input<&mut State, &mut Heap>)>
+  Action<State, Heap> for Catch<T, D>
+{
   type Value = T::Value;
-  type State = T::State;
-  type Heap = T::Heap;
 
   #[inline]
-  fn exec(
-    &self,
-    mut input: Input<&mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     let output = self.action.exec(input.reborrow());
     if output.is_none() {
       (self.inner)(input);
@@ -57,24 +50,21 @@ unsafe impl<T: Action, D: Fn(Input<&mut T::State, &mut T::Heap>)> Action for Cat
   }
 }
 
-unsafe impl<T: Action, D: Fn(Input<&mut T::State, &mut T::Heap>)> Action for Finally<T, D> {
+unsafe impl<State, Heap, T: Action<State, Heap>, D: Fn(Input<&mut State, &mut Heap>)>
+  Action<State, Heap> for Finally<T, D>
+{
   type Value = T::Value;
-  type State = T::State;
-  type Heap = T::Heap;
 
   #[inline]
-  fn exec(
-    &self,
-    mut input: Input<&mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     let output = self.action.exec(input.reborrow());
     (self.inner)(input);
     output
   }
 }
 
-impl<T: Action> Combinator<T> {
-  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
+impl<T> Combinator<T> {
+  /// Create a new combinator to modify [`Inpustate`] and [`Inpuheap`]
   /// before being executed.
   /// # Examples
   /// ```
@@ -85,14 +75,17 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn prepare<F: Fn(Input<&mut T::State, &mut T::Heap>)>(
+  pub fn prepare<State, Heap, F: Fn(Input<&mut State, &mut Heap>)>(
     self,
     modifier: F,
-  ) -> Combinator<Prepare<T, F>> {
+  ) -> Combinator<Prepare<T, F>>
+  where
+    T: Action<State, Heap>,
+  {
     Combinator::new(Prepare::new(self.action, modifier))
   }
 
-  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
+  /// Create a new combinator to modify [`Inpustate`] and [`Inpuheap`]
   /// after being accepted.
   /// # Examples
   /// ```
@@ -103,14 +96,21 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn then<F: Fn(AcceptedContext<Input<&mut T::State, &mut T::Heap>, &Output<T::Value>>)>(
+  pub fn then<
+    State,
+    Heap,
+    F: Fn(AcceptedContext<Input<&mut State, &mut Heap>, &Output<T::Value>>),
+  >(
     self,
     modifier: F,
-  ) -> Combinator<Then<T, F>> {
+  ) -> Combinator<Then<T, F>>
+  where
+    T: Action<State, Heap>,
+  {
     Combinator::new(Then::new(self.action, modifier))
   }
 
-  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
+  /// Create a new combinator to modify [`Inpustate`] and [`Inpuheap`]
   /// after being rejected.
   /// # Examples
   /// ```
@@ -121,14 +121,17 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn catch<F: Fn(Input<&mut T::State, &mut T::Heap>)>(
+  pub fn catch<State, Heap, F: Fn(Input<&mut State, &mut Heap>)>(
     self,
     modifier: F,
-  ) -> Combinator<Catch<T, F>> {
+  ) -> Combinator<Catch<T, F>>
+  where
+    T: Action<State, Heap>,
+  {
     Combinator::new(Catch::new(self.action, modifier))
   }
 
-  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
+  /// Create a new combinator to modify [`Inpustate`] and [`Inpuheap`]
   /// after the combinator is executed,
   /// no matter whether it is accepted or rejected.
   /// # Examples
@@ -140,10 +143,13 @@ impl<T: Action> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn finally<F: Fn(Input<&mut T::State, &mut T::Heap>)>(
+  pub fn finally<State, Heap, F: Fn(Input<&mut State, &mut Heap>)>(
     self,
     modifier: F,
-  ) -> Combinator<Finally<T, F>> {
+  ) -> Combinator<Finally<T, F>>
+  where
+    T: Action<State, Heap>,
+  {
     Combinator::new(Finally::new(self.action, modifier))
   }
 }
@@ -151,7 +157,7 @@ impl<T: Action> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{combinator::wrap, instant::Instant, C};
+  use crate::{combinator::wrap, instant::Instant};
 
   #[derive(Debug, Default, PartialEq, Eq)]
   struct State {
@@ -159,14 +165,14 @@ mod tests {
     to: i32,
   }
 
-  fn accepter() -> C!((), State) {
+  fn accepter() -> Combinator<impl Action<State, Value = ()>> {
     wrap(|input: Input<&mut State, &mut ()>| {
       input.state.to = input.state.from;
       input.digest(1)
     })
   }
 
-  fn rejecter() -> C!((), State) {
+  fn rejecter() -> Combinator<impl Action<State, Value = ()>> {
     wrap(|input: Input<&mut State, &mut ()>| {
       input.state.to = input.state.from;
       None

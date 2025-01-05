@@ -27,24 +27,17 @@ impl<State, Heap> Fold<State, Heap> for () {
   fn fold(self, _: Self::Output, _: Input<&mut State, &mut Heap>) -> Self::Output {}
 }
 
-impl<Lhs: Action<Value: Fold<Lhs::State, Lhs::Heap>>, Rhs: Repeat> ops::Mul<Rhs>
-  for Combinator<Lhs>
-{
-  type Output = Combinator<Mul<Lhs, Rhs>>;
+impl<Lhs, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
+  type Output = Combinator<Mul<Combinator<Lhs>, Rhs>>;
 
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   #[inline]
   fn mul(self, rhs: Rhs) -> Self::Output {
-    Self::Output::new(Mul::new(self.action, rhs))
+    Self::Output::new(Mul::new(self, rhs))
   }
 }
 
-impl<
-    T: Action<Value: Fold<T::State, T::Heap>>,
-    S: Action<State = T::State, Heap = T::Heap>,
-    Rhs: Repeat,
-  > ops::Mul<Rhs> for Sep<T, S>
-{
+impl<T, S, Rhs: Repeat> ops::Mul<Rhs> for Sep<T, S> {
   type Output = Combinator<Mul<Sep<T, S>, Rhs>>;
 
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
@@ -54,35 +47,29 @@ impl<
   }
 }
 
-unsafe impl<Lhs: Action<Value: Fold<Lhs::State, Lhs::Heap>>, Rhs: Repeat> Action for Mul<Lhs, Rhs> {
-  type Value = <Lhs::Value as Fold<Lhs::State, Lhs::Heap>>::Output;
-  type State = Lhs::State;
-  type Heap = Lhs::Heap;
+unsafe impl<State, Heap, Lhs: Action<State, Heap, Value: Fold<State, Heap>>, Rhs: Repeat>
+  Action<State, Heap> for Mul<Combinator<Lhs>, Rhs>
+{
+  type Value = <Lhs::Value as Fold<State, Heap>>::Output;
 
   #[inline]
-  fn exec(
-    &self,
-    mut input: Input<&mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     impl_mul!(input, self.rhs, Default::default, Fold::fold, self.lhs)
   }
 }
 
 unsafe impl<
-    T: Action<Value: Fold<T::State, T::Heap>>,
-    S: Action<State = T::State, Heap = T::Heap>,
+    State,
+    Heap,
+    T: Action<State, Heap, Value: Fold<State, Heap>>,
+    S: Action<State, Heap>,
     Rhs: Repeat,
-  > Action for Mul<Sep<T, S>, Rhs>
+  > Action<State, Heap> for Mul<Sep<T, S>, Rhs>
 {
-  type Value = <T::Value as Fold<T::State, T::Heap>>::Output;
-  type State = T::State;
-  type Heap = T::Heap;
+  type Value = <T::Value as Fold<State, Heap>>::Output;
 
   #[inline]
-  fn exec(
-    &self,
-    mut input: Input<&mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     impl_mul_with_sep!(
       input,
       self.rhs,

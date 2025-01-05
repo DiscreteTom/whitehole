@@ -5,10 +5,8 @@ use crate::{
 
 create_value_combinator!(Till, "See [`till`].");
 
-unsafe impl<State, Heap> Action for Till<&str, State, Heap> {
+unsafe impl<State, Heap> Action<State, Heap> for Till<&str> {
   type Value = ();
-  type State = State;
-  type Heap = Heap;
 
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
@@ -20,10 +18,8 @@ unsafe impl<State, Heap> Action for Till<&str, State, Heap> {
   }
 }
 
-unsafe impl<State, Heap> Action for Till<String, State, Heap> {
+unsafe impl<State, Heap> Action<State, Heap> for Till<String> {
   type Value = ();
-  type State = State;
-  type Heap = Heap;
 
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
@@ -35,10 +31,8 @@ unsafe impl<State, Heap> Action for Till<String, State, Heap> {
   }
 }
 
-unsafe impl<State, Heap> Action for Till<char, State, Heap> {
+unsafe impl<State, Heap> Action<State, Heap> for Till<char> {
   type Value = ();
-  type State = State;
-  type Heap = Heap;
 
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
@@ -50,10 +44,8 @@ unsafe impl<State, Heap> Action for Till<char, State, Heap> {
   }
 }
 
-unsafe impl<State, Heap> Action for Till<(), State, Heap> {
+unsafe impl<State, Heap> Action<State, Heap> for Till<()> {
   type Value = ();
-  type State = State;
-  type Heap = Heap;
 
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
@@ -83,7 +75,7 @@ unsafe impl<State, Heap> Action for Till<(), State, Heap> {
 /// # );
 /// ```
 #[inline]
-pub const fn till<State, Heap, T>(pattern: T) -> Combinator<Till<T, State, Heap>> {
+pub const fn till<T>(pattern: T) -> Combinator<Till<T>> {
   Combinator::new(Till::new(pattern))
 }
 
