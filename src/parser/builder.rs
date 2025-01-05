@@ -147,4 +147,11 @@ mod tests {
     assert!(p1.parse().is_some());
     assert!(p2.parse().is_none());
   }
+
+  #[test]
+  fn str_in_heap() {
+    let text = "123".to_string();
+    let mut parser = Builder::new().heap(&text).entry(eat(&text)).build(&text);
+    assert!(parser.parse().is_some());
+  }
 }

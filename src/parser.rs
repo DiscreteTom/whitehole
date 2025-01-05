@@ -349,4 +349,16 @@ mod tests {
     assert_eq!(parser.instant().rest(), "123");
     assert!(parser.parse().is_some());
   }
+
+  #[test]
+  fn str_in_heap() {
+    let text = "123".to_string();
+    let mut parser = Parser {
+      state: 123,
+      heap: &text,
+      instant: Instant::new(&text),
+      entry: eat(&text),
+    };
+    assert!(parser.parse().is_some());
+  }
 }
