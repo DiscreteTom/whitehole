@@ -7,8 +7,8 @@
 //! or reject if any of the combinators rejects.
 //! # Basics
 //! ```
-//! # use whitehole::{combinator::eat, C};
-//! # fn t(_: C!()) {}
+//! # use whitehole::{combinator::{eat, Combinator}, action::Action};
+//! # fn t(_: Combinator<impl Action>) {}
 //! // match "123" then match "456"
 //! # t(
 //! eat("123") + eat("456")
@@ -33,7 +33,7 @@
 //! If your combinators' values are tuples, they can be concatenated,
 //! and all unit tuples will be ignored.
 //! ```
-//! # use whitehole::{combinator::{next, eat}, C, parser::Builder};
+//! # use whitehole::{combinator::{next, eat}, action::Action, parser::Builder};
 //! let integer = || {
 //!   (next(|c| c.is_ascii_digit()) * (1..)) // eat one or more digits
 //!     .select(|ctx| ctx.content().parse::<usize>().unwrap()) // parse the digits

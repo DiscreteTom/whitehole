@@ -64,13 +64,13 @@ unsafe impl<State, Heap, T: Action<State, Heap>, D: Fn(Input<&mut State, &mut He
 }
 
 impl<T> Combinator<T> {
-  /// Create a new combinator to modify [`Inpustate`] and [`Inpuheap`]
+  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
   /// before being executed.
   /// # Examples
   /// ```
-  /// # use whitehole::C;
+  /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: C!((), MyState)) {
+  /// # fn t(combinator: Combinator<impl Action<MyState>>) {
   /// combinator.prepare(|input| input.state.value += 1)
   /// # ;}
   /// ```
@@ -85,13 +85,13 @@ impl<T> Combinator<T> {
     Combinator::new(Prepare::new(self.action, modifier))
   }
 
-  /// Create a new combinator to modify [`Inpustate`] and [`Inpuheap`]
+  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
   /// after being accepted.
   /// # Examples
   /// ```
-  /// # use whitehole::C;
+  /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: C!((), MyState)) {
+  /// # fn t(combinator: Combinator<impl Action<MyState>>) {
   /// combinator.then(|mut ctx| ctx.state().value += 1)
   /// # ;}
   /// ```
@@ -110,13 +110,13 @@ impl<T> Combinator<T> {
     Combinator::new(Then::new(self.action, modifier))
   }
 
-  /// Create a new combinator to modify [`Inpustate`] and [`Inpuheap`]
+  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
   /// after being rejected.
   /// # Examples
   /// ```
-  /// # use whitehole::C;
+  /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: C!((), MyState)) {
+  /// # fn t(combinator: Combinator<impl Action<MyState>>) {
   /// combinator.catch(|input| input.state.value += 1)
   /// # ;}
   /// ```
@@ -131,14 +131,14 @@ impl<T> Combinator<T> {
     Combinator::new(Catch::new(self.action, modifier))
   }
 
-  /// Create a new combinator to modify [`Inpustate`] and [`Inpuheap`]
+  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
   /// after the combinator is executed,
   /// no matter whether it is accepted or rejected.
   /// # Examples
   /// ```
-  /// # use whitehole::C;
+  /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: C!((), MyState)) {
+  /// # fn t(combinator: Combinator<impl Action<MyState>>) {
   /// combinator.finally(|input| input.state.value += 1)
   /// # ;}
   /// ```

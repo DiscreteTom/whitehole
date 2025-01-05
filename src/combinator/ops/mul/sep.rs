@@ -13,8 +13,8 @@ impl<T> Combinator<T> {
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   /// # Examples
   /// ```
-  /// # use whitehole::{combinator::eat, C};
-  /// # fn t(_: C!()) {}
+  /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
+  /// # fn t(_: Combinator<impl Action>) {}
   /// # t(
   /// eat("true").sep(eat(',')) * (1..) // with a combinator
   /// # );
@@ -22,8 +22,8 @@ impl<T> Combinator<T> {
   /// You can use [`char`], `&str`, [`String`], and [`usize`] as the shorthand
   /// for [`eat`](crate::combinator::eat) in the separator.
   /// ```
-  /// # use whitehole::{combinator::eat, C};
-  /// # fn t(_: C!()) {}
+  /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
+  /// # fn t(_: Combinator<impl Action>) {}
   /// # t(
   /// eat("true").sep(',') * (1..) // with a char
   /// # );

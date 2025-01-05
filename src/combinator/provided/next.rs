@@ -23,8 +23,8 @@ unsafe impl<State, Heap, F: Fn(char) -> bool> Action<State, Heap> for Next<F> {
 /// The combinator will reject if not matched.
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::next, C};
-/// # fn t(_: C!()) {}
+/// # use whitehole::{combinator::{next, Combinator}, action::Action};
+/// # fn t(_: Combinator<impl Action>) {}
 /// // match one ascii digit
 /// # t(
 /// next(|c| c.is_ascii_digit())

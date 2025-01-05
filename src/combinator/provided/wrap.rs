@@ -35,10 +35,9 @@ impl_wrap!(Wrap, assert);
 /// For the checked version, see [`wrap`].
 /// # Examples
 /// ```
-/// # use whitehole::C;
-/// # use whitehole::combinator::wrap_unchecked;
-/// # use whitehole::action::{Input, Output};
-/// # fn t() -> C!() {
+/// # use whitehole::combinator::{wrap_unchecked, Combinator};
+/// # use whitehole::action::{Input, Output, Action};
+/// # fn t() -> Combinator<impl Action> {
 /// // eat the next character
 /// unsafe { wrap_unchecked(|input| input.digest(input.next().len_utf8())) }
 /// # }
@@ -61,10 +60,9 @@ pub const unsafe fn wrap_unchecked<
 /// otherwise the combinator will panic when executed.
 /// # Examples
 /// ```
-/// # use whitehole::C;
-/// # use whitehole::combinator::wrap;
-/// # use whitehole::action::{Input, Output};
-/// # fn t() -> C!() {
+/// # use whitehole::combinator::{wrap, Combinator};
+/// # use whitehole::action::{Input, Output, Action};
+/// # fn t() -> Combinator<impl Action> {
 /// // eat the next character
 /// wrap(|input| input.digest(input.next().len_utf8()))
 /// # }

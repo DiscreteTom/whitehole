@@ -6,8 +6,8 @@
 //! The new combinator will reject if both of the combinators reject.
 //! # Basics
 //! ```
-//! # use whitehole::{combinator::eat, C};
-//! # fn t(_: C!()) {}
+//! # use whitehole::{combinator::{eat, Combinator}, action::Action};
+//! # fn t(_: Combinator<impl Action>) {}
 //! // match "true" or "false"
 //! # t(
 //! eat("true") | eat("false")

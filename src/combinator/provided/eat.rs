@@ -80,8 +80,8 @@ unsafe impl<State, Heap> Action<State, Heap> for Eat<usize> {
 ///
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::eat, C};
-/// # fn t(_: C!()) {}
+/// # use whitehole::{combinator::{eat, Combinator}, action::Action};
+/// # fn t(_: Combinator<impl Action>) {}
 /// # t(
 /// eat('a') // eat by char
 /// # );
@@ -144,8 +144,8 @@ unsafe impl<State, Heap> Action<State, Heap> for EatUnchecked<usize> {
 /// For the checked version, see [`eat`].
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::eat_unchecked, C};
-/// # fn t(_: C!()) {}
+/// # use whitehole::{combinator::{eat_unchecked, Combinator}, action::Action};
+/// # fn t(_: Combinator<impl Action>) {}
 /// // eat 10 bytes
 /// # t(
 /// unsafe { eat_unchecked(10) }

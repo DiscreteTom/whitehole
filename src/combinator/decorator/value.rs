@@ -148,8 +148,8 @@ impl<T> Combinator<T> {
   /// You can consume the original [`Output::value`] in the `mapper`.
   /// # Examples
   /// ```
-  /// # use whitehole::C;
-  /// # fn t(combinator: C!()) {
+  /// # use whitehole::{action::Action, combinator::Combinator};
+  /// # fn t(combinator: Combinator<impl Action>) {
   /// combinator.map(|value| Some(value))
   /// # ;}
   /// ```
@@ -172,8 +172,8 @@ impl<T> Combinator<T> {
   /// The reverse operation is [`Self::pop`].
   /// # Examples
   /// ```
-  /// # use whitehole::C;
-  /// # fn t(combinator: C!()) {
+  /// # use whitehole::{action::Action, combinator::Combinator};
+  /// # fn t(combinator: Combinator<impl Action>) {
   /// combinator.tuple()
   /// # ;}
   /// ```
@@ -187,10 +187,10 @@ impl<T> Combinator<T> {
   /// If your `Value` doesn't implement the [`Clone`] trait, consider using [`Self::select`] instead.
   /// # Examples
   /// ```
-  /// # use whitehole::C;
+  /// # use whitehole::{action::Action, combinator::Combinator};
   /// # #[derive(Clone)]
   /// # struct MyValue;
-  /// # fn t(combinator: C!()) {
+  /// # fn t(combinator: Combinator<impl Action>) {
   /// combinator.bind(MyValue)
   /// # ;}
   /// ```
@@ -205,8 +205,8 @@ impl<T> Combinator<T> {
   /// Create a new combinator to set [`Output::value`] to the default value.
   /// # Examples
   /// ```
-  /// # use whitehole::C;
-  /// # fn t(combinator: C!()) -> C!(i32) {
+  /// # use whitehole::{action::Action, combinator::Combinator};
+  /// # fn t(combinator: Combinator<impl Action>) -> Combinator<impl Action<Value=i32>> {
   /// combinator.bind_default()
   /// # }
   /// ```
@@ -224,9 +224,9 @@ impl<T> Combinator<T> {
   /// You can consume the original [`Output`] in the `selector`.
   /// # Examples
   /// ```
-  /// # use whitehole::C;
+  /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyValue(i32);
-  /// # fn t(combinator: C!()) {
+  /// # fn t(combinator: Combinator<impl Action>) {
   /// combinator.select(|ctx| MyValue(ctx.content().parse().unwrap()))
   /// # ;}
   /// ```
@@ -250,8 +250,8 @@ impl<T> Combinator<T> {
   /// which includes the byte range of the digested text.
   /// # Examples
   /// ```
-  /// # use whitehole::C;
-  /// # fn t(combinator: C!()) {
+  /// # use whitehole::{action::Action, combinator::Combinator};
+  /// # fn t(combinator: Combinator<impl Action>) {
   /// combinator.range()
   /// # ;}
   #[inline]
@@ -264,8 +264,8 @@ impl<T> Combinator<T> {
   /// This is reverse to [`Self::tuple`].
   /// # Examples
   /// ```
-  /// # use whitehole::C;
-  /// # fn t(combinator: C!((i32,))) {
+  /// # use whitehole::{action::Action, combinator::Combinator};
+  /// # fn t(combinator: Combinator<impl Action>) {
   /// combinator.pop()
   /// # ;}
   /// ```

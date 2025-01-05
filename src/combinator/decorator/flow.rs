@@ -99,9 +99,9 @@ impl<T> Combinator<T> {
   /// This is the opposite of [`Combinator::prevent`].
   /// # Examples
   /// ```
-  /// # use whitehole::C;
+  /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { execute: bool }
-  /// # fn t(combinator: C!((), MyState)) {
+  /// # fn t(combinator: Combinator<impl Action<MyState>>) {
   /// combinator.when(|input| input.state.execute)
   /// # ;}
   /// ```
@@ -122,9 +122,9 @@ impl<T> Combinator<T> {
   /// This is the opposite of [`Combinator::when`].
   /// # Examples
   /// ```
-  /// # use whitehole::C;
+  /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { reject: bool }
-  /// # fn t(combinator: C!((), MyState)) {
+  /// # fn t(combinator: Combinator<impl Action<MyState>>) {
   /// combinator.prevent(|input| input.state.reject)
   /// # ;}
   /// ```
@@ -143,8 +143,8 @@ impl<T> Combinator<T> {
   /// The combinator will reject if the `rejecter` returns `true`.
   /// # Examples
   /// ```
-  /// # use whitehole::C;
-  /// # fn t(combinator: C!()) {
+  /// # use whitehole::{action::Action, combinator::Combinator};
+  /// # fn t(combinator: Combinator<impl Action>) {
   /// combinator.reject(|ctx| ctx.content() != "123")
   /// # ;}
   /// ```
@@ -171,10 +171,10 @@ impl<T> Combinator<T> {
   /// This requires the `Value` to implement [`Default`],
   /// thus usually used before setting a custom value.
   /// ```
-  /// # use whitehole::C;
+  /// # use whitehole::{action::Action, combinator::Combinator};
   /// # #[derive(Clone)]
   /// # struct MyValue;
-  /// # fn t(combinator: C!()) {
+  /// # fn t(combinator: Combinator<impl Action>) {
   /// // make the combinator optional before binding a value
   /// combinator.optional().bind(MyValue)
   /// // instead of
@@ -184,17 +184,17 @@ impl<T> Combinator<T> {
   /// Or you can wrap `Value` with [`Option`] to make it optional
   /// after setting a custom value.
   /// ```
-  /// # use whitehole::C;
+  /// # use whitehole::{action::Action, combinator::Combinator};
   /// # #[derive(Clone)]
   /// # struct MyValue;
-  /// # fn t(combinator: C!()) {
+  /// # fn t(combinator: Combinator<impl Action>) {
   /// combinator.bind(Some(MyValue)).optional()
   /// # ;}
   /// ```
   /// # Examples
   /// ```
-  /// # use whitehole::C;
-  /// # fn t(combinator: C!()) {
+  /// # use whitehole::{action::Action, combinator::Combinator};
+  /// # fn t(combinator: Combinator<impl Action>) {
   /// combinator.optional()
   /// # ;}
   /// ```
@@ -208,8 +208,8 @@ impl<T> Combinator<T> {
   /// See [`char::is_alphanumeric`].
   /// # Examples
   /// ```
-  /// # use whitehole::C;
-  /// # fn t(combinator: C!()) {
+  /// # use whitehole::{action::Action, combinator::Combinator};
+  /// # fn t(combinator: Combinator<impl Action>) {
   /// combinator.boundary()
   /// # ;}
   /// ```

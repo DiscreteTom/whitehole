@@ -59,8 +59,8 @@ unsafe impl<State, Heap> Action<State, Heap> for Till<()> {
 /// Empty string is allowed, but be careful with infinite loops.
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::till, C};
-/// # fn t(_: C!()) {}
+/// # use whitehole::{combinator::{till, Combinator}, action::Action};
+/// # fn t(_: Combinator<impl Action>) {}
 /// # t(
 /// till("end".to_string()) // with String
 /// # );

@@ -10,8 +10,8 @@
 //! # Basics
 //! Use `*` to repeat a combinator:
 //! ```
-//! # use whitehole::{combinator::eat, C};
-//! # fn t(_: C!()) {}
+//! # use whitehole::{combinator::{eat, Combinator}, action::Action};
+//! # fn t(_: Combinator<impl Action>) {}
 //! // repeat the combinator for 2 times
 //! # t(
 //! eat("true") * 2
@@ -60,7 +60,7 @@
 //!     // convert the char to a number
 //!     .select(|ctx| ctx.input().next() as usize - '0' as usize)
 //!     // repeat for 1 or more times, init accumulator with 0, and fold values
-//!     * (1.., || 0 as usize, |value, acc, _input| acc * 10 + value);
+//!     * (1.., || 0 as usize, |value, acc, _input: Input<&mut (), &mut ()>| acc * 10 + value);
 //!
 //! // parse "123" to 123
 //! assert_eq!(
@@ -107,7 +107,7 @@
 //!   // eat one char, use the start index as the value
 //!   eat(1).select(|ctx| ctx.start())
 //!     // repeat for 1 or more times, fold values to a vec, no need to init or use the accumulator
-//!     * (1.., || {}, |value, _acc, input: Input<_, &mut Vec<_>>| input.heap.push(value))
+//!     * (1.., || {}, |value, _acc, input: Input<&mut (), &mut Vec<_>>| input.heap.push(value))
 //! }.prepare(|input| input.heap.clear()); // clear the vec before executing this combinator
 //!
 //! // create a re-usable heap
@@ -130,7 +130,7 @@
 //! ```
 //! // inline fold
 //! # use whitehole::{combinator::{ops::mul::Fold, eat}, action::{Input, Action}, instant::Instant};
-//! let combinator = eat('a').bind(1).sep(',') * (1.., || 0, |v, acc, _input| acc + v);
+//! let combinator = eat('a').bind(1).sep(',') * (1.., || 0, |v, acc, _input: Input<&mut (), &mut ()>| acc + v);
 //! assert_eq!(
 //!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()).unwrap()).unwrap().value,
 //!   3

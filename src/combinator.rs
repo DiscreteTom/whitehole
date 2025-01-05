@@ -4,8 +4,8 @@
 //! To get started, you can use the provided combinators like [`eat`],
 //! which will eat the provided pattern from the rest of the input text:
 //! ```
-//! # use whitehole::{combinator::eat, C};
-//! # fn t(_: C!()) {}
+//! # use whitehole::{combinator::{eat, Combinator}, action::Action};
+//! # fn t(_: Combinator<impl Action>) {}
 //! # t(
 //! eat("true")
 //! # );
@@ -22,8 +22,8 @@
 //! Use `+` and `|` to compose multiple combinators
 //! for more complex tasks:
 //! ```
-//! # use whitehole::{combinator::eat, C};
-//! # fn t(_: C!()) {}
+//! # use whitehole::{combinator::{eat, Combinator}, action::Action};
+//! # fn t(_: Combinator<impl Action>) {}
 //! // match "true" then match "false"
 //! # t(
 //! eat("true") + eat("false")
@@ -37,8 +37,8 @@
 //! ## Repetition
 //! Use `*` to repeat a combinator:
 //! ```
-//! # use whitehole::{combinator::eat, C};
-//! # fn t(_: C!()) {}
+//! # use whitehole::{combinator::{eat, Combinator}, action::Action};
+//! # fn t(_: Combinator<impl Action>) {}
 //! // repeat the combinator for 2 times
 //! # t(
 //! eat("true") * 2
