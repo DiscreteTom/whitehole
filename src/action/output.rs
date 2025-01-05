@@ -3,7 +3,7 @@ use super::Input;
 /// The output of [`Action::exec`](crate::action::Action::exec).
 /// Usually built by [`Input::digest`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Output<Value> {
+pub struct Output<Value = ()> {
   /// The yielded value.
   pub value: Value,
   /// How many bytes are digested by this action.
