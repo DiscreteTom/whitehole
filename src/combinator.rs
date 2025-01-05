@@ -143,6 +143,9 @@ macro_rules! create_combinator {
     }
   };
 }
+// https://github.com/rust-lang/rust-clippy/issues/12808
+#[allow(clippy::useless_attribute)]
+#[allow(clippy::needless_pub_self)]
 pub(self) use create_combinator;
 
 macro_rules! create_value_combinator {
@@ -150,6 +153,9 @@ macro_rules! create_value_combinator {
     $crate::combinator::create_combinator!($name, $usage, (Debug));
   };
 }
+// https://github.com/rust-lang/rust-clippy/issues/12808
+#[allow(clippy::useless_attribute)]
+#[allow(clippy::needless_pub_self)]
 pub(self) use create_value_combinator;
 
 macro_rules! create_closure_combinator {
@@ -164,4 +170,7 @@ macro_rules! create_closure_combinator {
     }
   };
 }
+// https://github.com/rust-lang/rust-clippy/issues/12808
+#[allow(clippy::useless_attribute)]
+#[allow(clippy::needless_pub_self)]
 pub(self) use create_closure_combinator;

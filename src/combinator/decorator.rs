@@ -24,6 +24,9 @@ macro_rules! create_simple_decorator {
     }
   };
 }
+// https://github.com/rust-lang/rust-clippy/issues/12808
+#[allow(clippy::useless_attribute)]
+#[allow(clippy::needless_pub_self)]
 pub(self) use create_simple_decorator;
 
 macro_rules! create_decorator {
@@ -46,6 +49,9 @@ macro_rules! create_decorator {
     }
   };
 }
+// https://github.com/rust-lang/rust-clippy/issues/12808
+#[allow(clippy::useless_attribute)]
+#[allow(clippy::needless_pub_self)]
 pub(self) use create_decorator;
 
 macro_rules! create_value_decorator {
@@ -53,6 +59,9 @@ macro_rules! create_value_decorator {
     $crate::combinator::decorator::create_decorator!($name, $usage, (Debug));
   };
 }
+// https://github.com/rust-lang/rust-clippy/issues/12808
+#[allow(clippy::useless_attribute)]
+#[allow(clippy::needless_pub_self)]
 pub(self) use create_value_decorator;
 
 macro_rules! create_closure_decorator {
@@ -70,4 +79,7 @@ macro_rules! create_closure_decorator {
     }
   };
 }
+// https://github.com/rust-lang/rust-clippy/issues/12808
+#[allow(clippy::useless_attribute)]
+#[allow(clippy::needless_pub_self)]
 pub(self) use create_closure_decorator;

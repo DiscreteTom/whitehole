@@ -202,6 +202,9 @@ macro_rules! impl_mul {
     $repeat.accept(repeated).then_some(output)
   }};
 }
+// https://github.com/rust-lang/rust-clippy/issues/12808
+#[allow(clippy::useless_attribute)]
+#[allow(clippy::needless_pub_self)]
 pub(self) use impl_mul;
 
 macro_rules! impl_mul_with_sep {
@@ -238,4 +241,7 @@ macro_rules! impl_mul_with_sep {
     $repeat.accept(repeated).then_some(output)
   }};
 }
+// https://github.com/rust-lang/rust-clippy/issues/12808
+#[allow(clippy::useless_attribute)]
+#[allow(clippy::needless_pub_self)]
 pub(self) use impl_mul_with_sep;
