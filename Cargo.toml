@@ -1,6 +1,6 @@
 [package]
 name = "whitehole"
-description = "A fast parser combinator framework."
+description = "A simple, fast, intuitive parser combinator framework for Rust."
 version = "0.3.0"
 edition = "2021"
 license = "MIT"
