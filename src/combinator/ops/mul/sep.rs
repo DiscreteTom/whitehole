@@ -95,6 +95,7 @@ unsafe impl<
 {
   type Value = <Lhs::Value as Fold<State, Heap>>::Output;
 
+  #[inline]
   fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     impl_mul_with_sep!(
       input,
@@ -120,6 +121,7 @@ unsafe impl<
 {
   type Value = Acc;
 
+  #[inline]
   fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     impl_mul_with_sep!(
       input,
