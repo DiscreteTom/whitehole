@@ -16,8 +16,9 @@ pub struct InlineFold<T, Init, Folder> {
 
 impl<T: fmt::Debug, Init, Folder> fmt::Debug for InlineFold<T, Init, Folder> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    f.debug_struct("InlineFold")
-      .field("action", &self.action)
+    let action = &self.action;
+    f.debug_struct(stringify!(InlineFold))
+      .field(stringify!(action), action)
       .finish()
   }
 }
