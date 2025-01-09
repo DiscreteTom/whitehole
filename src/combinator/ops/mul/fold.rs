@@ -1,10 +1,7 @@
-use super::{Mul, Repeat, Sep};
+use super::{Mul, Repeat};
 use crate::{
   action::{shift_input, Action, Input, Output},
-  combinator::{
-    ops::mul::{impl_mul, impl_mul_with_sep},
-    Combinator,
-  },
+  combinator::{ops::mul::impl_mul, Combinator},
 };
 use std::ops;
 
@@ -37,16 +34,6 @@ impl<Lhs, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
   }
 }
 
-impl<T, S, Rhs: Repeat> ops::Mul<Rhs> for Sep<T, S> {
-  type Output = Combinator<Mul<Sep<T, S>, Rhs>>;
-
-  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
-  #[inline]
-  fn mul(self, rhs: Rhs) -> Self::Output {
-    Self::Output::new(Mul::new(self, rhs))
-  }
-}
-
 unsafe impl<State, Heap, Lhs: Action<State, Heap, Value: Fold<State, Heap>>, Rhs: Repeat>
   Action<State, Heap> for Mul<Combinator<Lhs>, Rhs>
 {
@@ -55,29 +42,6 @@ unsafe impl<State, Heap, Lhs: Action<State, Heap, Value: Fold<State, Heap>>, Rhs
   #[inline]
   fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     impl_mul!(input, self.rhs, Default::default, Fold::fold, self.lhs)
-  }
-}
-
-unsafe impl<
-    State,
-    Heap,
-    T: Action<State, Heap, Value: Fold<State, Heap>>,
-    S: Action<State, Heap>,
-    Rhs: Repeat,
-  > Action<State, Heap> for Mul<Sep<T, S>, Rhs>
-{
-  type Value = <T::Value as Fold<State, Heap>>::Output;
-
-  #[inline]
-  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    impl_mul_with_sep!(
-      input,
-      self.rhs,
-      Default::default,
-      Fold::fold,
-      self.lhs.value,
-      self.lhs.sep
-    )
   }
 }
 

@@ -1,14 +1,14 @@
 use super::{inline::InlineFold, Fold, Mul, Repeat};
 use crate::{
   action::{shift_input, Action, Input, Output},
-  combinator::{ops::mul::impl_mul_with_sep, Combinator},
+  combinator::Combinator,
 };
 
 /// See [`Combinator::sep`].
 #[derive(Debug, Clone, Copy)]
 pub struct Sep<T, S> {
-  pub(super) value: T,
-  pub(super) sep: S,
+  value: T,
+  sep: S,
 }
 
 impl<T> Combinator<T> {
@@ -48,6 +48,41 @@ impl<T> Combinator<T> {
       sep: sep.into().action,
     })
   }
+}
+
+macro_rules! impl_mul_with_sep {
+  ($input:ident, $repeat:expr, $init:expr, $fold:expr, $action:expr, $sep:expr) => {{
+    let mut repeated = 0;
+    let mut output = Output {
+      value: $init(),
+      digested: 0,
+    };
+
+    let mut digested_with_sep = 0;
+    while unsafe { $repeat.validate(repeated) } {
+      let Some(value_output) =
+        shift_input!($input, digested_with_sep).and_then(|input| $action.exec(input))
+      else {
+        break;
+      };
+      repeated += 1;
+      output.value = $fold(value_output.value, output.value, $input.reborrow());
+      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
+      debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
+      output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
+
+      let Some(sep_output) =
+        shift_input!($input, output.digested).and_then(|input| $sep.exec(input))
+      else {
+        break;
+      };
+      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
+      debug_assert!(usize::MAX - output.digested > sep_output.digested);
+      digested_with_sep = unsafe { output.digested.unchecked_add(sep_output.digested) };
+    }
+
+    $repeat.accept(repeated).then_some(output)
+  }};
 }
 
 unsafe impl<
