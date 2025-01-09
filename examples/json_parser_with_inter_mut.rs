@@ -42,14 +42,18 @@ pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action<Value = WithRa
   let array = || {
     eat('[')
       + ws().optional()
-      + ((value() + ws().optional()).sep(eat(',') + ws().optional()) * (..)).optional()
+      + ((value() + ws().optional()) * (..))
+        .sep(eat(',') + ws().optional())
+        .optional()
       + ']'
   };
   let object = || {
     let object_item = string() + ws().optional() + eat(':') + ws().optional() + value();
     eat('{')
       + ws().optional()
-      + ((object_item + ws().optional()).sep(eat(',') + ws().optional()) * (..)).optional()
+      + ((object_item + ws().optional()) * (..))
+        .sep(eat(',') + ws().optional())
+        .optional()
       + '}'
   };
 

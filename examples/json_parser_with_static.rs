@@ -35,7 +35,9 @@ pub fn build_parser_with_static(s: &str) -> Parser<impl Action<Value = WithRange
   fn array() -> Combinator<impl Action<Value = ()>> {
     eat('[')
       + ws().optional()
-      + ((value() + ws().optional()).sep(eat(',') + ws().optional()) * (..)).optional()
+      + ((value() + ws().optional()) * (..))
+        .sep(eat(',') + ws().optional())
+        .optional()
       + ']'
   }
 
@@ -43,7 +45,9 @@ pub fn build_parser_with_static(s: &str) -> Parser<impl Action<Value = WithRange
     let object_item = string() + ws().optional() + eat(':') + ws().optional() + value();
     eat('{')
       + ws().optional()
-      + ((object_item + ws().optional()).sep(eat(',') + ws().optional()) * (..)).optional()
+      + ((object_item + ws().optional()) * (..))
+        .sep(eat(',') + ws().optional())
+        .optional()
       + '}'
   }
 
