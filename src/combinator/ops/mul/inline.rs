@@ -24,8 +24,30 @@ impl<T: fmt::Debug, Init, Folder> fmt::Debug for InlineFold<T, Init, Folder> {
 }
 
 impl<T> Combinator<T> {
-  /// TODO: more comments
+  /// Specify accumulator initializer and folder in an inline way.
+  ///
+  /// The return value is not a [`Combinator`], you should use `*` to combine it with a [`Repeat`].
+  ///
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
+  /// # Examples
+  /// ```
+  /// # use whitehole::{combinator::next, action::{Input, Action}, instant::Instant};
+  /// let combinator =
+  ///   // accept one ascii digit at a time
+  ///   next(|c| c.is_ascii_digit())
+  ///     // convert the char to a number
+  ///     .select(|ctx| ctx.input().next() as usize - '0' as usize)
+  ///     // init accumulator with 0, and fold values
+  ///     .fold(|| 0 as usize, |value, acc, _| acc * 10 + value)
+  ///     // repeat for 1 or more times
+  ///     * (1..);
+  ///
+  /// // parse "123" to 123
+  /// assert_eq!(
+  ///   combinator.exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()).unwrap().value,
+  ///   123
+  /// )
+  /// ```
   #[inline]
   pub fn fold<
     State,

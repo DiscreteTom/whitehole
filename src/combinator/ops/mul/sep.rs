@@ -13,14 +13,14 @@ pub struct Sep<T, S> {
 
 impl<T> Combinator<T> {
   /// Specify an other combinator as the separator
-  /// before performing `*` on [`Combinator`]s.
+  /// after performing `*` on [`Combinator`]s.
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   /// # Examples
   /// ```
   /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
   /// # fn t(_: Combinator<impl Action>) {}
   /// # t(
-  /// eat("true").sep(eat(',')) * (1..) // with a combinator
+  /// (eat("true") * (1..)).sep(eat(',')) // with a combinator
   /// # );
   /// ```
   /// You can use [`char`], `&str`, [`String`], and [`usize`] as the shorthand
@@ -29,20 +29,21 @@ impl<T> Combinator<T> {
   /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
   /// # fn t(_: Combinator<impl Action>) {}
   /// # t(
-  /// eat("true").sep(',') * (1..) // with a char
+  /// (eat("true") * (1..)).sep(',') // with a char
   /// # );
   /// # t(
-  /// eat("true").sep(",") * (1..) // with a str
+  /// (eat("true") * (1..)).sep(",") // with a str
   /// # );
   /// # t(
-  /// eat("true").sep(",".to_string()) * (1..) // with a string
+  /// (eat("true") * (1..)).sep(",".to_string()) // with a string
   /// # );
   /// # t(
-  /// eat("true").sep(1) * (1..) // with a usize
+  /// (eat("true") * (1..)).sep(1) // with a usize
   /// # );
   /// ```
   #[inline]
   pub fn sep<S>(self, sep: impl Into<Combinator<S>>) -> Combinator<Sep<T, S>> {
+    // TODO: stricter generic bound
     Combinator::new(Sep {
       value: self.action,
       sep: sep.into().action,
