@@ -3,17 +3,77 @@ use crate::{
   action::{shift_input, Action, Input, Output},
   combinator::Combinator,
 };
+use core::fmt;
 use std::ops;
 
-impl<Lhs, Acc, Repeater: Repeat, Initializer: Fn() -> Acc, InlineFolder>
-  ops::Mul<(Repeater, Initializer, InlineFolder)> for Combinator<Lhs>
-{
-  type Output = Combinator<Mul<Combinator<Lhs>, (Repeater, Initializer, InlineFolder)>>;
+/// See [`Combinator::fold`].
+#[derive(Copy, Clone)]
+pub struct InlineFold<T, Init, Folder> {
+  action: T,
+  init: Init,
+  fold: Folder,
+}
+
+impl<T: fmt::Debug, Init, Folder> fmt::Debug for InlineFold<T, Init, Folder> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.debug_struct("InlineFold")
+      .field("action", &self.action)
+      .finish()
+  }
+}
+
+impl<T> Combinator<T> {
+  /// TODO: more comments
+  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
+  #[inline]
+  pub fn fold<
+    State,
+    Heap,
+    Acc,
+    Init: Fn() -> Acc,
+    Folder: Fn(T::Value, Acc, Input<&mut State, &mut Heap>) -> Acc,
+  >(
+    self,
+    init: Init,
+    folder: Folder,
+  ) -> InlineFold<T, Init, Folder>
+  where
+    T: Action<State, Heap>,
+  {
+    InlineFold {
+      action: self.action,
+      init,
+      fold: folder,
+    }
+  }
+}
+
+impl<T, Init, Folder, Repeater: Repeat> ops::Mul<Repeater> for InlineFold<T, Init, Folder> {
+  type Output = Combinator<Mul<InlineFold<T, Init, Folder>, Repeater>>;
 
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   #[inline]
-  fn mul(self, rhs: (Repeater, Initializer, InlineFolder)) -> Self::Output {
+  fn mul(self, rhs: Repeater) -> Self::Output {
     Self::Output::new(Mul::new(self, rhs))
+  }
+}
+
+unsafe impl<
+    State,
+    Heap,
+    T: Action<State, Heap>,
+    Acc,
+    Repeater: Repeat,
+    Init: Fn() -> Acc,
+    Folder: Fn(T::Value, Acc, Input<&mut State, &mut Heap>) -> Acc,
+  > Action<State, Heap> for Mul<InlineFold<T, Init, Folder>, Repeater>
+{
+  type Value = Acc;
+
+  #[inline]
+  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+    let repeat = &self.rhs;
+    impl_mul!(input, repeat, self.lhs.init, self.lhs.fold, self.lhs.action)
   }
 }
 
@@ -26,25 +86,6 @@ impl<T, S, Acc, Repeater: Repeat, Initializer: Fn() -> Acc, InlineFolder>
   #[inline]
   fn mul(self, rhs: (Repeater, Initializer, InlineFolder)) -> Self::Output {
     Self::Output::new(Mul::new(self, rhs))
-  }
-}
-
-unsafe impl<
-    State,
-    Heap,
-    Lhs: Action<State, Heap>,
-    Acc,
-    Repeater: Repeat,
-    Initializer: Fn() -> Acc,
-    InlineFolder: Fn(Lhs::Value, Acc, Input<&mut State, &mut Heap>) -> Acc,
-  > Action<State, Heap> for Mul<Combinator<Lhs>, (Repeater, Initializer, InlineFolder)>
-{
-  type Value = Acc;
-
-  #[inline]
-  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    let (repeat, init, fold) = &self.rhs;
-    impl_mul!(input, repeat, init, fold, self.lhs)
   }
 }
 
@@ -75,8 +116,7 @@ mod tests {
 
   #[test]
   fn test_inline_fold() {
-    // TODO: find a way to remove the signature of `Input`. See https://users.rust-lang.org/t/implementation-of-fnonce-is-not-general-enough/68294/1
-    let combinator = eat('a').bind(1) * (1.., || 0, |v, acc, _: Input<&mut (), &mut ()>| acc + v);
+    let combinator = eat('a').bind(1).fold(|| 0, |v, acc, _| acc + v) * (1..);
     let output = combinator
       .exec(Input::new(Instant::new("aaa"), &mut (), &mut ()).unwrap())
       .unwrap();
