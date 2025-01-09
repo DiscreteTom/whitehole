@@ -403,7 +403,7 @@ mod tests {
 
   #[test]
   fn combinator_mul_with_sep() {
-    let one_or_more = || eat('a').sep(',') * (1..);
+    let one_or_more = || (eat('a') * (1..)).sep(',');
     macro_rules! input {
       ($rest:expr) => {
         Input::new(Instant::new($rest), &mut (), &mut ()).unwrap()

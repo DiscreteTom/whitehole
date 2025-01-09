@@ -1,4 +1,8 @@
-use crate::combinator::Combinator;
+use super::{inline::InlineFold, Fold, Mul, Repeat};
+use crate::{
+  action::{shift_input, Action, Input, Output},
+  combinator::{ops::mul::impl_mul_with_sep, Combinator},
+};
 
 /// See [`Combinator::sep`].
 #[derive(Debug, Clone, Copy)]
@@ -38,10 +42,57 @@ impl<T> Combinator<T> {
   /// # );
   /// ```
   #[inline]
-  pub fn sep<S>(self, sep: impl Into<Combinator<S>>) -> Sep<T, S> {
-    Sep {
+  pub fn sep<S>(self, sep: impl Into<Combinator<S>>) -> Combinator<Sep<T, S>> {
+    Combinator::new(Sep {
       value: self.action,
       sep: sep.into().action,
-    }
+    })
+  }
+}
+
+unsafe impl<
+    Lhs: Action<State, Heap, Value: Fold<State, Heap>>,
+    Rhs: Repeat,
+    S: Action<State, Heap>,
+    State,
+    Heap,
+  > Action<State, Heap> for Sep<Mul<Combinator<Lhs>, Rhs>, S>
+{
+  type Value = <Lhs::Value as Fold<State, Heap>>::Output;
+
+  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+    impl_mul_with_sep!(
+      input,
+      self.value.rhs,
+      Default::default,
+      Fold::fold,
+      self.value.lhs,
+      self.sep
+    )
+  }
+}
+
+unsafe impl<
+    T: Action<State, Heap>,
+    Acc,
+    Repeater: Repeat,
+    Init: Fn() -> Acc,
+    Folder: Fn(T::Value, Acc, Input<&mut State, &mut Heap>) -> Acc,
+    S: Action<State, Heap>,
+    State,
+    Heap,
+  > Action<State, Heap> for Sep<Mul<InlineFold<T, Init, Folder>, Repeater>, S>
+{
+  type Value = Acc;
+
+  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+    impl_mul_with_sep!(
+      input,
+      self.value.rhs,
+      self.value.lhs.init,
+      self.value.lhs.fold,
+      self.value.lhs.action,
+      self.sep
+    )
   }
 }

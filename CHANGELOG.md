@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `Combinator::fold`.
 
+### Changed
+
+- `Combinator::sep` now should be used after `mul` and will return a combinator.
+
 ### Removed
 
 - Remove `combinator * (repeat, init, fold)` syntax for inline fold. Use `Combinator::fold` instead for better type inference.
