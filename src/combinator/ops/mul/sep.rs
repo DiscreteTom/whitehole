@@ -11,7 +11,7 @@ pub struct Sep<T, S> {
   sep: S,
 }
 
-impl<T> Combinator<T> {
+impl<Lhs, Rhs> Combinator<Mul<Lhs, Rhs>> {
   /// Specify an other combinator as the separator
   /// after performing `*` on [`Combinator`]s.
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
@@ -42,8 +42,7 @@ impl<T> Combinator<T> {
   /// # );
   /// ```
   #[inline]
-  pub fn sep<S>(self, sep: impl Into<Combinator<S>>) -> Combinator<Sep<T, S>> {
-    // TODO: stricter generic bound
+  pub fn sep<S>(self, sep: impl Into<Combinator<S>>) -> Combinator<Sep<Mul<Lhs, Rhs>, S>> {
     Combinator::new(Sep {
       value: self.action,
       sep: sep.into().action,
