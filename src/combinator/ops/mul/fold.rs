@@ -86,7 +86,7 @@ mod tests {
   use super::*;
   use crate::{
     action::{Action, Input, Output},
-    combinator::{eat, wrap},
+    combinator::wrap,
     instant::Instant,
   };
 
@@ -396,53 +396,6 @@ mod tests {
       (accepter() * (..=3)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
       Some(Output {
         value: 3,
-        digested: 3
-      })
-    );
-  }
-
-  #[test]
-  fn combinator_mul_with_sep() {
-    let one_or_more = || (eat('a') * (1..)).sep(',');
-    macro_rules! input {
-      ($rest:expr) => {
-        Input::new(Instant::new($rest), &mut (), &mut ()).unwrap()
-      };
-    }
-
-    assert_eq!(one_or_more().exec(input!(",")), None);
-    assert_eq!(
-      one_or_more().exec(input!("a")),
-      Some(Output {
-        value: (),
-        digested: 1
-      })
-    );
-    assert_eq!(
-      one_or_more().exec(input!("a,")),
-      Some(Output {
-        value: (),
-        digested: 1
-      })
-    );
-    assert_eq!(
-      one_or_more().exec(input!("a,a")),
-      Some(Output {
-        value: (),
-        digested: 3
-      })
-    );
-    assert_eq!(
-      one_or_more().exec(input!("a,,")),
-      Some(Output {
-        value: (),
-        digested: 1
-      })
-    );
-    assert_eq!(
-      one_or_more().exec(input!("a,aa")),
-      Some(Output {
-        value: (),
         digested: 3
       })
     );

@@ -96,3 +96,66 @@ unsafe impl<
     )
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::{combinator::eat, instant::Instant};
+
+  #[test]
+  fn combinator_mul_with_sep() {
+    let one_or_more = || (eat('a') * (1..)).sep(',');
+    macro_rules! input {
+      ($rest:expr) => {
+        Input::new(Instant::new($rest), &mut (), &mut ()).unwrap()
+      };
+    }
+
+    assert_eq!(one_or_more().exec(input!(",")), None);
+    assert_eq!(
+      one_or_more().exec(input!("a")),
+      Some(Output {
+        value: (),
+        digested: 1
+      })
+    );
+    assert_eq!(
+      one_or_more().exec(input!("a,")),
+      Some(Output {
+        value: (),
+        digested: 1
+      })
+    );
+    assert_eq!(
+      one_or_more().exec(input!("a,a")),
+      Some(Output {
+        value: (),
+        digested: 3
+      })
+    );
+    assert_eq!(
+      one_or_more().exec(input!("a,,")),
+      Some(Output {
+        value: (),
+        digested: 1
+      })
+    );
+    assert_eq!(
+      one_or_more().exec(input!("a,aa")),
+      Some(Output {
+        value: (),
+        digested: 3
+      })
+    );
+  }
+
+  #[test]
+  fn test_inline_fold_with_sep() {
+    let combinator = (eat('a').bind(1).fold(|| 0, |v, acc, _| acc + v) * (1..)).sep(',');
+    let output = combinator
+      .exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()).unwrap())
+      .unwrap();
+    assert_eq!(output.value, 3);
+    assert_eq!(output.digested, 5);
+  }
+}

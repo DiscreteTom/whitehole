@@ -92,14 +92,4 @@ mod tests {
     assert_eq!(output.value, 3);
     assert_eq!(output.digested, 3);
   }
-
-  #[test]
-  fn test_inline_fold_with_sep() {
-    let combinator = (eat('a').bind(1).fold(|| 0, |v, acc, _| acc + v) * (1..)).sep(',');
-    let output = combinator
-      .exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()).unwrap())
-      .unwrap();
-    assert_eq!(output.value, 3);
-    assert_eq!(output.digested, 5);
-  }
 }
