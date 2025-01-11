@@ -136,40 +136,6 @@ impl<'a> From<&'a String> for Combinator<Eat<&'a String>> {
   }
 }
 
-create_value_combinator!(EatUnchecked, "See [`eat_unchecked`].");
-
-unsafe impl<State, Heap> Action<State, Heap> for EatUnchecked<usize> {
-  type Value = ();
-
-  #[inline]
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
-    unsafe { input.digest_unchecked(self.inner) }.into()
-  }
-}
-
-/// Returns a combinator to eat `n` bytes (not chars) from the head of [`Instant::rest`](crate::instant::Instant::rest),
-/// without checking `n`.
-/// The combinator will never reject.
-///
-/// `0` is allowed but be careful with infinite loops.
-/// # Safety
-/// You should ensure that the [`Output::digested`] is valid.
-/// This will be checked using [`debug_assert!`].
-/// For the checked version, see [`eat`].
-/// # Examples
-/// ```
-/// # use whitehole::{combinator::{eat_unchecked, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action>) {}
-/// // eat 10 bytes
-/// # t(
-/// unsafe { eat_unchecked(10) }
-/// # );
-/// ```
-#[inline]
-pub const unsafe fn eat_unchecked(n: usize) -> Combinator<EatUnchecked<usize>> {
-  Combinator::new(EatUnchecked::new(n))
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -253,36 +219,6 @@ mod tests {
         .map(|output| output.digested),
       Some(6)
     );
-  }
-
-  #[test]
-  fn combinator_eat_unchecked() {
-    // normal
-    assert_eq!(
-      unsafe { eat_unchecked(3) }
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
-        .map(|output| output.digested),
-      Some(3)
-    );
-    // 0
-    assert_eq!(
-      unsafe { eat_unchecked(0) }
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
-        .map(|output| output.digested),
-      Some(0)
-    );
-  }
-
-  #[test]
-  #[should_panic]
-  fn combinator_eat_unchecked_overflow() {
-    unsafe { eat_unchecked(3) }.exec(Input::new(Instant::new("12"), &mut (), &mut ()));
-  }
-
-  #[test]
-  #[should_panic]
-  fn combinator_eat_unchecked_invalid_code_point() {
-    unsafe { eat_unchecked(1) }.exec(Input::new(Instant::new("好"), &mut (), &mut ()));
   }
 
   #[test]
