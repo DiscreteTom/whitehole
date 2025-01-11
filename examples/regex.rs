@@ -29,14 +29,14 @@ mod tests {
   fn test_regex() {
     assert_eq!(
       regex(r"\d+")
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .unwrap()
         .digested,
       3
     );
     assert_eq!(
       regex(r"\d+")
-        .exec(Input::new(Instant::new("123abc"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123abc"), &mut (), &mut ()))
         .unwrap()
         .digested,
       3

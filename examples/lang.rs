@@ -36,14 +36,14 @@ mod tests {
   fn test_whitespaces() {
     assert_eq!(
       whitespaces()
-        .exec(Input::new(Instant::new(" \t\r\n"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new(" \t\r\n"), &mut (), &mut ()))
         .unwrap()
         .digested,
       4
     );
     assert_eq!(
       whitespaces()
-        .exec(Input::new(Instant::new(" \t\r\n123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new(" \t\r\n123"), &mut (), &mut ()))
         .unwrap()
         .digested,
       4
@@ -54,21 +54,21 @@ mod tests {
   fn test_comments() {
     assert_eq!(
       singleline_comment()
-        .exec(Input::new(Instant::new("//123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("//123"), &mut (), &mut ()))
         .unwrap()
         .digested,
       5
     );
     assert_eq!(
       singleline_comment()
-        .exec(Input::new(Instant::new("//123\n"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("//123\n"), &mut (), &mut ()))
         .unwrap()
         .digested,
       6
     );
     assert_eq!(
       singleline_comment()
-        .exec(Input::new(Instant::new("//123\n456"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("//123\n456"), &mut (), &mut ()))
         .unwrap()
         .digested,
       6
@@ -76,21 +76,21 @@ mod tests {
 
     assert_eq!(
       multiline_comment()
-        .exec(Input::new(Instant::new("/*123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("/*123"), &mut (), &mut ()))
         .unwrap()
         .digested,
       5
     );
     assert_eq!(
       multiline_comment()
-        .exec(Input::new(Instant::new("/*123\n*/"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("/*123\n*/"), &mut (), &mut ()))
         .unwrap()
         .digested,
       8
     );
     assert_eq!(
       multiline_comment()
-        .exec(Input::new(Instant::new("/*123\n*/456"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("/*123\n*/456"), &mut (), &mut ()))
         .unwrap()
         .digested,
       8

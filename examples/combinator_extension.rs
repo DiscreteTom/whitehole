@@ -58,9 +58,9 @@ unsafe impl<State, Heap, T: Action<State, Heap>> Action<State, Heap> for Print<T
 fn main() {
   eat("hello")
     .simple_print()
-    .exec(Input::new(Instant::new("hello world"), &mut (), &mut ()).unwrap());
+    .exec(Input::new(Instant::new("hello world"), &mut (), &mut ()));
 
   eat("hello")
     .print()
-    .exec(Input::new(Instant::new("hello world"), &mut (), &mut ()).unwrap());
+    .exec(Input::new(Instant::new("hello world"), &mut (), &mut ()));
 }
