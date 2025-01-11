@@ -56,10 +56,7 @@ mod concat;
 
 pub use concat::*;
 
-use crate::{
-  action::shift_input,
-  combinator::{eat, Action, Combinator, Eat, Input, Output},
-};
+use crate::combinator::{eat, Action, Combinator, Eat, Input, Output};
 use std::ops;
 
 /// An [`Action`] created by the `+` operator.
@@ -88,7 +85,7 @@ unsafe impl<State, Heap, Lhs: Action<State, Heap, Value: Concat<Rhs::Value>>, Rh
     self.lhs.exec(input.reborrow()).and_then(|output| {
       self
         .rhs
-        .exec(shift_input!(input, output.digested))
+        .exec(unsafe { input.shift_unchecked(output.digested) })
         .map(|rhs_output| Output {
           value: output.value.concat(rhs_output.value),
           digested: unsafe { output.digested.unchecked_add(rhs_output.digested) },

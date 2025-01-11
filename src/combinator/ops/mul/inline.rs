@@ -1,6 +1,6 @@
 use super::{impl_mul, Mul, Repeat};
 use crate::{
-  action::{shift_input, Action, Input, Output},
+  action::{Action, Input, Output},
   combinator::Combinator,
 };
 use core::fmt;

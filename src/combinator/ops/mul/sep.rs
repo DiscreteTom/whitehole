@@ -1,6 +1,6 @@
 use super::{inline::InlineFold, Fold, Mul, Repeat};
 use crate::{
-  action::{shift_input, Action, Input, Output},
+  action::{Action, Input, Output},
   combinator::Combinator,
 };
 
@@ -60,7 +60,8 @@ macro_rules! impl_mul_with_sep {
 
     let mut digested_with_sep = 0;
     while unsafe { $repeat.validate(repeated) } {
-      let Some(value_output) = $action.exec(shift_input!($input, digested_with_sep)) else {
+      let Some(value_output) = $action.exec(unsafe { $input.shift_unchecked(digested_with_sep) })
+      else {
         break;
       };
       repeated += 1;
@@ -69,7 +70,7 @@ macro_rules! impl_mul_with_sep {
       debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
       output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
 
-      let Some(sep_output) = $sep.exec(shift_input!($input, output.digested)) else {
+      let Some(sep_output) = $sep.exec(unsafe { $input.shift_unchecked(output.digested) }) else {
         break;
       };
       // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize

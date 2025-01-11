@@ -1,6 +1,6 @@
 use super::{Mul, Repeat};
 use crate::{
-  action::{shift_input, Action, Input, Output},
+  action::{Action, Input, Output},
   combinator::{ops::mul::impl_mul, Combinator},
 };
 use std::ops;

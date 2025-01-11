@@ -194,7 +194,8 @@ macro_rules! impl_mul {
     };
 
     while unsafe { $repeat.validate(repeated) } {
-      let Some(next_output) = $action.exec(shift_input!($input, output.digested)) else {
+      let Some(next_output) = $action.exec(unsafe { $input.shift_unchecked(output.digested) })
+      else {
         break;
       };
 

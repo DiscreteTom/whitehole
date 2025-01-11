@@ -65,24 +65,21 @@ impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
       instant: self.instant.clone(),
     }
   }
+
+  /// Construct a new [`Input`] by digesting `n` bytes from [`Input::instant`].
+  ///
+  /// This is cheap to call.
+  /// # Safety
+  /// You should ensure that `n` is a valid UTF-8 boundary.
+  /// This will be checked using [`debug_assert!`].
+  #[inline]
+  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<'text, &mut State, &mut Heap> {
+    let mut instant = self.instant().clone();
+    instant.digest_unchecked(n);
+    Input::new(instant, &mut *self.state, &mut *self.heap)
+  }
 }
 
-// TODO: make this a function?
-/// Construct a new [`Input`] by digesting `n` bytes from [`Input::instant`].
-/// # Safety
-/// You should ensure that `n` is a valid UTF-8 boundary.
-/// This will be checked using [`debug_assert!`].
-/// # Performance
-/// This is a macro to make sure this is always inlined.
-macro_rules! shift_input {
-  ($input:expr, $n:expr) => {{
-    // perf: check the len first to prevent unnecessary clone of instant
-    let mut instant = $input.instant().clone();
-    unsafe { instant.digest_unchecked($n) };
-    Input::new(instant, &mut *$input.state, &mut *$input.heap)
-  }};
-}
-pub(crate) use shift_input;
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -115,5 +112,24 @@ mod tests {
     }
     assert_eq!(state, 456);
     assert_eq!(heap, 456);
+  }
+
+  #[test]
+  fn input_shift_unchecked() {
+    let mut state = 123;
+    let mut heap = 123;
+    let mut input = Input::new(Instant::new("123"), &mut state, &mut heap);
+    let input = unsafe { input.shift_unchecked(1) };
+    assert_eq!(input.instant().digested(), 1);
+    assert_eq!(input.instant().rest(), "23");
+  }
+
+  #[test]
+  #[should_panic]
+  fn input_shift_unchecked_invalid_utf8() {
+    let mut state = 123;
+    let mut heap = 123;
+    let mut input = Input::new(Instant::new("好"), &mut state, &mut heap);
+    let _ = unsafe { input.shift_unchecked(1) };
   }
 }

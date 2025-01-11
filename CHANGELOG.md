@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `Input::shift_unchecked`.
+
 ### Changed
 
 - The `rest` of `Input::instant` is no longer guaranteed to be non-empty.
