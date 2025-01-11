@@ -18,8 +18,7 @@ unsafe impl<State, Heap, F: Fn(char) -> bool> Action<State, Heap> for Next<F> {
   }
 }
 
-/// Returns a combinator to match
-/// [`Input::next`](crate::action::Input::next) by the condition.
+/// Returns a combinator to match the next undigested [`char`] by the condition.
 /// The combinator will reject if not matched.
 /// # Examples
 /// ```
