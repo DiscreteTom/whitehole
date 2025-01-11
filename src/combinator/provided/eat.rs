@@ -62,11 +62,6 @@ unsafe impl<State, Heap> Action<State, Heap> for Eat<usize> {
 
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
-    // if eat 1 char, just eat the `input.next` which always exists
-    if self.inner == 1 {
-      return unsafe { input.digest_unchecked(input.next().len_utf8()) }.into();
-    }
-
     let mut digested: usize = 0;
     let mut count: usize = 0;
     let mut chars = input.instant().rest().chars();
@@ -185,76 +180,76 @@ mod tests {
     // normal usize
     assert_eq!(
       eat(3)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(3)
     );
     // normal &str
     assert_eq!(
       eat("123")
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(3)
     );
     // normal String
     assert_eq!(
       eat("123".to_string())
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(3)
     );
     // normal &String
     assert_eq!(
       eat(&"123".to_string())
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(3)
     );
     // normal char
     assert_eq!(
       eat(';')
-        .exec(Input::new(Instant::new(";"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new(";"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(1)
     );
     // overflow
     assert_eq!(
       eat(3)
-        .exec(Input::new(Instant::new("12"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("12"), &mut (), &mut ()))
         .map(|output| output.digested),
       None
     );
     // reject
     assert!(eat("123")
-      .exec(Input::new(Instant::new("abc"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("abc"), &mut (), &mut ()))
       .is_none());
     assert!(eat('1')
-      .exec(Input::new(Instant::new("abc"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("abc"), &mut (), &mut ()))
       .is_none());
     // 0 is allowed and always accept
     assert_eq!(
       eat(0)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(0)
     );
     // empty string is allowed and always accept
     assert_eq!(
       eat("")
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(0)
     );
     // eat by chars not bytes
     assert_eq!(
       eat(1)
-        .exec(Input::new(Instant::new("好"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("好"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(3)
     );
     assert_eq!(
       eat(2)
-        .exec(Input::new(Instant::new("好好"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("好好"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(6)
     );
@@ -265,14 +260,14 @@ mod tests {
     // normal
     assert_eq!(
       unsafe { eat_unchecked(3) }
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(3)
     );
     // 0
     assert_eq!(
       unsafe { eat_unchecked(0) }
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(0)
     );
@@ -281,19 +276,19 @@ mod tests {
   #[test]
   #[should_panic]
   fn combinator_eat_unchecked_overflow() {
-    unsafe { eat_unchecked(3) }.exec(Input::new(Instant::new("12"), &mut (), &mut ()).unwrap());
+    unsafe { eat_unchecked(3) }.exec(Input::new(Instant::new("12"), &mut (), &mut ()));
   }
 
   #[test]
   #[should_panic]
   fn combinator_eat_unchecked_invalid_code_point() {
-    unsafe { eat_unchecked(1) }.exec(Input::new(Instant::new("好"), &mut (), &mut ()).unwrap());
+    unsafe { eat_unchecked(1) }.exec(Input::new(Instant::new("好"), &mut (), &mut ()));
   }
 
   #[test]
   fn eat_into_combinator() {
     fn test(c: Combinator<impl Action>) {
-      c.exec(Input::new(Instant::new("a"), &mut (), &mut ()).unwrap());
+      c.exec(Input::new(Instant::new("a"), &mut (), &mut ()));
     }
     test(1.into());
     test('a'.into());

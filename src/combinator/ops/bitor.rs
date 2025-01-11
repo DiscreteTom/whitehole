@@ -149,7 +149,7 @@ mod tests {
 
     // reject then accept, both should increment the state
     assert_eq!(
-      (rejecter() | accepter()).exec(Input::new(Instant::new("123"), &mut state, &mut ()).unwrap()),
+      (rejecter() | accepter()).exec(Input::new(Instant::new("123"), &mut state, &mut ())),
       Some(Output {
         value: (),
         digested: 1,
@@ -161,7 +161,7 @@ mod tests {
 
     // accept then reject, only the first should increment the state
     assert_eq!(
-      (accepter() | rejecter()).exec(Input::new(Instant::new("123"), &mut state, &mut ()).unwrap()),
+      (accepter() | rejecter()).exec(Input::new(Instant::new("123"), &mut state, &mut ())),
       Some(Output {
         value: (),
         digested: 1,
@@ -175,7 +175,7 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | '1')
-        .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(1)
     );
@@ -186,7 +186,7 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | 1)
-        .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(1)
     );
@@ -197,7 +197,7 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | "1")
-        .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(1)
     );
@@ -208,7 +208,7 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | "1".to_string())
-        .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(1)
     );
@@ -219,7 +219,7 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | &"1".to_string())
-        .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(1)
     );

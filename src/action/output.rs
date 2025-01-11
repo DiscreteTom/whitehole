@@ -71,7 +71,7 @@ mod tests {
   fn input_digest() {
     let mut state = ();
     let mut heap = ();
-    let input = Input::new(Instant::new("123"), &mut state, &mut heap).unwrap();
+    let input = Input::new(Instant::new("123"), &mut state, &mut heap);
     assert_eq!(input.digest(3).map(|output| output.digested), Some(3));
     assert_eq!(input.digest(2).map(|output| output.digested), Some(2));
     assert_eq!(input.digest(1).map(|output| output.digested), Some(1));
@@ -83,7 +83,7 @@ mod tests {
   fn input_digest_invalid_code_point() {
     let mut state = ();
     let mut heap = ();
-    let input = Input::new(Instant::new("好"), &mut state, &mut heap).unwrap();
+    let input = Input::new(Instant::new("好"), &mut state, &mut heap);
     assert!(input.digest(1).is_none());
   }
 
@@ -91,7 +91,7 @@ mod tests {
   fn input_digest_unchecked() {
     let mut state = ();
     let mut heap = ();
-    let input = Input::new(Instant::new("123"), &mut state, &mut heap).unwrap();
+    let input = Input::new(Instant::new("123"), &mut state, &mut heap);
     assert_eq!(unsafe { input.digest_unchecked(3).digested }, 3);
     assert_eq!(unsafe { input.digest_unchecked(2).digested }, 2);
     assert_eq!(unsafe { input.digest_unchecked(1).digested }, 1);
@@ -103,7 +103,7 @@ mod tests {
   fn input_digest_unchecked_overflow() {
     let mut state = ();
     let mut heap = ();
-    let input = Input::new(Instant::new("123"), &mut state, &mut heap).unwrap();
+    let input = Input::new(Instant::new("123"), &mut state, &mut heap);
     unsafe { input.digest_unchecked(4) };
   }
 
@@ -112,7 +112,7 @@ mod tests {
   fn input_digest_unchecked_invalid_code_point() {
     let mut state = ();
     let mut heap = ();
-    let input = Input::new(Instant::new("好"), &mut state, &mut heap).unwrap();
+    let input = Input::new(Instant::new("好"), &mut state, &mut heap);
     unsafe { input.digest_unchecked(1) };
   }
 

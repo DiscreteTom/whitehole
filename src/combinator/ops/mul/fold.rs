@@ -56,7 +56,7 @@ mod tests {
 
   #[test]
   fn fold_unit() {
-    let _: () = ().fold((), Input::new(Instant::new("a"), &mut (), &mut ()).unwrap());
+    let _: () = ().fold((), Input::new(Instant::new("a"), &mut (), &mut ()));
   }
 
   #[derive(Debug)]
@@ -81,13 +81,13 @@ mod tests {
 
     // repeat a rejecter will reject
     assert!((rejecter() * 3)
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
 
     // repeat rejecter 0 times will accept
     let n = 0;
     assert_eq!(
-      (rejecter() * n).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (rejecter() * n).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: (),
         digested: 0,
@@ -97,7 +97,7 @@ mod tests {
     // repeat an accepter 0 times will accept
     let n = 0;
     assert_eq!(
-      (accepter() * n).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter() * n).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
         digested: 0,
@@ -106,7 +106,7 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * 3).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter() * 3).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,
         digested: 3
@@ -115,7 +115,7 @@ mod tests {
 
     // overflow, reject
     assert!((accepter() * 4)
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
   }
 
@@ -132,12 +132,12 @@ mod tests {
 
     // repeat a rejecter will reject
     assert!((rejecter() * (1..2))
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (0..2)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (rejecter() * (0..2)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: (),
         digested: 0,
@@ -146,7 +146,7 @@ mod tests {
 
     // repeat an accepter 0 times will accept
     assert_eq!(
-      (accepter() * (0..1)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter() * (0..1)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
         digested: 0,
@@ -155,7 +155,7 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (0..3)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter() * (0..3)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 1,
         digested: 2
@@ -164,7 +164,7 @@ mod tests {
 
     // too few, reject
     assert!((accepter() * (4..6))
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
   }
 
@@ -181,12 +181,12 @@ mod tests {
 
     // repeat a rejecter will reject
     assert!((rejecter() * (1..))
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (0..)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (rejecter() * (0..)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: (),
         digested: 0,
@@ -195,7 +195,7 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (0..)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter() * (0..)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,
         digested: 3
@@ -204,7 +204,7 @@ mod tests {
 
     // too few, reject
     assert!((accepter() * (4..))
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
   }
 
@@ -221,7 +221,7 @@ mod tests {
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (..)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (rejecter() * (..)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: (),
         digested: 0,
@@ -230,7 +230,7 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (..)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter() * (..)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,
         digested: 3
@@ -251,12 +251,12 @@ mod tests {
 
     // repeat a rejecter will reject
     assert!((rejecter() * (1..=3))
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (0..=2)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (rejecter() * (0..=2)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: (),
         digested: 0,
@@ -265,7 +265,7 @@ mod tests {
 
     // repeat an accepter 0 times will accept
     assert_eq!(
-      (accepter() * (0..=0)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter() * (0..=0)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
         digested: 0,
@@ -274,7 +274,7 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (0..=3)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter() * (0..=3)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,
         digested: 3
@@ -283,7 +283,7 @@ mod tests {
 
     // too few, reject
     assert!((accepter() * (4..=6))
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
   }
 
@@ -300,7 +300,7 @@ mod tests {
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (..2)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (rejecter() * (..2)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: (),
         digested: 0,
@@ -309,7 +309,7 @@ mod tests {
 
     // repeat an accepter 0 times will accept
     assert_eq!(
-      (accepter() * (..1)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter() * (..1)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
         digested: 0,
@@ -318,7 +318,7 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (..3)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter() * (..3)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 1,
         digested: 2
@@ -339,7 +339,7 @@ mod tests {
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (..=2)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (rejecter() * (..=2)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: (),
         digested: 0,
@@ -348,7 +348,7 @@ mod tests {
 
     // repeat an accepter 0 times will accept
     assert_eq!(
-      (accepter() * (..=0)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter() * (..=0)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
         digested: 0,
@@ -357,7 +357,7 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (..=3)).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter() * (..=3)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,
         digested: 3

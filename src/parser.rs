@@ -113,8 +113,9 @@ impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
   }
 
   /// Try to yield the next [`Output`].
-  /// Return [`None`] if the text is already fully digested
-  /// or the action rejects.
+  /// Return [`None`] if the action rejects.
+  ///
+  /// This will update [`Self::instant`] automatically.
   #[inline]
   pub fn parse(&mut self) -> Option<Output<T::Value>>
   where
@@ -126,14 +127,13 @@ impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
         self.instant.clone(),
         &mut self.state,
         &mut self.heap,
-      )?)
+      ))
       .inspect(|output| unsafe { self.instant.digest_unchecked(output.digested) })
   }
 
   /// Try to yield the next [`Output`] without updating [`Self::instant`] and [`Self::state`].
   /// [`Self::state`] will be cloned and returned.
-  /// Return [`None`] if the text is already fully digested
-  /// or the action rejects.
+  /// Return [`None`] if the action rejects.
   #[inline]
   pub fn peek(&mut self) -> (Option<Output<T::Value>>, State)
   where
@@ -142,8 +142,11 @@ impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
   {
     let mut tmp_state = self.state.clone();
     (
-      Input::new(self.instant.clone(), &mut tmp_state, &mut self.heap)
-        .and_then(|input| self.entry.exec(input)),
+      self.entry.exec(Input::new(
+        self.instant.clone(),
+        &mut tmp_state,
+        &mut self.heap,
+      )),
       tmp_state,
     )
   }
@@ -179,7 +182,7 @@ mod tests {
     assert_eq!(
       parser
         .entry()
-        .exec(Input::new(Instant::new("123"), &mut 0, &mut 0).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut 0, &mut 0))
         .unwrap()
         .digested,
       3

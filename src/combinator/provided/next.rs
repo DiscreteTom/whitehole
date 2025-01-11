@@ -10,7 +10,7 @@ unsafe impl<State, Heap, F: Fn(char) -> bool> Action<State, Heap> for Next<F> {
 
   #[inline]
   fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    let next = input.next();
+    let next = input.instant().rest().chars().next()?;
     if !(self.inner)(next) {
       return None;
     }
@@ -52,13 +52,13 @@ mod tests {
     // normal
     assert_eq!(
       next(|c| c.is_ascii_digit())
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(1)
     );
     // reject
     assert!(next(|c| c.is_ascii_alphabetic())
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
 
     // ensure the combinator is copyable and clone-able
@@ -75,13 +75,13 @@ mod tests {
     // normal
     assert_eq!(
       (next(|c| c.is_ascii_digit()) * (1..))
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(next(|c| c.is_ascii_digit())
-      .exec(Input::new(Instant::new("abc"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("abc"), &mut (), &mut ()))
       .is_none());
   }
 }

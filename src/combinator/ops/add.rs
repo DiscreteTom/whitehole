@@ -86,8 +86,9 @@ unsafe impl<State, Heap, Lhs: Action<State, Heap, Value: Concat<Rhs::Value>>, Rh
   #[inline]
   fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.lhs.exec(input.reborrow()).and_then(|output| {
-      shift_input!(input, output.digested)
-        .and_then(|input| self.rhs.exec(input))
+      self
+        .rhs
+        .exec(shift_input!(input, output.digested))
         .map(|rhs_output| Output {
           value: output.value.concat(rhs_output.value),
           digested: unsafe { output.digested.unchecked_add(rhs_output.digested) },
@@ -171,35 +172,32 @@ mod tests {
 
     // reject then accept, should return None
     assert!((rejecter() + accepter_unit())
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
 
     // accept then reject, should return None
     assert!((accepter_unit() + rejecter())
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
 
     // accept then accept, should return the sum of the digested
     // with the concat value
     assert_eq!(
-      (accepter_unit() + accepter_int())
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter_unit() + accepter_int()).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: (123,),
         digested: 2,
       })
     );
     assert_eq!(
-      (accepter_int() + accepter_unit())
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter_int() + accepter_unit()).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: (123,),
         digested: 2,
       })
     );
     assert_eq!(
-      (accepter_int() + accepter_int())
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      (accepter_int() + accepter_int()).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: (123, 123),
         digested: 2,
@@ -213,7 +211,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + '2')
-        .exec(Input::new(Instant::new("12"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("12"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(2)
     );
@@ -225,7 +223,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + "23".to_string())
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(3)
     );
@@ -237,7 +235,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + &"23".to_string())
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(3)
     );
@@ -249,7 +247,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + "23")
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(3)
     );
@@ -262,21 +260,21 @@ mod tests {
     // normal
     assert_eq!(
       (eat1() + 2)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(3)
     );
     // overflow
     assert_eq!(
       (eat1() + 3)
-        .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
         .map(|output| output.digested),
       None
     );
     // 0
     assert_eq!(
       (eat1() + 0)
-        .exec(Input::new(Instant::new("12"), &mut (), &mut ()).unwrap())
+        .exec(Input::new(Instant::new("12"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(1)
     );

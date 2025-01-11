@@ -60,9 +60,7 @@ macro_rules! impl_mul_with_sep {
 
     let mut digested_with_sep = 0;
     while unsafe { $repeat.validate(repeated) } {
-      let Some(value_output) =
-        shift_input!($input, digested_with_sep).and_then(|input| $action.exec(input))
-      else {
+      let Some(value_output) = $action.exec(shift_input!($input, digested_with_sep)) else {
         break;
       };
       repeated += 1;
@@ -71,9 +69,7 @@ macro_rules! impl_mul_with_sep {
       debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
       output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
 
-      let Some(sep_output) =
-        shift_input!($input, output.digested).and_then(|input| $sep.exec(input))
-      else {
+      let Some(sep_output) = $sep.exec(shift_input!($input, output.digested)) else {
         break;
       };
       // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
@@ -144,7 +140,7 @@ mod tests {
     let one_or_more = || (eat('a') * (1..)).sep(',');
     macro_rules! input {
       ($rest:expr) => {
-        Input::new(Instant::new($rest), &mut (), &mut ()).unwrap()
+        Input::new(Instant::new($rest), &mut (), &mut ())
       };
     }
 
@@ -190,7 +186,7 @@ mod tests {
   fn test_inline_fold_with_sep() {
     let combinator = (eat('a').bind(1).fold(|| 0, |v, acc, _| acc + v) * (1..)).sep(',');
     let output = combinator
-      .exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()))
       .unwrap();
     assert_eq!(output.value, 3);
     assert_eq!(output.digested, 5);

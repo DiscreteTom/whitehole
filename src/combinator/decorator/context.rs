@@ -127,8 +127,7 @@ mod tests {
           },
           &mut $state,
           &mut $heap,
-        )
-        .unwrap(),
+        ),
         output: Output {
           value: (),
           digested: 1,
@@ -151,8 +150,7 @@ mod tests {
           },
           &mut $state,
           &mut $heap,
-        )
-        .unwrap(),
+        ),
         output: &Output {
           value: (),
           digested: 1,
@@ -165,7 +163,6 @@ mod tests {
   fn accepted_decorator_context() {
     // getters
     assert_eq!(ctx!().input().instant().rest(), "123");
-    assert_eq!(ctx!().input().next(), '1');
     assert_eq!(ctx!().start(), 1);
     assert_eq!(ctx!().digested(), 1);
     assert_eq!(ctx!().rest(), "23");
@@ -173,7 +170,6 @@ mod tests {
     assert_eq!(ctx!().range(), 1..2);
     assert_eq!(ctx!().content(), "1");
     assert_eq!(ctx_ref!().input().instant().rest(), "123");
-    assert_eq!(ctx_ref!().input().next(), '1');
     assert_eq!(ctx_ref!().start(), 1);
     assert_eq!(ctx_ref!().digested(), 1);
     assert_eq!(ctx_ref!().rest(), "23");

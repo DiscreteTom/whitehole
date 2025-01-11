@@ -36,7 +36,7 @@ impl<T> Combinator<T> {
   ///   // accept one ascii digit at a time
   ///   next(|c| c.is_ascii_digit())
   ///     // convert the char to a number
-  ///     .select(|ctx| ctx.input().next() as usize - '0' as usize)
+  ///     .select(|ctx| ctx.input().instant().rest().chars().next().unwrap() as usize - '0' as usize)
   ///     // init accumulator with 0, and fold values
   ///     .fold(|| 0 as usize, |value, acc, _| acc * 10 + value)
   ///     // repeat for 1 or more times
@@ -44,7 +44,7 @@ impl<T> Combinator<T> {
   ///
   /// // parse "123" to 123
   /// assert_eq!(
-  ///   combinator.exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()).unwrap().value,
+  ///   combinator.exec(Input::new(Instant::new("123"), &mut (), &mut ())).unwrap().value,
   ///   123
   /// )
   /// ```
@@ -109,7 +109,7 @@ mod tests {
   fn test_inline_fold() {
     let combinator = eat('a').bind(1).fold(|| 0, |v, acc, _| acc + v) * (1..);
     let output = combinator
-      .exec(Input::new(Instant::new("aaa"), &mut (), &mut ()).unwrap())
+      .exec(Input::new(Instant::new("aaa"), &mut (), &mut ()))
       .unwrap();
     assert_eq!(output.value, 3);
     assert_eq!(output.digested, 3);

@@ -243,14 +243,14 @@ mod tests {
     let mut executed = false;
     assert!(accepter()
       .when(|_| false)
-      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
       .is_none());
     assert!(!executed);
 
     let mut executed = false;
     assert!(accepter()
       .when(|_| true)
-      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
       .is_some());
     assert!(executed);
   }
@@ -260,14 +260,14 @@ mod tests {
     let mut executed = false;
     assert!(accepter()
       .prevent(|_| true)
-      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
       .is_none());
     assert!(!executed);
 
     let mut executed = false;
     assert!(accepter()
       .prevent(|_| false)
-      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap())
+      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
       .is_some());
     assert!(executed);
   }
@@ -278,7 +278,7 @@ mod tests {
     assert_eq!(
       accepter()
         .reject(|input| input.content() != "1")
-        .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
         .unwrap()
         .digested,
       1
@@ -289,7 +289,7 @@ mod tests {
     assert_eq!(
       accepter()
         .reject(|input| input.content() == "1")
-        .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("123"), &mut executed, &mut ())),
       None
     );
     assert!(executed);
@@ -301,7 +301,7 @@ mod tests {
     assert_eq!(
       accepter()
         .optional()
-        .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
         .unwrap()
         .digested,
       1
@@ -312,7 +312,21 @@ mod tests {
     assert_eq!(
       rejecter()
         .optional()
-        .exec(Input::new(Instant::new("123"), &mut executed, &mut ()).unwrap())
+        .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
+        .unwrap()
+        .digested,
+      0
+    );
+    assert!(executed);
+  }
+
+  #[test]
+  fn optional_can_be_the_last_one() {
+    let mut executed = false;
+    assert_eq!(
+      accepter()
+        .optional()
+        .exec(Input::new(Instant::new(""), &mut executed, &mut ()))
         .unwrap()
         .digested,
       0
@@ -326,7 +340,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .exec(Input::new(Instant::new("1"), &mut executed, &mut ()).unwrap())
+        .exec(Input::new(Instant::new("1"), &mut executed, &mut ()))
         .unwrap()
         .digested,
       1
@@ -337,7 +351,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .exec(Input::new(Instant::new("12"), &mut executed, &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("12"), &mut executed, &mut ())),
       None
     );
     assert!(executed);
@@ -346,7 +360,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .exec(Input::new(Instant::new("1a"), &mut executed, &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("1a"), &mut executed, &mut ())),
       None
     );
     assert!(executed);
@@ -355,7 +369,7 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .exec(Input::new(Instant::new("1_"), &mut executed, &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("1_"), &mut executed, &mut ())),
       None
     );
     assert!(executed);

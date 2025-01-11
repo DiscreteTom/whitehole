@@ -58,7 +58,7 @@
 //!   // accept one ascii digit at a time
 //!   next(|c| c.is_ascii_digit())
 //!     // convert the char to a number
-//!     .select(|ctx| ctx.input().next() as usize - '0' as usize)
+//!     .select(|ctx| ctx.input().instant().rest().chars().next().unwrap() as usize - '0' as usize)
 //!     // init accumulator with 0, and fold values
 //!     .fold(|| 0 as usize, |value, acc, _| acc * 10 + value)
 //!     // repeat for 1 or more times
@@ -66,7 +66,7 @@
 //!
 //! // parse "123" to 123
 //! assert_eq!(
-//!   combinator.exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()).unwrap().value,
+//!   combinator.exec(Input::new(Instant::new("123"), &mut (), &mut ())).unwrap().value,
 //!   123
 //! )
 //! ```
@@ -90,13 +90,13 @@
 //!   // accept one ascii digit at a time
 //!   next(|c| c.is_ascii_digit())
 //!     // convert the char to a number, wrapped in `Usize`
-//!     .select(|ctx| Usize(ctx.input().next() as usize - '0' as usize))
+//!     .select(|ctx| Usize(ctx.input().instant().rest().chars().next().unwrap() as usize - '0' as usize))
 //!     // repeat for 1 or more times, fold `Usize` to `usize`
 //!     * (1..);
 //!
 //! // parse "123" to 123
 //! assert_eq!(
-//!   combinator.exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()).unwrap().value,
+//!   combinator.exec(Input::new(Instant::new("123"), &mut (), &mut ())).unwrap().value,
 //!   123
 //! )
 //! ```
@@ -120,7 +120,7 @@
 //!
 //! // create a re-usable heap
 //! let mut heap = vec![];
-//! combinator.exec(Input::new(Instant::new("123"), &mut (), &mut heap).unwrap());
+//! combinator.exec(Input::new(Instant::new("123"), &mut (), &mut heap));
 //! assert_eq!(heap, vec![0, 1, 2]);
 //! ```
 //! # Separator
@@ -130,7 +130,7 @@
 //! # use whitehole::{combinator::eat, action::{Input, Action}, instant::Instant};
 //! let combinator = (eat('a') * (1..)).sep(',');
 //! assert_eq!(
-//!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()).unwrap()).unwrap().digested,
+//!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ())).unwrap().digested,
 //!   5
 //! )
 //! ```
@@ -140,7 +140,7 @@
 //! # use whitehole::{combinator::{ops::mul::Fold, eat}, action::{Input, Action}, instant::Instant};
 //! let combinator = (eat('a').bind(1).fold(|| 0, |v, acc, _| acc + v) * (1..)).sep(',');
 //! assert_eq!(
-//!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()).unwrap()).unwrap().value,
+//!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ())).unwrap().value,
 //!   3
 //! );
 //!
@@ -155,7 +155,7 @@
 //! }
 //! let combinator = (eat('a').bind(Usize(1)) * (1..)).sep(',');
 //! assert_eq!(
-//!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()).unwrap()).unwrap().value,
+//!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ())).unwrap().value,
 //!   3
 //! )
 //! ```
@@ -194,9 +194,7 @@ macro_rules! impl_mul {
     };
 
     while unsafe { $repeat.validate(repeated) } {
-      let Some(next_output) =
-        shift_input!($input, output.digested).and_then(|input| $action.exec(input))
-      else {
+      let Some(next_output) = $action.exec(shift_input!($input, output.digested)) else {
         break;
       };
 

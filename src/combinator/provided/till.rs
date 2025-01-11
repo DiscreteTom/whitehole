@@ -90,29 +90,28 @@ mod tests {
   #[test]
   fn until_exec() {
     assert_eq!(
-      till("end".to_string())
-        .exec(Input::new(Instant::new("123end456"), &mut (), &mut ()).unwrap()),
+      till("end".to_string()).exec(Input::new(Instant::new("123end456"), &mut (), &mut ())),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till("end").exec(Input::new(Instant::new("123end456"), &mut (), &mut ()).unwrap()),
+      till("end").exec(Input::new(Instant::new("123end456"), &mut (), &mut ())),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till(';').exec(Input::new(Instant::new("123;456"), &mut (), &mut ()).unwrap()),
+      till(';').exec(Input::new(Instant::new("123;456"), &mut (), &mut ())),
       Some(Output {
         value: (),
         digested: 4
       })
     );
     assert_eq!(
-      till(()).exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      till(()).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: (),
         digested: 3

@@ -285,7 +285,7 @@ mod tests {
     assert_eq!(
       wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
         .map(Some)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: Some(1),
         digested: 1
@@ -298,7 +298,7 @@ mod tests {
     assert_eq!(
       wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
         .tuple()
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: (1,),
         digested: 1
@@ -312,7 +312,7 @@ mod tests {
       wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
         .tuple()
         .pop()
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 1,
         digested: 1
@@ -323,9 +323,11 @@ mod tests {
   #[test]
   fn combinator_bind() {
     assert_eq!(
-      wrap(|input| input.digest(1))
-        .bind(123)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+      wrap(|input| input.digest(1)).bind(123).exec(Input::new(
+        Instant::new("123"),
+        &mut (),
+        &mut ()
+      )),
       Some(Output {
         value: 123,
         digested: 1
@@ -338,7 +340,7 @@ mod tests {
     assert_eq!(
       wrap(|input| input.digest(1))
         .bind_default::<i32>()
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
         digested: 1
@@ -351,7 +353,7 @@ mod tests {
     assert_eq!(
       wrap(|input| input.digest(1))
         .select(|ctx| if ctx.content() == "1" { 1 } else { 2 })
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 1,
         digested: 1
@@ -364,7 +366,7 @@ mod tests {
     assert_eq!(
       wrap(|input| input.digest(1))
         .range()
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap()),
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: WithRange {
           data: (),

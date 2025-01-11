@@ -86,7 +86,7 @@ mod tests {
   use crate::{combinator::wrap, instant::Instant};
 
   fn helper(t: impl Action<Value = ()>) -> Option<Output<()>> {
-    t.exec(Input::new(Instant::new("123"), &mut (), &mut ()).unwrap())
+    t.exec(Input::new(Instant::new("123"), &mut (), &mut ()))
   }
 
   #[test]

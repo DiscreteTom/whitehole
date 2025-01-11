@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The `rest` of `Input::instant` is no longer guaranteed to be non-empty.
+- `Input::new` will return `Input` directly instead of an `Option`.
+
+### Fixed
+
+- `Combinator::optional` now will work properly with empty rest string.
+
+### Removed
+
+- Remove `Input::new_unchecked` and `Input::next`.
+
 ## [0.4.0] - 2025-01-10
 
 ### Added

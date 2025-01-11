@@ -39,7 +39,7 @@ impl_wrap!(Wrap, assert);
 /// # use whitehole::action::{Input, Output, Action};
 /// # fn t() -> Combinator<impl Action> {
 /// // eat the next character
-/// unsafe { wrap_unchecked(|input| input.digest(input.next().len_utf8())) }
+/// unsafe { wrap_unchecked(|input| input.instant().rest().chars().next().and_then(|c| input.digest(c.len_utf8()))) }
 /// # }
 /// ```
 #[inline]
@@ -64,7 +64,7 @@ pub const unsafe fn wrap_unchecked<
 /// # use whitehole::action::{Input, Output, Action};
 /// # fn t() -> Combinator<impl Action> {
 /// // eat the next character
-/// wrap(|input| input.digest(input.next().len_utf8()))
+/// wrap(|input| input.instant().rest().chars().next().and_then(|c| input.digest(c.len_utf8())))
 /// # }
 /// ```
 #[inline]
@@ -88,7 +88,7 @@ mod tests {
   fn combinator_wrap_unchecked() {
     let c = unsafe { wrap_unchecked(|input| input.digest(1)) };
     assert_eq!(
-      c.exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap()),
+      c.exec(Input::new(Instant::new("1"), &mut (), &mut ())),
       Some(Output {
         value: (),
         digested: 1
@@ -106,22 +106,28 @@ mod tests {
   #[test]
   #[should_panic]
   fn combinator_wrap_unchecked_overflow() {
-    unsafe { wrap_unchecked(|input| input.digest_unchecked(4).into()) }
-      .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap());
+    unsafe { wrap_unchecked(|input| input.digest_unchecked(4).into()) }.exec(Input::new(
+      Instant::new("1"),
+      &mut (),
+      &mut (),
+    ));
   }
 
   #[test]
   #[should_panic]
   fn combinator_wrap_unchecked_invalid_code_point() {
-    unsafe { wrap_unchecked(|input| input.digest_unchecked(1).into()) }
-      .exec(Input::new(Instant::new("好"), &mut (), &mut ()).unwrap());
+    unsafe { wrap_unchecked(|input| input.digest_unchecked(1).into()) }.exec(Input::new(
+      Instant::new("好"),
+      &mut (),
+      &mut (),
+    ));
   }
 
   #[test]
   fn combinator_wrap() {
     let c = wrap(|input| input.digest(1));
     assert_eq!(
-      c.exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap()),
+      c.exec(Input::new(Instant::new("1"), &mut (), &mut ())),
       Some(Output {
         value: (),
         digested: 1
@@ -139,14 +145,20 @@ mod tests {
   #[test]
   #[should_panic]
   fn combinator_wrap_overflow() {
-    wrap(|input| unsafe { input.digest_unchecked(4) }.into())
-      .exec(Input::new(Instant::new("1"), &mut (), &mut ()).unwrap());
+    wrap(|input| unsafe { input.digest_unchecked(4) }.into()).exec(Input::new(
+      Instant::new("1"),
+      &mut (),
+      &mut (),
+    ));
   }
 
   #[test]
   #[should_panic]
   fn combinator_wrap_invalid_code_point() {
-    wrap(|input| unsafe { input.digest_unchecked(1) }.into())
-      .exec(Input::new(Instant::new("好"), &mut (), &mut ()).unwrap());
+    wrap(|input| unsafe { input.digest_unchecked(1) }.into()).exec(Input::new(
+      Instant::new("好"),
+      &mut (),
+      &mut (),
+    ));
   }
 }
