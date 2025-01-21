@@ -23,7 +23,7 @@ pub fn build_lexer(s: &str) -> Parser<impl Action<MyState>, MyState> {
 
   macro_rules! Input {
     () => {
-      Input<&mut MyState, _>
+      Input<&str, &mut MyState, _>
     };
   }
 

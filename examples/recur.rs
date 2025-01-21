@@ -44,7 +44,7 @@ pub struct Recur<Value, State, Heap> {
 unsafe impl<Value, State, Heap> Action<State, Heap> for Recur<Value, State, Heap> {
   type Value = Value;
 
-  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.rc.get().unwrap().exec(input)
   }
 }
@@ -73,7 +73,7 @@ pub struct RecurUnchecked<Value, State, Heap> {
 unsafe impl<Value, State, Heap> Action<State, Heap> for RecurUnchecked<Value, State, Heap> {
   type Value = Value;
 
-  fn exec<'text>(&self, input: Input<'text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     unsafe { self.rc.get().unwrap_unchecked() }.exec(input)
   }
 }

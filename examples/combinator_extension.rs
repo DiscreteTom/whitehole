@@ -41,7 +41,7 @@ impl<T> CombinatorExt<T> for Combinator<T> {
 unsafe impl<State, Heap, T: Action<State, Heap>> Action<State, Heap> for Print<T> {
   type Value = T::Value;
 
-  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).inspect(|output| {
       let start = input.instant().digested();
       let end = start + output.digested;
