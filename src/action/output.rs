@@ -16,7 +16,7 @@ pub struct Output<Value = ()> {
   pub digested: usize,
 }
 
-impl<StateRef, HeapRef> Input<'_, StateRef, HeapRef> {
+impl<StateRef, HeapRef> Input<&str, StateRef, HeapRef> {
   /// Validate if it is ok to digest `n` bytes.
   #[inline]
   pub fn validate(&self, n: usize) -> bool {

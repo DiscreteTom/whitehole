@@ -22,7 +22,7 @@ pub struct Parser<'text, T, State = (), Heap = ()> {
   pub heap: Heap,
 
   /// See [`Self::instant`].
-  instant: Instant<'text>,
+  instant: Instant<&'text str>,
   /// See [`Self::entry`].
   entry: T,
 }
@@ -37,7 +37,7 @@ impl<'text, T, State, Heap> Parser<'text, T, State, Heap> {
   /// See [`Instant`].
   /// You are not allowed to mutate this directly.
   #[inline]
-  pub const fn instant(&self) -> &Instant<'text> {
+  pub const fn instant(&self) -> &Instant<&'text str> {
     &self.instant
   }
 

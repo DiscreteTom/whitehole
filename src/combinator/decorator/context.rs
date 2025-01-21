@@ -100,11 +100,11 @@ macro_rules! impl_ctx {
 // Input will always be consumed.
 // Output won't be modified directly in the context, but can be consumed.
 impl_ctx!(
-  Input<'text, &'state mut State, &'heap mut Heap>,
+  Input<&'text str, &'state mut State, &'heap mut Heap>,
   Output<Value>
 );
 impl_ctx!(
-  Input<'text, &'state mut State, &'heap mut Heap>,
+  Input<&'text str, &'state mut State, &'heap mut Heap>,
   &'output Output<Value>
 );
 

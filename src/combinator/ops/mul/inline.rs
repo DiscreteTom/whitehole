@@ -54,7 +54,7 @@ impl<T> Combinator<T> {
     Heap,
     Acc,
     Init: Fn() -> Acc,
-    Folder: Fn(T::Value, Acc, Input<&mut State, &mut Heap>) -> Acc,
+    Folder: Fn(T::Value, Acc, Input<&str, &mut State, &mut Heap>) -> Acc,
   >(
     self,
     init: Init,
@@ -88,13 +88,13 @@ unsafe impl<
     Acc,
     Repeater: Repeat,
     Init: Fn() -> Acc,
-    Folder: Fn(T::Value, Acc, Input<&mut State, &mut Heap>) -> Acc,
+    Folder: Fn(T::Value, Acc, Input<&str, &mut State, &mut Heap>) -> Acc,
   > Action<State, Heap> for Mul<InlineFold<T, Init, Folder>, Repeater>
 {
   type Value = Acc;
 
   #[inline]
-  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     let repeat = &self.rhs;
     impl_mul!(input, repeat, self.lhs.init, self.lhs.fold, self.lhs.action)
   }

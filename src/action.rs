@@ -34,6 +34,8 @@ use std::rc::Rc;
 pub use input::*;
 pub use output::*;
 
+// TODO: add `Action` for bytes
+
 /// The basic building block of a parser.
 /// See the [module level documentation](crate::action) for more information.
 /// # Safety
@@ -45,13 +47,13 @@ pub unsafe trait Action<State = (), Heap = ()> {
   /// Try to digest some bytes from the input, optionally change the state of the parsing,
   /// and yield a value.
   /// Return [`None`] to reject.
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>>;
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>>;
 }
 
 unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> for &T {
   type Value = T::Value;
 
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     (**self).exec(input)
   }
 }
@@ -59,7 +61,7 @@ unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> fo
 unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> for &mut T {
   type Value = T::Value;
 
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     (**self).exec(input)
   }
 }
@@ -67,7 +69,7 @@ unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> fo
 unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> for Box<T> {
   type Value = T::Value;
 
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.as_ref().exec(input)
   }
 }
@@ -75,7 +77,7 @@ unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> fo
 unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> for Rc<T> {
   type Value = T::Value;
 
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.as_ref().exec(input)
   }
 }

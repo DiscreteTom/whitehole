@@ -9,7 +9,7 @@ unsafe impl<State, Heap, F: Fn(char) -> bool> Action<State, Heap> for Next<F> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     let next = input.instant().rest().chars().next()?;
     if !(self.inner)(next) {
       return None;

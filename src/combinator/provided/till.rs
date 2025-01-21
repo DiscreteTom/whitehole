@@ -9,7 +9,7 @@ unsafe impl<State, Heap> Action<State, Heap> for Till<&str> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .instant()
       .rest()
@@ -22,7 +22,7 @@ unsafe impl<State, Heap> Action<State, Heap> for Till<String> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .instant()
       .rest()
@@ -35,7 +35,7 @@ unsafe impl<State, Heap> Action<State, Heap> for Till<char> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .instant()
       .rest()
@@ -48,7 +48,7 @@ unsafe impl<State, Heap> Action<State, Heap> for Till<()> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
     unsafe { input.digest_unchecked(input.instant().rest().len()) }.into()
   }
 }

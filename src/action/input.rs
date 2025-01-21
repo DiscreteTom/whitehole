@@ -6,7 +6,7 @@ use crate::instant::Instant;
 ///
 /// If you want to clone this, see [`Self::reborrow`].
 #[derive(Debug)]
-pub struct Input<'text, StateRef, HeapRef> {
+pub struct Input<TextRef, StateRef, HeapRef> {
   /// The `&mut State`.
   /// This is public, so you can mutate the `State` directly.
   ///
@@ -32,12 +32,12 @@ pub struct Input<'text, StateRef, HeapRef> {
   pub heap: HeapRef,
 
   /// See [`Self::instant`].
-  instant: Instant<'text>,
+  instant: Instant<TextRef>,
 }
 
-impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
+impl<TextRef, StateRef, HeapRef> Input<TextRef, StateRef, HeapRef> {
   #[inline]
-  pub const fn new(instant: Instant<'text>, state: StateRef, heap: HeapRef) -> Self {
+  pub const fn new(instant: Instant<TextRef>, state: StateRef, heap: HeapRef) -> Self {
     Input {
       state,
       heap,
@@ -47,25 +47,42 @@ impl<'text, StateRef, HeapRef> Input<'text, StateRef, HeapRef> {
 
   /// The [`Instant`] before this action is executed.
   #[inline]
-  pub const fn instant(&self) -> &Instant<'text> {
+  pub const fn instant(&self) -> &Instant<TextRef> {
     &self.instant
   }
 }
 
-impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
+impl<TextRef: Clone, State, Heap> Input<TextRef, &mut State, &mut Heap> {
   /// Re-borrow [`Self::state`] and [`Self::heap`] to construct a new [`Input`]
   /// (similar to cloning this instance).
   ///
   /// This is cheap to call.
   #[inline]
-  pub fn reborrow(&mut self) -> Input<'text, &mut State, &mut Heap> {
+  pub fn reborrow(&mut self) -> Input<TextRef, &mut State, &mut Heap> {
     Input {
       state: &mut *self.state,
       heap: &mut *self.heap,
       instant: self.instant.clone(),
     }
   }
+}
 
+impl<'text, State, Heap> Input<&'text [u8], &mut State, &mut Heap> {
+  /// Construct a new [`Input`] by digesting `n` bytes from [`Input::instant`].
+  ///
+  /// This is cheap to call.
+  /// # Safety
+  /// You should ensure that `n` is smaller than the length of [`Instant::rest`].
+  /// This will be checked using [`debug_assert!`].
+  #[inline]
+  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<&'text [u8], &mut State, &mut Heap> {
+    let mut instant = self.instant.clone();
+    instant.digest_unchecked(n);
+    Input::new(instant, &mut *self.state, &mut *self.heap)
+  }
+}
+
+impl<'text, State, Heap> Input<&'text str, &mut State, &mut Heap> {
   /// Construct a new [`Input`] by digesting `n` bytes from [`Input::instant`].
   ///
   /// This is cheap to call.
@@ -73,8 +90,9 @@ impl<'text, State, Heap> Input<'text, &mut State, &mut Heap> {
   /// You should ensure that `n` is a valid UTF-8 boundary.
   /// This will be checked using [`debug_assert!`].
   #[inline]
-  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<'text, &mut State, &mut Heap> {
-    let mut instant = self.instant().clone();
+  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<&'text str, &mut State, &mut Heap> {
+    // TODO: simplify code with a trait?
+    let mut instant = self.instant.clone();
     instant.digest_unchecked(n);
     Input::new(instant, &mut *self.state, &mut *self.heap)
   }
@@ -85,7 +103,7 @@ mod tests {
   use super::*;
 
   #[test]
-  fn input_new() {
+  fn input_new_getters() {
     let mut state = ();
     let mut heap = ();
     let input = Input::new(Instant::new("123"), &mut state, &mut heap);
@@ -122,6 +140,13 @@ mod tests {
     let input = unsafe { input.shift_unchecked(1) };
     assert_eq!(input.instant().digested(), 1);
     assert_eq!(input.instant().rest(), "23");
+
+    let mut state = 123;
+    let mut heap = 123;
+    let mut input = Input::new(Instant::new(&[1u8, 2, 3] as &[u8]), &mut state, &mut heap);
+    let input = unsafe { input.shift_unchecked(1) };
+    assert_eq!(input.instant().digested(), 1);
+    assert_eq!(input.instant().rest(), &[2u8, 3] as &[u8]);
   }
 
   #[test]
@@ -131,5 +156,23 @@ mod tests {
     let mut heap = 123;
     let mut input = Input::new(Instant::new("好"), &mut state, &mut heap);
     let _ = unsafe { input.shift_unchecked(1) };
+  }
+
+  #[test]
+  #[should_panic]
+  fn input_bytes_shift_overflow() {
+    let mut state = 123;
+    let mut heap = 123;
+    let mut input = Input::new(Instant::new(&[1u8, 2, 3] as &[u8]), &mut state, &mut heap);
+    let _ = unsafe { input.shift_unchecked(4) };
+  }
+
+  #[test]
+  #[should_panic]
+  fn input_str_shift_overflow() {
+    let mut state = 123;
+    let mut heap = 123;
+    let mut input = Input::new(Instant::new("123"), &mut state, &mut heap);
+    let _ = unsafe { input.shift_unchecked(4) };
   }
 }

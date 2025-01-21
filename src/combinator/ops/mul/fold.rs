@@ -15,13 +15,13 @@ pub trait Fold<State = (), Heap = ()> {
   type Output: Default;
 
   /// Fold self with the accumulator.
-  fn fold(self, acc: Self::Output, input: Input<&mut State, &mut Heap>) -> Self::Output;
+  fn fold(self, acc: Self::Output, input: Input<&str, &mut State, &mut Heap>) -> Self::Output;
 }
 
 impl<State, Heap> Fold<State, Heap> for () {
   type Output = ();
   #[inline]
-  fn fold(self, _: Self::Output, _: Input<&mut State, &mut Heap>) -> Self::Output {}
+  fn fold(self, _: Self::Output, _: Input<&str, &mut State, &mut Heap>) -> Self::Output {}
 }
 
 impl<Lhs, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
@@ -40,7 +40,7 @@ unsafe impl<State, Heap, Lhs: Action<State, Heap, Value: Fold<State, Heap>>, Rhs
   type Value = <Lhs::Value as Fold<State, Heap>>::Output;
 
   #[inline]
-  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     impl_mul!(input, self.rhs, Default::default, Fold::fold, self.lhs)
   }
 }
@@ -63,7 +63,7 @@ mod tests {
   struct MyValue(usize);
   impl<State, Heap> Fold<State, Heap> for MyValue {
     type Output = usize;
-    fn fold(self, current: Self::Output, _: Input<&mut State, &mut Heap>) -> Self::Output {
+    fn fold(self, current: Self::Output, _: Input<&str, &mut State, &mut Heap>) -> Self::Output {
       self.0 + current
     }
   }

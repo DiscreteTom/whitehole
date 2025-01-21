@@ -93,7 +93,7 @@ unsafe impl<
   type Value = <Lhs::Value as Fold<State, Heap>>::Output;
 
   #[inline]
-  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     impl_mul_with_sep!(
       input,
       self.value.rhs,
@@ -110,7 +110,7 @@ unsafe impl<
     Acc,
     Repeater: Repeat,
     Init: Fn() -> Acc,
-    Folder: Fn(T::Value, Acc, Input<&mut State, &mut Heap>) -> Acc,
+    Folder: Fn(T::Value, Acc, Input<&str, &mut State, &mut Heap>) -> Acc,
     S: Action<State, Heap>,
     State,
     Heap,
@@ -119,7 +119,7 @@ unsafe impl<
   type Value = Acc;
 
   #[inline]
-  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     impl_mul_with_sep!(
       input,
       self.value.rhs,

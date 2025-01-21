@@ -9,7 +9,7 @@ unsafe impl<State, Heap> Action<State, Heap> for Eat<char> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .instant()
       .rest()
@@ -22,7 +22,7 @@ unsafe impl<State, Heap> Action<State, Heap> for Eat<String> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .instant()
       .rest()
@@ -35,7 +35,7 @@ unsafe impl<State, Heap> Action<State, Heap> for Eat<&str> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .instant()
       .rest()
@@ -48,7 +48,7 @@ unsafe impl<State, Heap> Action<State, Heap> for Eat<&String> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
     input
       .instant()
       .rest()
@@ -61,7 +61,7 @@ unsafe impl<State, Heap> Action<State, Heap> for Eat<usize> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
     let mut digested: usize = 0;
     let mut count: usize = 0;
     let mut chars = input.instant().rest().chars();

@@ -16,14 +16,14 @@ pub struct Snapshot<'text, State> {
   /// You can modify this if needed.
   pub state: State,
   /// See [`Self::instant`].
-  pub(super) instant: Instant<'text>,
+  pub(super) instant: Instant<&'text str>,
 }
 
 impl<'text, State> Snapshot<'text, State> {
   /// See [`Parser::instant`](crate::parser::Parser::instant).
   /// You can't modify this manually.
   #[inline]
-  pub const fn instant(&self) -> &Instant<'text> {
+  pub const fn instant(&self) -> &Instant<&'text str> {
     &self.instant
   }
 }

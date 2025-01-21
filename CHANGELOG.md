@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `Instant` now take a generic param `TextRef` instead of a lifetime param.
+- `Input` now take an additional generic param `TextRef` instead of a lifetime param.
 - The `rest` of `Input::instant` is no longer guaranteed to be non-empty.
 - `Input::new` will return `Input` directly instead of an `Option`.
 

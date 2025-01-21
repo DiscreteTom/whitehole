@@ -122,7 +122,7 @@ unsafe impl<State, Heap, T: Action<State, Heap>> Action<State, Heap> for Combina
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&mut State, &mut Heap>) -> Option<Output<T::Value>> {
+  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<T::Value>> {
     self.action.exec(input)
   }
 }

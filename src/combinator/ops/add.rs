@@ -81,7 +81,7 @@ unsafe impl<State, Heap, Lhs: Action<State, Heap, Value: Concat<Rhs::Value>>, Rh
   type Value = <Lhs::Value as Concat<Rhs::Value>>::Output;
 
   #[inline]
-  fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.lhs.exec(input.reborrow()).and_then(|output| {
       self
         .rhs

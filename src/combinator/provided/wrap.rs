@@ -8,13 +8,13 @@ create_closure_combinator!(Wrap, "See [`wrap`].");
 
 macro_rules! impl_wrap {
   ($name:ident, $assert:ident) => {
-    unsafe impl<Value, State, Heap, F: Fn(Input<&mut State, &mut Heap>) -> Option<Output<Value>>>
+    unsafe impl<Value, State, Heap, F: Fn(Input<&str, &mut State, &mut Heap>) -> Option<Output<Value>>>
       Action<State, Heap> for $name<F>
     {
       type Value = Value;
 
       #[inline]
-      fn exec(&self, mut input: Input<&mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+      fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
         let output = (self.inner)(input.reborrow());
         $assert!(output
           .as_ref()
@@ -44,7 +44,7 @@ impl_wrap!(Wrap, assert);
 /// ```
 #[inline]
 pub const unsafe fn wrap_unchecked<
-  F: Fn(Input<&mut State, &mut Heap>) -> Option<Output<Value>>,
+  F: Fn(Input<&str, &mut State, &mut Heap>) -> Option<Output<Value>>,
   Value,
   State,
   Heap,
@@ -69,7 +69,7 @@ pub const unsafe fn wrap_unchecked<
 /// ```
 #[inline]
 pub const fn wrap<
-  F: Fn(Input<&mut State, &mut Heap>) -> Option<Output<Value>>,
+  F: Fn(Input<&str, &mut State, &mut Heap>) -> Option<Output<Value>>,
   Value,
   State,
   Heap,
