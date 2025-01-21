@@ -1,28 +1,27 @@
 /// The instantaneous state of a parser (a.k.a the "configuration" in the automata theory).
 ///
 /// This is cheap to clone.
-#[derive(Debug, PartialEq, Eq)]
-pub struct Instant<'text, T: ?Sized> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Instant<T> {
   /// See [`Self::text`].
-  text: &'text T,
+  text: T,
   /// See [`Self::rest`].
-  rest: &'text T,
+  rest: T,
   /// See [`Self::digested`].
   digested: usize,
 }
 
-impl<'text, T: ?Sized> Clone for Instant<'text, T> {
+impl<T> Instant<T> {
+  /// How many bytes are already digested.
+  ///
+  /// This is cheap to call because the value is stored in this struct.
   #[inline]
-  fn clone(&self) -> Self {
-    Instant {
-      text: self.text,
-      rest: self.rest,
-      digested: self.digested,
-    }
+  pub const fn digested(&self) -> usize {
+    self.digested
   }
 }
 
-impl<'text, T: ?Sized> Instant<'text, T> {
+impl<'text, T: ?Sized> Instant<&'text T> {
   /// Create a new instance with the given text.
   /// [`Self::digested`] will be set to `0`.
   #[inline]
@@ -43,14 +42,6 @@ impl<'text, T: ?Sized> Instant<'text, T> {
     self.text
   }
 
-  /// How many bytes are already digested.
-  ///
-  /// This is cheap to call because the value is stored in this struct.
-  #[inline]
-  pub const fn digested(&self) -> usize {
-    self.digested
-  }
-
   /// The undigested text. This might be an empty string.
   ///
   /// This is cheap to call because the value is stored in this struct.
@@ -60,7 +51,7 @@ impl<'text, T: ?Sized> Instant<'text, T> {
   }
 }
 
-impl<'text> Instant<'text, [u8]> {
+impl Instant<&[u8]> {
   /// Digest the next `n` bytes.
   /// [`Self::rest`] will be updated automatically.
   /// # Safety
@@ -74,7 +65,7 @@ impl<'text> Instant<'text, [u8]> {
   }
 }
 
-impl<'text> Instant<'text, str> {
+impl Instant<&str> {
   /// Digest the next `n` bytes.
   /// [`Self::rest`] will be updated automatically.
   /// # Safety

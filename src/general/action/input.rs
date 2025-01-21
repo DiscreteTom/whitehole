@@ -6,7 +6,7 @@ use crate::general::Instant;
 ///
 /// If you want to clone this, see [`Self::reborrow`].
 #[derive(Debug)]
-pub struct Input<'text, T: ?Sized, StateRef, HeapRef> {
+pub struct Input<T, StateRef, HeapRef> {
   /// The `&mut State`.
   /// This is public, so you can mutate the `State` directly.
   ///
@@ -32,12 +32,12 @@ pub struct Input<'text, T: ?Sized, StateRef, HeapRef> {
   pub heap: HeapRef,
 
   /// See [`Self::instant`].
-  instant: Instant<'text, T>,
+  instant: Instant<T>,
 }
 
-impl<'text, T: ?Sized, StateRef, HeapRef> Input<'text, T, StateRef, HeapRef> {
+impl<T, StateRef, HeapRef> Input<T, StateRef, HeapRef> {
   #[inline]
-  pub const fn new(instant: Instant<'text, T>, state: StateRef, heap: HeapRef) -> Self {
+  pub const fn new(instant: Instant<T>, state: StateRef, heap: HeapRef) -> Self {
     Input {
       state,
       heap,
@@ -47,18 +47,18 @@ impl<'text, T: ?Sized, StateRef, HeapRef> Input<'text, T, StateRef, HeapRef> {
 
   /// The [`Instant`] before this action is executed.
   #[inline]
-  pub const fn instant(&self) -> &Instant<'text, T> {
+  pub const fn instant(&self) -> &Instant<T> {
     &self.instant
   }
 }
 
-impl<'text, T: ?Sized, State, Heap> Input<'text, T, &mut State, &mut Heap> {
+impl<T: Clone, State, Heap> Input<T, &mut State, &mut Heap> {
   /// Re-borrow [`Self::state`] and [`Self::heap`] to construct a new [`Input`]
   /// (similar to cloning this instance).
   ///
   /// This is cheap to call.
   #[inline]
-  pub fn reborrow(&mut self) -> Input<'text, T, &mut State, &mut Heap> {
+  pub fn reborrow(&mut self) -> Input<T, &mut State, &mut Heap> {
     Input {
       state: &mut *self.state,
       heap: &mut *self.heap,
@@ -67,7 +67,7 @@ impl<'text, T: ?Sized, State, Heap> Input<'text, T, &mut State, &mut Heap> {
   }
 }
 
-impl<'text, State, Heap> Input<'text, [u8], &mut State, &mut Heap> {
+impl<'text, State, Heap> Input<&'text [u8], &mut State, &mut Heap> {
   /// Construct a new [`Input`] by digesting `n` bytes from [`Input::instant`].
   ///
   /// This is cheap to call.
@@ -75,14 +75,14 @@ impl<'text, State, Heap> Input<'text, [u8], &mut State, &mut Heap> {
   /// You should ensure that `n` is smaller than the length of [`Instant::rest`].
   /// This will be checked using [`debug_assert!`].
   #[inline]
-  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<'text, [u8], &mut State, &mut Heap> {
+  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<&'text [u8], &mut State, &mut Heap> {
     let mut instant = self.instant.clone();
     instant.digest_unchecked(n);
     Input::new(instant, &mut *self.state, &mut *self.heap)
   }
 }
 
-impl<'text, State, Heap> Input<'text, str, &mut State, &mut Heap> {
+impl<'text, State, Heap> Input<&'text str, &mut State, &mut Heap> {
   /// Construct a new [`Input`] by digesting `n` bytes from [`Input::instant`].
   ///
   /// This is cheap to call.
@@ -90,7 +90,7 @@ impl<'text, State, Heap> Input<'text, str, &mut State, &mut Heap> {
   /// You should ensure that `n` is a valid UTF-8 boundary.
   /// This will be checked using [`debug_assert!`].
   #[inline]
-  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<'text, str, &mut State, &mut Heap> {
+  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<&'text str, &mut State, &mut Heap> {
     let mut instant = self.instant.clone();
     instant.digest_unchecked(n);
     Input::new(instant, &mut *self.state, &mut *self.heap)
