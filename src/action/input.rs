@@ -72,7 +72,7 @@ impl<'text, State, Heap> Input<&'text [u8], &mut State, &mut Heap> {
   ///
   /// This is cheap to call.
   /// # Safety
-  /// You should ensure that `n` is smaller than the length of [`Instant::rest`].
+  /// You should ensure that `n` is no greater than the length of [`Instant::rest`].
   /// This will be checked using [`debug_assert!`].
   #[inline]
   pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<&'text [u8], &mut State, &mut Heap> {
@@ -91,7 +91,7 @@ impl<'text, State, Heap> Input<&'text str, &mut State, &mut Heap> {
   /// This will be checked using [`debug_assert!`].
   #[inline]
   pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<&'text str, &mut State, &mut Heap> {
-    // TODO: simplify code with a trait?
+    // TODO: merge duplicated code with a trait? how to differentiate the comments?
     let mut instant = self.instant.clone();
     instant.digest_unchecked(n);
     Input::new(instant, &mut *self.state, &mut *self.heap)

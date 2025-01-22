@@ -55,7 +55,7 @@ impl Instant<&[u8]> {
   /// Digest the next `n` bytes.
   /// [`Self::rest`] will be updated automatically.
   /// # Safety
-  /// You should ensure that `n` is smaller than the length of [`Self::rest`].
+  /// You should ensure that `n` is no greater than the length of [`Self::rest`].
   /// This will be checked using [`debug_assert!`].
   #[inline]
   pub unsafe fn digest_unchecked(&mut self, n: usize) {
