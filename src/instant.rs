@@ -62,7 +62,8 @@ impl<TextRef> Instant<TextRef> {
   /// Digest the next `n` bytes.
   /// [`Self::rest`] will be updated automatically.
   /// # Safety
-  /// See [`Digest::digest_unchecked`] and [`Digest::validate`].
+  /// You should ensure that `n` is valid according to [`Digest::validate`].
+  /// This will be checked using [`debug_assert!`].
   #[inline]
   pub unsafe fn digest_unchecked(&mut self, n: usize)
   where
