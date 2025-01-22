@@ -1,3 +1,5 @@
+use crate::digest::Digest;
+
 /// The instantaneous state of a parser (a.k.a the "configuration" in the automata theory).
 ///
 /// This is cheap to clone.
@@ -12,20 +14,13 @@ pub struct Instant<TextRef> {
 }
 
 impl<TextRef> Instant<TextRef> {
-  /// How many bytes are already digested.
-  ///
-  /// This is cheap to call because the value is stored in this struct.
-  #[inline]
-  pub const fn digested(&self) -> usize {
-    self.digested
-  }
-}
-
-impl<'text, TextRef: ?Sized> Instant<&'text TextRef> {
   /// Create a new instance with the given text.
   /// [`Self::digested`] will be set to `0`.
   #[inline]
-  pub const fn new(text: &'text TextRef) -> Self {
+  pub const fn new(text: TextRef) -> Self
+  where
+    TextRef: Copy,
+  {
     Instant {
       text,
       rest: text,
@@ -38,7 +33,10 @@ impl<'text, TextRef: ?Sized> Instant<&'text TextRef> {
   /// This is cheap to call because the value is stored in this struct.
   /// This will never be mutated after the creation of this instance.
   #[inline]
-  pub const fn text(&self) -> &'text TextRef {
+  pub const fn text(&self) -> TextRef
+  where
+    TextRef: Copy,
+  {
     self.text
   }
 
@@ -46,35 +44,31 @@ impl<'text, TextRef: ?Sized> Instant<&'text TextRef> {
   ///
   /// This is cheap to call because the value is stored in this struct.
   #[inline]
-  pub const fn rest(&self) -> &'text TextRef {
+  pub const fn rest(&self) -> TextRef
+  where
+    TextRef: Copy,
+  {
     self.rest
   }
-}
 
-impl Instant<&[u8]> {
-  /// Digest the next `n` bytes.
-  /// [`Self::rest`] will be updated automatically.
-  /// # Safety
-  /// You should ensure that `n` is no greater than the length of [`Self::rest`].
-  /// This will be checked using [`debug_assert!`].
+  /// How many bytes are already digested.
+  ///
+  /// This is cheap to call because the value is stored in this struct.
   #[inline]
-  pub unsafe fn digest_unchecked(&mut self, n: usize) {
-    debug_assert!(n <= self.rest.len());
-    self.rest = self.rest.get_unchecked(n..);
-    self.digested = self.digested.unchecked_add(n);
+  pub const fn digested(&self) -> usize {
+    self.digested
   }
-}
 
-impl Instant<&str> {
   /// Digest the next `n` bytes.
   /// [`Self::rest`] will be updated automatically.
   /// # Safety
-  /// You should ensure that `n` is a valid UTF-8 boundary.
-  /// This will be checked using [`debug_assert!`].
+  /// See [`Digest::digest_unchecked`] and [`Digest::validate`].
   #[inline]
-  pub unsafe fn digest_unchecked(&mut self, n: usize) {
-    debug_assert!(self.rest.is_char_boundary(n));
-    self.rest = self.rest.get_unchecked(n..);
+  pub unsafe fn digest_unchecked(&mut self, n: usize)
+  where
+    TextRef: Digest,
+  {
+    self.rest = self.rest.digest_unchecked(n);
     self.digested = self.digested.unchecked_add(n);
   }
 }
