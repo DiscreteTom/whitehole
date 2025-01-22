@@ -53,6 +53,7 @@ pub unsafe trait Action<State = (), Heap = ()> {
 unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> for &T {
   type Value = T::Value;
 
+  #[inline]
   fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     (**self).exec(input)
   }
@@ -61,6 +62,7 @@ unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> fo
 unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> for &mut T {
   type Value = T::Value;
 
+  #[inline]
   fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     (**self).exec(input)
   }
@@ -69,6 +71,7 @@ unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> fo
 unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> for Box<T> {
   type Value = T::Value;
 
+  #[inline]
   fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.as_ref().exec(input)
   }
@@ -77,6 +80,7 @@ unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> fo
 unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> for Rc<T> {
   type Value = T::Value;
 
+  #[inline]
   fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.as_ref().exec(input)
   }
