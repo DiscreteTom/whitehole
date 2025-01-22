@@ -1,4 +1,4 @@
-use crate::instant::Instant;
+use crate::{digest::Digest, instant::Instant};
 
 /// The input of [`Action::exec`](crate::action::Action::exec).
 ///
@@ -65,33 +65,18 @@ impl<TextRef: Clone, State, Heap> Input<TextRef, &mut State, &mut Heap> {
       instant: self.instant.clone(),
     }
   }
-}
 
-impl<'text, State, Heap> Input<&'text [u8], &mut State, &mut Heap> {
   /// Construct a new [`Input`] by digesting `n` bytes from [`Input::instant`].
   ///
   /// This is cheap to call.
   /// # Safety
-  /// You should ensure that `n` is no greater than the length of [`Instant::rest`].
+  /// You should ensure that `n` is valid according to [`Digest::validate`].
   /// This will be checked using [`debug_assert!`].
   #[inline]
-  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<&'text [u8], &mut State, &mut Heap> {
-    let mut instant = self.instant.clone();
-    instant.digest_unchecked(n);
-    Input::new(instant, &mut *self.state, &mut *self.heap)
-  }
-}
-
-impl<'text, State, Heap> Input<&'text str, &mut State, &mut Heap> {
-  /// Construct a new [`Input`] by digesting `n` bytes from [`Input::instant`].
-  ///
-  /// This is cheap to call.
-  /// # Safety
-  /// You should ensure that `n` is a valid UTF-8 boundary.
-  /// This will be checked using [`debug_assert!`].
-  #[inline]
-  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<&'text str, &mut State, &mut Heap> {
-    // TODO: merge duplicated code with a trait? how to differentiate the comments?
+  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<TextRef, &mut State, &mut Heap>
+  where
+    TextRef: Digest,
+  {
     let mut instant = self.instant.clone();
     instant.digest_unchecked(n);
     Input::new(instant, &mut *self.state, &mut *self.heap)

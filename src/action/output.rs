@@ -1,4 +1,5 @@
 use super::Input;
+use crate::digest::Digest;
 
 /// The output of [`Action::exec`](crate::action::Action::exec).
 /// Usually built by [`Input::digest`].
@@ -7,29 +8,22 @@ pub struct Output<Value = ()> {
   /// The yielded value.
   pub value: Value,
   /// How many bytes are digested by this action.
-  ///
-  /// This is guaranteed to be no greater than the length of `input.instant().rest()`
-  /// and is always a valid UTF-8 boundary for the corresponding [`Input`].
-  /// `0` is always a valid value.
-  ///
-  /// You can use [`Input::validate`] to check if a value is valid.
+  /// The value is validate by [`Digest::validate`].
   pub digested: usize,
 }
 
-impl<StateRef, HeapRef> Input<&str, StateRef, HeapRef> {
+impl<TextRef: Digest + Copy, StateRef, HeapRef> Input<TextRef, StateRef, HeapRef> {
   /// Validate if it is ok to digest `n` bytes.
+  /// See [`Digest::validate`] for more information.
   #[inline]
   pub fn validate(&self, n: usize) -> bool {
-    self.instant().rest().is_char_boundary(n)
+    self.instant().rest().validate(n)
   }
 
   /// Try to build an [`Output`] by digesting `n` bytes.
   /// # Safety
-  /// You should ensure that `n` is a valid UTF-8 boundary.
-  /// This will be checked using [`debug_assert!`] with [`Self::validate`].
-  /// For the checked version, see [`Self::digest`].
-  ///
-  /// See [`Output::digested`] and [`Self::validate`] for more information.
+  /// You should ensure that `n` is valid according to [`Self::validate`].
+  /// This will be checked using [`debug_assert!`].
   #[inline]
   pub unsafe fn digest_unchecked(&self, n: usize) -> Output<()> {
     debug_assert!(self.validate(n));
@@ -40,9 +34,7 @@ impl<StateRef, HeapRef> Input<&str, StateRef, HeapRef> {
   }
 
   /// Try to build an [`Output`] by digesting `n` bytes.
-  /// Return [`Some`] if `n` is a valid UTF-8 boundary.
-  ///
-  /// See [`Output::digested`] and [`Self::validate`] for more information.
+  /// Return [`Some`] if `n` is valid according to [`Self::validate`].
   #[inline]
   pub fn digest(&self, n: usize) -> Option<Output<()>> {
     self
