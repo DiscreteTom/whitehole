@@ -34,54 +34,60 @@ use std::rc::Rc;
 pub use input::*;
 pub use output::*;
 
-// TODO: add `Action` for bytes
-
 /// The basic building block of a parser.
 /// See the [module level documentation](crate::action) for more information.
 /// # Safety
 /// The [`Output`] of [`Action::exec`] should satisfy the requirement of [`Output::digested`].
-pub unsafe trait Action<State = (), Heap = ()> {
+pub unsafe trait Action<Text: ?Sized = str, State = (), Heap = ()> {
   /// See [`Output::value`].
   type Value;
 
   /// Try to digest some bytes from the input, optionally change the state of the parsing,
   /// and yield a value.
   /// Return [`None`] to reject.
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>>;
+  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>>;
 }
 
-unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> for &T {
+unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
+  Action<Text, State, Heap> for &T
+{
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     (**self).exec(input)
   }
 }
 
-unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> for &mut T {
+unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
+  Action<Text, State, Heap> for &mut T
+{
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     (**self).exec(input)
   }
 }
 
-unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> for Box<T> {
+unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
+  Action<Text, State, Heap> for Box<T>
+{
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.as_ref().exec(input)
   }
 }
 
-unsafe impl<State, Heap, T: Action<State, Heap> + ?Sized> Action<State, Heap> for Rc<T> {
+unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
+  Action<Text, State, Heap> for Rc<T>
+{
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.as_ref().exec(input)
   }
 }

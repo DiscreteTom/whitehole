@@ -11,19 +11,19 @@ use super::Instant;
 /// Since `State` should be cheap to clone,
 /// this is also cheap to create or clone.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Snapshot<'text, State> {
+pub struct Snapshot<TextRef, State> {
   /// See [`Parser::state`](crate::parser::Parser::state).
   /// You can modify this if needed.
   pub state: State,
   /// See [`Self::instant`].
-  pub(super) instant: Instant<&'text str>,
+  pub(super) instant: Instant<TextRef>,
 }
 
-impl<'text, State> Snapshot<'text, State> {
+impl<TextRef, State> Snapshot<TextRef, State> {
   /// See [`Parser::instant`](crate::parser::Parser::instant).
   /// You can't modify this manually.
   #[inline]
-  pub const fn instant(&self) -> &Instant<&'text str> {
+  pub const fn instant(&self) -> &Instant<TextRef> {
     &self.instant
   }
 }

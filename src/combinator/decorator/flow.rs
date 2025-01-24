@@ -9,13 +9,18 @@ create_closure_decorator!(Reject, "See [`Combinator::reject`].");
 create_simple_decorator!(Optional, "See [`Combinator::optional`].");
 create_simple_decorator!(Boundary, "See [`Combinator::boundary`].");
 
-unsafe impl<State, Heap, T: Action<State, Heap>, D: Fn(Input<&str, &mut State, &mut Heap>) -> bool>
-  Action<State, Heap> for When<T, D>
+unsafe impl<
+    Text: ?Sized,
+    State,
+    Heap,
+    T: Action<Text, State, Heap>,
+    D: Fn(Input<&Text, &mut State, &mut Heap>) -> bool,
+  > Action<Text, State, Heap> for When<T, D>
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     if (self.inner)(input.reborrow()) {
       self.action.exec(input)
     } else {
@@ -24,13 +29,18 @@ unsafe impl<State, Heap, T: Action<State, Heap>, D: Fn(Input<&str, &mut State, &
   }
 }
 
-unsafe impl<State, Heap, T: Action<State, Heap>, D: Fn(Input<&str, &mut State, &mut Heap>) -> bool>
-  Action<State, Heap> for Prevent<T, D>
+unsafe impl<
+    Text: ?Sized,
+    State,
+    Heap,
+    T: Action<Text, State, Heap>,
+    D: Fn(Input<&Text, &mut State, &mut Heap>) -> bool,
+  > Action<Text, State, Heap> for Prevent<T, D>
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     if !(self.inner)(input.reborrow()) {
       self.action.exec(input)
     } else {
@@ -40,16 +50,17 @@ unsafe impl<State, Heap, T: Action<State, Heap>, D: Fn(Input<&str, &mut State, &
 }
 
 unsafe impl<
+    Text: ?Sized,
     State,
     Heap,
-    T: Action<State, Heap>,
-    D: Fn(AcceptedContext<Input<&str, &mut State, &mut Heap>, &Output<T::Value>>) -> bool,
-  > Action<State, Heap> for Reject<T, D>
+    T: Action<Text, State, Heap>,
+    D: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, &Output<T::Value>>) -> bool,
+  > Action<Text, State, Heap> for Reject<T, D>
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).and_then(|output| {
       if (self.inner)(AcceptedContext {
         input,
@@ -63,13 +74,13 @@ unsafe impl<
   }
 }
 
-unsafe impl<State, Heap, T: Action<State, Heap, Value: Default>> Action<State, Heap>
-  for Optional<T>
+unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap, Value: Default>>
+  Action<Text, State, Heap> for Optional<T>
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     Some(self.action.exec(input).unwrap_or_else(|| Output {
       value: Default::default(),
       digested: 0,
@@ -77,7 +88,7 @@ unsafe impl<State, Heap, T: Action<State, Heap, Value: Default>> Action<State, H
   }
 }
 
-unsafe impl<State, Heap, T: Action<State, Heap>> Action<State, Heap> for Boundary<T> {
+unsafe impl<State, Heap, T: Action<str, State, Heap>> Action<str, State, Heap> for Boundary<T> {
   type Value = T::Value;
 
   #[inline]
@@ -106,12 +117,12 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn when<State, Heap, F: Fn(Input<&str, &mut State, &mut Heap>) -> bool>(
+  pub fn when<Text: ?Sized, State, Heap, F: Fn(Input<&Text, &mut State, &mut Heap>) -> bool>(
     self,
     condition: F,
   ) -> Combinator<When<T, F>>
   where
-    T: Action<State, Heap>,
+    T: Action<Text, State, Heap>,
   {
     Combinator::new(When::new(self.action, condition))
   }
@@ -129,12 +140,12 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn prevent<State, Heap, F: Fn(Input<&str, &mut State, &mut Heap>) -> bool>(
+  pub fn prevent<Text: ?Sized, State, Heap, F: Fn(Input<&Text, &mut State, &mut Heap>) -> bool>(
     self,
     preventer: F,
   ) -> Combinator<Prevent<T, F>>
   where
-    T: Action<State, Heap>,
+    T: Action<Text, State, Heap>,
   {
     Combinator::new(Prevent::new(self.action, preventer))
   }
@@ -150,15 +161,16 @@ impl<T> Combinator<T> {
   /// ```
   #[inline]
   pub fn reject<
+    Text: ?Sized,
     State,
     Heap,
-    F: Fn(AcceptedContext<Input<&str, &mut State, &mut Heap>, &Output<T::Value>>) -> bool,
+    F: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, &Output<T::Value>>) -> bool,
   >(
     self,
     rejecter: F,
   ) -> Combinator<Reject<T, F>>
   where
-    T: Action<State, Heap>,
+    T: Action<Text, State, Heap>,
   {
     Combinator::new(Reject::new(self.action, rejecter))
   }
@@ -224,14 +236,14 @@ mod tests {
   use super::*;
   use crate::{combinator::wrap, instant::Instant};
 
-  fn accepter() -> Combinator<impl Action<bool, Value = ()>> {
+  fn accepter() -> Combinator<impl Action<str, bool, Value = ()>> {
     wrap(|input| {
       *input.state = true;
       input.digest(1)
     })
   }
 
-  fn rejecter() -> Combinator<impl Action<bool, Value = ()>> {
+  fn rejecter() -> Combinator<impl Action<str, bool, Value = ()>> {
     wrap(|input| {
       *input.state = true;
       None

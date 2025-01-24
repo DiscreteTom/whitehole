@@ -2,6 +2,7 @@ use super::{impl_mul, Mul, Repeat};
 use crate::{
   action::{Action, Input, Output},
   combinator::Combinator,
+  digest::Digest,
 };
 use core::fmt;
 use std::ops;
@@ -50,18 +51,19 @@ impl<T> Combinator<T> {
   /// ```
   #[inline]
   pub fn fold<
+    Text: ?Sized,
     State,
     Heap,
     Acc,
     Init: Fn() -> Acc,
-    Folder: Fn(T::Value, Acc, Input<&str, &mut State, &mut Heap>) -> Acc,
+    Folder: Fn(T::Value, Acc, Input<&Text, &mut State, &mut Heap>) -> Acc,
   >(
     self,
     init: Init,
     folder: Folder,
   ) -> InlineFold<T, Init, Folder>
   where
-    T: Action<State, Heap>,
+    T: Action<Text, State, Heap>,
   {
     InlineFold {
       action: self.action,
@@ -82,19 +84,22 @@ impl<T, Init, Folder, Repeater: Repeat> ops::Mul<Repeater> for InlineFold<T, Ini
 }
 
 unsafe impl<
+    Text: ?Sized,
     State,
     Heap,
-    T: Action<State, Heap>,
+    T: Action<Text, State, Heap>,
     Acc,
     Repeater: Repeat,
     Init: Fn() -> Acc,
-    Folder: Fn(T::Value, Acc, Input<&str, &mut State, &mut Heap>) -> Acc,
-  > Action<State, Heap> for Mul<InlineFold<T, Init, Folder>, Repeater>
+    Folder: Fn(T::Value, Acc, Input<&Text, &mut State, &mut Heap>) -> Acc,
+  > Action<Text, State, Heap> for Mul<InlineFold<T, Init, Folder>, Repeater>
+where
+  for<'a> &'a Text: Digest,
 {
   type Value = Acc;
 
   #[inline]
-  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     let repeat = &self.rhs;
     impl_mul!(input, repeat, self.lhs.init, self.lhs.fold, self.lhs.action)
   }

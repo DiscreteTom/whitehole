@@ -2,6 +2,7 @@ use super::{inline::InlineFold, Fold, Mul, Repeat};
 use crate::{
   action::{Action, Input, Output},
   combinator::Combinator,
+  digest::Digest,
 };
 
 /// See [`Combinator::sep`].
@@ -83,17 +84,20 @@ macro_rules! impl_mul_with_sep {
 }
 
 unsafe impl<
-    Lhs: Action<State, Heap, Value: Fold<State, Heap>>,
+    Lhs: Action<Text, State, Heap, Value: Fold<Text, State, Heap>>,
     Rhs: Repeat,
-    S: Action<State, Heap>,
+    S: Action<Text, State, Heap>,
+    Text: ?Sized,
     State,
     Heap,
-  > Action<State, Heap> for Sep<Mul<Combinator<Lhs>, Rhs>, S>
+  > Action<Text, State, Heap> for Sep<Mul<Combinator<Lhs>, Rhs>, S>
+where
+  for<'a> &'a Text: Digest,
 {
-  type Value = <Lhs::Value as Fold<State, Heap>>::Output;
+  type Value = <Lhs::Value as Fold<Text, State, Heap>>::Output;
 
   #[inline]
-  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     impl_mul_with_sep!(
       input,
       self.value.rhs,
@@ -106,20 +110,23 @@ unsafe impl<
 }
 
 unsafe impl<
-    T: Action<State, Heap>,
+    T: Action<Text, State, Heap>,
     Acc,
     Repeater: Repeat,
     Init: Fn() -> Acc,
-    Folder: Fn(T::Value, Acc, Input<&str, &mut State, &mut Heap>) -> Acc,
-    S: Action<State, Heap>,
+    Folder: Fn(T::Value, Acc, Input<&Text, &mut State, &mut Heap>) -> Acc,
+    S: Action<Text, State, Heap>,
+    Text: ?Sized,
     State,
     Heap,
-  > Action<State, Heap> for Sep<Mul<InlineFold<T, Init, Folder>, Repeater>, S>
+  > Action<Text, State, Heap> for Sep<Mul<InlineFold<T, Init, Folder>, Repeater>, S>
+where
+  for<'a> &'a Text: Digest,
 {
   type Value = Acc;
 
   #[inline]
-  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     impl_mul_with_sep!(
       input,
       self.value.rhs,

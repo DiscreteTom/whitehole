@@ -5,7 +5,7 @@ use crate::{
 
 create_value_combinator!(Till, "See [`till`].");
 
-unsafe impl<State, Heap> Action<State, Heap> for Till<&str> {
+unsafe impl<State, Heap> Action<str, State, Heap> for Till<&str> {
   type Value = ();
 
   #[inline]
@@ -18,7 +18,7 @@ unsafe impl<State, Heap> Action<State, Heap> for Till<&str> {
   }
 }
 
-unsafe impl<State, Heap> Action<State, Heap> for Till<String> {
+unsafe impl<State, Heap> Action<str, State, Heap> for Till<String> {
   type Value = ();
 
   #[inline]
@@ -31,7 +31,7 @@ unsafe impl<State, Heap> Action<State, Heap> for Till<String> {
   }
 }
 
-unsafe impl<State, Heap> Action<State, Heap> for Till<char> {
+unsafe impl<State, Heap> Action<str, State, Heap> for Till<char> {
   type Value = ();
 
   #[inline]
@@ -44,7 +44,7 @@ unsafe impl<State, Heap> Action<State, Heap> for Till<char> {
   }
 }
 
-unsafe impl<State, Heap> Action<State, Heap> for Till<()> {
+unsafe impl<State, Heap> Action<str, State, Heap> for Till<()> {
   type Value = ();
 
   #[inline]
