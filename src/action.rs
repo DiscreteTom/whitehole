@@ -59,18 +59,6 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
   }
 }
 
-// TODO: remove this
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
-  Action<Text, State, Heap> for &mut T
-{
-  type Value = T::Value;
-
-  #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    (**self).exec(input)
-  }
-}
-
 unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
   Action<Text, State, Heap> for Box<T>
 {
@@ -105,13 +93,11 @@ mod tests {
   #[test]
   fn action_ref() {
     assert!(helper(&wrap(|input| input.digest(1))).is_some());
-    assert!(helper(&mut wrap(|input| input.digest(1))).is_some());
   }
 
   #[test]
   fn action_dyn_ref() {
     assert!(helper(&wrap(|input| input.digest(1)) as &dyn Action<Value = ()>).is_some());
-    assert!(helper(&mut wrap(|input| input.digest(1)) as &mut dyn Action<Value = ()>).is_some());
   }
 
   #[test]

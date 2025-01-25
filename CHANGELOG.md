@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Remove `Input::new_unchecked` and `Input::next`.
+- Remove implementation of `Action` for `&mut Action`.
 - Remove `eat_unchecked`. Use `wrap` instead.
 
 ## [0.4.0] - 2025-01-10
