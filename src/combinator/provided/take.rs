@@ -3,6 +3,7 @@ use crate::{
   combinator::Combinator,
 };
 
+/// See [`take`].
 #[derive(Copy, Clone, Debug)]
 pub struct Take {
   n: usize,
@@ -52,7 +53,7 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Take {
 ///
 /// `0` is allowed but be careful with infinite loops.
 /// # Examples
-/// ## For string (`&str`)
+/// For string (`&str`):
 /// ```
 /// # use whitehole::{combinator::{take, Combinator}, action::Action};
 /// # fn t(_: Combinator<impl Action>) {}
@@ -60,10 +61,10 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Take {
 /// take(10) // take 10 chars
 /// # );
 /// ```
-/// ## For bytes (`&[u8]`)
+/// For bytes (`&[u8]`):
 /// ```
 /// # use whitehole::{combinator::{take, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action>) {}
+/// # fn t(_: Combinator<impl Action<[u8]>>) {}
 /// # t(
 /// take(10) // take 10 bytes
 /// # );

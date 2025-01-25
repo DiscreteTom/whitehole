@@ -85,7 +85,7 @@ impl EatPattern for &[u8] {}
 /// `""` (empty string) is allowed but be careful with infinite loops.
 ///
 /// # Examples
-/// For string (`&str`)
+/// For string (`&str`):
 /// ```
 /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
 /// # fn t(_: Combinator<impl Action>) {}
@@ -99,7 +99,7 @@ impl EatPattern for &[u8] {}
 /// eat("true".to_string()) // eat by String
 /// # );
 /// ```
-/// For bytes (`&[u8]`)
+/// For bytes (`&[u8]`):
 /// ```
 /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
 /// # fn t(_: Combinator<impl Action<[u8]>>) {}
