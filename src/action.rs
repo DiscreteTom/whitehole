@@ -38,56 +38,56 @@ pub use output::*;
 /// See the [module level documentation](crate::action) for more information.
 /// # Safety
 /// The [`Output`] of [`Action::exec`] should satisfy the requirement of [`Output::digested`].
-pub unsafe trait Action<Text: ?Sized = str, State = (), Heap = ()> {
+pub unsafe trait Action<TextRef, State = (), Heap = ()> {
   /// See [`Output::value`].
   type Value;
 
   /// Try to digest some bytes from the input, optionally change the state of the parsing,
   /// and yield a value.
   /// Return [`None`] to reject.
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>>;
+  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>>;
 }
 
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
-  Action<Text, State, Heap> for &T
+unsafe impl<TextRef, State, Heap, T: Action<TextRef, State, Heap> + ?Sized>
+  Action<TextRef, State, Heap> for &T
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     (**self).exec(input)
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
-  Action<Text, State, Heap> for &mut T
+unsafe impl<TextRef, State, Heap, T: Action<TextRef, State, Heap> + ?Sized>
+  Action<TextRef, State, Heap> for &mut T
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     (**self).exec(input)
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
-  Action<Text, State, Heap> for Box<T>
+unsafe impl<TextRef, State, Heap, T: Action<TextRef, State, Heap> + ?Sized>
+  Action<TextRef, State, Heap> for Box<T>
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.as_ref().exec(input)
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
-  Action<Text, State, Heap> for Rc<T>
+unsafe impl<TextRef, State, Heap, T: Action<TextRef, State, Heap> + ?Sized>
+  Action<TextRef, State, Heap> for Rc<T>
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.as_ref().exec(input)
   }
 }
@@ -97,7 +97,7 @@ mod tests {
   use super::*;
   use crate::{combinator::wrap, instant::Instant};
 
-  fn helper(t: impl Action<Value = ()>) -> Option<Output<()>> {
+  fn helper(t: impl for<'a> Action<&'a str, Value = ()>) -> Option<Output<()>> {
     t.exec(Input::new(Instant::new("123"), &mut (), &mut ()))
   }
 
@@ -109,8 +109,13 @@ mod tests {
 
   #[test]
   fn action_dyn_ref() {
-    assert!(helper(&wrap(|input| input.digest(1)) as &dyn Action<Value = ()>).is_some());
-    assert!(helper(&mut wrap(|input| input.digest(1)) as &mut dyn Action<Value = ()>).is_some());
+    assert!(
+      helper(&wrap(|input| input.digest(1)) as &dyn for<'a> Action<&'a str, Value = ()>).is_some()
+    );
+    assert!(helper(
+      &mut wrap(|input| input.digest(1)) as &mut dyn for<'a> Action<&'a str, Value = ()>
+    )
+    .is_some());
   }
 
   #[test]
@@ -127,9 +132,10 @@ mod tests {
 
   #[test]
   fn boxed_dyn_action() {
-    assert!(
-      helper(Box::new(wrap(|input| input.digest(1))) as Box<dyn Action<Value = ()>>).is_some()
-    );
+    assert!(helper(
+      Box::new(wrap(|input| input.digest(1))) as Box<dyn for<'a> Action<&'a str, Value = ()>>
+    )
+    .is_some());
   }
 
   #[test]
@@ -146,6 +152,9 @@ mod tests {
 
   #[test]
   fn rc_dyn_action() {
-    assert!(helper(Rc::new(wrap(|input| input.digest(1))) as Rc<dyn Action<Value = ()>>).is_some());
+    assert!(helper(
+      Rc::new(wrap(|input| input.digest(1))) as Rc<dyn for<'a> Action<&'a str, (), (), Value = ()>>
+    )
+    .is_some());
   }
 }

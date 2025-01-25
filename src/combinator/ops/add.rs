@@ -79,19 +79,17 @@ impl<Lhs, Rhs> Add<Lhs, Rhs> {
 }
 
 unsafe impl<
-    Text: ?Sized,
+    TextRef: Clone + Digest,
     State,
     Heap,
-    Lhs: Action<Text, State, Heap, Value: Concat<Rhs::Value>>,
-    Rhs: Action<Text, State, Heap>,
-  > Action<Text, State, Heap> for Add<Lhs, Rhs>
-where
-  for<'a> &'a Text: Digest,
+    Lhs: Action<TextRef, State, Heap, Value: Concat<Rhs::Value>>,
+    Rhs: Action<TextRef, State, Heap>,
+  > Action<TextRef, State, Heap> for Add<Lhs, Rhs>
 {
   type Value = <Lhs::Value as Concat<Rhs::Value>>::Output;
 
   #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.lhs.exec(input.reborrow()).and_then(|output| {
       self
         .rhs
@@ -124,7 +122,7 @@ impl<Lhs> ops::Add<char> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs: Action<Value: Concat<()>>> ops::Add<usize> for Combinator<Lhs> {
+impl<Lhs> ops::Add<usize> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, Eat<usize>>>;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.
@@ -134,7 +132,7 @@ impl<Lhs: Action<Value: Concat<()>>> ops::Add<usize> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs: Action<Value: Concat<()>>> ops::Add<String> for Combinator<Lhs> {
+impl<Lhs> ops::Add<String> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, Eat<String>>>;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.
@@ -144,7 +142,7 @@ impl<Lhs: Action<Value: Concat<()>>> ops::Add<String> for Combinator<Lhs> {
   }
 }
 
-impl<'a, Lhs: Action<Value: Concat<()>>> ops::Add<&'a str> for Combinator<Lhs> {
+impl<'a, Lhs> ops::Add<&'a str> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, Eat<&'a str>>>;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.
@@ -153,7 +151,7 @@ impl<'a, Lhs: Action<Value: Concat<()>>> ops::Add<&'a str> for Combinator<Lhs> {
     Self::Output::new(Add::new(self.action, eat(rhs).action))
   }
 }
-impl<'a, Lhs: Action<Value: Concat<()>>> ops::Add<&'a String> for Combinator<Lhs> {
+impl<'a, Lhs> ops::Add<&'a String> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, Eat<&'a String>>>;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.

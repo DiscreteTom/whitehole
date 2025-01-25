@@ -11,18 +11,18 @@ use std::ops;
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
 ///
 /// Built-in implementations are provided for `()`.
-pub trait Fold<Text: ?Sized = str, State = (), Heap = ()> {
+pub trait Fold<TextRef, State = (), Heap = ()> {
   /// The accumulator type.
   type Output: Default;
 
   /// Fold self with the accumulator.
-  fn fold(self, acc: Self::Output, input: Input<&Text, &mut State, &mut Heap>) -> Self::Output;
+  fn fold(self, acc: Self::Output, input: Input<TextRef, &mut State, &mut Heap>) -> Self::Output;
 }
 
-impl<Text: ?Sized, State, Heap> Fold<Text, State, Heap> for () {
+impl<TextRef, State, Heap> Fold<TextRef, State, Heap> for () {
   type Output = ();
   #[inline]
-  fn fold(self, _: Self::Output, _: Input<&Text, &mut State, &mut Heap>) -> Self::Output {}
+  fn fold(self, _: Self::Output, _: Input<TextRef, &mut State, &mut Heap>) -> Self::Output {}
 }
 
 impl<Lhs, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
@@ -36,19 +36,17 @@ impl<Lhs, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
 }
 
 unsafe impl<
-    Text: ?Sized,
+    TextRef: Digest + Clone,
     State,
     Heap,
-    Lhs: Action<Text, State, Heap, Value: Fold<Text, State, Heap>>,
+    Lhs: Action<TextRef, State, Heap, Value: Fold<TextRef, State, Heap>>,
     Rhs: Repeat,
-  > Action<Text, State, Heap> for Mul<Combinator<Lhs>, Rhs>
-where
-  for<'a> &'a Text: Digest,
+  > Action<TextRef, State, Heap> for Mul<Combinator<Lhs>, Rhs>
 {
-  type Value = <Lhs::Value as Fold<Text, State, Heap>>::Output;
+  type Value = <Lhs::Value as Fold<TextRef, State, Heap>>::Output;
 
   #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     impl_mul!(input, self.rhs, Default::default, Fold::fold, self.lhs)
   }
 }
@@ -69,7 +67,7 @@ mod tests {
 
   #[derive(Debug)]
   struct MyValue(usize);
-  impl<State, Heap> Fold<str, State, Heap> for MyValue {
+  impl<State, Heap> Fold<&str, State, Heap> for MyValue {
     type Output = usize;
     fn fold(self, current: Self::Output, _: Input<&str, &mut State, &mut Heap>) -> Self::Output {
       self.0 + current

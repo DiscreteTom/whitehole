@@ -5,7 +5,7 @@ use crate::{
 
 create_closure_combinator!(Next, "See [`next`].");
 
-unsafe impl<State, Heap, F: Fn(char) -> bool> Action<str, State, Heap> for Next<F> {
+unsafe impl<State, Heap, F: Fn(char) -> bool> Action<&str, State, Heap> for Next<F> {
   type Value = ();
 
   #[inline]

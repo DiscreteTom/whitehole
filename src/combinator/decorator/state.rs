@@ -7,34 +7,34 @@ create_closure_decorator!(Catch, "See [`Combinator::catch`].");
 create_closure_decorator!(Finally, "See [`Combinator::finally`].");
 
 unsafe impl<
-    Text: ?Sized,
+    TextRef: Clone,
     State,
     Heap,
-    T: Action<Text, State, Heap>,
-    D: Fn(Input<&Text, &mut State, &mut Heap>),
-  > Action<Text, State, Heap> for Prepare<T, D>
+    T: Action<TextRef, State, Heap>,
+    D: Fn(Input<TextRef, &mut State, &mut Heap>),
+  > Action<TextRef, State, Heap> for Prepare<T, D>
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     (self.inner)(input.reborrow());
     self.action.exec(input)
   }
 }
 
 unsafe impl<
-    Text: ?Sized,
+    TextRef: Clone,
     State,
     Heap,
-    T: Action<Text, State, Heap>,
-    D: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, &Output<T::Value>>),
-  > Action<Text, State, Heap> for Then<T, D>
+    T: Action<TextRef, State, Heap>,
+    D: Fn(AcceptedContext<Input<TextRef, &mut State, &mut Heap>, &Output<T::Value>>),
+  > Action<TextRef, State, Heap> for Then<T, D>
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).inspect(|output| {
       (self.inner)(AcceptedContext { input, output });
     })
@@ -42,17 +42,17 @@ unsafe impl<
 }
 
 unsafe impl<
-    Text: ?Sized,
+    TextRef: Clone,
     State,
     Heap,
-    T: Action<Text, State, Heap>,
-    D: Fn(Input<&Text, &mut State, &mut Heap>),
-  > Action<Text, State, Heap> for Catch<T, D>
+    T: Action<TextRef, State, Heap>,
+    D: Fn(Input<TextRef, &mut State, &mut Heap>),
+  > Action<TextRef, State, Heap> for Catch<T, D>
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     let output = self.action.exec(input.reborrow());
     if output.is_none() {
       (self.inner)(input);
@@ -62,17 +62,17 @@ unsafe impl<
 }
 
 unsafe impl<
-    Text: ?Sized,
+    TextRef: Clone,
     State,
     Heap,
-    T: Action<Text, State, Heap>,
-    D: Fn(Input<&Text, &mut State, &mut Heap>),
-  > Action<Text, State, Heap> for Finally<T, D>
+    T: Action<TextRef, State, Heap>,
+    D: Fn(Input<TextRef, &mut State, &mut Heap>),
+  > Action<TextRef, State, Heap> for Finally<T, D>
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     let output = self.action.exec(input.reborrow());
     (self.inner)(input);
     output
@@ -91,12 +91,12 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn prepare<Text: ?Sized, State, Heap, F: Fn(Input<&Text, &mut State, &mut Heap>)>(
+  pub fn prepare<TextRef, State, Heap, F: Fn(Input<TextRef, &mut State, &mut Heap>)>(
     self,
     modifier: F,
   ) -> Combinator<Prepare<T, F>>
   where
-    T: Action<Text, State, Heap>,
+    T: Action<TextRef, State, Heap>,
   {
     Combinator::new(Prepare::new(self.action, modifier))
   }
@@ -113,16 +113,16 @@ impl<T> Combinator<T> {
   /// ```
   #[inline]
   pub fn then<
-    Text: ?Sized,
+    TextRef,
     State,
     Heap,
-    F: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, &Output<T::Value>>),
+    F: Fn(AcceptedContext<Input<TextRef, &mut State, &mut Heap>, &Output<T::Value>>),
   >(
     self,
     modifier: F,
   ) -> Combinator<Then<T, F>>
   where
-    T: Action<Text, State, Heap>,
+    T: Action<TextRef, State, Heap>,
   {
     Combinator::new(Then::new(self.action, modifier))
   }
@@ -138,12 +138,12 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn catch<Text: ?Sized, State, Heap, F: Fn(Input<&Text, &mut State, &mut Heap>)>(
+  pub fn catch<TextRef, State, Heap, F: Fn(Input<TextRef, &mut State, &mut Heap>)>(
     self,
     modifier: F,
   ) -> Combinator<Catch<T, F>>
   where
-    T: Action<Text, State, Heap>,
+    T: Action<TextRef, State, Heap>,
   {
     Combinator::new(Catch::new(self.action, modifier))
   }
@@ -160,12 +160,12 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn finally<Text: ?Sized, State, Heap, F: Fn(Input<&Text, &mut State, &mut Heap>)>(
+  pub fn finally<TextRef, State, Heap, F: Fn(Input<TextRef, &mut State, &mut Heap>)>(
     self,
     modifier: F,
   ) -> Combinator<Finally<T, F>>
   where
-    T: Action<Text, State, Heap>,
+    T: Action<TextRef, State, Heap>,
   {
     Combinator::new(Finally::new(self.action, modifier))
   }
@@ -182,14 +182,14 @@ mod tests {
     to: i32,
   }
 
-  fn accepter() -> Combinator<impl Action<str, State, Value = ()>> {
+  fn accepter() -> Combinator<impl for<'a> Action<&'a str, State, Value = ()>> {
     wrap(|input: Input<&str, &mut State, &mut ()>| {
       input.state.to = input.state.from;
       input.digest(1)
     })
   }
 
-  fn rejecter() -> Combinator<impl Action<str, State, Value = ()>> {
+  fn rejecter() -> Combinator<impl for<'a> Action<&'a str, State, Value = ()>> {
     wrap(|input: Input<&str, &mut State, &mut ()>| {
       input.state.to = input.state.from;
       None

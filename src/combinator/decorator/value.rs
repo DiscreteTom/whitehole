@@ -50,18 +50,18 @@ impl<T, D> BindDefault<T, D> {
 }
 
 unsafe impl<
-    Text: ?Sized,
+    TextRef,
     State,
     Heap,
     NewValue,
-    T: Action<Text, State, Heap>,
+    T: Action<TextRef, State, Heap>,
     D: Fn(T::Value) -> NewValue,
-  > Action<Text, State, Heap> for Map<T, D>
+  > Action<TextRef, State, Heap> for Map<T, D>
 {
   type Value = NewValue;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self
       .action
       .exec(input)
@@ -69,24 +69,24 @@ unsafe impl<
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text, State, Heap>
+unsafe impl<TextRef, State, Heap, T: Action<TextRef, State, Heap>> Action<TextRef, State, Heap>
   for Tuple<T>
 {
   type Value = (T::Value,);
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input).map(|output| output.map(|v| (v,)))
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>, D: Clone>
-  Action<Text, State, Heap> for Bind<T, D>
+unsafe impl<TextRef, State, Heap, T: Action<TextRef, State, Heap>, D: Clone>
+  Action<TextRef, State, Heap> for Bind<T, D>
 {
   type Value = D;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self
       .action
       .exec(input)
@@ -94,13 +94,13 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>, D: Clone>
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>, D: Default>
-  Action<Text, State, Heap> for BindDefault<T, D>
+unsafe impl<TextRef, State, Heap, T: Action<TextRef, State, Heap>, D: Default>
+  Action<TextRef, State, Heap> for BindDefault<T, D>
 {
   type Value = D;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self
       .action
       .exec(input)
@@ -109,18 +109,18 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>, D: Default>
 }
 
 unsafe impl<
-    Text: ?Sized,
+    TextRef: Clone,
     State,
     Heap,
     NewValue,
-    T: Action<Text, State, Heap>,
-    D: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, Output<T::Value>>) -> NewValue,
-  > Action<Text, State, Heap> for Select<T, D>
+    T: Action<TextRef, State, Heap>,
+    D: Fn(AcceptedContext<Input<TextRef, &mut State, &mut Heap>, Output<T::Value>>) -> NewValue,
+  > Action<TextRef, State, Heap> for Select<T, D>
 {
   type Value = NewValue;
 
   #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).map(|output| Output {
       digested: output.digested,
       value: (self.inner)(AcceptedContext { input, output }),
@@ -128,13 +128,13 @@ unsafe impl<
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text, State, Heap>
+unsafe impl<TextRef, State, Heap, T: Action<TextRef, State, Heap>> Action<TextRef, State, Heap>
   for Range<T>
 {
   type Value = WithRange<T::Value>;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     let start = input.instant().digested();
     self.action.exec(input).map(|output| {
       let digested = output.digested;
@@ -146,13 +146,13 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, V, T: Action<Text, State, Heap, Value = (V,)>>
-  Action<Text, State, Heap> for Pop<T>
+unsafe impl<TextRef, State, Heap, V, T: Action<TextRef, State, Heap, Value = (V,)>>
+  Action<TextRef, State, Heap> for Pop<T>
 {
   type Value = V;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input).map(|output| output.map(|(v,)| v))
   }
 }
@@ -169,12 +169,12 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn map<Text: ?Sized, State, Heap, NewValue, F: Fn(T::Value) -> NewValue>(
+  pub fn map<TextRef, State, Heap, NewValue, F: Fn(T::Value) -> NewValue>(
     self,
     mapper: F,
   ) -> Combinator<Map<T, F>>
   where
-    T: Action<Text, State, Heap>,
+    T: Action<TextRef, State, Heap>,
   {
     Combinator::new(Map::new(self.action, mapper))
   }
@@ -247,17 +247,17 @@ impl<T> Combinator<T> {
   /// ```
   #[inline]
   pub fn select<
-    Text: ?Sized,
+    TextRef,
     State,
     Heap,
     NewValue,
-    F: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, Output<T::Value>>) -> NewValue,
+    F: Fn(AcceptedContext<Input<TextRef, &mut State, &mut Heap>, Output<T::Value>>) -> NewValue,
   >(
     self,
     selector: F,
   ) -> Combinator<Select<T, F>>
   where
-    T: Action<Text, State, Heap>,
+    T: Action<TextRef, State, Heap>,
   {
     Combinator::new(Select::new(self.action, selector))
   }
