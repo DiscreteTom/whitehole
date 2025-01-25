@@ -97,7 +97,7 @@ pub mod ops;
 pub use decorator::*;
 pub use provided::*;
 
-use crate::action::{Action, BytesAction, Input, Output};
+use crate::action::{Action, Input, Output};
 
 /// Wrap an [`Action`] to provide decorators and operator overloads.
 ///
@@ -118,20 +118,13 @@ impl<T> Combinator<T> {
   }
 }
 
-unsafe impl<State, Heap, T: Action<State, Heap>> Action<State, Heap> for Combinator<T> {
+unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text, State, Heap>
+  for Combinator<T>
+{
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<T::Value>> {
-    self.action.exec(input)
-  }
-}
-
-unsafe impl<State, Heap, T: BytesAction<State, Heap>> BytesAction<State, Heap> for Combinator<T> {
-  type Value = T::Value;
-
-  #[inline]
-  fn exec(&self, input: Input<&[u8], &mut State, &mut Heap>) -> Option<Output<T::Value>> {
+  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<T::Value>> {
     self.action.exec(input)
   }
 }

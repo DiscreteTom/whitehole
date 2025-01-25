@@ -9,7 +9,7 @@ create_closure_combinator!(Wrap, "See [`wrap`].");
 macro_rules! impl_wrap {
   ($name:ident, $assert:ident) => {
     unsafe impl<Value, State, Heap, F: Fn(Input<&str, &mut State, &mut Heap>) -> Option<Output<Value>>>
-      Action<State, Heap> for $name<F>
+      Action<str, State, Heap> for $name<F>
     {
       type Value = Value;
 
