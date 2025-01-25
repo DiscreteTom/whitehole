@@ -197,6 +197,21 @@ impl<T> Combinator<T> {
     Combinator::new(Tuple::new(self.action))
   }
 
+  /// Create a new combinator to take the value from an one-element tuple as [`Output::value`].
+  ///
+  /// This is reverse to [`Self::tuple`].
+  /// # Examples
+  /// ```
+  /// # use whitehole::{action::Action, combinator::Combinator};
+  /// # fn t(combinator: Combinator<impl Action>) {
+  /// combinator.pop()
+  /// # ;}
+  /// ```
+  #[inline]
+  pub fn pop(self) -> Combinator<Pop<T>> {
+    Combinator::new(Pop::new(self.action))
+  }
+
   /// Create a new combinator to set [`Output::value`] to the provided value.
   ///
   /// If your `Value` doesn't implement the [`Clone`] trait, consider using [`Self::select`] instead.
@@ -273,21 +288,6 @@ impl<T> Combinator<T> {
   #[inline]
   pub fn range(self) -> Combinator<Range<T>> {
     Combinator::new(Range::new(self.action))
-  }
-
-  /// Create a new combinator to take the value from an one-element tuple as [`Output::value`].
-  ///
-  /// This is reverse to [`Self::tuple`].
-  /// # Examples
-  /// ```
-  /// # use whitehole::{action::Action, combinator::Combinator};
-  /// # fn t(combinator: Combinator<impl Action>) {
-  /// combinator.pop()
-  /// # ;}
-  /// ```
-  #[inline]
-  pub fn pop(self) -> Combinator<Pop<T>> {
-    Combinator::new(Pop::new(self.action))
   }
 }
 
