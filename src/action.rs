@@ -84,55 +84,55 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{combinator::wrap, instant::Instant};
+  use crate::{
+    combinator::{wrap, wrap_bytes},
+    instant::Instant,
+  };
 
-  fn helper(t: impl Action<Value = ()>) -> Option<Output<()>> {
-    t.exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+  fn helper(t: impl Action<Value = ()>) {
+    assert!(t
+      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+      .is_some());
+  }
+  fn helper_bytes(t: impl Action<[u8], Value = ()>) {
+    assert!(t
+      .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+      .is_some());
   }
 
   #[test]
   fn action_ref() {
-    assert!(helper(&wrap(|input| input.digest(1))).is_some());
+    helper(&wrap(|input| input.digest(1)));
+    helper_bytes(&wrap_bytes(|input| input.digest(1)));
   }
 
   #[test]
   fn action_dyn_ref() {
-    assert!(helper(&wrap(|input| input.digest(1)) as &dyn Action<Value = ()>).is_some());
+    helper(&wrap(|input| input.digest(1)) as &dyn Action<Value = ()>);
+    helper_bytes(&wrap_bytes(|input| input.digest(1)) as &dyn Action<[u8], Value = ()>);
   }
 
   #[test]
   fn boxed_action() {
-    let output = helper(Box::new(wrap(|input| input.digest(1))));
-    assert_eq!(
-      output,
-      Some(Output {
-        value: (),
-        digested: 1
-      })
-    );
+    helper(Box::new(wrap(|input| input.digest(1))));
+    helper_bytes(Box::new(wrap_bytes(|input| input.digest(1))));
   }
 
   #[test]
   fn boxed_dyn_action() {
-    assert!(
-      helper(Box::new(wrap(|input| input.digest(1))) as Box<dyn Action<Value = ()>>).is_some()
-    );
+    helper(Box::new(wrap(|input| input.digest(1))) as Box<dyn Action<Value = ()>>);
+    helper_bytes(Box::new(wrap_bytes(|input| input.digest(1))) as Box<dyn Action<[u8], Value = ()>>);
   }
 
   #[test]
   fn rc_action() {
-    let output = helper(Rc::new(wrap(|input| input.digest(1))));
-    assert_eq!(
-      output,
-      Some(Output {
-        value: (),
-        digested: 1
-      })
-    );
+    helper(Rc::new(wrap(|input| input.digest(1))));
+    helper_bytes(Rc::new(wrap_bytes(|input| input.digest(1))));
   }
 
   #[test]
   fn rc_dyn_action() {
-    assert!(helper(Rc::new(wrap(|input| input.digest(1))) as Rc<dyn Action<Value = ()>>).is_some());
+    helper(Rc::new(wrap(|input| input.digest(1))) as Rc<dyn Action<Value = ()>>);
+    helper_bytes(Rc::new(wrap_bytes(|input| input.digest(1))) as Rc<dyn Action<[u8], Value = ()>>);
   }
 }
