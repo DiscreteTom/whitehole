@@ -1,6 +1,7 @@
 use crate::{
   action::{Action, Input, Output},
   combinator::{create_closure_combinator, Combinator},
+  digest::Digest,
 };
 
 create_closure_combinator!(WrapUnchecked, "See [`wrap_unchecked`].");
@@ -20,14 +21,12 @@ macro_rules! impl_wrap {
       type Value = Value;
 
       #[inline]
-      fn exec(
-        &self,
-        mut input: Input<&$text, &mut State, &mut Heap>,
-      ) -> Option<Output<Self::Value>> {
-        let output = (self.inner)(input.reborrow());
+      fn exec(&self, input: Input<&$text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+        let rest = input.instant().rest();
+        let output = (self.inner)(input);
         $assert!(output
           .as_ref()
-          .map_or(true, |output| input.validate(output.digested)));
+          .map_or(true, |output| rest.validate(output.digested)));
         output
       }
     }
