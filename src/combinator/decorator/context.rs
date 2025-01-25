@@ -53,30 +53,28 @@ impl<InputType, OutputType> AcceptedContext<InputType, OutputType> {
   }
 }
 
-macro_rules! impl_ctx_input {
-  ($input:ty) => {
-    impl<TextRef, State, Heap, OutputType> AcceptedContext<$input, OutputType> {
-      /// The `self.input().instant().digested()`.
-      #[inline]
-      pub const fn start(&self) -> usize {
-        self.input.instant().digested()
-      }
+impl<TextRef, State, Heap, OutputType>
+  AcceptedContext<Input<TextRef, &mut State, &mut Heap>, OutputType>
+{
+  /// The `self.input().instant().digested()`.
+  #[inline]
+  pub const fn start(&self) -> usize {
+    self.input.instant().digested()
+  }
 
-      /// See [`Input::state`].
-      #[inline]
-      pub const fn state(&mut self) -> &mut State {
-        // since `Self::input` returns non-mutable reference, we have to provide this to get mutable reference.
-        self.input.state
-      }
+  /// See [`Input::state`].
+  #[inline]
+  pub const fn state(&mut self) -> &mut State {
+    // since `Self::input` returns non-mutable reference, we have to provide this to get mutable reference.
+    self.input.state
+  }
 
-      /// See [`Input::heap`].
-      #[inline]
-      pub const fn heap(&mut self) -> &mut Heap {
-        // since `Self::input` returns non-mutable reference, we have to provide this to get mutable reference.
-        self.input.heap
-      }
-    }
-  };
+  /// See [`Input::heap`].
+  #[inline]
+  pub const fn heap(&mut self) -> &mut Heap {
+    // since `Self::input` returns non-mutable reference, we have to provide this to get mutable reference.
+    self.input.heap
+  }
 }
 
 macro_rules! impl_ctx {
@@ -132,7 +130,6 @@ macro_rules! impl_ctx {
 
 // Input will always be consumed.
 // Output won't be modified directly in the context, but can be consumed.
-impl_ctx_input!(Input<TextRef, &mut State, &mut Heap>);
 impl_ctx!(
   Input<TextRef, & mut State, & mut Heap>,
   Output<Value>
