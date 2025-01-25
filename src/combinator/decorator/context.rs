@@ -1,30 +1,61 @@
-use crate::action::{Input, Output};
+use crate::{
+  action::{Input, Output},
+  digest::Digest,
+};
 use std::ops::Range;
 
 /// This struct provides the [`Input`] and [`Output`]
 /// in combinator decorators when the combinator is accepted.
 ///
-/// You can't construct this struct directly.
+/// You can't construct or modify this struct directly.
+/// This is to ensure the [`Input`] and [`Output`] are consistent
+/// so we can skip some runtime checks.
 #[derive(Debug)]
 pub struct AcceptedContext<InputType, OutputType> {
   /// The [`Input`].
-  pub(super) input: InputType,
+  input: InputType,
   /// The [`Output`].
   ///
   /// If the decorator can't consume the output, this will be `&Output`.
-  pub(super) output: OutputType,
+  output: OutputType,
 }
 
-macro_rules! impl_ctx {
-  ($input:ty, $output:ty) => {
-    impl<'text, 'state, 'heap, 'output, Value, State, Heap> AcceptedContext<$input, $output> {
-      /// Get the [`Input`] of this execution.
-      #[inline]
-      pub fn input(&self) -> &$input {
-        // return non-mutable reference to prevent mem::swap and override `Input::instant`.
-        &self.input
-      }
+impl<InputType, OutputType> AcceptedContext<InputType, OutputType> {
+  /// Create a new instance.
+  ///
+  /// This is only used internally by the library.
+  #[inline]
+  pub(super) const fn new(input: InputType, output: OutputType) -> Self {
+    AcceptedContext { input, output }
+  }
 
+  /// Get the [`Input`] of this execution.
+  #[inline]
+  pub fn input(&self) -> &InputType {
+    // return non-mutable reference to prevent mem::swap and override `Input::instant`.
+    &self.input
+  }
+
+  /// Take the [`Output`].
+  ///
+  /// To get the [`Input`] as well, use [`Self::split`].
+  #[inline]
+  pub fn take(self) -> OutputType {
+    self.output
+  }
+
+  /// Split the instance into the [`Input`] and [`Output`].
+  ///
+  /// To get the [`Output`] only, use [`Self::take`].
+  #[inline]
+  pub fn split(self) -> (InputType, OutputType) {
+    (self.input, self.output)
+  }
+}
+
+macro_rules! impl_ctx_input {
+  ($input:ty) => {
+    impl<TextRef, State, Heap, OutputType> AcceptedContext<$input, OutputType> {
       /// The `self.input().instant().digested()`.
       #[inline]
       pub const fn start(&self) -> usize {
@@ -34,28 +65,31 @@ macro_rules! impl_ctx {
       /// See [`Input::state`].
       #[inline]
       pub const fn state(&mut self) -> &mut State {
+        // since `Self::input` returns non-mutable reference, we have to provide this to get mutable reference.
         self.input.state
       }
 
       /// See [`Input::heap`].
       #[inline]
       pub const fn heap(&mut self) -> &mut Heap {
+        // since `Self::input` returns non-mutable reference, we have to provide this to get mutable reference.
         self.input.heap
       }
+    }
+  };
+}
 
+macro_rules! impl_ctx {
+  ($input:ty, $output:ty) => {
+    impl<InputType, Value> AcceptedContext<InputType, $output> {
       /// See [`Output::digested`].
       #[inline]
       pub const fn digested(&self) -> usize {
         self.output.digested
       }
+    }
 
-      /// Get the rest of the input text after accepting this combinator.
-      #[inline]
-      pub fn rest(&self) -> &'text str {
-        debug_assert!(self.output.digested <= self.input.instant().rest().len());
-        unsafe { self.input.instant().rest().get_unchecked(self.digested()..) }
-      }
-
+    impl<TextRef, Value, State, Heap> AcceptedContext<$input, $output> {
       /// The end index in bytes in the whole input text.
       #[inline]
       pub fn end(&self) -> usize {
@@ -70,28 +104,27 @@ macro_rules! impl_ctx {
       pub fn range(&self) -> Range<usize> {
         self.start()..self.end()
       }
+    }
+
+    impl<TextRef: Digest + Copy, Value, State, Heap> AcceptedContext<$input, $output> {
+      /// Get the rest of the input text after accepting this combinator.
+      #[inline]
+      pub fn rest(&self) -> TextRef {
+        debug_assert!(self.input.validate(self.output.digested));
+        unsafe {
+          self
+            .input
+            .instant()
+            .rest()
+            .digest_unchecked(self.digested())
+        }
+      }
 
       /// The text content accepted by this combinator.
       #[inline]
-      pub fn content(&self) -> &'text str {
-        debug_assert!(self.digested() <= self.input.instant().rest().len());
-        unsafe { self.input.instant().rest().get_unchecked(..self.digested()) }
-      }
-
-      /// Take the [`Output`].
-      ///
-      /// To get the [`Input`] as well, use [`Self::split`].
-      #[inline]
-      pub fn take(self) -> $output {
-        self.output
-      }
-
-      /// Split the instance into the [`Input`] and [`Output`].
-      ///
-      /// To get the [`Output`] only, use [`Self::take`].
-      #[inline]
-      pub fn split(self) -> ($input, $output) {
-        (self.input, self.output)
+      pub fn content(&self) -> TextRef {
+        debug_assert!(self.input.validate(self.output.digested));
+        unsafe { self.input.instant().rest().span_unchecked(self.digested()) }
       }
     }
   };
@@ -99,13 +132,14 @@ macro_rules! impl_ctx {
 
 // Input will always be consumed.
 // Output won't be modified directly in the context, but can be consumed.
+impl_ctx_input!(Input<TextRef, &mut State, &mut Heap>);
 impl_ctx!(
-  Input<&'text str, &'state mut State, &'heap mut Heap>,
+  Input<TextRef, & mut State, & mut Heap>,
   Output<Value>
 );
 impl_ctx!(
-  Input<&'text str, &'state mut State, &'heap mut Heap>,
-  &'output Output<Value>
+  Input<TextRef, & mut State, & mut Heap>,
+  &Output<Value>
 );
 
 #[cfg(test)]

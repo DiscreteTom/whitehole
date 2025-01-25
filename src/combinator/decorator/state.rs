@@ -36,7 +36,7 @@ unsafe impl<
   #[inline]
   fn exec(&self, mut input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).inspect(|output| {
-      (self.inner)(AcceptedContext { input, output });
+      (self.inner)(AcceptedContext::new(input, output));
     })
   }
 }
@@ -212,8 +212,8 @@ mod tests {
   fn combinator_then() {
     let mut state = State::default();
     assert!(accepter()
-      .then(|ctx| {
-        ctx.input.state.from = 1;
+      .then(|mut ctx| {
+        ctx.state().from = 1;
       })
       .exec(Input::new(Instant::new("123"), &mut state, &mut ()))
       .is_some());
@@ -221,8 +221,8 @@ mod tests {
 
     let mut state = State::default();
     assert!(rejecter()
-      .then(|ctx| {
-        ctx.input.state.from = 1;
+      .then(|mut ctx| {
+        ctx.state().from = 1;
       })
       .exec(Input::new(Instant::new("123"), &mut state, &mut ()))
       .is_none());

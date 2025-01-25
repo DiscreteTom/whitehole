@@ -62,10 +62,7 @@ unsafe impl<
   #[inline]
   fn exec(&self, mut input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).and_then(|output| {
-      if (self.inner)(AcceptedContext {
-        input,
-        output: &output,
-      }) {
+      if (self.inner)(AcceptedContext::new(input, &output)) {
         None
       } else {
         output.into()

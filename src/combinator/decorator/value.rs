@@ -123,7 +123,7 @@ unsafe impl<
   fn exec(&self, mut input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).map(|output| Output {
       digested: output.digested,
-      value: (self.inner)(AcceptedContext { input, output }),
+      value: (self.inner)(AcceptedContext::new(input, output)),
     })
   }
 }
