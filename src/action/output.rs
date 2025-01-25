@@ -60,34 +60,47 @@ mod tests {
   use crate::instant::Instant;
 
   #[test]
-  fn input_digest() {
+  fn input_validate() {
     let mut state = ();
     let mut heap = ();
-    let input = Input::new(Instant::new("123"), &mut state, &mut heap);
-    assert_eq!(input.digest(3).map(|output| output.digested), Some(3));
-    assert_eq!(input.digest(2).map(|output| output.digested), Some(2));
-    assert_eq!(input.digest(1).map(|output| output.digested), Some(1));
-    assert_eq!(input.digest(0).map(|output| output.digested), Some(0));
-    assert!(input.digest(4).is_none());
-  }
 
-  #[test]
-  fn input_digest_invalid_code_point() {
-    let mut state = ();
-    let mut heap = ();
+    let input = Input::new(Instant::new("123"), &mut state, &mut heap);
+    assert!(input.validate(0));
+    assert!(input.validate(1));
+    assert!(input.validate(2));
+    assert!(input.validate(3));
+    assert!(!input.validate(4));
+
     let input = Input::new(Instant::new("好"), &mut state, &mut heap);
-    assert!(input.digest(1).is_none());
+    assert!(input.validate(0));
+    assert!(!input.validate(1));
+    assert!(!input.validate(2));
+    assert!(input.validate(3));
+
+    let input = Input::new(Instant::new(b"123" as &[u8]), &mut state, &mut heap);
+    assert!(input.validate(0));
+    assert!(input.validate(1));
+    assert!(input.validate(2));
+    assert!(input.validate(3));
+    assert!(!input.validate(4));
   }
 
   #[test]
   fn input_digest_unchecked() {
     let mut state = ();
     let mut heap = ();
+
     let input = Input::new(Instant::new("123"), &mut state, &mut heap);
-    assert_eq!(unsafe { input.digest_unchecked(3).digested }, 3);
-    assert_eq!(unsafe { input.digest_unchecked(2).digested }, 2);
-    assert_eq!(unsafe { input.digest_unchecked(1).digested }, 1);
     assert_eq!(unsafe { input.digest_unchecked(0).digested }, 0);
+    assert_eq!(unsafe { input.digest_unchecked(1).digested }, 1);
+    assert_eq!(unsafe { input.digest_unchecked(2).digested }, 2);
+    assert_eq!(unsafe { input.digest_unchecked(3).digested }, 3);
+
+    let input = Input::new(Instant::new(b"123" as &[u8]), &mut state, &mut heap);
+    assert_eq!(unsafe { input.digest_unchecked(0).digested }, 0);
+    assert_eq!(unsafe { input.digest_unchecked(1).digested }, 1);
+    assert_eq!(unsafe { input.digest_unchecked(2).digested }, 2);
+    assert_eq!(unsafe { input.digest_unchecked(3).digested }, 3);
   }
 
   #[test]
@@ -101,11 +114,47 @@ mod tests {
 
   #[test]
   #[should_panic]
+  fn input_bytes_digest_unchecked_overflow() {
+    let mut state = ();
+    let mut heap = ();
+    let input = Input::new(Instant::new(b"123" as &[u8]), &mut state, &mut heap);
+    unsafe { input.digest_unchecked(4) };
+  }
+
+  #[test]
+  #[should_panic]
   fn input_digest_unchecked_invalid_code_point() {
     let mut state = ();
     let mut heap = ();
     let input = Input::new(Instant::new("好"), &mut state, &mut heap);
     unsafe { input.digest_unchecked(1) };
+  }
+
+  #[test]
+  fn input_digest() {
+    let mut state = ();
+    let mut heap = ();
+
+    let input = Input::new(Instant::new("123"), &mut state, &mut heap);
+    assert_eq!(input.digest(0).map(|output| output.digested), Some(0));
+    assert_eq!(input.digest(1).map(|output| output.digested), Some(1));
+    assert_eq!(input.digest(2).map(|output| output.digested), Some(2));
+    assert_eq!(input.digest(3).map(|output| output.digested), Some(3));
+    assert!(input.digest(4).is_none());
+
+    let input = Input::new(Instant::new("好"), &mut state, &mut heap);
+    assert_eq!(input.digest(0).map(|output| output.digested), Some(0));
+    assert!(input.digest(1).is_none());
+    assert!(input.digest(2).is_none());
+    assert_eq!(input.digest(3).map(|output| output.digested), Some(3));
+    assert!(input.digest(4).is_none());
+
+    let input = Input::new(Instant::new(b"123" as &[u8]), &mut state, &mut heap);
+    assert_eq!(input.digest(0).map(|output| output.digested), Some(0));
+    assert_eq!(input.digest(1).map(|output| output.digested), Some(1));
+    assert_eq!(input.digest(2).map(|output| output.digested), Some(2));
+    assert_eq!(input.digest(3).map(|output| output.digested), Some(3));
+    assert!(input.digest(4).is_none());
   }
 
   #[test]
