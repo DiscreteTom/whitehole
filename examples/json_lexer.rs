@@ -6,7 +6,7 @@ use whitehole::{
   range::WithRange,
 };
 
-pub fn build_lexer(s: &str) -> Parser<impl Action<Value = WithRange<()>>> {
+pub fn build_lexer(s: &str) -> Parser<impl Action<Value = WithRange<()>>, &str> {
   // Use `* (1..)` to repeat for one or more times.
   let whitespaces = next(in_str!(" \t\r\n")) * (1..);
 

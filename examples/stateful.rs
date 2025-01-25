@@ -9,7 +9,7 @@ pub struct MyState {
   pub nested: usize,
 }
 
-pub fn build_lexer(s: &str) -> Parser<impl Action<MyState>, MyState> {
+pub fn build_lexer(s: &str) -> Parser<impl Action<str, MyState>, &str, MyState> {
   let escape = || {
     let simple = next(in_str!("0'\"\\nrvtbf\u{000a}\u{000d}\u{2028}\u{2029}"));
     let hex = eat('x') + next(|c| c.is_ascii_hexdigit()) * 2;

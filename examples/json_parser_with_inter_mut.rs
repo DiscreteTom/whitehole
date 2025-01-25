@@ -7,7 +7,7 @@ use whitehole::{
   range::WithRange,
 };
 
-pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action<Value = WithRange<()>>> {
+pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action<Value = WithRange<()>>, &str> {
   // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
   // use a closure to generate the combinator for better runtime performance (via inlining).
   let ws = || next(in_str!(" \t\r\n")) * (1..);

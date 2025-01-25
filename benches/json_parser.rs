@@ -7,7 +7,7 @@ use whitehole::{
   parser::{Builder, Parser},
 };
 
-pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action> {
+pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action, &str> {
   // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
   // use a closure to generate the combinator for better runtime performance (via inlining).
   let ws = || next(in_str!(" \t\r\n")) * (1..);
@@ -68,7 +68,7 @@ pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action> {
   Builder::new().entry(ws() | value()).build(s)
 }
 
-pub fn build_parser_with_static(s: &str) -> Parser<impl Action> {
+pub fn build_parser_with_static(s: &str) -> Parser<impl Action, &str> {
   // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
   // use a function to generate the combinator for better runtime performance (via inlining).
   fn ws() -> Combinator<impl Action<Value = ()>> {
@@ -125,7 +125,7 @@ pub fn build_parser_with_static(s: &str) -> Parser<impl Action> {
   Builder::new().entry(ws() | value()).build(s)
 }
 
-fn parse_json(mut parser: Parser<impl Action>) {
+fn parse_json(mut parser: Parser<impl Action, &str>) {
   loop {
     let output = parser.parse();
     if output.is_none() {

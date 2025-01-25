@@ -5,7 +5,7 @@ use whitehole::{
 };
 
 /// Create a combinator from a regex.
-pub fn regex<State, Heap>(s: &str) -> Combinator<impl Action<State, Heap, Value = ()>> {
+pub fn regex<State, Heap>(s: &str) -> Combinator<impl Action<str, State, Heap, Value = ()>> {
   let re = Regex::new(s).unwrap();
   unsafe {
     wrap_unchecked(move |input| {

@@ -7,7 +7,7 @@ use whitehole::{
   range::WithRange,
 };
 
-pub fn build_parser_with_static(s: &str) -> Parser<impl Action<Value = WithRange<()>>> {
+pub fn build_parser_with_static(s: &str) -> Parser<impl Action<Value = WithRange<()>>, &str> {
   // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
   // use a function to generate the combinator for better runtime performance (via inlining).
   fn ws() -> Combinator<impl Action<Value = ()>> {

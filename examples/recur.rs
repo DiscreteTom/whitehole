@@ -9,7 +9,8 @@ use whitehole::{
 
 // Use `Rc` to make it clone-able, use `OnceCell` to initialize it later,
 // use `Box<dyn>` to prevent recursive/infinite type.
-type RecurInner<Value, State, Heap> = Rc<OnceCell<Box<dyn Action<State, Heap, Value = Value>>>>;
+type RecurInner<Value, State, Heap> =
+  Rc<OnceCell<Box<dyn Action<str, State, Heap, Value = Value>>>>;
 
 /// See [`recur`] and [`recur_unchecked`].
 ///
@@ -24,14 +25,14 @@ pub struct RecurSetter<Value, State, Heap> {
 impl<Value, State, Heap> RecurSetter<Value, State, Heap> {
   /// Consume self, set the parser.
   #[inline]
-  pub fn set(self, parser: Box<dyn Action<State, Heap, Value = Value>>) {
+  pub fn set(self, parser: Box<dyn Action<str, State, Heap, Value = Value>>) {
     // we can use `ok` here because the setter will be dropped after this call
     self.inner.set(parser).ok();
   }
 
   /// Consume self, set the parser by boxing the parser.
   #[inline]
-  pub fn boxed(self, p: impl Action<State, Heap, Value = Value> + 'static) {
+  pub fn boxed(self, p: impl Action<str, State, Heap, Value = Value> + 'static) {
     self.set(Box::new(p));
   }
 }
@@ -41,7 +42,7 @@ pub struct Recur<Value, State, Heap> {
   rc: RecurInner<Value, State, Heap>,
 }
 
-unsafe impl<Value, State, Heap> Action<State, Heap> for Recur<Value, State, Heap> {
+unsafe impl<Value, State, Heap> Action<str, State, Heap> for Recur<Value, State, Heap> {
   type Value = Value;
 
   fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
@@ -70,7 +71,7 @@ pub struct RecurUnchecked<Value, State, Heap> {
   rc: RecurInner<Value, State, Heap>,
 }
 
-unsafe impl<Value, State, Heap> Action<State, Heap> for RecurUnchecked<Value, State, Heap> {
+unsafe impl<Value, State, Heap> Action<str, State, Heap> for RecurUnchecked<Value, State, Heap> {
   type Value = Value;
 
   fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {

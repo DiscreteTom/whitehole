@@ -7,7 +7,7 @@ use whitehole::{
   parser::{Builder, Parser},
 };
 
-pub fn build_lexer(s: &str) -> Parser<impl Action> {
+pub fn build_lexer(s: &str) -> Parser<impl Action, &str> {
   // Use `* (1..)` to repeat for one or more times.
   let whitespaces = next(in_str!(" \t\r\n")) * (1..);
 

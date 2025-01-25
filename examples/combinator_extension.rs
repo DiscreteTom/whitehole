@@ -1,6 +1,9 @@
+use std::fmt::Debug;
+
 use whitehole::{
   action::{Action, Input, Output},
   combinator::{eat, Combinator},
+  digest::Digest,
   instant::Instant,
 };
 
@@ -8,13 +11,17 @@ use whitehole::{
 
 // The simpler way: return `impl`.
 
-trait SimpleCombinatorExt<T: Action<State, Heap>, State, Heap> {
+trait SimpleCombinatorExt<T: Action<Text, State, Heap>, Text: ?Sized, State, Heap> {
   /// Create a new combinator to print the range and content if accepted.
-  fn simple_print(self) -> Combinator<impl Action<State, Heap, Value = T::Value>>;
+  fn simple_print(self) -> Combinator<impl Action<Text, State, Heap, Value = T::Value>>;
 }
 
-impl<T: Action<State, Heap>, State, Heap> SimpleCombinatorExt<T, State, Heap> for Combinator<T> {
-  fn simple_print(self) -> Combinator<impl Action<State, Heap, Value = T::Value>> {
+impl<T: Action<Text, State, Heap>, Text: ?Sized + Debug, State, Heap>
+  SimpleCombinatorExt<T, Text, State, Heap> for Combinator<T>
+where
+  for<'a> &'a Text: Digest,
+{
+  fn simple_print(self) -> Combinator<impl Action<Text, State, Heap, Value = T::Value>> {
     self.then(|ctx| println!("{}..{}: {:?}", ctx.start(), ctx.end(), ctx.content()))
   }
 }
@@ -38,19 +45,20 @@ impl<T> CombinatorExt<T> for Combinator<T> {
   }
 }
 
-unsafe impl<State, Heap, T: Action<State, Heap>> Action<State, Heap> for Print<T> {
+unsafe impl<Text: ?Sized + Debug, State, Heap, T: Action<Text, State, Heap>>
+  Action<Text, State, Heap> for Print<T>
+where
+  for<'a> &'a Text: Digest,
+{
   type Value = T::Value;
 
-  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).inspect(|output| {
       let start = input.instant().digested();
       let end = start + output.digested;
-      println!(
-        "{}..{}: {:?}",
-        start,
-        end,
-        &input.instant().text()[start..end]
-      );
+      println!("{}..{}: {:?}", start, end, unsafe {
+        input.instant().rest().span_unchecked(output.digested)
+      });
     })
   }
 }
