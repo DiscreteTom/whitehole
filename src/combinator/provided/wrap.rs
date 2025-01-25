@@ -93,7 +93,7 @@ pub const fn wrap<
 /// # Safety
 /// The returned [`Output`] should satisfy the requirement of [`Output::digested`].
 /// This will be checked using [`debug_assert!`].
-/// For the checked version, see [`wrap`].
+/// For the checked version, see [`wrap_bytes`].
 /// # Examples
 /// ```
 /// # use whitehole::combinator::{wrap_bytes_unchecked, Combinator};
