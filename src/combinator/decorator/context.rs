@@ -15,8 +15,6 @@ pub struct AcceptedContext<InputType, OutputType> {
   /// The [`Input`].
   input: InputType,
   /// The [`Output`].
-  ///
-  /// If the decorator can't consume the output, this will be `&Output`.
   output: OutputType,
 }
 
@@ -77,67 +75,56 @@ impl<TextRef, State, Heap, OutputType>
   }
 }
 
-macro_rules! impl_ctx {
-  ($input:ty, $output:ty) => {
-    impl<InputType, Value> AcceptedContext<InputType, $output> {
-      /// See [`Output::digested`].
-      #[inline]
-      pub const fn digested(&self) -> usize {
-        self.output.digested
-      }
-    }
-
-    impl<TextRef, Value, State, Heap> AcceptedContext<$input, $output> {
-      /// The end index in bytes in the whole input text.
-      #[inline]
-      pub fn end(&self) -> usize {
-        debug_assert!(usize::MAX - self.start() >= self.digested());
-        unsafe { self.start().unchecked_add(self.digested()) }
-      }
-
-      /// The byte range of the digested text in the whole input text.
-      ///
-      /// Shortcut for `self.start()..self.end()`.
-      #[inline]
-      pub fn range(&self) -> Range<usize> {
-        self.start()..self.end()
-      }
-    }
-
-    impl<TextRef: Digest + Copy, Value, State, Heap> AcceptedContext<$input, $output> {
-      /// Get the rest of the input text after accepting this combinator.
-      #[inline]
-      pub fn rest(&self) -> TextRef {
-        debug_assert!(self.input.validate(self.output.digested));
-        unsafe {
-          self
-            .input
-            .instant()
-            .rest()
-            .digest_unchecked(self.digested())
-        }
-      }
-
-      /// The text content accepted by this combinator.
-      #[inline]
-      pub fn content(&self) -> TextRef {
-        debug_assert!(self.input.validate(self.output.digested));
-        unsafe { self.input.instant().rest().span_unchecked(self.digested()) }
-      }
-    }
-  };
+impl<InputType, Value> AcceptedContext<InputType, Output<Value>> {
+  /// See [`Output::digested`].
+  #[inline]
+  pub const fn digested(&self) -> usize {
+    self.output.digested
+  }
 }
 
-// Input will always be consumed.
-// Output won't be modified directly in the context, but can be consumed.
-impl_ctx!(
-  Input<TextRef, & mut State, & mut Heap>,
-  Output<Value>
-);
-impl_ctx!(
-  Input<TextRef, & mut State, & mut Heap>,
-  &Output<Value>
-);
+impl<TextRef, Value, State, Heap>
+  AcceptedContext<Input<TextRef, &mut State, &mut Heap>, Output<Value>>
+{
+  /// The end index in bytes in the whole input text.
+  #[inline]
+  pub fn end(&self) -> usize {
+    debug_assert!(usize::MAX - self.start() >= self.digested());
+    unsafe { self.start().unchecked_add(self.digested()) }
+  }
+
+  /// The byte range of the digested text in the whole input text.
+  ///
+  /// Shortcut for `self.start()..self.end()`.
+  #[inline]
+  pub fn range(&self) -> Range<usize> {
+    self.start()..self.end()
+  }
+}
+
+impl<TextRef: Digest + Copy, Value, State, Heap>
+  AcceptedContext<Input<TextRef, &mut State, &mut Heap>, Output<Value>>
+{
+  /// Get the rest of the input text after accepting this combinator.
+  #[inline]
+  pub fn rest(&self) -> TextRef {
+    debug_assert!(self.input.validate(self.output.digested));
+    unsafe {
+      self
+        .input
+        .instant()
+        .rest()
+        .digest_unchecked(self.digested())
+    }
+  }
+
+  /// The text content accepted by this combinator.
+  #[inline]
+  pub fn content(&self) -> TextRef {
+    debug_assert!(self.input.validate(self.output.digested));
+    unsafe { self.input.instant().rest().span_unchecked(self.digested()) }
+  }
+}
 
 #[cfg(test)]
 mod tests {
@@ -167,29 +154,6 @@ mod tests {
     };
   }
 
-  macro_rules! ctx_ref {
-    () => {
-      ctx_ref!((), ())
-    };
-    ($state:expr, $heap:expr) => {
-      AcceptedContext {
-        input: Input::new(
-          {
-            let mut instant = Instant::new("0123");
-            unsafe { instant.digest_unchecked(1) };
-            instant
-          },
-          &mut $state,
-          &mut $heap,
-        ),
-        output: &Output {
-          value: (),
-          digested: 1,
-        },
-      }
-    };
-  }
-
   #[test]
   fn accepted_decorator_context() {
     // getters
@@ -200,13 +164,6 @@ mod tests {
     assert_eq!(ctx!().end(), 2);
     assert_eq!(ctx!().range(), 1..2);
     assert_eq!(ctx!().content(), "1");
-    assert_eq!(ctx_ref!().input().instant().rest(), "123");
-    assert_eq!(ctx_ref!().start(), 1);
-    assert_eq!(ctx_ref!().digested(), 1);
-    assert_eq!(ctx_ref!().rest(), "23");
-    assert_eq!(ctx_ref!().end(), 2);
-    assert_eq!(ctx_ref!().range(), 1..2);
-    assert_eq!(ctx_ref!().content(), "1");
 
     // mutable state & heap
     let mut state = 0;
@@ -215,19 +172,11 @@ mod tests {
     let mut heap = 0;
     *ctx!((), heap).heap() = 1;
     assert_eq!(*ctx!((), heap).heap(), 1);
-    let mut state = 0;
-    *ctx_ref!(state, ()).state() = 1;
-    assert_eq!(*ctx_ref!(state, ()).state(), 1);
-    let mut heap = 0;
-    *ctx_ref!((), heap).heap() = 1;
-    assert_eq!(*ctx_ref!((), heap).heap(), 1);
 
     // take & split
     assert_eq!(ctx!().take().digested, 1);
     assert_eq!(ctx!().take().map(|_| 1).value, 1);
     assert_eq!(ctx!().split().1.map(|_| 1).value, 1);
     assert_eq!(ctx!().split().0.reborrow().instant().digested(), 1);
-    assert_eq!(ctx_ref!().take().digested, 1);
-    assert_eq!(ctx_ref!().split().0.reborrow().instant().digested(), 1);
   }
 }

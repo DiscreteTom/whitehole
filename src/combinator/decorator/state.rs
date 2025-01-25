@@ -28,7 +28,7 @@ unsafe impl<
     State,
     Heap,
     T: Action<Text, State, Heap>,
-    D: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, &Output<T::Value>>),
+    D: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, Output<&T::Value>>),
   > Action<Text, State, Heap> for Then<T, D>
 {
   type Value = T::Value;
@@ -36,7 +36,13 @@ unsafe impl<
   #[inline]
   fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).inspect(|output| {
-      (self.inner)(AcceptedContext::new(input, output));
+      (self.inner)(AcceptedContext::new(
+        input,
+        Output {
+          value: &output.value,
+          digested: output.digested,
+        },
+      ));
     })
   }
 }
@@ -116,7 +122,7 @@ impl<T> Combinator<T> {
     Text: ?Sized,
     State,
     Heap,
-    F: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, &Output<T::Value>>),
+    F: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, Output<&T::Value>>),
   >(
     self,
     modifier: F,

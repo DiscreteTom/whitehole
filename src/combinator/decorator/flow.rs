@@ -54,7 +54,7 @@ unsafe impl<
     State,
     Heap,
     T: Action<Text, State, Heap>,
-    D: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, &Output<T::Value>>) -> bool,
+    D: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, Output<&T::Value>>) -> bool,
   > Action<Text, State, Heap> for Reject<T, D>
 {
   type Value = T::Value;
@@ -62,7 +62,13 @@ unsafe impl<
   #[inline]
   fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).and_then(|output| {
-      if (self.inner)(AcceptedContext::new(input, &output)) {
+      if (self.inner)(AcceptedContext::new(
+        input,
+        Output {
+          value: &output.value,
+          digested: output.digested,
+        },
+      )) {
         None
       } else {
         output.into()
@@ -161,7 +167,7 @@ impl<T> Combinator<T> {
     Text: ?Sized,
     State,
     Heap,
-    F: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, &Output<T::Value>>) -> bool,
+    F: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, Output<&T::Value>>) -> bool,
   >(
     self,
     rejecter: F,
@@ -286,7 +292,7 @@ mod tests {
     let mut executed = false;
     assert_eq!(
       accepter()
-        .reject(|input| input.content() != "1")
+        .reject(|ctx| ctx.content() != "1")
         .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
         .unwrap()
         .digested,
@@ -297,7 +303,7 @@ mod tests {
     let mut executed = false;
     assert_eq!(
       accepter()
-        .reject(|input| input.content() == "1")
+        .reject(|ctx| ctx.content() == "1")
         .exec(Input::new(Instant::new("123"), &mut executed, &mut ())),
       None
     );

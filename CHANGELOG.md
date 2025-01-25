@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `rest` of `Input::instant` is no longer guaranteed to be non-empty.
 - `Input::new` will return `Input` directly instead of an `Option`.
 - `Action` will now take an additional generic param `Text`.
+- `AcceptedContext::output` will always be a struct instead of a reference.
 - `Parser` now take an additional generic param `TextRef` instead of a lifetime param.
 - `Snapshot` now take an additional generic param `TextRef` instead of a lifetime param.
 
