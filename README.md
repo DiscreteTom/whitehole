@@ -15,6 +15,7 @@ A simple, fast, intuitive parser combinator framework for Rust.
 - Re-usable heap memory: if you need allocation, never clone or reallocate it.
 - Stateful-able: control the parsing flow with an optional custom state.
 - Safe by default, with `unsafe` variants for performance.
+- Provide both string (`&str`) and bytes (`&[u8]`) support.
 
 ## Installation
 
