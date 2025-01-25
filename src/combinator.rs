@@ -15,7 +15,7 @@
 //! - [`eat`]: eat a pattern.
 //! - [`next`]: eat the next character by a predicate.
 //! - [`till`]: eat until a pattern, inclusive.
-//! - [`wrap`]: wrap a closure as a combinator.
+//! - [`wrap`]/[`wrap_bytes`]: wrap a closure as a combinator.
 //!
 //! Tips: Some of them may have faster `unsafe` variants named with suffix `_unchecked`.
 //! ## Composition
