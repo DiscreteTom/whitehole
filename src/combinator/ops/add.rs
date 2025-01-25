@@ -26,7 +26,7 @@
 //! eat("true") + ';'
 //! # );
 //! # t(
-//! eat("true") + 1
+//! eat("true") + b'a'
 //! # );
 //! ```
 //! # Concat Values
@@ -124,12 +124,12 @@ impl<Lhs> ops::Add<char> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs> ops::Add<usize> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, Eat<usize>>>;
+impl<Lhs> ops::Add<u8> for Combinator<Lhs> {
+  type Output = Combinator<Add<Lhs, Eat<u8>>>;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
-  fn add(self, rhs: usize) -> Self::Output {
+  fn add(self, rhs: u8) -> Self::Output {
     Self::Output::new(Add::new(self.action, eat(rhs).action))
   }
 }
@@ -158,7 +158,7 @@ impl<'a, Lhs> ops::Add<&'a str> for Combinator<Lhs> {
 mod tests {
   use super::*;
   use crate::{
-    combinator::{wrap, Input},
+    combinator::{wrap, wrap_bytes, Input},
     instant::Instant,
   };
 
@@ -240,29 +240,15 @@ mod tests {
   }
 
   #[test]
-  fn combinator_add_usize() {
-    let eat1 = || wrap(|input| input.digest(1));
+  fn combinator_add_u8() {
+    let eat1 = || wrap_bytes(|input| input.digest(1));
 
     // normal
     assert_eq!(
-      (eat1() + 2)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+      (eat1() + b'2')
+        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(3)
-    );
-    // overflow
-    assert_eq!(
-      (eat1() + 3)
-        .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
-        .map(|output| output.digested),
-      None
-    );
-    // 0
-    assert_eq!(
-      (eat1() + 0)
-        .exec(Input::new(Instant::new("12"), &mut (), &mut ()))
-        .map(|output| output.digested),
-      Some(1)
     );
   }
 }

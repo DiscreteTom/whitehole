@@ -25,7 +25,7 @@
 //! eat("true") | ';'
 //! # );
 //! # t(
-//! eat("true") | 1
+//! eat("true") | b'a'
 //! # );
 //! ```
 
@@ -87,12 +87,12 @@ impl<Lhs> ops::BitOr<char> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs> ops::BitOr<usize> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, Eat<usize>>>;
+impl<Lhs> ops::BitOr<u8> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Eat<u8>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
-  fn bitor(self, rhs: usize) -> Self::Output {
+  fn bitor(self, rhs: u8) -> Self::Output {
     Self::Output::new(BitOr::new(self.action, eat(rhs).action))
   }
 }
@@ -121,7 +121,7 @@ impl<'a, Lhs> ops::BitOr<&'a str> for Combinator<Lhs> {
 mod tests {
   use super::*;
   use crate::{
-    combinator::{wrap, Input, Output},
+    combinator::{wrap, wrap_bytes, Input, Output},
     instant::Instant,
   };
 
@@ -177,11 +177,11 @@ mod tests {
   }
 
   #[test]
-  fn combinator_bit_or_usize() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+  fn combinator_bit_or_u8() {
+    let rejecter = || wrap_bytes(|_| Option::<Output<()>>::None);
     assert_eq!(
-      (rejecter() | 1)
-        .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
+      (rejecter() | b'1')
+        .exec(Input::new(Instant::new(b"1"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(1)
     );

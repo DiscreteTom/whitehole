@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Input::shift_unchecked`.
 - Add `AcceptedContext::output`.
 - Add `wrap_bytes`/`WrapBytes` and `wrap_bytes_unchecked`/`WrapBytesUnchecked`.
+- Add `take`/`Take`.
 
 ### Changed
 
@@ -22,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Input::new` will return `Input` directly instead of an `Option`.
 - `Action` will now take an additional generic param `Text`.
 - `AcceptedContext::output` will always be a struct instead of a reference.
+- `eat` will no longer accept `usize`, use `take` instead.
 - `Parser` now take an additional generic param `TextRef` instead of a lifetime param.
 - `Snapshot` now take an additional generic param `TextRef` instead of a lifetime param.
 
