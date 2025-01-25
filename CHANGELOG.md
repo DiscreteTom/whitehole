@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add trait `Digest`.
 - Add `Input::shift_unchecked`.
+- Add `AcceptedContext::output`.
 
 ### Changed
 

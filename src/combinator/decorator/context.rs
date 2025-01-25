@@ -34,6 +34,13 @@ impl<InputType, OutputType> AcceptedContext<InputType, OutputType> {
     &self.input
   }
 
+  /// Get the [`Output`] of this execution.
+  #[inline]
+  pub fn output(&self) -> &OutputType {
+    // return non-mutable reference to prevent mem::swap and override `Output::digested`.
+    &self.output
+  }
+
   /// Take the [`Output`].
   ///
   /// To get the [`Input`] as well, use [`Self::split`].
@@ -158,6 +165,7 @@ mod tests {
   fn accepted_decorator_context() {
     // getters
     assert_eq!(ctx!().input().instant().rest(), "123");
+    assert_eq!(ctx!().output().digested, 1);
     assert_eq!(ctx!().start(), 1);
     assert_eq!(ctx!().digested(), 1);
     assert_eq!(ctx!().rest(), "23");
