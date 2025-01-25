@@ -157,7 +157,10 @@ mod tests {
   #[test]
   fn str_in_heap() {
     let text = "123".to_string();
-    let mut parser = Builder::new().heap(&text).entry(eat(&text)).build(&text);
+    let mut parser = Builder::new()
+      .heap(&text)
+      .entry(eat(text.as_str()))
+      .build(text.as_str());
     assert!(parser.parse().is_some());
   }
 }

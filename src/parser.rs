@@ -373,7 +373,7 @@ mod tests {
       state: 123,
       heap: &text,
       instant: Instant::new(text.as_str()),
-      entry: eat(&text),
+      entry: eat(text.as_str()),
     };
     assert!(parser.parse().is_some());
   }

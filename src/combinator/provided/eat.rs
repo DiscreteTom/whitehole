@@ -44,20 +44,6 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Eat<&str> {
   }
 }
 
-// TODO: remove this
-unsafe impl<State, Heap> Action<str, State, Heap> for Eat<&String> {
-  type Value = ();
-
-  #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
-    input
-      .instant()
-      .rest()
-      .starts_with(self.inner)
-      .then(|| unsafe { input.digest_unchecked(self.inner.len()) })
-  }
-}
-
 unsafe impl<State, Heap> Action<str, State, Heap> for Eat<usize> {
   type Value = ();
 
@@ -165,13 +151,6 @@ mod tests {
         .map(|output| output.digested),
       Some(3)
     );
-    // normal &String
-    assert_eq!(
-      eat(&"123".to_string())
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
-        .map(|output| output.digested),
-      Some(3)
-    );
     // normal char
     assert_eq!(
       eat(';')
@@ -231,6 +210,5 @@ mod tests {
     test('a'.into());
     test("a".into());
     test("a".to_string().into());
-    test((&"a".to_string()).into());
   }
 }

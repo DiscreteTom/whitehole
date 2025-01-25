@@ -117,16 +117,6 @@ impl<'a, Lhs> ops::BitOr<&'a str> for Combinator<Lhs> {
   }
 }
 
-impl<'a, Lhs> ops::BitOr<&'a String> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, Eat<&'a String>>>;
-
-  /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
-  #[inline]
-  fn bitor(self, rhs: &'a String) -> Self::Output {
-    Self::Output::new(BitOr::new(self.action, eat(rhs).action))
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -213,17 +203,6 @@ mod tests {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | "1".to_string())
-        .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
-        .map(|output| output.digested),
-      Some(1)
-    );
-  }
-
-  #[test]
-  fn combinator_bit_or_string_ref() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    assert_eq!(
-      (rejecter() | &"1".to_string())
         .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(1)
