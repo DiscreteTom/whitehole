@@ -56,10 +56,7 @@ mod concat;
 
 pub use concat::*;
 
-use crate::{
-  combinator::{eat, Action, Combinator, Eat, Input, Output},
-  digest::Digest,
-};
+use crate::combinator::{eat, Action, Combinator, Eat, Input, Output};
 use std::ops;
 
 /// An [`Action`] created by the `+` operator.
@@ -78,18 +75,13 @@ impl<Lhs, Rhs> Add<Lhs, Rhs> {
   }
 }
 
-unsafe impl<
-    TextRef: Clone + Digest,
-    State,
-    Heap,
-    Lhs: Action<TextRef, State, Heap, Value: Concat<Rhs::Value>>,
-    Rhs: Action<TextRef, State, Heap>,
-  > Action<TextRef, State, Heap> for Add<Lhs, Rhs>
+unsafe impl<State, Heap, Lhs: Action<State, Heap, Value: Concat<Rhs::Value>>, Rhs: Action<State, Heap>>
+  Action<State, Heap> for Add<Lhs, Rhs>
 {
   type Value = <Lhs::Value as Concat<Rhs::Value>>::Output;
 
   #[inline]
-  fn exec(&self, mut input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self.lhs.exec(input.reborrow()).and_then(|output| {
       self
         .rhs

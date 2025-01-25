@@ -5,7 +5,7 @@ use crate::{
 
 create_value_combinator!(Eat, "See [`eat`].");
 
-unsafe impl<State, Heap> Action<&str, State, Heap> for Eat<char> {
+unsafe impl<State, Heap> Action<State, Heap> for Eat<char> {
   type Value = ();
 
   #[inline]
@@ -18,7 +18,7 @@ unsafe impl<State, Heap> Action<&str, State, Heap> for Eat<char> {
   }
 }
 
-unsafe impl<State, Heap> Action<&str, State, Heap> for Eat<String> {
+unsafe impl<State, Heap> Action<State, Heap> for Eat<String> {
   type Value = ();
 
   #[inline]
@@ -31,7 +31,7 @@ unsafe impl<State, Heap> Action<&str, State, Heap> for Eat<String> {
   }
 }
 
-unsafe impl<State, Heap> Action<&str, State, Heap> for Eat<&str> {
+unsafe impl<State, Heap> Action<State, Heap> for Eat<&str> {
   type Value = ();
 
   #[inline]
@@ -45,7 +45,7 @@ unsafe impl<State, Heap> Action<&str, State, Heap> for Eat<&str> {
 }
 
 // TODO: remove this
-unsafe impl<State, Heap> Action<&str, State, Heap> for Eat<&String> {
+unsafe impl<State, Heap> Action<State, Heap> for Eat<&String> {
   type Value = ();
 
   #[inline]
@@ -58,7 +58,7 @@ unsafe impl<State, Heap> Action<&str, State, Heap> for Eat<&String> {
   }
 }
 
-unsafe impl<State, Heap> Action<&str, State, Heap> for Eat<usize> {
+unsafe impl<State, Heap> Action<State, Heap> for Eat<usize> {
   type Value = ();
 
   #[inline]
@@ -224,7 +224,7 @@ mod tests {
 
   #[test]
   fn eat_into_combinator() {
-    fn test(c: Combinator<impl for<'a> Action<&'a str>>) {
+    fn test(c: Combinator<impl Action>) {
       c.exec(Input::new(Instant::new("a"), &mut (), &mut ()));
     }
     test(1.into());

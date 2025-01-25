@@ -34,70 +34,85 @@ use std::rc::Rc;
 pub use input::*;
 pub use output::*;
 
-/// The basic building block of a parser.
-/// See the [module level documentation](crate::action) for more information.
-/// # Safety
-/// The [`Output`] of [`Action::exec`] should satisfy the requirement of [`Output::digested`].
-pub unsafe trait Action<TextRef, State = (), Heap = ()> {
-  /// See [`Output::value`].
-  type Value;
+macro_rules! create_action {
+  ($name:ident, $text:ty, $usage:literal) => {
+    #[doc = $usage]
+    pub unsafe trait $name<State = (), Heap = ()> {
+      /// See [`Output::value`].
+      type Value;
 
-  /// Try to digest some bytes from the input, optionally change the state of the parsing,
-  /// and yield a value.
-  /// Return [`None`] to reject.
-  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>>;
+      /// Try to digest some bytes from the input, optionally change the state of the parsing,
+      /// and yield a value.
+      /// Return [`None`] to reject.
+      fn exec(&self, input: Input<$text, &mut State, &mut Heap>) -> Option<Output<Self::Value>>;
+    }
+
+    unsafe impl<State, Heap, T: $name<State, Heap> + ?Sized> $name<State, Heap> for &T {
+      type Value = T::Value;
+
+      #[inline]
+      fn exec(&self, input: Input<$text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+        (**self).exec(input)
+      }
+    }
+
+    // TODO: remove this
+    unsafe impl<State, Heap, T: $name<State, Heap> + ?Sized> $name<State, Heap> for &mut T {
+      type Value = T::Value;
+
+      #[inline]
+      fn exec(&self, input: Input<$text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+        (**self).exec(input)
+      }
+    }
+
+    unsafe impl<State, Heap, T: $name<State, Heap> + ?Sized> $name<State, Heap> for Box<T> {
+      type Value = T::Value;
+
+      #[inline]
+      fn exec(&self, input: Input<$text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+        self.as_ref().exec(input)
+      }
+    }
+
+    unsafe impl<State, Heap, T: $name<State, Heap> + ?Sized> $name<State, Heap> for Rc<T> {
+      type Value = T::Value;
+
+      #[inline]
+      fn exec(&self, input: Input<$text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+        self.as_ref().exec(input)
+      }
+    }
+  };
 }
 
-unsafe impl<TextRef, State, Heap, T: Action<TextRef, State, Heap> + ?Sized>
-  Action<TextRef, State, Heap> for &T
-{
-  type Value = T::Value;
-
-  #[inline]
-  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    (**self).exec(input)
-  }
-}
-
-unsafe impl<TextRef, State, Heap, T: Action<TextRef, State, Heap> + ?Sized>
-  Action<TextRef, State, Heap> for &mut T
-{
-  type Value = T::Value;
-
-  #[inline]
-  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    (**self).exec(input)
-  }
-}
-
-unsafe impl<TextRef, State, Heap, T: Action<TextRef, State, Heap> + ?Sized>
-  Action<TextRef, State, Heap> for Box<T>
-{
-  type Value = T::Value;
-
-  #[inline]
-  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    self.as_ref().exec(input)
-  }
-}
-
-unsafe impl<TextRef, State, Heap, T: Action<TextRef, State, Heap> + ?Sized>
-  Action<TextRef, State, Heap> for Rc<T>
-{
-  type Value = T::Value;
-
-  #[inline]
-  fn exec(&self, input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    self.as_ref().exec(input)
-  }
-}
+create_action!(
+  Action,
+  &str,
+  r"
+The basic building block of a parser.
+See the [module level documentation](crate::action) for more information.
+# Safety
+The [`Output`] of [`Action::exec`] should satisfy the requirement of [`Output::digested`].
+"
+);
+create_action!(
+  BytesAction,
+  &[u8],
+  r"
+The basic building block of a parser.
+See the [module level documentation](crate::action) for more information.
+# Safety
+The [`Output`] of [`BytesAction::exec`] should satisfy the requirement of [`Output::digested`].
+"
+);
 
 #[cfg(test)]
 mod tests {
   use super::*;
   use crate::{combinator::wrap, instant::Instant};
 
-  fn helper(t: impl for<'a> Action<&'a str, Value = ()>) -> Option<Output<()>> {
+  fn helper(t: impl Action<Value = ()>) -> Option<Output<()>> {
     t.exec(Input::new(Instant::new("123"), &mut (), &mut ()))
   }
 
@@ -109,13 +124,8 @@ mod tests {
 
   #[test]
   fn action_dyn_ref() {
-    assert!(
-      helper(&wrap(|input| input.digest(1)) as &dyn for<'a> Action<&'a str, Value = ()>).is_some()
-    );
-    assert!(helper(
-      &mut wrap(|input| input.digest(1)) as &mut dyn for<'a> Action<&'a str, Value = ()>
-    )
-    .is_some());
+    assert!(helper(&wrap(|input| input.digest(1)) as &dyn Action<Value = ()>).is_some());
+    assert!(helper(&mut wrap(|input| input.digest(1)) as &mut dyn Action<Value = ()>).is_some());
   }
 
   #[test]
@@ -132,10 +142,9 @@ mod tests {
 
   #[test]
   fn boxed_dyn_action() {
-    assert!(helper(
-      Box::new(wrap(|input| input.digest(1))) as Box<dyn for<'a> Action<&'a str, Value = ()>>
-    )
-    .is_some());
+    assert!(
+      helper(Box::new(wrap(|input| input.digest(1))) as Box<dyn Action<Value = ()>>).is_some()
+    );
   }
 
   #[test]
@@ -152,9 +161,9 @@ mod tests {
 
   #[test]
   fn rc_dyn_action() {
-    assert!(helper(
-      Rc::new(wrap(|input| input.digest(1))) as Rc<dyn for<'a> Action<&'a str, (), (), Value = ()>>
-    )
-    .is_some());
+    assert!(
+      helper(Rc::new(wrap(|input| input.digest(1))) as Rc<dyn Action<(), (), Value = ()>>)
+        .is_some()
+    );
   }
 }

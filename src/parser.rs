@@ -121,7 +121,9 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
       self.state = state;
     }
   }
+}
 
+impl<T, State, Heap> Parser<T, &str, State, Heap> {
   /// Try to yield the next [`Output`].
   /// Return [`None`] if the action rejects.
   ///
@@ -129,8 +131,7 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
   #[inline]
   pub fn parse(&mut self) -> Option<Output<T::Value>>
   where
-    TextRef: Digest + Clone,
-    T: Action<TextRef, State, Heap>,
+    T: Action<State, Heap>,
   {
     self
       .entry
@@ -148,8 +149,7 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
   #[inline]
   pub fn peek(&mut self) -> (Option<Output<T::Value>>, State)
   where
-    TextRef: Clone,
-    T: Action<TextRef, State, Heap>,
+    T: Action<State, Heap>,
     State: Clone,
   {
     let mut tmp_state = self.state.clone();

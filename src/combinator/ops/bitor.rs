@@ -48,18 +48,13 @@ impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
   }
 }
 
-unsafe impl<
-    TextRef: Clone,
-    State,
-    Heap,
-    Lhs: Action<TextRef, State, Heap>,
-    Rhs: Action<TextRef, State, Heap, Value = Lhs::Value>,
-  > Action<TextRef, State, Heap> for BitOr<Lhs, Rhs>
+unsafe impl<State, Heap, Lhs: Action<State, Heap>, Rhs: Action<State, Heap, Value = Lhs::Value>>
+  Action<State, Heap> for BitOr<Lhs, Rhs>
 {
   type Value = Lhs::Value;
 
   #[inline]
-  fn exec(&self, mut input: Input<TextRef, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
     self
       .lhs
       .exec(input.reborrow())
