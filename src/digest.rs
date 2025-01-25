@@ -14,6 +14,12 @@ pub trait Digest {
   /// You should ensure that `n` is valid according to [`Digest::validate`].
   /// This will be checked using [`debug_assert!`].
   unsafe fn digest_unchecked(&self, n: usize) -> Self;
+
+  /// Return the first `n` bytes.
+  /// # Safety
+  /// You should ensure that `n` is valid according to [`Digest::validate`].
+  /// This will be checked using [`debug_assert!`].
+  unsafe fn span_unchecked(&self, n: usize) -> Self;
 }
 
 impl Digest for &[u8] {
@@ -27,6 +33,12 @@ impl Digest for &[u8] {
     debug_assert!(self.validate(n));
     self.get_unchecked(n..)
   }
+
+  #[inline]
+  unsafe fn span_unchecked(&self, n: usize) -> Self {
+    debug_assert!(self.validate(n));
+    self.get_unchecked(..n)
+  }
 }
 
 impl Digest for &str {
@@ -39,6 +51,12 @@ impl Digest for &str {
   unsafe fn digest_unchecked(&self, n: usize) -> Self {
     debug_assert!(self.validate(n));
     self.get_unchecked(n..)
+  }
+
+  #[inline]
+  unsafe fn span_unchecked(&self, n: usize) -> Self {
+    debug_assert!(self.validate(n));
+    self.get_unchecked(..n)
   }
 }
 
@@ -58,6 +76,10 @@ mod tests {
     assert_eq!(unsafe { bytes.digest_unchecked(1) }, b"23");
     assert_eq!(unsafe { bytes.digest_unchecked(2) }, b"3");
     assert_eq!(unsafe { bytes.digest_unchecked(3) }, b"");
+    assert_eq!(unsafe { bytes.span_unchecked(0) }, b"");
+    assert_eq!(unsafe { bytes.span_unchecked(1) }, b"1");
+    assert_eq!(unsafe { bytes.span_unchecked(2) }, b"12");
+    assert_eq!(unsafe { bytes.span_unchecked(3) }, b"123");
   }
 
   #[test]
@@ -65,6 +87,13 @@ mod tests {
   fn digest_bytes_overflow() {
     let bytes = b"123" as &[u8];
     unsafe { bytes.digest_unchecked(4) };
+  }
+
+  #[test]
+  #[should_panic]
+  fn digest_bytes_span_overflow() {
+    let bytes = b"123" as &[u8];
+    unsafe { bytes.span_unchecked(4) };
   }
 
   #[test]
@@ -79,6 +108,10 @@ mod tests {
     assert_eq!(unsafe { text.digest_unchecked(1) }, "23");
     assert_eq!(unsafe { text.digest_unchecked(2) }, "3");
     assert_eq!(unsafe { text.digest_unchecked(3) }, "");
+    assert_eq!(unsafe { text.span_unchecked(0) }, "");
+    assert_eq!(unsafe { text.span_unchecked(1) }, "1");
+    assert_eq!(unsafe { text.span_unchecked(2) }, "12");
+    assert_eq!(unsafe { text.span_unchecked(3) }, "123");
   }
 
   #[test]
@@ -90,8 +123,22 @@ mod tests {
 
   #[test]
   #[should_panic]
+  fn digest_str_span_invalid_code_point() {
+    let text = "好";
+    unsafe { text.span_unchecked(1) };
+  }
+
+  #[test]
+  #[should_panic]
   fn digest_str_overflow() {
     let text = "123";
     unsafe { text.digest_unchecked(4) };
+  }
+
+  #[test]
+  #[should_panic]
+  fn digest_str_span_overflow() {
+    let text = "123";
+    unsafe { text.span_unchecked(4) };
   }
 }
