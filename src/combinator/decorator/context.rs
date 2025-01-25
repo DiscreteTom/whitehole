@@ -136,8 +136,8 @@ mod tests {
       ctx!((), ())
     };
     ($state:expr, $heap:expr) => {
-      AcceptedContext {
-        input: Input::new(
+      AcceptedContext::new(
+        Input::new(
           {
             let mut instant = Instant::new("0123");
             unsafe { instant.digest_unchecked(1) };
@@ -146,11 +146,11 @@ mod tests {
           &mut $state,
           &mut $heap,
         ),
-        output: Output {
+        Output {
           value: (),
           digested: 1,
         },
-      }
+      )
     };
   }
 
