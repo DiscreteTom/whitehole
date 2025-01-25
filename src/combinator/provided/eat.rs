@@ -116,12 +116,6 @@ impl<'a> From<&'a str> for Combinator<Eat<&'a str>> {
     eat(v)
   }
 }
-impl<'a> From<&'a String> for Combinator<Eat<&'a String>> {
-  #[inline]
-  fn from(v: &String) -> Combinator<Eat<&String>> {
-    eat(v)
-  }
-}
 
 #[cfg(test)]
 mod tests {
