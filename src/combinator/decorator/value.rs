@@ -225,10 +225,7 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn bind<NewValue>(self, value: NewValue) -> Combinator<Bind<T, NewValue>>
-  where
-    NewValue: Clone,
-  {
+  pub fn bind<NewValue: Clone>(self, value: NewValue) -> Combinator<Bind<T, NewValue>> {
     Combinator::new(Bind::new(self.action, value))
   }
 
@@ -241,10 +238,7 @@ impl<T> Combinator<T> {
   /// # }
   /// ```
   #[inline]
-  pub fn bind_default<NewValue>(self) -> Combinator<BindDefault<T, NewValue>>
-  where
-    NewValue: Default,
-  {
+  pub fn bind_default<NewValue: Default>(self) -> Combinator<BindDefault<T, NewValue>> {
     Combinator::new(BindDefault::new(self.action))
   }
 
@@ -294,7 +288,10 @@ impl<T> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{combinator::wrap, instant::Instant};
+  use crate::{
+    combinator::{bytes, wrap},
+    instant::Instant,
+  };
 
   #[test]
   fn combinator_map() {
@@ -302,6 +299,15 @@ mod tests {
       wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
         .map(Some)
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      Some(Output {
+        value: Some(1),
+        digested: 1
+      })
+    );
+    assert_eq!(
+      bytes::wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
+        .map(Some)
+        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ())),
       Some(Output {
         value: Some(1),
         digested: 1
@@ -320,6 +326,15 @@ mod tests {
         digested: 1
       })
     );
+    assert_eq!(
+      bytes::wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
+        .tuple()
+        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ())),
+      Some(Output {
+        value: (1,),
+        digested: 1
+      })
+    );
   }
 
   #[test]
@@ -329,6 +344,16 @@ mod tests {
         .tuple()
         .pop()
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      Some(Output {
+        value: 1,
+        digested: 1
+      })
+    );
+    assert_eq!(
+      bytes::wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
+        .tuple()
+        .pop()
+        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ())),
       Some(Output {
         value: 1,
         digested: 1
@@ -349,6 +374,15 @@ mod tests {
         digested: 1
       })
     );
+    assert_eq!(
+      bytes::wrap(|input| input.digest(1))
+        .bind(123)
+        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ())),
+      Some(Output {
+        value: 123,
+        digested: 1
+      })
+    );
   }
 
   #[test]
@@ -357,6 +391,15 @@ mod tests {
       wrap(|input| input.digest(1))
         .bind_default::<i32>()
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      Some(Output {
+        value: 0,
+        digested: 1
+      })
+    );
+    assert_eq!(
+      bytes::wrap(|input| input.digest(1))
+        .bind_default::<i32>()
+        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
         digested: 1
@@ -375,6 +418,15 @@ mod tests {
         digested: 1
       })
     );
+    assert_eq!(
+      bytes::wrap(|input| input.digest(1))
+        .select(|ctx| if ctx.content() == b"1" { 1 } else { 2 })
+        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ())),
+      Some(Output {
+        value: 1,
+        digested: 1
+      })
+    );
   }
 
   #[test]
@@ -383,6 +435,18 @@ mod tests {
       wrap(|input| input.digest(1))
         .range()
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      Some(Output {
+        value: WithRange {
+          data: (),
+          range: 0..1
+        },
+        digested: 1
+      })
+    );
+    assert_eq!(
+      bytes::wrap(|input| input.digest(1))
+        .range()
+        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ())),
       Some(Output {
         value: WithRange {
           data: (),
