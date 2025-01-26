@@ -97,16 +97,6 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<Vec<u8>> {
   }
 }
 
-/// See [`eat`]. This trait is only used for early type checking.
-pub trait EatPattern {}
-impl EatPattern for char {}
-impl EatPattern for String {}
-impl EatPattern for &str {}
-impl EatPattern for u8 {}
-impl EatPattern for &[u8] {}
-impl EatPattern for Vec<u8> {}
-impl<const N: usize> EatPattern for &[u8; N] {}
-
 /// Returns a combinator to eat from the head of [`Instant::rest`](crate::instant::Instant::rest) by the provided pattern.
 /// The combinator will reject if the pattern is not found.
 ///
@@ -142,7 +132,7 @@ impl<const N: usize> EatPattern for &[u8; N] {}
 /// # );
 /// ```
 #[inline]
-pub const fn eat<T: EatPattern>(pattern: T) -> Combinator<Eat<T>> {
+pub const fn eat<T>(pattern: T) -> Combinator<Eat<T>> {
   Combinator::new(Eat::new(pattern))
 }
 
