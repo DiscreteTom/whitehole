@@ -23,6 +23,11 @@ pub trait Digest {
 
   /// Returns the byte length.
   fn len(&self) -> usize;
+
+  /// Returns `true` if the byte sequence is empty.
+  fn is_empty(&self) -> bool {
+    self.len() == 0
+  }
 }
 
 impl Digest for &[u8] {
