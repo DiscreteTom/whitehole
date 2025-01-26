@@ -13,19 +13,25 @@
 //! eat("true") | eat("false")
 //! # );
 //!
-//! // you can use a String, a &str, a char or an usize as a shortcut for `eat`
+//! // you can use a char, a &str, a String, a u8, a &[u8] or a Vec<u8> as a shortcut for `eat`
 //! // at the right-hand side of `|`
 //! # t(
-//! eat("true") | "false".to_string()
+//! eat("true") | ';'
 //! # );
 //! # t(
 //! eat("true") | "false"
 //! # );
 //! # t(
-//! eat("true") | ';'
+//! eat("true") | "false".to_string()
 //! # );
 //! # t(
-//! eat("true") | b'a'
+//! eat(b"true") | b'a'
+//! # );
+//! # t(
+//! eat(b"true") | b"false"
+//! # );
+//! # t(
+//! eat(b"true") | b"false".to_vec()
 //! # );
 //! ```
 
@@ -87,12 +93,12 @@ impl<Lhs> ops::BitOr<char> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs> ops::BitOr<u8> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, Eat<u8>>>;
+impl<'a, Lhs> ops::BitOr<&'a str> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Eat<&'a str>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
-  fn bitor(self, rhs: u8) -> Self::Output {
+  fn bitor(self, rhs: &'a str) -> Self::Output {
     Self::Output::new(BitOr::new(self.action, eat(rhs).action))
   }
 }
@@ -107,12 +113,42 @@ impl<Lhs> ops::BitOr<String> for Combinator<Lhs> {
   }
 }
 
-impl<'a, Lhs> ops::BitOr<&'a str> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, Eat<&'a str>>>;
+impl<Lhs> ops::BitOr<u8> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Eat<u8>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
-  fn bitor(self, rhs: &'a str) -> Self::Output {
+  fn bitor(self, rhs: u8) -> Self::Output {
+    Self::Output::new(BitOr::new(self.action, eat(rhs).action))
+  }
+}
+
+impl<'a, Lhs> ops::BitOr<&'a [u8]> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Eat<&'a [u8]>>>;
+
+  /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
+  #[inline]
+  fn bitor(self, rhs: &'a [u8]) -> Self::Output {
+    Self::Output::new(BitOr::new(self.action, eat(rhs).action))
+  }
+}
+
+impl<'a, const N: usize, Lhs> ops::BitOr<&'a [u8; N]> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Eat<&'a [u8; N]>>>;
+
+  /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
+  #[inline]
+  fn bitor(self, rhs: &'a [u8; N]) -> Self::Output {
+    Self::Output::new(BitOr::new(self.action, eat(rhs).action))
+  }
+}
+
+impl<Lhs> ops::BitOr<Vec<u8>> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Eat<Vec<u8>>>>;
+
+  /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
+  #[inline]
+  fn bitor(self, rhs: Vec<u8>) -> Self::Output {
     Self::Output::new(BitOr::new(self.action, eat(rhs).action))
   }
 }

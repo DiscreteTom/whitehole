@@ -14,19 +14,25 @@
 //! eat("123") + eat("456")
 //! # );
 //!
-//! // you can use a String, a &str, a char or an usize as a shortcut for `eat`
+//! // you can use a char, a &str, a String, a u8, a &[u8] or a Vec<u8> as a shortcut for `eat`
 //! // at the right-hand side of `+`
 //! # t(
-//! eat("true") + "false".to_string()
+//! eat("true") + ';'
 //! # );
 //! # t(
 //! eat("true") + "false"
 //! # );
 //! # t(
-//! eat("true") + ';'
+//! eat("true") + "false".to_string()
 //! # );
 //! # t(
-//! eat("true") + b'a'
+//! eat(b"true") + b'a'
+//! # );
+//! # t(
+//! eat(b"true") + b"false"
+//! # );
+//! # t(
+//! eat(b"true") + b"false".to_vec()
 //! # );
 //! ```
 //! # Concat Values
@@ -124,12 +130,12 @@ impl<Lhs> ops::Add<char> for Combinator<Lhs> {
   }
 }
 
-impl<Lhs> ops::Add<u8> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, Eat<u8>>>;
+impl<'a, Lhs> ops::Add<&'a str> for Combinator<Lhs> {
+  type Output = Combinator<Add<Lhs, Eat<&'a str>>>;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
-  fn add(self, rhs: u8) -> Self::Output {
+  fn add(self, rhs: &'a str) -> Self::Output {
     Self::Output::new(Add::new(self.action, eat(rhs).action))
   }
 }
@@ -144,12 +150,42 @@ impl<Lhs> ops::Add<String> for Combinator<Lhs> {
   }
 }
 
-impl<'a, Lhs> ops::Add<&'a str> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, Eat<&'a str>>>;
+impl<Lhs> ops::Add<u8> for Combinator<Lhs> {
+  type Output = Combinator<Add<Lhs, Eat<u8>>>;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
-  fn add(self, rhs: &'a str) -> Self::Output {
+  fn add(self, rhs: u8) -> Self::Output {
+    Self::Output::new(Add::new(self.action, eat(rhs).action))
+  }
+}
+
+impl<'a, Lhs> ops::Add<&'a [u8]> for Combinator<Lhs> {
+  type Output = Combinator<Add<Lhs, Eat<&'a [u8]>>>;
+
+  /// See [`ops::add`](crate::combinator::ops::add) for more information.
+  #[inline]
+  fn add(self, rhs: &'a [u8]) -> Self::Output {
+    Self::Output::new(Add::new(self.action, eat(rhs).action))
+  }
+}
+
+impl<'a, const N: usize, Lhs> ops::Add<&'a [u8; N]> for Combinator<Lhs> {
+  type Output = Combinator<Add<Lhs, Eat<&'a [u8; N]>>>;
+
+  /// See [`ops::add`](crate::combinator::ops::add) for more information.
+  #[inline]
+  fn add(self, rhs: &'a [u8; N]) -> Self::Output {
+    Self::Output::new(Add::new(self.action, eat(rhs).action))
+  }
+}
+
+impl<Lhs> ops::Add<Vec<u8>> for Combinator<Lhs> {
+  type Output = Combinator<Add<Lhs, Eat<Vec<u8>>>>;
+
+  /// See [`ops::add`](crate::combinator::ops::add) for more information.
+  #[inline]
+  fn add(self, rhs: Vec<u8>) -> Self::Output {
     Self::Output::new(Add::new(self.action, eat(rhs).action))
   }
 }
