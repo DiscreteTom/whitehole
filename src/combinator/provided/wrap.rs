@@ -57,10 +57,10 @@ impl_wrap!(Wrap, assert, [u8]);
 /// ```
 #[inline]
 pub const unsafe fn wrap_unchecked<
-  F: Fn(Input<&str, &mut State, &mut Heap>) -> Option<Output<Value>>,
-  Value,
   State,
   Heap,
+  Value,
+  F: Fn(Input<&str, &mut State, &mut Heap>) -> Option<Output<Value>>,
 >(
   f: F,
 ) -> Combinator<WrapUnchecked<F>> {
@@ -84,10 +84,10 @@ pub const unsafe fn wrap_unchecked<
 /// ```
 #[inline]
 pub const fn wrap<
-  F: Fn(Input<&str, &mut State, &mut Heap>) -> Option<Output<Value>>,
-  Value,
   State,
   Heap,
+  Value,
+  F: Fn(Input<&str, &mut State, &mut Heap>) -> Option<Output<Value>>,
 >(
   f: F,
 ) -> Combinator<Wrap<F>> {
@@ -115,10 +115,10 @@ pub mod bytes {
   /// ```
   #[inline]
   pub const unsafe fn wrap_unchecked<
-    F: Fn(Input<&[u8], &mut State, &mut Heap>) -> Option<Output<Value>>,
-    Value,
     State,
     Heap,
+    Value,
+    F: Fn(Input<&[u8], &mut State, &mut Heap>) -> Option<Output<Value>>,
   >(
     f: F,
   ) -> Combinator<WrapUnchecked<F>> {
@@ -142,10 +142,10 @@ pub mod bytes {
   /// ```
   #[inline]
   pub const fn wrap<
-    F: Fn(Input<&[u8], &mut State, &mut Heap>) -> Option<Output<Value>>,
-    Value,
     State,
     Heap,
+    Value,
+    F: Fn(Input<&[u8], &mut State, &mut Heap>) -> Option<Output<Value>>,
   >(
     f: F,
   ) -> Combinator<Wrap<F>> {
