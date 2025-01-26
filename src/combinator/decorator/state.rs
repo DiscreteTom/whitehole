@@ -180,7 +180,10 @@ impl<T> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{combinator::wrap, instant::Instant};
+  use crate::{
+    combinator::{bytes, wrap},
+    instant::Instant,
+  };
 
   #[derive(Debug, Default, PartialEq, Eq)]
   struct State {
@@ -194,9 +197,21 @@ mod tests {
       input.digest(1)
     })
   }
+  fn accepter_bytes() -> Combinator<impl Action<[u8], State, Value = ()>> {
+    bytes::wrap(|input: Input<&[u8], &mut State, &mut ()>| {
+      input.state.to = input.state.from;
+      input.digest(1)
+    })
+  }
 
   fn rejecter() -> Combinator<impl Action<str, State, Value = ()>> {
     wrap(|input: Input<&str, &mut State, &mut ()>| {
+      input.state.to = input.state.from;
+      None
+    })
+  }
+  fn rejecter_bytes() -> Combinator<impl Action<[u8], State, Value = ()>> {
+    bytes::wrap(|input: Input<&[u8], &mut State, &mut ()>| {
       input.state.to = input.state.from;
       None
     })
@@ -212,6 +227,14 @@ mod tests {
       .exec(Input::new(Instant::new("123"), &mut state, &mut ()))
       .is_some());
     assert_eq!(state, State { from: 1, to: 1 });
+    let mut state = State::default();
+    assert!(accepter_bytes()
+      .prepare(|input| {
+        input.state.from = 1;
+      })
+      .exec(Input::new(Instant::new(b"123"), &mut state, &mut ()))
+      .is_some());
+    assert_eq!(state, State { from: 1, to: 1 });
   }
 
   #[test]
@@ -224,6 +247,14 @@ mod tests {
       .exec(Input::new(Instant::new("123"), &mut state, &mut ()))
       .is_some());
     assert_eq!(state, State { from: 1, to: 0 });
+    let mut state = State::default();
+    assert!(accepter_bytes()
+      .then(|mut ctx| {
+        ctx.state().from = 1;
+      })
+      .exec(Input::new(Instant::new(b"123"), &mut state, &mut ()))
+      .is_some());
+    assert_eq!(state, State { from: 1, to: 0 });
 
     let mut state = State::default();
     assert!(rejecter()
@@ -231,6 +262,14 @@ mod tests {
         ctx.state().from = 1;
       })
       .exec(Input::new(Instant::new("123"), &mut state, &mut ()))
+      .is_none());
+    assert_eq!(state, State { from: 0, to: 0 });
+    let mut state = State::default();
+    assert!(rejecter_bytes()
+      .then(|mut ctx| {
+        ctx.state().from = 1;
+      })
+      .exec(Input::new(Instant::new(b"123"), &mut state, &mut ()))
       .is_none());
     assert_eq!(state, State { from: 0, to: 0 });
   }
@@ -245,6 +284,14 @@ mod tests {
       .exec(Input::new(Instant::new("123"), &mut state, &mut ()))
       .is_some());
     assert_eq!(state, State { from: 0, to: 0 });
+    let mut state = State::default();
+    assert!(accepter_bytes()
+      .catch(|input| {
+        input.state.from = 1;
+      })
+      .exec(Input::new(Instant::new(b"123"), &mut state, &mut ()))
+      .is_some());
+    assert_eq!(state, State { from: 0, to: 0 });
 
     let mut state = State::default();
     assert!(rejecter()
@@ -252,6 +299,14 @@ mod tests {
         input.state.from = 1;
       })
       .exec(Input::new(Instant::new("123"), &mut state, &mut ()))
+      .is_none());
+    assert_eq!(state, State { from: 1, to: 0 });
+    let mut state = State::default();
+    assert!(rejecter_bytes()
+      .catch(|input| {
+        input.state.from = 1;
+      })
+      .exec(Input::new(Instant::new(b"123"), &mut state, &mut ()))
       .is_none());
     assert_eq!(state, State { from: 1, to: 0 });
   }
@@ -266,6 +321,14 @@ mod tests {
       .exec(Input::new(Instant::new("123"), &mut state, &mut ()))
       .is_some());
     assert_eq!(state, State { from: 0, to: 1 });
+    let mut state = State::default();
+    assert!(accepter_bytes()
+      .finally(|input| {
+        input.state.to = 1;
+      })
+      .exec(Input::new(Instant::new(b"123"), &mut state, &mut ()))
+      .is_some());
+    assert_eq!(state, State { from: 0, to: 1 });
 
     let mut state = State::default();
     assert!(rejecter()
@@ -273,6 +336,14 @@ mod tests {
         input.state.to = 1;
       })
       .exec(Input::new(Instant::new("123"), &mut state, &mut ()))
+      .is_none());
+    assert_eq!(state, State { from: 0, to: 1 });
+    let mut state = State::default();
+    assert!(rejecter_bytes()
+      .finally(|input| {
+        input.state.to = 1;
+      })
+      .exec(Input::new(Instant::new(b"123"), &mut state, &mut ()))
       .is_none());
     assert_eq!(state, State { from: 0, to: 1 });
   }
