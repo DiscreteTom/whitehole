@@ -1,3 +1,5 @@
+//! Utilities for working with byte ranges.
+
 /// See [`WithRange::range`].
 pub type Range = std::ops::Range<usize>;
 

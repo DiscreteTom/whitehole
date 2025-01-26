@@ -1,3 +1,5 @@
+//! Digest-able byte sequence. See [`Digest`].
+
 /// A digest-able byte sequence.
 ///
 /// Built-in implementations are provided for `&[u8]` and `&str`.

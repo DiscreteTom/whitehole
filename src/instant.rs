@@ -1,3 +1,6 @@
+//! The instantaneous state of a parser (a.k.a the "configuration" in the automata theory).
+//! See [`Instant`].
+
 use crate::digest::Digest;
 
 /// The instantaneous state of a parser (a.k.a the "configuration" in the automata theory).
