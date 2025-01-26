@@ -52,7 +52,7 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<u8> {
     input
       .instant()
       .rest()
-      .get(0)
+      .first()
       .map_or(false, |&c| c == self.inner)
       .then(|| unsafe { input.digest_unchecked(1) })
   }
