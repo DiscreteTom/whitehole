@@ -20,6 +20,9 @@ pub trait Digest {
   /// You should ensure that `n` is valid according to [`Digest::validate`].
   /// This will be checked using [`debug_assert!`].
   unsafe fn span_unchecked(&self, n: usize) -> Self;
+
+  /// Returns the byte length.
+  fn len(&self) -> usize;
 }
 
 impl Digest for &[u8] {
@@ -39,6 +42,11 @@ impl Digest for &[u8] {
     debug_assert!(self.validate(n));
     self.get_unchecked(..n)
   }
+
+  #[inline]
+  fn len(&self) -> usize {
+    <[u8]>::len(self)
+  }
 }
 
 impl Digest for &str {
@@ -57,6 +65,11 @@ impl Digest for &str {
   unsafe fn span_unchecked(&self, n: usize) -> Self {
     debug_assert!(self.validate(n));
     self.get_unchecked(..n)
+  }
+
+  #[inline]
+  fn len(&self) -> usize {
+    <str>::len(self)
   }
 }
 
