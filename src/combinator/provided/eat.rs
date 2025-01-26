@@ -71,6 +71,32 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<&[u8]> {
   }
 }
 
+unsafe impl<const N: usize, State, Heap> Action<[u8], State, Heap> for Eat<&[u8; N]> {
+  type Value = ();
+
+  #[inline]
+  fn exec(&self, input: Input<&[u8], &mut State, &mut Heap>) -> Option<Output<()>> {
+    input
+      .instant()
+      .rest()
+      .starts_with(self.inner)
+      .then(|| unsafe { input.digest_unchecked(N) })
+  }
+}
+
+unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<Vec<u8>> {
+  type Value = ();
+
+  #[inline]
+  fn exec(&self, input: Input<&[u8], &mut State, &mut Heap>) -> Option<Output<()>> {
+    input
+      .instant()
+      .rest()
+      .starts_with(&self.inner)
+      .then(|| unsafe { input.digest_unchecked(self.inner.len()) })
+  }
+}
+
 /// See [`eat`]. This trait is only used for early type checking.
 pub trait EatPattern {}
 impl EatPattern for char {}
@@ -78,6 +104,8 @@ impl EatPattern for String {}
 impl EatPattern for &str {}
 impl EatPattern for u8 {}
 impl EatPattern for &[u8] {}
+impl EatPattern for Vec<u8> {}
+impl<const N: usize> EatPattern for &[u8; N] {}
 
 /// Returns a combinator to eat from the head of [`Instant::rest`](crate::instant::Instant::rest) by the provided pattern.
 /// The combinator will reject if the pattern is not found.
@@ -107,7 +135,10 @@ impl EatPattern for &[u8] {}
 /// eat(b'a') // eat by a byte (u8)
 /// # );
 /// # t(
-/// eat(b"true") // eat by &[u8]
+/// eat(b"true") // eat by &[u8] or &[u8; N]
+/// # );
+/// # t(
+/// eat(vec![b'a']) // eat by Vec<u8>
 /// # );
 /// ```
 #[inline]
@@ -128,6 +159,7 @@ macro_rules! impl_into_eat_combinator {
 impl_into_eat_combinator!(char);
 impl_into_eat_combinator!(String);
 impl_into_eat_combinator!(u8);
+impl_into_eat_combinator!(Vec<u8>);
 impl<'a> From<&'a str> for Combinator<Eat<&'a str>> {
   #[inline]
   fn from(v: &str) -> Combinator<Eat<&str>> {
@@ -137,6 +169,12 @@ impl<'a> From<&'a str> for Combinator<Eat<&'a str>> {
 impl<'a> From<&'a [u8]> for Combinator<Eat<&'a [u8]>> {
   #[inline]
   fn from(v: &[u8]) -> Combinator<Eat<&[u8]>> {
+    eat(v)
+  }
+}
+impl<'a, const N: usize> From<&'a [u8; N]> for Combinator<Eat<&'a [u8; N]>> {
+  #[inline]
+  fn from(v: &[u8; N]) -> Combinator<Eat<&[u8; N]>> {
     eat(v)
   }
 }
@@ -176,12 +214,26 @@ mod tests {
         .map(|output| output.digested),
       Some(1)
     );
-    // normal &[u8]
+    // normal &[u8;N]
     assert_eq!(
-      eat(b";" as &[u8])
+      eat(b";")
         .exec(Input::new(Instant::new(b";"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(1)
+    );
+    // normal &[u8]
+    assert_eq!(
+      eat("123".as_bytes())
+        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+        .map(|output| output.digested),
+      Some(3)
+    );
+    // normal Vec<u8>
+    assert_eq!(
+      eat(vec![b'1', b'2', b'3'])
+        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+        .map(|output| output.digested),
+      Some(3)
     );
     // reject
     assert!(eat("123")
@@ -217,6 +269,8 @@ mod tests {
     test("a".into());
     test("a".to_string().into());
     test_bytes(b'a'.into());
-    test_bytes((b"a" as &[u8]).into());
+    test_bytes(b"a".into());
+    test_bytes("a".as_bytes().into());
+    test_bytes(vec![b'a'].into());
   }
 }
