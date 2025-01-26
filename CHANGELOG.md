@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add trait `Digest`.
 - Add `Input::shift_unchecked`.
 - Add `AcceptedContext::output`.
-- Add `wrap_bytes`/`WrapBytes` and `wrap_bytes_unchecked`/`WrapBytesUnchecked`.
+- Add `combinator::bytes`.
 - Add `take`/`Take`.
 
 ### Changed

@@ -85,7 +85,7 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
 mod tests {
   use super::*;
   use crate::{
-    combinator::{wrap, wrap_bytes},
+    combinator::{bytes, wrap},
     instant::Instant,
   };
 
@@ -103,36 +103,38 @@ mod tests {
   #[test]
   fn action_ref() {
     helper(&wrap(|input| input.digest(1)));
-    helper_bytes(&wrap_bytes(|input| input.digest(1)));
+    helper_bytes(&bytes::wrap(|input| input.digest(1)));
   }
 
   #[test]
   fn action_dyn_ref() {
     helper(&wrap(|input| input.digest(1)) as &dyn Action<Value = ()>);
-    helper_bytes(&wrap_bytes(|input| input.digest(1)) as &dyn Action<[u8], Value = ()>);
+    helper_bytes(&bytes::wrap(|input| input.digest(1)) as &dyn Action<[u8], Value = ()>);
   }
 
   #[test]
   fn boxed_action() {
     helper(Box::new(wrap(|input| input.digest(1))));
-    helper_bytes(Box::new(wrap_bytes(|input| input.digest(1))));
+    helper_bytes(Box::new(bytes::wrap(|input| input.digest(1))));
   }
 
   #[test]
   fn boxed_dyn_action() {
     helper(Box::new(wrap(|input| input.digest(1))) as Box<dyn Action<Value = ()>>);
-    helper_bytes(Box::new(wrap_bytes(|input| input.digest(1))) as Box<dyn Action<[u8], Value = ()>>);
+    helper_bytes(
+      Box::new(bytes::wrap(|input| input.digest(1))) as Box<dyn Action<[u8], Value = ()>>
+    );
   }
 
   #[test]
   fn rc_action() {
     helper(Rc::new(wrap(|input| input.digest(1))));
-    helper_bytes(Rc::new(wrap_bytes(|input| input.digest(1))));
+    helper_bytes(Rc::new(bytes::wrap(|input| input.digest(1))));
   }
 
   #[test]
   fn rc_dyn_action() {
     helper(Rc::new(wrap(|input| input.digest(1))) as Rc<dyn Action<Value = ()>>);
-    helper_bytes(Rc::new(wrap_bytes(|input| input.digest(1))) as Rc<dyn Action<[u8], Value = ()>>);
+    helper_bytes(Rc::new(bytes::wrap(|input| input.digest(1))) as Rc<dyn Action<[u8], Value = ()>>);
   }
 }

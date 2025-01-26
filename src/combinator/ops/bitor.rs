@@ -121,7 +121,7 @@ impl<'a, Lhs> ops::BitOr<&'a str> for Combinator<Lhs> {
 mod tests {
   use super::*;
   use crate::{
-    combinator::{wrap, wrap_bytes, Input, Output},
+    combinator::{bytes, wrap, Input, Output},
     instant::Instant,
   };
 
@@ -178,7 +178,7 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_u8() {
-    let rejecter = || wrap_bytes(|_| Option::<Output<()>>::None);
+    let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | b'1')
         .exec(Input::new(Instant::new(b"1"), &mut (), &mut ()))

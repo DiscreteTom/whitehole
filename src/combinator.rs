@@ -16,9 +16,12 @@
 //! - [`take`]: take the next `n` chars or bytes.
 //! - [`next`]: eat the next character by a predicate.
 //! - [`till`]: eat until a pattern, inclusive.
-//! - [`wrap`]/[`wrap_bytes`]: wrap a closure as a combinator.
+//! - [`wrap`]: wrap a closure as a combinator.
 //!
-//! Tips: Some of them may have faster `unsafe` variants named with suffix `_unchecked`.
+//! Tips:
+//! - Some of them may have faster `unsafe` variants named with suffix `_unchecked`.
+//! - Some of them can be used in both string and bytes context.
+//!   Some may have specific variants for bytes under the [`bytes`] module.
 //! ## Composition
 //! Use `+` and `|` to compose multiple combinators
 //! for more complex tasks:

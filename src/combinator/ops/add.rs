@@ -158,7 +158,7 @@ impl<'a, Lhs> ops::Add<&'a str> for Combinator<Lhs> {
 mod tests {
   use super::*;
   use crate::{
-    combinator::{wrap, wrap_bytes, Input},
+    combinator::{bytes, wrap, Input},
     instant::Instant,
   };
 
@@ -241,14 +241,14 @@ mod tests {
 
   #[test]
   fn combinator_add_u8() {
-    let eat1 = || wrap_bytes(|input| input.digest(1));
+    let eat1 = || bytes::wrap(|input| input.digest(1));
 
     // normal
     assert_eq!(
       (eat1() + b'2')
         .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
         .map(|output| output.digested),
-      Some(3)
+      Some(2)
     );
   }
 }
