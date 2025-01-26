@@ -237,7 +237,10 @@ impl<T> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{combinator::wrap, instant::Instant};
+  use crate::{
+    combinator::{bytes, wrap},
+    instant::Instant,
+  };
 
   fn accepter() -> Combinator<impl Action<str, bool, Value = ()>> {
     wrap(|input| {
@@ -245,9 +248,21 @@ mod tests {
       input.digest(1)
     })
   }
+  fn accepter_bytes() -> Combinator<impl Action<[u8], bool, Value = ()>> {
+    bytes::wrap(|input| {
+      *input.state = true;
+      input.digest(1)
+    })
+  }
 
   fn rejecter() -> Combinator<impl Action<str, bool, Value = ()>> {
     wrap(|input| {
+      *input.state = true;
+      None
+    })
+  }
+  fn rejecter_bytes() -> Combinator<impl Action<[u8], bool, Value = ()>> {
+    bytes::wrap(|input| {
       *input.state = true;
       None
     })
@@ -261,11 +276,23 @@ mod tests {
       .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
       .is_none());
     assert!(!executed);
+    let mut executed = false;
+    assert!(accepter_bytes()
+      .when(|_| false)
+      .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ()))
+      .is_none());
+    assert!(!executed);
 
     let mut executed = false;
     assert!(accepter()
       .when(|_| true)
       .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
+      .is_some());
+    assert!(executed);
+    let mut executed = false;
+    assert!(accepter_bytes()
+      .when(|_| true)
+      .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ()))
       .is_some());
     assert!(executed);
   }
@@ -278,11 +305,23 @@ mod tests {
       .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
       .is_none());
     assert!(!executed);
+    let mut executed = false;
+    assert!(accepter_bytes()
+      .prevent(|_| true)
+      .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ()))
+      .is_none());
+    assert!(!executed);
 
     let mut executed = false;
     assert!(accepter()
       .prevent(|_| false)
       .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
+      .is_some());
+    assert!(executed);
+    let mut executed = false;
+    assert!(accepter_bytes()
+      .prevent(|_| false)
+      .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ()))
       .is_some());
     assert!(executed);
   }
@@ -299,12 +338,30 @@ mod tests {
       1
     );
     assert!(executed);
+    let mut executed = false;
+    assert_eq!(
+      accepter_bytes()
+        .reject(|ctx| ctx.content() != b"1")
+        .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ()))
+        .unwrap()
+        .digested,
+      1
+    );
+    assert!(executed);
 
     let mut executed = false;
     assert_eq!(
       accepter()
         .reject(|ctx| ctx.content() == "1")
         .exec(Input::new(Instant::new("123"), &mut executed, &mut ())),
+      None
+    );
+    assert!(executed);
+    let mut executed = false;
+    assert_eq!(
+      accepter_bytes()
+        .reject(|ctx| ctx.content() == b"1")
+        .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ())),
       None
     );
     assert!(executed);
@@ -322,12 +379,32 @@ mod tests {
       1
     );
     assert!(executed);
+    let mut executed = false;
+    assert_eq!(
+      accepter_bytes()
+        .optional()
+        .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ()))
+        .unwrap()
+        .digested,
+      1
+    );
+    assert!(executed);
 
     let mut executed = false;
     assert_eq!(
       rejecter()
         .optional()
         .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
+        .unwrap()
+        .digested,
+      0
+    );
+    assert!(executed);
+    let mut executed = false;
+    assert_eq!(
+      rejecter_bytes()
+        .optional()
+        .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ()))
         .unwrap()
         .digested,
       0
@@ -342,6 +419,16 @@ mod tests {
       accepter()
         .optional()
         .exec(Input::new(Instant::new(""), &mut executed, &mut ()))
+        .unwrap()
+        .digested,
+      0
+    );
+    assert!(executed);
+    let mut executed = false;
+    assert_eq!(
+      accepter_bytes()
+        .optional()
+        .exec(Input::new(Instant::new(b""), &mut executed, &mut ()))
         .unwrap()
         .digested,
       0
