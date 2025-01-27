@@ -1,8 +1,8 @@
-//! Overload `*` operator for [`Combinator`](crate::combinator::Combinator).
+//! Overload `*` operator for [`Combinator`].
 //!
 //! `Combinator * Repeat` will create a new combinator to repeat the original combinator
 //! with the given [`Repeat`] range.
-//! The new combinator will return the output with the [`Fold`]-ed value
+//! The new combinator will return the output with the folded value
 //! and the rest of the input text after the last repetition is executed,
 //! or reject if the repetition is not satisfied.
 //!
@@ -49,7 +49,7 @@
 //! eat("true") * (..=0)
 //! # );
 //! ```
-//! # Fold Values
+//! # Fold values
 //! ## Ad-hoc accumulator
 //! ```
 //! # use whitehole::{combinator::next, action::{Input, Action}, instant::Instant};
@@ -76,7 +76,7 @@
 //! That's not efficient.
 //!
 //! To optimize the performance,
-//! you can fold the values to [`Input::heap`](crate::action::Input::heap) to prevent re-allocation.
+//! you can fold the values to [`Input::heap`] to prevent re-allocation.
 //! ```
 //! # use whitehole::{combinator::eat, action::{Input, Action}, instant::Instant};
 //! let combinator = {
@@ -92,7 +92,7 @@
 //! assert_eq!(heap, vec![0, 1, 2]);
 //! ```
 //! # Separator
-//! You can use [`Combinator::sep`](crate::combinator::Combinator::sep)
+//! You can use [`Combinator::sep`]
 //! to specify an other combinator as the separator after performing `*`.
 //! ```
 //! # use whitehole::{combinator::eat, action::{Input, Action}, instant::Instant};
@@ -126,7 +126,7 @@ use crate::{
 };
 use std::ops;
 
-/// An [`Action`](crate::action::Action) created by the `*` operator.
+/// An [`Action`] created by the `*` operator.
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
 #[derive(Debug, Clone, Copy)]
 pub struct Mul<Lhs, Rhs, Sep = NoSep, Init = fn(), Fold = fn((), ())> {
