@@ -27,7 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Action` will now take an additional generic param `Text`.
 - `AcceptedContext::output` will always be a struct instead of a reference.
 - `eat` will no longer accept `usize`, use `take` instead.
-- `Fold` no longer take generic params. Remove `input` from `Fold::fold` and inline fold.
+- Rewrite `Mul`.
+- `Combinator::fold` now only exists for `Combinator<Mul>` and will return a `Combinator<Mul>`.
 - `Parser` now take an additional generic param `TextRef` instead of a lifetime param.
 - `Snapshot` now take an additional generic param `TextRef` instead of a lifetime param.
 
@@ -41,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove implementation of `Action` for `&mut Action`.
 - Remove `Eat<&String>`. Use `Eat<&str>` and `eat(s.as_str())` instead.
 - Remove `eat_unchecked`. Use `wrap` instead.
+- Remove `Sep`, `Fold` and `InlineFold`.
 
 ## [0.4.0] - 2025-01-10
 

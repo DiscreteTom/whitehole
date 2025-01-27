@@ -1,75 +1,100 @@
 use super::{Mul, Repeat};
 use crate::{
   action::{Action, Input, Output},
-  combinator::{ops::mul::impl_mul, Combinator},
+  combinator::Combinator,
   digest::Digest,
 };
-use std::ops;
 
-/// A helper trait to accumulate values when performing `*`
-/// on [`Combinator`](crate::combinator::Combinator)s.
-/// See [`ops::mul`](crate::combinator::ops::mul) for more information.
-///
-/// Built-in implementations are provided for `()`.
-pub trait Fold {
-  /// The accumulator type.
-  type Output: Default;
-
-  /// Fold self with the accumulator.
-  fn fold(self, acc: Self::Output) -> Self::Output;
-}
-
-impl Fold for () {
-  type Output = ();
-  #[inline]
-  fn fold(self, _: Self::Output) -> Self::Output {}
-}
-
-impl<Lhs, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
-  type Output = Combinator<Mul<Combinator<Lhs>, Rhs>>;
-
+impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
+  /// Fold values with an ad-hoc accumulator.
+  ///
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
+  /// # Examples
+  /// ```
+  /// # use whitehole::{combinator::next, action::{Input, Action}, instant::Instant};
+  /// let combinator = {
+  ///   // accept one ascii digit at a time
+  ///   next(|c| c.is_ascii_digit())
+  ///     // convert the char to a number
+  ///     .select(|ctx| ctx.input().instant().rest().chars().next().unwrap() as usize - '0' as usize)
+  ///     // repeat for 1 or more times
+  ///     * (1..)
+  /// }
+  /// // init accumulator with 0, and fold values
+  /// .fold(|| 0 as usize, |value, acc, _| acc * 10 + value)
+  ///
+  /// // parse "123" to 123
+  /// assert_eq!(
+  ///   combinator.exec(Input::new(Instant::new("123"), &mut (), &mut ())).unwrap().value,
+  ///   123
+  /// )
+  /// ```
   #[inline]
-  fn mul(self, rhs: Rhs) -> Self::Output {
-    Self::Output::new(Mul::new(self, rhs))
+  pub fn fold<Value, Acc, NewInit: Fn() -> Acc, NewFold: Fn(Value, Acc) -> Acc>(
+    self,
+    init: NewInit,
+    fold: NewFold,
+  ) -> Combinator<Mul<Lhs, Rhs, Sep, NewInit, NewFold>> {
+    Combinator::new(Mul {
+      lhs: self.action.lhs,
+      rhs: self.action.rhs,
+      sep: self.action.sep,
+      init,
+      fold,
+    })
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, Lhs: Action<Text, State, Heap, Value: Fold>, Rhs: Repeat>
-  Action<Text, State, Heap> for Mul<Combinator<Lhs>, Rhs>
+unsafe impl<
+    Text: ?Sized,
+    State,
+    Heap,
+    Lhs: Action<Text, State, Heap>,
+    Rhs: Repeat,
+    Acc,
+    Init: Fn() -> Acc,
+    Fold: Fn(Lhs::Value, Acc) -> Acc,
+  > Action<Text, State, Heap> for Mul<Lhs, Rhs, (), Init, Fold>
 where
   for<'a> &'a Text: Digest,
 {
-  type Value = <Lhs::Value as Fold>::Output;
+  type Value = Acc;
 
   #[inline]
   fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    impl_mul!(input, self.rhs, Default::default, Fold::fold, self.lhs)
+    // impl_mul!(input, repeat, self.lhs.init, self.lhs.fold, self.lhs.action)
+    let mut repeated = 0;
+    let mut output = Output {
+      value: (self.init)(),
+      digested: 0,
+    };
+
+    while unsafe { self.rhs.validate(repeated) } {
+      let Some(next_output) = self
+        .lhs
+        .exec(unsafe { input.shift_unchecked(output.digested) })
+      else {
+        break;
+      };
+
+      output.value = (self.fold)(next_output.value, output.value);
+      repeated += 1;
+      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
+      debug_assert!(usize::MAX - output.digested > next_output.digested);
+      output.digested = unsafe { output.digested.unchecked_add(next_output.digested) };
+    }
+
+    self.rhs.accept(repeated).then_some(output)
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use super::*;
   use crate::{
     action::{Action, Input, Output},
     combinator::wrap,
     instant::Instant,
   };
-
-  #[test]
-  fn fold_unit() {
-    let _: () = ().fold(());
-  }
-
-  #[derive(Debug)]
-  struct MyValue(usize);
-  impl Fold for MyValue {
-    type Output = usize;
-    fn fold(self, current: Self::Output) -> Self::Output {
-      self.0 + current
-    }
-  }
 
   #[test]
   fn combinator_mul_usize() {
@@ -78,7 +103,7 @@ mod tests {
       wrap(|input| {
         input
           .digest(1)
-          .map(|output| output.map(|_| MyValue(input.instant().digested())))
+          .map(|output| output.map(|_| input.instant().digested()))
       })
     };
 
@@ -100,7 +125,9 @@ mod tests {
     // repeat an accepter 0 times will accept
     let n = 0;
     assert_eq!(
-      (accepter() * n).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter() * n)
+        .fold(|| 0, |v, acc| acc + v)
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
         digested: 0,
@@ -109,7 +136,9 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * 3).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter() * 3)
+        .fold(|| 0, |v, acc| acc + v)
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,
         digested: 3
@@ -118,6 +147,7 @@ mod tests {
 
     // overflow, reject
     assert!((accepter() * 4)
+      .fold(|| 0, |v, acc| acc + v)
       .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
   }
@@ -129,7 +159,7 @@ mod tests {
       wrap(|input| {
         input
           .digest(1)
-          .map(|output| output.map(|_| MyValue(input.instant().digested())))
+          .map(|output| output.map(|_| input.instant().digested()))
       })
     };
 
@@ -149,7 +179,9 @@ mod tests {
 
     // repeat an accepter 0 times will accept
     assert_eq!(
-      (accepter() * (0..1)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter() * (0..1))
+        .fold(|| 0, |v, acc| acc + v)
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
         digested: 0,
@@ -158,7 +190,9 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (0..3)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter() * (0..3))
+        .fold(|| 0, |v, acc| acc + v)
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 1,
         digested: 2
@@ -167,6 +201,7 @@ mod tests {
 
     // too few, reject
     assert!((accepter() * (4..6))
+      .fold(|| 0, |v, acc| acc + v)
       .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
   }
@@ -178,7 +213,7 @@ mod tests {
       wrap(|input| {
         input
           .digest(1)
-          .map(|output| output.map(|_| MyValue(input.instant().digested())))
+          .map(|output| output.map(|_| input.instant().digested()))
       })
     };
 
@@ -198,7 +233,9 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (0..)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter() * (0..))
+        .fold(|| 0, |v, acc| acc + v)
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,
         digested: 3
@@ -207,6 +244,7 @@ mod tests {
 
     // too few, reject
     assert!((accepter() * (4..))
+      .fold(|| 0, |v, acc| acc + v)
       .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
   }
@@ -218,7 +256,7 @@ mod tests {
       wrap(|input| {
         input
           .digest(1)
-          .map(|output| output.map(|_| MyValue(input.instant().digested())))
+          .map(|output| output.map(|_| input.instant().digested()))
       })
     };
 
@@ -233,7 +271,9 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (..)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter() * (..))
+        .fold(|| 0, |v, acc| acc + v)
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,
         digested: 3
@@ -248,7 +288,7 @@ mod tests {
       wrap(|input| {
         input
           .digest(1)
-          .map(|output| output.map(|_| MyValue(input.instant().digested())))
+          .map(|output| output.map(|_| input.instant().digested()))
       })
     };
 
@@ -268,7 +308,9 @@ mod tests {
 
     // repeat an accepter 0 times will accept
     assert_eq!(
-      (accepter() * (0..=0)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter() * (0..=0))
+        .fold(|| 0, |v, acc| acc + v)
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
         digested: 0,
@@ -277,7 +319,9 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (0..=3)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter() * (0..=3))
+        .fold(|| 0, |v, acc| acc + v)
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,
         digested: 3
@@ -286,6 +330,7 @@ mod tests {
 
     // too few, reject
     assert!((accepter() * (4..=6))
+      .fold(|| 0, |v, acc| acc + v)
       .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
   }
@@ -297,7 +342,7 @@ mod tests {
       wrap(|input| {
         input
           .digest(1)
-          .map(|output| output.map(|_| MyValue(input.instant().digested())))
+          .map(|output| output.map(|_| input.instant().digested()))
       })
     };
 
@@ -312,7 +357,9 @@ mod tests {
 
     // repeat an accepter 0 times will accept
     assert_eq!(
-      (accepter() * (..1)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter() * (..1))
+        .fold(|| 0, |v, acc| acc + v)
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
         digested: 0,
@@ -321,7 +368,9 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (..3)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter() * (..3))
+        .fold(|| 0, |v, acc| acc + v)
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 1,
         digested: 2
@@ -336,7 +385,7 @@ mod tests {
       wrap(|input| {
         input
           .digest(1)
-          .map(|output| output.map(|_| MyValue(input.instant().digested())))
+          .map(|output| output.map(|_| input.instant().digested()))
       })
     };
 
@@ -351,7 +400,9 @@ mod tests {
 
     // repeat an accepter 0 times will accept
     assert_eq!(
-      (accepter() * (..=0)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter() * (..=0))
+        .fold(|| 0, |v, acc| acc + v)
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
         digested: 0,
@@ -360,7 +411,9 @@ mod tests {
 
     // normal, apply the folded value and sum the digested
     assert_eq!(
-      (accepter() * (..=3)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter() * (..=3))
+        .fold(|| 0, |v, acc| acc + v)
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,
         digested: 3

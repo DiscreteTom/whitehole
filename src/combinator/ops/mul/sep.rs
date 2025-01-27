@@ -1,18 +1,11 @@
-use super::{inline::InlineFold, Fold, Mul, Repeat};
+use super::{Mul, Repeat};
 use crate::{
   action::{Action, Input, Output},
   combinator::Combinator,
   digest::Digest,
 };
 
-/// See [`Combinator::sep`].
-#[derive(Debug, Clone, Copy)]
-pub struct Sep<T, S> {
-  value: T,
-  sep: S,
-}
-
-impl<Lhs, Rhs> Combinator<Mul<Lhs, Rhs>> {
+impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// Specify an other combinator as the separator
   /// after performing `*` on [`Combinator`]s.
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
@@ -43,83 +36,31 @@ impl<Lhs, Rhs> Combinator<Mul<Lhs, Rhs>> {
   /// # );
   /// ```
   #[inline]
-  pub fn sep<S>(self, sep: impl Into<Combinator<S>>) -> Combinator<Sep<Mul<Lhs, Rhs>, S>> {
-    Combinator::new(Sep {
-      value: self.action,
-      sep: sep.into().action,
+  pub fn sep<NewSep>(
+    self,
+    sep: impl Into<Combinator<NewSep>>,
+  ) -> Combinator<Mul<Lhs, Rhs, Combinator<NewSep>, Init, Fold>> {
+    Combinator::new(Mul {
+      lhs: self.action.lhs,
+      rhs: self.action.rhs,
+      sep: sep.into(),
+      init: self.action.init,
+      fold: self.action.fold,
     })
   }
 }
 
-macro_rules! impl_mul_with_sep {
-  ($input:ident, $repeat:expr, $init:expr, $fold:expr, $action:expr, $sep:expr) => {{
-    let mut repeated = 0;
-    let mut output = Output {
-      value: $init(),
-      digested: 0,
-    };
-
-    let mut digested_with_sep = 0;
-    while unsafe { $repeat.validate(repeated) } {
-      let Some(value_output) = $action.exec(unsafe { $input.shift_unchecked(digested_with_sep) })
-      else {
-        break;
-      };
-      repeated += 1;
-      output.value = $fold(value_output.value, output.value);
-      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
-      debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
-      output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
-
-      let Some(sep_output) = $sep.exec(unsafe { $input.shift_unchecked(output.digested) }) else {
-        break;
-      };
-      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
-      debug_assert!(usize::MAX - output.digested > sep_output.digested);
-      digested_with_sep = unsafe { output.digested.unchecked_add(sep_output.digested) };
-    }
-
-    $repeat.accept(repeated).then_some(output)
-  }};
-}
-
 unsafe impl<
-    Lhs: Action<Text, State, Heap, Value: Fold>,
+    Text: ?Sized,
+    State,
+    Heap,
+    Lhs: Action<Text, State, Heap>,
     Rhs: Repeat,
-    S: Action<Text, State, Heap>,
-    Text: ?Sized,
-    State,
-    Heap,
-  > Action<Text, State, Heap> for Sep<Mul<Combinator<Lhs>, Rhs>, S>
-where
-  for<'a> &'a Text: Digest,
-{
-  type Value = <Lhs::Value as Fold>::Output;
-
-  #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    impl_mul_with_sep!(
-      input,
-      self.value.rhs,
-      Default::default,
-      Fold::fold,
-      self.value.lhs,
-      self.sep
-    )
-  }
-}
-
-unsafe impl<
-    T: Action<Text, State, Heap>,
+    Sep: Action<Text, State, Heap>,
     Acc,
-    Repeater: Repeat,
     Init: Fn() -> Acc,
-    Folder: Fn(T::Value, Acc) -> Acc,
-    S: Action<Text, State, Heap>,
-    Text: ?Sized,
-    State,
-    Heap,
-  > Action<Text, State, Heap> for Sep<Mul<InlineFold<T, Init, Folder>, Repeater>, S>
+    Fold: Fn(Lhs::Value, Acc) -> Acc,
+  > Action<Text, State, Heap> for Mul<Lhs, Rhs, Combinator<Sep>, Init, Fold>
 where
   for<'a> &'a Text: Digest,
 {
@@ -127,14 +68,38 @@ where
 
   #[inline]
   fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    impl_mul_with_sep!(
-      input,
-      self.value.rhs,
-      self.value.lhs.init,
-      self.value.lhs.fold,
-      self.value.lhs.action,
-      self.sep
-    )
+    let mut repeated = 0;
+    let mut output = Output {
+      value: (self.init)(),
+      digested: 0,
+    };
+
+    let mut digested_with_sep = 0;
+    while unsafe { self.rhs.validate(repeated) } {
+      let Some(value_output) = self
+        .lhs
+        .exec(unsafe { input.shift_unchecked(digested_with_sep) })
+      else {
+        break;
+      };
+      repeated += 1;
+      output.value = (self.fold)(value_output.value, output.value);
+      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
+      debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
+      output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
+
+      let Some(sep_output) = self
+        .sep
+        .exec(unsafe { input.shift_unchecked(output.digested) })
+      else {
+        break;
+      };
+      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
+      debug_assert!(usize::MAX - output.digested > sep_output.digested);
+      digested_with_sep = unsafe { output.digested.unchecked_add(sep_output.digested) };
+    }
+
+    self.rhs.accept(repeated).then_some(output)
   }
 }
 
@@ -192,7 +157,9 @@ mod tests {
 
   #[test]
   fn test_inline_fold_with_sep() {
-    let combinator = (eat('a').bind(1).fold(|| 0, |v, acc| acc + v) * (1..)).sep(',');
+    let combinator = (eat('a').bind(1) * (1..))
+      .fold(|| 0, |v, acc| acc + v)
+      .sep(',');
     let output = combinator
       .exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()))
       .unwrap();
