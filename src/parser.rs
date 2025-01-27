@@ -15,10 +15,10 @@ use crate::{
 /// Manage [`Input::state`], [`Input::heap`] and the parsing progress.
 #[derive(Debug, Clone)]
 pub struct Parser<T, TextRef, State = (), Heap = ()> {
-  /// See [`Input::state`](crate::action::Input::state).
+  /// See [`Input::state`].
   /// You can mutate this directly if needed.
   pub state: State,
-  /// See [`Input::heap`](crate::action::Input::heap).
+  /// See [`Input::heap`].
   /// You can mutate this directly if needed.
   pub heap: Heap,
 
@@ -51,6 +51,7 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
   }
 
   /// Consume self, return a new instance with the same action and a new text.
+  ///
   /// [`Self::instant`] and [`Self::state`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
@@ -62,6 +63,7 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
   }
 
   /// Consume self, return a new instance with the same action, a new text and an optional new state.
+  ///
   /// If the state is not provided, current [`Self::state`] will be kept.
   /// [`Self::instant`] will be reset to default.
   /// [`Self::heap`] won't change.
@@ -116,7 +118,7 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
     self.digest_with_unchecked(State::default(), n)
   }
 
-  /// Digest the next `n` chars and optionally set [`Self::state`].
+  /// Digest the next `n` bytes and optionally set [`Self::state`].
   /// # Safety
   /// See [`Instant::digest_unchecked`].
   #[inline]

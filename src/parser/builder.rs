@@ -83,9 +83,7 @@ impl<T, State, Heap> Builder<T, State, Heap> {
       heap: self.heap,
     }
   }
-}
 
-impl<T, State, Heap> Builder<T, State, Heap> {
   /// Build a [`Parser`] with the given text.
   #[inline]
   pub fn build<Text: ?Sized>(self, text: &Text) -> Parser<T, &Text, State, Heap>
