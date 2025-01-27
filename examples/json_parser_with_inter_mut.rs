@@ -32,7 +32,7 @@ pub fn build_parser_with_recur(s: &str) -> Parser<impl Action<Value = WithRange<
   };
 
   // `value` will indirectly recurse to itself, so we need to use `recur` to break the cycle.
-  let (value, value_setter) = recur();
+  let (value, value_setter) = recur::<_, _, (), ()>();
 
   // We can use `value` in `array` and `object` before it is defined.
   let sep = || eat(',') + wso();
