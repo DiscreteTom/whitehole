@@ -17,7 +17,7 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   ///     * (1..)
   /// }
   /// // init accumulator with 0, and fold values
-  /// .fold(|| 0 as usize, |value, acc, _| acc * 10 + value)
+  /// .fold(|| 0 as usize, |acc, value| acc * 10 + value)
   ///
   /// // parse "123" to 123
   /// assert_eq!(
@@ -26,7 +26,7 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// )
   /// ```
   #[inline]
-  pub fn fold<Value, Acc, NewInit: Fn() -> Acc, NewFold: Fn(Value, Acc) -> Acc>(
+  pub fn fold<Value, Acc, NewInit: Fn() -> Acc, NewFold: Fn(Acc, Value) -> Acc>(
     self,
     init: NewInit,
     fold: NewFold,
@@ -79,7 +79,7 @@ mod tests {
     let n = 0;
     assert_eq!(
       (accepter() * n)
-        .fold(|| 0, |v, acc| acc + v)
+        .fold(|| 0, |acc, v| acc + v)
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
@@ -90,7 +90,7 @@ mod tests {
     // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * 3)
-        .fold(|| 0, |v, acc| acc + v)
+        .fold(|| 0, |acc, v| acc + v)
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,
@@ -100,7 +100,7 @@ mod tests {
 
     // overflow, reject
     assert!((accepter() * 4)
-      .fold(|| 0, |v, acc| acc + v)
+      .fold(|| 0, |acc, v| acc + v)
       .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
   }
@@ -133,7 +133,7 @@ mod tests {
     // repeat an accepter 0 times will accept
     assert_eq!(
       (accepter() * (0..1))
-        .fold(|| 0, |v, acc| acc + v)
+        .fold(|| 0, |acc, v| acc + v)
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
@@ -144,7 +144,7 @@ mod tests {
     // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (0..3))
-        .fold(|| 0, |v, acc| acc + v)
+        .fold(|| 0, |acc, v| acc + v)
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 1,
@@ -154,7 +154,7 @@ mod tests {
 
     // too few, reject
     assert!((accepter() * (4..6))
-      .fold(|| 0, |v, acc| acc + v)
+      .fold(|| 0, |acc, v| acc + v)
       .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
   }
@@ -187,7 +187,7 @@ mod tests {
     // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (0..))
-        .fold(|| 0, |v, acc| acc + v)
+        .fold(|| 0, |acc, v| acc + v)
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,
@@ -197,7 +197,7 @@ mod tests {
 
     // too few, reject
     assert!((accepter() * (4..))
-      .fold(|| 0, |v, acc| acc + v)
+      .fold(|| 0, |acc, v| acc + v)
       .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
   }
@@ -225,7 +225,7 @@ mod tests {
     // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (..))
-        .fold(|| 0, |v, acc| acc + v)
+        .fold(|| 0, |acc, v| acc + v)
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,
@@ -262,7 +262,7 @@ mod tests {
     // repeat an accepter 0 times will accept
     assert_eq!(
       (accepter() * (0..=0))
-        .fold(|| 0, |v, acc| acc + v)
+        .fold(|| 0, |acc, v| acc + v)
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
@@ -273,7 +273,7 @@ mod tests {
     // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (0..=3))
-        .fold(|| 0, |v, acc| acc + v)
+        .fold(|| 0, |acc, v| acc + v)
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,
@@ -283,7 +283,7 @@ mod tests {
 
     // too few, reject
     assert!((accepter() * (4..=6))
-      .fold(|| 0, |v, acc| acc + v)
+      .fold(|| 0, |acc, v| acc + v)
       .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
       .is_none());
   }
@@ -311,7 +311,7 @@ mod tests {
     // repeat an accepter 0 times will accept
     assert_eq!(
       (accepter() * (..1))
-        .fold(|| 0, |v, acc| acc + v)
+        .fold(|| 0, |acc, v| acc + v)
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
@@ -322,7 +322,7 @@ mod tests {
     // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (..3))
-        .fold(|| 0, |v, acc| acc + v)
+        .fold(|| 0, |acc, v| acc + v)
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 1,
@@ -354,7 +354,7 @@ mod tests {
     // repeat an accepter 0 times will accept
     assert_eq!(
       (accepter() * (..=0))
-        .fold(|| 0, |v, acc| acc + v)
+        .fold(|| 0, |acc, v| acc + v)
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 0,
@@ -365,7 +365,7 @@ mod tests {
     // normal, apply the folded value and sum the digested
     assert_eq!(
       (accepter() * (..=3))
-        .fold(|| 0, |v, acc| acc + v)
+        .fold(|| 0, |acc, v| acc + v)
         .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
       Some(Output {
         value: 3,

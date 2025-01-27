@@ -122,7 +122,7 @@ mod tests {
   #[test]
   fn test_inline_fold_with_sep() {
     let combinator = (eat('a').bind(1) * (1..))
-      .fold(|| 0, |v, acc| acc + v)
+      .fold(|| 0, |acc, v| acc + v)
       .sep(',');
     let output = combinator
       .exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()))

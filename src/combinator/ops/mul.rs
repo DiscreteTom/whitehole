@@ -62,7 +62,7 @@
 //!     * (1..)
 //! }
 //! // init accumulator with 0, and fold values
-//! .fold(|| 0 as usize, |value, acc| acc * 10 + value);
+//! .fold(|| 0 as usize, |acc, value| acc * 10 + value);
 //!
 //! // parse "123" to 123
 //! assert_eq!(
@@ -169,7 +169,7 @@ unsafe impl<
     Sep: Action<Text, State, Heap>,
     Acc,
     Init: Fn() -> Acc,
-    Fold: Fn(Lhs::Value, Acc) -> Acc,
+    Fold: Fn(Acc, Lhs::Value) -> Acc,
   > Action<Text, State, Heap> for Mul<Lhs, Rhs, Sep, Init, Fold>
 where
   for<'a> &'a Text: Digest,
@@ -193,7 +193,7 @@ where
         break;
       };
       repeated += 1;
-      output.value = (self.fold)(value_output.value, output.value);
+      output.value = (self.fold)(output.value, value_output.value);
       // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
       debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
       output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };

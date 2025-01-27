@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `eat` will no longer accept `usize`, use `take` instead.
 - Rewrite `Mul`.
 - `Combinator::fold` now only exists for `Combinator<Mul>` and will return a `Combinator<Mul>`.
+- `Combinator::fold`'s `fold` now take `acc` as the first param and `value` as the second param.
 - `Parser` now take an additional generic param `TextRef` instead of a lifetime param.
 - `Snapshot` now take an additional generic param `TextRef` instead of a lifetime param.
 
