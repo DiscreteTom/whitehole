@@ -111,6 +111,7 @@ unsafe impl<Text: ?Sized, Value, State, Heap> Action<Text, State, Heap>
 ///   .exec(Input::new(Instant::new("[[a],[]]"), &mut (), &mut ()))
 ///   .is_some());
 /// ```
+#[allow(clippy::type_complexity)]
 pub fn recur<Text: ?Sized, Value, State, Heap>() -> (
   impl Fn() -> Combinator<Recur<Text, Value, State, Heap>>,
   RecurSetter<Text, Value, State, Heap>,
@@ -203,6 +204,7 @@ unsafe impl<Text: ?Sized, Value, State, Heap> Action<Text, State, Heap>
 ///   .exec(Input::new(Instant::new("[[a],[]]"), &mut (), &mut ()))
 ///   .is_some());
 /// ```
+#[allow(clippy::type_complexity)]
 pub unsafe fn recur_unchecked<Text: ?Sized, Value, State, Heap>() -> (
   impl Fn() -> Combinator<RecurUnchecked<Text, Value, State, Heap>>,
   RecurSetter<Text, Value, State, Heap>,
