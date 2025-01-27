@@ -17,6 +17,7 @@
 //! - [`next`]: eat the next character by a predicate.
 //! - [`till`]: eat until a pattern, inclusive.
 //! - [`wrap`]: wrap a closure as a combinator.
+//! - [`recur`]: create a recursive combinator.
 //!
 //! Tips:
 //! - Some of them may have faster `unsafe` variants named with suffix `_unchecked`.

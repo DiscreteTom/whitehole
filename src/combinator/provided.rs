@@ -1,10 +1,12 @@
 mod eat;
 mod next;
+mod recur;
 mod take;
 mod till;
 mod wrap;
 
 pub use eat::*;
+pub use recur::*;
 pub use take::*;
 pub use till::*;
 
