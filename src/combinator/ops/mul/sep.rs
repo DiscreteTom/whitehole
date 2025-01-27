@@ -29,16 +29,21 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// # Examples
   /// ```
   /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
-  /// # fn t(_: Combinator<impl Action>) {}
-  /// # t(
-  /// (eat("true") * (1..)).sep(eat(',')) // with a combinator
-  /// # );
+  /// // eat `true` for 1 or more times, separated by `,` with optional spaces
+  /// let action = {
+  ///   let ws = || eat(' ') * (..);
+  ///   (eat("true") * (1..)).sep(ws() + eat(',') + ws())
+  /// };
+  /// assert!(action.exec(Input::new(Instant::new("true"), &mut (), &mut ())).is_some());
+  /// assert!(action.exec(Input::new(Instant::new("true,true"), &mut (), &mut ())).is_some());
+  /// assert!(action.exec(Input::new(Instant::new("true , true"), &mut (), &mut ())).is_some());
   /// ```
-  /// You can use [`char`], `&str`, [`String`], and [`usize`] as the shorthand
+  /// Tips: you can use [`char`], `&str`, [`String`], [`u8`], `&[u8]` and [`Vec<u8>`] as the shorthand
   /// for [`eat`](crate::combinator::eat) in the separator.
   /// ```
   /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
   /// # fn t(_: Combinator<impl Action>) {}
+  /// # fn tb(_: Combinator<impl Action<[u8]>>) {}
   /// # t(
   /// (eat("true") * (1..)).sep(',') // with a char
   /// # );
@@ -48,10 +53,34 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// # t(
   /// (eat("true") * (1..)).sep(",".to_string()) // with a string
   /// # );
-  /// # t(
-  /// (eat("true") * (1..)).sep(1) // with a usize
+  /// # tb(
+  /// (eat(b"true") * (1..)).sep(b',') // with a u8
+  /// # );
+  /// # tb(
+  /// (eat(b"true") * (1..)).sep(b",") // with a &[u8]
+  /// # );
+  /// # tb(
+  /// (eat(b"true") * (1..)).sep(vec![b',']) // with a Vec<u8>
   /// # );
   /// ```
+  /// You can use [`Combinator::sep`] with [`Combinator::fold`] in any order after `*`,
+  /// since they are actually builder methods for [`Combinator<Mul>`].
+  /// ```
+  /// # use whitehole::{combinator::{ops::mul::Fold, eat}, action::{Input, Action}, instant::Instant};
+  /// let combinator = (eat('a').bind(1) * (1..)).sep(',').fold(|| 0, |v, acc| acc + v);
+  /// assert_eq!(
+  ///   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ())).unwrap().value,
+  ///   3
+  /// );
+  /// let combinator = (eat('a').bind(1) * (1..)).fold(|| 0, |v, acc| acc + v).sep(',');
+  /// assert_eq!(
+  ///   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ())).unwrap().value,
+  ///   3
+  /// );
+  /// ```
+  /// You can't use [`Combinator::fold`] to accumulate values in the separator combinator.
+  /// You can fold values of the separator combinator to the heap.
+  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   #[inline]
   pub fn sep<NewSep>(
     self,
