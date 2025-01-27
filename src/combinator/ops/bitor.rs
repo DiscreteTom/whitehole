@@ -213,17 +213,6 @@ mod tests {
   }
 
   #[test]
-  fn combinator_bit_or_u8() {
-    let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
-    assert_eq!(
-      (rejecter() | b'1')
-        .exec(Input::new(Instant::new(b"1"), &mut (), &mut ()))
-        .map(|output| output.digested),
-      Some(1)
-    );
-  }
-
-  #[test]
   fn combinator_bit_or_str() {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     assert_eq!(
@@ -240,6 +229,50 @@ mod tests {
     assert_eq!(
       (rejecter() | "1".to_string())
         .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
+        .map(|output| output.digested),
+      Some(1)
+    );
+  }
+
+  #[test]
+  fn combinator_bit_or_u8() {
+    let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
+    assert_eq!(
+      (rejecter() | b'1')
+        .exec(Input::new(Instant::new(b"1"), &mut (), &mut ()))
+        .map(|output| output.digested),
+      Some(1)
+    );
+  }
+
+  #[test]
+  fn combinator_bit_or_u8_slice() {
+    let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
+    assert_eq!(
+      (rejecter() | "1".as_bytes())
+        .exec(Input::new(Instant::new(b"1"), &mut (), &mut ()))
+        .map(|output| output.digested),
+      Some(1)
+    );
+  }
+
+  #[test]
+  fn combinator_bit_or_u8_const_slice() {
+    let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
+    assert_eq!(
+      (rejecter() | b"1")
+        .exec(Input::new(Instant::new(b"1"), &mut (), &mut ()))
+        .map(|output| output.digested),
+      Some(1)
+    );
+  }
+
+  #[test]
+  fn combinator_bit_or_vec_u8() {
+    let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
+    assert_eq!(
+      (rejecter() | vec![b'1'])
+        .exec(Input::new(Instant::new(b"1"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(1)
     );

@@ -252,18 +252,6 @@ mod tests {
   }
 
   #[test]
-  fn combinator_add_string() {
-    let eat1 = || wrap(|input| input.digest(1));
-
-    assert_eq!(
-      (eat1() + "23".to_string())
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
-        .map(|output| output.digested),
-      Some(3)
-    );
-  }
-
-  #[test]
   fn combinator_add_str() {
     let eat1 = || wrap(|input| input.digest(1));
 
@@ -276,12 +264,59 @@ mod tests {
   }
 
   #[test]
+  fn combinator_add_string() {
+    let eat1 = || wrap(|input| input.digest(1));
+
+    assert_eq!(
+      (eat1() + "23".to_string())
+        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+        .map(|output| output.digested),
+      Some(3)
+    );
+  }
+
+  #[test]
   fn combinator_add_u8() {
     let eat1 = || bytes::wrap(|input| input.digest(1));
 
-    // normal
     assert_eq!(
       (eat1() + b'2')
+        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+        .map(|output| output.digested),
+      Some(2)
+    );
+  }
+
+  #[test]
+  fn combinator_add_u8_slice() {
+    let eat1 = || bytes::wrap(|input| input.digest(1));
+
+    assert_eq!(
+      (eat1() + "2".as_bytes())
+        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+        .map(|output| output.digested),
+      Some(2)
+    );
+  }
+
+  #[test]
+  fn combinator_add_u8_const_slice() {
+    let eat1 = || bytes::wrap(|input| input.digest(1));
+
+    assert_eq!(
+      (eat1() + b"2")
+        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+        .map(|output| output.digested),
+      Some(2)
+    );
+  }
+
+  #[test]
+  fn combinator_add_vec_u8() {
+    let eat1 = || bytes::wrap(|input| input.digest(1));
+
+    assert_eq!(
+      (eat1() + vec![b'2'])
         .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
         .map(|output| output.digested),
       Some(2)
