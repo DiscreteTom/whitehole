@@ -17,7 +17,7 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   ///     * (1..)
   /// }
   /// // init accumulator with 0, and fold values
-  /// .fold(|| 0 as usize, |acc, value| acc * 10 + value)
+  /// .fold(|| 0 as usize, |acc, value| acc * 10 + value);
   ///
   /// // parse "123" to 123
   /// assert_eq!(

@@ -9,6 +9,7 @@
 //! ```
 //! # use whitehole::{combinator::{eat, Combinator}, action::Action};
 //! # fn t(_: Combinator<impl Action>) {}
+//! # fn tb(_: Combinator<impl Action<[u8]>>) {}
 //! // match "123" then match "456"
 //! # t(
 //! eat("123") + eat("456")
@@ -25,13 +26,13 @@
 //! # t(
 //! eat("true") + "false".to_string()
 //! # );
-//! # t(
+//! # tb(
 //! eat(b"true") + b'a'
 //! # );
-//! # t(
+//! # tb(
 //! eat(b"true") + b"false"
 //! # );
-//! # t(
+//! # tb(
 //! eat(b"true") + b"false".to_vec()
 //! # );
 //! ```

@@ -145,7 +145,7 @@ where
 /// For bytes (`&[u8]`):
 /// ```
 /// # use whitehole::{combinator::{till, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action>) {}
+/// # fn t(_: Combinator<impl Action<[u8]>>) {}
 /// # t(
 /// till(b';') // with u8
 /// # );

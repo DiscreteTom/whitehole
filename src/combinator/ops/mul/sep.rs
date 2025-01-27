@@ -28,7 +28,7 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   /// # Examples
   /// ```
-  /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
+  /// # use whitehole::{combinator::{eat, Combinator}, action::{Action, Input}, instant::Instant};
   /// // eat `true` for 1 or more times, separated by `,` with optional spaces
   /// let action = {
   ///   let ws = || eat(' ') * (..);
@@ -66,7 +66,7 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// You can use [`Combinator::sep`] with [`Combinator::fold`] in any order after `*`,
   /// since they are actually builder methods for [`Combinator<Mul>`].
   /// ```
-  /// # use whitehole::{combinator::{ops::mul::Fold, eat}, action::{Input, Action}, instant::Instant};
+  /// # use whitehole::{combinator::eat, action::{Input, Action}, instant::Instant};
   /// let combinator = (eat('a').bind(1) * (1..)).sep(',').fold(|| 0, |v, acc| acc + v);
   /// assert_eq!(
   ///   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ())).unwrap().value,

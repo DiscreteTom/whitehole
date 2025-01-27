@@ -108,7 +108,7 @@ pub mod bytes {
   /// ```
   /// # use whitehole::combinator::{bytes::wrap_unchecked, Combinator};
   /// # use whitehole::action::{Input, Output, Action};
-  /// # fn t() -> Combinator<impl Action> {
+  /// # fn t() -> Combinator<impl Action<[u8]>> {
   /// // eat the next byte if it exists
   /// unsafe { wrap_unchecked(|input| input.digest(1)) }
   /// # }
@@ -135,7 +135,7 @@ pub mod bytes {
   /// ```
   /// # use whitehole::combinator::{bytes::wrap, Combinator};
   /// # use whitehole::action::{Input, Output, Action};
-  /// # fn t() -> Combinator<impl Action> {
+  /// # fn t() -> Combinator<impl Action<[u8]>> {
   /// // eat the next byte if it exists
   /// wrap(|input| input.digest(1))
   /// # }

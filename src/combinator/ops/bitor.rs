@@ -8,6 +8,7 @@
 //! ```
 //! # use whitehole::{combinator::{eat, Combinator}, action::Action};
 //! # fn t(_: Combinator<impl Action>) {}
+//! # fn tb(_: Combinator<impl Action<[u8]>>) {}
 //! // match "true" or "false"
 //! # t(
 //! eat("true") | eat("false")
@@ -24,13 +25,13 @@
 //! # t(
 //! eat("true") | "false".to_string()
 //! # );
-//! # t(
+//! # tb(
 //! eat(b"true") | b'a'
 //! # );
-//! # t(
+//! # tb(
 //! eat(b"true") | b"false"
 //! # );
-//! # t(
+//! # tb(
 //! eat(b"true") | b"false".to_vec()
 //! # );
 //! ```

@@ -80,10 +80,10 @@
 //! To optimize the performance,
 //! you can fold the values to [`Input::heap`] to prevent re-allocation.
 //! ```
-//! # use whitehole::{combinator::eat, action::{Input, Action}, instant::Instant};
+//! # use whitehole::{combinator::take, action::{Input, Action}, instant::Instant};
 //! let combinator = {
-//!   // eat one char, accumulate the start index in `input.heap`
-//!   eat(1).then(|mut ctx| ctx.heap().push(ctx.start()))
+//!   // eat one char, accumulate some value in `input.heap`
+//!   take(1).then::<_, _, Vec<_>, _>(|mut ctx| ctx.heap().push(1))
 //!     // repeat for 1 or more times
 //!     * (1..)
 //! }.prepare(|input| input.heap.clear()); // clear the vec before executing this combinator
@@ -91,7 +91,7 @@
 //! // create a re-usable heap
 //! let mut heap = vec![];
 //! combinator.exec(Input::new(Instant::new("123"), &mut (), &mut heap));
-//! assert_eq!(heap, vec![0, 1, 2]);
+//! assert_eq!(heap, vec![1, 1, 1]);
 //! ```
 //! # Separator
 //! You can use [`Combinator::sep`]
@@ -106,7 +106,7 @@
 //! ```
 //! You can use [`Combinator::sep`] with [`Combinator::fold`]:
 //! ```
-//! # use whitehole::{combinator::{ops::mul::Fold, eat}, action::{Input, Action}, instant::Instant};
+//! # use whitehole::{combinator::eat, action::{Input, Action}, instant::Instant};
 //! let combinator = (eat('a').bind(1) * (1..)).sep(',').fold(|| 0, |v, acc| acc + v);
 //! assert_eq!(
 //!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ())).unwrap().value,
