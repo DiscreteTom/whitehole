@@ -28,6 +28,14 @@ pub struct Parser<T, TextRef, State = (), Heap = ()> {
   entry: T,
 }
 
+impl Parser<(), &str> {
+  /// Create a parser builder with default settings.
+  #[inline]
+  pub const fn builder() -> Builder<()> {
+    Builder::new()
+  }
+}
+
 impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
   /// The entry action.
   #[inline]

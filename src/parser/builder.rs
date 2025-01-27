@@ -4,7 +4,7 @@ use crate::action::Action;
 /// A builder for [`Parser`].
 /// # Examples
 /// ```
-/// use whitehole::{parser::Builder, combinator::eat};
+/// use whitehole::{parser::Parser, combinator::eat};
 ///
 /// # struct MyState;
 /// # impl MyState {
@@ -14,7 +14,7 @@ use crate::action::Action;
 /// # impl MyHeap {
 /// #   fn new() -> Self { MyHeap }
 /// # }
-/// let _ = Builder::new()
+/// Parser::builder()
 ///   // optional
 ///   .state(MyState::new())
 ///   // optional
