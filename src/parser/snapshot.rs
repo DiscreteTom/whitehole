@@ -34,13 +34,13 @@ mod tests {
 
   #[test]
   fn test_snapshot() {
-    assert_eq!(
-      Snapshot {
-        state: (),
-        instant: Instant::new("")
-      }
-      .instant(),
-      &Instant::new("")
-    );
+    let s = Snapshot {
+      state: (),
+      instant: Instant::new(""),
+    };
+    assert_eq!(s.instant(), &Instant::new(""));
+
+    // ensure clone-able
+    let _ = s.clone();
   }
 }
