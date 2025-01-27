@@ -51,6 +51,8 @@
 //! ```
 //! # Fold values
 //! ## Ad-hoc accumulator
+//! You can use [`Combinator::fold`]
+//! to specify an ad-hoc accumulator after performing `*`.
 //! ```
 //! # use whitehole::{combinator::next, action::{Input, Action}, instant::Instant};
 //! let combinator = {
@@ -102,10 +104,10 @@
 //!   5
 //! )
 //! ```
-//! You can fold the values with the separator.
+//! You can use [`Combinator::sep`] with [`Combinator::fold`]:
 //! ```
 //! # use whitehole::{combinator::{ops::mul::Fold, eat}, action::{Input, Action}, instant::Instant};
-//! let combinator = (eat('a').bind(1) * (1..)).fold(|| 0, |v, acc| acc + v).sep(',');
+//! let combinator = (eat('a').bind(1) * (1..)).sep(',').fold(|| 0, |v, acc| acc + v);
 //! assert_eq!(
 //!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ())).unwrap().value,
 //!   3
