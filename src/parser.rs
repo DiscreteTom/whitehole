@@ -182,6 +182,18 @@ mod tests {
   use std::rc::Rc;
 
   #[test]
+  fn parser_builder() {
+    let parser = Parser::builder()
+      .state(123)
+      .heap(123)
+      .entry(eat("123"))
+      .build("123");
+    assert_eq!(parser.state, 123);
+    assert_eq!(parser.heap, 123);
+    assert_eq!(parser.instant().text(), "123");
+  }
+
+  #[test]
   fn parser_clone() {
     let parser = Parser {
       state: 123,

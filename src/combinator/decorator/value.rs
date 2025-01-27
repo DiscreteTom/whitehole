@@ -405,6 +405,16 @@ mod tests {
         digested: 1
       })
     );
+
+    // make sure copy-able and clone-able
+    let a = wrap::<(), (), _, _>(|input| input.digest(1)).bind_default::<i32>();
+    let _ = a;
+    let _ = a.clone();
+
+    assert_eq!(
+      format!("{:?}", a),
+      "Combinator { action: BindDefault { action: Wrap } }"
+    );
   }
 
   #[test]

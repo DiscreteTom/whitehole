@@ -100,6 +100,8 @@ mod tests {
     assert_eq!(unsafe { bytes.span_unchecked(1) }, b"1");
     assert_eq!(unsafe { bytes.span_unchecked(2) }, b"12");
     assert_eq!(unsafe { bytes.span_unchecked(3) }, b"123");
+    assert_eq!(<&[u8] as Digest>::len(&bytes), 3);
+    assert!(!<&[u8] as Digest>::is_empty(&bytes));
   }
 
   #[test]
@@ -132,6 +134,8 @@ mod tests {
     assert_eq!(unsafe { text.span_unchecked(1) }, "1");
     assert_eq!(unsafe { text.span_unchecked(2) }, "12");
     assert_eq!(unsafe { text.span_unchecked(3) }, "123");
+    assert_eq!(<&str as Digest>::len(&text), 3);
+    assert!(!<&str as Digest>::is_empty(&text));
   }
 
   #[test]
