@@ -149,7 +149,7 @@ mod tests {
   }
 
   #[test]
-  fn test_inline_fold_with_sep() {
+  fn test_fold_with_sep() {
     let combinator = (eat('a').bind(1) * (1..))
       .fold(|| 0, |acc, v| acc + v)
       .sep(',');
@@ -158,5 +158,37 @@ mod tests {
       .unwrap();
     assert_eq!(output.value, 3);
     assert_eq!(output.digested, 5);
+  }
+
+  #[test]
+  fn test_sep_with_eat() {
+    fn t(action: Combinator<impl Action>) {
+      assert!(action
+        .exec(Input::new(Instant::new("true"), &mut (), &mut ()))
+        .is_some());
+      assert!(action
+        .exec(Input::new(Instant::new("true,true"), &mut (), &mut ()))
+        .is_some());
+    }
+    fn tb(action: Combinator<impl Action<[u8]>>) {
+      assert!(action
+        .exec(Input::new(Instant::new(b"true"), &mut (), &mut ()))
+        .is_some());
+      assert!(action
+        .exec(Input::new(Instant::new(b"true,true"), &mut (), &mut ()))
+        .is_some());
+    }
+    // with a char
+    t((eat("true") * (1..)).sep(','));
+    // with a str
+    t((eat("true") * (1..)).sep(","));
+    // with a string
+    t((eat("true") * (1..)).sep(",".to_string()));
+    // with a u8
+    tb((eat(b"true") * (1..)).sep(b','));
+    // with a &[u8]
+    tb((eat(b"true") * (1..)).sep(b","));
+    // with a Vec<u8>
+    tb((eat(b"true") * (1..)).sep(vec![b',']));
   }
 }
