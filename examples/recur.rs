@@ -2,7 +2,7 @@ use std::{cell::OnceCell, rc::Rc};
 use whitehole::{
   action::{Action, Input, Output},
   combinator::{eat, next, Combinator},
-  parser::Builder,
+  parser::Parser,
 };
 
 // TODO: comments
@@ -96,7 +96,7 @@ pub unsafe fn recur_unchecked<Value, State, Heap>() -> (
 }
 
 fn main() {
-  let mut parser = Builder::new()
+  let mut parser = Parser::builder()
     .entry({
       let number = next(|c| c.is_ascii_digit()) * (1..);
       let (exp, exp_setter) = unsafe { recur_unchecked() };

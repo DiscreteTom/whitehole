@@ -2,7 +2,7 @@ use in_str::in_str;
 use whitehole::{
   action::Action,
   combinator::{eat, next},
-  parser::{Builder, Parser},
+  parser::Parser,
   range::WithRange,
 };
 
@@ -36,7 +36,7 @@ pub fn build_lexer(s: &str) -> Parser<impl Action<Value = WithRange<()>>, &str> 
 
   let boundary = next(in_str!("[]{}:,"));
 
-  Builder::new()
+  Parser::builder()
     .entry((whitespaces | boundary | number | string | "true" | "false" | "null").range())
     .build(s)
 }

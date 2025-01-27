@@ -3,7 +3,7 @@ use std::{cell::OnceCell, rc::Rc};
 use whitehole::{
   action::Action,
   combinator::{eat, next, wrap},
-  parser::{Builder, Parser},
+  parser::Parser,
   range::WithRange,
 };
 
@@ -65,7 +65,7 @@ pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action<Value = WithRa
     })))
     .ok();
 
-  Builder::new().entry((ws() | value()).range()).build(s)
+  Parser::builder().entry((ws() | value()).range()).build(s)
 }
 
 fn main() {}

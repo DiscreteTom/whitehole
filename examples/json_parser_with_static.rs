@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 use whitehole::{
   action::Action,
   combinator::{eat, next, wrap, Combinator},
-  parser::{Builder, Parser},
+  parser::Parser,
   range::WithRange,
 };
 
@@ -62,7 +62,7 @@ pub fn build_parser_with_static(s: &str) -> Parser<impl Action<Value = WithRange
     wrap(|input| VALUE.exec(input))
   }
 
-  Builder::new().entry((ws() | value()).range()).build(s)
+  Parser::builder().entry((ws() | value()).range()).build(s)
 }
 
 fn main() {}

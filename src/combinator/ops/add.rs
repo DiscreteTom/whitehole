@@ -39,7 +39,7 @@
 //! If your combinators' values are tuples, they can be concatenated,
 //! and all unit tuples will be ignored.
 //! ```
-//! # use whitehole::{combinator::{next, eat}, action::Action, parser::Builder};
+//! # use whitehole::{combinator::{next, eat}, action::Action, parser::Parser};
 //! let integer = || {
 //!   (next(|c| c.is_ascii_digit()) * (1..)) // eat one or more digits
 //!     .select(|ctx| ctx.content().parse::<usize>().unwrap()) // parse the digits
@@ -52,7 +52,7 @@
 //! // so the value will be `(usize, usize)`
 //! let entry = integer() + dot + integer();
 //!
-//! let mut parser = Builder::new().entry(entry).build("123.456");
+//! let mut parser = Parser::builder().entry(entry).build("123.456");
 //! let output = parser.parse().unwrap();
 //! assert_eq!(output.value, (123, 456));
 //! ```

@@ -4,7 +4,7 @@ use std::{cell::OnceCell, fs::read_to_string, rc::Rc, sync::LazyLock};
 use whitehole::{
   action::Action,
   combinator::{eat, next, wrap, Combinator},
-  parser::{Builder, Parser},
+  parser::Parser,
 };
 
 pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action, &str> {
@@ -65,7 +65,7 @@ pub fn build_parser_with_inter_mut(s: &str) -> Parser<impl Action, &str> {
     })))
     .ok();
 
-  Builder::new().entry(ws() | value()).build(s)
+  Parser::builder().entry(ws() | value()).build(s)
 }
 
 pub fn build_parser_with_static(s: &str) -> Parser<impl Action, &str> {
@@ -122,7 +122,7 @@ pub fn build_parser_with_static(s: &str) -> Parser<impl Action, &str> {
     wrap(|input| VALUE.exec(input))
   }
 
-  Builder::new().entry(ws() | value()).build(s)
+  Parser::builder().entry(ws() | value()).build(s)
 }
 
 fn parse_json(mut parser: Parser<impl Action, &str>) {

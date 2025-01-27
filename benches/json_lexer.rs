@@ -4,7 +4,7 @@ use std::fs::read_to_string;
 use whitehole::{
   action::Action,
   combinator::{eat, next},
-  parser::{Builder, Parser},
+  parser::Parser,
 };
 
 pub fn build_lexer(s: &str) -> Parser<impl Action, &str> {
@@ -34,7 +34,7 @@ pub fn build_lexer(s: &str) -> Parser<impl Action, &str> {
 
   let boundary = next(in_str!("[]{}:,"));
 
-  Builder::new()
+  Parser::builder()
     .entry(whitespaces | boundary | number | string | "true" | "false" | "null")
     .build(s)
 }

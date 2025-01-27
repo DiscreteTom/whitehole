@@ -2,7 +2,7 @@ use in_str::in_str;
 use whitehole::{
   action::{Action, Input},
   combinator::{eat, next, AcceptedContext},
-  parser::{Builder, Parser},
+  parser::Parser,
 };
 
 pub struct MyState {
@@ -51,7 +51,7 @@ pub fn build_lexer(s: &str) -> Parser<impl Action<str, MyState>, &str, MyState> 
     | next(|c| c != '`').prevent(|input: Input!()| input.state.nested != 0))
     * (1..);
 
-  Builder::new()
+  Parser::builder()
     .state(MyState { nested: 0 })
     .entry(others | left | middle_or_right)
     .build(s)

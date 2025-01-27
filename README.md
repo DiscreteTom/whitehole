@@ -30,7 +30,7 @@ Here is a simple example to parse [hexadecimal color codes](./examples/hex_color
 ```rust
 use whitehole::{
   combinator::{eat, next},
-  parser::Builder,
+  parser::Parser,
 };
 
 let double_hex = || {
@@ -47,7 +47,7 @@ let double_hex = || {
 // Here `() + (u8,) + (u8,) + (u8,)` will be `(u8, u8, u8)`.
 let entry = eat('#') + double_hex() + double_hex() + double_hex();
 
-let mut parser = Builder::new().entry(entry).build("#FFA500");
+let mut parser = Parser::builder().entry(entry).build("#FFA500");
 let output = parser.parse().unwrap();
 assert_eq!(output.digested, 7);
 assert_eq!(output.value, (255, 165, 0));
