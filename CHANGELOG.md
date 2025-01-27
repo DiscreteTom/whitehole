@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Action` will now take an additional generic param `Text`.
 - `AcceptedContext::output` will always be a struct instead of a reference.
 - `eat` will no longer accept `usize`, use `take` instead.
+- `Fold` no longer take generic params. Remove `input` from `Fold::fold` and inline fold.
 - `Parser` now take an additional generic param `TextRef` instead of a lifetime param.
 - `Snapshot` now take an additional generic param `TextRef` instead of a lifetime param.
 

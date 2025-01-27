@@ -60,7 +60,7 @@
 //!     // convert the char to a number
 //!     .select(|ctx| ctx.input().instant().rest().chars().next().unwrap() as usize - '0' as usize)
 //!     // init accumulator with 0, and fold values
-//!     .fold(|| 0 as usize, |value, acc, _| acc * 10 + value)
+//!     .fold(|| 0 as usize, |value, acc| acc * 10 + value)
 //!     // repeat for 1 or more times
 //!     * (1..);
 //!
@@ -78,10 +78,10 @@
 //! // wrap it in a new-type
 //! struct Usize(usize);
 //!
-//! impl<State, Heap> Fold<State, Heap> for Usize {
+//! impl Fold for Usize {
 //!   type Output = usize;
 //!
-//!   fn fold(self, acc: Self::Output, _input: Input<&mut State, &mut Heap>) -> Self::Output {
+//!   fn fold(self, acc: Self::Output) -> Self::Output {
 //!     acc * 10 + self.0
 //!   }
 //! }
@@ -110,10 +110,8 @@
 //! ```
 //! # use whitehole::{combinator::eat, action::{Input, Action}, instant::Instant};
 //! let combinator = {
-//!   // eat one char, use the start index as the value
-//!   eat(1).select(|ctx| ctx.start())
-//!     // fold values to a vec, store values in `input.heap`
-//!     .fold(|| {}, |value, _acc, input: Input<_, &mut Vec<_>>| input.heap.push(value))
+//!   // eat one char, accumulate the start index in `input.heap`
+//!   eat(1).then(|mut ctx| ctx.heap().push(ctx.start()))
 //!     // repeat for 1 or more times
 //!     * (1..)
 //! }.prepare(|input| input.heap.clear()); // clear the vec before executing this combinator
@@ -138,7 +136,7 @@
 //! ```
 //! // inline fold
 //! # use whitehole::{combinator::{ops::mul::Fold, eat}, action::{Input, Action}, instant::Instant};
-//! let combinator = (eat('a').bind(1).fold(|| 0, |v, acc, _| acc + v) * (1..)).sep(',');
+//! let combinator = (eat('a').bind(1).fold(|| 0, |v, acc| acc + v) * (1..)).sep(',');
 //! assert_eq!(
 //!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ())).unwrap().value,
 //!   3
@@ -147,9 +145,9 @@
 //! // with custom type
 //! #[derive(Clone)]
 //! struct Usize(usize);
-//! impl<State, Heap> Fold<State, Heap> for Usize {
+//! impl Fold for Usize {
 //!   type Output = usize;
-//!   fn fold(self, acc: Self::Output, _input: Input<&mut State, &mut Heap>) -> Self::Output {
+//!   fn fold(self, acc: Self::Output) -> Self::Output {
 //!     acc + self.0
 //!   }
 //! }
@@ -199,7 +197,7 @@ macro_rules! impl_mul {
         break;
       };
 
-      output.value = $fold(next_output.value, output.value, $input.reborrow());
+      output.value = $fold(next_output.value, output.value);
       repeated += 1;
       // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
       debug_assert!(usize::MAX - output.digested > next_output.digested);

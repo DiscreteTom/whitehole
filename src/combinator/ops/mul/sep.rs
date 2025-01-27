@@ -66,7 +66,7 @@ macro_rules! impl_mul_with_sep {
         break;
       };
       repeated += 1;
-      output.value = $fold(value_output.value, output.value, $input.reborrow());
+      output.value = $fold(value_output.value, output.value);
       // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
       debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
       output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
@@ -84,7 +84,7 @@ macro_rules! impl_mul_with_sep {
 }
 
 unsafe impl<
-    Lhs: Action<Text, State, Heap, Value: Fold<Text, State, Heap>>,
+    Lhs: Action<Text, State, Heap, Value: Fold>,
     Rhs: Repeat,
     S: Action<Text, State, Heap>,
     Text: ?Sized,
@@ -94,7 +94,7 @@ unsafe impl<
 where
   for<'a> &'a Text: Digest,
 {
-  type Value = <Lhs::Value as Fold<Text, State, Heap>>::Output;
+  type Value = <Lhs::Value as Fold>::Output;
 
   #[inline]
   fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
@@ -114,7 +114,7 @@ unsafe impl<
     Acc,
     Repeater: Repeat,
     Init: Fn() -> Acc,
-    Folder: Fn(T::Value, Acc, Input<&Text, &mut State, &mut Heap>) -> Acc,
+    Folder: Fn(T::Value, Acc) -> Acc,
     S: Action<Text, State, Heap>,
     Text: ?Sized,
     State,
@@ -192,7 +192,7 @@ mod tests {
 
   #[test]
   fn test_inline_fold_with_sep() {
-    let combinator = (eat('a').bind(1).fold(|| 0, |v, acc, _| acc + v) * (1..)).sep(',');
+    let combinator = (eat('a').bind(1).fold(|| 0, |v, acc| acc + v) * (1..)).sep(',');
     let output = combinator
       .exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()))
       .unwrap();

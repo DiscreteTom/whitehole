@@ -50,21 +50,11 @@ impl<T> Combinator<T> {
   /// )
   /// ```
   #[inline]
-  pub fn fold<
-    Text: ?Sized,
-    State,
-    Heap,
-    Acc,
-    Init: Fn() -> Acc,
-    Folder: Fn(T::Value, Acc, Input<&Text, &mut State, &mut Heap>) -> Acc,
-  >(
+  pub fn fold<Value, Acc, Init: Fn() -> Acc, Folder: Fn(Value, Acc) -> Acc>(
     self,
     init: Init,
     folder: Folder,
-  ) -> InlineFold<T, Init, Folder>
-  where
-    T: Action<Text, State, Heap>,
-  {
+  ) -> InlineFold<T, Init, Folder> {
     InlineFold {
       action: self.action,
       init,
@@ -91,7 +81,7 @@ unsafe impl<
     Acc,
     Repeater: Repeat,
     Init: Fn() -> Acc,
-    Folder: Fn(T::Value, Acc, Input<&Text, &mut State, &mut Heap>) -> Acc,
+    Folder: Fn(T::Value, Acc) -> Acc,
   > Action<Text, State, Heap> for Mul<InlineFold<T, Init, Folder>, Repeater>
 where
   for<'a> &'a Text: Digest,
@@ -112,7 +102,7 @@ mod tests {
 
   #[test]
   fn test_inline_fold() {
-    let combinator = eat('a').bind(1).fold(|| 0, |v, acc, _| acc + v) * (1..);
+    let combinator = eat('a').bind(1).fold(|| 0, |v, acc| acc + v) * (1..);
     let output = combinator
       .exec(Input::new(Instant::new("aaa"), &mut (), &mut ()))
       .unwrap();

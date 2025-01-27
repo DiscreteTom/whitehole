@@ -11,18 +11,18 @@ use std::ops;
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
 ///
 /// Built-in implementations are provided for `()`.
-pub trait Fold<Text: ?Sized = str, State = (), Heap = ()> {
+pub trait Fold {
   /// The accumulator type.
   type Output: Default;
 
   /// Fold self with the accumulator.
-  fn fold(self, acc: Self::Output, input: Input<&Text, &mut State, &mut Heap>) -> Self::Output;
+  fn fold(self, acc: Self::Output) -> Self::Output;
 }
 
-impl<Text: ?Sized, State, Heap> Fold<Text, State, Heap> for () {
+impl Fold for () {
   type Output = ();
   #[inline]
-  fn fold(self, _: Self::Output, _: Input<&Text, &mut State, &mut Heap>) -> Self::Output {}
+  fn fold(self, _: Self::Output) -> Self::Output {}
 }
 
 impl<Lhs, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
@@ -35,17 +35,12 @@ impl<Lhs, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
   }
 }
 
-unsafe impl<
-    Text: ?Sized,
-    State,
-    Heap,
-    Lhs: Action<Text, State, Heap, Value: Fold<Text, State, Heap>>,
-    Rhs: Repeat,
-  > Action<Text, State, Heap> for Mul<Combinator<Lhs>, Rhs>
+unsafe impl<Text: ?Sized, State, Heap, Lhs: Action<Text, State, Heap, Value: Fold>, Rhs: Repeat>
+  Action<Text, State, Heap> for Mul<Combinator<Lhs>, Rhs>
 where
   for<'a> &'a Text: Digest,
 {
-  type Value = <Lhs::Value as Fold<Text, State, Heap>>::Output;
+  type Value = <Lhs::Value as Fold>::Output;
 
   #[inline]
   fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
@@ -64,14 +59,14 @@ mod tests {
 
   #[test]
   fn fold_unit() {
-    let _: () = ().fold((), Input::new(Instant::new("a"), &mut (), &mut ()));
+    let _: () = ().fold(());
   }
 
   #[derive(Debug)]
   struct MyValue(usize);
-  impl<State, Heap> Fold<str, State, Heap> for MyValue {
+  impl Fold for MyValue {
     type Output = usize;
-    fn fold(self, current: Self::Output, _: Input<&str, &mut State, &mut Heap>) -> Self::Output {
+    fn fold(self, current: Self::Output) -> Self::Output {
       self.0 + current
     }
   }
