@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Eat<u8>`, `Eat<&[u8]>`, `Eat<&[u8;N]>`, `Eat<Vec<u8>>`.
 - Add `take`/`Take`.
 - Add `Till<u8>`, `Till<&[u8]>`, `Till<&[u8;N]>`, `Till<Vec<u8>>`.
+- Add `NoSep`.
 - Add `Parser::builder`.
 
 ### Changed

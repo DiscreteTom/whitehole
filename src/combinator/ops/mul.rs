@@ -117,14 +117,19 @@ mod repeat;
 mod sep;
 
 pub use repeat::*;
+pub use sep::*;
 
-use crate::combinator::Combinator;
+use crate::{
+  action::{Action, Input, Output},
+  combinator::Combinator,
+  digest::Digest,
+};
 use std::ops;
 
 /// An [`Action`](crate::action::Action) created by the `*` operator.
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
 #[derive(Debug, Clone, Copy)]
-pub struct Mul<Lhs, Rhs, Sep = (), Init = fn(), Fold = fn((), ())> {
+pub struct Mul<Lhs, Rhs, Sep = NoSep, Init = fn(), Fold = fn((), ())> {
   lhs: Lhs,
   rhs: Rhs,
   sep: Sep,
@@ -138,7 +143,7 @@ impl<Lhs, Rhs> Mul<Lhs, Rhs> {
     Self {
       lhs,
       rhs,
-      sep: (),
+      sep: NoSep,
       init: || (),
       fold: |_, _| (),
     }
@@ -152,5 +157,58 @@ impl<Lhs, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
   #[inline]
   fn mul(self, rhs: Rhs) -> Self::Output {
     Self::Output::new(Mul::new(self.action, rhs))
+  }
+}
+
+unsafe impl<
+    Text: ?Sized,
+    State,
+    Heap,
+    Lhs: Action<Text, State, Heap>,
+    Rhs: Repeat,
+    Sep: Action<Text, State, Heap>,
+    Acc,
+    Init: Fn() -> Acc,
+    Fold: Fn(Lhs::Value, Acc) -> Acc,
+  > Action<Text, State, Heap> for Mul<Lhs, Rhs, Sep, Init, Fold>
+where
+  for<'a> &'a Text: Digest,
+{
+  type Value = Acc;
+
+  #[inline]
+  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+    let mut repeated = 0;
+    let mut output = Output {
+      value: (self.init)(),
+      digested: 0,
+    };
+
+    let mut digested_with_sep = 0;
+    while unsafe { self.rhs.validate(repeated) } {
+      let Some(value_output) = self
+        .lhs
+        .exec(unsafe { input.shift_unchecked(digested_with_sep) })
+      else {
+        break;
+      };
+      repeated += 1;
+      output.value = (self.fold)(value_output.value, output.value);
+      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
+      debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
+      output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
+
+      let Some(sep_output) = self
+        .sep
+        .exec(unsafe { input.shift_unchecked(output.digested) })
+      else {
+        break;
+      };
+      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
+      debug_assert!(usize::MAX - output.digested > sep_output.digested);
+      digested_with_sep = unsafe { output.digested.unchecked_add(sep_output.digested) };
+    }
+
+    self.rhs.accept(repeated).then_some(output)
   }
 }

@@ -1,9 +1,5 @@
-use super::{Mul, Repeat};
-use crate::{
-  action::{Action, Input, Output},
-  combinator::Combinator,
-  digest::Digest,
-};
+use super::Mul;
+use crate::combinator::Combinator;
 
 impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// Fold values with an ad-hoc accumulator.
@@ -42,49 +38,6 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
       init,
       fold,
     })
-  }
-}
-
-unsafe impl<
-    Text: ?Sized,
-    State,
-    Heap,
-    Lhs: Action<Text, State, Heap>,
-    Rhs: Repeat,
-    Acc,
-    Init: Fn() -> Acc,
-    Fold: Fn(Lhs::Value, Acc) -> Acc,
-  > Action<Text, State, Heap> for Mul<Lhs, Rhs, (), Init, Fold>
-where
-  for<'a> &'a Text: Digest,
-{
-  type Value = Acc;
-
-  #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    // impl_mul!(input, repeat, self.lhs.init, self.lhs.fold, self.lhs.action)
-    let mut repeated = 0;
-    let mut output = Output {
-      value: (self.init)(),
-      digested: 0,
-    };
-
-    while unsafe { self.rhs.validate(repeated) } {
-      let Some(next_output) = self
-        .lhs
-        .exec(unsafe { input.shift_unchecked(output.digested) })
-      else {
-        break;
-      };
-
-      output.value = (self.fold)(next_output.value, output.value);
-      repeated += 1;
-      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
-      debug_assert!(usize::MAX - output.digested > next_output.digested);
-      output.digested = unsafe { output.digested.unchecked_add(next_output.digested) };
-    }
-
-    self.rhs.accept(repeated).then_some(output)
   }
 }
 
