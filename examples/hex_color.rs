@@ -21,5 +21,5 @@ fn main() {
   let mut parser = Parser::builder().entry(entry).build("#FFA500");
   let output = parser.parse().unwrap();
   assert_eq!(output.digested, 7);
-  assert_eq!(output.value, (255, 165, 0));
+  assert_eq!(output.value, (0xFF, 0xA5, 0x00));
 }
