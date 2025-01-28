@@ -83,7 +83,7 @@
 //! # use whitehole::{combinator::take, action::{Input, Action}, instant::Instant};
 //! let combinator = {
 //!   // eat one char, accumulate some value in `input.heap`
-//!   take(1).then::<_, _, Vec<_>, _>(|mut ctx| ctx.heap().push(1))
+//!   take(1).then(|mut ctx| Vec::push(ctx.heap(), 1))
 //!     // repeat for 1 or more times
 //!     * (1..)
 //! }.prepare(|input| input.heap.clear()); // clear the vec before executing this combinator
