@@ -11,8 +11,8 @@ A simple, fast, intuitive parser combinator framework for Rust.
 
 - Simple: only a handful of combinators to remember: `eat`, `take`, `next`, `till`, `wrap`, `recur`.
 - Operator overloading: use `+` and `|` to compose combinators, use `*` to repeat a combinator.
-- Zero heap allocation: this framework only uses stack memory.
-- Re-usable heap memory: if you need allocation, never clone or reallocate it.
+- Almost zero heap allocation: this framework only uses stack memory, except `recur` which uses some pointers for recursion.
+- Re-usable heap memory: store accumulated values in a parser-managed heap, instead of re-allocation for each iteration.
 - Stateful-able: control the parsing flow with an optional custom state.
 - Safe by default, with `unsafe` variants for performance.
 - Provide both string (`&str`) and bytes (`&[u8]`) support.
