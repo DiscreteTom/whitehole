@@ -8,7 +8,7 @@ use std::{cell::OnceCell, rc::Rc};
 /// Use `Box<dyn>` to prevent recursive/infinite type.
 /// Use `OnceCell` to initialize this later.
 /// Use `Rc` to make this clone-able.
-type RecurInner<Text, Value, State, Heap> =
+type RecurInner<Text, State, Heap, Value> =
   Rc<OnceCell<Box<dyn Action<Text, State, Heap, Value = Value>>>>;
 
 /// See [`recur`] and [`recur_unchecked`].
@@ -17,11 +17,11 @@ type RecurInner<Text, Value, State, Heap> =
 /// This is not [`Clone`] because you can only set the action implementor once.
 /// This must be used to set the action implementor before the action is executed.
 #[must_use = "This must be used to set the action implementor before the action is executed."]
-pub struct RecurSetter<Text: ?Sized, Value, State, Heap> {
-  inner: RecurInner<Text, Value, State, Heap>,
+pub struct RecurSetter<Text: ?Sized = str, State = (), Heap = (), Value = ()> {
+  inner: RecurInner<Text, State, Heap, Value>,
 }
 
-impl<Text: ?Sized, Value, State, Heap> RecurSetter<Text, Value, State, Heap> {
+impl<Text: ?Sized, State, Heap, Value> RecurSetter<Text, State, Heap, Value> {
   /// Consume self, set the action implementor.
   #[inline]
   pub fn set(self, action: Box<dyn Action<Text, State, Heap, Value = Value>>) {
@@ -37,17 +37,17 @@ impl<Text: ?Sized, Value, State, Heap> RecurSetter<Text, Value, State, Heap> {
 }
 
 /// See [`recur`].
-pub struct Recur<Text: ?Sized, Value, State, Heap> {
-  inner: RecurInner<Text, Value, State, Heap>,
+pub struct Recur<Text: ?Sized = str, State = (), Heap = (), Value = ()> {
+  inner: RecurInner<Text, State, Heap, Value>,
 }
 
-impl<Text: ?Sized, Value, State, Heap> fmt::Debug for Recur<Text, Value, State, Heap> {
+impl<Text: ?Sized, State, Heap, Value> fmt::Debug for Recur<Text, State, Heap, Value> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.debug_struct("Recur").finish()
   }
 }
 
-impl<Text: ?Sized, Value, State, Heap> Clone for Recur<Text, Value, State, Heap> {
+impl<Text: ?Sized, State, Heap, Value> Clone for Recur<Text, State, Heap, Value> {
   #[inline]
   fn clone(&self) -> Self {
     Self {
@@ -56,8 +56,8 @@ impl<Text: ?Sized, Value, State, Heap> Clone for Recur<Text, Value, State, Heap>
   }
 }
 
-unsafe impl<Text: ?Sized, Value, State, Heap> Action<Text, State, Heap>
-  for Recur<Text, Value, State, Heap>
+unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
+  for Recur<Text, State, Heap, Value>
 {
   type Value = Value;
 
@@ -112,9 +112,9 @@ unsafe impl<Text: ?Sized, Value, State, Heap> Action<Text, State, Heap>
 ///   .is_some());
 /// ```
 #[allow(clippy::type_complexity)]
-pub fn recur<Text: ?Sized, Value, State, Heap>() -> (
-  impl Fn() -> Combinator<Recur<Text, Value, State, Heap>>,
-  RecurSetter<Text, Value, State, Heap>,
+pub fn recur<Text: ?Sized, State, Heap, Value>() -> (
+  impl Fn() -> Combinator<Recur<Text, State, Heap, Value>>,
+  RecurSetter<Text, State, Heap, Value>,
 ) {
   let inner = Rc::new(OnceCell::new());
   let setter = RecurSetter {
@@ -129,17 +129,17 @@ pub fn recur<Text: ?Sized, Value, State, Heap>() -> (
 }
 
 /// See [`recur_unchecked`].
-pub struct RecurUnchecked<Text: ?Sized, Value, State, Heap> {
-  inner: RecurInner<Text, Value, State, Heap>,
+pub struct RecurUnchecked<Text: ?Sized = str, State = (), Heap = (), Value = ()> {
+  inner: RecurInner<Text, State, Heap, Value>,
 }
 
-impl<Text: ?Sized, Value, State, Heap> fmt::Debug for RecurUnchecked<Text, Value, State, Heap> {
+impl<Text: ?Sized, State, Heap, Value> fmt::Debug for RecurUnchecked<Text, State, Heap, Value> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.debug_struct("RecurUnchecked").finish()
   }
 }
 
-impl<Text: ?Sized, Value, State, Heap> Clone for RecurUnchecked<Text, Value, State, Heap> {
+impl<Text: ?Sized, State, Heap, Value> Clone for RecurUnchecked<Text, State, Heap, Value> {
   #[inline]
   fn clone(&self) -> Self {
     Self {
@@ -148,8 +148,8 @@ impl<Text: ?Sized, Value, State, Heap> Clone for RecurUnchecked<Text, Value, Sta
   }
 }
 
-unsafe impl<Text: ?Sized, Value, State, Heap> Action<Text, State, Heap>
-  for RecurUnchecked<Text, Value, State, Heap>
+unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
+  for RecurUnchecked<Text, State, Heap, Value>
 {
   type Value = Value;
 
@@ -205,9 +205,9 @@ unsafe impl<Text: ?Sized, Value, State, Heap> Action<Text, State, Heap>
 ///   .is_some());
 /// ```
 #[allow(clippy::type_complexity)]
-pub unsafe fn recur_unchecked<Text: ?Sized, Value, State, Heap>() -> (
-  impl Fn() -> Combinator<RecurUnchecked<Text, Value, State, Heap>>,
-  RecurSetter<Text, Value, State, Heap>,
+pub unsafe fn recur_unchecked<Text: ?Sized, State, Heap, Value>() -> (
+  impl Fn() -> Combinator<RecurUnchecked<Text, State, Heap, Value>>,
+  RecurSetter<Text, State, Heap, Value>,
 ) {
   let inner = Rc::new(OnceCell::new());
   let setter = RecurSetter {
@@ -263,7 +263,7 @@ mod tests {
   #[test]
   #[should_panic]
   fn test_recur_panic() {
-    let (value, _) = recur::<_, (), _, _>();
+    let (value, _) = recur::<_, _, _, ()>();
     value().exec(Input::new(Instant::new("a"), &mut (), &mut ()));
   }
 
@@ -304,7 +304,7 @@ mod tests {
   #[test]
   #[should_panic]
   fn test_recur_unchecked_panic() {
-    let (value, _) = unsafe { recur_unchecked::<_, (), _, _>() };
+    let (value, _) = unsafe { recur_unchecked::<_, _, _, ()>() };
     value().exec(Input::new(Instant::new("a"), &mut (), &mut ()));
   }
 }
