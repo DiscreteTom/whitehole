@@ -184,7 +184,7 @@
 //! unsafe { parser.digest_unchecked(parser.instant().rest().chars().next().unwrap().len_utf8()) };
 //! assert_eq!(parser.instant().rest(), "123");
 //!
-//! // now we can parse again
+//! // now we can try to yield again
 //! assert!(parser.next().is_some());
 //! ```
 
