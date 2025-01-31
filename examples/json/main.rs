@@ -25,7 +25,7 @@ fn print_all_with_range(entry: Combinator<impl Action<Value = ()>>) {
   let mut parser = Parser::builder().entry(entry.range()).build(TEXT);
 
   loop {
-    let output = parser.parse();
+    let output = parser.next();
     if let Some(node) = output {
       println!(
         "{}..{}: {:?}",

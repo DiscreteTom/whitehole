@@ -19,7 +19,7 @@ fn main() {
   let entry = eat('#') + double_hex() + double_hex() + double_hex();
 
   let mut parser = Parser::builder().entry(entry).build("#FFA500");
-  let output = parser.parse().unwrap();
+  let output = parser.next().unwrap();
   assert_eq!(output.digested, 7);
   assert_eq!(output.value, (0xFF, 0xA5, 0x00));
 }

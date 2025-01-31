@@ -12,7 +12,7 @@ fn process(entry: Combinator<impl Action<Value = ()>>, s: &str) {
   let mut parser = Parser::builder().entry(entry).build(s);
 
   loop {
-    let output = parser.parse();
+    let output = parser.next();
     if output.is_none() {
       break;
     }
