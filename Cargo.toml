@@ -15,9 +15,5 @@ in_str = "0.1"
 regex = { version = "1.9.4" }
 
 [[bench]]
-name = "json_lexer"
-harness = false
-
-[[bench]]
-name = "json_parser"
+name = "json"
 harness = false
