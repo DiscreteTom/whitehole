@@ -1,6 +1,5 @@
 //! [`Combinator`] is a wrapper around [`Action`] to provide decorators and operator overloads.
-//! # Basic Usage
-//! ## Provided Combinators
+//! # Provided Combinators
 //! To get started, you can use the provided combinators like [`eat`],
 //! which will eat the provided pattern from the rest of the input text:
 //! ```
@@ -23,7 +22,7 @@
 //! - Some of them may have faster `unsafe` variants named with suffix `_unchecked`.
 //! - Some of them can be used in both string and bytes context.
 //!   Some may have specific variants for bytes under the [`bytes`] module.
-//! ## Composition
+//! # Composition
 //! Use `+` and `|` to compose multiple combinators
 //! for more complex tasks:
 //! ```
@@ -39,7 +38,7 @@
 //! # );
 //! ```
 //! See [`ops::add`] and [`ops::bitor`] for more information.
-//! ## Repetition
+//! # Repetition
 //! Use `*` to repeat a combinator:
 //! ```
 //! # use whitehole::{combinator::{eat, Combinator}, action::Action};
@@ -63,16 +62,16 @@
 //! # );
 //! ```
 //! See [`ops::mul`] for more information.
-//! ## Decorator
+//! # Decorator
 //! [`Combinator`] provides a set of methods as decorators
 //! to modify the behavior of the combinator.
-//! ### Flow Control
+//! ## Flow Control
 //! - [`Combinator::optional`] to make a combinator optional.
 //! - [`Combinator::boundary`] to require a word boundary after the action is accepted.
 //! - [`Combinator::when`] to conditionally execute the combinator.
 //! - [`Combinator::prevent`] to conditionally reject the combinator before it is executed.
 //! - [`Combinator::reject`] to conditionally reject the combinator after it is executed.
-//! ### Value Transformation
+//! ## Value Transformation
 //! You can set [`Output::value`] to distinguish different output types
 //! or carrying additional data.
 //!
@@ -84,7 +83,7 @@
 //! - [`Combinator::bind_with`] to set the value with a provided factory.
 //! - [`Combinator::select`] to calculate the value with a closure.
 //! - [`Combinator::range`] to wrap the value in a [`WithRange`](crate::range::WithRange) struct.
-//! ### State Manipulation
+//! ## State Manipulation
 //! [`Combinator`]s are stateless, but you can access external states
 //! via [`Input::state`] to realize stateful parsing.
 //!
