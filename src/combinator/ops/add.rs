@@ -54,7 +54,7 @@
 //! let entry = integer() + dot + integer();
 //!
 //! let mut parser = Parser::builder().entry(entry).build("123.456");
-//! let output = parser.parse().unwrap();
+//! let output = parser.next().unwrap();
 //! assert_eq!(output.value, (123, 456));
 //! ```
 //! See [`Concat`] for more information.

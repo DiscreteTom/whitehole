@@ -18,7 +18,7 @@
 //!   .entry(eat("a").bind(Kind::A)) // set the entry action
 //!   .build("a"); // build the parser with the input
 //!
-//! let output = parser.parse().unwrap(); // parse the input
+//! let output = parser.next().unwrap(); // parse the input
 //! assert_eq!(output.value, Kind::A); // check the output
 //! ```
 //!

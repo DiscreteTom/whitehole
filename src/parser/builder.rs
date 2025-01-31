@@ -110,11 +110,11 @@ mod tests {
       .entry(eat("hello ") + "world")
       .build("hello world");
 
-    let output = parser.parse().unwrap();
+    let output = parser.next().unwrap();
     assert_eq!(output.digested, 11);
     let _: () = output.value;
 
-    assert!(parser.parse().is_none());
+    assert!(parser.next().is_none());
 
     let _: () = parser.heap;
     let _: () = parser.state;
@@ -131,11 +131,11 @@ mod tests {
       }))
       .build("hello world");
 
-    let output = parser.parse().unwrap();
+    let output = parser.next().unwrap();
     assert_eq!(output.digested, 11);
     let _: () = output.value;
 
-    assert!(parser.parse().is_none());
+    assert!(parser.next().is_none());
 
     assert_eq!(parser.heap, 1);
     assert_eq!(parser.state, 1);
@@ -148,8 +148,8 @@ mod tests {
     let mut p1 = Builder::default().entry(&entry).build("hello world");
     let mut p2 = Builder::default().entry(&entry).build("hello");
 
-    assert!(p1.parse().is_some());
-    assert!(p2.parse().is_none());
+    assert!(p1.next().is_some());
+    assert!(p2.next().is_none());
   }
 
   #[test]
@@ -159,6 +159,6 @@ mod tests {
       .heap(&text)
       .entry(eat(text.as_str()))
       .build(text.as_str());
-    assert!(parser.parse().is_some());
+    assert!(parser.next().is_some());
   }
 }

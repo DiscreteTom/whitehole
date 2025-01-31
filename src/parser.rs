@@ -46,20 +46,20 @@
 //!   .build("a=/123/ \n a=1/2");
 //!
 //! assert_eq!(parser.state, Mode::Normal);
-//! assert_eq!(parser.parse().unwrap().digested, 1); // "a"
-//! assert_eq!(parser.parse().unwrap().digested, 1); // "="
+//! assert_eq!(parser.next().unwrap().digested, 1); // "a"
+//! assert_eq!(parser.next().unwrap().digested, 1); // "="
 //! assert_eq!(parser.state, Mode::Regex);
-//! assert_eq!(parser.parse().unwrap().digested, 5); // "/123/"
+//! assert_eq!(parser.next().unwrap().digested, 5); // "/123/"
 //! assert_eq!(parser.state, Mode::Normal);
-//! assert_eq!(parser.parse().unwrap().digested, 3); // " \n "
-//! assert_eq!(parser.parse().unwrap().digested, 1); // "a"
-//! assert_eq!(parser.parse().unwrap().digested, 1); // "="
+//! assert_eq!(parser.next().unwrap().digested, 3); // " \n "
+//! assert_eq!(parser.next().unwrap().digested, 1); // "a"
+//! assert_eq!(parser.next().unwrap().digested, 1); // "="
 //! assert_eq!(parser.state, Mode::Regex);
-//! assert_eq!(parser.parse().unwrap().digested, 1); // "1"
+//! assert_eq!(parser.next().unwrap().digested, 1); // "1"
 //! parser.state = Mode::Normal; // manually switch back to normal mode
-//! assert_eq!(parser.parse().unwrap().digested, 1); // "/"
-//! assert_eq!(parser.parse().unwrap().digested, 1); // "2"
-//! assert!(parser.parse().is_none());
+//! assert_eq!(parser.next().unwrap().digested, 1); // "/"
+//! assert_eq!(parser.next().unwrap().digested, 1); // "2"
+//! assert!(parser.next().is_none());
 //! ```
 //!
 //! For non-state data, you can use [`Parser::heap`] which is also accessible by actions.
@@ -69,7 +69,7 @@
 //!
 //! # Parse and Peek
 //!
-//! You can use [`Parser::parse`] to try to yield the next [`Output`].
+//! You can use [`Parser::next`] to try to yield the next [`Output`].
 //!
 //! If you just want to peek the next output without updating the parser,
 //! you can use [`Parser::peek`] instead.
@@ -83,6 +83,33 @@
 //!
 //! // peek will clone the state
 //! let (output, state) = parser.peek();
+//! ```
+//!
+//! # Iter
+//!
+//! [`Parser`] implements [`Iterator`] so you can use it in a for loop
+//! or with any iterator methods.
+//!
+//! ```
+//! use whitehole::{combinator::eat, parser::Parser};
+//!
+//! let factory = || {
+//!   Parser::builder()
+//!     .entry(eat("123"))
+//!     .build("123123123")
+//! };
+//!
+//! // for loop
+//! let mut parser = factory();
+//! for o in &mut parser {
+//!   assert_eq!(o.digested, 3);
+//! }
+//!
+//! // iterator methods
+//! let mut parser = factory();
+//! for (_, o) in (&mut parser).enumerate() {
+//!   assert_eq!(o.digested, 3);
+//! }
 //! ```
 //!
 //! # Instant
@@ -101,11 +128,11 @@
 //! assert_eq!(parser.instant().rest(), "123123");
 //! assert_eq!(parser.instant().digested(), 0);
 //!
-//! parser.parse();
+//! parser.next();
 //! assert_eq!(parser.instant().rest(), "123");
 //! assert_eq!(parser.instant().digested(), 3);
 //!
-//! parser.parse();
+//! parser.next();
 //! assert_eq!(parser.instant().rest(), "");
 //! assert_eq!(parser.instant().digested(), 6);
 //! ```
@@ -129,7 +156,7 @@
 //!   .build("123");
 //!
 //! let snapshot = parser.snapshot();
-//! parser.parse();
+//! parser.next();
 //! assert_eq!(parser.instant().digested(), 3);
 //!
 //! parser.restore(snapshot);
@@ -151,14 +178,14 @@
 //!   .entry(eat("123"))
 //!   .build("a123");
 //!
-//! assert!(parser.parse().is_none());
+//! assert!(parser.next().is_none());
 //!
 //! // enter "panic mode", digest the next char from outside
 //! unsafe { parser.digest_unchecked(parser.instant().rest().chars().next().unwrap().len_utf8()) };
 //! assert_eq!(parser.instant().rest(), "123");
 //!
 //! // now we can parse again
-//! assert!(parser.parse().is_some());
+//! assert!(parser.next().is_some());
 //! ```
 
 mod builder;
@@ -297,26 +324,6 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
 }
 
 impl<T, Text: ?Sized, State, Heap> Parser<T, &Text, State, Heap> {
-  /// Try to yield the next [`Output`].
-  /// Return [`None`] if the action rejects.
-  ///
-  /// This will update [`Self::instant`] automatically.
-  #[inline]
-  pub fn parse(&mut self) -> Option<Output<T::Value>>
-  where
-    for<'a> &'a Text: Digest,
-    T: Action<Text, State, Heap>,
-  {
-    self
-      .entry
-      .exec(Input::new(
-        self.instant.clone(),
-        &mut self.state,
-        &mut self.heap,
-      ))
-      .inspect(|output| unsafe { self.instant.digest_unchecked(output.digested) })
-  }
-
   /// Try to yield the next [`Output`] without updating [`Self::instant`] and [`Self::state`].
   /// [`Self::state`] will be cloned and returned.
   /// Return [`None`] if the action rejects.
@@ -335,6 +342,26 @@ impl<T, Text: ?Sized, State, Heap> Parser<T, &Text, State, Heap> {
       )),
       tmp_state,
     )
+  }
+}
+
+impl<T: Action<Text, State, Heap>, Text: ?Sized, State, Heap> Iterator
+  for Parser<T, &Text, State, Heap>
+where
+  for<'a> &'a Text: Digest,
+{
+  type Item = Output<T::Value>;
+
+  #[inline]
+  fn next(&mut self) -> Option<Self::Item> {
+    self
+      .entry
+      .exec(Input::new(
+        self.instant.clone(),
+        &mut self.state,
+        &mut self.heap,
+      ))
+      .inspect(|output| unsafe { self.instant.digest_unchecked(output.digested) })
   }
 }
 
@@ -396,7 +423,7 @@ mod tests {
       instant: Instant::new("123"),
       entry: eat("123"),
     };
-    parser.parse();
+    parser.next();
     assert_eq!(parser.instant().digested(), 3);
     assert_eq!(parser.instant().rest(), "");
     let parser = parser.reload("456");
@@ -415,7 +442,7 @@ mod tests {
       instant: Instant::new("123"),
       entry: eat("123"),
     };
-    parser.parse();
+    parser.next();
     assert_eq!(parser.instant().digested(), 3);
     assert_eq!(parser.instant().rest(), "");
     let parser = parser.reload_with(None, "456");
@@ -434,7 +461,7 @@ mod tests {
       instant: Instant::new("123"),
       entry: eat("123"),
     };
-    parser.parse();
+    parser.next();
     let snapshot = parser.snapshot();
     assert_eq!(snapshot.state, 123);
     assert_eq!(snapshot.instant().text(), "123");
@@ -525,12 +552,12 @@ mod tests {
       instant: Instant::new("123"),
       entry: eat("123"),
     };
-    let output = parser.parse().unwrap();
+    let output = parser.next().unwrap();
     assert_eq!(output.digested, 3);
     assert_eq!(output.value, ());
     assert_eq!(parser.instant().digested(), 3);
     assert_eq!(parser.instant().rest(), "");
-    assert!(parser.parse().is_none());
+    assert!(parser.next().is_none());
   }
 
   #[test]
@@ -548,7 +575,7 @@ mod tests {
     assert_eq!(output.value, ());
     assert_eq!(parser.instant().digested(), 0);
     assert_eq!(parser.instant().rest(), "123");
-    assert!(parser.parse().is_some());
+    assert!(parser.next().is_some());
   }
 
   #[test]
@@ -560,6 +587,34 @@ mod tests {
       instant: Instant::new(text.as_str()),
       entry: eat(text.as_str()),
     };
-    assert!(parser.parse().is_some());
+    assert!(parser.next().is_some());
+  }
+
+  #[test]
+  fn parser_iterator_in_for_loop() {
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123123123"),
+      entry: eat("123"),
+    };
+    for o in &mut parser {
+      assert_eq!(o.digested, 3);
+    }
+    assert_eq!(parser.instant().digested(), 9);
+  }
+
+  #[test]
+  fn parser_iterator_with_iter_methods() {
+    let mut parser = Parser {
+      state: 123,
+      heap: 123,
+      instant: Instant::new("123123123"),
+      entry: eat("123"),
+    };
+    for (_, o) in (&mut parser).enumerate() {
+      assert_eq!(o.digested, 3);
+    }
+    assert_eq!(parser.instant().digested(), 9);
   }
 }

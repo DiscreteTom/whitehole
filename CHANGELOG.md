@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `Combinator::bind_with`.
+- Implement `Iterator` for `Parser`.
 
 ### Removed
 
 - Remove `Combinator::bind_default`, use `Combinator::bind_with` instead.
+- Remove `Parser::parse`, use `Parser::next` instead.
 
 ## [0.5.0] - 2025-01-28
 
