@@ -177,9 +177,9 @@ impl<T> Combinator<T> {
     Combinator::new(Pop::new(self.action))
   }
 
-  /// Create a new combinator to set [`Output::value`] to the provided value.
+  /// Create a new combinator to set [`Output::value`] to the provided clone-able value.
   ///
-  /// If your `Value` doesn't implement the [`Clone`] trait, consider using [`Self::select`] instead.
+  /// If your value doesn't implement the [`Clone`] trait, consider using [`Self::bind_with`] or [`Self::select`] instead.
   /// # Examples
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};

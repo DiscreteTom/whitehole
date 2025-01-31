@@ -80,7 +80,7 @@
 //! - [`Combinator::map`] to convert the value to a new value.
 //! - [`Combinator::tuple`] to wrap the value in an one-element tuple.
 //! - [`Combinator::pop`] to unwrap the value from the one-element tuple.
-//! - [`Combinator::bind`] to set the value to a provided value.
+//! - [`Combinator::bind`] to set the value to a provided clone-able value.
 //! - [`Combinator::bind_with`] to set the value with a provided factory.
 //! - [`Combinator::select`] to calculate the value with a closure.
 //! - [`Combinator::range`] to wrap the value in a [`WithRange`](crate::range::WithRange) struct.
