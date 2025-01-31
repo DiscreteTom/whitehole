@@ -55,11 +55,7 @@ assert_eq!(output.digested, 7);
 assert_eq!(output.value, (0xFF, 0xA5, 0x00));
 ```
 
-## Documentation
-
-See [docs.rs](https://docs.rs/whitehole/).
-
-It's recommended to starts from the [combinator](https://docs.rs/whitehole/latest/whitehole/combinator/index.html) chapter.
+## [Documentation](https://docs.rs/whitehole/)
 
 ## [Benchmarks](https://github.com/DiscreteTom/whitehole-bench)
 
