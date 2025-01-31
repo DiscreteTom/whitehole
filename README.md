@@ -23,7 +23,9 @@ A simple, fast, intuitive parser combinator framework for Rust.
 cargo add whitehole
 ```
 
-## [Examples](./examples)
+## Examples
+
+See the [examples](./examples) directory for more examples.
 
 Here is a simple example to parse [hexadecimal color codes](./examples/hex_color.rs):
 
@@ -53,7 +55,13 @@ assert_eq!(output.digested, 7);
 assert_eq!(output.value, (0xFF, 0xA5, 0x00));
 ```
 
-## [Documentation](https://docs.rs/whitehole/)
+## Documentation
+
+See [docs.rs](https://docs.rs/whitehole/).
+
+It's recommended to starts from the [combinator](https://docs.rs/whitehole/latest/whitehole/combinator/index.html) chapter.
+
+## [Benchmarks](https://github.com/DiscreteTom/whitehole-bench)
 
 ## Related
 
