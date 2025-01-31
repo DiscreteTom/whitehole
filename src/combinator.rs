@@ -81,7 +81,7 @@
 //! - [`Combinator::tuple`] to wrap the value in an one-element tuple.
 //! - [`Combinator::pop`] to unwrap the value from the one-element tuple.
 //! - [`Combinator::bind`] to set the value to a provided value.
-//! - [`Combinator::bind_default`] to set the value to the default value.
+//! - [`Combinator::bind_with`] to set the value with a provided factory.
 //! - [`Combinator::select`] to calculate the value with a closure.
 //! - [`Combinator::range`] to wrap the value in a [`WithRange`](crate::range::WithRange) struct.
 //! ### State Manipulation
