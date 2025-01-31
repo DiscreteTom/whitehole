@@ -16,7 +16,7 @@
 //! ```
 //! use whitehole::{combinator::{eat, next}, parser::Parser};
 //!
-//! #[derive(PartialEq, Eq)]
+//! #[derive(PartialEq, Eq, Debug)]
 //! enum Mode {
 //!   Normal,
 //!   Regex,
@@ -30,12 +30,15 @@
 //! let div = eat('/').when(|input| *input.state == Mode::Normal);
 //!
 //! // after '=', switch to regex mode
-//! let assign = eat('=').then(|input| *input.state = Mode::Regex);
+//! let assign = eat('=').then(|mut ctx| *ctx.state() = Mode::Regex);
 //!
 //! // in regex mode, '/' is the start of a regex literal
-//! let regex = eat("/123/").when(|input| *input.state == Mode::Regex);
+//! let regex = eat("/123/")
+//!   .when(|input| *input.state == Mode::Regex)
+//!   // after the regex literal, switch back to normal mode
+//!   .then(|mut ctx| *ctx.state() = Mode::Normal);
 //!
-//! let entry = whitespaces | identifier | number | assign | dev | regex;
+//! let entry = whitespaces | identifier | number | assign | div | regex;
 //!
 //! let mut parser = Parser::builder()
 //!   .state(Mode::Normal)
