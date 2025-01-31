@@ -24,18 +24,13 @@ const TEXT: &str = r#"
 fn print_all_with_range(entry: Combinator<impl Action<Value = ()>>) {
   let mut parser = Parser::builder().entry(entry.range()).build(TEXT);
 
-  loop {
-    let output = parser.next();
-    if let Some(node) = output {
-      println!(
-        "{}..{}: {:?}",
-        node.value.range.start,
-        node.value.range.end,
-        &TEXT[node.value.range.clone()]
-      );
-    } else {
-      break;
-    }
+  for output in &mut parser {
+    println!(
+      "{}..{}: {:?}",
+      output.value.range.start,
+      output.value.range.end,
+      &TEXT[output.value.range.clone()]
+    );
   }
 
   let rest = parser.instant().rest();

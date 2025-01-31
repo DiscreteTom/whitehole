@@ -11,12 +11,8 @@ use whitehole::{action::Action, combinator::Combinator, parser::Parser};
 fn process(entry: Combinator<impl Action<Value = ()>>, s: &str) {
   let mut parser = Parser::builder().entry(entry).build(s);
 
-  loop {
-    let output = parser.next();
-    if output.is_none() {
-      break;
-    }
-  }
+  // consume the whole input
+  for _ in &mut parser {}
 
   let rest = parser.instant().rest();
   if !rest.is_empty() {
