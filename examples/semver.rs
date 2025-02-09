@@ -40,27 +40,27 @@ fn build_entry() -> impl Action {
   valid_semver()
 }
 
-fn helper(input: &str) -> bool {
+/// Return `Some(rest)` if accepted.
+fn helper(input: &str) -> Option<&str> {
   let mut parser = Parser::builder().entry(build_entry()).build(input);
-  let r = parser.next();
-
-  let rest = parser.instant().rest();
-  if !rest.is_empty() {
-    panic!("Failed to parse '{}', remaining: {}", input, rest);
-  }
-
-  r.is_some()
+  parser.next().map(|_| parser.instant().rest())
 }
 
 fn accept(input: &str) {
-  if !helper(input) {
+  if let Some(rest) = helper(input) {
+    if !rest.is_empty() {
+      panic!("Failed to parse '{}', remaining: {}", input, rest);
+    }
+  } else {
     panic!("Failed to accept '{}'", input);
   }
 }
 
 fn reject(input: &str) {
-  if helper(input) {
-    panic!("Failed to reject '{}'", input);
+  if let Some(rest) = helper(input) {
+    if rest.is_empty() {
+      panic!("Failed to reject '{}'", input);
+    }
   }
 }
 
