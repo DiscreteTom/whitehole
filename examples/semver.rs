@@ -1,13 +1,13 @@
 use whitehole::{
   action::Action,
-  combinator::{eat, next, recur},
+  combinator::{eat, next},
   parser::Parser,
 };
 
 // see https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions
 fn build_entry() -> impl Action {
   let letter = || next(|c| c.is_ascii_alphabetic());
-  let positive_digit = || next(|c| matches!(c, '1'..'9'));
+  let positive_digit = || next(|c| matches!(c, '1'..='9'));
   let digit = || next(|c| c.is_ascii_digit());
   let digits = || digit() * (1..);
   let non_digit = || letter() | '-';
@@ -15,24 +15,15 @@ fn build_entry() -> impl Action {
   let identifier_characters = || identifier_character() * (1..);
   let numeric_identifier = || eat('0') | positive_digit() + digits().optional();
 
-  let alphanumeric_identifier = || {
-    (non_digit() + identifier_characters().optional())
-      | (identifier_characters() + non_digit() + identifier_characters().optional())
-  };
+  let alphanumeric_identifier =
+    || (non_digit() + identifier_characters().optional()) | (digit() + identifier_characters());
 
   let build_identifier = || alphanumeric_identifier() | digits();
   let pre_release_identifier = || alphanumeric_identifier() | numeric_identifier();
 
-  let (dot_separated_build_identifiers, setter) = recur::<_, (), (), ()>();
-  setter.boxed(build_identifier() + (eat('.') + dot_separated_build_identifiers()).optional());
-
+  let dot_separated_build_identifiers = || (build_identifier() * (1..)).sep('.');
   let build = || dot_separated_build_identifiers();
-
-  let (dot_separated_pre_release_identifiers, setter) = recur::<_, (), (), ()>();
-  setter.boxed(
-    pre_release_identifier() + (eat('.') + dot_separated_pre_release_identifiers()).optional(),
-  );
-
+  let dot_separated_pre_release_identifiers = || (pre_release_identifier() * (1..)).sep('.');
   let pre_release = || dot_separated_pre_release_identifiers();
   let patch = || numeric_identifier();
   let minor = || numeric_identifier();
@@ -43,6 +34,7 @@ fn build_entry() -> impl Action {
     version_core()
       + ((eat('-') + pre_release() + (eat('+') + build()).optional())
         | (eat('+') + build()).optional())
+      .optional()
   };
 
   valid_semver()
