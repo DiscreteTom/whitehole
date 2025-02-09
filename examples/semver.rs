@@ -15,8 +15,11 @@ fn build_entry() -> impl Action {
   let identifier_characters = || identifier_character() * (1..);
   let numeric_identifier = || eat('0') | positive_digit() + digits().optional();
 
-  let alphanumeric_identifier =
-    || (non_digit() + identifier_characters().optional()) | (digit() + identifier_characters());
+  let alphanumeric_identifier = || {
+    (non_digit() + identifier_characters().optional())
+      | (digit() + identifier_characters())
+        .reject(|ctx| ctx.content().chars().all(|c| c.is_ascii_digit()))
+  };
 
   let build_identifier = || alphanumeric_identifier() | digits();
   let pre_release_identifier = || alphanumeric_identifier() | numeric_identifier();
