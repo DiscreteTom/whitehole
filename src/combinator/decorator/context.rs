@@ -29,14 +29,14 @@ impl<InputType, OutputType> AcceptedContext<InputType, OutputType> {
 
   /// Get the [`Input`] of this execution.
   #[inline]
-  pub fn input(&self) -> &InputType {
+  pub const fn input(&self) -> &InputType {
     // return non-mutable reference to prevent mem::swap and override `Input::instant`.
     &self.input
   }
 
   /// Get the [`Output`] of this execution.
   #[inline]
-  pub fn output(&self) -> &OutputType {
+  pub const fn output(&self) -> &OutputType {
     // return non-mutable reference to prevent mem::swap and override `Output::digested`.
     &self.output
   }

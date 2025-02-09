@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Make `AcceptedContext::input` and `AcceptedContext::output` available in `const` context.
+
 ## [0.6.0] - 2025-01-31
 
 ### Added
