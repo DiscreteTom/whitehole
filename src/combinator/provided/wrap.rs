@@ -39,7 +39,7 @@ impl_wrap!(Wrap, assert, str);
 impl_wrap!(WrapUnchecked, debug_assert, [u8]);
 impl_wrap!(Wrap, assert, [u8]);
 
-/// Wrap a closure to create a [`Combinator`].
+/// Wrap a closure or function to create a [`Combinator`].
 ///
 /// For the bytes version, see [`bytes::wrap_unchecked`].
 /// # Safety
@@ -67,7 +67,7 @@ pub const unsafe fn wrap_unchecked<
   Combinator::new(WrapUnchecked::new(f))
 }
 
-/// Wrap a closure to create a [`Combinator`].
+/// Wrap a closure or function to create a [`Combinator`].
 ///
 /// For the bytes version, see [`bytes::wrap`].
 /// # Panics
@@ -97,7 +97,7 @@ pub const fn wrap<
 pub mod bytes {
   use super::*;
 
-  /// Wrap a closure to create a [`Combinator`] for bytes.
+  /// Wrap a closure or function to create a [`Combinator`] for bytes.
   ///
   /// For the string version, see [`wrap_unchecked`](super::wrap_unchecked).
   /// # Safety
@@ -125,7 +125,7 @@ pub mod bytes {
     Combinator::new(WrapUnchecked::new(f))
   }
 
-  /// Wrap a closure to create a [`Combinator`] for bytes.
+  /// Wrap a closure or function to create a [`Combinator`] for bytes.
   ///
   /// For the string version, see [`wrap`](super::wrap).
   /// # Panics
@@ -178,6 +178,28 @@ mod tests {
   }
 
   #[test]
+  fn combinator_wrap_unchecked_fn() {
+    fn action(input: Input<&str, &mut (), &mut ()>) -> Option<Output<()>> {
+      input.digest(1)
+    }
+    let c = unsafe { wrap_unchecked(action) };
+    assert_eq!(
+      c.exec(Input::new(Instant::new("1"), &mut (), &mut ())),
+      Some(Output {
+        value: (),
+        digested: 1
+      })
+    );
+
+    // ensure the combinator is copyable and clone-able
+    let _ = c;
+    let _ = c.clone();
+
+    // ensure the combinator is debuggable
+    assert_eq!(format!("{:?}", c), "Combinator { action: WrapUnchecked }");
+  }
+
+  #[test]
   #[should_panic]
   fn combinator_wrap_unchecked_overflow() {
     unsafe { wrap_unchecked(|input| input.digest_unchecked(4).into()) }.exec(Input::new(
@@ -200,6 +222,28 @@ mod tests {
   #[test]
   fn combinator_wrap() {
     let c = wrap(|input| input.digest(1));
+    assert_eq!(
+      c.exec(Input::new(Instant::new("1"), &mut (), &mut ())),
+      Some(Output {
+        value: (),
+        digested: 1
+      })
+    );
+
+    // ensure the combinator is copyable and clone-able
+    let _ = c;
+    let _ = c.clone();
+
+    // ensure the combinator is debuggable
+    assert_eq!(format!("{:?}", c), "Combinator { action: Wrap }");
+  }
+
+  #[test]
+  fn combinator_wrap_fn() {
+    fn action(input: Input<&str, &mut (), &mut ()>) -> Option<Output<()>> {
+      input.digest(1)
+    }
+    let c = wrap(action);
     assert_eq!(
       c.exec(Input::new(Instant::new("1"), &mut (), &mut ())),
       Some(Output {
