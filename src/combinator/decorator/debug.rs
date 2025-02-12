@@ -88,7 +88,7 @@ impl<T> Combinator<T> {
   /// # Examples
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
-  /// # fn t(combinator: Combinator<impl Action<str, MyState>>) {
+  /// # fn t(combinator: Combinator<impl Action>) {
   /// combinator.log("name")
   /// # ;}
   /// ```
