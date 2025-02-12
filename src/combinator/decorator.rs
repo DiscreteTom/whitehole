@@ -1,9 +1,11 @@
 mod context;
+mod debug;
 mod flow;
 mod state;
 mod value;
 
 pub use context::*;
+pub use debug::*;
 pub use flow::*;
 pub use state::*;
 pub use value::*;
