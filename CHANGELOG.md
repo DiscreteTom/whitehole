@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2025-02-13
+
 ### Added
 
 - Make `AcceptedContext::input` and `AcceptedContext::output` available in `const` context.
@@ -187,7 +189,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Overloaded operators: `|`, `+` and `*` for `Combinator`.
 - The basic `Parser`, with `Builder`, `Instant` and `Snapshot` support.
 
-[unreleased]: https://github.com/DiscreteTom/whitehole/compare/v0.6.0...HEAD
+[unreleased]: https://github.com/DiscreteTom/whitehole/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/DiscreteTom/whitehole/releases/tag/v0.6.1
 [0.6.0]: https://github.com/DiscreteTom/whitehole/releases/tag/v0.6.0
 [0.5.0]: https://github.com/DiscreteTom/whitehole/releases/tag/v0.5.0
 [0.4.0]: https://github.com/DiscreteTom/whitehole/releases/tag/v0.4.0
