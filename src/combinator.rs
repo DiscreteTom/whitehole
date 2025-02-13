@@ -65,6 +65,8 @@
 //! # Decorator
 //! [`Combinator`] provides a set of methods as decorators
 //! to modify the behavior of the combinator.
+//! ## Debug
+//! - [`Combinator::log`] to print debug information.
 //! ## Flow Control
 //! - [`Combinator::optional`] to make a combinator optional.
 //! - [`Combinator::boundary`] to require a word boundary after the action is accepted.
