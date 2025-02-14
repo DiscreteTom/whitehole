@@ -116,7 +116,7 @@ where
 
   #[inline]
   fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<()>> {
-    unsafe { input.digest_unchecked(input.instant().rest().len()) }.into()
+    unsafe { input.digest_unchecked(input.instant().rest().as_bytes().len()) }.into()
   }
 }
 

@@ -11,6 +11,9 @@ pub trait Digest {
   /// For `&str`, this method will also require `n` is a valid UTF-8 boundary.
   fn validate(&self, n: usize) -> bool;
 
+  /// Convert self to a byte slice.
+  fn as_bytes(&self) -> &[u8];
+
   /// Digest the next `n` bytes. Return the rest.
   /// # Safety
   /// You should ensure that `n` is valid according to [`Digest::validate`].
@@ -22,20 +25,17 @@ pub trait Digest {
   /// You should ensure that `n` is valid according to [`Digest::validate`].
   /// This will be checked using [`debug_assert!`].
   unsafe fn span_unchecked(&self, n: usize) -> Self;
-
-  /// Returns the byte length.
-  fn len(&self) -> usize;
-
-  /// Returns `true` if the byte sequence is empty.
-  fn is_empty(&self) -> bool {
-    self.len() == 0
-  }
 }
 
 impl Digest for &[u8] {
   #[inline]
   fn validate(&self, n: usize) -> bool {
     n <= self.len()
+  }
+
+  #[inline]
+  fn as_bytes(&self) -> &[u8] {
+    self
   }
 
   #[inline]
@@ -48,11 +48,6 @@ impl Digest for &[u8] {
   unsafe fn span_unchecked(&self, n: usize) -> Self {
     debug_assert!(self.validate(n));
     self.get_unchecked(..n)
-  }
-
-  #[inline]
-  fn len(&self) -> usize {
-    <[u8]>::len(self)
   }
 }
 
@@ -63,6 +58,11 @@ impl Digest for &str {
   }
 
   #[inline]
+  fn as_bytes(&self) -> &[u8] {
+    <str>::as_bytes(self)
+  }
+
+  #[inline]
   unsafe fn digest_unchecked(&self, n: usize) -> Self {
     debug_assert!(self.validate(n));
     self.get_unchecked(n..)
@@ -72,11 +72,6 @@ impl Digest for &str {
   unsafe fn span_unchecked(&self, n: usize) -> Self {
     debug_assert!(self.validate(n));
     self.get_unchecked(..n)
-  }
-
-  #[inline]
-  fn len(&self) -> usize {
-    <str>::len(self)
   }
 }
 
@@ -100,8 +95,6 @@ mod tests {
     assert_eq!(unsafe { bytes.span_unchecked(1) }, b"1");
     assert_eq!(unsafe { bytes.span_unchecked(2) }, b"12");
     assert_eq!(unsafe { bytes.span_unchecked(3) }, b"123");
-    assert_eq!(<&[u8] as Digest>::len(&bytes), 3);
-    assert!(!<&[u8] as Digest>::is_empty(&bytes));
   }
 
   #[test]
@@ -134,8 +127,6 @@ mod tests {
     assert_eq!(unsafe { text.span_unchecked(1) }, "1");
     assert_eq!(unsafe { text.span_unchecked(2) }, "12");
     assert_eq!(unsafe { text.span_unchecked(3) }, "123");
-    assert_eq!(<&str as Digest>::len(&text), 3);
-    assert!(!<&str as Digest>::is_empty(&text));
   }
 
   #[test]

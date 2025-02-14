@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `Digest::as_bytes`.
+
+### Removed
+
+- Remove `Digest::len` and `Digest::is_empty`, use `Digest::as_bytes` instead.
+
 ## [0.6.1] - 2025-02-13
 
 ### Added
