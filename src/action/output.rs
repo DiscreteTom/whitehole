@@ -12,7 +12,10 @@ pub struct Output<Value = ()> {
   pub digested: usize,
 }
 
-impl<TextRef: Digest + Copy, StateRef, HeapRef> Input<TextRef, StateRef, HeapRef> {
+impl<'a, Text: ?Sized, StateRef, HeapRef> Input<&'a Text, StateRef, HeapRef>
+where
+  &'a Text: Digest,
+{
   /// Validate if it is ok to digest `n` bytes.
   /// See [`Digest::validate`] for more information.
   #[inline]

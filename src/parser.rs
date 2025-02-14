@@ -245,7 +245,7 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
   /// [`Self::instant`] and [`Self::state`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload<NewTextRef: Copy>(self, text: NewTextRef) -> Parser<T, NewTextRef, State, Heap>
+  pub fn reload<NewText: ?Sized>(self, text: &NewText) -> Parser<T, &NewText, State, Heap>
   where
     State: Default,
   {
@@ -258,11 +258,11 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
   /// [`Self::instant`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload_with<NewTextRef: Copy>(
+  pub fn reload_with<NewText: ?Sized>(
     self,
     state: impl Into<Option<State>>,
-    text: NewTextRef,
-  ) -> Parser<T, NewTextRef, State, Heap> {
+    text: &NewText,
+  ) -> Parser<T, &NewText, State, Heap> {
     Parser {
       entry: self.entry,
       heap: self.heap,

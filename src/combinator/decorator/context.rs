@@ -109,12 +109,14 @@ impl<TextRef, Value, State, Heap>
   }
 }
 
-impl<TextRef: Digest + Copy, Value, State, Heap>
-  AcceptedContext<Input<TextRef, &mut State, &mut Heap>, Output<Value>>
+impl<'a, Text: ?Sized, Value, State, Heap>
+  AcceptedContext<Input<&'a Text, &mut State, &mut Heap>, Output<Value>>
+where
+  &'a Text: Digest,
 {
   /// Get the rest of the input text after accepting this combinator.
   #[inline]
-  pub fn rest(&self) -> TextRef {
+  pub fn rest(&self) -> &'a Text {
     debug_assert!(self.input.validate(self.output.digested));
     unsafe {
       self
@@ -127,7 +129,7 @@ impl<TextRef: Digest + Copy, Value, State, Heap>
 
   /// The text content accepted by this combinator.
   #[inline]
-  pub fn content(&self) -> TextRef {
+  pub fn content(&self) -> &'a Text {
     debug_assert!(self.input.validate(self.output.digested));
     unsafe { self.input.instant().rest().span_unchecked(self.digested()) }
   }

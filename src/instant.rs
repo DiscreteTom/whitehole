@@ -16,14 +16,11 @@ pub struct Instant<TextRef> {
   digested: usize,
 }
 
-impl<TextRef> Instant<TextRef> {
+impl<'a, Text: ?Sized> Instant<&'a Text> {
   /// Create a new instance with the given text.
   /// [`Self::digested`] will be set to `0`.
   #[inline]
-  pub const fn new(text: TextRef) -> Self
-  where
-    TextRef: Copy,
-  {
+  pub const fn new(text: &'a Text) -> Self {
     Instant {
       text,
       rest: text,
@@ -36,10 +33,7 @@ impl<TextRef> Instant<TextRef> {
   /// This is cheap to call because the value is stored in this struct.
   /// This will never be mutated after the creation of this instance.
   #[inline]
-  pub const fn text(&self) -> TextRef
-  where
-    TextRef: Copy,
-  {
+  pub const fn text(&self) -> &'a Text {
     self.text
   }
 
@@ -47,13 +41,12 @@ impl<TextRef> Instant<TextRef> {
   ///
   /// This is cheap to call because the value is stored in this struct.
   #[inline]
-  pub const fn rest(&self) -> TextRef
-  where
-    TextRef: Copy,
-  {
+  pub const fn rest(&self) -> &'a Text {
     self.rest
   }
+}
 
+impl<TextRef> Instant<TextRef> {
   /// How many bytes are already digested.
   ///
   /// This is cheap to call because the value is stored in this struct.
