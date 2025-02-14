@@ -4,10 +4,10 @@
 ///
 /// Built-in implementations are provided for `&[u8]` and `&str`.
 pub trait Digest {
-  /// Validate if it is ok to digest `n` bytes.
+  /// Validate if it is ok to digest the first `n` bytes.
   ///
   /// For both `&[u8]` and `&str`, this method will
-  /// require `n` is no greater than or equal to the length of `self`.
+  /// require `n` is no greater than the length of `self`.
   /// For `&str`, this method will also require `n` is a valid UTF-8 boundary.
   fn validate(&self, n: usize) -> bool;
 
