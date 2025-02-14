@@ -21,7 +21,8 @@ pub trait Digest {
 
   /// Get an unchecked subslice of `self` without bound checking.
   /// # Safety
-  /// You should ensure that `n` is valid according to [`Digest::validate`].
+  /// You should ensure the provided index is valid according to [`Digest::validate`].
+  /// For a safe version, use [`Digest::get`].
   unsafe fn get_unchecked<I: SliceIndex<Self>>(&self, i: I) -> &I::Output;
 }
 
