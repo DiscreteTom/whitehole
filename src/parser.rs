@@ -290,7 +290,9 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
     self.state = snapshot.state;
     self.instant = snapshot.instant;
   }
+}
 
+impl<T, Text: ?Sized, State, Heap> Parser<T, &Text, State, Heap> {
   /// Digest the next `n` bytes and set [`Self::state`] to the default.
   ///
   /// Usually when you digest some bytes from outside of the parser
@@ -302,7 +304,7 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
   #[inline]
   pub unsafe fn digest_unchecked(&mut self, n: usize)
   where
-    TextRef: Digest,
+    Text: Digest,
     State: Default,
   {
     self.digest_with_unchecked(State::default(), n)
@@ -314,16 +316,14 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
   #[inline]
   pub unsafe fn digest_with_unchecked(&mut self, state: impl Into<Option<State>>, n: usize)
   where
-    TextRef: Digest,
+    Text: Digest,
   {
     self.instant.digest_unchecked(n);
     if let Some(state) = state.into() {
       self.state = state;
     }
   }
-}
 
-impl<T, Text: ?Sized, State, Heap> Parser<T, &Text, State, Heap> {
   /// Try to yield the next [`Output`] without updating [`Self::instant`] and [`Self::state`].
   /// [`Self::state`] will be cloned and returned.
   /// Return [`None`] if the action rejects.
@@ -345,10 +345,8 @@ impl<T, Text: ?Sized, State, Heap> Parser<T, &Text, State, Heap> {
   }
 }
 
-impl<T: Action<Text, State, Heap>, Text: ?Sized, State, Heap> Iterator
+impl<T: Action<Text, State, Heap>, Text: ?Sized + Digest, State, Heap> Iterator
   for Parser<T, &Text, State, Heap>
-where
-  for<'a> &'a Text: Digest,
 {
   type Item = Output<T::Value>;
 

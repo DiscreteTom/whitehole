@@ -16,10 +16,8 @@ trait SimpleCombinatorExt<T: Action<Text, State, Heap>, Text: ?Sized, State, Hea
   fn simple_print(self) -> Combinator<impl Action<Text, State, Heap, Value = T::Value>>;
 }
 
-impl<T: Action<Text, State, Heap>, Text: ?Sized + Debug, State, Heap>
+impl<T: Action<Text, State, Heap>, Text: ?Sized + Debug + Digest, State, Heap>
   SimpleCombinatorExt<T, Text, State, Heap> for Combinator<T>
-where
-  for<'a> &'a Text: Digest,
 {
   fn simple_print(self) -> Combinator<impl Action<Text, State, Heap, Value = T::Value>> {
     self.then(|ctx| println!("{}..{}: {:?}", ctx.start(), ctx.end(), ctx.content()))
@@ -45,10 +43,8 @@ impl<T> CombinatorExt<T> for Combinator<T> {
   }
 }
 
-unsafe impl<Text: ?Sized + Debug, State, Heap, T: Action<Text, State, Heap>>
+unsafe impl<Text: ?Sized + Debug + Digest, State, Heap, T: Action<Text, State, Heap>>
   Action<Text, State, Heap> for Print<T>
-where
-  for<'a> &'a Text: Digest,
 {
   type Value = T::Value;
 

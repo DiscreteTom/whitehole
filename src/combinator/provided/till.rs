@@ -108,10 +108,7 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<Vec<u8>> {
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap> Action<Text, State, Heap> for Till<()>
-where
-  for<'a> &'a Text: Digest,
-{
+unsafe impl<Text: ?Sized + Digest, State, Heap> Action<Text, State, Heap> for Till<()> {
   type Value = ();
 
   #[inline]

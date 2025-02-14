@@ -44,16 +44,6 @@ impl<'a, Text: ?Sized> Instant<&'a Text> {
   pub const fn rest(&self) -> &'a Text {
     self.rest
   }
-}
-
-impl<TextRef> Instant<TextRef> {
-  /// How many bytes are already digested.
-  ///
-  /// This is cheap to call because the value is stored in this struct.
-  #[inline]
-  pub const fn digested(&self) -> usize {
-    self.digested
-  }
 
   /// Digest the next `n` bytes.
   /// [`Self::rest`] will be updated automatically.
@@ -63,10 +53,20 @@ impl<TextRef> Instant<TextRef> {
   #[inline]
   pub unsafe fn digest_unchecked(&mut self, n: usize)
   where
-    TextRef: Digest,
+    Text: Digest,
   {
     self.rest = self.rest.digest_unchecked(n);
     self.digested = self.digested.unchecked_add(n);
+  }
+}
+
+impl<TextRef> Instant<TextRef> {
+  /// How many bytes are already digested.
+  ///
+  /// This is cheap to call because the value is stored in this struct.
+  #[inline]
+  pub const fn digested(&self) -> usize {
+    self.digested
   }
 }
 

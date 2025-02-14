@@ -109,10 +109,8 @@ impl<TextRef, Value, State, Heap>
   }
 }
 
-impl<'a, Text: ?Sized, Value, State, Heap>
+impl<'a, Text: ?Sized + Digest, Value, State, Heap>
   AcceptedContext<Input<&'a Text, &mut State, &mut Heap>, Output<Value>>
-where
-  &'a Text: Digest,
 {
   /// Get the rest of the input text after accepting this combinator.
   #[inline]

@@ -163,7 +163,7 @@ impl<Lhs, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
 }
 
 unsafe impl<
-    Text: ?Sized,
+    Text: ?Sized + Digest,
     State,
     Heap,
     Lhs: Action<Text, State, Heap>,
@@ -173,8 +173,6 @@ unsafe impl<
     Init: Fn() -> Acc,
     Fold: Fn(Acc, Lhs::Value) -> Acc,
   > Action<Text, State, Heap> for Mul<Lhs, Rhs, Sep, Init, Fold>
-where
-  for<'a> &'a Text: Digest,
 {
   type Value = Acc;
 

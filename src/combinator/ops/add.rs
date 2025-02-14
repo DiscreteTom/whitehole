@@ -86,14 +86,12 @@ impl<Lhs, Rhs> Add<Lhs, Rhs> {
 }
 
 unsafe impl<
-    Text: ?Sized,
+    Text: ?Sized + Digest,
     State,
     Heap,
     Lhs: Action<Text, State, Heap, Value: Concat<Rhs::Value>>,
     Rhs: Action<Text, State, Heap>,
   > Action<Text, State, Heap> for Add<Lhs, Rhs>
-where
-  for<'a> &'a Text: Digest,
 {
   type Value = <Lhs::Value as Concat<Rhs::Value>>::Output;
 

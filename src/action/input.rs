@@ -52,13 +52,13 @@ impl<TextRef, StateRef, HeapRef> Input<TextRef, StateRef, HeapRef> {
   }
 }
 
-impl<TextRef: Clone, State, Heap> Input<TextRef, &mut State, &mut Heap> {
+impl<'a, Text: ?Sized, State, Heap> Input<&'a Text, &mut State, &mut Heap> {
   /// Re-borrow [`Self::state`] and [`Self::heap`] to construct a new [`Input`]
   /// (similar to cloning this instance).
   ///
   /// This is cheap to call.
   #[inline]
-  pub fn reborrow(&mut self) -> Input<TextRef, &mut State, &mut Heap> {
+  pub fn reborrow(&mut self) -> Input<&'a Text, &mut State, &mut Heap> {
     Input {
       state: &mut *self.state,
       heap: &mut *self.heap,
@@ -73,9 +73,9 @@ impl<TextRef: Clone, State, Heap> Input<TextRef, &mut State, &mut Heap> {
   /// You should ensure that `n` is valid according to [`Digest::validate`].
   /// This will be checked using [`debug_assert!`].
   #[inline]
-  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<TextRef, &mut State, &mut Heap>
+  pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<&'a Text, &mut State, &mut Heap>
   where
-    TextRef: Digest,
+    Text: Digest,
   {
     let mut instant = self.instant.clone();
     instant.digest_unchecked(n);

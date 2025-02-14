@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `Digest::as_bytes`.
 
+### Changed
+
+- `Digest` is now implemented by `str` and `[u8]` instead of `&str` and `&[u8]`.
+
 ### Removed
 
 - Remove `Digest::len` and `Digest::is_empty`, use `Digest::as_bytes` instead.

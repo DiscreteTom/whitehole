@@ -2,13 +2,13 @@
 
 /// A digest-able byte sequence.
 ///
-/// Built-in implementations are provided for `&[u8]` and `&str`.
+/// Built-in implementations are provided for `[u8]` and [`str`].
 pub trait Digest {
   /// Validate if it is ok to digest the first `n` bytes.
   ///
-  /// For both `&[u8]` and `&str`, this method will
+  /// For both `[u8]` and [`str`], this method will
   /// require `n` is no greater than the length of `self`.
-  /// For `&str`, this method will also require `n` is a valid UTF-8 boundary.
+  /// For [`str`], this method will also require `n` is a valid UTF-8 boundary.
   fn validate(&self, n: usize) -> bool;
 
   /// Convert self to a byte slice.
@@ -18,16 +18,16 @@ pub trait Digest {
   /// # Safety
   /// You should ensure that `n` is valid according to [`Digest::validate`].
   /// This will be checked using [`debug_assert!`].
-  unsafe fn digest_unchecked(&self, n: usize) -> Self;
+  unsafe fn digest_unchecked(&self, n: usize) -> &Self;
 
   /// Return the first `n` bytes.
   /// # Safety
   /// You should ensure that `n` is valid according to [`Digest::validate`].
   /// This will be checked using [`debug_assert!`].
-  unsafe fn span_unchecked(&self, n: usize) -> Self;
+  unsafe fn span_unchecked(&self, n: usize) -> &Self;
 }
 
-impl Digest for &[u8] {
+impl Digest for [u8] {
   #[inline]
   fn validate(&self, n: usize) -> bool {
     n <= self.len()
@@ -39,19 +39,19 @@ impl Digest for &[u8] {
   }
 
   #[inline]
-  unsafe fn digest_unchecked(&self, n: usize) -> Self {
+  unsafe fn digest_unchecked(&self, n: usize) -> &Self {
     debug_assert!(self.validate(n));
     self.get_unchecked(n..)
   }
 
   #[inline]
-  unsafe fn span_unchecked(&self, n: usize) -> Self {
+  unsafe fn span_unchecked(&self, n: usize) -> &Self {
     debug_assert!(self.validate(n));
     self.get_unchecked(..n)
   }
 }
 
-impl Digest for &str {
+impl Digest for str {
   #[inline]
   fn validate(&self, n: usize) -> bool {
     self.is_char_boundary(n)
@@ -63,13 +63,13 @@ impl Digest for &str {
   }
 
   #[inline]
-  unsafe fn digest_unchecked(&self, n: usize) -> Self {
+  unsafe fn digest_unchecked(&self, n: usize) -> &Self {
     debug_assert!(self.validate(n));
     self.get_unchecked(n..)
   }
 
   #[inline]
-  unsafe fn span_unchecked(&self, n: usize) -> Self {
+  unsafe fn span_unchecked(&self, n: usize) -> &Self {
     debug_assert!(self.validate(n));
     self.get_unchecked(..n)
   }

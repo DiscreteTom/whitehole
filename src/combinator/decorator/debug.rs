@@ -48,9 +48,9 @@ fn format_input<TextRef>(
   )
 }
 
-fn format_output<TextRef: Digest + Debug, Value>(
+fn format_output<Text: ?Sized + Digest + Debug, Value>(
   name: &str,
-  rest: TextRef,
+  rest: &Text,
   output: &Option<Output<Value>>,
 ) -> String {
   format!(
