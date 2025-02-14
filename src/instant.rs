@@ -2,6 +2,7 @@
 //! See [`Instant`].
 
 use crate::digest::Digest;
+use std::{ops::RangeFrom, slice::SliceIndex};
 
 /// The instantaneous state of a parser (a.k.a the "configuration" in the automata theory).
 ///
@@ -54,8 +55,10 @@ impl<'a, Text: ?Sized> Instant<&'a Text> {
   pub unsafe fn digest_unchecked(&mut self, n: usize)
   where
     Text: Digest,
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
   {
-    self.rest = self.rest.digest_unchecked(n);
+    debug_assert!(self.rest.validate(n));
+    self.rest = self.rest.get_unchecked(n..);
     self.digested = self.digested.unchecked_add(n);
   }
 }

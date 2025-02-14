@@ -191,6 +191,8 @@
 mod builder;
 mod snapshot;
 
+use std::{ops::RangeFrom, slice::SliceIndex};
+
 pub use builder::*;
 pub use snapshot::*;
 
@@ -306,6 +308,7 @@ impl<T, Text: ?Sized, State, Heap> Parser<T, &Text, State, Heap> {
   where
     Text: Digest,
     State: Default,
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
   {
     self.digest_with_unchecked(State::default(), n)
   }
@@ -317,6 +320,7 @@ impl<T, Text: ?Sized, State, Heap> Parser<T, &Text, State, Heap> {
   pub unsafe fn digest_with_unchecked(&mut self, state: impl Into<Option<State>>, n: usize)
   where
     Text: Digest,
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
   {
     self.instant.digest_unchecked(n);
     if let Some(state) = state.into() {
@@ -347,6 +351,8 @@ impl<T, Text: ?Sized, State, Heap> Parser<T, &Text, State, Heap> {
 
 impl<T: Action<Text, State, Heap>, Text: ?Sized + Digest, State, Heap> Iterator
   for Parser<T, &Text, State, Heap>
+where
+  RangeFrom<usize>: SliceIndex<Text, Output = Text>,
 {
   type Item = Output<T::Value>;
 

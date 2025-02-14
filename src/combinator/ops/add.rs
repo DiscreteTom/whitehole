@@ -67,7 +67,10 @@ use crate::{
   combinator::{eat, Action, Combinator, Eat, Input, Output},
   digest::Digest,
 };
-use std::ops;
+use std::{
+  ops::{self, RangeFrom},
+  slice::SliceIndex,
+};
 
 /// An [`Action`] created by the `+` operator.
 /// See [`ops::add`](crate::combinator::ops::add) for more information.
@@ -92,6 +95,8 @@ unsafe impl<
     Lhs: Action<Text, State, Heap, Value: Concat<Rhs::Value>>,
     Rhs: Action<Text, State, Heap>,
   > Action<Text, State, Heap> for Add<Lhs, Rhs>
+where
+  RangeFrom<usize>: SliceIndex<Text, Output = Text>,
 {
   type Value = <Lhs::Value as Concat<Rhs::Value>>::Output;
 

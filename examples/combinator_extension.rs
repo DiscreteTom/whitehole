@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, ops::RangeTo, slice::SliceIndex};
 
 use whitehole::{
   action::{Action, Input, Output},
@@ -18,6 +18,8 @@ trait SimpleCombinatorExt<T: Action<Text, State, Heap>, Text: ?Sized, State, Hea
 
 impl<T: Action<Text, State, Heap>, Text: ?Sized + Debug + Digest, State, Heap>
   SimpleCombinatorExt<T, Text, State, Heap> for Combinator<T>
+where
+  RangeTo<usize>: SliceIndex<Text, Output = Text>,
 {
   fn simple_print(self) -> Combinator<impl Action<Text, State, Heap, Value = T::Value>> {
     self.then(|ctx| println!("{}..{}: {:?}", ctx.start(), ctx.end(), ctx.content()))
@@ -45,6 +47,8 @@ impl<T> CombinatorExt<T> for Combinator<T> {
 
 unsafe impl<Text: ?Sized + Debug + Digest, State, Heap, T: Action<Text, State, Heap>>
   Action<Text, State, Heap> for Print<T>
+where
+  RangeTo<usize>: SliceIndex<Text, Output = Text>,
 {
   type Value = T::Value;
 
@@ -52,9 +56,12 @@ unsafe impl<Text: ?Sized + Debug + Digest, State, Heap, T: Action<Text, State, H
     self.action.exec(input.reborrow()).inspect(|output| {
       let start = input.instant().digested();
       let end = start + output.digested;
-      println!("{}..{}: {:?}", start, end, unsafe {
-        input.instant().rest().span_unchecked(output.digested)
-      });
+      println!(
+        "{}..{}: {:?}",
+        start,
+        end,
+        input.instant().rest().get(..output.digested)
+      );
     })
   }
 }

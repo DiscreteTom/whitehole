@@ -2,7 +2,10 @@ use crate::{
   action::{Input, Output},
   digest::Digest,
 };
-use std::ops::Range;
+use std::{
+  ops::{Range, RangeFrom, RangeTo},
+  slice::SliceIndex,
+};
 
 /// This struct provides the [`Input`] and [`Output`]
 /// in combinator decorators when the combinator is accepted.
@@ -114,22 +117,22 @@ impl<'a, Text: ?Sized + Digest, Value, State, Heap>
 {
   /// Get the rest of the input text after accepting this combinator.
   #[inline]
-  pub fn rest(&self) -> &'a Text {
+  pub fn rest(&self) -> &'a Text
+  where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
     debug_assert!(self.input.validate(self.output.digested));
-    unsafe {
-      self
-        .input
-        .instant()
-        .rest()
-        .digest_unchecked(self.digested())
-    }
+    unsafe { self.input.instant().rest().get_unchecked(self.digested()..) }
   }
 
   /// The text content accepted by this combinator.
   #[inline]
-  pub fn content(&self) -> &'a Text {
+  pub fn content(&self) -> &'a Text
+  where
+    RangeTo<usize>: SliceIndex<Text, Output = Text>,
+  {
     debug_assert!(self.input.validate(self.output.digested));
-    unsafe { self.input.instant().rest().span_unchecked(self.digested()) }
+    unsafe { self.input.instant().rest().get_unchecked(..self.digested()) }
   }
 }
 

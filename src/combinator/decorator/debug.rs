@@ -4,7 +4,7 @@ use crate::{
   combinator::Combinator,
   digest::Digest,
 };
-use std::fmt::Debug;
+use std::{fmt::Debug, ops::RangeTo, slice::SliceIndex};
 
 // TODO: don't make this generic
 create_value_decorator!(Log, "See [`Combinator::log`].");
@@ -52,14 +52,15 @@ fn format_output<Text: ?Sized + Digest + Debug, Value>(
   name: &str,
   rest: &Text,
   output: &Option<Output<Value>>,
-) -> String {
+) -> String
+where
+  RangeTo<usize>: SliceIndex<Text, Output = Text>,
+{
   format!(
     "{}({}) output: {:?}",
     &indentation(),
     name,
-    output
-      .as_ref()
-      .map(|o| { unsafe { rest.span_unchecked(o.digested) } }),
+    output.as_ref().and_then(|o| { rest.get(..o.digested) }),
   )
 }
 

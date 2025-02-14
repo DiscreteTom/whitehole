@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add `Digest::as_bytes`.
+- Add `Digest::as_bytes`, `Digest::get` and `Digest::get_unchecked`.
 
 ### Changed
 
@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Remove `Digest::len` and `Digest::is_empty`, use `Digest::as_bytes` instead.
+- Remove `Digest::digest_unchecked` and `Digest::span_unchecked`, use `Digest::get_unchecked` instead.
 
 ## [0.6.1] - 2025-02-13
 

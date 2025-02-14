@@ -126,7 +126,10 @@ use crate::{
   combinator::Combinator,
   digest::Digest,
 };
-use std::ops;
+use std::{
+  ops::{self, RangeFrom},
+  slice::SliceIndex,
+};
 
 /// An [`Action`] created by the `*` operator.
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
@@ -173,6 +176,8 @@ unsafe impl<
     Init: Fn() -> Acc,
     Fold: Fn(Acc, Lhs::Value) -> Acc,
   > Action<Text, State, Heap> for Mul<Lhs, Rhs, Sep, Init, Fold>
+where
+  RangeFrom<usize>: SliceIndex<Text, Output = Text>,
 {
   type Value = Acc;
 

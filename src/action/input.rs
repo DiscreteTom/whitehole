@@ -1,4 +1,5 @@
 use crate::{digest::Digest, instant::Instant};
+use std::{ops::RangeFrom, slice::SliceIndex};
 
 /// The input of [`Action::exec`](crate::action::Action::exec).
 ///
@@ -76,6 +77,7 @@ impl<'a, Text: ?Sized, State, Heap> Input<&'a Text, &mut State, &mut Heap> {
   pub unsafe fn shift_unchecked(&mut self, n: usize) -> Input<&'a Text, &mut State, &mut Heap>
   where
     Text: Digest,
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
   {
     let mut instant = self.instant.clone();
     instant.digest_unchecked(n);
