@@ -21,7 +21,7 @@ fn main() {}
 mod tests {
   use super::*;
   use whitehole::{
-    action::{Action, Context, Input},
+    action::{Action, Context},
     instant::Instant,
   };
 
@@ -29,14 +29,14 @@ mod tests {
   fn test_regex() {
     assert_eq!(
       regex(r"\d+")
-        .exec(Instant::new("123"), Context::default())
+        .exec(&Instant::new("123"), Context::default())
         .unwrap()
         .digested,
       3
     );
     assert_eq!(
       regex(r"\d+")
-        .exec(Instant::new("123abc"), Context::default())
+        .exec(&Instant::new("123abc"), Context::default())
         .unwrap()
         .digested,
       3
