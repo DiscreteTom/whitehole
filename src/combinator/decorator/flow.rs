@@ -140,7 +140,7 @@ unsafe impl<State, Heap, T: Action<str, State, Heap>> Action<str, State, Heap> f
 }
 
 impl<T> Combinator<T> {
-  /// Create a new combinator to check the [`Input`] before being executed.
+  /// Create a new combinator to check the [`Instant`] and [`Context`] before being executed.
   /// The combinator will be executed only if the `condition` returns `true`.
   ///
   /// This is the opposite of [`Combinator::prevent`].
@@ -168,7 +168,7 @@ impl<T> Combinator<T> {
     Combinator::new(When::new(self.action, condition))
   }
 
-  /// Create a new combinator to check the [`Input`] before being executed.
+  /// Create a new combinator to check the [`Instant`] and [`Context`] before being executed.
   /// The combinator will reject if the `preventer` returns `true`.
   ///
   /// This is the opposite of [`Combinator::when`].
@@ -196,7 +196,7 @@ impl<T> Combinator<T> {
     Combinator::new(Prevent::new(self.action, preventer))
   }
 
-  /// Create a new combinator to check the [`Input`] and [`Output`] after being executed.
+  /// Create a new combinator to check the [`Instant`], [`Context`] and [`Output`] after being executed.
   /// The combinator will reject if the `rejecter` returns `true`.
   /// # Examples
   /// ```

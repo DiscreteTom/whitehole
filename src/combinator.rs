@@ -87,7 +87,7 @@
 //! - [`Combinator::range`] to wrap the value in a [`WithRange`](crate::range::WithRange) struct.
 //! ## State Manipulation
 //! [`Combinator`]s are stateless, but you can access external states
-//! via [`Input::state`] to realize stateful parsing.
+//! via [`Context::state`] to realize stateful parsing.
 //!
 //! Related decorators:
 //! - [`Combinator::prepare`] to modify states before being executed.

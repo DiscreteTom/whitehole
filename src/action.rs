@@ -6,13 +6,13 @@
 //!
 //! For most cases, you don't need to use [`Action`] directly.
 //! See [`Combinator`](crate::combinator::Combinator) and
-//! [`Parser`](crate::parser::Parser) for more high-level APIs.
+//! [`Parser`](crate::parser::Parser) for higher-level APIs.
 //!
 //! # Stateless
 //!
 //! [`Action`]s are stateless and immutable,
 //! but they can access external states to change their behavior.
-//! See [`Input::state`] and [`Input::heap`] for more information.
+//! See [`Context::state`] and [`Context::heap`] for more information.
 //!
 //! States are centrally managed by the parser,
 //! so it's easy to realize peeking and backtracking.

@@ -78,11 +78,11 @@
 //! That's not efficient.
 //!
 //! To optimize the performance,
-//! you can fold the values to [`Input::heap`] to prevent re-allocation.
+//! you can fold the values to [`Context::heap`] to prevent re-allocation.
 //! ```
 //! # use whitehole::{combinator::take, action::{Action, Context}, instant::Instant};
 //! let combinator = {
-//!   // eat one char, accumulate some value in `input.heap`
+//!   // eat one char, accumulate some value in `ctx.heap`
 //!   take(1).then(|_, ctx| Vec::push(ctx.heap, 1))
 //!     // repeat for 1 or more times
 //!     * (1..)

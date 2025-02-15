@@ -109,7 +109,7 @@ unsafe impl<
 }
 
 impl<T> Combinator<T> {
-  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
+  /// Create a new combinator to modify [`Context::state`] and [`Context::heap`]
   /// before being executed.
   /// # Examples
   /// ```
@@ -135,7 +135,7 @@ impl<T> Combinator<T> {
     Combinator::new(Prepare::new(self.action, modifier))
   }
 
-  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
+  /// Create a new combinator to modify [`Context::state`] and [`Context::heap`]
   /// after being accepted.
   /// # Examples
   /// ```
@@ -161,7 +161,7 @@ impl<T> Combinator<T> {
     Combinator::new(Then::new(self.action, modifier))
   }
 
-  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
+  /// Create a new combinator to modify [`Context::state`] and [`Context::heap`]
   /// after being rejected.
   /// # Examples
   /// ```
@@ -182,7 +182,7 @@ impl<T> Combinator<T> {
     Combinator::new(Catch::new(self.action, modifier))
   }
 
-  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
+  /// Create a new combinator to modify [`Context::state`] and [`Context::heap`]
   /// after the combinator is executed,
   /// no matter whether it is accepted or rejected.
   /// # Examples

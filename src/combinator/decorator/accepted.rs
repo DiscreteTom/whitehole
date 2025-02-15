@@ -34,13 +34,13 @@ impl<'a, TextRef, Value> Accepted<'a, TextRef, Value> {
 
   /// Take the [`Output`].
   ///
-  /// To get the [`Input`] as well, use [`Self::split`].
+  /// To get the [`Instant`] as well, use [`Self::split`].
   #[inline]
   pub fn take(self) -> Output<Value> {
     self.output
   }
 
-  /// Split the instance into the [`Input`] and [`Output`].
+  /// Split the instance into the [`Instant`] and [`Output`].
   ///
   /// To get the [`Output`] only, use [`Self::take`].
   #[inline]
