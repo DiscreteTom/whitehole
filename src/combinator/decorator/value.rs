@@ -33,7 +33,7 @@ unsafe impl<
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(&instant, ctx)
+      .exec(instant, ctx)
       .map(|output| output.map(&self.inner))
   }
 }
@@ -51,7 +51,7 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(&instant, ctx)
+      .exec(instant, ctx)
       .map(|output| output.map(|v| (v,)))
   }
 }
@@ -69,7 +69,7 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>, D: Clone>
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(&instant, ctx)
+      .exec(instant, ctx)
       .map(|output| output.map(|_| self.inner.clone()))
   }
 }
@@ -87,7 +87,7 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>, NewValue, D
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(&instant, ctx)
+      .exec(instant, ctx)
       .map(|output| output.map(|_| (self.inner)()))
   }
 }
@@ -111,7 +111,7 @@ unsafe impl<
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(&instant, ctx.reborrow())
+      .exec(instant, ctx.reborrow())
       .map(|output| Output {
         digested: output.digested,
         value: (self.inner)(Accepted::new(instant, output), ctx),
@@ -131,7 +131,7 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     let start = instant.digested();
-    self.action.exec(&instant, ctx).map(|output| {
+    self.action.exec(instant, ctx).map(|output| {
       let digested = output.digested;
       output.map(|data| WithRange {
         range: start..start + digested,
@@ -154,7 +154,7 @@ unsafe impl<Text: ?Sized, State, Heap, V, T: Action<Text, State, Heap, Value = (
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(&instant, ctx)
+      .exec(instant, ctx)
       .map(|output| output.map(|(v,)| v))
   }
 }

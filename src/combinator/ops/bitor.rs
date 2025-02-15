@@ -77,8 +77,8 @@ unsafe impl<
   ) -> Option<Output<Self::Value>> {
     self
       .lhs
-      .exec(&instant, ctx.reborrow())
-      .or_else(|| self.rhs.exec(&instant, ctx))
+      .exec(instant, ctx.reborrow())
+      .or_else(|| self.rhs.exec(instant, ctx))
   }
 }
 

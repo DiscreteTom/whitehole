@@ -68,7 +68,7 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
     instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
-    self.inner.get().unwrap().exec(&instant, ctx)
+    self.inner.get().unwrap().exec(instant, ctx)
   }
 }
 
@@ -165,7 +165,7 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     debug_assert!(self.inner.get().is_some());
-    unsafe { self.inner.get().unwrap_unchecked() }.exec(&instant, ctx)
+    unsafe { self.inner.get().unwrap_unchecked() }.exec(instant, ctx)
   }
 }
 
