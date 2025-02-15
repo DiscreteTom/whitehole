@@ -82,14 +82,7 @@ mod tests {
     };
 
     // repeat a rejecter will reject
-    helper(
-      rejecter() * 3,
-      "123",
-      Some(Output {
-        value: (),
-        digested: 0,
-      }),
-    );
+    helper(rejecter() * 3, "123", None);
 
     // repeat rejecter 0 times will accept
     let n = 0;
