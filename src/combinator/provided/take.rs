@@ -1,6 +1,7 @@
 use crate::{
-  action::{Action, Input, Output},
+  action::{Action, Context, Output},
   combinator::Combinator,
+  instant::Instant,
 };
 
 /// See [`take`].
@@ -20,10 +21,10 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Take {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, instant: Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
     let mut digested: usize = 0;
     let mut count: usize = 0;
-    let mut chars = input.instant().rest().chars();
+    let mut chars = instant.rest().chars();
     while count < self.n {
       // no enough chars, try to digest more
       if let Some(c) = chars.next() {
@@ -36,7 +37,7 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Take {
       }
     }
     // enough chars
-    unsafe { input.digest_unchecked(digested) }.into()
+    unsafe { instant.accept_unchecked(digested) }.into()
   }
 }
 
@@ -44,8 +45,8 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Take {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&[u8], &mut State, &mut Heap>) -> Option<Output<()>> {
-    input.digest(self.n)
+  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+    instant.accept(self.n)
   }
 }
 
@@ -84,47 +85,43 @@ mod tests {
     // normal
     assert_eq!(
       take(3)
-        .exec(Input::new(Instant::new("123456"), &mut (), &mut ()))
+        .exec(Instant::new("123456"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     assert_eq!(
       take(3)
-        .exec(Input::new(
-          Instant::new(b"123456" as &[u8]),
-          &mut (),
-          &mut ()
-        ))
+        .exec(Instant::new(b"123456" as &[u8]), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(take(7)
-      .exec(Input::new(Instant::new("123456"), &mut (), &mut ()))
+      .exec(Instant::new("123456"), Context::default())
       .is_none());
     // 0 is always accepted
     assert_eq!(
       take(0)
-        .exec(Input::new(Instant::new(""), &mut (), &mut ()))
+        .exec(Instant::new(""), Context::default())
         .map(|output| output.digested),
       Some(0)
     );
     assert_eq!(
       take(0)
-        .exec(Input::new(Instant::new("123456"), &mut (), &mut ()))
+        .exec(Instant::new("123456"), Context::default())
         .map(|output| output.digested),
       Some(0)
     );
     // take by chars not bytes for &str
     assert_eq!(
       take(1)
-        .exec(Input::new(Instant::new("好"), &mut (), &mut ()))
+        .exec(Instant::new("好"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     assert_eq!(
       take(2)
-        .exec(Input::new(Instant::new("好好"), &mut (), &mut ()))
+        .exec(Instant::new("好好"), Context::default())
         .map(|output| output.digested),
       Some(6)
     );

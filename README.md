@@ -39,7 +39,7 @@ let double_hex = || {
   // Repeat a combinator with `*`.
   (next(|c| c.is_ascii_hexdigit()) * 2)
     // Convert the matched content to `u8`.
-    .select(|ctx| u8::from_str_radix(ctx.content(), 16).unwrap())
+    .select(|accept, _| u8::from_str_radix(accept.content(), 16).unwrap())
     // Wrap `u8` to `(u8,)`, this is required by `+` below.
     .tuple()
 };

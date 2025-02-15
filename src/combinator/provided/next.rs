@@ -1,6 +1,7 @@
 use crate::{
-  action::{Action, Input, Output},
+  action::{Action, Context, Output},
   combinator::{create_closure_combinator, Combinator},
+  instant::Instant,
 };
 
 create_closure_combinator!(Next, "See [`next`].");
@@ -9,12 +10,16 @@ unsafe impl<State, Heap, F: Fn(char) -> bool> Action<str, State, Heap> for Next<
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    let next = input.instant().rest().chars().next()?;
+  fn exec(
+    &self,
+    instant: Instant<&str>,
+    _: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    let next = instant.rest().chars().next()?;
     if !(self.inner)(next) {
       return None;
     }
-    Some(unsafe { input.digest_unchecked(next.len_utf8()) })
+    Some(unsafe { instant.accept_unchecked(next.len_utf8()) })
   }
 }
 
@@ -22,12 +27,16 @@ unsafe impl<State, Heap, F: Fn(u8) -> bool> Action<[u8], State, Heap> for Next<F
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&[u8], &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    let &next = input.instant().rest().first()?;
+  fn exec(
+    &self,
+    instant: Instant<&[u8]>,
+    _: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    let &next = instant.rest().first()?;
     if !(self.inner)(next) {
       return None;
     }
-    Some(unsafe { input.digest_unchecked(1) })
+    Some(unsafe { instant.accept_unchecked(1) })
   }
 }
 
@@ -82,23 +91,20 @@ pub mod bytes {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    action::{Action, Input},
-    instant::Instant,
-  };
+  use crate::{action::Action, instant::Instant};
 
   #[test]
   fn combinator_next() {
     // normal
     assert_eq!(
       next(|c| c.is_ascii_digit())
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+        .exec(Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
     // reject
     assert!(next(|c| c.is_ascii_alphabetic())
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+      .exec(Instant::new("123"), Context::default())
       .is_none());
 
     // ensure the combinator is copyable and clone-able
@@ -115,13 +121,13 @@ mod tests {
     // normal
     assert_eq!(
       (next(|c| c.is_ascii_digit()) * (1..))
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+        .exec(Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(next(|c| c.is_ascii_digit())
-      .exec(Input::new(Instant::new("abc"), &mut (), &mut ()))
+      .exec(Instant::new("abc"), Context::default())
       .is_none());
   }
 
@@ -130,13 +136,13 @@ mod tests {
     // normal
     assert_eq!(
       bytes::next(|b| b.is_ascii_digit())
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+        .exec(Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
     // reject
     assert!(bytes::next(|b| b.is_ascii_alphabetic())
-      .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+      .exec(Instant::new(b"123"), Context::default())
       .is_none());
 
     // ensure the combinator is copyable and clone-able
@@ -153,13 +159,13 @@ mod tests {
     // normal
     assert_eq!(
       (bytes::next(|b| b.is_ascii_digit()) * (1..))
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+        .exec(Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(bytes::next(|b| b.is_ascii_digit())
-      .exec(Input::new(Instant::new(b"abc"), &mut (), &mut ()))
+      .exec(Instant::new(b"abc"), Context::default())
       .is_none());
   }
 }

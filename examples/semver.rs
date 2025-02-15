@@ -18,7 +18,7 @@ fn build_entry() -> impl Action {
   let alphanumeric_identifier = || {
     (non_digit() + identifier_characters().optional())
       | (digit() + identifier_characters())
-        .reject(|ctx| ctx.content().chars().all(|c| c.is_ascii_digit()))
+        .reject(|accept, _| accept.content().chars().all(|c| c.is_ascii_digit()))
   };
 
   let build_identifier = || alphanumeric_identifier() | digits();

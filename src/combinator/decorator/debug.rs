@@ -1,8 +1,9 @@
 use super::create_value_decorator;
 use crate::{
-  action::{Action, Input, Output},
+  action::{Action, Context, Output},
   combinator::Combinator,
   digest::Digest,
+  instant::Instant,
 };
 use std::{fmt::Debug, ops::RangeTo, slice::SliceIndex};
 
@@ -65,11 +66,11 @@ where
 }
 
 macro_rules! impl_log {
-  ($self:ident, $input:ident, $rest_formatter:ident) => {{
-    let rest = $input.instant().rest();
+  ($self:ident, $instant:ident, $ctx:ident, $rest_formatter:ident) => {{
+    let rest = $instant.rest();
     println!("{}", &format_input($self.inner, $rest_formatter, rest));
     unsafe { INDENT_LEVEL += 1 };
-    let output = $self.action.exec($input);
+    let output = $self.action.exec($instant, $ctx);
     unsafe { INDENT_LEVEL -= 1 };
     println!("{}", &format_output($self.inner, rest, &output));
     output
@@ -80,8 +81,12 @@ unsafe impl<State, Heap, T: Action<str, State, Heap>> Action<str, State, Heap> f
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    impl_log!(self, input, input_rest_str)
+  fn exec(
+    &self,
+    instant: Instant<&str>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    impl_log!(self, instant, ctx, input_rest_str)
   }
 }
 
@@ -89,8 +94,12 @@ unsafe impl<State, Heap, T: Action<[u8], State, Heap>> Action<[u8], State, Heap>
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&[u8], &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    impl_log!(self, input, input_rest_bytes)
+  fn exec(
+    &self,
+    instant: Instant<&[u8]>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    impl_log!(self, instant, ctx, input_rest_bytes)
   }
 }
 
@@ -125,10 +134,8 @@ mod tests {
   #[test]
   #[serial]
   fn ensure_log_does_not_modify_output() {
-    let c = wrap(|input| input.digest(1)).bind(2).log("name");
-    let output = c
-      .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
-      .unwrap();
+    let c = wrap(|instant, _| instant.accept(1)).bind(2).log("name");
+    let output = c.exec(Instant::new("1"), Context::default()).unwrap();
     assert_eq!(output.digested, 1);
     assert_eq!(output.value, 2);
   }
@@ -136,10 +143,10 @@ mod tests {
   #[test]
   #[serial]
   fn ensure_log_can_be_used_with_bytes() {
-    let c = bytes::wrap(|input| input.digest(1)).bind(2).log("name");
-    let output = c
-      .exec(Input::new(Instant::new(b"1"), &mut (), &mut ()))
-      .unwrap();
+    let c = bytes::wrap(|instant, _| instant.accept(1))
+      .bind(2)
+      .log("name");
+    let output = c.exec(Instant::new(b"1"), Context::default()).unwrap();
     assert_eq!(output.digested, 1);
     assert_eq!(output.value, 2);
   }

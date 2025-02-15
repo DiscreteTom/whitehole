@@ -36,7 +36,11 @@
 //! # );
 //! ```
 
-use crate::combinator::{eat, Action, Combinator, Eat, Input, Output};
+use crate::{
+  action::Context,
+  combinator::{eat, Action, Combinator, Eat, Output},
+  instant::Instant,
+};
 use std::ops;
 
 /// An [`Action`] created by the `|` operator.
@@ -66,11 +70,15 @@ unsafe impl<
   type Value = Lhs::Value;
 
   #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    mut ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
     self
       .lhs
-      .exec(input.reborrow())
-      .or_else(|| self.rhs.exec(input))
+      .exec(instant.clone(), ctx.reborrow())
+      .or_else(|| self.rhs.exec(instant, ctx))
   }
 }
 
@@ -158,7 +166,7 @@ impl<Lhs> ops::BitOr<Vec<u8>> for Combinator<Lhs> {
 mod tests {
   use super::*;
   use crate::{
-    combinator::{bytes, wrap, Input, Output},
+    combinator::{bytes, wrap, Output},
     instant::Instant,
   };
 
@@ -167,21 +175,27 @@ mod tests {
     let mut state = 0;
 
     let rejecter = || {
-      wrap(|input| {
-        *input.state += 1;
+      wrap(|_, ctx| {
+        *ctx.state += 1;
         None
       })
     };
     let accepter = || {
-      wrap(|input| {
-        *input.state += 1;
-        input.digest(1)
+      wrap(|instant, ctx| {
+        *ctx.state += 1;
+        instant.accept(1)
       })
     };
 
     // reject then accept, both should increment the state
     assert_eq!(
-      (rejecter() | accepter()).exec(Input::new(Instant::new("123"), &mut state, &mut ())),
+      (rejecter() | accepter()).exec(
+        Instant::new("123"),
+        Context {
+          state: &mut state,
+          heap: &mut ()
+        }
+      ),
       Some(Output {
         value: (),
         digested: 1,
@@ -193,7 +207,13 @@ mod tests {
 
     // accept then reject, only the first should increment the state
     assert_eq!(
-      (accepter() | rejecter()).exec(Input::new(Instant::new("123"), &mut state, &mut ())),
+      (accepter() | rejecter()).exec(
+        Instant::new("123"),
+        Context {
+          state: &mut state,
+          heap: &mut ()
+        }
+      ),
       Some(Output {
         value: (),
         digested: 1,
@@ -204,10 +224,10 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_char() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | '1')
-        .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
+        .exec(Instant::new("1"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
@@ -215,10 +235,10 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_str() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | "1")
-        .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
+        .exec(Instant::new("1"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
@@ -226,10 +246,10 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_string() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | "1".to_string())
-        .exec(Input::new(Instant::new("1"), &mut (), &mut ()))
+        .exec(Instant::new("1"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
@@ -237,10 +257,10 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_u8() {
-    let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | b'1')
-        .exec(Input::new(Instant::new(b"1"), &mut (), &mut ()))
+        .exec(Instant::new(b"1"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
@@ -248,10 +268,10 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_u8_slice() {
-    let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | "1".as_bytes())
-        .exec(Input::new(Instant::new(b"1"), &mut (), &mut ()))
+        .exec(Instant::new(b"1"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
@@ -259,10 +279,10 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_u8_const_slice() {
-    let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | b"1")
-        .exec(Input::new(Instant::new(b"1"), &mut (), &mut ()))
+        .exec(Instant::new(b"1"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
@@ -270,10 +290,10 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_vec_u8() {
-    let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | vec![b'1'])
-        .exec(Input::new(Instant::new(b"1"), &mut (), &mut ()))
+        .exec(Instant::new(b"1"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );

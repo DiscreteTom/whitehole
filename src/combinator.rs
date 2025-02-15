@@ -103,7 +103,10 @@ pub mod ops;
 pub use decorator::*;
 pub use provided::*;
 
-use crate::action::{Action, Input, Output};
+use crate::{
+  action::{Action, Context, Output},
+  instant::Instant,
+};
 
 /// Wrap an [`Action`] to provide decorators and operator overloads.
 ///
@@ -130,8 +133,12 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<T::Value>> {
-    self.action.exec(input)
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<T::Value>> {
+    self.action.exec(instant, ctx)
   }
 }
 

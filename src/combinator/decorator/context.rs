@@ -1,45 +1,33 @@
-use crate::{
-  action::{Input, Output},
-  digest::Digest,
-};
+use crate::{action::Output, digest::Digest, instant::Instant};
 use std::{
   ops::{Range, RangeFrom, RangeTo},
   slice::SliceIndex,
 };
 
-/// This struct provides the [`Input`] and [`Output`]
+/// This struct provides the [`Instant`] and [`Output`]
 /// in combinator decorators when the combinator is accepted.
 ///
 /// You can't construct or modify this struct directly.
-/// This is to ensure the [`Input`] and [`Output`] are consistent
+/// This is to ensure the [`Instant`] and [`Output`] are consistent
 /// so we can skip some runtime checks.
 #[derive(Debug)]
-pub struct AcceptedContext<InputType, OutputType> {
-  /// The [`Input`].
-  input: InputType,
-  /// The [`Output`].
-  output: OutputType,
+pub struct AcceptedContext<TextRef, Value> {
+  instant: Instant<TextRef>,
+  output: Output<Value>,
 }
 
-impl<InputType, OutputType> AcceptedContext<InputType, OutputType> {
+impl<TextRef, Value> AcceptedContext<TextRef, Value> {
   /// Create a new instance.
   ///
   /// This is only used internally by the library.
   #[inline]
-  pub(super) const fn new(input: InputType, output: OutputType) -> Self {
-    AcceptedContext { input, output }
-  }
-
-  /// Get the [`Input`] of this execution.
-  #[inline]
-  pub const fn input(&self) -> &InputType {
-    // return non-mutable reference to prevent mem::swap and override `Input::instant`.
-    &self.input
+  pub(super) const fn new(instant: Instant<TextRef>, output: Output<Value>) -> Self {
+    AcceptedContext { instant, output }
   }
 
   /// Get the [`Output`] of this execution.
   #[inline]
-  pub const fn output(&self) -> &OutputType {
+  pub const fn output(&self) -> &Output<Value> {
     // return non-mutable reference to prevent mem::swap and override `Output::digested`.
     &self.output
   }
@@ -48,7 +36,7 @@ impl<InputType, OutputType> AcceptedContext<InputType, OutputType> {
   ///
   /// To get the [`Input`] as well, use [`Self::split`].
   #[inline]
-  pub fn take(self) -> OutputType {
+  pub fn take(self) -> Output<Value> {
     self.output
   }
 
@@ -56,36 +44,24 @@ impl<InputType, OutputType> AcceptedContext<InputType, OutputType> {
   ///
   /// To get the [`Output`] only, use [`Self::take`].
   #[inline]
-  pub fn split(self) -> (InputType, OutputType) {
-    (self.input, self.output)
+  pub fn split(self) -> (Instant<TextRef>, Output<Value>) {
+    (self.instant, self.output)
   }
 }
 
-impl<TextRef, State, Heap, OutputType>
-  AcceptedContext<Input<TextRef, &mut State, &mut Heap>, OutputType>
-{
-  /// The `self.input().instant().digested()`.
+impl<TextRef, Value> AcceptedContext<TextRef, Value> {
+  #[inline]
+  pub const fn instant(&self) -> &Instant<TextRef> {
+    &self.instant
+  }
+
   #[inline]
   pub const fn start(&self) -> usize {
-    self.input.instant().digested()
-  }
-
-  /// See [`Input::state`].
-  #[inline]
-  pub const fn state(&mut self) -> &mut State {
-    // since `Self::input` returns non-mutable reference, we have to provide this to get mutable reference.
-    self.input.state
-  }
-
-  /// See [`Input::heap`].
-  #[inline]
-  pub const fn heap(&mut self) -> &mut Heap {
-    // since `Self::input` returns non-mutable reference, we have to provide this to get mutable reference.
-    self.input.heap
+    self.instant.digested()
   }
 }
 
-impl<InputType, Value> AcceptedContext<InputType, Output<Value>> {
+impl<TextRef, Value> AcceptedContext<TextRef, Value> {
   /// See [`Output::digested`].
   #[inline]
   pub const fn digested(&self) -> usize {
@@ -93,9 +69,7 @@ impl<InputType, Value> AcceptedContext<InputType, Output<Value>> {
   }
 }
 
-impl<TextRef, Value, State, Heap>
-  AcceptedContext<Input<TextRef, &mut State, &mut Heap>, Output<Value>>
-{
+impl<TextRef, Value> AcceptedContext<TextRef, Value> {
   /// The end index in bytes in the whole input text.
   #[inline]
   pub fn end(&self) -> usize {
@@ -112,17 +86,15 @@ impl<TextRef, Value, State, Heap>
   }
 }
 
-impl<'a, Text: ?Sized + Digest, Value, State, Heap>
-  AcceptedContext<Input<&'a Text, &mut State, &mut Heap>, Output<Value>>
-{
+impl<'a, Text: ?Sized + Digest, Value> AcceptedContext<&'a Text, Value> {
   /// Get the rest of the input text after accepting this combinator.
   #[inline]
   pub fn rest(&self) -> &'a Text
   where
     RangeFrom<usize>: SliceIndex<Text, Output = Text>,
   {
-    debug_assert!(self.input.validate(self.output.digested));
-    unsafe { self.input.instant().rest().get_unchecked(self.digested()..) }
+    debug_assert!(self.instant.rest().validate(self.output.digested));
+    unsafe { self.instant.rest().get_unchecked(self.digested()..) }
   }
 
   /// The text content accepted by this combinator.
@@ -131,8 +103,8 @@ impl<'a, Text: ?Sized + Digest, Value, State, Heap>
   where
     RangeTo<usize>: SliceIndex<Text, Output = Text>,
   {
-    debug_assert!(self.input.validate(self.output.digested));
-    unsafe { self.input.instant().rest().get_unchecked(..self.digested()) }
+    debug_assert!(self.instant.rest().validate(self.output.digested));
+    unsafe { self.instant.rest().get_unchecked(..self.digested()) }
   }
 }
 
@@ -147,15 +119,7 @@ mod tests {
     };
     ($state:expr, $heap:expr) => {
       AcceptedContext::new(
-        Input::new(
-          {
-            let mut instant = Instant::new("0123");
-            unsafe { instant.digest_unchecked(1) };
-            instant
-          },
-          &mut $state,
-          &mut $heap,
-        ),
+        unsafe { Instant::new("0123").shift_unchecked(1) },
         Output {
           value: (),
           digested: 1,
@@ -167,7 +131,7 @@ mod tests {
   #[test]
   fn accepted_decorator_context() {
     // getters
-    assert_eq!(ctx!().input().instant().rest(), "123");
+    assert_eq!(ctx!().instant().rest(), "123");
     assert_eq!(ctx!().output().digested, 1);
     assert_eq!(ctx!().start(), 1);
     assert_eq!(ctx!().digested(), 1);
@@ -176,18 +140,10 @@ mod tests {
     assert_eq!(ctx!().range(), 1..2);
     assert_eq!(ctx!().content(), "1");
 
-    // mutable state & heap
-    let mut state = 0;
-    *ctx!(state, ()).state() = 1;
-    assert_eq!(*ctx!(state, ()).state(), 1);
-    let mut heap = 0;
-    *ctx!((), heap).heap() = 1;
-    assert_eq!(*ctx!((), heap).heap(), 1);
-
     // take & split
     assert_eq!(ctx!().take().digested, 1);
     assert_eq!(ctx!().take().map(|_| 1).value, 1);
     assert_eq!(ctx!().split().1.map(|_| 1).value, 1);
-    assert_eq!(ctx!().split().0.reborrow().instant().digested(), 1);
+    assert_eq!(ctx!().split().0.digested(), 1);
   }
 }

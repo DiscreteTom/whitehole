@@ -26,12 +26,13 @@
 //! So we decide to consume the `Input` in [`Action::exec`].
 //! If you need to use `Input` for multiple times, see [`Input::reborrow`].
 
-mod input;
+mod context;
 mod output;
 
+use crate::instant::Instant;
 use std::rc::Rc;
 
-pub use input::*;
+pub use context::*;
 pub use output::*;
 
 /// The basic building block of a parser.
@@ -42,10 +43,15 @@ pub unsafe trait Action<Text: ?Sized = str, State = (), Heap = ()> {
   /// See [`Output::value`].
   type Value;
 
-  /// Try to digest some bytes from the input, optionally change the state of the parsing,
+  /// Try to digest some bytes from the [`Instant::rest`],
+  /// optionally change the state of the parsing,
   /// and yield a value.
   /// Return [`None`] to reject.
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>>;
+  fn exec(
+    &self,
+    instant: Instant<&Text>, // TODO: pass by ref?
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>>;
 }
 
 unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
@@ -54,8 +60,12 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    (**self).exec(input)
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    (**self).exec(instant, ctx)
   }
 }
 
@@ -65,8 +75,12 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    self.as_ref().exec(input)
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    self.as_ref().exec(instant, ctx)
   }
 }
 
@@ -76,8 +90,12 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    self.as_ref().exec(input)
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    self.as_ref().exec(instant, ctx)
   }
 }
 
@@ -90,51 +108,49 @@ mod tests {
   };
 
   fn helper(t: impl Action<Value = ()>) {
-    assert!(t
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
-      .is_some());
+    assert!(t.exec(Instant::new("123"), Context::default()).is_some());
   }
   fn helper_bytes(t: impl Action<[u8], Value = ()>) {
-    assert!(t
-      .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
-      .is_some());
+    assert!(t.exec(Instant::new(b"123"), Context::default()).is_some());
   }
 
   #[test]
   fn action_ref() {
-    helper(&wrap(|input| input.digest(1)));
-    helper_bytes(&bytes::wrap(|input| input.digest(1)));
+    helper(&wrap(|instant, _| instant.accept(1)));
+    helper_bytes(&bytes::wrap(|instant, _| instant.accept(1)));
   }
 
   #[test]
   fn action_dyn_ref() {
-    helper(&wrap(|input| input.digest(1)) as &dyn Action<Value = ()>);
-    helper_bytes(&bytes::wrap(|input| input.digest(1)) as &dyn Action<[u8], Value = ()>);
+    helper(&wrap(|instant, _| instant.accept(1)) as &dyn Action<Value = ()>);
+    helper_bytes(&bytes::wrap(|instant, _| instant.accept(1)) as &dyn Action<[u8], Value = ()>);
   }
 
   #[test]
   fn boxed_action() {
-    helper(Box::new(wrap(|input| input.digest(1))));
-    helper_bytes(Box::new(bytes::wrap(|input| input.digest(1))));
+    helper(Box::new(wrap(|instant, _| instant.accept(1))));
+    helper_bytes(Box::new(bytes::wrap(|instant, _| instant.accept(1))));
   }
 
   #[test]
   fn boxed_dyn_action() {
-    helper(Box::new(wrap(|input| input.digest(1))) as Box<dyn Action<Value = ()>>);
+    helper(Box::new(wrap(|instant, _| instant.accept(1))) as Box<dyn Action<Value = ()>>);
     helper_bytes(
-      Box::new(bytes::wrap(|input| input.digest(1))) as Box<dyn Action<[u8], Value = ()>>
+      Box::new(bytes::wrap(|instant, _| instant.accept(1))) as Box<dyn Action<[u8], Value = ()>>
     );
   }
 
   #[test]
   fn rc_action() {
-    helper(Rc::new(wrap(|input| input.digest(1))));
-    helper_bytes(Rc::new(bytes::wrap(|input| input.digest(1))));
+    helper(Rc::new(wrap(|instant, _| instant.accept(1))));
+    helper_bytes(Rc::new(bytes::wrap(|instant, _| instant.accept(1))));
   }
 
   #[test]
   fn rc_dyn_action() {
-    helper(Rc::new(wrap(|input| input.digest(1))) as Rc<dyn Action<Value = ()>>);
-    helper_bytes(Rc::new(bytes::wrap(|input| input.digest(1))) as Rc<dyn Action<[u8], Value = ()>>);
+    helper(Rc::new(wrap(|instant, _| instant.accept(1))) as Rc<dyn Action<Value = ()>>);
+    helper_bytes(
+      Rc::new(bytes::wrap(|instant, _| instant.accept(1))) as Rc<dyn Action<[u8], Value = ()>>
+    );
   }
 }

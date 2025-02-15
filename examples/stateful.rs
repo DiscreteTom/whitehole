@@ -45,7 +45,7 @@ pub fn build_lexer(s: &str) -> Parser<impl Action<str, MyState>, &str, MyState> 
   let whole_or_left = {
     let whole_end = eat('`');
     // if the template string is not closed, we need to increment the nested level
-    let left_end = eat("${").then(|mut ctx| inc(ctx.state()));
+    let left_end = eat("${").then(|_, ctx| inc(ctx.state));
     eat('`') + body_optional() + (whole_end | left_end)
   };
 
@@ -53,19 +53,19 @@ pub fn build_lexer(s: &str) -> Parser<impl Action<str, MyState>, &str, MyState> 
   let middle_or_right = {
     let middle_end = eat("${");
     // if the template string is closed, we need to decrement the nested level
-    let right_end = eat('`').then(|mut ctx| dec(ctx.state()));
+    let right_end = eat('`').then(|_, ctx| dec(ctx.state));
     eat('}') + body_optional() + (right_end | middle_end)
   }
   // if not in a template string, the "}" is a normal character instead of part of a template string,
   // this action shouldn't be executed
-  .prevent(|input| !nested(input.state));
+  .prevent(|_, ctx| !nested(ctx.state));
 
   // other characters that are not part of a template string
   let others = {
     // when not in a template string, all non-"`" characters are normal characters
-    let outside = (next(|c| c != '`') * (1..)).when(|input| !nested(input.state));
+    let outside = (next(|c| c != '`') * (1..)).when(|_, ctx| !nested(ctx.state));
     // when in a template string, besides "`", we also need to check for "}" to handle middle_or_right
-    let inside = (next(|c| c != '}' && c != '`') * (1..)).when(|input| nested(input.state));
+    let inside = (next(|c| c != '}' && c != '`') * (1..)).when(|_, ctx| nested(ctx.state));
     outside | inside
   };
 

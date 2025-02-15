@@ -1,7 +1,8 @@
 use super::Mul;
 use crate::{
-  action::{Action, Input, Output},
+  action::{Action, Context, Output},
   combinator::Combinator,
+  instant::Instant,
 };
 
 /// A util struct to represent no separator.
@@ -13,7 +14,11 @@ unsafe impl<Text: ?Sized, State, Heap> Action<Text, State, Heap> for NoSep {
   type Value = ();
 
   #[inline]
-  fn exec(&self, _: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(
+    &self,
+    _: Instant<&Text>,
+    _: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
     // just accept without digesting
     Some(Output {
       value: (),
@@ -28,15 +33,15 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   /// # Examples
   /// ```
-  /// # use whitehole::{combinator::{eat, Combinator}, action::{Action, Input}, instant::Instant};
+  /// # use whitehole::{combinator::{eat, Combinator}, action::{Action, Context}, instant::Instant};
   /// // eat `true` for 1 or more times, separated by `,` with optional spaces
   /// let action = {
   ///   let ws = || eat(' ') * (..);
   ///   (eat("true") * (1..)).sep(ws() + eat(',') + ws())
   /// };
-  /// assert!(action.exec(Input::new(Instant::new("true"), &mut (), &mut ())).is_some());
-  /// assert!(action.exec(Input::new(Instant::new("true,true"), &mut (), &mut ())).is_some());
-  /// assert!(action.exec(Input::new(Instant::new("true , true"), &mut (), &mut ())).is_some());
+  /// assert!(action.exec(Instant::new("true"), Context::default()).is_some());
+  /// assert!(action.exec(Instant::new("true,true"), Context::default()).is_some());
+  /// assert!(action.exec(Instant::new("true , true"), Context::default()).is_some());
   /// ```
   /// Tips: you can use [`char`], `&str`, [`String`], [`u8`], `&[u8]` and [`Vec<u8>`] as the shorthand
   /// for [`eat`](crate::combinator::eat) in the separator.
@@ -66,15 +71,15 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// You can use [`Combinator::sep`] with [`Combinator::fold`] in any order after `*`,
   /// since they are actually builder methods for [`Combinator<Mul>`].
   /// ```
-  /// # use whitehole::{combinator::eat, action::{Input, Action}, instant::Instant};
+  /// # use whitehole::{combinator::eat, action::{Action, Context}, instant::Instant};
   /// let combinator = (eat('a').bind(1) * (1..)).sep(',').fold(|| 0, |v, acc| acc + v);
   /// assert_eq!(
-  ///   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ())).unwrap().value,
+  ///   combinator.exec(Instant::new("a,a,a"), Context::default()).unwrap().value,
   ///   3
   /// );
   /// let combinator = (eat('a').bind(1) * (1..)).fold(|| 0, |v, acc| acc + v).sep(',');
   /// assert_eq!(
-  ///   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ())).unwrap().value,
+  ///   combinator.exec(Instant::new("a,a,a"), Context::default()).unwrap().value,
   ///   3
   /// );
   /// ```
@@ -104,43 +109,41 @@ mod tests {
   #[test]
   fn combinator_mul_with_sep() {
     let one_or_more = || (eat('a') * (1..)).sep(',');
-    macro_rules! input {
-      ($rest:expr) => {
-        Input::new(Instant::new($rest), &mut (), &mut ())
-      };
-    }
 
-    assert_eq!(one_or_more().exec(input!(",")), None);
     assert_eq!(
-      one_or_more().exec(input!("a")),
+      one_or_more().exec(Instant::new(","), Context::default()),
+      None
+    );
+    assert_eq!(
+      one_or_more().exec(Instant::new("a"), Context::default()),
       Some(Output {
         value: (),
         digested: 1
       })
     );
     assert_eq!(
-      one_or_more().exec(input!("a,")),
+      one_or_more().exec(Instant::new("a,"), Context::default()),
       Some(Output {
         value: (),
         digested: 1
       })
     );
     assert_eq!(
-      one_or_more().exec(input!("a,a")),
+      one_or_more().exec(Instant::new("a,a"), Context::default()),
       Some(Output {
         value: (),
         digested: 3
       })
     );
     assert_eq!(
-      one_or_more().exec(input!("a,,")),
+      one_or_more().exec(Instant::new("a,,"), Context::default()),
       Some(Output {
         value: (),
         digested: 1
       })
     );
     assert_eq!(
-      one_or_more().exec(input!("a,aa")),
+      one_or_more().exec(Instant::new("a,aa"), Context::default()),
       Some(Output {
         value: (),
         digested: 3
@@ -154,7 +157,7 @@ mod tests {
       .fold(|| 0, |acc, v| acc + v)
       .sep(',');
     let output = combinator
-      .exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ()))
+      .exec(Instant::new("a,a,a"), Context::default())
       .unwrap();
     assert_eq!(output.value, 3);
     assert_eq!(output.digested, 5);
@@ -164,18 +167,18 @@ mod tests {
   fn test_sep_with_eat() {
     fn t(action: Combinator<impl Action>) {
       assert!(action
-        .exec(Input::new(Instant::new("true"), &mut (), &mut ()))
+        .exec(Instant::new("true"), Context::default())
         .is_some());
       assert!(action
-        .exec(Input::new(Instant::new("true,true"), &mut (), &mut ()))
+        .exec(Instant::new("true,true"), Context::default())
         .is_some());
     }
     fn tb(action: Combinator<impl Action<[u8]>>) {
       assert!(action
-        .exec(Input::new(Instant::new(b"true"), &mut (), &mut ()))
+        .exec(Instant::new(b"true"), Context::default())
         .is_some());
       assert!(action
-        .exec(Input::new(Instant::new(b"true,true"), &mut (), &mut ()))
+        .exec(Instant::new(b"true,true"), Context::default())
         .is_some());
     }
     // with a char

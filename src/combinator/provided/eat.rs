@@ -1,6 +1,7 @@
 use crate::{
-  action::Action,
-  combinator::{create_value_combinator, Combinator, Input, Output},
+  action::{Action, Context},
+  combinator::{create_value_combinator, Combinator, Output},
+  instant::Instant,
 };
 
 create_value_combinator!(Eat, "See [`eat`].");
@@ -9,12 +10,11 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Eat<char> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
-    input
-      .instant()
+  fn exec(&self, instant: Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+    instant
       .rest()
       .starts_with(self.inner)
-      .then(|| unsafe { input.digest_unchecked(self.inner.len_utf8()) })
+      .then(|| unsafe { instant.accept_unchecked(self.inner.len_utf8()) })
   }
 }
 
@@ -22,12 +22,11 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Eat<String> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
-    input
-      .instant()
+  fn exec(&self, instant: Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+    instant
       .rest()
       .starts_with(&self.inner)
-      .then(|| unsafe { input.digest_unchecked(self.inner.len()) })
+      .then(|| unsafe { instant.accept_unchecked(self.inner.len()) })
   }
 }
 
@@ -35,12 +34,11 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Eat<&str> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
-    input
-      .instant()
+  fn exec(&self, instant: Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+    instant
       .rest()
       .starts_with(self.inner)
-      .then(|| unsafe { input.digest_unchecked(self.inner.len()) })
+      .then(|| unsafe { instant.accept_unchecked(self.inner.len()) })
   }
 }
 
@@ -48,13 +46,12 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<u8> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&[u8], &mut State, &mut Heap>) -> Option<Output<()>> {
-    input
-      .instant()
+  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+    instant
       .rest()
       .first()
       .is_some_and(|&c| c == self.inner)
-      .then(|| unsafe { input.digest_unchecked(1) })
+      .then(|| unsafe { instant.accept_unchecked(1) })
   }
 }
 
@@ -62,12 +59,11 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<&[u8]> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&[u8], &mut State, &mut Heap>) -> Option<Output<()>> {
-    input
-      .instant()
+  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+    instant
       .rest()
       .starts_with(self.inner)
-      .then(|| unsafe { input.digest_unchecked(self.inner.len()) })
+      .then(|| unsafe { instant.accept_unchecked(self.inner.len()) })
   }
 }
 
@@ -75,12 +71,11 @@ unsafe impl<const N: usize, State, Heap> Action<[u8], State, Heap> for Eat<&[u8;
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&[u8], &mut State, &mut Heap>) -> Option<Output<()>> {
-    input
-      .instant()
+  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+    instant
       .rest()
       .starts_with(self.inner)
-      .then(|| unsafe { input.digest_unchecked(N) })
+      .then(|| unsafe { instant.accept_unchecked(N) })
   }
 }
 
@@ -88,12 +83,11 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<Vec<u8>> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&[u8], &mut State, &mut Heap>) -> Option<Output<()>> {
-    input
-      .instant()
+  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+    instant
       .rest()
       .starts_with(&self.inner)
-      .then(|| unsafe { input.digest_unchecked(self.inner.len()) })
+      .then(|| unsafe { instant.accept_unchecked(self.inner.len()) })
   }
 }
 
@@ -179,69 +173,69 @@ mod tests {
     // normal char
     assert_eq!(
       eat(';')
-        .exec(Input::new(Instant::new(";"), &mut (), &mut ()))
+        .exec(Instant::new(";"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
     // normal &str
     assert_eq!(
       eat("123")
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+        .exec(Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     // normal String
     assert_eq!(
       eat("123".to_string())
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+        .exec(Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     // normal u8
     assert_eq!(
       eat(b';')
-        .exec(Input::new(Instant::new(b";"), &mut (), &mut ()))
+        .exec(Instant::new(b";"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
     // normal &[u8;N]
     assert_eq!(
       eat(b";")
-        .exec(Input::new(Instant::new(b";"), &mut (), &mut ()))
+        .exec(Instant::new(b";"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
     // normal &[u8]
     assert_eq!(
       eat("123".as_bytes())
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+        .exec(Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     // normal Vec<u8>
     assert_eq!(
       eat(vec![b'1', b'2', b'3'])
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+        .exec(Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(eat("123")
-      .exec(Input::new(Instant::new("abc"), &mut (), &mut ()))
+      .exec(Instant::new("abc"), Context::default())
       .is_none());
     assert!(eat('1')
-      .exec(Input::new(Instant::new("abc"), &mut (), &mut ()))
+      .exec(Instant::new("abc"), Context::default())
       .is_none());
     // empty string is allowed and always accept
     assert_eq!(
       eat("")
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+        .exec(Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(0)
     );
     assert_eq!(
       eat("")
-        .exec(Input::new(Instant::new(""), &mut (), &mut ()))
+        .exec(Instant::new(""), Context::default())
         .map(|output| output.digested),
       Some(0)
     );
@@ -250,10 +244,10 @@ mod tests {
   #[test]
   fn eat_into_combinator() {
     fn test(c: Combinator<impl Action>) {
-      c.exec(Input::new(Instant::new("a"), &mut (), &mut ()));
+      c.exec(Instant::new("a"), Context::default());
     }
     fn test_bytes(c: Combinator<impl Action<[u8]>>) {
-      c.exec(Input::new(Instant::new(b"a"), &mut (), &mut ()));
+      c.exec(Instant::new(b"a"), Context::default());
     }
     test('a'.into());
     test("a".into());

@@ -10,15 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `Digest::as_bytes`, `Digest::get` and `Digest::get_unchecked`.
+- Add `Instant::accept_unchecked` and `Instant::accept` to replace `Input::digest_unchecked` and `Input::digest`.
+- Add `Context` to provide `&mut State` and `&mut Heap`.
 
 ### Changed
 
 - `Digest` is now implemented by `str` and `[u8]` instead of `&str` and `&[u8]`.
+- `Action` now takes `Instant` and `Context` as params.
+- `AcceptedContext` now contains `Instant` and `Output`. Simplify its generic params.
 
 ### Removed
 
 - Remove `Digest::len` and `Digest::is_empty`, use `Digest::as_bytes` instead.
 - Remove `Digest::digest_unchecked` and `Digest::span_unchecked`, use `Digest::get_unchecked` instead.
+- Remove `Input`, use `Instant` and `Context` instead.
 
 ## [0.6.1] - 2025-02-13
 

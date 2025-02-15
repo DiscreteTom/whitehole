@@ -1,7 +1,11 @@
 //! Decorators that modify the acceptance of a combinator.
 
 use super::{create_closure_decorator, create_simple_decorator, AcceptedContext};
-use crate::combinator::{Action, Combinator, Input, Output};
+use crate::{
+  action::Context,
+  combinator::{Action, Combinator, Output},
+  instant::Instant,
+};
 
 create_closure_decorator!(When, "See [`Combinator::when`].");
 create_closure_decorator!(Prevent, "See [`Combinator::prevent`].");
@@ -14,15 +18,19 @@ unsafe impl<
     State,
     Heap,
     T: Action<Text, State, Heap>,
-    D: Fn(Input<&Text, &mut State, &mut Heap>) -> bool,
+    D: Fn(Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
   > Action<Text, State, Heap> for When<T, D>
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    if (self.inner)(input.reborrow()) {
-      self.action.exec(input)
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    mut ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    if (self.inner)(instant.clone(), ctx.reborrow()) {
+      self.action.exec(instant, ctx)
     } else {
       None
     }
@@ -34,15 +42,19 @@ unsafe impl<
     State,
     Heap,
     T: Action<Text, State, Heap>,
-    D: Fn(Input<&Text, &mut State, &mut Heap>) -> bool,
+    D: Fn(Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
   > Action<Text, State, Heap> for Prevent<T, D>
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    if !(self.inner)(input.reborrow()) {
-      self.action.exec(input)
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    mut ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    if !(self.inner)(instant.clone(), ctx.reborrow()) {
+      self.action.exec(instant, ctx)
     } else {
       None
     }
@@ -54,26 +66,36 @@ unsafe impl<
     State,
     Heap,
     T: Action<Text, State, Heap>,
-    D: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, Output<&T::Value>>) -> bool,
+    D: Fn(AcceptedContext<&Text, &T::Value>, Context<&mut State, &mut Heap>) -> bool,
   > Action<Text, State, Heap> for Reject<T, D>
 {
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    self.action.exec(input.reborrow()).and_then(|output| {
-      if (self.inner)(AcceptedContext::new(
-        input,
-        Output {
-          value: &output.value,
-          digested: output.digested,
-        },
-      )) {
-        None
-      } else {
-        output.into()
-      }
-    })
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    mut ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    self
+      .action
+      .exec(instant.clone(), ctx.reborrow())
+      .and_then(|output| {
+        if (self.inner)(
+          AcceptedContext::new(
+            instant,
+            Output {
+              value: &output.value,
+              digested: output.digested,
+            },
+          ),
+          ctx,
+        ) {
+          None
+        } else {
+          output.into()
+        }
+      })
   }
 }
 
@@ -83,8 +105,12 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap, Value: Defau
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    Some(self.action.exec(input).unwrap_or_else(|| Output {
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    Some(self.action.exec(instant, ctx).unwrap_or_else(|| Output {
       value: Default::default(),
       digested: 0,
     }))
@@ -95,14 +121,21 @@ unsafe impl<State, Heap, T: Action<str, State, Heap>> Action<str, State, Heap> f
   type Value = T::Value;
 
   #[inline]
-  fn exec(&self, mut input: Input<&str, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    self.action.exec(input.reborrow()).and_then(|output| {
-      unsafe { input.instant().rest().get_unchecked(output.digested..) }
-        .chars()
-        .next()
-        .map_or(true, |c| !c.is_alphanumeric() && c != '_')
-        .then_some(output)
-    })
+  fn exec(
+    &self,
+    instant: Instant<&str>,
+    mut ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    self
+      .action
+      .exec(instant.clone(), ctx.reborrow())
+      .and_then(|output| {
+        unsafe { instant.rest().get_unchecked(output.digested..) }
+          .chars()
+          .next()
+          .map_or(true, |c| !c.is_alphanumeric() && c != '_')
+          .then_some(output)
+      })
   }
 }
 
@@ -116,11 +149,16 @@ impl<T> Combinator<T> {
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { execute: bool }
   /// # fn t(combinator: Combinator<impl Action<str, MyState>>) {
-  /// combinator.when(|input| input.state.execute)
+  /// combinator.when(|_, ctx| ctx.state.execute)
   /// # ;}
   /// ```
   #[inline]
-  pub fn when<Text: ?Sized, State, Heap, F: Fn(Input<&Text, &mut State, &mut Heap>) -> bool>(
+  pub fn when<
+    Text: ?Sized,
+    State,
+    Heap,
+    F: Fn(Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
+  >(
     self,
     condition: F,
   ) -> Combinator<When<T, F>>
@@ -139,11 +177,16 @@ impl<T> Combinator<T> {
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { reject: bool }
   /// # fn t(combinator: Combinator<impl Action<str, MyState>>) {
-  /// combinator.prevent(|input| input.state.reject)
+  /// combinator.prevent(|_, ctx| ctx.state.reject)
   /// # ;}
   /// ```
   #[inline]
-  pub fn prevent<Text: ?Sized, State, Heap, F: Fn(Input<&Text, &mut State, &mut Heap>) -> bool>(
+  pub fn prevent<
+    Text: ?Sized,
+    State,
+    Heap,
+    F: Fn(Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
+  >(
     self,
     preventer: F,
   ) -> Combinator<Prevent<T, F>>
@@ -159,7 +202,7 @@ impl<T> Combinator<T> {
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # fn t(combinator: Combinator<impl Action>) {
-  /// combinator.reject(|ctx| ctx.content() != "123")
+  /// combinator.reject(|ctx, _| ctx.content() != "123")
   /// # ;}
   /// ```
   #[inline]
@@ -167,7 +210,7 @@ impl<T> Combinator<T> {
     Text: ?Sized,
     State,
     Heap,
-    F: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, Output<&T::Value>>) -> bool,
+    F: Fn(AcceptedContext<&Text, &T::Value>, Context<&mut State, &mut Heap>) -> bool,
   >(
     self,
     rejecter: F,
@@ -243,27 +286,27 @@ mod tests {
   };
 
   fn accepter() -> Combinator<impl Action<str, bool, Value = ()>> {
-    wrap(|input| {
-      *input.state = true;
-      input.digest(1)
+    wrap(|instant, ctx| {
+      *ctx.state = true;
+      instant.accept(1)
     })
   }
   fn accepter_bytes() -> Combinator<impl Action<[u8], bool, Value = ()>> {
-    bytes::wrap(|input| {
-      *input.state = true;
-      input.digest(1)
+    bytes::wrap(|instant, ctx| {
+      *ctx.state = true;
+      instant.accept(1)
     })
   }
 
   fn rejecter() -> Combinator<impl Action<str, bool, Value = ()>> {
-    wrap(|input| {
-      *input.state = true;
+    wrap(|_, ctx| {
+      *ctx.state = true;
       None
     })
   }
   fn rejecter_bytes() -> Combinator<impl Action<[u8], bool, Value = ()>> {
-    bytes::wrap(|input| {
-      *input.state = true;
+    bytes::wrap(|_, ctx| {
+      *ctx.state = true;
       None
     })
   }
@@ -272,27 +315,51 @@ mod tests {
   fn combinator_when() {
     let mut executed = false;
     assert!(accepter()
-      .when(|_| false)
-      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
+      .when(|_, _| false)
+      .exec(
+        Instant::new("123"),
+        Context {
+          state: &mut executed,
+          heap: &mut ()
+        }
+      )
       .is_none());
     assert!(!executed);
     let mut executed = false;
     assert!(accepter_bytes()
-      .when(|_| false)
-      .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ()))
+      .when(|_, _| false)
+      .exec(
+        Instant::new(b"123"),
+        Context {
+          state: &mut executed,
+          heap: &mut ()
+        }
+      )
       .is_none());
     assert!(!executed);
 
     let mut executed = false;
     assert!(accepter()
-      .when(|_| true)
-      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
+      .when(|_, _| true)
+      .exec(
+        Instant::new("123"),
+        Context {
+          state: &mut executed,
+          heap: &mut ()
+        }
+      )
       .is_some());
     assert!(executed);
     let mut executed = false;
     assert!(accepter_bytes()
-      .when(|_| true)
-      .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ()))
+      .when(|_, _| true)
+      .exec(
+        Instant::new(b"123"),
+        Context {
+          state: &mut executed,
+          heap: &mut ()
+        }
+      )
       .is_some());
     assert!(executed);
   }
@@ -301,27 +368,51 @@ mod tests {
   fn combinator_prevent() {
     let mut executed = false;
     assert!(accepter()
-      .prevent(|_| true)
-      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
+      .prevent(|_, _| true)
+      .exec(
+        Instant::new("123"),
+        Context {
+          state: &mut executed,
+          heap: &mut ()
+        }
+      )
       .is_none());
     assert!(!executed);
     let mut executed = false;
     assert!(accepter_bytes()
-      .prevent(|_| true)
-      .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ()))
+      .prevent(|_, _| true)
+      .exec(
+        Instant::new(b"123"),
+        Context {
+          state: &mut executed,
+          heap: &mut ()
+        }
+      )
       .is_none());
     assert!(!executed);
 
     let mut executed = false;
     assert!(accepter()
-      .prevent(|_| false)
-      .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
+      .prevent(|_, _| false)
+      .exec(
+        Instant::new("123"),
+        Context {
+          state: &mut executed,
+          heap: &mut ()
+        }
+      )
       .is_some());
     assert!(executed);
     let mut executed = false;
     assert!(accepter_bytes()
-      .prevent(|_| false)
-      .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ()))
+      .prevent(|_, _| false)
+      .exec(
+        Instant::new(b"123"),
+        Context {
+          state: &mut executed,
+          heap: &mut ()
+        }
+      )
       .is_some());
     assert!(executed);
   }
@@ -331,8 +422,14 @@ mod tests {
     let mut executed = false;
     assert_eq!(
       accepter()
-        .reject(|ctx| ctx.content() != "1")
-        .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
+        .reject(|accept, _| accept.content() != "1")
+        .exec(
+          Instant::new("123"),
+          Context {
+            state: &mut executed,
+            heap: &mut ()
+          }
+        )
         .unwrap()
         .digested,
       1
@@ -341,8 +438,14 @@ mod tests {
     let mut executed = false;
     assert_eq!(
       accepter_bytes()
-        .reject(|ctx| ctx.content() != b"1")
-        .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ()))
+        .reject(|accept, _| accept.content() != b"1")
+        .exec(
+          Instant::new(b"123"),
+          Context {
+            state: &mut executed,
+            heap: &mut ()
+          }
+        )
         .unwrap()
         .digested,
       1
@@ -351,17 +454,27 @@ mod tests {
 
     let mut executed = false;
     assert_eq!(
-      accepter()
-        .reject(|ctx| ctx.content() == "1")
-        .exec(Input::new(Instant::new("123"), &mut executed, &mut ())),
+      accepter().reject(|accept, _| accept.content() == "1").exec(
+        Instant::new("123"),
+        Context {
+          state: &mut executed,
+          heap: &mut ()
+        }
+      ),
       None
     );
     assert!(executed);
     let mut executed = false;
     assert_eq!(
       accepter_bytes()
-        .reject(|ctx| ctx.content() == b"1")
-        .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ())),
+        .reject(|accept, _| accept.content() == b"1")
+        .exec(
+          Instant::new(b"123"),
+          Context {
+            state: &mut executed,
+            heap: &mut ()
+          }
+        ),
       None
     );
     assert!(executed);
@@ -373,7 +486,13 @@ mod tests {
     assert_eq!(
       accepter()
         .optional()
-        .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
+        .exec(
+          Instant::new("123"),
+          Context {
+            state: &mut executed,
+            heap: &mut ()
+          }
+        )
         .unwrap()
         .digested,
       1
@@ -383,7 +502,13 @@ mod tests {
     assert_eq!(
       accepter_bytes()
         .optional()
-        .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ()))
+        .exec(
+          Instant::new(b"123"),
+          Context {
+            state: &mut executed,
+            heap: &mut ()
+          }
+        )
         .unwrap()
         .digested,
       1
@@ -394,7 +519,13 @@ mod tests {
     assert_eq!(
       rejecter()
         .optional()
-        .exec(Input::new(Instant::new("123"), &mut executed, &mut ()))
+        .exec(
+          Instant::new("123"),
+          Context {
+            state: &mut executed,
+            heap: &mut ()
+          }
+        )
         .unwrap()
         .digested,
       0
@@ -404,7 +535,13 @@ mod tests {
     assert_eq!(
       rejecter_bytes()
         .optional()
-        .exec(Input::new(Instant::new(b"123"), &mut executed, &mut ()))
+        .exec(
+          Instant::new(b"123"),
+          Context {
+            state: &mut executed,
+            heap: &mut ()
+          }
+        )
         .unwrap()
         .digested,
       0
@@ -418,7 +555,13 @@ mod tests {
     assert_eq!(
       accepter()
         .optional()
-        .exec(Input::new(Instant::new(""), &mut executed, &mut ()))
+        .exec(
+          Instant::new(""),
+          Context {
+            state: &mut executed,
+            heap: &mut ()
+          }
+        )
         .unwrap()
         .digested,
       0
@@ -428,7 +571,13 @@ mod tests {
     assert_eq!(
       accepter_bytes()
         .optional()
-        .exec(Input::new(Instant::new(b""), &mut executed, &mut ()))
+        .exec(
+          Instant::new(b""),
+          Context {
+            state: &mut executed,
+            heap: &mut ()
+          }
+        )
         .unwrap()
         .digested,
       0
@@ -442,7 +591,13 @@ mod tests {
     assert_eq!(
       accepter()
         .boundary()
-        .exec(Input::new(Instant::new("1"), &mut executed, &mut ()))
+        .exec(
+          Instant::new("1"),
+          Context {
+            state: &mut executed,
+            heap: &mut ()
+          }
+        )
         .unwrap()
         .digested,
       1
@@ -451,27 +606,39 @@ mod tests {
 
     let mut executed = false;
     assert_eq!(
-      accepter()
-        .boundary()
-        .exec(Input::new(Instant::new("12"), &mut executed, &mut ())),
+      accepter().boundary().exec(
+        Instant::new("12"),
+        Context {
+          state: &mut executed,
+          heap: &mut ()
+        }
+      ),
       None
     );
     assert!(executed);
 
     let mut executed = false;
     assert_eq!(
-      accepter()
-        .boundary()
-        .exec(Input::new(Instant::new("1a"), &mut executed, &mut ())),
+      accepter().boundary().exec(
+        Instant::new("1a"),
+        Context {
+          state: &mut executed,
+          heap: &mut ()
+        }
+      ),
       None
     );
     assert!(executed);
 
     let mut executed = false;
     assert_eq!(
-      accepter()
-        .boundary()
-        .exec(Input::new(Instant::new("1_"), &mut executed, &mut ())),
+      accepter().boundary().exec(
+        Instant::new("1_"),
+        Context {
+          state: &mut executed,
+          heap: &mut ()
+        }
+      ),
       None
     );
     assert!(executed);

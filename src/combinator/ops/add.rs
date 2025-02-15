@@ -43,7 +43,7 @@
 //! # use whitehole::{combinator::{next, eat}, action::Action, parser::Parser};
 //! let integer = || {
 //!   (next(|c| c.is_ascii_digit()) * (1..)) // eat one or more digits
-//!     .select(|ctx| ctx.content().parse::<usize>().unwrap()) // parse the digits
+//!     .select(|accept, _| accept.content().parse::<usize>().unwrap()) // parse the digits
 //!     .tuple() // wrap the parsed digits in a tuple
 //! };
 //! let dot = eat('.'); // the value is `()`
@@ -64,8 +64,10 @@ mod concat;
 pub use concat::*;
 
 use crate::{
-  combinator::{eat, Action, Combinator, Eat, Input, Output},
+  action::Context,
+  combinator::{eat, Action, Combinator, Eat, Output},
   digest::Digest,
+  instant::Instant,
 };
 use std::{
   ops::{self, RangeFrom},
@@ -101,16 +103,23 @@ where
   type Value = <Lhs::Value as Concat<Rhs::Value>>::Output;
 
   #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    self.lhs.exec(input.reborrow()).and_then(|output| {
-      self
-        .rhs
-        .exec(unsafe { input.shift_unchecked(output.digested) })
-        .map(|rhs_output| Output {
-          value: output.value.concat(rhs_output.value),
-          digested: unsafe { output.digested.unchecked_add(rhs_output.digested) },
-        })
-    })
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    mut ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    self
+      .lhs
+      .exec(instant.clone(), ctx.reborrow())
+      .and_then(|output| {
+        self
+          .rhs
+          .exec(unsafe { instant.shift_unchecked(output.digested) }, ctx)
+          .map(|rhs_output| Output {
+            value: output.value.concat(rhs_output.value),
+            digested: unsafe { output.digested.unchecked_add(rhs_output.digested) },
+          })
+      })
   }
 }
 
@@ -198,44 +207,44 @@ impl<Lhs> ops::Add<Vec<u8>> for Combinator<Lhs> {
 mod tests {
   use super::*;
   use crate::{
-    combinator::{bytes, wrap, Input},
+    combinator::{bytes, wrap},
     instant::Instant,
   };
 
   #[test]
   fn combinator_add() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter_unit = || wrap(|input| input.digest(1));
-    let accepter_int = || wrap(|input| input.digest(1).map(|output| output.map(|_| (123,))));
+    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
+    let accepter_unit = || wrap(|instant, _| instant.accept(1));
+    let accepter_int = || wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| (123,))));
 
     // reject then accept, should return None
     assert!((rejecter() + accepter_unit())
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+      .exec(Instant::new("123"), Context::default())
       .is_none());
 
     // accept then reject, should return None
     assert!((accepter_unit() + rejecter())
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+      .exec(Instant::new("123"), Context::default())
       .is_none());
 
     // accept then accept, should return the sum of the digested
     // with the concat value
     assert_eq!(
-      (accepter_unit() + accepter_int()).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter_unit() + accepter_int()).exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: (123,),
         digested: 2,
       })
     );
     assert_eq!(
-      (accepter_int() + accepter_unit()).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter_int() + accepter_unit()).exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: (123,),
         digested: 2,
       })
     );
     assert_eq!(
-      (accepter_int() + accepter_int()).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (accepter_int() + accepter_int()).exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: (123, 123),
         digested: 2,
@@ -245,11 +254,11 @@ mod tests {
 
   #[test]
   fn combinator_add_char() {
-    let eat1 = || wrap(|input| input.digest(1));
+    let eat1 = || wrap(|instant, _| instant.accept(1));
 
     assert_eq!(
       (eat1() + '2')
-        .exec(Input::new(Instant::new("12"), &mut (), &mut ()))
+        .exec(Instant::new("12"), Context::default())
         .map(|output| output.digested),
       Some(2)
     );
@@ -257,11 +266,11 @@ mod tests {
 
   #[test]
   fn combinator_add_str() {
-    let eat1 = || wrap(|input| input.digest(1));
+    let eat1 = || wrap(|instant, _| instant.accept(1));
 
     assert_eq!(
       (eat1() + "23")
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+        .exec(Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
@@ -269,11 +278,11 @@ mod tests {
 
   #[test]
   fn combinator_add_string() {
-    let eat1 = || wrap(|input| input.digest(1));
+    let eat1 = || wrap(|instant, _| instant.accept(1));
 
     assert_eq!(
       (eat1() + "23".to_string())
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+        .exec(Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
@@ -281,11 +290,11 @@ mod tests {
 
   #[test]
   fn combinator_add_u8() {
-    let eat1 = || bytes::wrap(|input| input.digest(1));
+    let eat1 = || bytes::wrap(|instant, _| instant.accept(1));
 
     assert_eq!(
       (eat1() + b'2')
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+        .exec(Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(2)
     );
@@ -293,11 +302,11 @@ mod tests {
 
   #[test]
   fn combinator_add_u8_slice() {
-    let eat1 = || bytes::wrap(|input| input.digest(1));
+    let eat1 = || bytes::wrap(|instant, _| instant.accept(1));
 
     assert_eq!(
       (eat1() + "2".as_bytes())
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+        .exec(Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(2)
     );
@@ -305,11 +314,11 @@ mod tests {
 
   #[test]
   fn combinator_add_u8_const_slice() {
-    let eat1 = || bytes::wrap(|input| input.digest(1));
+    let eat1 = || bytes::wrap(|instant, _| instant.accept(1));
 
     assert_eq!(
       (eat1() + b"2")
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+        .exec(Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(2)
     );
@@ -317,11 +326,11 @@ mod tests {
 
   #[test]
   fn combinator_add_vec_u8() {
-    let eat1 = || bytes::wrap(|input| input.digest(1));
+    let eat1 = || bytes::wrap(|instant, _| instant.accept(1));
 
     assert_eq!(
       (eat1() + vec![b'2'])
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ()))
+        .exec(Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(2)
     );

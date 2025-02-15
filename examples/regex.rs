@@ -8,9 +8,9 @@ use whitehole::{
 pub fn regex<State, Heap>(s: &str) -> Combinator<impl Action<str, State, Heap, Value = ()>> {
   let re = Regex::new(s).unwrap();
   unsafe {
-    wrap_unchecked(move |input| {
-      re.find(input.instant().rest())
-        .map(|m| input.digest_unchecked(m.len()))
+    wrap_unchecked(move |instant, _| {
+      re.find(instant.rest())
+        .map(|m| instant.accept_unchecked(m.len()))
     })
   }
 }
@@ -21,7 +21,7 @@ fn main() {}
 mod tests {
   use super::*;
   use whitehole::{
-    action::{Action, Input},
+    action::{Action, Context, Input},
     instant::Instant,
   };
 
@@ -29,14 +29,14 @@ mod tests {
   fn test_regex() {
     assert_eq!(
       regex(r"\d+")
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+        .exec(Instant::new("123"), Context::default())
         .unwrap()
         .digested,
       3
     );
     assert_eq!(
       regex(r"\d+")
-        .exec(Input::new(Instant::new("123abc"), &mut (), &mut ()))
+        .exec(Instant::new("123abc"), Context::default())
         .unwrap()
         .digested,
       3

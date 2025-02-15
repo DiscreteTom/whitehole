@@ -1,7 +1,8 @@
 use crate::{
-  action::{Action, Input, Output},
+  action::{Action, Context, Output},
   combinator::{create_value_combinator, Combinator},
   digest::Digest,
+  instant::Instant,
 };
 
 create_value_combinator!(Till, "See [`till`].");
@@ -10,12 +11,11 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Till<&str> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
-    input
-      .instant()
+  fn exec(&self, instant: Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+    instant
       .rest()
       .find(self.inner)
-      .map(|i| unsafe { input.digest_unchecked(i.unchecked_add(self.inner.len())) })
+      .map(|i| unsafe { instant.accept_unchecked(i.unchecked_add(self.inner.len())) })
   }
 }
 
@@ -23,12 +23,11 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Till<String> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
-    input
-      .instant()
+  fn exec(&self, instant: Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+    instant
       .rest()
       .find(&self.inner)
-      .map(|i| unsafe { input.digest_unchecked(i.unchecked_add(self.inner.len())) })
+      .map(|i| unsafe { instant.accept_unchecked(i.unchecked_add(self.inner.len())) })
   }
 }
 
@@ -36,12 +35,11 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Till<char> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&str, &mut State, &mut Heap>) -> Option<Output<()>> {
-    input
-      .instant()
+  fn exec(&self, instant: Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+    instant
       .rest()
       .find(self.inner)
-      .map(|i| unsafe { input.digest_unchecked(i.unchecked_add(self.inner.len_utf8())) })
+      .map(|i| unsafe { instant.accept_unchecked(i.unchecked_add(self.inner.len_utf8())) })
   }
 }
 
@@ -49,14 +47,13 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<u8> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&[u8], &mut State, &mut Heap>) -> Option<Output<()>> {
-    input
-      .instant()
+  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+    instant
       .rest()
       .iter()
       .enumerate()
       .find(|(_, b)| **b == self.inner)
-      .map(|(i, _)| unsafe { input.digest_unchecked(i.unchecked_add(1)) })
+      .map(|(i, _)| unsafe { instant.accept_unchecked(i.unchecked_add(1)) })
   }
 }
 
@@ -64,15 +61,14 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<&[u8]> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&[u8], &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
     // TODO: optimize
-    input
-      .instant()
+    instant
       .rest()
       .windows(self.inner.len())
       .enumerate()
       .find(|(_, window)| *window == self.inner)
-      .map(|(i, _)| unsafe { input.digest_unchecked(i.unchecked_add(self.inner.len())) })
+      .map(|(i, _)| unsafe { instant.accept_unchecked(i.unchecked_add(self.inner.len())) })
   }
 }
 
@@ -80,15 +76,14 @@ unsafe impl<const N: usize, State, Heap> Action<[u8], State, Heap> for Till<&[u8
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&[u8], &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
     // TODO: optimize
-    input
-      .instant()
+    instant
       .rest()
       .windows(N)
       .enumerate()
       .find(|(_, window)| *window == self.inner)
-      .map(|(i, _)| unsafe { input.digest_unchecked(i.unchecked_add(N)) })
+      .map(|(i, _)| unsafe { instant.accept_unchecked(i.unchecked_add(N)) })
   }
 }
 
@@ -96,15 +91,14 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<Vec<u8>> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&[u8], &mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
     // TODO: optimize
-    input
-      .instant()
+    instant
       .rest()
       .windows(self.inner.len())
       .enumerate()
       .find(|(_, window)| *window == self.inner)
-      .map(|(i, _)| unsafe { input.digest_unchecked(i.unchecked_add(self.inner.len())) })
+      .map(|(i, _)| unsafe { instant.accept_unchecked(i.unchecked_add(self.inner.len())) })
   }
 }
 
@@ -112,8 +106,8 @@ unsafe impl<Text: ?Sized + Digest, State, Heap> Action<Text, State, Heap> for Ti
   type Value = ();
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<()>> {
-    unsafe { input.digest_unchecked(input.instant().rest().as_bytes().len()) }.into()
+  fn exec(&self, instant: Instant<&Text>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+    unsafe { instant.accept_unchecked(instant.rest().as_bytes().len()) }.into()
   }
 }
 
@@ -165,74 +159,70 @@ pub const fn till<T>(pattern: T) -> Combinator<Till<T>> {
 mod tests {
   use super::*;
   use crate::{
-    action::{Action, Input, Output},
+    action::{Action, Output},
     instant::Instant,
   };
 
   #[test]
   fn until_exec() {
     assert_eq!(
-      till(';').exec(Input::new(Instant::new("123;456"), &mut (), &mut ())),
+      till(';').exec(Instant::new("123;456"), Context::default()),
       Some(Output {
         value: (),
         digested: 4
       })
     );
     assert_eq!(
-      till("end").exec(Input::new(Instant::new("123end456"), &mut (), &mut ())),
+      till("end").exec(Instant::new("123end456"), Context::default()),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till("end".to_string()).exec(Input::new(Instant::new("123end456"), &mut (), &mut ())),
+      till("end".to_string()).exec(Instant::new("123end456"), Context::default()),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till(()).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      till(()).exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 3
       })
     );
     assert_eq!(
-      till(b';').exec(Input::new(Instant::new(b"123;456"), &mut (), &mut ())),
+      till(b';').exec(Instant::new(b"123;456"), Context::default()),
       Some(Output {
         value: (),
         digested: 4
       })
     );
     assert_eq!(
-      till(b"end").exec(Input::new(Instant::new(b"123end456"), &mut (), &mut ())),
+      till(b"end").exec(Instant::new(b"123end456"), Context::default()),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till("end".to_string().as_bytes()).exec(Input::new(
-        Instant::new(b"123end456"),
-        &mut (),
-        &mut ()
-      )),
+      till("end".to_string().as_bytes()).exec(Instant::new(b"123end456"), Context::default()),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till(vec![b'1', b'2', b'3']).exec(Input::new(Instant::new(b"123456"), &mut (), &mut ())),
+      till(vec![b'1', b'2', b'3']).exec(Instant::new(b"123456"), Context::default()),
       Some(Output {
         value: (),
         digested: 3
       })
     );
     assert_eq!(
-      till(()).exec(Input::new(Instant::new(b"123" as &[u8]), &mut (), &mut ())),
+      till(()).exec(Instant::new(b"123" as &[u8]), Context::default()),
       Some(Output {
         value: (),
         digested: 3

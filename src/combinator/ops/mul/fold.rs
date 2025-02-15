@@ -7,12 +7,12 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   /// # Examples
   /// ```
-  /// # use whitehole::{combinator::next, action::{Input, Action}, instant::Instant};
+  /// # use whitehole::{combinator::next, action::{Context, Action}, instant::Instant};
   /// let combinator = {
   ///   // accept one ascii digit at a time
   ///   next(|c| c.is_ascii_digit())
   ///     // convert the char to a number
-  ///     .select(|ctx| ctx.input().instant().rest().chars().next().unwrap() as usize - '0' as usize)
+  ///     .select(|accept, _| accept.instant().rest().chars().next().unwrap() as usize - '0' as usize)
   ///     // repeat for 1 or more times
   ///     * (1..)
   /// }
@@ -21,7 +21,7 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   ///
   /// // parse "123" to 123
   /// assert_eq!(
-  ///   combinator.exec(Input::new(Instant::new("123"), &mut (), &mut ())).unwrap().value,
+  ///   combinator.exec(Instant::new("123"), Context::default()).unwrap().value,
   ///   123
   /// )
   /// ```
@@ -44,31 +44,31 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
 #[cfg(test)]
 mod tests {
   use crate::{
-    action::{Action, Input, Output},
+    action::{Action, Context, Output},
     combinator::wrap,
     instant::Instant,
   };
 
   #[test]
   fn combinator_mul_usize() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
     let accepter = || {
-      wrap(|input| {
-        input
-          .digest(1)
-          .map(|output| output.map(|_| input.instant().digested()))
+      wrap(|instant, _| {
+        instant
+          .accept(1)
+          .map(|output| output.map(|_| instant.digested()))
       })
     };
 
     // repeat a rejecter will reject
     assert!((rejecter() * 3)
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+      .exec(Instant::new("123"), Context::default())
       .is_none());
 
     // repeat rejecter 0 times will accept
     let n = 0;
     assert_eq!(
-      (rejecter() * n).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (rejecter() * n).exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 0,
@@ -80,7 +80,7 @@ mod tests {
     assert_eq!(
       (accepter() * n)
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 0,
         digested: 0,
@@ -91,7 +91,7 @@ mod tests {
     assert_eq!(
       (accepter() * 3)
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 3,
         digested: 3
@@ -101,29 +101,29 @@ mod tests {
     // overflow, reject
     assert!((accepter() * 4)
       .fold(|| 0, |acc, v| acc + v)
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+      .exec(Instant::new("123"), Context::default())
       .is_none());
   }
 
   #[test]
   fn combinator_mul_range() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
     let accepter = || {
-      wrap(|input| {
-        input
-          .digest(1)
-          .map(|output| output.map(|_| input.instant().digested()))
+      wrap(|instant, _| {
+        instant
+          .accept(1)
+          .map(|output| output.map(|_| instant.digested()))
       })
     };
 
     // repeat a rejecter will reject
     assert!((rejecter() * (1..2))
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+      .exec(Instant::new("123"), Context::default())
       .is_none());
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (0..2)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (rejecter() * (0..2)).exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 0,
@@ -134,7 +134,7 @@ mod tests {
     assert_eq!(
       (accepter() * (0..1))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 0,
         digested: 0,
@@ -145,7 +145,7 @@ mod tests {
     assert_eq!(
       (accepter() * (0..3))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 1,
         digested: 2
@@ -155,29 +155,29 @@ mod tests {
     // too few, reject
     assert!((accepter() * (4..6))
       .fold(|| 0, |acc, v| acc + v)
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+      .exec(Instant::new("123"), Context::default())
       .is_none());
   }
 
   #[test]
   fn combinator_mul_range_from() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
     let accepter = || {
-      wrap(|input| {
-        input
-          .digest(1)
-          .map(|output| output.map(|_| input.instant().digested()))
+      wrap(|instant, _| {
+        instant
+          .accept(1)
+          .map(|output| output.map(|_| instant.digested()))
       })
     };
 
     // repeat a rejecter will reject
     assert!((rejecter() * (1..))
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+      .exec(Instant::new("123"), Context::default())
       .is_none());
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (0..)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (rejecter() * (0..)).exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 0,
@@ -188,7 +188,7 @@ mod tests {
     assert_eq!(
       (accepter() * (0..))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 3,
         digested: 3
@@ -198,24 +198,24 @@ mod tests {
     // too few, reject
     assert!((accepter() * (4..))
       .fold(|| 0, |acc, v| acc + v)
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+      .exec(Instant::new("123"), Context::default())
       .is_none());
   }
 
   #[test]
   fn combinator_mul_range_full() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
     let accepter = || {
-      wrap(|input| {
-        input
-          .digest(1)
-          .map(|output| output.map(|_| input.instant().digested()))
+      wrap(|instant, _| {
+        instant
+          .accept(1)
+          .map(|output| output.map(|_| instant.digested()))
       })
     };
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (..)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (rejecter() * (..)).exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 0,
@@ -226,7 +226,7 @@ mod tests {
     assert_eq!(
       (accepter() * (..))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 3,
         digested: 3
@@ -236,23 +236,23 @@ mod tests {
 
   #[test]
   fn combinator_mul_range_inclusive() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
     let accepter = || {
-      wrap(|input| {
-        input
-          .digest(1)
-          .map(|output| output.map(|_| input.instant().digested()))
+      wrap(|instant, _| {
+        instant
+          .accept(1)
+          .map(|output| output.map(|_| instant.digested()))
       })
     };
 
     // repeat a rejecter will reject
     assert!((rejecter() * (1..=3))
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+      .exec(Instant::new("123"), Context::default())
       .is_none());
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (0..=2)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (rejecter() * (0..=2)).exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 0,
@@ -263,7 +263,7 @@ mod tests {
     assert_eq!(
       (accepter() * (0..=0))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 0,
         digested: 0,
@@ -274,7 +274,7 @@ mod tests {
     assert_eq!(
       (accepter() * (0..=3))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 3,
         digested: 3
@@ -284,24 +284,24 @@ mod tests {
     // too few, reject
     assert!((accepter() * (4..=6))
       .fold(|| 0, |acc, v| acc + v)
-      .exec(Input::new(Instant::new("123"), &mut (), &mut ()))
+      .exec(Instant::new("123"), Context::default())
       .is_none());
   }
 
   #[test]
   fn combinator_mul_range_to() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
     let accepter = || {
-      wrap(|input| {
-        input
-          .digest(1)
-          .map(|output| output.map(|_| input.instant().digested()))
+      wrap(|instant, _| {
+        instant
+          .accept(1)
+          .map(|output| output.map(|_| instant.digested()))
       })
     };
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (..2)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (rejecter() * (..2)).exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 0,
@@ -312,7 +312,7 @@ mod tests {
     assert_eq!(
       (accepter() * (..1))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 0,
         digested: 0,
@@ -323,7 +323,7 @@ mod tests {
     assert_eq!(
       (accepter() * (..3))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 1,
         digested: 2
@@ -333,18 +333,18 @@ mod tests {
 
   #[test]
   fn combinator_mul_range_to_inclusive() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
+    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
     let accepter = || {
-      wrap(|input| {
-        input
-          .digest(1)
-          .map(|output| output.map(|_| input.instant().digested()))
+      wrap(|instant, _| {
+        instant
+          .accept(1)
+          .map(|output| output.map(|_| instant.digested()))
       })
     };
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (..=2)).exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      (rejecter() * (..=2)).exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 0,
@@ -355,7 +355,7 @@ mod tests {
     assert_eq!(
       (accepter() * (..=0))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 0,
         digested: 0,
@@ -366,7 +366,7 @@ mod tests {
     assert_eq!(
       (accepter() * (..=3))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 3,
         digested: 3

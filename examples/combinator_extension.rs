@@ -1,7 +1,7 @@
 use std::{fmt::Debug, ops::RangeTo, slice::SliceIndex};
 
 use whitehole::{
-  action::{Action, Input, Output},
+  action::{Action, Context, Output},
   combinator::{eat, Combinator},
   digest::Digest,
   instant::Instant,
@@ -22,7 +22,14 @@ where
   RangeTo<usize>: SliceIndex<Text, Output = Text>,
 {
   fn simple_print(self) -> Combinator<impl Action<Text, State, Heap, Value = T::Value>> {
-    self.then(|ctx| println!("{}..{}: {:?}", ctx.start(), ctx.end(), ctx.content()))
+    self.then(|accept, _| {
+      println!(
+        "{}..{}: {:?}",
+        accept.start(),
+        accept.end(),
+        accept.content()
+      )
+    })
   }
 }
 
@@ -52,26 +59,33 @@ where
 {
   type Value = T::Value;
 
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    self.action.exec(input.reborrow()).inspect(|output| {
-      let start = input.instant().digested();
-      let end = start + output.digested;
-      println!(
-        "{}..{}: {:?}",
-        start,
-        end,
-        input.instant().rest().get(..output.digested)
-      );
-    })
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    mut ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    self
+      .action
+      .exec(instant.clone(), ctx.reborrow())
+      .inspect(|output| {
+        let start = instant.digested();
+        let end = start + output.digested;
+        println!(
+          "{}..{}: {:?}",
+          start,
+          end,
+          instant.rest().get(..output.digested)
+        );
+      })
   }
 }
 
 fn main() {
   eat("hello")
     .simple_print()
-    .exec(Input::new(Instant::new("hello world"), &mut (), &mut ()));
+    .exec(Instant::new("hello world"), Context::default());
 
   eat("hello")
     .print()
-    .exec(Input::new(Instant::new("hello world"), &mut (), &mut ()));
+    .exec(Instant::new("hello world"), Context::default());
 }

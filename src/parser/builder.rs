@@ -125,9 +125,9 @@ mod tests {
     let mut parser = Builder::default()
       .state(1)
       .heap(1)
-      .entry((eat("hello ") + "world").then(|mut ctx| {
-        *ctx.state() = 1;
-        *ctx.heap() = 1;
+      .entry((eat("hello ") + "world").then(|_, ctx| {
+        *ctx.state = 1;
+        *ctx.heap = 1;
       }))
       .build("hello world");
 

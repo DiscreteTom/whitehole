@@ -54,12 +54,12 @@
 //! You can use [`Combinator::fold`]
 //! to specify an ad-hoc accumulator after performing `*`.
 //! ```
-//! # use whitehole::{combinator::next, action::{Input, Action}, instant::Instant};
+//! # use whitehole::{combinator::next, action::{Action, Context}, instant::Instant};
 //! let combinator = {
 //!   // accept one ascii digit at a time
 //!   next(|c| c.is_ascii_digit())
 //!     // convert the char to a number
-//!     .select(|ctx| ctx.input().instant().rest().chars().next().unwrap() as usize - '0' as usize)
+//!     .select(|accept, _| accept.instant().rest().chars().next().unwrap() as usize - '0' as usize)
 //!     // repeat for 1 or more times
 //!     * (1..)
 //! }
@@ -68,7 +68,7 @@
 //!
 //! // parse "123" to 123
 //! assert_eq!(
-//!   combinator.exec(Input::new(Instant::new("123"), &mut (), &mut ())).unwrap().value,
+//!   combinator.exec(Instant::new("123"), Context::default()).unwrap().value,
 //!   123
 //! )
 //! ```
@@ -80,36 +80,36 @@
 //! To optimize the performance,
 //! you can fold the values to [`Input::heap`] to prevent re-allocation.
 //! ```
-//! # use whitehole::{combinator::take, action::{Input, Action}, instant::Instant};
+//! # use whitehole::{combinator::take, action::{Action, Context}, instant::Instant};
 //! let combinator = {
 //!   // eat one char, accumulate some value in `input.heap`
-//!   take(1).then(|mut ctx| Vec::push(ctx.heap(), 1))
+//!   take(1).then(|_, ctx| Vec::push(ctx.heap, 1))
 //!     // repeat for 1 or more times
 //!     * (1..)
-//! }.prepare(|input| input.heap.clear()); // clear the vec before executing this combinator
+//! }.prepare(|_, ctx| ctx.heap.clear()); // clear the vec before executing this combinator
 //!
 //! // create a re-usable heap
 //! let mut heap = vec![];
-//! combinator.exec(Input::new(Instant::new("123"), &mut (), &mut heap));
+//! combinator.exec(Instant::new("123"), Context { state: &mut (), heap: &mut heap });
 //! assert_eq!(heap, vec![1, 1, 1]);
 //! ```
 //! # Separator
 //! You can use [`Combinator::sep`]
 //! to specify an other combinator as the separator after performing `*`.
 //! ```
-//! # use whitehole::{combinator::eat, action::{Input, Action}, instant::Instant};
+//! # use whitehole::{combinator::eat, action::{Context, Action}, instant::Instant};
 //! let combinator = (eat('a') * (1..)).sep(',');
 //! assert_eq!(
-//!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ())).unwrap().digested,
+//!   combinator.exec(Instant::new("a,a,a"), Context::default()).unwrap().digested,
 //!   5
 //! )
 //! ```
 //! You can use [`Combinator::sep`] with [`Combinator::fold`]:
 //! ```
-//! # use whitehole::{combinator::eat, action::{Input, Action}, instant::Instant};
+//! # use whitehole::{combinator::eat, action::{Action, Context}, instant::Instant};
 //! let combinator = (eat('a').bind(1) * (1..)).sep(',').fold(|| 0, |v, acc| acc + v);
 //! assert_eq!(
-//!   combinator.exec(Input::new(Instant::new("a,a,a"), &mut (), &mut ())).unwrap().value,
+//!   combinator.exec(Instant::new("a,a,a"), Context::default()).unwrap().value,
 //!   3
 //! );
 //! ```
@@ -122,9 +122,10 @@ pub use repeat::*;
 pub use sep::*;
 
 use crate::{
-  action::{Action, Input, Output},
+  action::{Action, Context, Output},
   combinator::Combinator,
   digest::Digest,
+  instant::Instant,
 };
 use std::{
   ops::{self, RangeFrom},
@@ -182,7 +183,11 @@ where
   type Value = Acc;
 
   #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    mut ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
     let mut repeated = 0;
     let mut output = Output {
       value: (self.init)(),
@@ -191,10 +196,10 @@ where
 
     let mut digested_with_sep = 0;
     while unsafe { self.rhs.validate(repeated) } {
-      let Some(value_output) = self
-        .lhs
-        .exec(unsafe { input.shift_unchecked(digested_with_sep) })
-      else {
+      let Some(value_output) = self.lhs.exec(
+        unsafe { instant.shift_unchecked(digested_with_sep) },
+        ctx.reborrow(),
+      ) else {
         break;
       };
       repeated += 1;
@@ -203,10 +208,10 @@ where
       debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
       output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
 
-      let Some(sep_output) = self
-        .sep
-        .exec(unsafe { input.shift_unchecked(output.digested) })
-      else {
+      let Some(sep_output) = self.sep.exec(
+        unsafe { instant.shift_unchecked(output.digested) },
+        ctx.reborrow(),
+      ) else {
         break;
       };
       // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize

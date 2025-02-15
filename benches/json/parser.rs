@@ -47,7 +47,7 @@ pub fn parser_entry_with_static() -> Combinator<impl Action<Value = ()>> {
     static VALUE: LazyLock<Box<dyn Action<Value = ()> + Send + Sync>> = LazyLock::new(|| {
       Box::new(array() | object() | number() | string() | "true" | "false" | "null")
     });
-    wrap(|input| VALUE.exec(input))
+    wrap(|instant, ctx| VALUE.exec(instant, ctx))
   }
 
   whitespaces() | value()

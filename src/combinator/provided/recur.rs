@@ -1,6 +1,7 @@
 use crate::{
-  action::{Action, Input, Output},
+  action::{Action, Context, Output},
   combinator::Combinator,
+  instant::Instant,
 };
 use core::fmt;
 use std::{cell::OnceCell, rc::Rc};
@@ -62,8 +63,12 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
   type Value = Value;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    self.inner.get().unwrap().exec(input)
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    self.inner.get().unwrap().exec(instant, ctx)
   }
 }
 
@@ -75,7 +80,7 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
 /// You need to handle [left recursion](https://en.wikipedia.org/wiki/Left_recursion) by yourself.
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::{recur, eat}, action::{Action, Input}, instant::Instant};
+/// # use whitehole::{combinator::{recur, eat}, action::{Action, Context}, instant::Instant};
 /// // create a recursive action, get the getter and setter
 /// let (value, value_setter) = recur();
 ///
@@ -90,25 +95,25 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
 /// // now you can execute the `value`.
 /// // it can have recursive structures
 /// assert!(value()
-///   .exec(Input::new(Instant::new("a"), &mut (), &mut ()))
+///   .exec(Instant::new("a"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Input::new(Instant::new("[]"), &mut (), &mut ()))
+///   .exec(Instant::new("[]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Input::new(Instant::new("[a]"), &mut (), &mut ()))
+///   .exec(Instant::new("[a]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Input::new(Instant::new("[[]]"), &mut (), &mut ()))
+///   .exec(Instant::new("[[]]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Input::new(Instant::new("[a,a]"), &mut (), &mut ()))
+///   .exec(Instant::new("[a,a]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Input::new(Instant::new("[[],[]]"), &mut (), &mut ()))
+///   .exec(Instant::new("[[],[]]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Input::new(Instant::new("[[a],[]]"), &mut (), &mut ()))
+///   .exec(Instant::new("[[a],[]]"), Context::default())
 ///   .is_some());
 /// ```
 #[allow(clippy::type_complexity)]
@@ -154,9 +159,13 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
   type Value = Value;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
     debug_assert!(self.inner.get().is_some());
-    unsafe { self.inner.get().unwrap_unchecked() }.exec(input)
+    unsafe { self.inner.get().unwrap_unchecked() }.exec(instant, ctx)
   }
 }
 
@@ -168,7 +177,7 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
 /// You need to handle [left recursion](https://en.wikipedia.org/wiki/Left_recursion) by yourself.
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::{recur_unchecked, eat}, action::{Action, Input}, instant::Instant};
+/// # use whitehole::{combinator::{recur_unchecked, eat}, action::{Action, Context}, instant::Instant};
 /// // create a recursive action, get the getter and setter
 /// let (value, value_setter) = unsafe { recur_unchecked() };
 ///
@@ -183,25 +192,25 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
 /// // now you can execute the `value`.
 /// // it can have recursive structures
 /// assert!(value()
-///   .exec(Input::new(Instant::new("a"), &mut (), &mut ()))
+///   .exec(Instant::new("a"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Input::new(Instant::new("[]"), &mut (), &mut ()))
+///   .exec(Instant::new("[]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Input::new(Instant::new("[a]"), &mut (), &mut ()))
+///   .exec(Instant::new("[a]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Input::new(Instant::new("[[]]"), &mut (), &mut ()))
+///   .exec(Instant::new("[[]]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Input::new(Instant::new("[a,a]"), &mut (), &mut ()))
+///   .exec(Instant::new("[a,a]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Input::new(Instant::new("[[],[]]"), &mut (), &mut ()))
+///   .exec(Instant::new("[[],[]]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Input::new(Instant::new("[[a],[]]"), &mut (), &mut ()))
+///   .exec(Instant::new("[[a],[]]"), Context::default())
 ///   .is_some());
 /// ```
 #[allow(clippy::type_complexity)]
@@ -233,25 +242,25 @@ mod tests {
     value_setter.boxed(array() | 'a');
 
     assert!(value()
-      .exec(Input::new(Instant::new("a"), &mut (), &mut ()))
+      .exec(Instant::new("a"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Input::new(Instant::new("[]"), &mut (), &mut ()))
+      .exec(Instant::new("[]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Input::new(Instant::new("[a]"), &mut (), &mut ()))
+      .exec(Instant::new("[a]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Input::new(Instant::new("[[]]"), &mut (), &mut ()))
+      .exec(Instant::new("[[]]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Input::new(Instant::new("[a,a]"), &mut (), &mut ()))
+      .exec(Instant::new("[a,a]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Input::new(Instant::new("[[],[]]"), &mut (), &mut ()))
+      .exec(Instant::new("[[],[]]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Input::new(Instant::new("[[a],[]]"), &mut (), &mut ()))
+      .exec(Instant::new("[[a],[]]"), Context::default())
       .is_some());
 
     // make sure clone-able
@@ -264,7 +273,7 @@ mod tests {
   #[should_panic]
   fn test_recur_panic() {
     let (value, _) = recur::<_, _, _, ()>();
-    value().exec(Input::new(Instant::new("a"), &mut (), &mut ()));
+    value().exec(Instant::new("a"), Context::default());
   }
 
   #[test]
@@ -274,25 +283,25 @@ mod tests {
     value_setter.boxed(array() | 'a');
 
     assert!(value()
-      .exec(Input::new(Instant::new("a"), &mut (), &mut ()))
+      .exec(Instant::new("a"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Input::new(Instant::new("[]"), &mut (), &mut ()))
+      .exec(Instant::new("[]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Input::new(Instant::new("[a]"), &mut (), &mut ()))
+      .exec(Instant::new("[a]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Input::new(Instant::new("[[]]"), &mut (), &mut ()))
+      .exec(Instant::new("[[]]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Input::new(Instant::new("[a,a]"), &mut (), &mut ()))
+      .exec(Instant::new("[a,a]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Input::new(Instant::new("[[],[]]"), &mut (), &mut ()))
+      .exec(Instant::new("[[],[]]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Input::new(Instant::new("[[a],[]]"), &mut (), &mut ()))
+      .exec(Instant::new("[[a],[]]"), Context::default())
       .is_some());
 
     // make sure clone-able
@@ -305,6 +314,6 @@ mod tests {
   #[should_panic]
   fn test_recur_unchecked_panic() {
     let (value, _) = unsafe { recur_unchecked::<_, _, _, ()>() };
-    value().exec(Input::new(Instant::new("a"), &mut (), &mut ()));
+    value().exec(Instant::new("a"), Context::default());
   }
 }

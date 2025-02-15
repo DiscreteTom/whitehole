@@ -57,9 +57,28 @@ impl<'a, Text: ?Sized> Instant<&'a Text> {
     Text: Digest,
     RangeFrom<usize>: SliceIndex<Text, Output = Text>,
   {
+    // TODO: rename to shift_unchecked
     debug_assert!(self.rest.validate(n));
     self.rest = self.rest.get_unchecked(n..);
     self.digested = self.digested.unchecked_add(n);
+  }
+
+  /// Construct a new instance by digesting `n` bytes from [`Self::rest`].
+  ///
+  /// This is cheap to call.
+  /// # Safety
+  /// You should ensure that `n` is valid according to [`Digest::validate`].
+  /// This will be checked using [`debug_assert!`].
+  #[inline]
+  pub unsafe fn shift_unchecked(&self, n: usize) -> Self
+  where
+    Text: Digest,
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    // TODO: rename to digest_unchecked
+    let mut instant = self.clone();
+    instant.digest_unchecked(n);
+    instant
   }
 }
 
@@ -146,5 +165,34 @@ mod tests {
   fn instant_str_digest_unchecked_invalid_code_point() {
     let mut i = Instant::new("好");
     unsafe { i.digest_unchecked(1) };
+  }
+
+  #[test]
+  fn instant_shift_unchecked() {
+    let instant = unsafe { Instant::new("123").shift_unchecked(1) };
+    assert_eq!(instant.digested(), 1);
+    assert_eq!(instant.rest(), "23");
+
+    let instant = unsafe { Instant::new(b"123" as &[u8]).shift_unchecked(1) };
+    assert_eq!(instant.digested(), 1);
+    assert_eq!(instant.rest(), b"23");
+  }
+
+  #[test]
+  #[should_panic]
+  fn instant_shift_unchecked_invalid_utf8() {
+    let _ = unsafe { Instant::new("好").shift_unchecked(1) };
+  }
+
+  #[test]
+  #[should_panic]
+  fn instant_bytes_shift_overflow() {
+    let _ = unsafe { Instant::new(b"123" as &[u8]).shift_unchecked(4) };
+  }
+
+  #[test]
+  #[should_panic]
+  fn instant_str_shift_overflow() {
+    let _ = unsafe { Instant::new("123").shift_unchecked(4) };
   }
 }

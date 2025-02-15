@@ -2,7 +2,9 @@ use super::{
   create_closure_decorator, create_simple_decorator, create_value_decorator, AcceptedContext,
 };
 use crate::{
-  combinator::{Action, Combinator, Input, Output},
+  action::Context,
+  combinator::{Action, Combinator, Output},
+  instant::Instant,
   range::WithRange,
 };
 
@@ -26,10 +28,14 @@ unsafe impl<
   type Value = NewValue;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(input)
+      .exec(instant, ctx)
       .map(|output| output.map(&self.inner))
   }
 }
@@ -40,8 +46,15 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text
   type Value = (T::Value,);
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    self.action.exec(input).map(|output| output.map(|v| (v,)))
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    self
+      .action
+      .exec(instant, ctx)
+      .map(|output| output.map(|v| (v,)))
   }
 }
 
@@ -51,10 +64,14 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>, D: Clone>
   type Value = D;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(input)
+      .exec(instant, ctx)
       .map(|output| output.map(|_| self.inner.clone()))
   }
 }
@@ -65,10 +82,14 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>, NewValue, D
   type Value = NewValue;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(input)
+      .exec(instant, ctx)
       .map(|output| output.map(|_| (self.inner)()))
   }
 }
@@ -79,17 +100,24 @@ unsafe impl<
     Heap,
     NewValue,
     T: Action<Text, State, Heap>,
-    D: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, Output<T::Value>>) -> NewValue,
+    D: Fn(AcceptedContext<&Text, T::Value>, Context<&mut State, &mut Heap>) -> NewValue,
   > Action<Text, State, Heap> for Select<T, D>
 {
   type Value = NewValue;
 
   #[inline]
-  fn exec(&self, mut input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    self.action.exec(input.reborrow()).map(|output| Output {
-      digested: output.digested,
-      value: (self.inner)(AcceptedContext::new(input, output)),
-    })
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    mut ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    self
+      .action
+      .exec(instant.clone(), ctx.reborrow())
+      .map(|output| Output {
+        digested: output.digested,
+        value: (self.inner)(AcceptedContext::new(instant, output), ctx),
+      })
   }
 }
 
@@ -99,9 +127,13 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text
   type Value = WithRange<T::Value>;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    let start = input.instant().digested();
-    self.action.exec(input).map(|output| {
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    let start = instant.digested();
+    self.action.exec(instant, ctx).map(|output| {
       let digested = output.digested;
       output.map(|data| WithRange {
         range: start..start + digested,
@@ -117,8 +149,15 @@ unsafe impl<Text: ?Sized, State, Heap, V, T: Action<Text, State, Heap, Value = (
   type Value = V;
 
   #[inline]
-  fn exec(&self, input: Input<&Text, &mut State, &mut Heap>) -> Option<Output<Self::Value>> {
-    self.action.exec(input).map(|output| output.map(|(v,)| v))
+  fn exec(
+    &self,
+    instant: Instant<&Text>,
+    ctx: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<Self::Value>> {
+    self
+      .action
+      .exec(instant, ctx)
+      .map(|output| output.map(|(v,)| v))
   }
 }
 
@@ -219,7 +258,7 @@ impl<T> Combinator<T> {
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyValue(i32);
   /// # fn t(combinator: Combinator<impl Action>) {
-  /// combinator.select(|ctx| MyValue(ctx.content().parse().unwrap()))
+  /// combinator.select(|accept, _| MyValue(accept.content().parse().unwrap()))
   /// # ;}
   /// ```
   #[inline]
@@ -228,7 +267,7 @@ impl<T> Combinator<T> {
     State,
     Heap,
     NewValue,
-    F: Fn(AcceptedContext<Input<&Text, &mut State, &mut Heap>, Output<T::Value>>) -> NewValue,
+    F: Fn(AcceptedContext<&Text, T::Value>, Context<&mut State, &mut Heap>) -> NewValue,
   >(
     self,
     selector: F,
@@ -264,18 +303,18 @@ mod tests {
   #[test]
   fn combinator_map() {
     assert_eq!(
-      wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
+      wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
         .map(Some)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: Some(1),
         digested: 1
       })
     );
     assert_eq!(
-      bytes::wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
+      bytes::wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
         .map(Some)
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ())),
+        .exec(Instant::new(b"123"), Context::default()),
       Some(Output {
         value: Some(1),
         digested: 1
@@ -286,18 +325,18 @@ mod tests {
   #[test]
   fn combinator_tuple() {
     assert_eq!(
-      wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
+      wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
         .tuple()
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: (1,),
         digested: 1
       })
     );
     assert_eq!(
-      bytes::wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
+      bytes::wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
         .tuple()
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ())),
+        .exec(Instant::new(b"123"), Context::default()),
       Some(Output {
         value: (1,),
         digested: 1
@@ -308,20 +347,20 @@ mod tests {
   #[test]
   fn combinator_pop() {
     assert_eq!(
-      wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
+      wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
         .tuple()
         .pop()
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 1,
         digested: 1
       })
     );
     assert_eq!(
-      bytes::wrap(|input| input.digest(1).map(|output| output.map(|_| 1)))
+      bytes::wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
         .tuple()
         .pop()
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ())),
+        .exec(Instant::new(b"123"), Context::default()),
       Some(Output {
         value: 1,
         digested: 1
@@ -332,20 +371,18 @@ mod tests {
   #[test]
   fn combinator_bind() {
     assert_eq!(
-      wrap(|input| input.digest(1)).bind(123).exec(Input::new(
-        Instant::new("123"),
-        &mut (),
-        &mut ()
-      )),
+      wrap(|instant, _| instant.accept(1))
+        .bind(123)
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 123,
         digested: 1
       })
     );
     assert_eq!(
-      bytes::wrap(|input| input.digest(1))
+      bytes::wrap(|instant, _| instant.accept(1))
         .bind(123)
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ())),
+        .exec(Instant::new(b"123"), Context::default()),
       Some(Output {
         value: 123,
         digested: 1
@@ -356,18 +393,18 @@ mod tests {
   #[test]
   fn combinator_bind_with() {
     assert_eq!(
-      wrap(|input| input.digest(1))
+      wrap(|instant, _| instant.accept(1))
         .bind_with(|| 0i32)
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 0,
         digested: 1
       })
     );
     assert_eq!(
-      bytes::wrap(|input| input.digest(1))
+      bytes::wrap(|instant, _| instant.accept(1))
         .bind_with(|| 0i32)
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ())),
+        .exec(Instant::new(b"123"), Context::default()),
       Some(Output {
         value: 0,
         digested: 1
@@ -375,7 +412,7 @@ mod tests {
     );
 
     // make sure copy-able and clone-able
-    let a = wrap::<(), (), _, _>(|input| input.digest(1)).bind_with(|| 0i32);
+    let a = wrap::<(), (), _, _>(|instant, _| instant.accept(1)).bind_with(|| 0i32);
     let _ = a;
     let _ = a.clone();
 
@@ -388,18 +425,18 @@ mod tests {
   #[test]
   fn combinator_select() {
     assert_eq!(
-      wrap(|input| input.digest(1))
-        .select(|ctx| if ctx.content() == "1" { 1 } else { 2 })
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+      wrap(|instant, _| instant.accept(1))
+        .select(|accept, _| if accept.content() == "1" { 1 } else { 2 })
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: 1,
         digested: 1
       })
     );
     assert_eq!(
-      bytes::wrap(|input| input.digest(1))
-        .select(|ctx| if ctx.content() == b"1" { 1 } else { 2 })
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ())),
+      bytes::wrap(|instant, _| instant.accept(1))
+        .select(|accept, _| if accept.content() == b"1" { 1 } else { 2 })
+        .exec(Instant::new(b"123"), Context::default()),
       Some(Output {
         value: 1,
         digested: 1
@@ -410,9 +447,9 @@ mod tests {
   #[test]
   fn combinator_range() {
     assert_eq!(
-      wrap(|input| input.digest(1))
+      wrap(|instant, _| instant.accept(1))
         .range()
-        .exec(Input::new(Instant::new("123"), &mut (), &mut ())),
+        .exec(Instant::new("123"), Context::default()),
       Some(Output {
         value: WithRange {
           data: (),
@@ -422,9 +459,9 @@ mod tests {
       })
     );
     assert_eq!(
-      bytes::wrap(|input| input.digest(1))
+      bytes::wrap(|instant, _| instant.accept(1))
         .range()
-        .exec(Input::new(Instant::new(b"123"), &mut (), &mut ())),
+        .exec(Instant::new(b"123"), Context::default()),
       Some(Output {
         value: WithRange {
           data: (),

@@ -27,16 +27,16 @@
 //! let number = next(|c| c.is_ascii_digit());
 //!
 //! // in normal mode, '/' is a division operator
-//! let div = eat('/').when(|input| *input.state == Mode::Normal);
+//! let div = eat('/').when(|_, ctx| *ctx.state == Mode::Normal);
 //!
 //! // after '=', switch to regex mode
-//! let assign = eat('=').then(|mut ctx| *ctx.state() = Mode::Regex);
+//! let assign = eat('=').then(|_, ctx| *ctx.state = Mode::Regex);
 //!
 //! // in regex mode, '/' is the start of a regex literal
 //! let regex = eat("/123/")
-//!   .when(|input| *input.state == Mode::Regex)
+//!   .when(|_, ctx| *ctx.state == Mode::Regex)
 //!   // after the regex literal, switch back to normal mode
-//!   .then(|mut ctx| *ctx.state() = Mode::Normal);
+//!   .then(|_, ctx| *ctx.state = Mode::Normal);
 //!
 //! let entry = whitespaces | identifier | number | assign | div | regex;
 //!
@@ -197,7 +197,7 @@ pub use builder::*;
 pub use snapshot::*;
 
 use crate::{
-  action::{Action, Input, Output},
+  action::{Action, Context, Output},
   digest::Digest,
   instant::Instant,
 };
@@ -339,11 +339,13 @@ impl<T, Text: ?Sized, State, Heap> Parser<T, &Text, State, Heap> {
   {
     let mut tmp_state = self.state.clone();
     (
-      self.entry.exec(Input::new(
+      self.entry.exec(
         self.instant.clone(),
-        &mut tmp_state,
-        &mut self.heap,
-      )),
+        Context {
+          state: &mut tmp_state,
+          heap: &mut self.heap,
+        },
+      ),
       tmp_state,
     )
   }
@@ -360,11 +362,13 @@ where
   fn next(&mut self) -> Option<Self::Item> {
     self
       .entry
-      .exec(Input::new(
+      .exec(
         self.instant.clone(),
-        &mut self.state,
-        &mut self.heap,
-      ))
+        Context {
+          state: &mut self.state,
+          heap: &mut self.heap,
+        },
+      )
       .inspect(|output| unsafe { self.instant.digest_unchecked(output.digested) })
   }
 }
@@ -411,7 +415,13 @@ mod tests {
     assert_eq!(
       parser
         .entry()
-        .exec(Input::new(Instant::new("123"), &mut 0, &mut 0))
+        .exec(
+          Instant::new("123"),
+          Context {
+            state: &mut 0,
+            heap: &mut 0
+          }
+        )
         .unwrap()
         .digested,
       3
