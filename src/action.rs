@@ -96,10 +96,26 @@ mod tests {
   use crate::{combinator::take, instant::Instant};
 
   fn assert_str_action(t: impl Action<Value = ()>) {
-    assert!(t.exec(&Instant::new("123"), Context::default()).is_some());
+    assert!(t
+      .exec(
+        &Instant::new("123"),
+        Context {
+          state: &mut (),
+          heap: &mut ()
+        }
+      )
+      .is_some());
   }
   fn assert_bytes_action(t: impl Action<[u8], Value = ()>) {
-    assert!(t.exec(&Instant::new(b"123"), Context::default()).is_some());
+    assert!(t
+      .exec(
+        &Instant::new(b"123"),
+        Context {
+          state: &mut (),
+          heap: &mut ()
+        }
+      )
+      .is_some());
   }
 
   #[test]

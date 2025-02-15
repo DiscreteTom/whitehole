@@ -33,15 +33,15 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   /// # Examples
   /// ```
-  /// # use whitehole::{combinator::{eat, Combinator}, action::{Action, Context}, instant::Instant};
+  /// # use whitehole::{combinator::eat, parser::Parser};
   /// // eat `true` for 1 or more times, separated by `,` with optional spaces
-  /// let action = {
+  /// let entry = {
   ///   let ws = || eat(' ') * (..);
   ///   (eat("true") * (1..)).sep(ws() + eat(',') + ws())
   /// };
-  /// assert!(action.exec(&Instant::new("true"), Context::default()).is_some());
-  /// assert!(action.exec(&Instant::new("true,true"), Context::default()).is_some());
-  /// assert!(action.exec(&Instant::new("true , true"), Context::default()).is_some());
+  /// assert_eq!(Parser::builder().entry(&entry).build("true").next().unwrap().digested, 4);
+  /// assert_eq!(Parser::builder().entry(&entry).build("true,true").next().unwrap().digested, 9);
+  /// assert_eq!(Parser::builder().entry(&entry).build("true , true").next().unwrap().digested, 11);
   /// ```
   /// Tips: you can use [`char`], `&str`, [`String`], [`u8`], `&[u8]` and [`Vec<u8>`] as the shorthand
   /// for [`eat`](crate::combinator::eat) in the separator.
@@ -71,15 +71,15 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// You can use [`Combinator::sep`] with [`Combinator::fold`] in any order after `*`,
   /// since they are actually builder methods for [`Combinator<Mul>`].
   /// ```
-  /// # use whitehole::{combinator::eat, action::{Action, Context}, instant::Instant};
-  /// let combinator = (eat('a').bind(1) * (1..)).sep(',').fold(|| 0, |v, acc| acc + v);
+  /// # use whitehole::{combinator::eat, parser::Parser};
+  /// let entry = (eat('a').bind(1) * (1..)).sep(',').fold(|| 0, |v, acc| acc + v);
   /// assert_eq!(
-  ///   combinator.exec(&Instant::new("a,a,a"), Context::default()).unwrap().value,
+  ///   Parser::builder().entry(entry).build("a,a,a").next().unwrap().value,
   ///   3
   /// );
-  /// let combinator = (eat('a').bind(1) * (1..)).fold(|| 0, |v, acc| acc + v).sep(',');
+  /// let entry = (eat('a').bind(1) * (1..)).fold(|| 0, |v, acc| acc + v).sep(',');
   /// assert_eq!(
-  ///   combinator.exec(&Instant::new("a,a,a"), Context::default()).unwrap().value,
+  ///   Parser::builder().entry(entry).build("a,a,a").next().unwrap().value,
   ///   3
   /// );
   /// ```
@@ -104,51 +104,40 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{combinator::eat, instant::Instant};
+  use crate::{combinator::eat, digest::Digest, instant::Instant};
+  use std::{ops::RangeFrom, slice::SliceIndex};
+
+  fn helper<Text: ?Sized + Digest>(
+    action: impl Action<Text, Value = ()>,
+    input: &Text,
+    digested: usize,
+  ) where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    assert_eq!(
+      action
+        .exec(
+          &Instant::new(input),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
+        .map_or(0, |output| output.digested),
+      digested
+    )
+  }
 
   #[test]
   fn combinator_mul_with_sep() {
     let one_or_more = || (eat('a') * (1..)).sep(',');
 
-    assert_eq!(
-      one_or_more().exec(&Instant::new(","), Context::default()),
-      None
-    );
-    assert_eq!(
-      one_or_more().exec(&Instant::new("a"), Context::default()),
-      Some(Output {
-        value: (),
-        digested: 1
-      })
-    );
-    assert_eq!(
-      one_or_more().exec(&Instant::new("a,"), Context::default()),
-      Some(Output {
-        value: (),
-        digested: 1
-      })
-    );
-    assert_eq!(
-      one_or_more().exec(&Instant::new("a,a"), Context::default()),
-      Some(Output {
-        value: (),
-        digested: 3
-      })
-    );
-    assert_eq!(
-      one_or_more().exec(&Instant::new("a,,"), Context::default()),
-      Some(Output {
-        value: (),
-        digested: 1
-      })
-    );
-    assert_eq!(
-      one_or_more().exec(&Instant::new("a,aa"), Context::default()),
-      Some(Output {
-        value: (),
-        digested: 3
-      })
-    );
+    helper(one_or_more(), ",", 0);
+    helper(one_or_more(), "a", 1);
+    helper(one_or_more(), "a,", 1);
+    helper(one_or_more(), "a,a", 3);
+    helper(one_or_more(), "a,,", 1);
+    helper(one_or_more(), "a,aa", 3);
   }
 
   #[test]
@@ -157,7 +146,13 @@ mod tests {
       .fold(|| 0, |acc, v| acc + v)
       .sep(',');
     let output = combinator
-      .exec(&Instant::new("a,a,a"), Context::default())
+      .exec(
+        &Instant::new("a,a,a"),
+        Context {
+          state: &mut (),
+          heap: &mut (),
+        },
+      )
       .unwrap();
     assert_eq!(output.value, 3);
     assert_eq!(output.digested, 5);
@@ -167,18 +162,42 @@ mod tests {
   fn test_sep_with_eat() {
     fn t(action: Combinator<impl Action>) {
       assert!(action
-        .exec(&Instant::new("true"), Context::default())
+        .exec(
+          &Instant::new("true"),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
         .is_some());
       assert!(action
-        .exec(&Instant::new("true,true"), Context::default())
+        .exec(
+          &Instant::new("true,true"),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
         .is_some());
     }
     fn tb(action: Combinator<impl Action<[u8]>>) {
       assert!(action
-        .exec(&Instant::new(b"true"), Context::default())
+        .exec(
+          &Instant::new(b"true"),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
         .is_some());
       assert!(action
-        .exec(&Instant::new(b"true,true"), Context::default())
+        .exec(
+          &Instant::new(b"true,true"),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
         .is_some());
     }
     // with a char

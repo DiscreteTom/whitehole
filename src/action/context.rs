@@ -29,16 +29,6 @@ pub struct Context<StateRef, HeapRef> {
   pub heap: HeapRef,
 }
 
-impl Default for Context<&mut (), &mut ()> {
-  fn default() -> Self {
-    static mut UNIT: () = ();
-    Context {
-      state: unsafe { &mut UNIT },
-      heap: unsafe { &mut UNIT },
-    }
-  }
-}
-
 impl<State, Heap> Context<&mut State, &mut Heap> {
   /// Re-borrow [`Self::state`] and [`Self::heap`] to construct a new instance
   /// (similar to cloning this instance).

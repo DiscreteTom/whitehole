@@ -186,63 +186,63 @@ mod tests {
   #[test]
   fn until_exec() {
     assert_eq!(
-      till(';').exec(&Instant::new("123;456"), Context::default()),
+      till(';').exec(&Instant::new("123;456"), Context { state: &mut (), heap: &mut () }),
       Some(Output {
         value: (),
         digested: 4
       })
     );
     assert_eq!(
-      till("end").exec(&Instant::new("123end456"), Context::default()),
+      till("end").exec(&Instant::new("123end456"), Context { state: &mut (), heap: &mut () }),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till("end".to_string()).exec(&Instant::new("123end456"), Context::default()),
+      till("end".to_string()).exec(&Instant::new("123end456"), Context { state: &mut (), heap: &mut () }),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till(()).exec(&Instant::new("123"), Context::default()),
+      till(()).exec(&Instant::new("123"), Context { state: &mut (), heap: &mut () }),
       Some(Output {
         value: (),
         digested: 3
       })
     );
     assert_eq!(
-      till(b';').exec(&Instant::new(b"123;456"), Context::default()),
+      till(b';').exec(&Instant::new(b"123;456"), Context { state: &mut (), heap: &mut () }),
       Some(Output {
         value: (),
         digested: 4
       })
     );
     assert_eq!(
-      till(b"end").exec(&Instant::new(b"123end456"), Context::default()),
+      till(b"end").exec(&Instant::new(b"123end456"), Context { state: &mut (), heap: &mut () }),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till("end".to_string().as_bytes()).exec(&Instant::new(b"123end456"), Context::default()),
+      till("end".to_string().as_bytes()).exec(&Instant::new(b"123end456"), Context { state: &mut (), heap: &mut () }),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till(vec![b'1', b'2', b'3']).exec(&Instant::new(b"123456"), Context::default()),
+      till(vec![b'1', b'2', b'3']).exec(&Instant::new(b"123456"), Context { state: &mut (), heap: &mut () }),
       Some(Output {
         value: (),
         digested: 3
       })
     );
     assert_eq!(
-      till(()).exec(&Instant::new(b"123" as &[u8]), Context::default()),
+      till(()).exec(&Instant::new(b"123" as &[u8]), Context { state: &mut (), heap: &mut () }),
       Some(Output {
         value: (),
         digested: 3

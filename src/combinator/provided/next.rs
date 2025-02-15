@@ -98,13 +98,13 @@ mod tests {
     // normal
     assert_eq!(
       next(|c| c.is_ascii_digit())
-        .exec(&Instant::new("123"), Context::default())
+        .exec(&Instant::new("123"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(1)
     );
     // reject
     assert!(next(|c| c.is_ascii_alphabetic())
-      .exec(&Instant::new("123"), Context::default())
+      .exec(&Instant::new("123"), Context { state: &mut (), heap: &mut () })
       .is_none());
 
     // ensure the combinator is copyable and clone-able
@@ -121,13 +121,13 @@ mod tests {
     // normal
     assert_eq!(
       (next(|c| c.is_ascii_digit()) * (1..))
-        .exec(&Instant::new("123"), Context::default())
+        .exec(&Instant::new("123"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(next(|c| c.is_ascii_digit())
-      .exec(&Instant::new("abc"), Context::default())
+      .exec(&Instant::new("abc"), Context { state: &mut (), heap: &mut () })
       .is_none());
   }
 
@@ -136,13 +136,13 @@ mod tests {
     // normal
     assert_eq!(
       bytes::next(|b| b.is_ascii_digit())
-        .exec(&Instant::new(b"123"), Context::default())
+        .exec(&Instant::new(b"123"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(1)
     );
     // reject
     assert!(bytes::next(|b| b.is_ascii_alphabetic())
-      .exec(&Instant::new(b"123"), Context::default())
+      .exec(&Instant::new(b"123"), Context { state: &mut (), heap: &mut () })
       .is_none());
 
     // ensure the combinator is copyable and clone-able
@@ -159,13 +159,13 @@ mod tests {
     // normal
     assert_eq!(
       (bytes::next(|b| b.is_ascii_digit()) * (1..))
-        .exec(&Instant::new(b"123"), Context::default())
+        .exec(&Instant::new(b"123"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(bytes::next(|b| b.is_ascii_digit())
-      .exec(&Instant::new(b"abc"), Context::default())
+      .exec(&Instant::new(b"abc"), Context { state: &mut (), heap: &mut () })
       .is_none());
   }
 }

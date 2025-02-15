@@ -89,43 +89,43 @@ mod tests {
     // normal
     assert_eq!(
       take(3)
-        .exec(&Instant::new("123456"), Context::default())
+        .exec(&Instant::new("123456"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(3)
     );
     assert_eq!(
       take(3)
-        .exec(&Instant::new(b"123456" as &[u8]), Context::default())
+        .exec(&Instant::new(b"123456" as &[u8]), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(take(7)
-      .exec(&Instant::new("123456"), Context::default())
+      .exec(&Instant::new("123456"), Context { state: &mut (), heap: &mut () })
       .is_none());
     // 0 is always accepted
     assert_eq!(
       take(0)
-        .exec(&Instant::new(""), Context::default())
+        .exec(&Instant::new(""), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(0)
     );
     assert_eq!(
       take(0)
-        .exec(&Instant::new("123456"), Context::default())
+        .exec(&Instant::new("123456"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(0)
     );
     // take by chars not bytes for &str
     assert_eq!(
       take(1)
-        .exec(&Instant::new("好"), Context::default())
+        .exec(&Instant::new("好"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(3)
     );
     assert_eq!(
       take(2)
-        .exec(&Instant::new("好好"), Context::default())
+        .exec(&Instant::new("好好"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(6)
     );

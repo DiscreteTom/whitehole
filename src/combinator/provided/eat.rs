@@ -189,69 +189,69 @@ mod tests {
     // normal char
     assert_eq!(
       eat(';')
-        .exec(&Instant::new(";"), Context::default())
+        .exec(&Instant::new(";"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(1)
     );
     // normal &str
     assert_eq!(
       eat("123")
-        .exec(&Instant::new("123"), Context::default())
+        .exec(&Instant::new("123"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(3)
     );
     // normal String
     assert_eq!(
       eat("123".to_string())
-        .exec(&Instant::new("123"), Context::default())
+        .exec(&Instant::new("123"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(3)
     );
     // normal u8
     assert_eq!(
       eat(b';')
-        .exec(&Instant::new(b";"), Context::default())
+        .exec(&Instant::new(b";"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(1)
     );
     // normal &[u8;N]
     assert_eq!(
       eat(b";")
-        .exec(&Instant::new(b";"), Context::default())
+        .exec(&Instant::new(b";"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(1)
     );
     // normal &[u8]
     assert_eq!(
       eat("123".as_bytes())
-        .exec(&Instant::new(b"123"), Context::default())
+        .exec(&Instant::new(b"123"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(3)
     );
     // normal Vec<u8>
     assert_eq!(
       eat(vec![b'1', b'2', b'3'])
-        .exec(&Instant::new(b"123"), Context::default())
+        .exec(&Instant::new(b"123"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(eat("123")
-      .exec(&Instant::new("abc"), Context::default())
+      .exec(&Instant::new("abc"), Context { state: &mut (), heap: &mut () })
       .is_none());
     assert!(eat('1')
-      .exec(&Instant::new("abc"), Context::default())
+      .exec(&Instant::new("abc"), Context { state: &mut (), heap: &mut () })
       .is_none());
     // empty string is allowed and always accept
     assert_eq!(
       eat("")
-        .exec(&Instant::new("123"), Context::default())
+        .exec(&Instant::new("123"), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(0)
     );
     assert_eq!(
       eat("")
-        .exec(&Instant::new(""), Context::default())
+        .exec(&Instant::new(""), Context { state: &mut (), heap: &mut () })
         .map(|output| output.digested),
       Some(0)
     );
@@ -260,10 +260,10 @@ mod tests {
   #[test]
   fn eat_into_combinator() {
     fn test(c: Combinator<impl Action>) {
-      c.exec(&Instant::new("a"), Context::default());
+      c.exec(&Instant::new("a"), Context { state: &mut (), heap: &mut () });
     }
     fn test_bytes(c: Combinator<impl Action<[u8]>>) {
-      c.exec(&Instant::new(b"a"), Context::default());
+      c.exec(&Instant::new(b"a"), Context { state: &mut (), heap: &mut () });
     }
     test('a'.into());
     test("a".into());

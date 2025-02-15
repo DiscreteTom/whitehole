@@ -227,7 +227,13 @@ mod tests {
     let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | '1')
-        .exec(&Instant::new("1"), Context::default())
+        .exec(
+          &Instant::new("1"),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
         .map(|output| output.digested),
       Some(1)
     );
@@ -238,7 +244,13 @@ mod tests {
     let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | "1")
-        .exec(&Instant::new("1"), Context::default())
+        .exec(
+          &Instant::new("1"),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
         .map(|output| output.digested),
       Some(1)
     );
@@ -249,7 +261,13 @@ mod tests {
     let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | "1".to_string())
-        .exec(&Instant::new("1"), Context::default())
+        .exec(
+          &Instant::new("1"),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
         .map(|output| output.digested),
       Some(1)
     );
@@ -260,7 +278,13 @@ mod tests {
     let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | b'1')
-        .exec(&Instant::new(b"1"), Context::default())
+        .exec(
+          &Instant::new(b"1"),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
         .map(|output| output.digested),
       Some(1)
     );
@@ -271,7 +295,13 @@ mod tests {
     let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | "1".as_bytes())
-        .exec(&Instant::new(b"1"), Context::default())
+        .exec(
+          &Instant::new(b"1"),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
         .map(|output| output.digested),
       Some(1)
     );
@@ -282,7 +312,13 @@ mod tests {
     let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | b"1")
-        .exec(&Instant::new(b"1"), Context::default())
+        .exec(
+          &Instant::new(b"1"),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
         .map(|output| output.digested),
       Some(1)
     );
@@ -293,7 +329,13 @@ mod tests {
     let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
     assert_eq!(
       (rejecter() | vec![b'1'])
-        .exec(&Instant::new(b"1"), Context::default())
+        .exec(
+          &Instant::new(b"1"),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
         .map(|output| output.digested),
       Some(1)
     );

@@ -54,8 +54,8 @@
 //! You can use [`Combinator::fold`]
 //! to specify an ad-hoc accumulator after performing `*`.
 //! ```
-//! # use whitehole::{combinator::next, action::{Action, Context}, instant::Instant};
-//! let combinator = {
+//! # use whitehole::{combinator::next, parser::Parser};
+//! let entry = {
 //!   // accept one ascii digit at a time
 //!   next(|c| c.is_ascii_digit())
 //!     // convert the char to a number
@@ -68,7 +68,7 @@
 //!
 //! // parse "123" to 123
 //! assert_eq!(
-//!   combinator.exec(&Instant::new("123"), Context::default()).unwrap().value,
+//!   Parser::builder().entry(entry).build("123").next().unwrap().value,
 //!   123
 //! )
 //! ```
@@ -80,8 +80,8 @@
 //! To optimize the performance,
 //! you can fold the values to [`Context::heap`] to prevent re-allocation.
 //! ```
-//! # use whitehole::{combinator::take, action::{Action, Context}, instant::Instant};
-//! let combinator = {
+//! # use whitehole::{combinator::take, parser::Parser};
+//! let entry = {
 //!   // eat one char, accumulate some value in `ctx.heap`
 //!   take(1).then(|_, ctx| Vec::push(ctx.heap, 1))
 //!     // repeat for 1 or more times
@@ -89,27 +89,27 @@
 //! }.prepare(|_, ctx| ctx.heap.clear()); // clear the vec before executing this combinator
 //!
 //! // create a re-usable heap
-//! let mut heap = vec![];
-//! combinator.exec(&Instant::new("123"), Context { state: &mut (), heap: &mut heap });
-//! assert_eq!(heap, vec![1, 1, 1]);
+//! let mut parser = Parser::builder().heap(vec![]).entry(entry).build("123");
+//! parser.next();
+//! assert_eq!(parser.heap, vec![1, 1, 1]);
 //! ```
 //! # Separator
 //! You can use [`Combinator::sep`]
 //! to specify an other combinator as the separator after performing `*`.
 //! ```
-//! # use whitehole::{combinator::eat, action::{Context, Action}, instant::Instant};
-//! let combinator = (eat('a') * (1..)).sep(',');
+//! # use whitehole::{combinator::eat, parser::Parser};
+//! let entry = (eat('a') * (1..)).sep(',');
 //! assert_eq!(
-//!   combinator.exec(&Instant::new("a,a,a"), Context::default()).unwrap().digested,
+//!   Parser::builder().entry(entry).build("a,a,a").next().unwrap().digested,
 //!   5
 //! )
 //! ```
 //! You can use [`Combinator::sep`] with [`Combinator::fold`]:
 //! ```
-//! # use whitehole::{combinator::eat, action::{Action, Context}, instant::Instant};
-//! let combinator = (eat('a').bind(1) * (1..)).sep(',').fold(|| 0, |v, acc| acc + v);
+//! # use whitehole::{combinator::eat, parser::Parser};
+//! let entry = (eat('a').bind(1) * (1..)).sep(',').fold(|| 0, |v, acc| acc + v);
 //! assert_eq!(
-//!   combinator.exec(&Instant::new("a,a,a"), Context::default()).unwrap().value,
+//!   Parser::builder().entry(entry).build("a,a,a").next().unwrap().value,
 //!   3
 //! );
 //! ```

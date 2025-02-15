@@ -132,7 +132,15 @@ mod tests {
   #[serial]
   fn ensure_log_does_not_modify_output() {
     let c = take(1).bind(2).log("name");
-    let output = c.exec(&Instant::new("1"), Context::default()).unwrap();
+    let output = c
+      .exec(
+        &Instant::new("1"),
+        Context {
+          state: &mut (),
+          heap: &mut (),
+        },
+      )
+      .unwrap();
     assert_eq!(output.digested, 1);
     assert_eq!(output.value, 2);
   }
@@ -142,7 +150,13 @@ mod tests {
   fn ensure_log_can_be_used_with_bytes() {
     let c = take(1).bind(2).log("name");
     let output = c
-      .exec(&Instant::new(b"1" as &[u8]), Context::default())
+      .exec(
+        &Instant::new(b"1" as &[u8]),
+        Context {
+          state: &mut (),
+          heap: &mut (),
+        },
+      )
       .unwrap();
     assert_eq!(output.digested, 1);
     assert_eq!(output.value, 2);
