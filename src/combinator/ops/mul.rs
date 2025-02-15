@@ -68,7 +68,7 @@
 //!
 //! // parse "123" to 123
 //! assert_eq!(
-//!   combinator.exec(Instant::new("123"), Context::default()).unwrap().value,
+//!   combinator.exec(&Instant::new("123"), Context::default()).unwrap().value,
 //!   123
 //! )
 //! ```
@@ -90,7 +90,7 @@
 //!
 //! // create a re-usable heap
 //! let mut heap = vec![];
-//! combinator.exec(Instant::new("123"), Context { state: &mut (), heap: &mut heap });
+//! combinator.exec(&Instant::new("123"), Context { state: &mut (), heap: &mut heap });
 //! assert_eq!(heap, vec![1, 1, 1]);
 //! ```
 //! # Separator
@@ -100,7 +100,7 @@
 //! # use whitehole::{combinator::eat, action::{Context, Action}, instant::Instant};
 //! let combinator = (eat('a') * (1..)).sep(',');
 //! assert_eq!(
-//!   combinator.exec(Instant::new("a,a,a"), Context::default()).unwrap().digested,
+//!   combinator.exec(&Instant::new("a,a,a"), Context::default()).unwrap().digested,
 //!   5
 //! )
 //! ```
@@ -109,7 +109,7 @@
 //! # use whitehole::{combinator::eat, action::{Action, Context}, instant::Instant};
 //! let combinator = (eat('a').bind(1) * (1..)).sep(',').fold(|| 0, |v, acc| acc + v);
 //! assert_eq!(
-//!   combinator.exec(Instant::new("a,a,a"), Context::default()).unwrap().value,
+//!   combinator.exec(&Instant::new("a,a,a"), Context::default()).unwrap().value,
 //!   3
 //! );
 //! ```
