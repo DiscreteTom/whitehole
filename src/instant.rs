@@ -103,21 +103,21 @@ mod tests {
 
   #[test]
   fn instant_bytes_digest_unchecked() {
-    let mut i = Instant::new(&[1u8, 2, 3] as &[u8]);
+    let mut i = Instant::new(b"123" as &[u8]);
     unsafe { i.digest_unchecked(1) };
     assert_eq!(i.digested(), 1);
-    assert_eq!(i.rest(), &[2u8, 3] as &[u8]);
-    assert_eq!(i.text(), &[1u8, 2, 3] as &[u8]);
+    assert_eq!(i.rest(), b"23");
+    assert_eq!(i.text(), b"123");
     unsafe { i.digest_unchecked(1) };
     assert_eq!(i.digested(), 2);
-    assert_eq!(i.rest(), &[3u8] as &[u8]);
-    assert_eq!(i.text(), &[1u8, 2, 3] as &[u8]);
+    assert_eq!(i.rest(), b"3");
+    assert_eq!(i.text(), b"123");
   }
 
   #[test]
   #[should_panic]
   fn instant_bytes_digest_unchecked_overflow() {
-    let mut i = Instant::new(&[1u8, 2, 3] as &[u8]);
+    let mut i = Instant::new(b"123" as &[u8]);
     unsafe { i.digest_unchecked(4) };
   }
 
