@@ -45,18 +45,29 @@ impl<'a, Text: ?Sized> Instant<&'a Text> {
   pub const fn rest(&self) -> &'a Text {
     self.rest
   }
+}
 
+impl<TextRef> Instant<TextRef> {
+  /// How many bytes are already digested.
+  ///
+  /// This is cheap to call because the value is stored in this struct.
+  #[inline]
+  pub const fn digested(&self) -> usize {
+    self.digested
+  }
+}
+
+impl<Text: ?Sized + Digest> Instant<&'_ Text>
+where
+  RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+{
   /// Digest the next `n` bytes.
   /// This will update [`Self::rest`] and [`Self::digested`].
   /// # Safety
   /// You should ensure that `n` is valid according to [`Digest::validate`].
   /// This will be checked using [`debug_assert!`].
   #[inline]
-  pub unsafe fn digest_unchecked(&mut self, n: usize)
-  where
-    Text: Digest,
-    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
-  {
+  pub unsafe fn digest_unchecked(&mut self, n: usize) {
     debug_assert!(self.rest.validate(n));
     self.rest = self.rest.get_unchecked(n..);
     self.digested = self.digested.unchecked_add(n);
@@ -69,24 +80,10 @@ impl<'a, Text: ?Sized> Instant<&'a Text> {
   /// You should ensure that `n` is valid according to [`Digest::validate`].
   /// This will be checked using [`debug_assert!`].
   #[inline]
-  pub unsafe fn to_digested_unchecked(&self, n: usize) -> Self
-  where
-    Text: Digest,
-    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
-  {
+  pub unsafe fn to_digested_unchecked(&self, n: usize) -> Self {
     let mut instant = self.clone();
     instant.digest_unchecked(n);
     instant
-  }
-}
-
-impl<TextRef> Instant<TextRef> {
-  /// How many bytes are already digested.
-  ///
-  /// This is cheap to call because the value is stored in this struct.
-  #[inline]
-  pub const fn digested(&self) -> usize {
-    self.digested
   }
 }
 
