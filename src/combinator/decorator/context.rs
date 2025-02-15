@@ -11,17 +11,17 @@ use std::{
 /// This is to ensure the [`Instant`] and [`Output`] are consistent
 /// so we can skip some runtime checks.
 #[derive(Debug)]
-pub struct AcceptedContext<TextRef, Value> {
-  instant: Instant<TextRef>,
+pub struct AcceptedContext<'a, TextRef, Value> {
+  instant: &'a Instant<TextRef>,
   output: Output<Value>,
 }
 
-impl<TextRef, Value> AcceptedContext<TextRef, Value> {
+impl<'a, TextRef, Value> AcceptedContext<'a, TextRef, Value> {
   /// Create a new instance.
   ///
   /// This is only used internally by the library.
   #[inline]
-  pub(super) const fn new(instant: Instant<TextRef>, output: Output<Value>) -> Self {
+  pub(super) const fn new(instant: &'a Instant<TextRef>, output: Output<Value>) -> Self {
     AcceptedContext { instant, output }
   }
 
@@ -44,15 +44,15 @@ impl<TextRef, Value> AcceptedContext<TextRef, Value> {
   ///
   /// To get the [`Output`] only, use [`Self::take`].
   #[inline]
-  pub fn split(self) -> (Instant<TextRef>, Output<Value>) {
+  pub fn split(self) -> (&'a Instant<TextRef>, Output<Value>) {
     (self.instant, self.output)
   }
 }
 
-impl<TextRef, Value> AcceptedContext<TextRef, Value> {
+impl<'a, TextRef, Value> AcceptedContext<'a, TextRef, Value> {
   #[inline]
-  pub const fn instant(&self) -> &Instant<TextRef> {
-    &self.instant
+  pub const fn instant(&self) -> &'a Instant<TextRef> {
+    self.instant
   }
 
   #[inline]
@@ -61,7 +61,7 @@ impl<TextRef, Value> AcceptedContext<TextRef, Value> {
   }
 }
 
-impl<TextRef, Value> AcceptedContext<TextRef, Value> {
+impl<TextRef, Value> AcceptedContext<'_, TextRef, Value> {
   /// See [`Output::digested`].
   #[inline]
   pub const fn digested(&self) -> usize {
@@ -69,7 +69,7 @@ impl<TextRef, Value> AcceptedContext<TextRef, Value> {
   }
 }
 
-impl<TextRef, Value> AcceptedContext<TextRef, Value> {
+impl<TextRef, Value> AcceptedContext<'_, TextRef, Value> {
   /// The end index in bytes in the whole input text.
   #[inline]
   pub fn end(&self) -> usize {
@@ -86,7 +86,7 @@ impl<TextRef, Value> AcceptedContext<TextRef, Value> {
   }
 }
 
-impl<'a, Text: ?Sized + Digest, Value> AcceptedContext<&'a Text, Value> {
+impl<'a, Text: ?Sized + Digest, Value> AcceptedContext<'_, &'a Text, Value> {
   /// Get the rest of the input text after accepting this combinator.
   #[inline]
   pub fn rest(&self) -> &'a Text
@@ -119,7 +119,7 @@ mod tests {
     };
     ($state:expr, $heap:expr) => {
       AcceptedContext::new(
-        unsafe { Instant::new("0123").shift_unchecked(1) },
+        &unsafe { Instant::new("0123").shift_unchecked(1) },
         Output {
           value: (),
           digested: 1,

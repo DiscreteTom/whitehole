@@ -30,12 +30,12 @@ unsafe impl<
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(instant, ctx)
+      .exec(&instant, ctx)
       .map(|output| output.map(&self.inner))
   }
 }
@@ -48,12 +48,12 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(instant, ctx)
+      .exec(&instant, ctx)
       .map(|output| output.map(|v| (v,)))
   }
 }
@@ -66,12 +66,12 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>, D: Clone>
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(instant, ctx)
+      .exec(&instant, ctx)
       .map(|output| output.map(|_| self.inner.clone()))
   }
 }
@@ -84,12 +84,12 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>, NewValue, D
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(instant, ctx)
+      .exec(&instant, ctx)
       .map(|output| output.map(|_| (self.inner)()))
   }
 }
@@ -108,12 +108,12 @@ unsafe impl<
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     mut ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(instant.clone(), ctx.reborrow())
+      .exec(&instant, ctx.reborrow())
       .map(|output| Output {
         digested: output.digested,
         value: (self.inner)(AcceptedContext::new(instant, output), ctx),
@@ -129,11 +129,11 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     let start = instant.digested();
-    self.action.exec(instant, ctx).map(|output| {
+    self.action.exec(&instant, ctx).map(|output| {
       let digested = output.digested;
       output.map(|data| WithRange {
         range: start..start + digested,
@@ -151,12 +151,12 @@ unsafe impl<Text: ?Sized, State, Heap, V, T: Action<Text, State, Heap, Value = (
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(instant, ctx)
+      .exec(&instant, ctx)
       .map(|output| output.map(|(v,)| v))
   }
 }
@@ -305,7 +305,7 @@ mod tests {
     assert_eq!(
       wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
         .map(Some)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: Some(1),
         digested: 1
@@ -314,7 +314,7 @@ mod tests {
     assert_eq!(
       bytes::wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
         .map(Some)
-        .exec(Instant::new(b"123"), Context::default()),
+        .exec(&Instant::new(b"123"), Context::default()),
       Some(Output {
         value: Some(1),
         digested: 1
@@ -327,7 +327,7 @@ mod tests {
     assert_eq!(
       wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
         .tuple()
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: (1,),
         digested: 1
@@ -336,7 +336,7 @@ mod tests {
     assert_eq!(
       bytes::wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
         .tuple()
-        .exec(Instant::new(b"123"), Context::default()),
+        .exec(&Instant::new(b"123"), Context::default()),
       Some(Output {
         value: (1,),
         digested: 1
@@ -350,7 +350,7 @@ mod tests {
       wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
         .tuple()
         .pop()
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 1,
         digested: 1
@@ -360,7 +360,7 @@ mod tests {
       bytes::wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
         .tuple()
         .pop()
-        .exec(Instant::new(b"123"), Context::default()),
+        .exec(&Instant::new(b"123"), Context::default()),
       Some(Output {
         value: 1,
         digested: 1
@@ -373,7 +373,7 @@ mod tests {
     assert_eq!(
       wrap(|instant, _| instant.accept(1))
         .bind(123)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 123,
         digested: 1
@@ -382,7 +382,7 @@ mod tests {
     assert_eq!(
       bytes::wrap(|instant, _| instant.accept(1))
         .bind(123)
-        .exec(Instant::new(b"123"), Context::default()),
+        .exec(&Instant::new(b"123"), Context::default()),
       Some(Output {
         value: 123,
         digested: 1
@@ -395,7 +395,7 @@ mod tests {
     assert_eq!(
       wrap(|instant, _| instant.accept(1))
         .bind_with(|| 0i32)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 0,
         digested: 1
@@ -404,7 +404,7 @@ mod tests {
     assert_eq!(
       bytes::wrap(|instant, _| instant.accept(1))
         .bind_with(|| 0i32)
-        .exec(Instant::new(b"123"), Context::default()),
+        .exec(&Instant::new(b"123"), Context::default()),
       Some(Output {
         value: 0,
         digested: 1
@@ -427,7 +427,7 @@ mod tests {
     assert_eq!(
       wrap(|instant, _| instant.accept(1))
         .select(|accept, _| if accept.content() == "1" { 1 } else { 2 })
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 1,
         digested: 1
@@ -436,7 +436,7 @@ mod tests {
     assert_eq!(
       bytes::wrap(|instant, _| instant.accept(1))
         .select(|accept, _| if accept.content() == b"1" { 1 } else { 2 })
-        .exec(Instant::new(b"123"), Context::default()),
+        .exec(&Instant::new(b"123"), Context::default()),
       Some(Output {
         value: 1,
         digested: 1
@@ -449,7 +449,7 @@ mod tests {
     assert_eq!(
       wrap(|instant, _| instant.accept(1))
         .range()
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: WithRange {
           data: (),
@@ -461,7 +461,7 @@ mod tests {
     assert_eq!(
       bytes::wrap(|instant, _| instant.accept(1))
         .range()
-        .exec(Instant::new(b"123"), Context::default()),
+        .exec(&Instant::new(b"123"), Context::default()),
       Some(Output {
         value: WithRange {
           data: (),

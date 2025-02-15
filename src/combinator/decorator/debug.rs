@@ -83,7 +83,7 @@ unsafe impl<State, Heap, T: Action<str, State, Heap>> Action<str, State, Heap> f
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&str>,
+    instant: &Instant<&str>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     impl_log!(self, instant, ctx, input_rest_str)
@@ -96,7 +96,7 @@ unsafe impl<State, Heap, T: Action<[u8], State, Heap>> Action<[u8], State, Heap>
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&[u8]>,
+    instant: &Instant<&[u8]>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     impl_log!(self, instant, ctx, input_rest_bytes)
@@ -135,7 +135,7 @@ mod tests {
   #[serial]
   fn ensure_log_does_not_modify_output() {
     let c = wrap(|instant, _| instant.accept(1)).bind(2).log("name");
-    let output = c.exec(Instant::new("1"), Context::default()).unwrap();
+    let output = c.exec(&Instant::new("1"), Context::default()).unwrap();
     assert_eq!(output.digested, 1);
     assert_eq!(output.value, 2);
   }
@@ -146,7 +146,7 @@ mod tests {
     let c = bytes::wrap(|instant, _| instant.accept(1))
       .bind(2)
       .log("name");
-    let output = c.exec(Instant::new(b"1"), Context::default()).unwrap();
+    let output = c.exec(&Instant::new(b"1"), Context::default()).unwrap();
     assert_eq!(output.digested, 1);
     assert_eq!(output.value, 2);
   }

@@ -61,31 +61,28 @@ where
 
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     mut ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
-    self
-      .action
-      .exec(instant.clone(), ctx.reborrow())
-      .inspect(|output| {
-        let start = instant.digested();
-        let end = start + output.digested;
-        println!(
-          "{}..{}: {:?}",
-          start,
-          end,
-          instant.rest().get(..output.digested)
-        );
-      })
+    self.action.exec(instant, ctx.reborrow()).inspect(|output| {
+      let start = instant.digested();
+      let end = start + output.digested;
+      println!(
+        "{}..{}: {:?}",
+        start,
+        end,
+        instant.rest().get(..output.digested)
+      );
+    })
   }
 }
 
 fn main() {
   eat("hello")
     .simple_print()
-    .exec(Instant::new("hello world"), Context::default());
+    .exec(&Instant::new("hello world"), Context::default());
 
   eat("hello")
     .print()
-    .exec(Instant::new("hello world"), Context::default());
+    .exec(&Instant::new("hello world"), Context::default());
 }

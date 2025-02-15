@@ -15,7 +15,7 @@ unsafe impl<
     State,
     Heap,
     T: Action<Text, State, Heap>,
-    D: Fn(Instant<&Text>, Context<&mut State, &mut Heap>),
+    D: Fn(&Instant<&Text>, Context<&mut State, &mut Heap>),
   > Action<Text, State, Heap> for Prepare<T, D>
 {
   type Value = T::Value;
@@ -23,10 +23,10 @@ unsafe impl<
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     mut ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
-    (self.inner)(instant.clone(), ctx.reborrow());
+    (self.inner)(instant, ctx.reborrow());
     self.action.exec(instant, ctx)
   }
 }
@@ -44,24 +44,21 @@ unsafe impl<
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     mut ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
-    self
-      .action
-      .exec(instant.clone(), ctx.reborrow())
-      .inspect(|output| {
-        (self.inner)(
-          AcceptedContext::new(
-            instant,
-            Output {
-              value: &output.value,
-              digested: output.digested,
-            },
-          ),
-          ctx,
-        );
-      })
+    self.action.exec(instant, ctx.reborrow()).inspect(|output| {
+      (self.inner)(
+        AcceptedContext::new(
+          instant,
+          Output {
+            value: &output.value,
+            digested: output.digested,
+          },
+        ),
+        ctx,
+      );
+    })
   }
 }
 
@@ -70,7 +67,7 @@ unsafe impl<
     State,
     Heap,
     T: Action<Text, State, Heap>,
-    D: Fn(Instant<&Text>, Context<&mut State, &mut Heap>),
+    D: Fn(&Instant<&Text>, Context<&mut State, &mut Heap>),
   > Action<Text, State, Heap> for Catch<T, D>
 {
   type Value = T::Value;
@@ -78,10 +75,10 @@ unsafe impl<
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     mut ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
-    let output = self.action.exec(instant.clone(), ctx.reborrow());
+    let output = self.action.exec(instant, ctx.reborrow());
     if output.is_none() {
       (self.inner)(instant, ctx);
     }
@@ -94,7 +91,7 @@ unsafe impl<
     State,
     Heap,
     T: Action<Text, State, Heap>,
-    D: Fn(Instant<&Text>, Context<&mut State, &mut Heap>),
+    D: Fn(&Instant<&Text>, Context<&mut State, &mut Heap>),
   > Action<Text, State, Heap> for Finally<T, D>
 {
   type Value = T::Value;
@@ -102,10 +99,10 @@ unsafe impl<
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     mut ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
-    let output = self.action.exec(instant.clone(), ctx.reborrow());
+    let output = self.action.exec(instant, ctx.reborrow());
     (self.inner)(instant, ctx);
     output
   }
@@ -123,7 +120,12 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn prepare<Text: ?Sized, State, Heap, F: Fn(Instant<&Text>, Context<&mut State, &mut Heap>)>(
+  pub fn prepare<
+    Text: ?Sized,
+    State,
+    Heap,
+    F: Fn(&Instant<&Text>, Context<&mut State, &mut Heap>),
+  >(
     self,
     modifier: F,
   ) -> Combinator<Prepare<T, F>>
@@ -170,7 +172,7 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn catch<Text: ?Sized, State, Heap, F: Fn(Instant<&Text>, Context<&mut State, &mut Heap>)>(
+  pub fn catch<Text: ?Sized, State, Heap, F: Fn(&Instant<&Text>, Context<&mut State, &mut Heap>)>(
     self,
     modifier: F,
   ) -> Combinator<Catch<T, F>>
@@ -192,7 +194,12 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn finally<Text: ?Sized, State, Heap, F: Fn(Instant<&Text>, Context<&mut State, &mut Heap>)>(
+  pub fn finally<
+    Text: ?Sized,
+    State,
+    Heap,
+    F: Fn(&Instant<&Text>, Context<&mut State, &mut Heap>),
+  >(
     self,
     modifier: F,
   ) -> Combinator<Finally<T, F>>
@@ -251,7 +258,7 @@ mod tests {
         ctx.state.from = 1;
       })
       .exec(
-        Instant::new("123"),
+        &Instant::new("123"),
         Context {
           state: &mut state,
           heap: &mut ()
@@ -265,7 +272,7 @@ mod tests {
         ctx.state.from = 1;
       })
       .exec(
-        Instant::new(b"123"),
+        &Instant::new(b"123"),
         Context {
           state: &mut state,
           heap: &mut ()
@@ -283,7 +290,7 @@ mod tests {
         ctx.state.from = 1;
       })
       .exec(
-        Instant::new("123"),
+        &Instant::new("123"),
         Context {
           state: &mut state,
           heap: &mut ()
@@ -297,7 +304,7 @@ mod tests {
         ctx.state.from = 1;
       })
       .exec(
-        Instant::new(b"123"),
+        &Instant::new(b"123"),
         Context {
           state: &mut state,
           heap: &mut ()
@@ -312,7 +319,7 @@ mod tests {
         ctx.state.from = 1;
       })
       .exec(
-        Instant::new("123"),
+        &Instant::new("123"),
         Context {
           state: &mut state,
           heap: &mut ()
@@ -326,7 +333,7 @@ mod tests {
         ctx.state.from = 1;
       })
       .exec(
-        Instant::new(b"123"),
+        &Instant::new(b"123"),
         Context {
           state: &mut state,
           heap: &mut ()
@@ -344,7 +351,7 @@ mod tests {
         ctx.state.from = 1;
       })
       .exec(
-        Instant::new("123"),
+        &Instant::new("123"),
         Context {
           state: &mut state,
           heap: &mut ()
@@ -358,7 +365,7 @@ mod tests {
         ctx.state.from = 1;
       })
       .exec(
-        Instant::new(b"123"),
+        &Instant::new(b"123"),
         Context {
           state: &mut state,
           heap: &mut ()
@@ -373,7 +380,7 @@ mod tests {
         ctx.state.from = 1;
       })
       .exec(
-        Instant::new("123"),
+        &Instant::new("123"),
         Context {
           state: &mut state,
           heap: &mut ()
@@ -387,7 +394,7 @@ mod tests {
         ctx.state.from = 1;
       })
       .exec(
-        Instant::new(b"123"),
+        &Instant::new(b"123"),
         Context {
           state: &mut state,
           heap: &mut ()
@@ -405,7 +412,7 @@ mod tests {
         ctx.state.to = 1;
       })
       .exec(
-        Instant::new("123"),
+        &Instant::new("123"),
         Context {
           state: &mut state,
           heap: &mut ()
@@ -419,7 +426,7 @@ mod tests {
         ctx.state.to = 1;
       })
       .exec(
-        Instant::new(b"123"),
+        &Instant::new(b"123"),
         Context {
           state: &mut state,
           heap: &mut ()
@@ -434,7 +441,7 @@ mod tests {
         ctx.state.to = 1;
       })
       .exec(
-        Instant::new("123"),
+        &Instant::new("123"),
         Context {
           state: &mut state,
           heap: &mut ()
@@ -448,7 +455,7 @@ mod tests {
         ctx.state.to = 1;
       })
       .exec(
-        Instant::new(b"123"),
+        &Instant::new(b"123"),
         Context {
           state: &mut state,
           heap: &mut ()

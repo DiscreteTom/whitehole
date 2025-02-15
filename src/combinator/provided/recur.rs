@@ -65,10 +65,10 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
-    self.inner.get().unwrap().exec(instant, ctx)
+    self.inner.get().unwrap().exec(&instant, ctx)
   }
 }
 
@@ -95,25 +95,25 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
 /// // now you can execute the `value`.
 /// // it can have recursive structures
 /// assert!(value()
-///   .exec(Instant::new("a"), Context::default())
+///   .exec(&Instant::new("a"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Instant::new("[]"), Context::default())
+///   .exec(&Instant::new("[]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Instant::new("[a]"), Context::default())
+///   .exec(&Instant::new("[a]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Instant::new("[[]]"), Context::default())
+///   .exec(&Instant::new("[[]]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Instant::new("[a,a]"), Context::default())
+///   .exec(&Instant::new("[a,a]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Instant::new("[[],[]]"), Context::default())
+///   .exec(&Instant::new("[[],[]]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Instant::new("[[a],[]]"), Context::default())
+///   .exec(&Instant::new("[[a],[]]"), Context::default())
 ///   .is_some());
 /// ```
 #[allow(clippy::type_complexity)]
@@ -161,11 +161,11 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     debug_assert!(self.inner.get().is_some());
-    unsafe { self.inner.get().unwrap_unchecked() }.exec(instant, ctx)
+    unsafe { self.inner.get().unwrap_unchecked() }.exec(&instant, ctx)
   }
 }
 
@@ -192,25 +192,25 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
 /// // now you can execute the `value`.
 /// // it can have recursive structures
 /// assert!(value()
-///   .exec(Instant::new("a"), Context::default())
+///   .exec(&Instant::new("a"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Instant::new("[]"), Context::default())
+///   .exec(&Instant::new("[]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Instant::new("[a]"), Context::default())
+///   .exec(&Instant::new("[a]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Instant::new("[[]]"), Context::default())
+///   .exec(&Instant::new("[[]]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Instant::new("[a,a]"), Context::default())
+///   .exec(&Instant::new("[a,a]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Instant::new("[[],[]]"), Context::default())
+///   .exec(&Instant::new("[[],[]]"), Context::default())
 ///   .is_some());
 /// assert!(value()
-///   .exec(Instant::new("[[a],[]]"), Context::default())
+///   .exec(&Instant::new("[[a],[]]"), Context::default())
 ///   .is_some());
 /// ```
 #[allow(clippy::type_complexity)]
@@ -242,25 +242,25 @@ mod tests {
     value_setter.boxed(array() | 'a');
 
     assert!(value()
-      .exec(Instant::new("a"), Context::default())
+      .exec(&Instant::new("a"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Instant::new("[]"), Context::default())
+      .exec(&Instant::new("[]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Instant::new("[a]"), Context::default())
+      .exec(&Instant::new("[a]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Instant::new("[[]]"), Context::default())
+      .exec(&Instant::new("[[]]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Instant::new("[a,a]"), Context::default())
+      .exec(&Instant::new("[a,a]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Instant::new("[[],[]]"), Context::default())
+      .exec(&Instant::new("[[],[]]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Instant::new("[[a],[]]"), Context::default())
+      .exec(&Instant::new("[[a],[]]"), Context::default())
       .is_some());
 
     // make sure clone-able
@@ -273,7 +273,7 @@ mod tests {
   #[should_panic]
   fn test_recur_panic() {
     let (value, _) = recur::<_, _, _, ()>();
-    value().exec(Instant::new("a"), Context::default());
+    value().exec(&Instant::new("a"), Context::default());
   }
 
   #[test]
@@ -283,25 +283,25 @@ mod tests {
     value_setter.boxed(array() | 'a');
 
     assert!(value()
-      .exec(Instant::new("a"), Context::default())
+      .exec(&Instant::new("a"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Instant::new("[]"), Context::default())
+      .exec(&Instant::new("[]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Instant::new("[a]"), Context::default())
+      .exec(&Instant::new("[a]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Instant::new("[[]]"), Context::default())
+      .exec(&Instant::new("[[]]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Instant::new("[a,a]"), Context::default())
+      .exec(&Instant::new("[a,a]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Instant::new("[[],[]]"), Context::default())
+      .exec(&Instant::new("[[],[]]"), Context::default())
       .is_some());
     assert!(value()
-      .exec(Instant::new("[[a],[]]"), Context::default())
+      .exec(&Instant::new("[[a],[]]"), Context::default())
       .is_some());
 
     // make sure clone-able
@@ -314,6 +314,6 @@ mod tests {
   #[should_panic]
   fn test_recur_unchecked_panic() {
     let (value, _) = unsafe { recur_unchecked::<_, _, _, ()>() };
-    value().exec(Instant::new("a"), Context::default());
+    value().exec(&Instant::new("a"), Context::default());
   }
 }

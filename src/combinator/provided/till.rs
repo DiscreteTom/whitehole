@@ -11,7 +11,7 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Till<&str> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, instant: &Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
     instant
       .rest()
       .find(self.inner)
@@ -23,7 +23,7 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Till<String> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, instant: &Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
     instant
       .rest()
       .find(&self.inner)
@@ -35,7 +35,7 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Till<char> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, instant: &Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
     instant
       .rest()
       .find(self.inner)
@@ -47,7 +47,11 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<u8> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&[u8]>,
+    _: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<()>> {
     instant
       .rest()
       .iter()
@@ -61,7 +65,11 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<&[u8]> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&[u8]>,
+    _: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<()>> {
     // TODO: optimize
     instant
       .rest()
@@ -76,7 +84,11 @@ unsafe impl<const N: usize, State, Heap> Action<[u8], State, Heap> for Till<&[u8
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&[u8]>,
+    _: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<()>> {
     // TODO: optimize
     instant
       .rest()
@@ -91,7 +103,11 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<Vec<u8>> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&[u8]>,
+    _: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<()>> {
     // TODO: optimize
     instant
       .rest()
@@ -106,7 +122,11 @@ unsafe impl<Text: ?Sized + Digest, State, Heap> Action<Text, State, Heap> for Ti
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&Text>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&Text>,
+    _: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<()>> {
     unsafe { instant.accept_unchecked(instant.rest().as_bytes().len()) }.into()
   }
 }
@@ -166,63 +186,63 @@ mod tests {
   #[test]
   fn until_exec() {
     assert_eq!(
-      till(';').exec(Instant::new("123;456"), Context::default()),
+      till(';').exec(&Instant::new("123;456"), Context::default()),
       Some(Output {
         value: (),
         digested: 4
       })
     );
     assert_eq!(
-      till("end").exec(Instant::new("123end456"), Context::default()),
+      till("end").exec(&Instant::new("123end456"), Context::default()),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till("end".to_string()).exec(Instant::new("123end456"), Context::default()),
+      till("end".to_string()).exec(&Instant::new("123end456"), Context::default()),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till(()).exec(Instant::new("123"), Context::default()),
+      till(()).exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 3
       })
     );
     assert_eq!(
-      till(b';').exec(Instant::new(b"123;456"), Context::default()),
+      till(b';').exec(&Instant::new(b"123;456"), Context::default()),
       Some(Output {
         value: (),
         digested: 4
       })
     );
     assert_eq!(
-      till(b"end").exec(Instant::new(b"123end456"), Context::default()),
+      till(b"end").exec(&Instant::new(b"123end456"), Context::default()),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till("end".to_string().as_bytes()).exec(Instant::new(b"123end456"), Context::default()),
+      till("end".to_string().as_bytes()).exec(&Instant::new(b"123end456"), Context::default()),
       Some(Output {
         value: (),
         digested: 6
       })
     );
     assert_eq!(
-      till(vec![b'1', b'2', b'3']).exec(Instant::new(b"123456"), Context::default()),
+      till(vec![b'1', b'2', b'3']).exec(&Instant::new(b"123456"), Context::default()),
       Some(Output {
         value: (),
         digested: 3
       })
     );
     assert_eq!(
-      till(()).exec(Instant::new(b"123" as &[u8]), Context::default()),
+      till(()).exec(&Instant::new(b"123" as &[u8]), Context::default()),
       Some(Output {
         value: (),
         digested: 3

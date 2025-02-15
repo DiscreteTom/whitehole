@@ -16,15 +16,6 @@
 //!
 //! States are centrally managed by the parser,
 //! so it's easy to realize peeking and backtracking.
-//!
-//! # Consume the [`Input`]
-//!
-//! If not consuming the `Input`:
-//! - With `&Input`: [`Input::state`] and [`Input::heap`] can't be mutated.
-//! - With `&mut Input`: [`Action`]s may [`std::mem::swap`] the `Input` to break the outer state.
-//!
-//! So we decide to consume the `Input` in [`Action::exec`].
-//! If you need to use `Input` for multiple times, see [`Input::reborrow`].
 
 mod context;
 mod output;
@@ -49,7 +40,7 @@ pub unsafe trait Action<Text: ?Sized = str, State = (), Heap = ()> {
   /// Return [`None`] to reject.
   fn exec(
     &self,
-    instant: Instant<&Text>, // TODO: pass by ref?
+    instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>>;
 }
@@ -62,7 +53,7 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     (**self).exec(instant, ctx)
@@ -77,7 +68,7 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     self.as_ref().exec(instant, ctx)
@@ -92,7 +83,7 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     self.as_ref().exec(instant, ctx)
@@ -108,10 +99,10 @@ mod tests {
   };
 
   fn helper(t: impl Action<Value = ()>) {
-    assert!(t.exec(Instant::new("123"), Context::default()).is_some());
+    assert!(t.exec(&Instant::new("123"), Context::default()).is_some());
   }
   fn helper_bytes(t: impl Action<[u8], Value = ()>) {
-    assert!(t.exec(Instant::new(b"123"), Context::default()).is_some());
+    assert!(t.exec(&Instant::new(b"123"), Context::default()).is_some());
   }
 
   #[test]

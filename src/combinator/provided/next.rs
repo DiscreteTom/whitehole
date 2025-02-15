@@ -12,7 +12,7 @@ unsafe impl<State, Heap, F: Fn(char) -> bool> Action<str, State, Heap> for Next<
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&str>,
+    instant: &Instant<&str>,
     _: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     let next = instant.rest().chars().next()?;
@@ -29,7 +29,7 @@ unsafe impl<State, Heap, F: Fn(u8) -> bool> Action<[u8], State, Heap> for Next<F
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&[u8]>,
+    instant: &Instant<&[u8]>,
     _: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     let &next = instant.rest().first()?;
@@ -98,13 +98,13 @@ mod tests {
     // normal
     assert_eq!(
       next(|c| c.is_ascii_digit())
-        .exec(Instant::new("123"), Context::default())
+        .exec(&Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
     // reject
     assert!(next(|c| c.is_ascii_alphabetic())
-      .exec(Instant::new("123"), Context::default())
+      .exec(&Instant::new("123"), Context::default())
       .is_none());
 
     // ensure the combinator is copyable and clone-able
@@ -121,13 +121,13 @@ mod tests {
     // normal
     assert_eq!(
       (next(|c| c.is_ascii_digit()) * (1..))
-        .exec(Instant::new("123"), Context::default())
+        .exec(&Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(next(|c| c.is_ascii_digit())
-      .exec(Instant::new("abc"), Context::default())
+      .exec(&Instant::new("abc"), Context::default())
       .is_none());
   }
 
@@ -136,13 +136,13 @@ mod tests {
     // normal
     assert_eq!(
       bytes::next(|b| b.is_ascii_digit())
-        .exec(Instant::new(b"123"), Context::default())
+        .exec(&Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
     // reject
     assert!(bytes::next(|b| b.is_ascii_alphabetic())
-      .exec(Instant::new(b"123"), Context::default())
+      .exec(&Instant::new(b"123"), Context::default())
       .is_none());
 
     // ensure the combinator is copyable and clone-able
@@ -159,13 +159,13 @@ mod tests {
     // normal
     assert_eq!(
       (bytes::next(|b| b.is_ascii_digit()) * (1..))
-        .exec(Instant::new(b"123"), Context::default())
+        .exec(&Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(bytes::next(|b| b.is_ascii_digit())
-      .exec(Instant::new(b"abc"), Context::default())
+      .exec(&Instant::new(b"abc"), Context::default())
       .is_none());
   }
 }

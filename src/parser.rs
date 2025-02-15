@@ -340,7 +340,7 @@ impl<T, Text: ?Sized, State, Heap> Parser<T, &Text, State, Heap> {
     let mut tmp_state = self.state.clone();
     (
       self.entry.exec(
-        self.instant.clone(),
+        &self.instant,
         Context {
           state: &mut tmp_state,
           heap: &mut self.heap,
@@ -363,7 +363,7 @@ where
     self
       .entry
       .exec(
-        self.instant.clone(),
+        &self.instant,
         Context {
           state: &mut self.state,
           heap: &mut self.heap,
@@ -416,7 +416,7 @@ mod tests {
       parser
         .entry()
         .exec(
-          Instant::new("123"),
+          &Instant::new("123"),
           Context {
             state: &mut 0,
             heap: &mut 0

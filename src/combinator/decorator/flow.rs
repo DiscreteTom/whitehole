@@ -18,7 +18,7 @@ unsafe impl<
     State,
     Heap,
     T: Action<Text, State, Heap>,
-    D: Fn(Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
+    D: Fn(&Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
   > Action<Text, State, Heap> for When<T, D>
 {
   type Value = T::Value;
@@ -26,10 +26,10 @@ unsafe impl<
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     mut ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
-    if (self.inner)(instant.clone(), ctx.reborrow()) {
+    if (self.inner)(instant, ctx.reborrow()) {
       self.action.exec(instant, ctx)
     } else {
       None
@@ -42,7 +42,7 @@ unsafe impl<
     State,
     Heap,
     T: Action<Text, State, Heap>,
-    D: Fn(Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
+    D: Fn(&Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
   > Action<Text, State, Heap> for Prevent<T, D>
 {
   type Value = T::Value;
@@ -50,10 +50,10 @@ unsafe impl<
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     mut ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
-    if !(self.inner)(instant.clone(), ctx.reborrow()) {
+    if !(self.inner)(instant, ctx.reborrow()) {
       self.action.exec(instant, ctx)
     } else {
       None
@@ -74,12 +74,12 @@ unsafe impl<
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     mut ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(instant.clone(), ctx.reborrow())
+      .exec(instant, ctx.reborrow())
       .and_then(|output| {
         if (self.inner)(
           AcceptedContext::new(
@@ -107,7 +107,7 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap, Value: Defau
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     Some(self.action.exec(instant, ctx).unwrap_or_else(|| Output {
@@ -123,12 +123,12 @@ unsafe impl<State, Heap, T: Action<str, State, Heap>> Action<str, State, Heap> f
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&str>,
+    instant: &Instant<&str>,
     mut ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(instant.clone(), ctx.reborrow())
+      .exec(instant, ctx.reborrow())
       .and_then(|output| {
         unsafe { instant.rest().get_unchecked(output.digested..) }
           .chars()
@@ -157,7 +157,7 @@ impl<T> Combinator<T> {
     Text: ?Sized,
     State,
     Heap,
-    F: Fn(Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
+    F: Fn(&Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
   >(
     self,
     condition: F,
@@ -185,7 +185,7 @@ impl<T> Combinator<T> {
     Text: ?Sized,
     State,
     Heap,
-    F: Fn(Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
+    F: Fn(&Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
   >(
     self,
     preventer: F,
@@ -317,7 +317,7 @@ mod tests {
     assert!(accepter()
       .when(|_, _| false)
       .exec(
-        Instant::new("123"),
+        &Instant::new("123"),
         Context {
           state: &mut executed,
           heap: &mut ()
@@ -329,7 +329,7 @@ mod tests {
     assert!(accepter_bytes()
       .when(|_, _| false)
       .exec(
-        Instant::new(b"123"),
+        &Instant::new(b"123"),
         Context {
           state: &mut executed,
           heap: &mut ()
@@ -342,7 +342,7 @@ mod tests {
     assert!(accepter()
       .when(|_, _| true)
       .exec(
-        Instant::new("123"),
+        &Instant::new("123"),
         Context {
           state: &mut executed,
           heap: &mut ()
@@ -354,7 +354,7 @@ mod tests {
     assert!(accepter_bytes()
       .when(|_, _| true)
       .exec(
-        Instant::new(b"123"),
+        &Instant::new(b"123"),
         Context {
           state: &mut executed,
           heap: &mut ()
@@ -370,7 +370,7 @@ mod tests {
     assert!(accepter()
       .prevent(|_, _| true)
       .exec(
-        Instant::new("123"),
+        &Instant::new("123"),
         Context {
           state: &mut executed,
           heap: &mut ()
@@ -382,7 +382,7 @@ mod tests {
     assert!(accepter_bytes()
       .prevent(|_, _| true)
       .exec(
-        Instant::new(b"123"),
+        &Instant::new(b"123"),
         Context {
           state: &mut executed,
           heap: &mut ()
@@ -395,7 +395,7 @@ mod tests {
     assert!(accepter()
       .prevent(|_, _| false)
       .exec(
-        Instant::new("123"),
+        &Instant::new("123"),
         Context {
           state: &mut executed,
           heap: &mut ()
@@ -407,7 +407,7 @@ mod tests {
     assert!(accepter_bytes()
       .prevent(|_, _| false)
       .exec(
-        Instant::new(b"123"),
+        &Instant::new(b"123"),
         Context {
           state: &mut executed,
           heap: &mut ()
@@ -424,7 +424,7 @@ mod tests {
       accepter()
         .reject(|accept, _| accept.content() != "1")
         .exec(
-          Instant::new("123"),
+          &Instant::new("123"),
           Context {
             state: &mut executed,
             heap: &mut ()
@@ -440,7 +440,7 @@ mod tests {
       accepter_bytes()
         .reject(|accept, _| accept.content() != b"1")
         .exec(
-          Instant::new(b"123"),
+          &Instant::new(b"123"),
           Context {
             state: &mut executed,
             heap: &mut ()
@@ -455,7 +455,7 @@ mod tests {
     let mut executed = false;
     assert_eq!(
       accepter().reject(|accept, _| accept.content() == "1").exec(
-        Instant::new("123"),
+        &Instant::new("123"),
         Context {
           state: &mut executed,
           heap: &mut ()
@@ -469,7 +469,7 @@ mod tests {
       accepter_bytes()
         .reject(|accept, _| accept.content() == b"1")
         .exec(
-          Instant::new(b"123"),
+          &Instant::new(b"123"),
           Context {
             state: &mut executed,
             heap: &mut ()
@@ -487,7 +487,7 @@ mod tests {
       accepter()
         .optional()
         .exec(
-          Instant::new("123"),
+          &Instant::new("123"),
           Context {
             state: &mut executed,
             heap: &mut ()
@@ -503,7 +503,7 @@ mod tests {
       accepter_bytes()
         .optional()
         .exec(
-          Instant::new(b"123"),
+          &Instant::new(b"123"),
           Context {
             state: &mut executed,
             heap: &mut ()
@@ -520,7 +520,7 @@ mod tests {
       rejecter()
         .optional()
         .exec(
-          Instant::new("123"),
+          &Instant::new("123"),
           Context {
             state: &mut executed,
             heap: &mut ()
@@ -536,7 +536,7 @@ mod tests {
       rejecter_bytes()
         .optional()
         .exec(
-          Instant::new(b"123"),
+          &Instant::new(b"123"),
           Context {
             state: &mut executed,
             heap: &mut ()
@@ -556,7 +556,7 @@ mod tests {
       accepter()
         .optional()
         .exec(
-          Instant::new(""),
+          &Instant::new(""),
           Context {
             state: &mut executed,
             heap: &mut ()
@@ -572,7 +572,7 @@ mod tests {
       accepter_bytes()
         .optional()
         .exec(
-          Instant::new(b""),
+          &Instant::new(b""),
           Context {
             state: &mut executed,
             heap: &mut ()
@@ -592,7 +592,7 @@ mod tests {
       accepter()
         .boundary()
         .exec(
-          Instant::new("1"),
+          &Instant::new("1"),
           Context {
             state: &mut executed,
             heap: &mut ()
@@ -607,7 +607,7 @@ mod tests {
     let mut executed = false;
     assert_eq!(
       accepter().boundary().exec(
-        Instant::new("12"),
+        &Instant::new("12"),
         Context {
           state: &mut executed,
           heap: &mut ()
@@ -620,7 +620,7 @@ mod tests {
     let mut executed = false;
     assert_eq!(
       accepter().boundary().exec(
-        Instant::new("1a"),
+        &Instant::new("1a"),
         Context {
           state: &mut executed,
           heap: &mut ()
@@ -633,7 +633,7 @@ mod tests {
     let mut executed = false;
     assert_eq!(
       accepter().boundary().exec(
-        Instant::new("1_"),
+        &Instant::new("1_"),
         Context {
           state: &mut executed,
           heap: &mut ()

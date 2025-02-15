@@ -16,7 +16,7 @@ unsafe impl<Text: ?Sized, State, Heap> Action<Text, State, Heap> for NoSep {
   #[inline]
   fn exec(
     &self,
-    _: Instant<&Text>,
+    _: &Instant<&Text>,
     _: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     // just accept without digesting
@@ -39,9 +39,9 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   ///   let ws = || eat(' ') * (..);
   ///   (eat("true") * (1..)).sep(ws() + eat(',') + ws())
   /// };
-  /// assert!(action.exec(Instant::new("true"), Context::default()).is_some());
-  /// assert!(action.exec(Instant::new("true,true"), Context::default()).is_some());
-  /// assert!(action.exec(Instant::new("true , true"), Context::default()).is_some());
+  /// assert!(action.exec(&Instant::new("true"), Context::default()).is_some());
+  /// assert!(action.exec(&Instant::new("true,true"), Context::default()).is_some());
+  /// assert!(action.exec(&Instant::new("true , true"), Context::default()).is_some());
   /// ```
   /// Tips: you can use [`char`], `&str`, [`String`], [`u8`], `&[u8]` and [`Vec<u8>`] as the shorthand
   /// for [`eat`](crate::combinator::eat) in the separator.
@@ -74,12 +74,12 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// # use whitehole::{combinator::eat, action::{Action, Context}, instant::Instant};
   /// let combinator = (eat('a').bind(1) * (1..)).sep(',').fold(|| 0, |v, acc| acc + v);
   /// assert_eq!(
-  ///   combinator.exec(Instant::new("a,a,a"), Context::default()).unwrap().value,
+  ///   combinator.exec(&Instant::new("a,a,a"), Context::default()).unwrap().value,
   ///   3
   /// );
   /// let combinator = (eat('a').bind(1) * (1..)).fold(|| 0, |v, acc| acc + v).sep(',');
   /// assert_eq!(
-  ///   combinator.exec(Instant::new("a,a,a"), Context::default()).unwrap().value,
+  ///   combinator.exec(&Instant::new("a,a,a"), Context::default()).unwrap().value,
   ///   3
   /// );
   /// ```
@@ -111,39 +111,39 @@ mod tests {
     let one_or_more = || (eat('a') * (1..)).sep(',');
 
     assert_eq!(
-      one_or_more().exec(Instant::new(","), Context::default()),
+      one_or_more().exec(&Instant::new(","), Context::default()),
       None
     );
     assert_eq!(
-      one_or_more().exec(Instant::new("a"), Context::default()),
+      one_or_more().exec(&Instant::new("a"), Context::default()),
       Some(Output {
         value: (),
         digested: 1
       })
     );
     assert_eq!(
-      one_or_more().exec(Instant::new("a,"), Context::default()),
+      one_or_more().exec(&Instant::new("a,"), Context::default()),
       Some(Output {
         value: (),
         digested: 1
       })
     );
     assert_eq!(
-      one_or_more().exec(Instant::new("a,a"), Context::default()),
+      one_or_more().exec(&Instant::new("a,a"), Context::default()),
       Some(Output {
         value: (),
         digested: 3
       })
     );
     assert_eq!(
-      one_or_more().exec(Instant::new("a,,"), Context::default()),
+      one_or_more().exec(&Instant::new("a,,"), Context::default()),
       Some(Output {
         value: (),
         digested: 1
       })
     );
     assert_eq!(
-      one_or_more().exec(Instant::new("a,aa"), Context::default()),
+      one_or_more().exec(&Instant::new("a,aa"), Context::default()),
       Some(Output {
         value: (),
         digested: 3
@@ -157,7 +157,7 @@ mod tests {
       .fold(|| 0, |acc, v| acc + v)
       .sep(',');
     let output = combinator
-      .exec(Instant::new("a,a,a"), Context::default())
+      .exec(&Instant::new("a,a,a"), Context::default())
       .unwrap();
     assert_eq!(output.value, 3);
     assert_eq!(output.digested, 5);
@@ -167,18 +167,18 @@ mod tests {
   fn test_sep_with_eat() {
     fn t(action: Combinator<impl Action>) {
       assert!(action
-        .exec(Instant::new("true"), Context::default())
+        .exec(&Instant::new("true"), Context::default())
         .is_some());
       assert!(action
-        .exec(Instant::new("true,true"), Context::default())
+        .exec(&Instant::new("true,true"), Context::default())
         .is_some());
     }
     fn tb(action: Combinator<impl Action<[u8]>>) {
       assert!(action
-        .exec(Instant::new(b"true"), Context::default())
+        .exec(&Instant::new(b"true"), Context::default())
         .is_some());
       assert!(action
-        .exec(Instant::new(b"true,true"), Context::default())
+        .exec(&Instant::new(b"true,true"), Context::default())
         .is_some());
     }
     // with a char

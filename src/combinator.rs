@@ -135,7 +135,7 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<T::Value>> {
     self.action.exec(instant, ctx)

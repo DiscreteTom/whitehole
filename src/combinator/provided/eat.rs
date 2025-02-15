@@ -10,7 +10,7 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Eat<char> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, instant: &Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
     instant
       .rest()
       .starts_with(self.inner)
@@ -22,7 +22,7 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Eat<String> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, instant: &Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
     instant
       .rest()
       .starts_with(&self.inner)
@@ -34,7 +34,7 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Eat<&str> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, instant: &Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
     instant
       .rest()
       .starts_with(self.inner)
@@ -46,7 +46,11 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<u8> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&[u8]>,
+    _: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<()>> {
     instant
       .rest()
       .first()
@@ -59,7 +63,11 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<&[u8]> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&[u8]>,
+    _: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<()>> {
     instant
       .rest()
       .starts_with(self.inner)
@@ -71,7 +79,11 @@ unsafe impl<const N: usize, State, Heap> Action<[u8], State, Heap> for Eat<&[u8;
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&[u8]>,
+    _: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<()>> {
     instant
       .rest()
       .starts_with(self.inner)
@@ -83,7 +95,11 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<Vec<u8>> {
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&[u8]>,
+    _: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<()>> {
     instant
       .rest()
       .starts_with(&self.inner)
@@ -173,69 +189,69 @@ mod tests {
     // normal char
     assert_eq!(
       eat(';')
-        .exec(Instant::new(";"), Context::default())
+        .exec(&Instant::new(";"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
     // normal &str
     assert_eq!(
       eat("123")
-        .exec(Instant::new("123"), Context::default())
+        .exec(&Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     // normal String
     assert_eq!(
       eat("123".to_string())
-        .exec(Instant::new("123"), Context::default())
+        .exec(&Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     // normal u8
     assert_eq!(
       eat(b';')
-        .exec(Instant::new(b";"), Context::default())
+        .exec(&Instant::new(b";"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
     // normal &[u8;N]
     assert_eq!(
       eat(b";")
-        .exec(Instant::new(b";"), Context::default())
+        .exec(&Instant::new(b";"), Context::default())
         .map(|output| output.digested),
       Some(1)
     );
     // normal &[u8]
     assert_eq!(
       eat("123".as_bytes())
-        .exec(Instant::new(b"123"), Context::default())
+        .exec(&Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     // normal Vec<u8>
     assert_eq!(
       eat(vec![b'1', b'2', b'3'])
-        .exec(Instant::new(b"123"), Context::default())
+        .exec(&Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(eat("123")
-      .exec(Instant::new("abc"), Context::default())
+      .exec(&Instant::new("abc"), Context::default())
       .is_none());
     assert!(eat('1')
-      .exec(Instant::new("abc"), Context::default())
+      .exec(&Instant::new("abc"), Context::default())
       .is_none());
     // empty string is allowed and always accept
     assert_eq!(
       eat("")
-        .exec(Instant::new("123"), Context::default())
+        .exec(&Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(0)
     );
     assert_eq!(
       eat("")
-        .exec(Instant::new(""), Context::default())
+        .exec(&Instant::new(""), Context::default())
         .map(|output| output.digested),
       Some(0)
     );
@@ -244,10 +260,10 @@ mod tests {
   #[test]
   fn eat_into_combinator() {
     fn test(c: Combinator<impl Action>) {
-      c.exec(Instant::new("a"), Context::default());
+      c.exec(&Instant::new("a"), Context::default());
     }
     fn test_bytes(c: Combinator<impl Action<[u8]>>) {
-      c.exec(Instant::new(b"a"), Context::default());
+      c.exec(&Instant::new(b"a"), Context::default());
     }
     test('a'.into());
     test("a".into());

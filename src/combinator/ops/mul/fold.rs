@@ -21,7 +21,7 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   ///
   /// // parse "123" to 123
   /// assert_eq!(
-  ///   combinator.exec(Instant::new("123"), Context::default()).unwrap().value,
+  ///   combinator.exec(&Instant::new("123"), Context::default()).unwrap().value,
   ///   123
   /// )
   /// ```
@@ -62,13 +62,13 @@ mod tests {
 
     // repeat a rejecter will reject
     assert!((rejecter() * 3)
-      .exec(Instant::new("123"), Context::default())
+      .exec(&Instant::new("123"), Context::default())
       .is_none());
 
     // repeat rejecter 0 times will accept
     let n = 0;
     assert_eq!(
-      (rejecter() * n).exec(Instant::new("123"), Context::default()),
+      (rejecter() * n).exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 0,
@@ -80,7 +80,7 @@ mod tests {
     assert_eq!(
       (accepter() * n)
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 0,
         digested: 0,
@@ -91,7 +91,7 @@ mod tests {
     assert_eq!(
       (accepter() * 3)
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 3,
         digested: 3
@@ -101,7 +101,7 @@ mod tests {
     // overflow, reject
     assert!((accepter() * 4)
       .fold(|| 0, |acc, v| acc + v)
-      .exec(Instant::new("123"), Context::default())
+      .exec(&Instant::new("123"), Context::default())
       .is_none());
   }
 
@@ -118,12 +118,12 @@ mod tests {
 
     // repeat a rejecter will reject
     assert!((rejecter() * (1..2))
-      .exec(Instant::new("123"), Context::default())
+      .exec(&Instant::new("123"), Context::default())
       .is_none());
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (0..2)).exec(Instant::new("123"), Context::default()),
+      (rejecter() * (0..2)).exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 0,
@@ -134,7 +134,7 @@ mod tests {
     assert_eq!(
       (accepter() * (0..1))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 0,
         digested: 0,
@@ -145,7 +145,7 @@ mod tests {
     assert_eq!(
       (accepter() * (0..3))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 1,
         digested: 2
@@ -155,7 +155,7 @@ mod tests {
     // too few, reject
     assert!((accepter() * (4..6))
       .fold(|| 0, |acc, v| acc + v)
-      .exec(Instant::new("123"), Context::default())
+      .exec(&Instant::new("123"), Context::default())
       .is_none());
   }
 
@@ -172,12 +172,12 @@ mod tests {
 
     // repeat a rejecter will reject
     assert!((rejecter() * (1..))
-      .exec(Instant::new("123"), Context::default())
+      .exec(&Instant::new("123"), Context::default())
       .is_none());
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (0..)).exec(Instant::new("123"), Context::default()),
+      (rejecter() * (0..)).exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 0,
@@ -188,7 +188,7 @@ mod tests {
     assert_eq!(
       (accepter() * (0..))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 3,
         digested: 3
@@ -198,7 +198,7 @@ mod tests {
     // too few, reject
     assert!((accepter() * (4..))
       .fold(|| 0, |acc, v| acc + v)
-      .exec(Instant::new("123"), Context::default())
+      .exec(&Instant::new("123"), Context::default())
       .is_none());
   }
 
@@ -215,7 +215,7 @@ mod tests {
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (..)).exec(Instant::new("123"), Context::default()),
+      (rejecter() * (..)).exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 0,
@@ -226,7 +226,7 @@ mod tests {
     assert_eq!(
       (accepter() * (..))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 3,
         digested: 3
@@ -247,12 +247,12 @@ mod tests {
 
     // repeat a rejecter will reject
     assert!((rejecter() * (1..=3))
-      .exec(Instant::new("123"), Context::default())
+      .exec(&Instant::new("123"), Context::default())
       .is_none());
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (0..=2)).exec(Instant::new("123"), Context::default()),
+      (rejecter() * (0..=2)).exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 0,
@@ -263,7 +263,7 @@ mod tests {
     assert_eq!(
       (accepter() * (0..=0))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 0,
         digested: 0,
@@ -274,7 +274,7 @@ mod tests {
     assert_eq!(
       (accepter() * (0..=3))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 3,
         digested: 3
@@ -284,7 +284,7 @@ mod tests {
     // too few, reject
     assert!((accepter() * (4..=6))
       .fold(|| 0, |acc, v| acc + v)
-      .exec(Instant::new("123"), Context::default())
+      .exec(&Instant::new("123"), Context::default())
       .is_none());
   }
 
@@ -301,7 +301,7 @@ mod tests {
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (..2)).exec(Instant::new("123"), Context::default()),
+      (rejecter() * (..2)).exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 0,
@@ -312,7 +312,7 @@ mod tests {
     assert_eq!(
       (accepter() * (..1))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 0,
         digested: 0,
@@ -323,7 +323,7 @@ mod tests {
     assert_eq!(
       (accepter() * (..3))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 1,
         digested: 2
@@ -344,7 +344,7 @@ mod tests {
 
     // repeat rejecter 0 times will accept
     assert_eq!(
-      (rejecter() * (..=2)).exec(Instant::new("123"), Context::default()),
+      (rejecter() * (..=2)).exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: (),
         digested: 0,
@@ -355,7 +355,7 @@ mod tests {
     assert_eq!(
       (accepter() * (..=0))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 0,
         digested: 0,
@@ -366,7 +366,7 @@ mod tests {
     assert_eq!(
       (accepter() * (..=3))
         .fold(|| 0, |acc, v| acc + v)
-        .exec(Instant::new("123"), Context::default()),
+        .exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: 3,
         digested: 3

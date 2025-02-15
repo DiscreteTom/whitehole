@@ -105,21 +105,18 @@ where
   #[inline]
   fn exec(
     &self,
-    instant: Instant<&Text>,
+    instant: &Instant<&Text>,
     mut ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
-    self
-      .lhs
-      .exec(instant.clone(), ctx.reborrow())
-      .and_then(|output| {
-        self
-          .rhs
-          .exec(unsafe { instant.shift_unchecked(output.digested) }, ctx)
-          .map(|rhs_output| Output {
-            value: output.value.concat(rhs_output.value),
-            digested: unsafe { output.digested.unchecked_add(rhs_output.digested) },
-          })
-      })
+    self.lhs.exec(instant, ctx.reborrow()).and_then(|output| {
+      self
+        .rhs
+        .exec(&unsafe { instant.shift_unchecked(output.digested) }, ctx)
+        .map(|rhs_output| Output {
+          value: output.value.concat(rhs_output.value),
+          digested: unsafe { output.digested.unchecked_add(rhs_output.digested) },
+        })
+    })
   }
 }
 
@@ -219,32 +216,32 @@ mod tests {
 
     // reject then accept, should return None
     assert!((rejecter() + accepter_unit())
-      .exec(Instant::new("123"), Context::default())
+      .exec(&Instant::new("123"), Context::default())
       .is_none());
 
     // accept then reject, should return None
     assert!((accepter_unit() + rejecter())
-      .exec(Instant::new("123"), Context::default())
+      .exec(&Instant::new("123"), Context::default())
       .is_none());
 
     // accept then accept, should return the sum of the digested
     // with the concat value
     assert_eq!(
-      (accepter_unit() + accepter_int()).exec(Instant::new("123"), Context::default()),
+      (accepter_unit() + accepter_int()).exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: (123,),
         digested: 2,
       })
     );
     assert_eq!(
-      (accepter_int() + accepter_unit()).exec(Instant::new("123"), Context::default()),
+      (accepter_int() + accepter_unit()).exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: (123,),
         digested: 2,
       })
     );
     assert_eq!(
-      (accepter_int() + accepter_int()).exec(Instant::new("123"), Context::default()),
+      (accepter_int() + accepter_int()).exec(&Instant::new("123"), Context::default()),
       Some(Output {
         value: (123, 123),
         digested: 2,
@@ -258,7 +255,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + '2')
-        .exec(Instant::new("12"), Context::default())
+        .exec(&Instant::new("12"), Context::default())
         .map(|output| output.digested),
       Some(2)
     );
@@ -270,7 +267,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + "23")
-        .exec(Instant::new("123"), Context::default())
+        .exec(&Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
@@ -282,7 +279,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + "23".to_string())
-        .exec(Instant::new("123"), Context::default())
+        .exec(&Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
@@ -294,7 +291,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + b'2')
-        .exec(Instant::new(b"123"), Context::default())
+        .exec(&Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(2)
     );
@@ -306,7 +303,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + "2".as_bytes())
-        .exec(Instant::new(b"123"), Context::default())
+        .exec(&Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(2)
     );
@@ -318,7 +315,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + b"2")
-        .exec(Instant::new(b"123"), Context::default())
+        .exec(&Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(2)
     );
@@ -330,7 +327,7 @@ mod tests {
 
     assert_eq!(
       (eat1() + vec![b'2'])
-        .exec(Instant::new(b"123"), Context::default())
+        .exec(&Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(2)
     );

@@ -17,7 +17,7 @@ macro_rules! impl_wrap {
         Value,
         State,
         Heap,
-        F: Fn(Instant<&$text>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
+        F: Fn(&Instant<&$text>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
       > Action<$text, State, Heap> for $name<F>
     {
       type Value = Value;
@@ -25,7 +25,7 @@ macro_rules! impl_wrap {
       #[inline]
       fn exec(
         &self,
-        instant: Instant<&$text>,
+        instant: &Instant<&$text>,
         ctx: Context<&mut State, &mut Heap>,
       ) -> Option<Output<Self::Value>> {
         let rest = instant.rest();
@@ -65,7 +65,7 @@ pub const unsafe fn wrap_unchecked<
   State,
   Heap,
   Value,
-  F: Fn(Instant<&str>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
+  F: Fn(&Instant<&str>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
 >(
   f: F,
 ) -> Combinator<WrapUnchecked<F>> {
@@ -92,7 +92,7 @@ pub const fn wrap<
   State,
   Heap,
   Value,
-  F: Fn(Instant<&str>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
+  F: Fn(&Instant<&str>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
 >(
   f: F,
 ) -> Combinator<Wrap<F>> {
@@ -123,7 +123,7 @@ pub mod bytes {
     State,
     Heap,
     Value,
-    F: Fn(Instant<&[u8]>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
+    F: Fn(&Instant<&[u8]>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
   >(
     f: F,
   ) -> Combinator<WrapUnchecked<F>> {
@@ -150,7 +150,7 @@ pub mod bytes {
     State,
     Heap,
     Value,
-    F: Fn(Instant<&[u8]>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
+    F: Fn(&Instant<&[u8]>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
   >(
     f: F,
   ) -> Combinator<Wrap<F>> {
@@ -167,7 +167,7 @@ mod tests {
   fn combinator_wrap_unchecked() {
     let c = unsafe { wrap_unchecked(|instant, _| instant.accept(1)) };
     assert_eq!(
-      c.exec(Instant::new("1"), Context::default()),
+      c.exec(&Instant::new("1"), Context::default()),
       Some(Output {
         value: (),
         digested: 1
@@ -184,12 +184,12 @@ mod tests {
 
   #[test]
   fn combinator_wrap_unchecked_fn() {
-    fn action(instant: Instant<&str>, _: Context<&mut (), &mut ()>) -> Option<Output<()>> {
+    fn action(instant: &Instant<&str>, _: Context<&mut (), &mut ()>) -> Option<Output<()>> {
       instant.accept(1)
     }
     let c = unsafe { wrap_unchecked(action) };
     assert_eq!(
-      c.exec(Instant::new("1"), Context::default()),
+      c.exec(&Instant::new("1"), Context::default()),
       Some(Output {
         value: (),
         digested: 1
@@ -208,21 +208,21 @@ mod tests {
   #[should_panic]
   fn combinator_wrap_unchecked_overflow() {
     unsafe { wrap_unchecked(|instant, _| instant.accept_unchecked(4).into()) }
-      .exec(Instant::new("1"), Context::default());
+      .exec(&Instant::new("1"), Context::default());
   }
 
   #[test]
   #[should_panic]
   fn combinator_wrap_unchecked_invalid_code_point() {
     unsafe { wrap_unchecked(|instant, _| instant.accept_unchecked(1).into()) }
-      .exec(Instant::new("好"), Context::default());
+      .exec(&Instant::new("好"), Context::default());
   }
 
   #[test]
   fn combinator_wrap() {
     let c = wrap(|instant, _| instant.accept(1));
     assert_eq!(
-      c.exec(Instant::new("1"), Context::default()),
+      c.exec(&Instant::new("1"), Context::default()),
       Some(Output {
         value: (),
         digested: 1
@@ -239,12 +239,12 @@ mod tests {
 
   #[test]
   fn combinator_wrap_fn() {
-    fn action(instant: Instant<&str>, _: Context<&mut (), &mut ()>) -> Option<Output<()>> {
+    fn action(instant: &Instant<&str>, _: Context<&mut (), &mut ()>) -> Option<Output<()>> {
       instant.accept(1)
     }
     let c = wrap(action);
     assert_eq!(
-      c.exec(Instant::new("1"), Context::default()),
+      c.exec(&Instant::new("1"), Context::default()),
       Some(Output {
         value: (),
         digested: 1
@@ -263,21 +263,21 @@ mod tests {
   #[should_panic]
   fn combinator_wrap_overflow() {
     wrap(|instant, _| unsafe { instant.accept_unchecked(4) }.into())
-      .exec(Instant::new("1"), Context::default());
+      .exec(&Instant::new("1"), Context::default());
   }
 
   #[test]
   #[should_panic]
   fn combinator_wrap_invalid_code_point() {
     wrap(|instant, _| unsafe { instant.accept_unchecked(1) }.into())
-      .exec(Instant::new("好"), Context::default());
+      .exec(&Instant::new("好"), Context::default());
   }
 
   #[test]
   fn combinator_bytes_wrap_unchecked() {
     let c = unsafe { bytes::wrap_unchecked(|instant, _| instant.accept(1)) };
     assert_eq!(
-      c.exec(Instant::new(b"1"), Context::default()),
+      c.exec(&Instant::new(b"1"), Context::default()),
       Some(Output {
         value: (),
         digested: 1
@@ -296,14 +296,14 @@ mod tests {
   #[should_panic]
   fn combinator_bytes_wrap_unchecked_overflow() {
     unsafe { bytes::wrap_unchecked(|instant, _| instant.accept_unchecked(4).into()) }
-      .exec(Instant::new(b"1"), Context::default());
+      .exec(&Instant::new(b"1"), Context::default());
   }
 
   #[test]
   fn combinator_bytes_wrap() {
     let c = bytes::wrap(|instant, _| instant.accept(1));
     assert_eq!(
-      c.exec(Instant::new(b"1"), Context::default()),
+      c.exec(&Instant::new(b"1"), Context::default()),
       Some(Output {
         value: (),
         digested: 1
@@ -322,6 +322,6 @@ mod tests {
   #[should_panic]
   fn combinator_bytes_wrap_overflow() {
     bytes::wrap(|instant, _| unsafe { instant.accept_unchecked(4) }.into())
-      .exec(Instant::new(b"1"), Context::default());
+      .exec(&Instant::new(b"1"), Context::default());
   }
 }

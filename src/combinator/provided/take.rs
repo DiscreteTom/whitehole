@@ -21,7 +21,7 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Take {
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(&self, instant: &Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
     let mut digested: usize = 0;
     let mut count: usize = 0;
     let mut chars = instant.rest().chars();
@@ -45,7 +45,11 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Take {
   type Value = ();
 
   #[inline]
-  fn exec(&self, instant: Instant<&[u8]>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&[u8]>,
+    _: Context<&mut State, &mut Heap>,
+  ) -> Option<Output<()>> {
     instant.accept(self.n)
   }
 }
@@ -85,43 +89,43 @@ mod tests {
     // normal
     assert_eq!(
       take(3)
-        .exec(Instant::new("123456"), Context::default())
+        .exec(&Instant::new("123456"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     assert_eq!(
       take(3)
-        .exec(Instant::new(b"123456" as &[u8]), Context::default())
+        .exec(&Instant::new(b"123456" as &[u8]), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     // reject
     assert!(take(7)
-      .exec(Instant::new("123456"), Context::default())
+      .exec(&Instant::new("123456"), Context::default())
       .is_none());
     // 0 is always accepted
     assert_eq!(
       take(0)
-        .exec(Instant::new(""), Context::default())
+        .exec(&Instant::new(""), Context::default())
         .map(|output| output.digested),
       Some(0)
     );
     assert_eq!(
       take(0)
-        .exec(Instant::new("123456"), Context::default())
+        .exec(&Instant::new("123456"), Context::default())
         .map(|output| output.digested),
       Some(0)
     );
     // take by chars not bytes for &str
     assert_eq!(
       take(1)
-        .exec(Instant::new("好"), Context::default())
+        .exec(&Instant::new("好"), Context::default())
         .map(|output| output.digested),
       Some(3)
     );
     assert_eq!(
       take(2)
-        .exec(Instant::new("好好"), Context::default())
+        .exec(&Instant::new("好好"), Context::default())
         .map(|output| output.digested),
       Some(6)
     );
