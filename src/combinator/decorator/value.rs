@@ -293,7 +293,7 @@ impl<T> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{combinator::take, digest::Digest, parser::Parser};
+  use crate::{combinator::take, digest::Digest};
   use std::{fmt::Debug, ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Value: PartialEq + Debug, Text: ?Sized + Digest>(
@@ -304,7 +304,15 @@ mod tests {
     RangeFrom<usize>: SliceIndex<Text, Output = Text>,
   {
     assert_eq!(
-      Parser::builder().entry(action).build(input).next().unwrap(),
+      action
+        .exec(
+          &Instant::new(input),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
+        .unwrap(),
       Output { value, digested: 1 }
     )
   }
