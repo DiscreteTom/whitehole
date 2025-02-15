@@ -125,16 +125,13 @@ impl<T> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    combinator::{bytes, wrap},
-    instant::Instant,
-  };
+  use crate::{combinator::take, instant::Instant};
   use serial_test::serial;
 
   #[test]
   #[serial]
   fn ensure_log_does_not_modify_output() {
-    let c = wrap(|instant, _| instant.accept(1)).bind(2).log("name");
+    let c = take(1).bind(2).log("name");
     let output = c.exec(&Instant::new("1"), Context::default()).unwrap();
     assert_eq!(output.digested, 1);
     assert_eq!(output.value, 2);
@@ -143,10 +140,10 @@ mod tests {
   #[test]
   #[serial]
   fn ensure_log_can_be_used_with_bytes() {
-    let c = bytes::wrap(|instant, _| instant.accept(1))
-      .bind(2)
-      .log("name");
-    let output = c.exec(&Instant::new(b"1"), Context::default()).unwrap();
+    let c = take(1).bind(2).log("name");
+    let output = c
+      .exec(&Instant::new(b"1" as &[u8]), Context::default())
+      .unwrap();
     assert_eq!(output.digested, 1);
     assert_eq!(output.value, 2);
   }

@@ -293,180 +293,97 @@ impl<T> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    combinator::{bytes, wrap},
-    instant::Instant,
-  };
+  use crate::{combinator::take, digest::Digest, parser::Parser};
+  use std::{fmt::Debug, ops::RangeFrom, slice::SliceIndex};
+
+  fn helper<Value: PartialEq + Debug, Text: ?Sized + Digest>(
+    action: impl Action<Text, Value = Value>,
+    input: &Text,
+    value: Value,
+  ) where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    assert_eq!(
+      Parser::builder().entry(action).build(input).next().unwrap(),
+      Output { value, digested: 1 }
+    )
+  }
 
   #[test]
   fn combinator_map() {
-    assert_eq!(
-      wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
-        .map(Some)
-        .exec(&Instant::new("123"), Context::default()),
-      Some(Output {
-        value: Some(1),
-        digested: 1
-      })
-    );
-    assert_eq!(
-      bytes::wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
-        .map(Some)
-        .exec(&Instant::new(b"123"), Context::default()),
-      Some(Output {
-        value: Some(1),
-        digested: 1
-      })
+    helper(take(1).map::<str, (), (), _, _>(Some), "123", Some(()));
+    helper(
+      take(1).map::<[u8], (), (), _, _>(Some),
+      b"123" as &[u8],
+      Some(()),
     );
   }
 
   #[test]
   fn combinator_tuple() {
-    assert_eq!(
-      wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
-        .tuple()
-        .exec(&Instant::new("123"), Context::default()),
-      Some(Output {
-        value: (1,),
-        digested: 1
-      })
-    );
-    assert_eq!(
-      bytes::wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
-        .tuple()
-        .exec(&Instant::new(b"123"), Context::default()),
-      Some(Output {
-        value: (1,),
-        digested: 1
-      })
-    );
+    helper(take(1).bind(1).tuple(), "123", (1,));
+    helper(take(1).bind(1).tuple(), b"123" as &[u8], (1,));
   }
 
   #[test]
   fn combinator_pop() {
-    assert_eq!(
-      wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
-        .tuple()
-        .pop()
-        .exec(&Instant::new("123"), Context::default()),
-      Some(Output {
-        value: 1,
-        digested: 1
-      })
-    );
-    assert_eq!(
-      bytes::wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| 1)))
-        .tuple()
-        .pop()
-        .exec(&Instant::new(b"123"), Context::default()),
-      Some(Output {
-        value: 1,
-        digested: 1
-      })
-    );
+    helper(take(1).bind(1).tuple().pop(), "123", 1);
+    helper(take(1).bind(1).tuple().pop(), b"123" as &[u8], 1);
   }
 
   #[test]
   fn combinator_bind() {
-    assert_eq!(
-      wrap(|instant, _| instant.accept(1))
-        .bind(123)
-        .exec(&Instant::new("123"), Context::default()),
-      Some(Output {
-        value: 123,
-        digested: 1
-      })
-    );
-    assert_eq!(
-      bytes::wrap(|instant, _| instant.accept(1))
-        .bind(123)
-        .exec(&Instant::new(b"123"), Context::default()),
-      Some(Output {
-        value: 123,
-        digested: 1
-      })
-    );
+    helper(take(1).bind(123), "123", 123);
+    helper(take(1).bind(123), b"123" as &[u8], 123);
   }
 
   #[test]
   fn combinator_bind_with() {
-    assert_eq!(
-      wrap(|instant, _| instant.accept(1))
-        .bind_with(|| 0i32)
-        .exec(&Instant::new("123"), Context::default()),
-      Some(Output {
-        value: 0,
-        digested: 1
-      })
-    );
-    assert_eq!(
-      bytes::wrap(|instant, _| instant.accept(1))
-        .bind_with(|| 0i32)
-        .exec(&Instant::new(b"123"), Context::default()),
-      Some(Output {
-        value: 0,
-        digested: 1
-      })
-    );
+    helper(take(1).bind_with(|| 123), "123", 123);
+    helper(take(1).bind_with(|| 123), b"123" as &[u8], 123);
 
     // make sure copy-able and clone-able
-    let a = wrap::<(), (), _, _>(|instant, _| instant.accept(1)).bind_with(|| 0i32);
+    let a = take(1).bind_with(|| 0i32);
     let _ = a;
     let _ = a.clone();
 
     assert_eq!(
       format!("{:?}", a),
-      "Combinator { action: BindWith { action: Wrap } }"
+      "Combinator { action: BindWith { action: Take { n: 1 } } }"
     );
   }
 
   #[test]
   fn combinator_select() {
-    assert_eq!(
-      wrap(|instant, _| instant.accept(1))
-        .select(|accept, _| if accept.content() == "1" { 1 } else { 2 })
-        .exec(&Instant::new("123"), Context::default()),
-      Some(Output {
-        value: 1,
-        digested: 1
-      })
+    helper(
+      take(1).select(|accept, _| if accept.content() == "1" { 1 } else { 2 }),
+      "123",
+      1,
     );
-    assert_eq!(
-      bytes::wrap(|instant, _| instant.accept(1))
-        .select(|accept, _| if accept.content() == b"1" { 1 } else { 2 })
-        .exec(&Instant::new(b"123"), Context::default()),
-      Some(Output {
-        value: 1,
-        digested: 1
-      })
+    helper(
+      take(1).select(|accept, _| if accept.content() == b"1" { 1 } else { 2 }),
+      b"123" as &[u8],
+      1,
     );
   }
 
   #[test]
   fn combinator_range() {
-    assert_eq!(
-      wrap(|instant, _| instant.accept(1))
-        .range()
-        .exec(&Instant::new("123"), Context::default()),
-      Some(Output {
-        value: WithRange {
-          data: (),
-          range: 0..1
-        },
-        digested: 1
-      })
+    helper(
+      take(1).range(),
+      "123",
+      WithRange {
+        data: (),
+        range: 0..1,
+      },
     );
-    assert_eq!(
-      bytes::wrap(|instant, _| instant.accept(1))
-        .range()
-        .exec(&Instant::new(b"123"), Context::default()),
-      Some(Output {
-        value: WithRange {
-          data: (),
-          range: 0..1
-        },
-        digested: 1
-      })
+    helper(
+      take(1).range(),
+      b"123" as &[u8],
+      WithRange {
+        data: (),
+        range: 0..1,
+      },
     );
   }
 }

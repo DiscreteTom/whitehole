@@ -206,16 +206,13 @@ impl<Lhs> ops::Add<Vec<u8>> for Combinator<Lhs> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    combinator::{bytes, wrap},
-    instant::Instant,
-  };
+  use crate::{combinator::take, instant::Instant};
 
   #[test]
   fn combinator_add() {
-    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
-    let accepter_unit = || wrap(|instant, _| instant.accept(1));
-    let accepter_int = || wrap(|instant, _| instant.accept(1).map(|output| output.map(|_| (123,))));
+    let rejecter = || take(0).reject(|_, _| true);
+    let accepter_unit = || take(1);
+    let accepter_int = || take(1).bind((123,));
 
     // reject then accept, should return None
     assert!((rejecter() + accepter_unit())
@@ -254,10 +251,8 @@ mod tests {
 
   #[test]
   fn combinator_add_char() {
-    let eat1 = || wrap(|instant, _| instant.accept(1));
-
     assert_eq!(
-      (eat1() + '2')
+      (take(1) + '2')
         .exec(&Instant::new("12"), Context::default())
         .map(|output| output.digested),
       Some(2)
@@ -266,10 +261,8 @@ mod tests {
 
   #[test]
   fn combinator_add_str() {
-    let eat1 = || wrap(|instant, _| instant.accept(1));
-
     assert_eq!(
-      (eat1() + "23")
+      (take(1) + "23")
         .exec(&Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(3)
@@ -278,10 +271,8 @@ mod tests {
 
   #[test]
   fn combinator_add_string() {
-    let eat1 = || wrap(|instant, _| instant.accept(1));
-
     assert_eq!(
-      (eat1() + "23".to_string())
+      (take(1) + "23".to_string())
         .exec(&Instant::new("123"), Context::default())
         .map(|output| output.digested),
       Some(3)
@@ -290,10 +281,8 @@ mod tests {
 
   #[test]
   fn combinator_add_u8() {
-    let eat1 = || bytes::wrap(|instant, _| instant.accept(1));
-
     assert_eq!(
-      (eat1() + b'2')
+      (take(1) + b'2')
         .exec(&Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(2)
@@ -302,10 +291,8 @@ mod tests {
 
   #[test]
   fn combinator_add_u8_slice() {
-    let eat1 = || bytes::wrap(|instant, _| instant.accept(1));
-
     assert_eq!(
-      (eat1() + "2".as_bytes())
+      (take(1) + "2".as_bytes())
         .exec(&Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(2)
@@ -314,10 +301,8 @@ mod tests {
 
   #[test]
   fn combinator_add_u8_const_slice() {
-    let eat1 = || bytes::wrap(|instant, _| instant.accept(1));
-
     assert_eq!(
-      (eat1() + b"2")
+      (take(1) + b"2")
         .exec(&Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(2)
@@ -326,10 +311,8 @@ mod tests {
 
   #[test]
   fn combinator_add_vec_u8() {
-    let eat1 = || bytes::wrap(|instant, _| instant.accept(1));
-
     assert_eq!(
-      (eat1() + vec![b'2'])
+      (take(1) + vec![b'2'])
         .exec(&Instant::new(b"123"), Context::default())
         .map(|output| output.digested),
       Some(2)
