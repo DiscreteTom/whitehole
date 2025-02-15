@@ -1,4 +1,4 @@
-use super::{create_closure_decorator, AcceptedContext};
+use super::{create_closure_decorator, Accepted};
 use crate::{
   action::Context,
   combinator::{Action, Combinator, Output},
@@ -36,7 +36,7 @@ unsafe impl<
     State,
     Heap,
     T: Action<Text, State, Heap>,
-    D: Fn(AcceptedContext<&Text, &T::Value>, Context<&mut State, &mut Heap>),
+    D: Fn(Accepted<&Text, &T::Value>, Context<&mut State, &mut Heap>),
   > Action<Text, State, Heap> for Then<T, D>
 {
   type Value = T::Value;
@@ -49,7 +49,7 @@ unsafe impl<
   ) -> Option<Output<Self::Value>> {
     self.action.exec(instant, ctx.reborrow()).inspect(|output| {
       (self.inner)(
-        AcceptedContext::new(
+        Accepted::new(
           instant,
           Output {
             value: &output.value,
@@ -150,7 +150,7 @@ impl<T> Combinator<T> {
     Text: ?Sized,
     State,
     Heap,
-    F: Fn(AcceptedContext<&Text, &T::Value>, Context<&mut State, &mut Heap>),
+    F: Fn(Accepted<&Text, &T::Value>, Context<&mut State, &mut Heap>),
   >(
     self,
     modifier: F,

@@ -11,18 +11,18 @@ use std::{
 /// This is to ensure the [`Instant`] and [`Output`] are consistent
 /// so we can skip some runtime checks.
 #[derive(Debug)]
-pub struct AcceptedContext<'a, TextRef, Value> {
+pub struct Accepted<'a, TextRef, Value> {
   instant: &'a Instant<TextRef>,
   output: Output<Value>,
 }
 
-impl<'a, TextRef, Value> AcceptedContext<'a, TextRef, Value> {
+impl<'a, TextRef, Value> Accepted<'a, TextRef, Value> {
   /// Create a new instance.
   ///
   /// This is only used internally by the library.
   #[inline]
   pub(super) const fn new(instant: &'a Instant<TextRef>, output: Output<Value>) -> Self {
-    AcceptedContext { instant, output }
+    Accepted { instant, output }
   }
 
   /// Get the [`Output`] of this execution.
@@ -49,7 +49,7 @@ impl<'a, TextRef, Value> AcceptedContext<'a, TextRef, Value> {
   }
 }
 
-impl<'a, TextRef, Value> AcceptedContext<'a, TextRef, Value> {
+impl<'a, TextRef, Value> Accepted<'a, TextRef, Value> {
   #[inline]
   pub const fn instant(&self) -> &'a Instant<TextRef> {
     self.instant
@@ -61,7 +61,7 @@ impl<'a, TextRef, Value> AcceptedContext<'a, TextRef, Value> {
   }
 }
 
-impl<TextRef, Value> AcceptedContext<'_, TextRef, Value> {
+impl<TextRef, Value> Accepted<'_, TextRef, Value> {
   /// See [`Output::digested`].
   #[inline]
   pub const fn digested(&self) -> usize {
@@ -69,7 +69,7 @@ impl<TextRef, Value> AcceptedContext<'_, TextRef, Value> {
   }
 }
 
-impl<TextRef, Value> AcceptedContext<'_, TextRef, Value> {
+impl<TextRef, Value> Accepted<'_, TextRef, Value> {
   /// The end index in bytes in the whole input text.
   #[inline]
   pub fn end(&self) -> usize {
@@ -86,7 +86,7 @@ impl<TextRef, Value> AcceptedContext<'_, TextRef, Value> {
   }
 }
 
-impl<'a, Text: ?Sized + Digest, Value> AcceptedContext<'_, &'a Text, Value> {
+impl<'a, Text: ?Sized + Digest, Value> Accepted<'_, &'a Text, Value> {
   /// Get the rest of the input text after accepting this combinator.
   #[inline]
   pub fn after(&self) -> &'a Text
@@ -118,7 +118,7 @@ mod tests {
       ctx!((), ())
     };
     ($state:expr, $heap:expr) => {
-      AcceptedContext::new(
+      Accepted::new(
         &unsafe { Instant::new("0123").to_digested_unchecked(1) },
         Output {
           value: (),

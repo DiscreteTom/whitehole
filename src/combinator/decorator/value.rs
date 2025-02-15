@@ -1,6 +1,4 @@
-use super::{
-  create_closure_decorator, create_simple_decorator, create_value_decorator, AcceptedContext,
-};
+use super::{create_closure_decorator, create_simple_decorator, create_value_decorator, Accepted};
 use crate::{
   action::Context,
   combinator::{Action, Combinator, Output},
@@ -100,7 +98,7 @@ unsafe impl<
     Heap,
     NewValue,
     T: Action<Text, State, Heap>,
-    D: Fn(AcceptedContext<&Text, T::Value>, Context<&mut State, &mut Heap>) -> NewValue,
+    D: Fn(Accepted<&Text, T::Value>, Context<&mut State, &mut Heap>) -> NewValue,
   > Action<Text, State, Heap> for Select<T, D>
 {
   type Value = NewValue;
@@ -116,7 +114,7 @@ unsafe impl<
       .exec(&instant, ctx.reborrow())
       .map(|output| Output {
         digested: output.digested,
-        value: (self.inner)(AcceptedContext::new(instant, output), ctx),
+        value: (self.inner)(Accepted::new(instant, output), ctx),
       })
   }
 }
@@ -267,7 +265,7 @@ impl<T> Combinator<T> {
     State,
     Heap,
     NewValue,
-    F: Fn(AcceptedContext<&Text, T::Value>, Context<&mut State, &mut Heap>) -> NewValue,
+    F: Fn(Accepted<&Text, T::Value>, Context<&mut State, &mut Heap>) -> NewValue,
   >(
     self,
     selector: F,

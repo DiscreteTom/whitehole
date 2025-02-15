@@ -1,6 +1,6 @@
 //! Decorators that modify the acceptance of a combinator.
 
-use super::{create_closure_decorator, create_simple_decorator, AcceptedContext};
+use super::{create_closure_decorator, create_simple_decorator, Accepted};
 use crate::{
   action::Context,
   combinator::{Action, Combinator, Output},
@@ -66,7 +66,7 @@ unsafe impl<
     State,
     Heap,
     T: Action<Text, State, Heap>,
-    D: Fn(AcceptedContext<&Text, &T::Value>, Context<&mut State, &mut Heap>) -> bool,
+    D: Fn(Accepted<&Text, &T::Value>, Context<&mut State, &mut Heap>) -> bool,
   > Action<Text, State, Heap> for Reject<T, D>
 {
   type Value = T::Value;
@@ -82,7 +82,7 @@ unsafe impl<
       .exec(instant, ctx.reborrow())
       .and_then(|output| {
         if (self.inner)(
-          AcceptedContext::new(
+          Accepted::new(
             instant,
             Output {
               value: &output.value,
@@ -210,7 +210,7 @@ impl<T> Combinator<T> {
     Text: ?Sized,
     State,
     Heap,
-    F: Fn(AcceptedContext<&Text, &T::Value>, Context<&mut State, &mut Heap>) -> bool,
+    F: Fn(Accepted<&Text, &T::Value>, Context<&mut State, &mut Heap>) -> bool,
   >(
     self,
     rejecter: F,
