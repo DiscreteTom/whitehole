@@ -93,55 +93,48 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap> + ?Sized>
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    combinator::{bytes, wrap},
-    instant::Instant,
-  };
+  use crate::{combinator::take, instant::Instant};
 
-  fn helper(t: impl Action<Value = ()>) {
+  fn assert_str_action(t: impl Action<Value = ()>) {
     assert!(t.exec(&Instant::new("123"), Context::default()).is_some());
   }
-  fn helper_bytes(t: impl Action<[u8], Value = ()>) {
+  fn assert_bytes_action(t: impl Action<[u8], Value = ()>) {
     assert!(t.exec(&Instant::new(b"123"), Context::default()).is_some());
   }
 
   #[test]
   fn action_ref() {
-    helper(&wrap(|instant, _| instant.accept(1)));
-    helper_bytes(&bytes::wrap(|instant, _| instant.accept(1)));
+    assert_str_action(&take(1));
+    assert_bytes_action(&take(1));
   }
 
   #[test]
   fn action_dyn_ref() {
-    helper(&wrap(|instant, _| instant.accept(1)) as &dyn Action<Value = ()>);
-    helper_bytes(&bytes::wrap(|instant, _| instant.accept(1)) as &dyn Action<[u8], Value = ()>);
+    assert_str_action(&take(1) as &dyn Action<Value = ()>);
+    assert_bytes_action(&take(1) as &dyn Action<[u8], Value = ()>);
   }
 
   #[test]
   fn boxed_action() {
-    helper(Box::new(wrap(|instant, _| instant.accept(1))));
-    helper_bytes(Box::new(bytes::wrap(|instant, _| instant.accept(1))));
+    assert_str_action(Box::new(take(1)));
+    assert_bytes_action(Box::new(take(1)));
   }
 
   #[test]
   fn boxed_dyn_action() {
-    helper(Box::new(wrap(|instant, _| instant.accept(1))) as Box<dyn Action<Value = ()>>);
-    helper_bytes(
-      Box::new(bytes::wrap(|instant, _| instant.accept(1))) as Box<dyn Action<[u8], Value = ()>>
-    );
+    assert_str_action(Box::new(take(1)) as Box<dyn Action<Value = ()>>);
+    assert_bytes_action(Box::new(take(1)) as Box<dyn Action<[u8], Value = ()>>);
   }
 
   #[test]
   fn rc_action() {
-    helper(Rc::new(wrap(|instant, _| instant.accept(1))));
-    helper_bytes(Rc::new(bytes::wrap(|instant, _| instant.accept(1))));
+    assert_str_action(Rc::new(take(1)));
+    assert_bytes_action(Rc::new(take(1)));
   }
 
   #[test]
   fn rc_dyn_action() {
-    helper(Rc::new(wrap(|instant, _| instant.accept(1))) as Rc<dyn Action<Value = ()>>);
-    helper_bytes(
-      Rc::new(bytes::wrap(|instant, _| instant.accept(1))) as Rc<dyn Action<[u8], Value = ()>>
-    );
+    assert_str_action(Rc::new(take(1)) as Rc<dyn Action<Value = ()>>);
+    assert_bytes_action(Rc::new(take(1)) as Rc<dyn Action<[u8], Value = ()>>);
   }
 }
