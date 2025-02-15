@@ -162,17 +162,34 @@ pub mod bytes {
 mod tests {
   use super::*;
   use crate::instant::Instant;
+  use std::{ops::RangeFrom, slice::SliceIndex};
+
+  fn helper<Text: ?Sized + Digest>(
+    action: impl Action<Text, Value = ()>,
+    input: &Text,
+    digested: usize,
+  ) where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    assert_eq!(
+      action
+        .exec(
+          &Instant::new(input),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
+        .unwrap()
+        .digested,
+      digested
+    )
+  }
 
   #[test]
   fn combinator_wrap_unchecked() {
     let c = unsafe { wrap_unchecked(|instant, _| instant.accept(1)) };
-    assert_eq!(
-      c.exec(&Instant::new("1"), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 1
-      })
-    );
+    helper(c, "1", 1);
 
     // ensure the combinator is copyable and clone-able
     let _ = c;
@@ -188,13 +205,7 @@ mod tests {
       instant.accept(1)
     }
     let c = unsafe { wrap_unchecked(action) };
-    assert_eq!(
-      c.exec(&Instant::new("1"), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 1
-      })
-    );
+    helper(c, "1", 1);
 
     // ensure the combinator is copyable and clone-able
     let _ = c;
@@ -207,27 +218,27 @@ mod tests {
   #[test]
   #[should_panic]
   fn combinator_wrap_unchecked_overflow() {
-    unsafe { wrap_unchecked(|instant, _| instant.accept_unchecked(4).into()) }
-      .exec(&Instant::new("1"), Context { state: &mut (), heap: &mut () });
+    helper(
+      unsafe { wrap_unchecked(|instant, _| instant.accept_unchecked(4).into()) },
+      "1",
+      0,
+    );
   }
 
   #[test]
   #[should_panic]
   fn combinator_wrap_unchecked_invalid_code_point() {
-    unsafe { wrap_unchecked(|instant, _| instant.accept_unchecked(1).into()) }
-      .exec(&Instant::new("好"), Context { state: &mut (), heap: &mut () });
+    helper(
+      unsafe { wrap_unchecked(|instant, _| instant.accept_unchecked(1).into()) },
+      "好",
+      0,
+    );
   }
 
   #[test]
   fn combinator_wrap() {
     let c = wrap(|instant, _| instant.accept(1));
-    assert_eq!(
-      c.exec(&Instant::new("1"), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 1
-      })
-    );
+    helper(c, "1", 1);
 
     // ensure the combinator is copyable and clone-able
     let _ = c;
@@ -243,13 +254,7 @@ mod tests {
       instant.accept(1)
     }
     let c = wrap(action);
-    assert_eq!(
-      c.exec(&Instant::new("1"), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 1
-      })
-    );
+    helper(c, "1", 1);
 
     // ensure the combinator is copyable and clone-able
     let _ = c;
@@ -262,27 +267,27 @@ mod tests {
   #[test]
   #[should_panic]
   fn combinator_wrap_overflow() {
-    wrap(|instant, _| unsafe { instant.accept_unchecked(4) }.into())
-      .exec(&Instant::new("1"), Context { state: &mut (), heap: &mut () });
+    helper(
+      wrap(|instant, _| unsafe { instant.accept_unchecked(4) }.into()),
+      "1",
+      0,
+    );
   }
 
   #[test]
   #[should_panic]
   fn combinator_wrap_invalid_code_point() {
-    wrap(|instant, _| unsafe { instant.accept_unchecked(1) }.into())
-      .exec(&Instant::new("好"), Context { state: &mut (), heap: &mut () });
+    helper(
+      wrap(|instant, _| unsafe { instant.accept_unchecked(1) }.into()),
+      "好",
+      0,
+    );
   }
 
   #[test]
   fn combinator_bytes_wrap_unchecked() {
     let c = unsafe { bytes::wrap_unchecked(|instant, _| instant.accept(1)) };
-    assert_eq!(
-      c.exec(&Instant::new(b"1"), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 1
-      })
-    );
+    helper(c, b"1", 1);
 
     // ensure the combinator is copyable and clone-able
     let _ = c;
@@ -295,20 +300,17 @@ mod tests {
   #[test]
   #[should_panic]
   fn combinator_bytes_wrap_unchecked_overflow() {
-    unsafe { bytes::wrap_unchecked(|instant, _| instant.accept_unchecked(4).into()) }
-      .exec(&Instant::new(b"1"), Context { state: &mut (), heap: &mut () });
+    helper(
+      unsafe { bytes::wrap_unchecked(|instant, _| instant.accept_unchecked(4).into()) },
+      b"1",
+      0,
+    );
   }
 
   #[test]
   fn combinator_bytes_wrap() {
     let c = bytes::wrap(|instant, _| instant.accept(1));
-    assert_eq!(
-      c.exec(&Instant::new(b"1"), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 1
-      })
-    );
+    helper(c, b"1", 1);
 
     // ensure the combinator is copyable and clone-able
     let _ = c;
@@ -321,7 +323,10 @@ mod tests {
   #[test]
   #[should_panic]
   fn combinator_bytes_wrap_overflow() {
-    bytes::wrap(|instant, _| unsafe { instant.accept_unchecked(4) }.into())
-      .exec(&Instant::new(b"1"), Context { state: &mut (), heap: &mut () });
+    helper(
+      bytes::wrap(|instant, _| unsafe { instant.accept_unchecked(4) }.into()),
+      b"1",
+      0,
+    );
   }
 }
