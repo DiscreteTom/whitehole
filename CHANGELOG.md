@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Digest` is now implemented by `str` and `[u8]` instead of `&str` and `&[u8]`.
 - `Action` now takes `Instant` and `Context` as params.
 - `AcceptedContext` now contains `Instant` and `Output`. Simplify its generic params.
+- Rename `AcceptedContext::rest` to `AcceptedContext::after`.
 
 ### Removed
 

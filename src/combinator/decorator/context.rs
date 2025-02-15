@@ -89,7 +89,7 @@ impl<TextRef, Value> AcceptedContext<'_, TextRef, Value> {
 impl<'a, Text: ?Sized + Digest, Value> AcceptedContext<'_, &'a Text, Value> {
   /// Get the rest of the input text after accepting this combinator.
   #[inline]
-  pub fn rest(&self) -> &'a Text
+  pub fn after(&self) -> &'a Text
   where
     RangeFrom<usize>: SliceIndex<Text, Output = Text>,
   {
@@ -135,7 +135,7 @@ mod tests {
     assert_eq!(ctx!().output().digested, 1);
     assert_eq!(ctx!().start(), 1);
     assert_eq!(ctx!().digested(), 1);
-    assert_eq!(ctx!().rest(), "23");
+    assert_eq!(ctx!().after(), "23");
     assert_eq!(ctx!().end(), 2);
     assert_eq!(ctx!().range(), 1..2);
     assert_eq!(ctx!().content(), "1");
