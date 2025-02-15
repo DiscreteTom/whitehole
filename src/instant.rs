@@ -47,7 +47,7 @@ impl<'a, Text: ?Sized> Instant<&'a Text> {
   }
 
   /// Digest the next `n` bytes.
-  /// [`Self::rest`] will be updated automatically.
+  /// This will update [`Self::rest`] and [`Self::digested`].
   /// # Safety
   /// You should ensure that `n` is valid according to [`Digest::validate`].
   /// This will be checked using [`debug_assert!`].
