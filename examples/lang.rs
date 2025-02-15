@@ -30,70 +30,38 @@ mod tests {
   use whitehole::{
     action::{Action, Context},
     instant::Instant,
+    parser::Parser,
   };
+
+  fn helper(action: impl Action<Value = ()>, input: &str, digested: usize) {
+    assert_eq!(
+      Parser::builder()
+        .entry(action)
+        .build(input)
+        .next()
+        .unwrap()
+        .digested,
+      digested
+    )
+  }
 
   #[test]
   fn test_whitespaces() {
-    assert_eq!(
-      whitespaces()
-        .exec(&Instant::new(" \t\r\n"), Context::default())
-        .unwrap()
-        .digested,
-      4
-    );
-    assert_eq!(
-      whitespaces()
-        .exec(&Instant::new(" \t\r\n123"), Context::default())
-        .unwrap()
-        .digested,
-      4
-    );
+    let ws = whitespaces();
+    helper(&ws, " \t\r\n", 4);
+    helper(&ws, " \t\r\n123", 4);
   }
 
   #[test]
   fn test_comments() {
-    assert_eq!(
-      singleline_comment()
-        .exec(&Instant::new("//123"), Context::default())
-        .unwrap()
-        .digested,
-      5
-    );
-    assert_eq!(
-      singleline_comment()
-        .exec(&Instant::new("//123\n"), Context::default())
-        .unwrap()
-        .digested,
-      6
-    );
-    assert_eq!(
-      singleline_comment()
-        .exec(&Instant::new("//123\n456"), Context::default())
-        .unwrap()
-        .digested,
-      6
-    );
+    let single = singleline_comment();
+    helper(&single, "//123", 5);
+    helper(&single, "//123\n", 6);
+    helper(&single, "//123\n456", 6);
 
-    assert_eq!(
-      multiline_comment()
-        .exec(&Instant::new("/*123"), Context::default())
-        .unwrap()
-        .digested,
-      5
-    );
-    assert_eq!(
-      multiline_comment()
-        .exec(&Instant::new("/*123\n*/"), Context::default())
-        .unwrap()
-        .digested,
-      8
-    );
-    assert_eq!(
-      multiline_comment()
-        .exec(&Instant::new("/*123\n*/456"), Context::default())
-        .unwrap()
-        .digested,
-      8
-    );
+    let multi = multiline_comment();
+    helper(&multi, "/*123", 5);
+    helper(&multi, "/*123\n*/", 8);
+    helper(&multi, "/*123\n*/456", 8);
   }
 }

@@ -1,10 +1,10 @@
 use std::{fmt::Debug, ops::RangeTo, slice::SliceIndex};
-
 use whitehole::{
   action::{Action, Context, Output},
   combinator::{eat, Combinator},
   digest::Digest,
   instant::Instant,
+  parser::Parser,
 };
 
 // Define a trait to extend the combinator.
@@ -78,11 +78,13 @@ where
 }
 
 fn main() {
-  eat("hello")
-    .simple_print()
-    .exec(&Instant::new("hello world"), Context::default());
+  Parser::builder()
+    .entry(eat("hello").simple_print())
+    .build("hello world")
+    .next();
 
-  eat("hello")
-    .print()
-    .exec(&Instant::new("hello world"), Context::default());
+  Parser::builder()
+    .entry(eat("hello").print())
+    .build("hello world")
+    .next();
 }

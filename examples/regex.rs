@@ -25,21 +25,22 @@ mod tests {
     instant::Instant,
   };
 
+  fn helper(action: impl Action<Value = ()>, input: &str, digested: usize) {
+    assert_eq!(
+      Parser::builder()
+        .entry(action)
+        .build(input)
+        .next()
+        .unwrap()
+        .digested,
+      digested
+    )
+  }
+
   #[test]
   fn test_regex() {
-    assert_eq!(
-      regex(r"\d+")
-        .exec(&Instant::new("123"), Context::default())
-        .unwrap()
-        .digested,
-      3
-    );
-    assert_eq!(
-      regex(r"\d+")
-        .exec(&Instant::new("123abc"), Context::default())
-        .unwrap()
-        .digested,
-      3
-    );
+    let r = regex(r"\d+");
+    helper(&r, "123", 3);
+    helper(&r, "123abc", 3);
   }
 }
