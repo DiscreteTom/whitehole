@@ -197,7 +197,7 @@ where
     let mut digested_with_sep = 0;
     while unsafe { self.rhs.validate(repeated) } {
       let Some(value_output) = self.lhs.exec(
-        &unsafe { instant.shift_unchecked(digested_with_sep) },
+        &unsafe { instant.to_digested_unchecked(digested_with_sep) },
         ctx.reborrow(),
       ) else {
         break;
@@ -209,7 +209,7 @@ where
       output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
 
       let Some(sep_output) = self.sep.exec(
-        &unsafe { instant.shift_unchecked(output.digested) },
+        &unsafe { instant.to_digested_unchecked(output.digested) },
         ctx.reborrow(),
       ) else {
         break;

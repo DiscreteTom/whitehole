@@ -119,7 +119,7 @@ mod tests {
     };
     ($state:expr, $heap:expr) => {
       AcceptedContext::new(
-        &unsafe { Instant::new("0123").shift_unchecked(1) },
+        &unsafe { Instant::new("0123").to_digested_unchecked(1) },
         Output {
           value: (),
           digested: 1,

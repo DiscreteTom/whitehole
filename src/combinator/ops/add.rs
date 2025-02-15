@@ -111,7 +111,10 @@ where
     self.lhs.exec(instant, ctx.reborrow()).and_then(|output| {
       self
         .rhs
-        .exec(&unsafe { instant.shift_unchecked(output.digested) }, ctx)
+        .exec(
+          &unsafe { instant.to_digested_unchecked(output.digested) },
+          ctx,
+        )
         .map(|rhs_output| Output {
           value: output.value.concat(rhs_output.value),
           digested: unsafe { output.digested.unchecked_add(rhs_output.digested) },
