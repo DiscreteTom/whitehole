@@ -150,7 +150,7 @@ macro_rules! impl_into_eat_combinator {
   ($inner:ty) => {
     impl From<$inner> for Combinator<Eat<$inner>> {
       #[inline]
-      fn from(v: $inner) -> Combinator<Eat<$inner>> {
+      fn from(v: $inner) -> Self {
         eat(v)
       }
     }
@@ -162,19 +162,19 @@ impl_into_eat_combinator!(u8);
 impl_into_eat_combinator!(Vec<u8>);
 impl<'a> From<&'a str> for Combinator<Eat<&'a str>> {
   #[inline]
-  fn from(v: &str) -> Combinator<Eat<&str>> {
+  fn from(v: &'a str) -> Self {
     eat(v)
   }
 }
 impl<'a> From<&'a [u8]> for Combinator<Eat<&'a [u8]>> {
   #[inline]
-  fn from(v: &[u8]) -> Combinator<Eat<&[u8]>> {
+  fn from(v: &'a [u8]) -> Self {
     eat(v)
   }
 }
 impl<'a, const N: usize> From<&'a [u8; N]> for Combinator<Eat<&'a [u8; N]>> {
   #[inline]
-  fn from(v: &[u8; N]) -> Combinator<Eat<&[u8; N]>> {
+  fn from(v: &'a [u8; N]) -> Self {
     eat(v)
   }
 }
