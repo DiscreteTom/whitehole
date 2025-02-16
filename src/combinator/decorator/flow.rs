@@ -216,7 +216,7 @@ impl<T> Combinator<T> {
   ///
   /// Under the hood, the combinator will be accepted
   /// with the default value and zero digested if the original combinator rejects.
-  /// # Caveats
+  ///
   /// This requires the `Value` to implement [`Default`],
   /// thus usually used before setting a custom value.
   /// ```
@@ -240,6 +240,8 @@ impl<T> Combinator<T> {
   /// combinator.bind(Some(MyValue)).optional()
   /// # ;}
   /// ```
+  /// # Caveats
+  /// Be careful of infinite loops since this may accept with 0 bytes digested.
   /// # Examples
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
