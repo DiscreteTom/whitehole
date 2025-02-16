@@ -191,7 +191,7 @@ mod tests {
     helper(c, "1", 1);
 
     // ensure the combinator is copyable and clone-able
-    let _ = c;
+    let _c = c;
     let _ = c.clone();
 
     // ensure the combinator is debuggable
@@ -207,7 +207,7 @@ mod tests {
     helper(c, "1", 1);
 
     // ensure the combinator is copyable and clone-able
-    let _ = c;
+    let _c = c;
     let _ = c.clone();
 
     // ensure the combinator is debuggable
@@ -240,7 +240,7 @@ mod tests {
     helper(c, "1", 1);
 
     // ensure the combinator is copyable and clone-able
-    let _ = c;
+    let _c = c;
     let _ = c.clone();
 
     // ensure the combinator is debuggable
@@ -256,7 +256,7 @@ mod tests {
     helper(c, "1", 1);
 
     // ensure the combinator is copyable and clone-able
-    let _ = c;
+    let _c = c;
     let _ = c.clone();
 
     // ensure the combinator is debuggable
@@ -289,7 +289,7 @@ mod tests {
     helper(c, b"1", 1);
 
     // ensure the combinator is copyable and clone-able
-    let _ = c;
+    let _c = c;
     let _ = c.clone();
 
     // ensure the combinator is debuggable
@@ -312,7 +312,7 @@ mod tests {
     helper(c, b"1", 1);
 
     // ensure the combinator is copyable and clone-able
-    let _ = c;
+    let _c = c;
     let _ = c.clone();
 
     // ensure the combinator is debuggable
