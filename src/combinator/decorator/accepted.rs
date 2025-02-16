@@ -114,9 +114,22 @@ mod tests {
     };
   }
 
+  macro_rules! ctx_bytes {
+    () => {
+      Accepted::new(
+        &unsafe { Instant::new(b"0123" as &[u8]).to_digested_unchecked(1) },
+        Output {
+          value: (),
+          digested: 1,
+        },
+      )
+    };
+  }
+
   #[test]
   fn make_sure_accepted_clone_able() {
     let _ = ctx!().clone();
+    let _ = ctx_bytes!().clone();
   }
 
   #[test]
@@ -134,5 +147,22 @@ mod tests {
     // take
     assert_eq!(ctx!().take().digested, 1);
     assert_eq!(ctx!().take().map(|_| 1).value, 1);
+  }
+
+  #[test]
+  fn test_accepted_bytes() {
+    // getters
+    assert_eq!(ctx_bytes!().instant().rest(), b"123");
+    assert_eq!(ctx_bytes!().output().digested, 1);
+    assert_eq!(ctx_bytes!().digested(), 1);
+    assert_eq!(ctx_bytes!().start(), 1);
+    assert_eq!(ctx_bytes!().end(), 2);
+    assert_eq!(ctx_bytes!().range(), 1..2);
+    assert_eq!(ctx_bytes!().content(), b"1");
+    assert_eq!(ctx_bytes!().after(), b"23");
+
+    // take
+    assert_eq!(ctx_bytes!().take().digested, 1);
+    assert_eq!(ctx_bytes!().take().map(|_| 1).value, 1);
   }
 }
