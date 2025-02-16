@@ -109,9 +109,10 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<Vec<u8>> {
 
 /// Returns a combinator to eat from the head of [`Instant::rest`] by the provided pattern.
 /// The combinator will reject if the pattern is not found.
-///
-/// `""` (empty string) is allowed but be careful with infinite loops.
-///
+/// # Caveats
+/// Empty patterns are allowed and will always accept 0 bytes,
+/// even when [`Instant::rest`] is empty.
+/// Be careful with infinite loops.
 /// # Examples
 /// For string (`&str`):
 /// ```
@@ -228,8 +229,14 @@ mod tests {
     // empty string is allowed and always accept
     helper(eat(""), "123", Some(0));
     helper(eat(""), "", Some(0));
+    helper(eat("".to_string()), "123", Some(0));
+    helper(eat("".to_string()), "", Some(0));
     helper(eat(b""), b"123", Some(0));
     helper(eat(b""), b"", Some(0));
+    helper(eat(b"" as &[u8]), b"123", Some(0));
+    helper(eat(b"" as &[u8]), b"", Some(0));
+    helper(eat(vec![]), b"123", Some(0));
+    helper(eat(vec![]), b"", Some(0));
   }
 
   #[test]
