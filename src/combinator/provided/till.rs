@@ -157,8 +157,11 @@ unsafe impl<Text: ?Sized + Digest, State, Heap> Action<Text, State, Heap> for Ti
 
 /// Return a combinator to match the provided pattern, eat all the bytes
 /// to the end of the first occurrence of the pattern (inclusive).
-///
-/// `""` (empty string) is allowed but be careful with infinite loops.
+/// # Caveats
+/// Empty patterns are allowed and will always accept 0 bytes,
+/// even when [`Instant::rest`] is empty.
+/// `()` will accept 0 bytes when [`Instant::rest`] is empty.
+/// Be careful with infinite loops.
 /// # Examples
 /// For string (`&str`):
 /// ```
@@ -174,7 +177,7 @@ unsafe impl<Text: ?Sized + Digest, State, Heap> Action<Text, State, Heap> for Ti
 /// till("end".to_string()) // with String
 /// # );
 /// # t(
-/// till(()) // with (), eat all rest
+/// till(()) // with (), eat till the end
 /// # );
 /// ```
 /// For bytes (`&[u8]`):
@@ -191,7 +194,7 @@ unsafe impl<Text: ?Sized + Digest, State, Heap> Action<Text, State, Heap> for Ti
 /// till(vec![b'a']) // with Vec<u8>
 /// # );
 /// # t(
-/// till(()) // with (), eat all rest
+/// till(()) // with (), eat till the end
 /// # );
 /// ```
 #[inline]
@@ -244,7 +247,7 @@ mod tests {
 
     // ()
     helper(till(()), "123", Some(3));
-    helper(till(()), "", Some(0)); // TODO: add comments about this
+    helper(till(()), "", Some(0));
 
     // u8
     helper(till(b';'), b"123;456", Some(4));
