@@ -138,6 +138,11 @@ Example
 </summary>
 
 ```rust
+use whitehole::{
+  combinator::{eat, next},
+  parser::Parser,
+};
+
 let double_hex = || {
   (next(|c| c.is_ascii_hexdigit()) * 2)
     .select(|accept, _| u8::from_str_radix(accept.content(), 16).unwrap())
