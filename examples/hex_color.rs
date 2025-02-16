@@ -23,3 +23,43 @@ fn main() {
   assert_eq!(output.digested, 7);
   assert_eq!(output.value, (0xFF, 0xA5, 0x00));
 }
+
+#[test]
+fn with_log() {
+  let double_hex = || {
+    (next(|c| c.is_ascii_hexdigit()).log("hex") * 2)
+      .log("double_hex")
+      .select(|accept, _| u8::from_str_radix(accept.content(), 16).unwrap())
+      .tuple()
+  };
+
+  let entry =
+    (eat('#').log("hash") + double_hex().log("R") + double_hex().log("G") + double_hex().log("B"))
+      .log("entry");
+
+  let mut parser = Parser::builder().entry(entry).build("#FFA500");
+  parser.next().unwrap();
+}
+
+#[test]
+fn with_breakpoint() {
+  let double_hex = || {
+    (next(|c| c.is_ascii_hexdigit()) * 2)
+      .select(|accept, _| u8::from_str_radix(accept.content(), 16).unwrap())
+      .tuple()
+  };
+  // wrap the original combinator
+  let double_hex = || {
+    use whitehole::{action::Action, combinator::wrap};
+    let c = double_hex();
+    wrap(move |instant, ctx| {
+      // set a breakpoint here
+      c.exec(instant, ctx)
+    })
+  };
+
+  let entry = eat('#') + double_hex() + double_hex() + double_hex();
+
+  let mut parser = Parser::builder().entry(entry).build("#FFA500");
+  parser.next().unwrap();
+}
