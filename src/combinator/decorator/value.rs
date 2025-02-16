@@ -135,8 +135,9 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text
     let start = instant.digested();
     self.action.exec(instant, ctx).map(|output| {
       let digested = output.digested;
+      debug_assert!(usize::MAX - start >= digested);
       output.map(|data| WithRange {
-        range: start..start + digested,
+        range: start..unsafe { start.unchecked_add(digested) },
         data,
       })
     })
