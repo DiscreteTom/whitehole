@@ -20,10 +20,7 @@ fn main() {}
 #[cfg(test)]
 mod tests {
   use super::*;
-  use whitehole::{
-    action::{Action, Context},
-    instant::Instant,
-  };
+  use whitehole::{action::Action, parser::Parser};
 
   fn helper(action: impl Action<Value = ()>, input: &str, digested: usize) {
     assert_eq!(
