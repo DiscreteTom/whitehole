@@ -297,7 +297,7 @@ mod tests {
       }),
       "123",
       &mut state,
-      Some(1),
+      None,
     );
     assert_eq!(state, State { from: 1, to: 1 });
     let mut state = State::default();
@@ -307,7 +307,7 @@ mod tests {
       }),
       b"123",
       &mut state,
-      Some(1),
+      None,
     );
     assert_eq!(state, State { from: 1, to: 1 });
   }
