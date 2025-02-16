@@ -167,13 +167,35 @@ mod tests {
   use super::*;
   use crate::{
     combinator::{bytes, wrap, Output},
+    digest::Digest,
     instant::Instant,
   };
+  use std::{ops::RangeFrom, slice::SliceIndex};
+
+  fn helper<Text: ?Sized + Digest, State>(
+    action: impl Action<Text, State, Value = ()>,
+    input: &Text,
+    state: &mut State,
+    digested: Option<usize>,
+  ) where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    assert_eq!(
+      action
+        .exec(
+          &Instant::new(input),
+          Context {
+            state,
+            heap: &mut ()
+          }
+        )
+        .map(|o| o.digested),
+      digested
+    )
+  }
 
   #[test]
   fn combinator_bit_or() {
-    let mut state = 0;
-
     let rejecter = || {
       wrap(|_, ctx| {
         *ctx.state += 1;
@@ -188,156 +210,55 @@ mod tests {
     };
 
     // reject then accept, both should increment the state
-    assert_eq!(
-      (rejecter() | accepter()).exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      ),
-      Some(Output {
-        value: (),
-        digested: 1,
-      })
-    );
+    let mut state = 0;
+    helper(rejecter() | accepter(), "123", &mut state, Some(1));
     assert_eq!(state, 2);
 
-    state = 0;
-
     // accept then reject, only the first should increment the state
-    assert_eq!(
-      (accepter() | rejecter()).exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      ),
-      Some(Output {
-        value: (),
-        digested: 1,
-      })
-    );
+    let mut state = 0;
+    helper(accepter() | rejecter(), "123", &mut state, Some(1));
     assert_eq!(state, 1);
   }
 
   #[test]
   fn combinator_bit_or_char() {
     let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
-    assert_eq!(
-      (rejecter() | '1')
-        .exec(
-          &Instant::new("1"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
-        .map(|output| output.digested),
-      Some(1)
-    );
+    helper(rejecter() | '1', "1", &mut (), Some(1));
   }
 
   #[test]
   fn combinator_bit_or_str() {
     let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
-    assert_eq!(
-      (rejecter() | "1")
-        .exec(
-          &Instant::new("1"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
-        .map(|output| output.digested),
-      Some(1)
-    );
+    helper(rejecter() | "1", "1", &mut (), Some(1));
   }
 
   #[test]
   fn combinator_bit_or_string() {
     let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
-    assert_eq!(
-      (rejecter() | "1".to_string())
-        .exec(
-          &Instant::new("1"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
-        .map(|output| output.digested),
-      Some(1)
-    );
+    helper(rejecter() | "1".to_string(), "1", &mut (), Some(1));
   }
 
   #[test]
   fn combinator_bit_or_u8() {
     let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
-    assert_eq!(
-      (rejecter() | b'1')
-        .exec(
-          &Instant::new(b"1"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
-        .map(|output| output.digested),
-      Some(1)
-    );
+    helper(rejecter() | b'1', b"1", &mut (), Some(1));
   }
 
   #[test]
   fn combinator_bit_or_u8_slice() {
     let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
-    assert_eq!(
-      (rejecter() | "1".as_bytes())
-        .exec(
-          &Instant::new(b"1"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
-        .map(|output| output.digested),
-      Some(1)
-    );
+    helper(rejecter() | "1".as_bytes(), b"1", &mut (), Some(1));
   }
 
   #[test]
   fn combinator_bit_or_u8_const_slice() {
     let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
-    assert_eq!(
-      (rejecter() | b"1")
-        .exec(
-          &Instant::new(b"1"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
-        .map(|output| output.digested),
-      Some(1)
-    );
+    helper(rejecter() | b"1", b"1", &mut (), Some(1));
   }
 
   #[test]
   fn combinator_bit_or_vec_u8() {
     let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
-    assert_eq!(
-      (rejecter() | vec![b'1'])
-        .exec(
-          &Instant::new(b"1"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
-        .map(|output| output.digested),
-      Some(1)
-    );
+    helper(rejecter() | vec![b'1'], b"1", &mut (), Some(1));
   }
 }

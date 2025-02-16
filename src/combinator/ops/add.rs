@@ -207,6 +207,26 @@ impl<Lhs> ops::Add<Vec<u8>> for Combinator<Lhs> {
 mod tests {
   use super::*;
   use crate::{combinator::take, instant::Instant};
+  use std::fmt::Debug;
+
+  fn helper<Text: ?Sized + Digest, Value: PartialEq + Debug>(
+    action: impl Action<Text, Value = Value>,
+    input: &Text,
+    output: Option<Output<Value>>,
+  ) where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    assert_eq!(
+      action.exec(
+        &Instant::new(input),
+        Context {
+          state: &mut (),
+          heap: &mut ()
+        }
+      ),
+      output
+    )
+  }
 
   #[test]
   fn combinator_add() {
@@ -215,179 +235,120 @@ mod tests {
     let accepter_int = || take(1).bind((123,));
 
     // reject then accept, should return None
-    assert!((rejecter() + accepter_unit())
-      .exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_none());
+    helper(rejecter() + accepter_unit(), "123", None);
 
     // accept then reject, should return None
-    assert!((accepter_unit() + rejecter())
-      .exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_none());
+    helper(accepter_unit() + rejecter(), "123", None);
 
     // accept then accept, should return the sum of the digested
     // with the concat value
-    assert_eq!(
-      (accepter_unit() + accepter_int()).exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      ),
+    helper(
+      accepter_unit() + accepter_int(),
+      "123",
       Some(Output {
         value: (123,),
         digested: 2,
-      })
+      }),
     );
-    assert_eq!(
-      (accepter_int() + accepter_unit()).exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      ),
+    helper(
+      accepter_int() + accepter_unit(),
+      "123",
       Some(Output {
         value: (123,),
         digested: 2,
-      })
+      }),
     );
-    assert_eq!(
-      (accepter_int() + accepter_int()).exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      ),
+    helper(
+      accepter_int() + accepter_int(),
+      "123",
       Some(Output {
         value: (123, 123),
         digested: 2,
-      })
+      }),
     );
   }
 
   #[test]
   fn combinator_add_char() {
-    assert_eq!(
-      (take(1) + '2')
-        .exec(
-          &Instant::new("12"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
-        .map(|output| output.digested),
-      Some(2)
+    helper(
+      take(1) + '2',
+      "12",
+      Some(Output {
+        digested: 2,
+        value: (),
+      }),
     );
   }
 
   #[test]
   fn combinator_add_str() {
-    assert_eq!(
-      (take(1) + "23")
-        .exec(
-          &Instant::new("123"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
-        .map(|output| output.digested),
-      Some(3)
+    helper(
+      take(1) + "23",
+      "123",
+      Some(Output {
+        digested: 3,
+        value: (),
+      }),
     );
   }
 
   #[test]
   fn combinator_add_string() {
-    assert_eq!(
-      (take(1) + "23".to_string())
-        .exec(
-          &Instant::new("123"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
-        .map(|output| output.digested),
-      Some(3)
+    helper(
+      take(1) + "23".to_string(),
+      "123",
+      Some(Output {
+        digested: 3,
+        value: (),
+      }),
     );
   }
 
   #[test]
   fn combinator_add_u8() {
-    assert_eq!(
-      (take(1) + b'2')
-        .exec(
-          &Instant::new(b"123"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
-        .map(|output| output.digested),
-      Some(2)
+    helper(
+      take(1) + b'2',
+      b"123",
+      Some(Output {
+        digested: 2,
+        value: (),
+      }),
     );
   }
 
   #[test]
   fn combinator_add_u8_slice() {
-    assert_eq!(
-      (take(1) + "2".as_bytes())
-        .exec(
-          &Instant::new(b"123"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
-        .map(|output| output.digested),
-      Some(2)
+    helper(
+      take(1) + "2".as_bytes(),
+      b"123",
+      Some(Output {
+        digested: 2,
+        value: (),
+      }),
     );
   }
 
   #[test]
   fn combinator_add_u8_const_slice() {
-    assert_eq!(
-      (take(1) + b"2")
-        .exec(
-          &Instant::new(b"123"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
-        .map(|output| output.digested),
-      Some(2)
+    helper(
+      take(1) + b"2",
+      b"123",
+      Some(Output {
+        digested: 2,
+        value: (),
+      }),
     );
   }
 
   #[test]
   fn combinator_add_vec_u8() {
-    assert_eq!(
-      (take(1) + vec![b'2'])
-        .exec(
-          &Instant::new(b"123"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
-        .map(|output| output.digested),
-      Some(2)
+    helper(
+      take(1) + vec![b'2'],
+      b"123",
+      Some(Output {
+        digested: 2,
+        value: (),
+      }),
     );
   }
 }
