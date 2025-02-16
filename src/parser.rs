@@ -191,8 +191,6 @@
 mod builder;
 mod snapshot;
 
-use std::{ops::RangeFrom, slice::SliceIndex};
-
 pub use builder::*;
 pub use snapshot::*;
 
@@ -201,6 +199,7 @@ use crate::{
   digest::Digest,
   instant::Instant,
 };
+use std::{ops::RangeFrom, slice::SliceIndex};
 
 /// Manage [`Context::state`], [`Context::heap`] and the parsing progress.
 ///
