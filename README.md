@@ -55,6 +55,112 @@ assert_eq!(output.digested, 7);
 assert_eq!(output.value, (0xFF, 0xA5, 0x00));
 ```
 
+## How to Debug
+
+### With Logging
+
+The easiest way is to apply `.log(name)` to any combinator you need to inspect.
+
+<details>
+
+<summary>
+Example
+</summary>
+
+```rust
+use whitehole::{
+  combinator::{eat, next},
+  parser::Parser,
+};
+
+let double_hex = || {
+  (next(|c| c.is_ascii_hexdigit()).log("hex") * 2)
+    .log("double_hex")
+    .select(|accept, _| u8::from_str_radix(accept.content(), 16).unwrap())
+    .tuple()
+};
+
+let entry =
+  (eat('#').log("hash") + double_hex().log("R") + double_hex().log("G") + double_hex().log("B"))
+    .log("entry");
+
+let mut parser = Parser::builder().entry(entry).build("#FFA500");
+parser.next().unwrap();
+```
+
+Output:
+
+```text
+(entry) input: "#FFA500"
+| (hash) input: "#FFA500"
+| (hash) output: Some("#")
+| (R) input: "FFA500"
+| | (double_hex) input: "FFA500"
+| | | (hex) input: "FFA500"
+| | | (hex) output: Some("F")
+| | | (hex) input: "FA500"
+| | | (hex) output: Some("F")
+| | (double_hex) output: Some("FF")
+| (R) output: Some("FF")
+| (G) input: "A500"
+| | (double_hex) input: "A500"
+| | | (hex) input: "A500"
+| | | (hex) output: Some("A")
+| | | (hex) input: "500"
+| | | (hex) output: Some("5")
+| | (double_hex) output: Some("A5")
+| (G) output: Some("A5")
+| (B) input: "00"
+| | (double_hex) input: "00"
+| | | (hex) input: "00"
+| | | (hex) output: Some("0")
+| | | (hex) input: "0"
+| | | (hex) output: Some("0")
+| | (double_hex) output: Some("00")
+| (B) output: Some("00")
+(entry) output: Some("#FFA500")
+```
+
+</details>
+
+If you need to inspect your custom state and heap, you can use combinator decorators or write your own combinator extensions to achieve this.
+
+### With Breakpoints
+
+Because of the high level abstraction, it's hard to set breakpoints to combinators.
+
+One workaround is to use `wrap` to wrap your combinator in a closure or function and manually call `Action::exec`.
+
+<details>
+
+<summary>
+Example
+</summary>
+
+```rust
+let double_hex = || {
+  (next(|c| c.is_ascii_hexdigit()) * 2)
+    .select(|accept, _| u8::from_str_radix(accept.content(), 16).unwrap())
+    .tuple()
+};
+// wrap the original combinator
+let double_hex = || {
+  use whitehole::{action::Action, combinator::wrap};
+  let c = double_hex();
+  wrap(move |instant, ctx| {
+    // set a breakpoint here
+    c.exec(instant, ctx)
+  })
+};
+
+let entry = eat('#') + double_hex() + double_hex() + double_hex();
+
+let mut parser = Parser::builder().entry(entry).build("#FFA500");
+parser.next().unwrap();
+```
+
+</details>
+
 ## [Documentation](https://docs.rs/whitehole/)
 
 ## [Benchmarks](https://github.com/DiscreteTom/whitehole-bench)
