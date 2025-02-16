@@ -23,6 +23,11 @@ pub struct RecurSetter<Text: ?Sized = str, State = (), Heap = (), Value = ()> {
 }
 
 impl<Text: ?Sized, State, Heap, Value> RecurSetter<Text, State, Heap, Value> {
+  #[inline]
+  const fn new(inner: RecurInner<Text, State, Heap, Value>) -> Self {
+    Self { inner }
+  }
+
   /// Consume self, set the action implementor.
   #[inline]
   pub fn set(self, action: Box<dyn Action<Text, State, Heap, Value = Value>>) {
@@ -40,6 +45,13 @@ impl<Text: ?Sized, State, Heap, Value> RecurSetter<Text, State, Heap, Value> {
 /// See [`recur`].
 pub struct Recur<Text: ?Sized = str, State = (), Heap = (), Value = ()> {
   inner: RecurInner<Text, State, Heap, Value>,
+}
+
+impl<Text: ?Sized, State, Heap, Value> Recur<Text, State, Heap, Value> {
+  #[inline]
+  const fn new(inner: RecurInner<Text, State, Heap, Value>) -> Self {
+    Self { inner }
+  }
 }
 
 impl<Text: ?Sized, State, Heap, Value> fmt::Debug for Recur<Text, State, Heap, Value> {
@@ -82,15 +94,15 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
 /// ```
 /// # use whitehole::{combinator::{recur, eat}, parser::Parser};
 /// // create a recursive action, get the getter and setter
-/// let (value, value_setter) = recur();
+/// let (value, setter) = recur();
 ///
 /// // an array consists of zero or more values separated by commas, enclosed in square brackets.
 /// // you can use the `value` before it is defined
 /// let array = eat('[') + (value() * ..).sep(',') + ']';
 ///
-/// // before execute the `value`, you must set the action implementor.
+/// // before executing `value`, you must set the action implementor.
 /// // a value is either an array or a character 'a'
-/// value_setter.boxed(array | 'a');
+/// setter.boxed(array | 'a');
 ///
 /// // now you can execute the `value`.
 /// // it can have recursive structures
@@ -108,20 +120,21 @@ pub fn recur<Text: ?Sized, State, Heap, Value>() -> (
   RecurSetter<Text, State, Heap, Value>,
 ) {
   let inner = Rc::new(OnceCell::new());
-  let setter = RecurSetter {
-    inner: inner.clone(),
-  };
-  let getter = move || {
-    Combinator::new(Recur {
-      inner: inner.clone(),
-    })
-  };
+  let setter = RecurSetter::new(inner.clone());
+  let getter = move || Combinator::new(Recur::new(inner.clone()));
   (getter, setter)
 }
 
 /// See [`recur_unchecked`].
 pub struct RecurUnchecked<Text: ?Sized = str, State = (), Heap = (), Value = ()> {
   inner: RecurInner<Text, State, Heap, Value>,
+}
+
+impl<Text: ?Sized, State, Heap, Value> RecurUnchecked<Text, State, Heap, Value> {
+  #[inline]
+  const fn new(inner: RecurInner<Text, State, Heap, Value>) -> Self {
+    Self { inner }
+  }
 }
 
 impl<Text: ?Sized, State, Heap, Value> fmt::Debug for RecurUnchecked<Text, State, Heap, Value> {
@@ -165,15 +178,15 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
 /// ```
 /// # use whitehole::{combinator::{recur_unchecked, eat}, parser::Parser};
 /// // create a recursive action, get the getter and setter
-/// let (value, value_setter) = unsafe { recur_unchecked() };
+/// let (value, setter) = unsafe { recur_unchecked() };
 ///
 /// // an array consists of zero or more values separated by commas, enclosed in square brackets.
 /// // you can use the `value` before it is defined
 /// let array = eat('[') + (value() * ..).sep(',') + ']';
 ///
-/// // before execute the `value`, you must set the action implementor.
+/// // before executing the `value`, you must set the action implementor.
 /// // a value is either an array or a character 'a'
-/// value_setter.boxed(array | 'a');
+/// setter.boxed(array | 'a');
 ///
 /// // now you can execute the `value`.
 /// // it can have recursive structures
@@ -191,14 +204,8 @@ pub unsafe fn recur_unchecked<Text: ?Sized, State, Heap, Value>() -> (
   RecurSetter<Text, State, Heap, Value>,
 ) {
   let inner = Rc::new(OnceCell::new());
-  let setter = RecurSetter {
-    inner: inner.clone(),
-  };
-  let getter = move || {
-    Combinator::new(RecurUnchecked {
-      inner: inner.clone(),
-    })
-  };
+  let setter = RecurSetter::new(inner.clone());
+  let getter = move || Combinator::new(RecurUnchecked::new(inner.clone()));
   (getter, setter)
 }
 
