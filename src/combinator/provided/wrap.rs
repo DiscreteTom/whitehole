@@ -28,11 +28,10 @@ macro_rules! impl_wrap {
         instant: &Instant<&$text>,
         ctx: Context<&mut State, &mut Heap>,
       ) -> Option<Output<Self::Value>> {
-        let rest = instant.rest();
         let output = (self.inner)(instant, ctx);
         $assert!(output
           .as_ref()
-          .map_or(true, |output| rest.validate(output.digested)));
+          .map_or(true, |output| instant.rest().validate(output.digested)));
         output
       }
     }
