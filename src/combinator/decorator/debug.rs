@@ -106,6 +106,8 @@ unsafe impl<State, Heap, T: Action<[u8], State, Heap>> Action<[u8], State, Heap>
 impl<T> Combinator<T> {
   /// Create a new combinator to print the input text
   /// and the digested text by the action.
+  ///
+  /// The indentation can be customized by [`LOG_INDENTATION`].
   /// # Caveats
   /// This should NOT be used in multi-threaded environments
   /// because it uses a global variable to store the indentation level.
