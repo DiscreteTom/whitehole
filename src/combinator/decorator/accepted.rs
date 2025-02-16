@@ -10,7 +10,7 @@ use std::{
 /// You can't construct or modify this struct directly.
 /// This is to ensure the [`Instant`] and [`Output`] are consistent
 /// so we can skip some runtime checks.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Accepted<'a, TextRef, Value> {
   instant: &'a Instant<TextRef>,
   output: Output<Value>,
@@ -126,6 +126,11 @@ mod tests {
         },
       )
     };
+  }
+
+  #[test]
+  fn make_sure_clone_able() {
+    let _ = ctx!().clone();
   }
 
   #[test]
