@@ -1,4 +1,6 @@
-use super::{create_closure_decorator, create_simple_decorator, create_value_decorator, Accepted};
+use super::{
+  create_closure_decorator, create_generic_value_decorator, create_simple_decorator, Accepted,
+};
 use crate::{
   action::Context,
   combinator::{Action, Combinator, Output},
@@ -8,7 +10,7 @@ use crate::{
 
 create_closure_decorator!(Map, "See [`Combinator::map`].");
 create_simple_decorator!(Tuple, "See [`Combinator::tuple`].");
-create_value_decorator!(Bind, "See [`Combinator::bind`].");
+create_generic_value_decorator!(Bind, "See [`Combinator::bind`].");
 create_closure_decorator!(BindWith, "See [`Combinator::bind_with`].");
 create_closure_decorator!(Select, "See [`Combinator::select`].");
 create_simple_decorator!(Range, "See [`Combinator::range`].");

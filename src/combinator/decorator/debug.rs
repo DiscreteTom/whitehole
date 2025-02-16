@@ -1,4 +1,4 @@
-use super::create_value_decorator;
+use super::create_generic_value_decorator;
 use crate::{
   action::{Action, Context, Output},
   combinator::Combinator,
@@ -8,7 +8,7 @@ use crate::{
 use std::{fmt::Debug, ops::RangeTo, slice::SliceIndex};
 
 // TODO: don't make this generic
-create_value_decorator!(Log, "See [`Combinator::log`].");
+create_generic_value_decorator!(Log, "See [`Combinator::log`].");
 
 /// The indentation used in [`Combinator::log`].
 pub static mut LOG_INDENTATION: &str = "| ";
