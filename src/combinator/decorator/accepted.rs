@@ -11,23 +11,23 @@ use std::{
 /// This is to ensure the [`Instant`] and [`Output`] are consistent
 /// so we can skip some runtime checks.
 #[derive(Debug, Clone)]
-pub struct Accepted<'a, TextRef, Value> {
-  instant: &'a Instant<TextRef>,
+pub struct Accepted<'instant, TextRef, Value> {
+  instant: &'instant Instant<TextRef>,
   output: Output<Value>,
 }
 
-impl<'a, TextRef, Value> Accepted<'a, TextRef, Value> {
+impl<'instant, TextRef, Value> Accepted<'instant, TextRef, Value> {
   /// Create a new instance.
   ///
   /// This is only used internally by the library.
   #[inline]
-  pub(super) const fn new(instant: &'a Instant<TextRef>, output: Output<Value>) -> Self {
+  pub(super) const fn new(instant: &'instant Instant<TextRef>, output: Output<Value>) -> Self {
     Accepted { instant, output }
   }
 
   /// Get the [`Instant`] of this execution.
   #[inline]
-  pub const fn instant(&self) -> &'a Instant<TextRef> {
+  pub const fn instant(&self) -> &'instant Instant<TextRef> {
     // don't make `Self::instant` public. this is to prevent `mem::swap` and override `Instant::rest`.
     self.instant
   }
@@ -75,10 +75,10 @@ impl<'a, TextRef, Value> Accepted<'a, TextRef, Value> {
   }
 }
 
-impl<'a, Text: ?Sized + Digest, Value> Accepted<'_, &'a Text, Value> {
+impl<'text, Text: ?Sized + Digest, Value> Accepted<'_, &'text Text, Value> {
   /// Get the rest of the input text after accepting this combinator.
   #[inline]
-  pub fn after(&self) -> &'a Text
+  pub fn after(&self) -> &'text Text
   where
     RangeFrom<usize>: SliceIndex<Text, Output = Text>,
   {
@@ -86,9 +86,9 @@ impl<'a, Text: ?Sized + Digest, Value> Accepted<'_, &'a Text, Value> {
     unsafe { self.instant.rest().get_unchecked(self.digested()..) }
   }
 
-  /// The text content accepted by this combinator.
+  /// The text content accepted by this execution.
   #[inline]
-  pub fn content(&self) -> &'a Text
+  pub fn content(&self) -> &'text Text
   where
     RangeTo<usize>: SliceIndex<Text, Output = Text>,
   {
@@ -104,9 +104,6 @@ mod tests {
 
   macro_rules! ctx {
     () => {
-      ctx!((), ())
-    };
-    ($state:expr, $heap:expr) => {
       Accepted::new(
         &unsafe { Instant::new("0123").to_digested_unchecked(1) },
         Output {
