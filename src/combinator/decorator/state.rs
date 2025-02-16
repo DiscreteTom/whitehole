@@ -48,16 +48,7 @@ unsafe impl<
     mut ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     self.action.exec(instant, ctx.reborrow()).inspect(|output| {
-      (self.inner)(
-        Accepted::new(
-          instant,
-          Output {
-            value: &output.value,
-            digested: output.digested,
-          },
-        ),
-        ctx,
-      );
+      (self.inner)(Accepted::new(instant, output.as_ref()), ctx);
     })
   }
 }

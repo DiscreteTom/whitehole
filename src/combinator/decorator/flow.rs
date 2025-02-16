@@ -81,16 +81,7 @@ unsafe impl<
       .action
       .exec(instant, ctx.reborrow())
       .and_then(|output| {
-        if (self.inner)(
-          Accepted::new(
-            instant,
-            Output {
-              value: &output.value,
-              digested: output.digested,
-            },
-          ),
-          ctx,
-        ) {
+        if (self.inner)(Accepted::new(instant, output.as_ref()), ctx) {
           None
         } else {
           output.into()
