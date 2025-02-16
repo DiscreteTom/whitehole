@@ -76,16 +76,6 @@ impl<'instant, TextRef, Value> Accepted<'instant, TextRef, Value> {
 }
 
 impl<'text, Text: ?Sized + Digest, Value> Accepted<'_, &'text Text, Value> {
-  /// Get the rest of the input text after accepting this combinator.
-  #[inline]
-  pub fn after(&self) -> &'text Text
-  where
-    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
-  {
-    debug_assert!(self.instant.rest().validate(self.output.digested));
-    unsafe { self.instant.rest().get_unchecked(self.digested()..) }
-  }
-
   /// The text content accepted by this execution.
   #[inline]
   pub fn content(&self) -> &'text Text
@@ -94,6 +84,16 @@ impl<'text, Text: ?Sized + Digest, Value> Accepted<'_, &'text Text, Value> {
   {
     debug_assert!(self.instant.rest().validate(self.output.digested));
     unsafe { self.instant.rest().get_unchecked(..self.digested()) }
+  }
+
+  /// Get the rest of the input text after accepting this combinator.
+  #[inline]
+  pub fn after(&self) -> &'text Text
+  where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    debug_assert!(self.instant.rest().validate(self.output.digested));
+    unsafe { self.instant.rest().get_unchecked(self.digested()..) }
   }
 }
 
@@ -115,21 +115,21 @@ mod tests {
   }
 
   #[test]
-  fn make_sure_clone_able() {
+  fn make_sure_accepted_clone_able() {
     let _ = ctx!().clone();
   }
 
   #[test]
-  fn accepted_decorator_context() {
+  fn test_accepted() {
     // getters
     assert_eq!(ctx!().instant().rest(), "123");
     assert_eq!(ctx!().output().digested, 1);
-    assert_eq!(ctx!().start(), 1);
     assert_eq!(ctx!().digested(), 1);
-    assert_eq!(ctx!().after(), "23");
+    assert_eq!(ctx!().start(), 1);
     assert_eq!(ctx!().end(), 2);
     assert_eq!(ctx!().range(), 1..2);
     assert_eq!(ctx!().content(), "1");
+    assert_eq!(ctx!().after(), "23");
 
     // take
     assert_eq!(ctx!().take().digested, 1);
