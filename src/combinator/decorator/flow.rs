@@ -275,8 +275,32 @@ mod tests {
   use super::*;
   use crate::{
     combinator::{bytes, wrap},
+    digest::Digest,
     instant::Instant,
   };
+  use std::{ops::RangeFrom, slice::SliceIndex};
+
+  fn helper<Text: ?Sized + Digest>(
+    action: impl Action<Text, bool, Value = ()>,
+    input: &Text,
+    state: &mut bool,
+    digested: Option<usize>,
+  ) where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    assert_eq!(
+      action
+        .exec(
+          &Instant::new(input),
+          Context {
+            state,
+            heap: &mut ()
+          }
+        )
+        .map(|o| o.digested),
+      digested
+    )
+  }
 
   fn accepter() -> Combinator<impl Action<str, bool, Value = ()>> {
     wrap(|instant, ctx| {
@@ -306,334 +330,159 @@ mod tests {
 
   #[test]
   fn combinator_when() {
+    // prevented
     let mut executed = false;
-    assert!(accepter()
-      .when(|_, _| false)
-      .exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut executed,
-          heap: &mut ()
-        }
-      )
-      .is_none());
+    helper(accepter().when(|_, _| false), "123", &mut executed, None);
     assert!(!executed);
     let mut executed = false;
-    assert!(accepter_bytes()
-      .when(|_, _| false)
-      .exec(
-        &Instant::new(b"123"),
-        Context {
-          state: &mut executed,
-          heap: &mut ()
-        }
-      )
-      .is_none());
+    helper(
+      accepter_bytes().when(|_, _| false),
+      b"123",
+      &mut executed,
+      None,
+    );
     assert!(!executed);
 
+    // executed
     let mut executed = false;
-    assert!(accepter()
-      .when(|_, _| true)
-      .exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut executed,
-          heap: &mut ()
-        }
-      )
-      .is_some());
+    helper(accepter().when(|_, _| true), "123", &mut executed, Some(1));
     assert!(executed);
     let mut executed = false;
-    assert!(accepter_bytes()
-      .when(|_, _| true)
-      .exec(
-        &Instant::new(b"123"),
-        Context {
-          state: &mut executed,
-          heap: &mut ()
-        }
-      )
-      .is_some());
+    helper(
+      accepter_bytes().when(|_, _| true),
+      b"123",
+      &mut executed,
+      Some(1),
+    );
     assert!(executed);
   }
 
   #[test]
   fn combinator_prevent() {
+    // prevented
     let mut executed = false;
-    assert!(accepter()
-      .prevent(|_, _| true)
-      .exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut executed,
-          heap: &mut ()
-        }
-      )
-      .is_none());
+    helper(accepter().prevent(|_, _| true), "123", &mut executed, None);
     assert!(!executed);
     let mut executed = false;
-    assert!(accepter_bytes()
-      .prevent(|_, _| true)
-      .exec(
-        &Instant::new(b"123"),
-        Context {
-          state: &mut executed,
-          heap: &mut ()
-        }
-      )
-      .is_none());
+    helper(
+      accepter_bytes().prevent(|_, _| true),
+      b"123",
+      &mut executed,
+      None,
+    );
     assert!(!executed);
 
+    // executed
     let mut executed = false;
-    assert!(accepter()
-      .prevent(|_, _| false)
-      .exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut executed,
-          heap: &mut ()
-        }
-      )
-      .is_some());
+    helper(
+      accepter().prevent(|_, _| false),
+      "123",
+      &mut executed,
+      Some(1),
+    );
     assert!(executed);
     let mut executed = false;
-    assert!(accepter_bytes()
-      .prevent(|_, _| false)
-      .exec(
-        &Instant::new(b"123"),
-        Context {
-          state: &mut executed,
-          heap: &mut ()
-        }
-      )
-      .is_some());
+    helper(
+      accepter_bytes().prevent(|_, _| false),
+      b"123",
+      &mut executed,
+      Some(1),
+    );
     assert!(executed);
   }
 
   #[test]
   fn combinator_reject() {
+    // accepted
     let mut executed = false;
-    assert_eq!(
-      accepter()
-        .reject(|accept, _| accept.content() != "1")
-        .exec(
-          &Instant::new("123"),
-          Context {
-            state: &mut executed,
-            heap: &mut ()
-          }
-        )
-        .unwrap()
-        .digested,
-      1
+    helper(
+      accepter().reject(|accept, _| accept.content() != "1"),
+      "123",
+      &mut executed,
+      Some(1),
     );
     assert!(executed);
     let mut executed = false;
-    assert_eq!(
-      accepter_bytes()
-        .reject(|accept, _| accept.content() != b"1")
-        .exec(
-          &Instant::new(b"123"),
-          Context {
-            state: &mut executed,
-            heap: &mut ()
-          }
-        )
-        .unwrap()
-        .digested,
-      1
+    helper(
+      accepter_bytes().reject(|accept, _| accept.content() != b"1"),
+      b"123",
+      &mut executed,
+      Some(1),
     );
     assert!(executed);
 
+    // rejected
     let mut executed = false;
-    assert_eq!(
-      accepter().reject(|accept, _| accept.content() == "1").exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut executed,
-          heap: &mut ()
-        }
-      ),
-      None
+    helper(
+      accepter().reject(|accept, _| accept.content() == "1"),
+      "123",
+      &mut executed,
+      None,
     );
     assert!(executed);
     let mut executed = false;
-    assert_eq!(
-      accepter_bytes()
-        .reject(|accept, _| accept.content() == b"1")
-        .exec(
-          &Instant::new(b"123"),
-          Context {
-            state: &mut executed,
-            heap: &mut ()
-          }
-        ),
-      None
+    helper(
+      accepter_bytes().reject(|accept, _| accept.content() == b"1"),
+      b"123",
+      &mut executed,
+      None,
     );
     assert!(executed);
   }
 
   #[test]
   fn combinator_optional() {
+    // accept
     let mut executed = false;
-    assert_eq!(
-      accepter()
-        .optional()
-        .exec(
-          &Instant::new("123"),
-          Context {
-            state: &mut executed,
-            heap: &mut ()
-          }
-        )
-        .unwrap()
-        .digested,
-      1
-    );
+    helper(accepter().optional(), "123", &mut executed, Some(1));
     assert!(executed);
     let mut executed = false;
-    assert_eq!(
-      accepter_bytes()
-        .optional()
-        .exec(
-          &Instant::new(b"123"),
-          Context {
-            state: &mut executed,
-            heap: &mut ()
-          }
-        )
-        .unwrap()
-        .digested,
-      1
-    );
+    helper(accepter_bytes().optional(), b"123", &mut executed, Some(1));
     assert!(executed);
 
+    // reject but optional
     let mut executed = false;
-    assert_eq!(
-      rejecter()
-        .optional()
-        .exec(
-          &Instant::new("123"),
-          Context {
-            state: &mut executed,
-            heap: &mut ()
-          }
-        )
-        .unwrap()
-        .digested,
-      0
-    );
+    helper(rejecter().optional(), "123", &mut executed, Some(0));
     assert!(executed);
     let mut executed = false;
-    assert_eq!(
-      rejecter_bytes()
-        .optional()
-        .exec(
-          &Instant::new(b"123"),
-          Context {
-            state: &mut executed,
-            heap: &mut ()
-          }
-        )
-        .unwrap()
-        .digested,
-      0
-    );
+    helper(rejecter_bytes().optional(), b"123", &mut executed, Some(0));
     assert!(executed);
   }
 
   #[test]
   fn optional_can_be_the_last_one() {
     let mut executed = false;
-    assert_eq!(
-      accepter()
-        .optional()
-        .exec(
-          &Instant::new(""),
-          Context {
-            state: &mut executed,
-            heap: &mut ()
-          }
-        )
-        .unwrap()
-        .digested,
-      0
-    );
+    helper(accepter().optional(), "", &mut executed, Some(0));
     assert!(executed);
     let mut executed = false;
-    assert_eq!(
-      accepter_bytes()
-        .optional()
-        .exec(
-          &Instant::new(b""),
-          Context {
-            state: &mut executed,
-            heap: &mut ()
-          }
-        )
-        .unwrap()
-        .digested,
-      0
-    );
+    helper(accepter_bytes().optional(), b"", &mut executed, Some(0));
     assert!(executed);
   }
 
   #[test]
   fn combinator_boundary() {
     let mut executed = false;
-    assert_eq!(
-      accepter()
-        .boundary()
-        .exec(
-          &Instant::new("1"),
-          Context {
-            state: &mut executed,
-            heap: &mut ()
-          }
-        )
-        .unwrap()
-        .digested,
-      1
-    );
+    helper(accepter().boundary(), "1", &mut executed, Some(1));
     assert!(executed);
 
     let mut executed = false;
-    assert_eq!(
-      accepter().boundary().exec(
-        &Instant::new("12"),
-        Context {
-          state: &mut executed,
-          heap: &mut ()
-        }
-      ),
-      None
-    );
+    helper(accepter().boundary(), "1.", &mut executed, Some(1));
     assert!(executed);
 
     let mut executed = false;
-    assert_eq!(
-      accepter().boundary().exec(
-        &Instant::new("1a"),
-        Context {
-          state: &mut executed,
-          heap: &mut ()
-        }
-      ),
-      None
-    );
+    helper(accepter().boundary(), "12", &mut executed, None);
     assert!(executed);
 
     let mut executed = false;
-    assert_eq!(
-      accepter().boundary().exec(
-        &Instant::new("1_"),
-        Context {
-          state: &mut executed,
-          heap: &mut ()
-        }
-      ),
-      None
-    );
+    helper(accepter().boundary(), "1a", &mut executed, None);
+    assert!(executed);
+
+    let mut executed = false;
+    helper(accepter().boundary(), "1_", &mut executed, None);
+    assert!(executed);
+
+    let mut executed = false;
+    helper(accepter().boundary(), "1好", &mut executed, None);
     assert!(executed);
   }
 }
