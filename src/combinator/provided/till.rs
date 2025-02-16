@@ -230,7 +230,7 @@ mod tests {
   }
 
   #[test]
-  fn until_exec() {
+  fn test_till() {
     // char
     helper(till(';'), "123;456", Some(4));
     helper(till(';'), "123456", None);
