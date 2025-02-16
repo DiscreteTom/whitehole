@@ -182,88 +182,63 @@ impl<'a, const N: usize> From<&'a [u8; N]> for Combinator<Eat<&'a [u8; N]>> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{action::Action, instant::Instant};
+  use crate::{action::Action, digest::Digest, instant::Instant};
+  use std::{ops::RangeFrom, slice::SliceIndex};
+
+  fn helper<Text: ?Sized + Digest>(
+    action: impl Action<Text, Value = ()>,
+    input: &Text,
+    digested: Option<usize>,
+  ) where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    assert_eq!(
+      action
+        .exec(
+          &Instant::new(input),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
+        .map(|o| o.digested),
+      digested
+    )
+  }
 
   #[test]
   fn combinator_eat() {
     // normal char
-    assert_eq!(
-      eat(';')
-        .exec(&Instant::new(";"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(1)
-    );
+    helper(eat(';'), ";", Some(1));
     // normal &str
-    assert_eq!(
-      eat("123")
-        .exec(&Instant::new("123"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(3)
-    );
+    helper(eat("123"), "123", Some(3));
     // normal String
-    assert_eq!(
-      eat("123".to_string())
-        .exec(&Instant::new("123"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(3)
-    );
+    helper(eat("123".to_string()), "123", Some(3));
     // normal u8
-    assert_eq!(
-      eat(b';')
-        .exec(&Instant::new(b";"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(1)
-    );
+    helper(eat(b';'), b";", Some(1));
     // normal &[u8;N]
-    assert_eq!(
-      eat(b";")
-        .exec(&Instant::new(b";"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(1)
-    );
+    helper(eat(b";"), b";", Some(1));
     // normal &[u8]
-    assert_eq!(
-      eat("123".as_bytes())
-        .exec(&Instant::new(b"123"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(3)
-    );
+    helper(eat("123".as_bytes()), b"123", Some(3));
     // normal Vec<u8>
-    assert_eq!(
-      eat(vec![b'1', b'2', b'3'])
-        .exec(&Instant::new(b"123"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(3)
-    );
+    helper(eat(vec![b'1', b'2', b'3']), b"123", Some(3));
     // reject
-    assert!(eat("123")
-      .exec(&Instant::new("abc"), Context { state: &mut (), heap: &mut () })
-      .is_none());
-    assert!(eat('1')
-      .exec(&Instant::new("abc"), Context { state: &mut (), heap: &mut () })
-      .is_none());
+    helper(eat("123"), "abc", None);
+    helper(eat('1'), "abc", None);
     // empty string is allowed and always accept
-    assert_eq!(
-      eat("")
-        .exec(&Instant::new("123"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(0)
-    );
-    assert_eq!(
-      eat("")
-        .exec(&Instant::new(""), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(0)
-    );
+    helper(eat(""), "123", Some(0));
+    helper(eat(""), "", Some(0));
+    helper(eat(b""), b"123", Some(0));
+    helper(eat(b""), b"", Some(0));
   }
 
   #[test]
   fn eat_into_combinator() {
-    fn test(c: Combinator<impl Action>) {
-      c.exec(&Instant::new("a"), Context { state: &mut (), heap: &mut () });
+    fn test(c: Combinator<impl Action<Value = ()>>) {
+      helper(c, "a", Some(1));
     }
-    fn test_bytes(c: Combinator<impl Action<[u8]>>) {
-      c.exec(&Instant::new(b"a"), Context { state: &mut (), heap: &mut () });
+    fn test_bytes(c: Combinator<impl Action<[u8], Value = ()>>) {
+      helper(c, b"a", Some(1));
     }
     test('a'.into());
     test("a".into());

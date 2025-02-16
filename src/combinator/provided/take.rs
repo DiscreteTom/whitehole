@@ -82,52 +82,42 @@ pub const fn take(n: usize) -> Combinator<Take> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::instant::Instant;
+  use crate::{digest::Digest, instant::Instant};
+  use std::{ops::RangeFrom, slice::SliceIndex};
+
+  fn helper<Text: ?Sized + Digest>(
+    action: impl Action<Text, Value = ()>,
+    input: &Text,
+    digested: Option<usize>,
+  ) where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    assert_eq!(
+      action
+        .exec(
+          &Instant::new(input),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
+        .map(|o| o.digested),
+      digested
+    )
+  }
 
   #[test]
   fn test_take() {
     // normal
-    assert_eq!(
-      take(3)
-        .exec(&Instant::new("123456"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(3)
-    );
-    assert_eq!(
-      take(3)
-        .exec(&Instant::new(b"123456" as &[u8]), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(3)
-    );
+    helper(take(3), "123456", Some(3));
+    helper(take(3), b"123456" as &[u8], Some(3));
     // reject
-    assert!(take(7)
-      .exec(&Instant::new("123456"), Context { state: &mut (), heap: &mut () })
-      .is_none());
+    helper(take(7), "123456", None);
     // 0 is always accepted
-    assert_eq!(
-      take(0)
-        .exec(&Instant::new(""), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(0)
-    );
-    assert_eq!(
-      take(0)
-        .exec(&Instant::new("123456"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(0)
-    );
+    helper(take(0), "", Some(0));
+    helper(take(0), "123456", Some(0));
     // take by chars not bytes for &str
-    assert_eq!(
-      take(1)
-        .exec(&Instant::new("好"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(3)
-    );
-    assert_eq!(
-      take(2)
-        .exec(&Instant::new("好好"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(6)
-    );
+    helper(take(1), "好", Some(3));
+    helper(take(2), "好好", Some(6));
   }
 }

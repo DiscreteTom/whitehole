@@ -178,75 +178,66 @@ pub const fn till<T>(pattern: T) -> Combinator<Till<T>> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    action::{Action, Output},
-    instant::Instant,
-  };
+  use crate::{action::Action, instant::Instant};
+  use std::{ops::RangeFrom, slice::SliceIndex};
+
+  fn helper<Text: ?Sized + Digest>(
+    action: impl Action<Text, Value = ()>,
+    input: &Text,
+    digested: Option<usize>,
+  ) where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    assert_eq!(
+      action
+        .exec(
+          &Instant::new(input),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
+        .map(|o| o.digested),
+      digested
+    )
+  }
 
   #[test]
   fn until_exec() {
-    assert_eq!(
-      till(';').exec(&Instant::new("123;456"), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 4
-      })
-    );
-    assert_eq!(
-      till("end").exec(&Instant::new("123end456"), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 6
-      })
-    );
-    assert_eq!(
-      till("end".to_string()).exec(&Instant::new("123end456"), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 6
-      })
-    );
-    assert_eq!(
-      till(()).exec(&Instant::new("123"), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 3
-      })
-    );
-    assert_eq!(
-      till(b';').exec(&Instant::new(b"123;456"), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 4
-      })
-    );
-    assert_eq!(
-      till(b"end").exec(&Instant::new(b"123end456"), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 6
-      })
-    );
-    assert_eq!(
-      till("end".to_string().as_bytes()).exec(&Instant::new(b"123end456"), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 6
-      })
-    );
-    assert_eq!(
-      till(vec![b'1', b'2', b'3']).exec(&Instant::new(b"123456"), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 3
-      })
-    );
-    assert_eq!(
-      till(()).exec(&Instant::new(b"123" as &[u8]), Context { state: &mut (), heap: &mut () }),
-      Some(Output {
-        value: (),
-        digested: 3
-      })
-    );
+    // char
+    helper(till(';'), "123;456", Some(4));
+    helper(till(';'), "123456", None);
+
+    // &str
+    helper(till("end"), "123end456", Some(6));
+    helper(till("end"), "123456", None);
+
+    // String
+    helper(till("end".to_string()), "123end456", Some(6));
+    helper(till("end".to_string()), "123456", None);
+
+    // ()
+    helper(till(()), "123", Some(3));
+    helper(till(()), "", Some(0)); // TODO: add comments about this
+
+    // u8
+    helper(till(b';'), b"123;456", Some(4));
+    helper(till(b';'), b"123456", None);
+
+    // [u8, N]
+    helper(till(b"end"), b"123end456", Some(6));
+    helper(till(b"end"), b"123456", None);
+
+    // &[u8]
+    helper(till("end".to_string().as_bytes()), b"123end456", Some(6));
+    helper(till("end".to_string().as_bytes()), b"123456", None);
+
+    // Vec<u8>
+    helper(till(vec![b'1', b'2', b'3']), b"123456", Some(3));
+    helper(till(vec![b'1', b'2', b'3']), b"456", None);
+
+    // ()
+    helper(till(()), b"123" as &[u8], Some(3));
+    helper(till(()), b"" as &[u8], Some(0));
   }
 }

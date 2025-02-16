@@ -91,25 +91,42 @@ pub mod bytes {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{action::Action, instant::Instant};
+  use crate::{action::Action, digest::Digest, instant::Instant};
+  use std::{ops::RangeFrom, slice::SliceIndex};
+
+  fn helper<Text: ?Sized + Digest>(
+    action: impl Action<Text, Value = ()>,
+    input: &Text,
+    digested: Option<usize>,
+  ) where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    assert_eq!(
+      action
+        .exec(
+          &Instant::new(input),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
+        .map(|o| o.digested),
+      digested
+    )
+  }
 
   #[test]
   fn combinator_next() {
     // normal
-    assert_eq!(
-      next(|c| c.is_ascii_digit())
-        .exec(&Instant::new("123"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(1)
-    );
+    helper(next(|c| c.is_ascii_digit()), "123", Some(1));
     // reject
-    assert!(next(|c| c.is_ascii_alphabetic())
-      .exec(&Instant::new("123"), Context { state: &mut (), heap: &mut () })
-      .is_none());
+    helper(next(|c| c.is_ascii_alphabetic()), "123", None);
+    // utf8
+    helper(next(|_| true), "好", Some(3));
 
     // ensure the combinator is copyable and clone-able
     let c = next(|c| c.is_ascii_digit());
-    let _ = c;
+    let _c = c;
     let _ = c.clone();
 
     // ensure the combinator is debuggable
@@ -119,35 +136,23 @@ mod tests {
   #[test]
   fn one_or_more_next() {
     // normal
-    assert_eq!(
-      (next(|c| c.is_ascii_digit()) * (1..))
-        .exec(&Instant::new("123"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(3)
-    );
+    helper(next(|c| c.is_ascii_digit()) * (1..), "123", Some(3));
     // reject
-    assert!(next(|c| c.is_ascii_digit())
-      .exec(&Instant::new("abc"), Context { state: &mut (), heap: &mut () })
-      .is_none());
+    helper(next(|c| c.is_ascii_digit()) * (1..), "abc", None);
+    // utf8
+    helper(next(|_| true) * (1..), "好好好", Some(9));
   }
 
   #[test]
   fn combinator_next_bytes() {
     // normal
-    assert_eq!(
-      bytes::next(|b| b.is_ascii_digit())
-        .exec(&Instant::new(b"123"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(1)
-    );
+    helper(bytes::next(|b| b.is_ascii_digit()), b"123", Some(1));
     // reject
-    assert!(bytes::next(|b| b.is_ascii_alphabetic())
-      .exec(&Instant::new(b"123"), Context { state: &mut (), heap: &mut () })
-      .is_none());
+    helper(bytes::next(|b| b.is_ascii_alphabetic()), b"123", None);
 
     // ensure the combinator is copyable and clone-able
     let c = bytes::next(|b| b.is_ascii_digit());
-    let _ = c;
+    let _c = c;
     let _ = c.clone();
 
     // ensure the combinator is debuggable
@@ -157,15 +162,8 @@ mod tests {
   #[test]
   fn one_or_more_next_bytes() {
     // normal
-    assert_eq!(
-      (bytes::next(|b| b.is_ascii_digit()) * (1..))
-        .exec(&Instant::new(b"123"), Context { state: &mut (), heap: &mut () })
-        .map(|output| output.digested),
-      Some(3)
-    );
+    helper(bytes::next(|b| b.is_ascii_digit()) * (1..), b"123", Some(3));
     // reject
-    assert!(bytes::next(|b| b.is_ascii_digit())
-      .exec(&Instant::new(b"abc"), Context { state: &mut (), heap: &mut () })
-      .is_none());
+    helper(bytes::next(|b| b.is_ascii_digit()) * (1..), b"abc", None);
   }
 }
