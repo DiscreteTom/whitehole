@@ -45,6 +45,15 @@ impl<Value> Output<Value> {
       digested: self.digested,
     }
   }
+
+  /// Converts from `&Output<T>` to `Output<&T>`.
+  #[inline]
+  pub const fn as_ref(&self) -> Output<&Value> {
+    Output {
+      value: &self.value,
+      digested: self.digested,
+    }
+  }
 }
 
 #[cfg(test)]
@@ -125,5 +134,15 @@ mod tests {
         digested: 0,
       }
     );
+  }
+
+  #[test]
+  fn output_as_ref() {
+    let o = Output {
+      digested: 1,
+      value: 1,
+    };
+    assert_eq!(o.as_ref().digested, 1);
+    assert_eq!(o.as_ref().value, &1);
   }
 }

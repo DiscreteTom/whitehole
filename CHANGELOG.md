@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Instant::accept_unchecked` and `Instant::accept` to replace `Input::digest_unchecked` and `Input::digest`.
 - Add `Instant::to_digested_unchecked` to replace `Input::shift_unchecked`.
 - Add `Context` to provide `&mut State` and `&mut Heap`.
+- Add `Output::as_ref`.
 - Derive `Clone` for `Accepted`.
 - Make `Accepted::end` and `Accepted::range` const.
 
