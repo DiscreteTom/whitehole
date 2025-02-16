@@ -240,13 +240,15 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
   pub const fn instant(&self) -> &Instant<TextRef> {
     &self.instant
   }
+}
 
+impl<'text, T, Text: ?Sized, State, Heap> Parser<T, &'text Text, State, Heap> {
   /// Consume self, return a new instance with the same action and a new text.
   ///
   /// [`Self::instant`] and [`Self::state`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload<NewText: ?Sized>(self, text: &NewText) -> Parser<T, &NewText, State, Heap>
+  pub fn reload(self, text: &Text) -> Parser<T, &Text, State, Heap>
   where
     State: Default,
   {
@@ -259,11 +261,11 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
   /// [`Self::instant`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload_with<NewText: ?Sized>(
+  pub fn reload_with(
     self,
     state: impl Into<Option<State>>,
-    text: &NewText,
-  ) -> Parser<T, &NewText, State, Heap> {
+    text: &Text,
+  ) -> Parser<T, &Text, State, Heap> {
     Parser {
       entry: self.entry,
       heap: self.heap,
@@ -274,9 +276,8 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
 
   /// Take a snapshot of the current [`Self::state`] and [`Self::instant`].
   #[inline]
-  pub fn snapshot(&self) -> Snapshot<TextRef, State>
+  pub fn snapshot(&self) -> Snapshot<&'text Text, State>
   where
-    TextRef: Clone,
     State: Clone,
   {
     Snapshot {
@@ -287,13 +288,11 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
 
   /// Restore [`Self::state`] and [`Self::instant`] from a [`Snapshot`].
   #[inline]
-  pub fn restore(&mut self, snapshot: Snapshot<TextRef, State>) {
+  pub fn restore(&mut self, snapshot: Snapshot<&'text Text, State>) {
     self.state = snapshot.state;
     self.instant = snapshot.instant;
   }
-}
 
-impl<T, Text: ?Sized, State, Heap> Parser<T, &Text, State, Heap> {
   /// Digest the next `n` bytes and set [`Self::state`] to the default.
   ///
   /// Usually when you digest some bytes from outside of the parser
