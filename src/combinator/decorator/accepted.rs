@@ -25,6 +25,13 @@ impl<'a, TextRef, Value> Accepted<'a, TextRef, Value> {
     Accepted { instant, output }
   }
 
+  /// Get the [`Instant`] of this execution.
+  #[inline]
+  pub const fn instant(&self) -> &'a Instant<TextRef> {
+    // don't make `Self::instant` public. this is to prevent `mem::swap` and override `Instant::rest`.
+    self.instant
+  }
+
   /// Get the [`Output`] of this execution.
   #[inline]
   pub const fn output(&self) -> &Output<Value> {
@@ -32,56 +39,38 @@ impl<'a, TextRef, Value> Accepted<'a, TextRef, Value> {
     &self.output
   }
 
-  /// Take the [`Output`].
-  ///
-  /// To get the [`Instant`] as well, use [`Self::split`].
+  /// Consume the instance and take the [`Output`].
   #[inline]
   pub fn take(self) -> Output<Value> {
     self.output
   }
 
-  /// Split the instance into the [`Instant`] and [`Output`].
+  /// How many bytes will be digested by this accepted execution.
   ///
-  /// To get the [`Output`] only, use [`Self::take`].
-  #[inline]
-  pub fn split(self) -> (&'a Instant<TextRef>, Output<Value>) {
-    (self.instant, self.output)
-  }
-}
-
-impl<'a, TextRef, Value> Accepted<'a, TextRef, Value> {
-  #[inline]
-  pub const fn instant(&self) -> &'a Instant<TextRef> {
-    self.instant
-  }
-
-  #[inline]
-  pub const fn start(&self) -> usize {
-    self.instant.digested()
-  }
-}
-
-impl<TextRef, Value> Accepted<'_, TextRef, Value> {
   /// See [`Output::digested`].
   #[inline]
   pub const fn digested(&self) -> usize {
     self.output.digested
   }
-}
 
-impl<TextRef, Value> Accepted<'_, TextRef, Value> {
-  /// The end index in bytes in the whole input text.
+  /// The start index of the accepted content in the whole input text, in bytes.
   #[inline]
-  pub fn end(&self) -> usize {
+  pub const fn start(&self) -> usize {
+    self.instant.digested()
+  }
+
+  /// The end index of the accepted content in the whole input text, in bytes.
+  #[inline]
+  pub const fn end(&self) -> usize {
     debug_assert!(usize::MAX - self.start() >= self.digested());
     unsafe { self.start().unchecked_add(self.digested()) }
   }
 
-  /// The byte range of the digested text in the whole input text.
+  /// The byte range of the digested content in the whole input text.
   ///
   /// Shortcut for `self.start()..self.end()`.
   #[inline]
-  pub fn range(&self) -> Range<usize> {
+  pub const fn range(&self) -> Range<usize> {
     self.start()..self.end()
   }
 }
@@ -145,10 +134,8 @@ mod tests {
     assert_eq!(ctx!().range(), 1..2);
     assert_eq!(ctx!().content(), "1");
 
-    // take & split
+    // take
     assert_eq!(ctx!().take().digested, 1);
     assert_eq!(ctx!().take().map(|_| 1).value, 1);
-    assert_eq!(ctx!().split().1.map(|_| 1).value, 1);
-    assert_eq!(ctx!().split().0.digested(), 1);
   }
 }
