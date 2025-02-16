@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename `AcceptedContext` to `Accepted`.
 - `Accepted` now contains `Instant` and `Output`. Simplify its generic params.
 - Rename `Accepted::rest` to `Accepted::after`.
+- `Log` now can only take `&str` as the name.
 
 ### Fixed
 

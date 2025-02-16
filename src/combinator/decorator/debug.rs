@@ -1,4 +1,3 @@
-use super::create_generic_value_decorator;
 use crate::{
   action::{Action, Context, Output},
   combinator::Combinator,
@@ -7,8 +6,19 @@ use crate::{
 };
 use std::{fmt::Debug, ops::RangeTo, slice::SliceIndex};
 
-// TODO: don't make this generic
-create_generic_value_decorator!(Log, "See [`Combinator::log`].");
+/// See [`Combinator::log`].
+#[derive(Copy, Clone, Debug)]
+pub struct Log<'a, T> {
+  action: T,
+  name: &'a str,
+}
+
+impl<'a, T> Log<'a, T> {
+  #[inline]
+  const fn new(action: T, name: &'a str) -> Self {
+    Self { action, name }
+  }
+}
 
 /// The indentation used in [`Combinator::log`].
 pub static mut LOG_INDENTATION: &str = "| ";
@@ -68,16 +78,16 @@ where
 macro_rules! impl_log {
   ($self:ident, $instant:ident, $ctx:ident, $rest_formatter:ident) => {{
     let rest = $instant.rest();
-    println!("{}", &format_input($self.inner, $rest_formatter, rest));
+    println!("{}", &format_input($self.name, $rest_formatter, rest));
     unsafe { INDENT_LEVEL += 1 };
     let output = $self.action.exec($instant, $ctx);
     unsafe { INDENT_LEVEL -= 1 };
-    println!("{}", &format_output($self.inner, rest, &output));
+    println!("{}", &format_output($self.name, rest, &output));
     output
   }};
 }
 
-unsafe impl<State, Heap, T: Action<str, State, Heap>> Action<str, State, Heap> for Log<T, &str> {
+unsafe impl<State, Heap, T: Action<str, State, Heap>> Action<str, State, Heap> for Log<'_, T> {
   type Value = T::Value;
 
   #[inline]
@@ -90,7 +100,7 @@ unsafe impl<State, Heap, T: Action<str, State, Heap>> Action<str, State, Heap> f
   }
 }
 
-unsafe impl<State, Heap, T: Action<[u8], State, Heap>> Action<[u8], State, Heap> for Log<T, &str> {
+unsafe impl<State, Heap, T: Action<[u8], State, Heap>> Action<[u8], State, Heap> for Log<'_, T> {
   type Value = T::Value;
 
   #[inline]
@@ -119,7 +129,7 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn log(self, name: &str) -> Combinator<Log<T, &str>> {
+  pub fn log(self, name: &str) -> Combinator<Log<T>> {
     Combinator::new(Log::new(self.action, name))
   }
 }
