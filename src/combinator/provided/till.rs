@@ -71,12 +71,20 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<&[u8]> {
     _: Context<&mut State, &mut Heap>,
   ) -> Option<Output<()>> {
     // TODO: optimize
-    instant
-      .rest()
-      .windows(self.inner.len())
-      .enumerate()
-      .find(|(_, window)| *window == self.inner)
-      .map(|(i, _)| unsafe { instant.accept_unchecked(i.unchecked_add(self.inner.len())) })
+    if self.inner.len() != 0 {
+      instant
+        .rest()
+        .windows(self.inner.len())
+        .enumerate()
+        .find(|(_, window)| *window == self.inner)
+        .map(|(i, _)| unsafe { instant.accept_unchecked(i.unchecked_add(self.inner.len())) })
+    } else {
+      // window length can't be zero so we need special handling
+      Some(Output {
+        digested: 0,
+        value: (),
+      })
+    }
   }
 }
 
@@ -90,12 +98,20 @@ unsafe impl<const N: usize, State, Heap> Action<[u8], State, Heap> for Till<&[u8
     _: Context<&mut State, &mut Heap>,
   ) -> Option<Output<()>> {
     // TODO: optimize
-    instant
-      .rest()
-      .windows(N)
-      .enumerate()
-      .find(|(_, window)| *window == self.inner)
-      .map(|(i, _)| unsafe { instant.accept_unchecked(i.unchecked_add(N)) })
+    if N != 0 {
+      instant
+        .rest()
+        .windows(N)
+        .enumerate()
+        .find(|(_, window)| *window == self.inner)
+        .map(|(i, _)| unsafe { instant.accept_unchecked(i.unchecked_add(N)) })
+    } else {
+      // window length can't be zero so we need special handling
+      Some(Output {
+        digested: 0,
+        value: (),
+      })
+    }
   }
 }
 
@@ -109,12 +125,20 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<Vec<u8>> {
     _: Context<&mut State, &mut Heap>,
   ) -> Option<Output<()>> {
     // TODO: optimize
-    instant
-      .rest()
-      .windows(self.inner.len())
-      .enumerate()
-      .find(|(_, window)| *window == self.inner)
-      .map(|(i, _)| unsafe { instant.accept_unchecked(i.unchecked_add(self.inner.len())) })
+    if self.inner.len() != 0 {
+      instant
+        .rest()
+        .windows(self.inner.len())
+        .enumerate()
+        .find(|(_, window)| *window == self.inner)
+        .map(|(i, _)| unsafe { instant.accept_unchecked(i.unchecked_add(self.inner.len())) })
+    } else {
+      // window length can't be zero so we need special handling
+      Some(Output {
+        digested: 0,
+        value: (),
+      })
+    }
   }
 }
 
@@ -211,10 +235,12 @@ mod tests {
     // &str
     helper(till("end"), "123end456", Some(6));
     helper(till("end"), "123456", None);
+    helper(till(""), "123456", Some(0));
 
     // String
     helper(till("end".to_string()), "123end456", Some(6));
     helper(till("end".to_string()), "123456", None);
+    helper(till("".to_string()), "123456", Some(0));
 
     // ()
     helper(till(()), "123", Some(3));
@@ -227,14 +253,17 @@ mod tests {
     // [u8, N]
     helper(till(b"end"), b"123end456", Some(6));
     helper(till(b"end"), b"123456", None);
+    helper(till(b""), b"123456", Some(0));
 
     // &[u8]
     helper(till("end".to_string().as_bytes()), b"123end456", Some(6));
     helper(till("end".to_string().as_bytes()), b"123456", None);
+    helper(till("".to_string().as_bytes()), b"123456", Some(0));
 
     // Vec<u8>
     helper(till(vec![b'1', b'2', b'3']), b"123456", Some(3));
     helper(till(vec![b'1', b'2', b'3']), b"456", None);
+    helper(till(vec![]), b"456", Some(0));
 
     // ()
     helper(till(()), b"123" as &[u8], Some(3));
