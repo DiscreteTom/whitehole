@@ -71,7 +71,7 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<&[u8]> {
     _: Context<&mut State, &mut Heap>,
   ) -> Option<Output<()>> {
     // TODO: optimize
-    if self.inner.len() != 0 {
+    if !self.inner.is_empty() {
       instant
         .rest()
         .windows(self.inner.len())
@@ -125,7 +125,7 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<Vec<u8>> {
     _: Context<&mut State, &mut Heap>,
   ) -> Option<Output<()>> {
     // TODO: optimize
-    if self.inner.len() != 0 {
+    if !self.inner.is_empty() {
       instant
         .rest()
         .windows(self.inner.len())
