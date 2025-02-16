@@ -212,7 +212,29 @@ pub unsafe fn recur_unchecked<Text: ?Sized, State, Heap, Value>() -> (
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{combinator::eat, instant::Instant};
+  use crate::{combinator::eat, digest::Digest, instant::Instant};
+  use std::{ops::RangeFrom, slice::SliceIndex};
+
+  fn helper<Text: ?Sized + Digest>(
+    action: impl Action<Text, Value = ()>,
+    input: &Text,
+    digested: Option<usize>,
+  ) where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    assert_eq!(
+      action
+        .exec(
+          &Instant::new(input),
+          Context {
+            state: &mut (),
+            heap: &mut ()
+          }
+        )
+        .map(|o| o.digested),
+      digested
+    )
+  }
 
   #[test]
   fn test_recur() {
@@ -220,69 +242,13 @@ mod tests {
     let array = || eat('[') + (value() * ..).sep(',') + ']';
     value_setter.boxed(array() | 'a');
 
-    assert!(value()
-      .exec(
-        &Instant::new("a"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_some());
-    assert!(value()
-      .exec(
-        &Instant::new("[]"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_some());
-    assert!(value()
-      .exec(
-        &Instant::new("[a]"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_some());
-    assert!(value()
-      .exec(
-        &Instant::new("[[]]"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_some());
-    assert!(value()
-      .exec(
-        &Instant::new("[a,a]"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_some());
-    assert!(value()
-      .exec(
-        &Instant::new("[[],[]]"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_some());
-    assert!(value()
-      .exec(
-        &Instant::new("[[a],[]]"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_some());
+    helper(value(), "a", Some(1));
+    helper(value(), "[]", Some(2));
+    helper(value(), "[a]", Some(3));
+    helper(value(), "[[]]", Some(4));
+    helper(value(), "[a,a]", Some(5));
+    helper(value(), "[[],[]]", Some(7));
+    helper(value(), "[[a],[]]", Some(8));
 
     // make sure clone-able
     let _ = value().clone();
@@ -309,69 +275,13 @@ mod tests {
     let array = || eat('[') + (value() * ..).sep(',') + ']';
     value_setter.boxed(array() | 'a');
 
-    assert!(value()
-      .exec(
-        &Instant::new("a"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_some());
-    assert!(value()
-      .exec(
-        &Instant::new("[]"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_some());
-    assert!(value()
-      .exec(
-        &Instant::new("[a]"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_some());
-    assert!(value()
-      .exec(
-        &Instant::new("[[]]"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_some());
-    assert!(value()
-      .exec(
-        &Instant::new("[a,a]"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_some());
-    assert!(value()
-      .exec(
-        &Instant::new("[[],[]]"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_some());
-    assert!(value()
-      .exec(
-        &Instant::new("[[a],[]]"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
-      .is_some());
+    helper(value(), "a", Some(1));
+    helper(value(), "[]", Some(2));
+    helper(value(), "[a]", Some(3));
+    helper(value(), "[[]]", Some(4));
+    helper(value(), "[a,a]", Some(5));
+    helper(value(), "[[],[]]", Some(7));
+    helper(value(), "[[a],[]]", Some(8));
 
     // make sure clone-able
     let _ = value().clone();
