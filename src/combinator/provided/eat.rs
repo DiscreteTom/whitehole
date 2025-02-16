@@ -107,7 +107,7 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<Vec<u8>> {
   }
 }
 
-/// Returns a combinator to eat from the head of [`Instant::rest`](crate::instant::Instant::rest) by the provided pattern.
+/// Returns a combinator to eat from the head of [`Instant::rest`] by the provided pattern.
 /// The combinator will reject if the pattern is not found.
 ///
 /// `""` (empty string) is allowed but be careful with infinite loops.
