@@ -206,13 +206,37 @@ mod tests {
   use super::*;
   use crate::{
     combinator::{bytes, wrap},
+    digest::Digest,
     instant::Instant,
   };
+  use std::{ops::RangeFrom, slice::SliceIndex};
 
   #[derive(Debug, Default, PartialEq, Eq)]
   struct State {
     from: i32,
     to: i32,
+  }
+
+  fn helper<Text: ?Sized + Digest>(
+    action: impl Action<Text, State, Value = ()>,
+    input: &Text,
+    state: &mut State,
+    digested: Option<usize>,
+  ) where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    assert_eq!(
+      action
+        .exec(
+          &Instant::new(input),
+          Context {
+            state,
+            heap: &mut ()
+          }
+        )
+        .map(|o| o.digested),
+      digested
+    )
   }
 
   fn accepter() -> Combinator<impl Action<str, State, Value = ()>> {
@@ -243,216 +267,189 @@ mod tests {
 
   #[test]
   fn combinator_prepare() {
+    // accepted
     let mut state = State::default();
-    assert!(accepter()
-      .prepare(|_, ctx| {
+    helper(
+      accepter().prepare(|_, ctx| {
         ctx.state.from = 1;
-      })
-      .exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      )
-      .is_some());
+      }),
+      "123",
+      &mut state,
+      Some(1),
+    );
     assert_eq!(state, State { from: 1, to: 1 });
     let mut state = State::default();
-    assert!(accepter_bytes()
-      .prepare(|_, ctx| {
+    helper(
+      accepter_bytes().prepare(|_, ctx| {
         ctx.state.from = 1;
-      })
-      .exec(
-        &Instant::new(b"123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      )
-      .is_some());
+      }),
+      b"123",
+      &mut state,
+      Some(1),
+    );
+    assert_eq!(state, State { from: 1, to: 1 });
+
+    // rejected
+    let mut state = State::default();
+    helper(
+      rejecter().prepare(|_, ctx| {
+        ctx.state.from = 1;
+      }),
+      "123",
+      &mut state,
+      Some(1),
+    );
+    assert_eq!(state, State { from: 1, to: 1 });
+    let mut state = State::default();
+    helper(
+      rejecter_bytes().prepare(|_, ctx| {
+        ctx.state.from = 1;
+      }),
+      b"123",
+      &mut state,
+      Some(1),
+    );
     assert_eq!(state, State { from: 1, to: 1 });
   }
 
   #[test]
   fn combinator_then() {
+    // accepted
     let mut state = State::default();
-    assert!(accepter()
-      .then(|_, ctx| {
+    helper(
+      accepter().then(|_, ctx| {
         ctx.state.from = 1;
-      })
-      .exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      )
-      .is_some());
+      }),
+      "123",
+      &mut state,
+      Some(1),
+    );
     assert_eq!(state, State { from: 1, to: 0 });
     let mut state = State::default();
-    assert!(accepter_bytes()
-      .then(|_, ctx| {
+    helper(
+      accepter_bytes().then(|_, ctx| {
         ctx.state.from = 1;
-      })
-      .exec(
-        &Instant::new(b"123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      )
-      .is_some());
+      }),
+      b"123",
+      &mut state,
+      Some(1),
+    );
     assert_eq!(state, State { from: 1, to: 0 });
 
+    // rejected
     let mut state = State::default();
-    assert!(rejecter()
-      .then(|_, ctx| {
+    helper(
+      rejecter().then(|_, ctx| {
         ctx.state.from = 1;
-      })
-      .exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      )
-      .is_none());
+      }),
+      "123",
+      &mut state,
+      None,
+    );
     assert_eq!(state, State { from: 0, to: 0 });
     let mut state = State::default();
-    assert!(rejecter_bytes()
-      .then(|_, ctx| {
+    helper(
+      rejecter_bytes().then(|_, ctx| {
         ctx.state.from = 1;
-      })
-      .exec(
-        &Instant::new(b"123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      )
-      .is_none());
+      }),
+      b"123",
+      &mut state,
+      None,
+    );
     assert_eq!(state, State { from: 0, to: 0 });
   }
 
   #[test]
   fn combinator_catch() {
+    // accepted
     let mut state = State::default();
-    assert!(accepter()
-      .catch(|_, ctx| {
+    helper(
+      accepter().catch(|_, ctx| {
         ctx.state.from = 1;
-      })
-      .exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      )
-      .is_some());
+      }),
+      "123",
+      &mut state,
+      Some(1),
+    );
     assert_eq!(state, State { from: 0, to: 0 });
     let mut state = State::default();
-    assert!(accepter_bytes()
-      .catch(|_, ctx| {
+    helper(
+      accepter_bytes().catch(|_, ctx| {
         ctx.state.from = 1;
-      })
-      .exec(
-        &Instant::new(b"123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      )
-      .is_some());
+      }),
+      b"123",
+      &mut state,
+      Some(1),
+    );
     assert_eq!(state, State { from: 0, to: 0 });
 
+    // rejected
     let mut state = State::default();
-    assert!(rejecter()
-      .catch(|_, ctx| {
+    helper(
+      rejecter().catch(|_, ctx| {
         ctx.state.from = 1;
-      })
-      .exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      )
-      .is_none());
+      }),
+      "123",
+      &mut state,
+      None,
+    );
     assert_eq!(state, State { from: 1, to: 0 });
     let mut state = State::default();
-    assert!(rejecter_bytes()
-      .catch(|_, ctx| {
+    helper(
+      rejecter_bytes().catch(|_, ctx| {
         ctx.state.from = 1;
-      })
-      .exec(
-        &Instant::new(b"123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      )
-      .is_none());
+      }),
+      b"123",
+      &mut state,
+      None,
+    );
     assert_eq!(state, State { from: 1, to: 0 });
   }
 
   #[test]
   fn combinator_finally() {
+    // accepted
     let mut state = State::default();
-    assert!(accepter()
-      .finally(|_, ctx| {
+    helper(
+      accepter().finally(|_, ctx| {
         ctx.state.to = 1;
-      })
-      .exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      )
-      .is_some());
+      }),
+      "123",
+      &mut state,
+      Some(1),
+    );
     assert_eq!(state, State { from: 0, to: 1 });
     let mut state = State::default();
-    assert!(accepter_bytes()
-      .finally(|_, ctx| {
+    helper(
+      accepter_bytes().finally(|_, ctx| {
         ctx.state.to = 1;
-      })
-      .exec(
-        &Instant::new(b"123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      )
-      .is_some());
+      }),
+      b"123",
+      &mut state,
+      Some(1),
+    );
     assert_eq!(state, State { from: 0, to: 1 });
 
+    // rejected
     let mut state = State::default();
-    assert!(rejecter()
-      .finally(|_, ctx| {
+    helper(
+      rejecter().finally(|_, ctx| {
         ctx.state.to = 1;
-      })
-      .exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      )
-      .is_none());
+      }),
+      "123",
+      &mut state,
+      None,
+    );
     assert_eq!(state, State { from: 0, to: 1 });
     let mut state = State::default();
-    assert!(rejecter_bytes()
-      .finally(|_, ctx| {
+    helper(
+      rejecter_bytes().finally(|_, ctx| {
         ctx.state.to = 1;
-      })
-      .exec(
-        &Instant::new(b"123"),
-        Context {
-          state: &mut state,
-          heap: &mut ()
-        }
-      )
-      .is_none());
+      }),
+      b"123",
+      &mut state,
+      None,
+    );
     assert_eq!(state, State { from: 0, to: 1 });
   }
 }
