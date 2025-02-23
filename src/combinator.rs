@@ -62,6 +62,17 @@
 //! # );
 //! ```
 //! See [`ops::mul`] for more information.
+//! # Negation
+//! Use `!` to negate a combinator:
+//! ```
+//! # use whitehole::{combinator::{eat, Combinator}, action::Action};
+//! # fn t(_: Combinator<impl Action>) {}
+//! // match one char that is not 'a'
+//! # t(
+//! !eat('a')
+//! # );
+//! ```
+//! See [`ops::not`] for more information.
 //! # Decorator
 //! [`Combinator`] provides a set of methods as decorators
 //! to modify the behavior of the combinator.

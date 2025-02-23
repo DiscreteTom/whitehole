@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `!` operator overloading for `Combinator`.
+
 ## [0.7.0] - 2025-02-16
 
 ### Added
