@@ -1,24 +1,21 @@
 //! Overload `!` operator for [`Combinator`].
 //!
 //! `!Combinator` will create a new combinator
-//! that will accept one byte or [`char`] if the original combinator rejects,
+//! that will accept with zero digested if the original combinator rejects,
 //! or reject if the original combinator accepts.
 //! # Basics
 //! ```
 //! # use whitehole::{combinator::{eat, take, Combinator}, action::Action};
 //! # fn t(_: Combinator<impl Action>) {}
 //! # fn tb(_: Combinator<impl Action<[u8]>>) {}
-//! // match one char that is not 'a'
+//! // reject if the next char is 'a', otherwise accept with 0 digested
+//! // (negative lookahead)
 //! # t(
 //! !eat('a')
 //! # );
-//! // match one char that is not 'a' or 'b'
+//! // apply twice to realize positive lookahead
 //! # t(
-//! !(eat('a') | eat('b'))
-//! # );
-//! // accept more than one char with `take`
-//! # t(
-//! !eat('a') + take(3)
+//! !!eat('a')
 //! # );
 //! ```
 
@@ -43,43 +40,22 @@ impl<T> Not<T> {
   }
 }
 
-unsafe impl<State, Heap, T: Action<[u8], State, Heap, Value: Default>> Action<[u8], State, Heap>
-  for Not<T>
+unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap, Value: Default>>
+  Action<Text, State, Heap> for Not<T>
 {
   type Value = T::Value;
 
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&[u8]>,
-    mut ctx: Context<&mut State, &mut Heap>,
-  ) -> Option<Output<Self::Value>> {
-    if let Some(_) = self.action.exec(instant, ctx.reborrow()) {
-      None
-    } else {
-      instant
-        .accept(1)
-        .map(|output| output.map(|_| Default::default()))
-    }
-  }
-}
-
-unsafe impl<State, Heap, T: Action<str, State, Heap, Value: Default>> Action<str, State, Heap>
-  for Not<T>
-{
-  type Value = T::Value;
-
-  #[inline]
-  fn exec(
-    &self,
-    instant: &Instant<&str>,
+    instant: &Instant<&Text>,
     mut ctx: Context<&mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     if let Some(_) = self.action.exec(instant, ctx.reborrow()) {
       None
     } else {
       Some(Output {
-        digested: instant.rest().chars().next()?.len_utf8(),
+        digested: 0,
         value: Default::default(),
       })
     }
@@ -136,31 +112,52 @@ mod tests {
 
     helper(!accept(), "1", None);
     helper(!accept0(), "1", None);
-    helper(!reject(), "1", Some(1));
+    helper(!reject(), "1", Some(0));
+    helper(!!accept(), "1", Some(0));
+    helper(!!accept0(), "1", Some(0));
+    helper(!!reject(), "1", None);
 
     helper(!accept(), "好", None);
     helper(!accept0(), "好", None);
-    helper(!reject(), "好", Some(3));
+    helper(!reject(), "好", Some(0));
+    helper(!!accept(), "好", Some(0));
+    helper(!!accept0(), "好", Some(0));
+    helper(!!reject(), "好", None);
 
-    helper(!accept(), "", None);
+    helper(!accept(), "", Some(0));
     helper(!accept0(), "", None);
-    helper(!reject(), "", None);
+    helper(!reject(), "", Some(0));
+    helper(!!accept(), "", None);
+    helper(!!accept0(), "", Some(0));
+    helper(!!reject(), "", None);
 
     helper(!accept(), b"1" as &[u8], None);
     helper(!accept0(), b"1" as &[u8], None);
-    helper(!reject_b(), b"1" as &[u8], Some(1));
+    helper(!reject_b(), b"1" as &[u8], Some(0));
+    helper(!!accept(), b"1" as &[u8], Some(0));
+    helper(!!accept0(), b"1" as &[u8], Some(0));
+    helper(!!reject_b(), b"1" as &[u8], None);
 
-    helper(!accept(), b"" as &[u8], None);
+    helper(!accept(), b"" as &[u8], Some(0));
     helper(!accept0(), b"" as &[u8], None);
-    helper(!reject_b(), b"" as &[u8], None);
+    helper(!reject_b(), b"" as &[u8], Some(0));
+    helper(!!accept(), b"" as &[u8], None);
+    helper(!!accept0(), b"" as &[u8], Some(0));
+    helper(!!reject_b(), b"" as &[u8], None);
 
     helper(!eat('a'), "a", None);
-    helper(!eat('a'), "b", Some(1));
+    helper(!eat('a'), "b", Some(0));
     helper(!(eat('a') | eat('b')), "a", None);
     helper(!(eat('a') | eat('b')), "b", None);
-    helper(!(eat('a') | eat('b')), "c", Some(1));
-    helper(!eat('a') + take(1), "aa", None);
-    helper(!eat('a') + take(1), "b", None);
-    helper(!eat('a') + take(1), "ba", Some(2));
+    helper(!(eat('a') | eat('b')), "c", Some(0));
+    helper(!eat('a') + take(1), "a", None);
+    helper(!eat('a') + take(1), "b", Some(1));
+    helper(!eat('a'), "a", None);
+    helper(!!eat('a'), "b", None);
+    helper(!!(eat('a') | eat('b')), "a", Some(0));
+    helper(!!(eat('a') | eat('b')), "b", Some(0));
+    helper(!!(eat('a') | eat('b')), "c", None);
+    helper(!!eat('a') + take(1), "a", Some(1));
+    helper(!!eat('a') + take(1), "b", None);
   }
 }

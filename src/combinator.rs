@@ -62,14 +62,19 @@
 //! # );
 //! ```
 //! See [`ops::mul`] for more information.
-//! # Negation
-//! Use `!` to negate a combinator:
+//! # Lookahead
+//! Use `!` for negative lookahead:
 //! ```
 //! # use whitehole::{combinator::{eat, Combinator}, action::Action};
 //! # fn t(_: Combinator<impl Action>) {}
-//! // match one char that is not 'a'
+//! // reject if the next char is 'a', otherwise accept with 0 digested
+//! // (negative lookahead)
 //! # t(
 //! !eat('a')
+//! # );
+//! // apply twice to realize positive lookahead
+//! # t(
+//! !!eat('a')
 //! # );
 //! ```
 //! See [`ops::not`] for more information.
