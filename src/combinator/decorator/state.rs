@@ -183,11 +183,7 @@ impl<T> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    combinator::{bytes, wrap},
-    digest::Digest,
-    instant::Instant,
-  };
+  use crate::{contextual, digest::Digest, instant::Instant};
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   #[derive(Debug, Default, PartialEq, Eq)]
@@ -218,30 +214,20 @@ mod tests {
     )
   }
 
+  contextual!(State, ());
+
   fn accepter() -> Combinator<impl Action<str, State = State, Heap = (), Value = ()>> {
-    wrap(|instant, ctx: Context<&mut State, &mut ()>| {
-      ctx.state.to = ctx.state.from;
-      instant.accept(1)
-    })
+    wrap(|instant| instant.accept(1)).prepare(|_, ctx| ctx.state.to = ctx.state.from)
   }
   fn accepter_bytes() -> Combinator<impl Action<[u8], State = State, Heap = (), Value = ()>> {
-    bytes::wrap(|instant, ctx: Context<&mut State, &mut ()>| {
-      ctx.state.to = ctx.state.from;
-      instant.accept(1)
-    })
+    bytes::wrap(|instant| instant.accept(1)).prepare(|_, ctx| ctx.state.to = ctx.state.from)
   }
 
   fn rejecter() -> Combinator<impl Action<str, State = State, Heap = (), Value = ()>> {
-    wrap(|_, ctx: Context<&mut State, &mut ()>| {
-      ctx.state.to = ctx.state.from;
-      None
-    })
+    wrap(|_| None).prepare(|_, ctx| ctx.state.to = ctx.state.from)
   }
   fn rejecter_bytes() -> Combinator<impl Action<[u8], State = State, Heap = (), Value = ()>> {
-    bytes::wrap(|_, ctx: Context<&mut State, &mut ()>| {
-      ctx.state.to = ctx.state.from;
-      None
-    })
+    bytes::wrap(|_| None).prepare(|_, ctx| ctx.state.to = ctx.state.from)
   }
 
   #[test]

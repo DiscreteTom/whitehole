@@ -69,7 +69,13 @@ macro_rules! contextual {
   ($state:ty, $heap:ty) => {
     #[allow(dead_code)]
     mod _impl_contextual_combinators {
-      use $crate::combinator::{Combinator, Contextual, Eat, Next, Take, Till};
+      #[allow(unused_imports)]
+      use super::*;
+      use $crate::action::Output;
+      use $crate::combinator::{
+        Combinator, Contextual, Eat, Next, Take, Till, Wrap, WrapUnchecked,
+      };
+      use $crate::instant::Instant;
 
       /// Contextual version of [`eat`](whitehole::combinator::eat).
       #[inline]
@@ -85,18 +91,6 @@ macro_rules! contextual {
         Combinator::new(Contextual::new(Next::new(condition)))
       }
 
-      pub mod bytes {
-        use $crate::combinator::{Combinator, Contextual, Next};
-
-        /// Contextual version of [`next`](whitehole::combinator::next).
-        #[inline]
-        pub const fn next<F: Fn(u8) -> bool>(
-          condition: F,
-        ) -> Combinator<Contextual<Next<F>, $state, $heap>> {
-          Combinator::new(Contextual::new(Next::new(condition)))
-        }
-      }
-
       /// Contextual version of [`take`](whitehole::combinator::take).
       #[inline]
       pub const fn take(n: usize) -> Combinator<Contextual<Take, $state, $heap>> {
@@ -108,10 +102,57 @@ macro_rules! contextual {
       pub const fn till<T>(pattern: T) -> Combinator<Contextual<Till<T>, $state, $heap>> {
         Combinator::new(Contextual::new(Till::new(pattern)))
       }
+
+      /// Contextual version of [`wrap_unchecked`](whitehole::combinator::wrap_unchecked).
+      #[inline]
+      pub const unsafe fn wrap_unchecked<Value, F: Fn(&Instant<&str>) -> Option<Output<Value>>>(
+        f: F,
+      ) -> Combinator<Contextual<WrapUnchecked<F>, $state, $heap>> {
+        Combinator::new(Contextual::new(WrapUnchecked::new(f)))
+      }
+
+      /// Contextual version of [`wrap`](whitehole::combinator::wrap).
+      #[inline]
+      pub const fn wrap<Value, F: Fn(&Instant<&str>) -> Option<Output<Value>>>(
+        f: F,
+      ) -> Combinator<Contextual<Wrap<F>, $state, $heap>> {
+        Combinator::new(Contextual::new(Wrap::new(f)))
+      }
+
+      pub mod bytes {
+        use super::*;
+
+        /// Contextual version of [`bytes::next`](whitehole::combinator::bytes::next).
+        #[inline]
+        pub const fn next<F: Fn(u8) -> bool>(
+          condition: F,
+        ) -> Combinator<Contextual<Next<F>, $state, $heap>> {
+          Combinator::new(Contextual::new(Next::new(condition)))
+        }
+
+        /// Contextual version of [`bytes::wrap_unchecked`](whitehole::combinator::bytes::wrap_unchecked).
+        #[inline]
+        pub const unsafe fn wrap_unchecked<
+          Value,
+          F: Fn(&Instant<&[u8]>) -> Option<Output<Value>>,
+        >(
+          f: F,
+        ) -> Combinator<Contextual<WrapUnchecked<F>, $state, $heap>> {
+          Combinator::new(Contextual::new(WrapUnchecked::new(f)))
+        }
+
+        /// Contextual version of [`bytes::wrap`](whitehole::combinator::bytes::wrap).
+        #[inline]
+        pub const fn wrap<Value, F: Fn(&Instant<&[u8]>) -> Option<Output<Value>>>(
+          f: F,
+        ) -> Combinator<Contextual<Wrap<F>, $state, $heap>> {
+          Combinator::new(Contextual::new(Wrap::new(f)))
+        }
+      }
     }
     pub use _impl_contextual_combinators::*;
 
-    // TODO: recur, wrap
+    // TODO: recur
   };
 }
 

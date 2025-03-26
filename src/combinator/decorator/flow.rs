@@ -266,11 +266,7 @@ impl<T> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    combinator::{bytes, wrap},
-    digest::Digest,
-    instant::Instant,
-  };
+  use crate::{contextual, digest::Digest, instant::Instant};
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
@@ -295,30 +291,20 @@ mod tests {
     )
   }
 
+  contextual!(bool, ());
+
   fn accepter() -> Combinator<impl Action<str, State = bool, Heap = (), Value = ()>> {
-    wrap(|instant, ctx| {
-      *ctx.state = true;
-      instant.accept(1)
-    })
+    wrap(|instant| instant.accept(1)).prepare(|_, ctx| *ctx.state = true)
   }
   fn accepter_bytes() -> Combinator<impl Action<[u8], State = bool, Heap = (), Value = ()>> {
-    bytes::wrap(|instant, ctx| {
-      *ctx.state = true;
-      instant.accept(1)
-    })
+    bytes::wrap(|instant| instant.accept(1)).prepare(|_, ctx| *ctx.state = true)
   }
 
   fn rejecter() -> Combinator<impl Action<str, State = bool, Heap = (), Value = ()>> {
-    wrap(|_, ctx| {
-      *ctx.state = true;
-      None
-    })
+    wrap(|_| None).prepare(|_, ctx| *ctx.state = true)
   }
   fn rejecter_bytes() -> Combinator<impl Action<[u8], State = bool, Heap = (), Value = ()>> {
-    bytes::wrap(|_, ctx| {
-      *ctx.state = true;
-      None
-    })
+    bytes::wrap(|_| None).prepare(|_, ctx| *ctx.state = true)
   }
 
   #[test]

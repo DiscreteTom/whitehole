@@ -168,6 +168,7 @@ mod tests {
   use super::*;
   use crate::{
     combinator::{bytes, wrap, Output},
+    contextual,
     digest::Digest,
     instant::Instant,
   };
@@ -197,18 +198,10 @@ mod tests {
 
   #[test]
   fn combinator_bit_or() {
-    let rejecter = || {
-      wrap(|_, ctx| {
-        *ctx.state += 1;
-        None
-      })
-    };
-    let accepter = || {
-      wrap(|instant, ctx| {
-        *ctx.state += 1;
-        instant.accept(1)
-      })
-    };
+    contextual!(i32, ());
+
+    let rejecter = || wrap(|_| None).prepare(|_, ctx| *ctx.state += 1);
+    let accepter = || wrap(|instant| instant.accept(1)).prepare(|_, ctx| *ctx.state += 1);
 
     // reject then accept, both should increment the state
     let mut state = 0;
@@ -223,43 +216,43 @@ mod tests {
 
   #[test]
   fn combinator_bit_or_char() {
-    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
     helper(rejecter() | '1', "1", &mut (), Some(1));
   }
 
   #[test]
   fn combinator_bit_or_str() {
-    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
     helper(rejecter() | "1", "1", &mut (), Some(1));
   }
 
   #[test]
   fn combinator_bit_or_string() {
-    let rejecter = || wrap(|_, _| Option::<Output<()>>::None);
+    let rejecter = || wrap(|_| Option::<Output<()>>::None);
     helper(rejecter() | "1".to_string(), "1", &mut (), Some(1));
   }
 
   #[test]
   fn combinator_bit_or_u8() {
-    let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
+    let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
     helper(rejecter() | b'1', b"1", &mut (), Some(1));
   }
 
   #[test]
   fn combinator_bit_or_u8_slice() {
-    let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
+    let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
     helper(rejecter() | "1".as_bytes(), b"1", &mut (), Some(1));
   }
 
   #[test]
   fn combinator_bit_or_u8_const_slice() {
-    let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
+    let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
     helper(rejecter() | b"1", b"1", &mut (), Some(1));
   }
 
   #[test]
   fn combinator_bit_or_vec_u8() {
-    let rejecter = || bytes::wrap(|_, _| Option::<Output<()>>::None);
+    let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
     helper(rejecter() | vec![b'1'], b"1", &mut (), Some(1));
   }
 }

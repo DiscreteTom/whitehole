@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `State` and `Heap` are now associated types of `Action` instead of generic params.
 - All provided combinators will associate `State` and `Heap` as `()` instead of generic.
-- `wrap` and `wrap_unchecked` will return `Combinator<Contextual<Wrap>>` and `Combinator<Contextual<WrapUnchecked>>` instead of `Combinator<Wrap>` and `Combinator<WrapUnchecked>`.
+- `wrap` and `wrap_unchecked` only accept non-contextual closures.
 - `Parser` now only takes `'text`, `Text` and the entry action as generic params.
 - Contextual combinators can't take non-static reference as the heap.
 
