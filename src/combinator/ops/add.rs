@@ -133,6 +133,7 @@ impl<Lhs, Rhs> ops::Add<Combinator<Rhs>> for Combinator<Lhs> {
   }
 }
 
+// TODO: what about contextual?
 impl<Lhs> ops::Add<char> for Combinator<Lhs> {
   type Output = Combinator<Add<Lhs, Eat<char>>>;
 

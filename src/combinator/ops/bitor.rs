@@ -92,6 +92,7 @@ impl<Lhs, Rhs> ops::BitOr<Combinator<Rhs>> for Combinator<Lhs> {
   }
 }
 
+// TODO: what about contextual?
 impl<Lhs> ops::BitOr<char> for Combinator<Lhs> {
   type Output = Combinator<BitOr<Lhs, Eat<char>>>;
 
