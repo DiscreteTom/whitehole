@@ -5,12 +5,16 @@ use crate::{
 };
 use std::{fmt::Debug, marker::PhantomData};
 
+// TODO: more comments
+/// Overwrite original [`Action`]'s `State` and `Heap` with new ones.
 pub struct Contextual<T, State, Heap> {
   pub inner: T,
   _phantom: PhantomData<(State, Heap)>,
 }
 
 impl<T, State, Heap> Contextual<T, State, Heap> {
+  /// Create a new instance.
+  #[inline]
   pub const fn new(inner: T) -> Self {
     Self {
       inner,
@@ -20,6 +24,7 @@ impl<T, State, Heap> Contextual<T, State, Heap> {
 }
 
 impl<T: Clone, State, Heap> Clone for Contextual<T, State, Heap> {
+  #[inline]
   fn clone(&self) -> Self {
     Self {
       inner: self.inner.clone(),
@@ -37,9 +42,9 @@ impl<T: Debug, State, Heap> Debug for Contextual<T, State, Heap> {
 }
 
 impl<T> Combinator<T> {
-  // TODO: add new
   // TODO: better design? comments.
   // TODO: should this be a decorator?
+  #[inline]
   pub fn with_ctx<State, Heap>(self) -> Combinator<Contextual<T, State, Heap>> {
     Combinator::new(Contextual::new(self.action))
   }
@@ -65,5 +70,23 @@ unsafe impl<Text: ?Sized, T: Action<Text, State: Default, Heap: Default>, State,
         heap: &mut Default::default(),
       },
     )
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::{combinator::eat, instant::Instant};
+
+  #[test]
+  fn test_contextual() {
+    let action = eat('a').with_ctx::<i32, i32>();
+    action.exec(
+      &Instant::new("abc"),
+      Context {
+        state: &mut 0,
+        heap: &mut 0,
+      },
+    );
   }
 }
