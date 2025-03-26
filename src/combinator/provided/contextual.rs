@@ -1,6 +1,5 @@
 use crate::{
   action::{Action, Context, Output},
-  combinator::Combinator,
   instant::Instant,
 };
 use std::{fmt::Debug, marker::PhantomData};
@@ -41,15 +40,6 @@ impl<T: Debug, State, Heap> Debug for Contextual<T, State, Heap> {
   }
 }
 
-impl<T> Combinator<T> {
-  // TODO: better design? comments.
-  // TODO: should this be a decorator?
-  #[inline]
-  pub fn with_ctx<State, Heap>(self) -> Combinator<Contextual<T, State, Heap>> {
-    Combinator::new(Contextual::new(self.action))
-  }
-}
-
 unsafe impl<Text: ?Sized, T: Action<Text, State: Default, Heap: Default>, State, Heap> Action<Text>
   for Contextual<T, State, Heap>
 {
@@ -73,14 +63,68 @@ unsafe impl<Text: ?Sized, T: Action<Text, State: Default, Heap: Default>, State,
   }
 }
 
+/// Generate contextual combinators.
+#[macro_export]
+macro_rules! contextual {
+  ($state:ty, $heap:ty) => {
+    #[allow(dead_code)]
+    mod _impl_contextual_combinators {
+      use $crate::combinator::{Combinator, Contextual, Eat, Next, Take, Till};
+
+      /// Contextual version of [`eat`](whitehole::combinator::eat).
+      #[inline]
+      pub const fn eat<T>(pattern: T) -> Combinator<Contextual<Eat<T>, $state, $heap>> {
+        Combinator::new(Contextual::new(Eat::new(pattern)))
+      }
+
+      /// Contextual version of [`next`](whitehole::combinator::next).
+      #[inline]
+      pub const fn next<F: Fn(char) -> bool>(
+        condition: F,
+      ) -> Combinator<Contextual<Next<F>, $state, $heap>> {
+        Combinator::new(Contextual::new(Next::new(condition)))
+      }
+
+      pub mod bytes {
+        use $crate::combinator::{Combinator, Contextual, Next};
+
+        /// Contextual version of [`next`](whitehole::combinator::next).
+        #[inline]
+        pub const fn next<F: Fn(u8) -> bool>(
+          condition: F,
+        ) -> Combinator<Contextual<Next<F>, $state, $heap>> {
+          Combinator::new(Contextual::new(Next::new(condition)))
+        }
+      }
+
+      /// Contextual version of [`take`](whitehole::combinator::take).
+      #[inline]
+      pub const fn take(n: usize) -> Combinator<Contextual<Take, $state, $heap>> {
+        Combinator::new(Contextual::new(Take::new(n)))
+      }
+
+      /// Contextual version of [`till`](whitehole::combinator::till).
+      #[inline]
+      pub const fn till<T>(pattern: T) -> Combinator<Contextual<Till<T>, $state, $heap>> {
+        Combinator::new(Contextual::new(Till::new(pattern)))
+      }
+    }
+    pub use _impl_contextual_combinators::*;
+
+    // TODO: recur, wrap
+  };
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{combinator::eat, instant::Instant};
+  use crate::instant::Instant;
 
   #[test]
   fn test_contextual() {
-    let action = eat('a').with_ctx::<i32, i32>();
+    contextual!(i32, i32);
+
+    let action = eat('a');
     action.exec(
       &Instant::new("abc"),
       Context {
