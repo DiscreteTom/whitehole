@@ -196,6 +196,7 @@ pub use snapshot::*;
 
 use crate::{
   action::{Action, Context, Output},
+  combinator::Eat,
   digest::Digest,
   instant::Instant,
 };
@@ -204,22 +205,36 @@ use std::{ops::RangeFrom, slice::SliceIndex};
 /// Manage [`Context::state`], [`Context::heap`] and the parsing progress.
 ///
 /// See the [module-level documentation](self) for more.
-#[derive(Debug, Clone)]
-pub struct Parser<T, TextRef, State = (), Heap = ()> {
+#[derive(Debug)]
+pub struct Parser<'text, Text: ?Sized, T: Action<Text>> {
   /// See [`Context::state`].
   /// You can mutate this directly if needed.
-  pub state: State,
+  pub state: T::State,
   /// See [`Context::heap`].
   /// You can mutate this directly if needed.
-  pub heap: Heap,
+  pub heap: T::Heap,
 
   /// See [`Self::instant`].
-  instant: Instant<TextRef>,
+  instant: Instant<&'text Text>,
   /// See [`Self::entry`].
   entry: T,
 }
 
-impl Parser<(), &str> {
+impl<'text, Text: ?Sized, T: Action<Text, State: Clone, Heap: Clone> + Clone> Clone
+  for Parser<'text, Text, T>
+{
+  fn clone(&self) -> Self {
+    Parser {
+      state: self.state.clone(),
+      heap: self.heap.clone(),
+      instant: self.instant.clone(),
+      entry: self.entry.clone(),
+    }
+  }
+}
+
+// TODO: don't use Eat here
+impl Parser<'static, [u8], Eat<u8>> {
   /// Create a parser builder with default settings.
   #[inline]
   pub const fn builder() -> Builder<()> {
@@ -227,7 +242,7 @@ impl Parser<(), &str> {
   }
 }
 
-impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
+impl<'text, Text: ?Sized, T: Action<Text>> Parser<'text, Text, T> {
   /// The entry action.
   #[inline]
   pub const fn entry(&self) -> &T {
@@ -237,22 +252,22 @@ impl<T, TextRef, State, Heap> Parser<T, TextRef, State, Heap> {
   /// See [`Instant`].
   /// You are not allowed to mutate this directly.
   #[inline]
-  pub const fn instant(&self) -> &Instant<TextRef> {
+  pub const fn instant(&self) -> &Instant<&'text Text> {
     &self.instant
   }
 }
 
-impl<'text, T, Text: ?Sized, State, Heap> Parser<T, &'text Text, State, Heap> {
+impl<'text, Text: ?Sized, T: Action<Text>> Parser<'text, Text, T> {
   /// Consume self, return a new instance with the same action and a new text.
   ///
   /// [`Self::instant`] and [`Self::state`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload(self, text: &Text) -> Parser<T, &Text, State, Heap>
+  pub fn reload(self, text: &Text) -> Parser<Text, T>
   where
-    State: Default,
+    T::State: Default,
   {
-    self.reload_with(State::default(), text)
+    self.reload_with(T::State::default(), text)
   }
 
   /// Consume self, return a new instance with the same action, a new text and an optional new state.
@@ -261,11 +276,7 @@ impl<'text, T, Text: ?Sized, State, Heap> Parser<T, &'text Text, State, Heap> {
   /// [`Self::instant`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload_with(
-    self,
-    state: impl Into<Option<State>>,
-    text: &Text,
-  ) -> Parser<T, &Text, State, Heap> {
+  pub fn reload_with(self, state: impl Into<Option<T::State>>, text: &Text) -> Parser<Text, T> {
     Parser {
       entry: self.entry,
       heap: self.heap,
@@ -276,9 +287,9 @@ impl<'text, T, Text: ?Sized, State, Heap> Parser<T, &'text Text, State, Heap> {
 
   /// Take a snapshot of the current [`Self::state`] and [`Self::instant`].
   #[inline]
-  pub fn snapshot(&self) -> Snapshot<&'text Text, State>
+  pub fn snapshot(&self) -> Snapshot<&'text Text, T::State>
   where
-    State: Clone,
+    T::State: Clone,
   {
     Snapshot {
       state: self.state.clone(),
@@ -288,7 +299,7 @@ impl<'text, T, Text: ?Sized, State, Heap> Parser<T, &'text Text, State, Heap> {
 
   /// Restore [`Self::state`] and [`Self::instant`] from a [`Snapshot`].
   #[inline]
-  pub fn restore(&mut self, snapshot: Snapshot<&'text Text, State>) {
+  pub fn restore(&mut self, snapshot: Snapshot<&'text Text, T::State>) {
     self.state = snapshot.state;
     self.instant = snapshot.instant;
   }
@@ -305,17 +316,17 @@ impl<'text, T, Text: ?Sized, State, Heap> Parser<T, &'text Text, State, Heap> {
   pub unsafe fn digest_unchecked(&mut self, n: usize)
   where
     Text: Digest,
-    State: Default,
+    T::State: Default,
     RangeFrom<usize>: SliceIndex<Text, Output = Text>,
   {
-    self.digest_with_unchecked(State::default(), n)
+    self.digest_with_unchecked(T::State::default(), n)
   }
 
   /// Digest the next `n` bytes and optionally set [`Self::state`].
   /// # Safety
   /// See [`Instant::digest_unchecked`].
   #[inline]
-  pub unsafe fn digest_with_unchecked(&mut self, state: impl Into<Option<State>>, n: usize)
+  pub unsafe fn digest_with_unchecked(&mut self, state: impl Into<Option<T::State>>, n: usize)
   where
     Text: Digest,
     RangeFrom<usize>: SliceIndex<Text, Output = Text>,
@@ -330,10 +341,9 @@ impl<'text, T, Text: ?Sized, State, Heap> Parser<T, &'text Text, State, Heap> {
   /// [`Self::state`] will be cloned and returned.
   /// Return [`None`] if the action rejects.
   #[inline]
-  pub fn peek(&mut self) -> (Option<Output<T::Value>>, State)
+  pub fn peek(&mut self) -> (Option<Output<T::Value>>, T::State)
   where
-    T: Action<Text, State, Heap>,
-    State: Clone,
+    T::State: Clone,
   {
     let mut tmp_state = self.state.clone();
     (
@@ -349,8 +359,7 @@ impl<'text, T, Text: ?Sized, State, Heap> Parser<T, &'text Text, State, Heap> {
   }
 }
 
-impl<T: Action<Text, State, Heap>, Text: ?Sized + Digest, State, Heap> Iterator
-  for Parser<T, &Text, State, Heap>
+impl<'text, Text: ?Sized + Digest, T: Action<Text>> Iterator for Parser<'text, Text, T>
 where
   RangeFrom<usize>: SliceIndex<Text, Output = Text>,
 {
@@ -382,7 +391,7 @@ mod tests {
     let parser = Parser::builder()
       .state(123)
       .heap(123)
-      .entry(eat("123"))
+      .entry(eat("123").with_ctx::<i32, i32>())
       .build("123");
     assert_eq!(parser.state, 123);
     assert_eq!(parser.heap, 123);
@@ -395,7 +404,7 @@ mod tests {
       state: 123,
       heap: 123,
       instant: Instant::new("123"),
-      entry: Rc::new(eat("123")),
+      entry: Rc::new(eat("123").with_ctx::<i32, i32>()),
     }
     .clone();
     assert_eq!(parser.state, 123);
@@ -408,7 +417,7 @@ mod tests {
       state: 123,
       heap: 123,
       instant: Instant::new("123"),
-      entry: eat("123"),
+      entry: eat("123").with_ctx::<i32, i32>(),
     };
     assert_eq!(
       parser
@@ -433,7 +442,7 @@ mod tests {
       state: 123,
       heap: 123,
       instant: Instant::new("123"),
-      entry: eat("123"),
+      entry: eat("123").with_ctx::<i32, i32>(),
     };
     parser.next();
     assert_eq!(parser.instant().digested(), 3);
@@ -452,7 +461,7 @@ mod tests {
       state: 123,
       heap: 123,
       instant: Instant::new("123"),
-      entry: eat("123"),
+      entry: eat("123").with_ctx::<i32, i32>(),
     };
     parser.next();
     assert_eq!(parser.instant().digested(), 3);
@@ -471,7 +480,7 @@ mod tests {
       state: 123,
       heap: 123,
       instant: Instant::new("123"),
-      entry: eat("123"),
+      entry: eat("123").with_ctx::<i32, i32>(),
     };
     parser.next();
     let snapshot = parser.snapshot();
@@ -484,7 +493,7 @@ mod tests {
       state: 0,
       heap: 123,
       instant: Instant::new("123"),
-      entry: eat("123"),
+      entry: eat("123").with_ctx::<i32, i32>(),
     };
     parser.restore(snapshot);
     assert_eq!(parser.state, 123);
@@ -499,7 +508,7 @@ mod tests {
       state: 123,
       heap: 123,
       instant: Instant::new("123"),
-      entry: eat("123"),
+      entry: eat("123").with_ctx::<i32, i32>(),
     };
     unsafe { parser.digest_unchecked(1) };
     assert_eq!(parser.state, 0);
@@ -514,7 +523,7 @@ mod tests {
       state: 123,
       heap: 123,
       instant: Instant::new("123"),
-      entry: eat("123"),
+      entry: eat("123").with_ctx::<i32, i32>(),
     };
     unsafe { parser.digest_unchecked(4) };
   }
@@ -526,7 +535,7 @@ mod tests {
       state: 123,
       heap: 123,
       instant: Instant::new("好"),
-      entry: eat("123"),
+      entry: eat("123").with_ctx::<i32, i32>(),
     };
     unsafe { parser.digest_unchecked(1) };
   }
@@ -537,7 +546,7 @@ mod tests {
       state: 123,
       heap: 123,
       instant: Instant::new("123"),
-      entry: eat("123"),
+      entry: eat("123").with_ctx::<i32, i32>(),
     };
     unsafe { parser.digest_with_unchecked(None, 1) };
     assert_eq!(parser.state, 123);
@@ -548,7 +557,7 @@ mod tests {
       state: 123,
       heap: 123,
       instant: Instant::new("123"),
-      entry: eat("123"),
+      entry: eat("123").with_ctx::<i32, i32>(),
     };
     unsafe { parser.digest_with_unchecked(456, 1) };
     assert_eq!(parser.state, 456);
@@ -562,7 +571,7 @@ mod tests {
       state: 123,
       heap: 123,
       instant: Instant::new("123"),
-      entry: eat("123"),
+      entry: eat("123").with_ctx::<i32, i32>(),
     };
     let output = parser.next().unwrap();
     assert_eq!(output.digested, 3);
@@ -578,7 +587,7 @@ mod tests {
       state: 123,
       heap: 123,
       instant: Instant::new("123"),
-      entry: eat("123"),
+      entry: eat("123").with_ctx::<i32, i32>(),
     };
     let (output, state) = parser.peek();
     let output = output.unwrap();
@@ -595,9 +604,9 @@ mod tests {
     let text = "123".to_string();
     let mut parser = Parser {
       state: 123,
-      heap: &text,
+      heap: text.as_str(),
       instant: Instant::new(text.as_str()),
-      entry: eat(text.as_str()),
+      entry: eat(text.as_str()).with_ctx::<i32, &str>(),
     };
     assert!(parser.next().is_some());
   }
@@ -608,7 +617,7 @@ mod tests {
       state: 123,
       heap: 123,
       instant: Instant::new("123123123"),
-      entry: eat("123"),
+      entry: eat("123").with_ctx::<i32, i32>(),
     };
     for o in &mut parser {
       assert_eq!(o.digested, 3);
@@ -622,7 +631,7 @@ mod tests {
       state: 123,
       heap: 123,
       instant: Instant::new("123123123"),
-      entry: eat("123"),
+      entry: eat("123").with_ctx::<i32, i32>(),
     };
     for (_, o) in (&mut parser).enumerate() {
       assert_eq!(o.digested, 3);

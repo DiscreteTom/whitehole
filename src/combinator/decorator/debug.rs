@@ -87,27 +87,31 @@ macro_rules! impl_log {
   }};
 }
 
-unsafe impl<State, Heap, T: Action<str, State, Heap>> Action<str, State, Heap> for Log<'_, T> {
+unsafe impl<T: Action<str>> Action<str> for Log<'_, T> {
   type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&str>,
-    ctx: Context<&mut State, &mut Heap>,
+    ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     impl_log!(self, instant, ctx, input_rest_str)
   }
 }
 
-unsafe impl<State, Heap, T: Action<[u8], State, Heap>> Action<[u8], State, Heap> for Log<'_, T> {
+unsafe impl<T: Action<[u8]>> Action<[u8]> for Log<'_, T> {
   type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&[u8]>,
-    ctx: Context<&mut State, &mut Heap>,
+    ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     impl_log!(self, instant, ctx, input_rest_bytes)
   }

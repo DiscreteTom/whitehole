@@ -6,14 +6,16 @@ use crate::{
 
 create_closure_combinator!(Next, "See [`next`].");
 
-unsafe impl<State, Heap, F: Fn(char) -> bool> Action<str, State, Heap> for Next<F> {
+unsafe impl<F: Fn(char) -> bool> Action<str> for Next<F> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&str>,
-    _: Context<&mut State, &mut Heap>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let next = instant.rest().chars().next()?;
     if !(self.inner)(next) {
@@ -23,14 +25,16 @@ unsafe impl<State, Heap, F: Fn(char) -> bool> Action<str, State, Heap> for Next<
   }
 }
 
-unsafe impl<State, Heap, F: Fn(u8) -> bool> Action<[u8], State, Heap> for Next<F> {
+unsafe impl<F: Fn(u8) -> bool> Action<[u8]> for Next<F> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&[u8]>,
-    _: Context<&mut State, &mut Heap>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let &next = instant.rest().first()?;
     if !(self.inner)(next) {
@@ -95,7 +99,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, Value = ()>,
+    action: impl Action<Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where

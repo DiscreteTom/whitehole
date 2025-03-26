@@ -61,19 +61,19 @@ impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
 
 unsafe impl<
     Text: ?Sized,
-    State,
-    Heap,
-    Lhs: Action<Text, State, Heap>,
-    Rhs: Action<Text, State, Heap, Value = Lhs::Value>,
-  > Action<Text, State, Heap> for BitOr<Lhs, Rhs>
+    Lhs: Action<Text>,
+    Rhs: Action<Text, State = Lhs::State, Heap = Lhs::Heap, Value = Lhs::Value>,
+  > Action<Text> for BitOr<Lhs, Rhs>
 {
   type Value = Lhs::Value;
+  type State = Lhs::State;
+  type Heap = Lhs::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    mut ctx: Context<&mut State, &mut Heap>,
+    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .lhs
@@ -173,7 +173,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest, State>(
-    action: impl Action<Text, State, Value = ()>,
+    action: impl Action<Text, State = State, Heap = (), Value = ()>,
     input: &Text,
     state: &mut State,
     digested: Option<usize>,

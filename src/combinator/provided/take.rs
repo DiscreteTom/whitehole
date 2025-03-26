@@ -17,11 +17,17 @@ impl Take {
   }
 }
 
-unsafe impl<State, Heap> Action<str, State, Heap> for Take {
+unsafe impl Action<str> for Take {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
-  fn exec(&self, instant: &Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&str>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<()>> {
     let mut digested: usize = 0;
     let mut count: usize = 0;
     let mut chars = instant.rest().chars();
@@ -41,14 +47,16 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Take {
   }
 }
 
-unsafe impl<State, Heap> Action<[u8], State, Heap> for Take {
+unsafe impl Action<[u8]> for Take {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&[u8]>,
-    _: Context<&mut State, &mut Heap>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     instant.accept(self.n)
   }
@@ -86,7 +94,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, Value = ()>,
+    action: impl Action<Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where

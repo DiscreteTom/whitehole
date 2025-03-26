@@ -92,21 +92,21 @@ impl<Lhs, Rhs> Add<Lhs, Rhs> {
 
 unsafe impl<
     Text: ?Sized + Digest,
-    State,
-    Heap,
-    Lhs: Action<Text, State, Heap, Value: Concat<Rhs::Value>>,
-    Rhs: Action<Text, State, Heap>,
-  > Action<Text, State, Heap> for Add<Lhs, Rhs>
+    Lhs: Action<Text, Value: Concat<Rhs::Value>>,
+    Rhs: Action<Text, State = Lhs::State, Heap = Lhs::Heap>,
+  > Action<Text> for Add<Lhs, Rhs>
 where
   RangeFrom<usize>: SliceIndex<Text, Output = Text>,
 {
   type Value = <Lhs::Value as Concat<Rhs::Value>>::Output;
+  type State = Lhs::State;
+  type Heap = Lhs::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    mut ctx: Context<&mut State, &mut Heap>,
+    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self.lhs.exec(instant, ctx.reborrow()).and_then(|output| {
       self
@@ -210,7 +210,7 @@ mod tests {
   use std::fmt::Debug;
 
   fn helper<Text: ?Sized + Digest, Value: PartialEq + Debug>(
-    action: impl Action<Text, Value = Value>,
+    action: impl Action<Text, State = (), Heap = (), Value = Value>,
     input: &Text,
     output: Option<Output<Value>>,
   ) where

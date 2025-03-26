@@ -168,25 +168,25 @@ impl<Lhs, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
 
 unsafe impl<
     Text: ?Sized + Digest,
-    State,
-    Heap,
-    Lhs: Action<Text, State, Heap>,
+    Lhs: Action<Text>,
     Rhs: Repeat,
-    Sep: Action<Text, State, Heap>,
+    Sep: Action<Text, State = Lhs::State, Heap = Lhs::Heap>,
     Acc,
     Init: Fn() -> Acc,
     Fold: Fn(Acc, Lhs::Value) -> Acc,
-  > Action<Text, State, Heap> for Mul<Lhs, Rhs, Sep, Init, Fold>
+  > Action<Text> for Mul<Lhs, Rhs, Sep, Init, Fold>
 where
   RangeFrom<usize>: SliceIndex<Text, Output = Text>,
 {
   type Value = Acc;
+  type State = Lhs::State;
+  type Heap = Lhs::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    mut ctx: Context<&mut State, &mut Heap>,
+    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let mut repeated = 0;
     let mut output = Output {

@@ -7,11 +7,17 @@ use crate::{
 
 create_value_combinator!(Till, "See [`till`].");
 
-unsafe impl<State, Heap> Action<str, State, Heap> for Till<&str> {
+unsafe impl Action<str> for Till<&str> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
-  fn exec(&self, instant: &Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&str>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<()>> {
     instant
       .rest()
       .find(self.inner)
@@ -19,11 +25,17 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Till<&str> {
   }
 }
 
-unsafe impl<State, Heap> Action<str, State, Heap> for Till<String> {
+unsafe impl Action<str> for Till<String> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
-  fn exec(&self, instant: &Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&str>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<()>> {
     instant
       .rest()
       .find(&self.inner)
@@ -31,11 +43,17 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Till<String> {
   }
 }
 
-unsafe impl<State, Heap> Action<str, State, Heap> for Till<char> {
+unsafe impl Action<str> for Till<char> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
-  fn exec(&self, instant: &Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&str>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<()>> {
     instant
       .rest()
       .find(self.inner)
@@ -43,14 +61,16 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Till<char> {
   }
 }
 
-unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<u8> {
+unsafe impl Action<[u8]> for Till<u8> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&[u8]>,
-    _: Context<&mut State, &mut Heap>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     instant
       .rest()
@@ -61,14 +81,16 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<u8> {
   }
 }
 
-unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<&[u8]> {
+unsafe impl Action<[u8]> for Till<&[u8]> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&[u8]>,
-    _: Context<&mut State, &mut Heap>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     // TODO: optimize
     if !self.inner.is_empty() {
@@ -88,14 +110,16 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<&[u8]> {
   }
 }
 
-unsafe impl<const N: usize, State, Heap> Action<[u8], State, Heap> for Till<&[u8; N]> {
+unsafe impl<const N: usize> Action<[u8]> for Till<&[u8; N]> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&[u8]>,
-    _: Context<&mut State, &mut Heap>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     // TODO: optimize
     if N != 0 {
@@ -115,14 +139,16 @@ unsafe impl<const N: usize, State, Heap> Action<[u8], State, Heap> for Till<&[u8
   }
 }
 
-unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<Vec<u8>> {
+unsafe impl Action<[u8]> for Till<Vec<u8>> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&[u8]>,
-    _: Context<&mut State, &mut Heap>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     // TODO: optimize
     if !self.inner.is_empty() {
@@ -142,14 +168,16 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Till<Vec<u8>> {
   }
 }
 
-unsafe impl<Text: ?Sized + Digest, State, Heap> Action<Text, State, Heap> for Till<()> {
+unsafe impl<Text: ?Sized + Digest> Action<Text> for Till<()> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    _: Context<&mut State, &mut Heap>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     unsafe { instant.accept_unchecked(instant.rest().as_bytes().len()) }.into()
   }
@@ -209,7 +237,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, Value = ()>,
+    action: impl Action<Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where

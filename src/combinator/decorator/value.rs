@@ -16,22 +16,18 @@ create_closure_decorator!(Select, "See [`Combinator::select`].");
 create_simple_decorator!(Range, "See [`Combinator::range`].");
 create_simple_decorator!(Pop, "See [`Combinator::pop`].");
 
-unsafe impl<
-    Text: ?Sized,
-    State,
-    Heap,
-    NewValue,
-    T: Action<Text, State, Heap>,
-    D: Fn(T::Value) -> NewValue,
-  > Action<Text, State, Heap> for Map<T, D>
+unsafe impl<Text: ?Sized, NewValue, T: Action<Text>, D: Fn(T::Value) -> NewValue> Action<Text>
+  for Map<T, D>
 {
   type Value = NewValue;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    ctx: Context<&mut State, &mut Heap>,
+    ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
@@ -40,16 +36,16 @@ unsafe impl<
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text, State, Heap>
-  for Tuple<T>
-{
+unsafe impl<Text: ?Sized, T: Action<Text>> Action<Text> for Tuple<T> {
   type Value = (T::Value,);
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    ctx: Context<&mut State, &mut Heap>,
+    ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
@@ -58,16 +54,16 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>, D: Clone>
-  Action<Text, State, Heap> for Bind<T, D>
-{
+unsafe impl<Text: ?Sized, T: Action<Text>, D: Clone> Action<Text> for Bind<T, D> {
   type Value = D;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    ctx: Context<&mut State, &mut Heap>,
+    ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
@@ -76,16 +72,18 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>, D: Clone>
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>, NewValue, D: Fn() -> NewValue>
-  Action<Text, State, Heap> for BindWith<T, D>
+unsafe impl<Text: ?Sized, T: Action<Text>, NewValue, D: Fn() -> NewValue> Action<Text>
+  for BindWith<T, D>
 {
   type Value = NewValue;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    ctx: Context<&mut State, &mut Heap>,
+    ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
@@ -96,20 +94,20 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>, NewValue, D
 
 unsafe impl<
     Text: ?Sized,
-    State,
-    Heap,
     NewValue,
-    T: Action<Text, State, Heap>,
-    D: Fn(Accepted<&Text, T::Value>, Context<&mut State, &mut Heap>) -> NewValue,
-  > Action<Text, State, Heap> for Select<T, D>
+    T: Action<Text>,
+    D: Fn(Accepted<&Text, T::Value>, Context<&mut T::State, &mut T::Heap>) -> NewValue,
+  > Action<Text> for Select<T, D>
 {
   type Value = NewValue;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    mut ctx: Context<&mut State, &mut Heap>,
+    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
@@ -121,16 +119,16 @@ unsafe impl<
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text, State, Heap>
-  for Range<T>
-{
+unsafe impl<Text: ?Sized, T: Action<Text>> Action<Text> for Range<T> {
   type Value = WithRange<T::Value>;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    ctx: Context<&mut State, &mut Heap>,
+    ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let start = instant.digested();
     self.action.exec(instant, ctx).map(|output| {
@@ -144,16 +142,16 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap>> Action<Text
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, V, T: Action<Text, State, Heap, Value = (V,)>>
-  Action<Text, State, Heap> for Pop<T>
-{
+unsafe impl<Text: ?Sized, V, T: Action<Text, Value = (V,)>> Action<Text> for Pop<T> {
   type Value = V;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    ctx: Context<&mut State, &mut Heap>,
+    ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
@@ -174,12 +172,12 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn map<Text: ?Sized, State, Heap, NewValue, F: Fn(T::Value) -> NewValue>(
+  pub fn map<Text: ?Sized, NewValue, F: Fn(T::Value) -> NewValue>(
     self,
     mapper: F,
   ) -> Combinator<Map<T, F>>
   where
-    T: Action<Text, State, Heap>,
+    T: Action<Text>,
   {
     Combinator::new(Map::new(self.action, mapper))
   }
@@ -265,16 +263,14 @@ impl<T> Combinator<T> {
   #[inline]
   pub fn select<
     Text: ?Sized,
-    State,
-    Heap,
     NewValue,
-    F: Fn(Accepted<&Text, T::Value>, Context<&mut State, &mut Heap>) -> NewValue,
+    F: Fn(Accepted<&Text, T::Value>, Context<&mut T::State, &mut T::Heap>) -> NewValue,
   >(
     self,
     selector: F,
   ) -> Combinator<Select<T, F>>
   where
-    T: Action<Text, State, Heap>,
+    T: Action<Text>,
   {
     Combinator::new(Select::new(self.action, selector))
   }
@@ -300,7 +296,7 @@ mod tests {
   use std::{fmt::Debug, ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Value: PartialEq + Debug, Text: ?Sized + Digest>(
-    action: impl Action<Text, Value = Value>,
+    action: impl Action<Text, State = (), Heap = (), Value = Value>,
     input: &Text,
     value: Value,
   ) where
@@ -322,12 +318,9 @@ mod tests {
 
   #[test]
   fn combinator_map() {
-    helper(take(1).map::<str, (), (), _, _>(Some), "123", Some(()));
-    helper(
-      take(1).map::<[u8], (), (), _, _>(Some),
-      b"123" as &[u8],
-      Some(()),
-    );
+    // TODO: simplify type annotation
+    helper(take(1).map::<str, _, _>(Some), "123", Some(()));
+    helper(take(1).map::<[u8], _, _>(Some), b"123" as &[u8], Some(()));
   }
 
   #[test]

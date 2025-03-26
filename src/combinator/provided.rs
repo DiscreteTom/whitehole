@@ -1,3 +1,4 @@
+mod contextual;
 mod eat;
 mod next;
 mod recur;
@@ -5,6 +6,7 @@ mod take;
 mod till;
 mod wrap;
 
+pub use contextual::*;
 pub use eat::*;
 pub use recur::*;
 pub use take::*;

@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `!` operator overloading for `Combinator`.
+- Add `Contextual` and `Combinator::with_ctx`.
+
+### Changed
+
+- `State` and `Heap` are now associated types of `Action` instead of generic params.
+- All provided combinators will associate `State` and `Heap` as `()` instead of generic.
+- `wrap` and `wrap_unchecked` will return `Combinator<Contextual<Wrap>>` and `Combinator<Contextual<WrapUnchecked>>` instead of `Combinator<Wrap>` and `Combinator<WrapUnchecked>`.
+- `Parser` now only takes `'text`, `Text` and the entry action as generic params.
 
 ## [0.7.0] - 2025-02-16
 

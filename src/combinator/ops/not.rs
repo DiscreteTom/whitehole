@@ -40,16 +40,16 @@ impl<T> Not<T> {
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap, Value: Default>>
-  Action<Text, State, Heap> for Not<T>
-{
+unsafe impl<Text: ?Sized, T: Action<Text, Value: Default>> Action<Text> for Not<T> {
   type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    mut ctx: Context<&mut State, &mut Heap>,
+    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     if let Some(_) = self.action.exec(instant, ctx.reborrow()) {
       None
@@ -83,7 +83,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, Value = ()>,
+    action: impl Action<Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where

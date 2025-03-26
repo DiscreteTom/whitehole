@@ -6,11 +6,17 @@ use crate::{
 
 create_value_combinator!(Eat, "See [`eat`].");
 
-unsafe impl<State, Heap> Action<str, State, Heap> for Eat<char> {
+unsafe impl Action<str> for Eat<char> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
-  fn exec(&self, instant: &Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&str>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<()>> {
     instant
       .rest()
       .starts_with(self.inner)
@@ -18,11 +24,17 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Eat<char> {
   }
 }
 
-unsafe impl<State, Heap> Action<str, State, Heap> for Eat<String> {
+unsafe impl Action<str> for Eat<String> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
-  fn exec(&self, instant: &Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&str>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<()>> {
     instant
       .rest()
       .starts_with(&self.inner)
@@ -30,11 +42,17 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Eat<String> {
   }
 }
 
-unsafe impl<State, Heap> Action<str, State, Heap> for Eat<&str> {
+unsafe impl Action<str> for Eat<&str> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
-  fn exec(&self, instant: &Instant<&str>, _: Context<&mut State, &mut Heap>) -> Option<Output<()>> {
+  fn exec(
+    &self,
+    instant: &Instant<&str>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<()>> {
     instant
       .rest()
       .starts_with(self.inner)
@@ -42,14 +60,16 @@ unsafe impl<State, Heap> Action<str, State, Heap> for Eat<&str> {
   }
 }
 
-unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<u8> {
+unsafe impl Action<[u8]> for Eat<u8> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&[u8]>,
-    _: Context<&mut State, &mut Heap>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     instant
       .rest()
@@ -59,14 +79,16 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<u8> {
   }
 }
 
-unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<&[u8]> {
+unsafe impl Action<[u8]> for Eat<&[u8]> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&[u8]>,
-    _: Context<&mut State, &mut Heap>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     instant
       .rest()
@@ -75,14 +97,16 @@ unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<&[u8]> {
   }
 }
 
-unsafe impl<const N: usize, State, Heap> Action<[u8], State, Heap> for Eat<&[u8; N]> {
+unsafe impl<const N: usize> Action<[u8]> for Eat<&[u8; N]> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&[u8]>,
-    _: Context<&mut State, &mut Heap>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     instant
       .rest()
@@ -91,14 +115,16 @@ unsafe impl<const N: usize, State, Heap> Action<[u8], State, Heap> for Eat<&[u8;
   }
 }
 
-unsafe impl<State, Heap> Action<[u8], State, Heap> for Eat<Vec<u8>> {
+unsafe impl Action<[u8]> for Eat<Vec<u8>> {
   type Value = ();
+  type State = ();
+  type Heap = ();
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&[u8]>,
-    _: Context<&mut State, &mut Heap>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     instant
       .rest()
@@ -187,7 +213,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, Value = ()>,
+    action: impl Action<Text, Value = (), State = (), Heap = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where
@@ -241,10 +267,10 @@ mod tests {
 
   #[test]
   fn eat_into_combinator() {
-    fn test(c: Combinator<impl Action<Value = ()>>) {
+    fn test(c: Combinator<impl Action<Value = (), State = (), Heap = ()>>) {
       helper(c, "a", Some(1));
     }
-    fn test_bytes(c: Combinator<impl Action<[u8], Value = ()>>) {
+    fn test_bytes(c: Combinator<impl Action<[u8], Value = (), State = (), Heap = ()>>) {
       helper(c, b"a", Some(1));
     }
     test('a'.into());

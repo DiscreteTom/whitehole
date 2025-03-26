@@ -73,7 +73,7 @@ impl<T, State, Heap> Builder<T, State, Heap> {
 
   /// Set [`Parser::entry`].
   #[inline]
-  pub fn entry<Text: ?Sized, Entry: Action<Text, State, Heap>>(
+  pub fn entry<Text: ?Sized, Entry: Action<Text, State = State, Heap = Heap>>(
     self,
     entry: Entry,
   ) -> Builder<Entry, State, Heap> {
@@ -86,9 +86,9 @@ impl<T, State, Heap> Builder<T, State, Heap> {
 
   /// Build a [`Parser`] with the given text.
   #[inline]
-  pub fn build<Text: ?Sized>(self, text: &Text) -> Parser<T, &Text, State, Heap>
+  pub fn build<Text: ?Sized>(self, text: &Text) -> Parser<Text, T>
   where
-    T: Action<Text, State, Heap>,
+    T: Action<Text, State = State, Heap = Heap>,
   {
     Parser {
       state: self.state,
@@ -125,10 +125,14 @@ mod tests {
     let mut parser = Builder::default()
       .state(1)
       .heap(1)
-      .entry((eat("hello ") + "world").then(|_, ctx| {
-        *ctx.state = 1;
-        *ctx.heap = 1;
-      }))
+      .entry(
+        (eat("hello ") + "world")
+          .with_ctx::<i32, i32>()
+          .then(|_, ctx| {
+            *ctx.state = 1;
+            *ctx.heap = 1;
+          }),
+      )
       .build("hello world");
 
     let output = parser.next().unwrap();
@@ -156,8 +160,8 @@ mod tests {
   fn str_in_heap() {
     let text = "123".to_string();
     let mut parser = Builder::new()
-      .heap(&text)
-      .entry(eat(text.as_str()))
+      .heap(text.as_str())
+      .entry(eat(text.as_str()).with_ctx::<(), &str>())
       .build(text.as_str());
     assert!(parser.next().is_some());
   }

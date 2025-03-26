@@ -52,7 +52,7 @@ mod tests {
   use std::{fmt::Debug, ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest, Value: PartialEq + Debug>(
-    action: impl Action<Text, Value = Value>,
+    action: impl Action<Text, State = (), Heap = (), Value = Value>,
     input: &Text,
     expected: Option<Output<Value>>,
   ) where

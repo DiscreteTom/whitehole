@@ -5,6 +5,8 @@ use crate::{
   instant::Instant,
 };
 
+use super::Contextual;
+
 create_closure_combinator!(
   WrapUnchecked,
   "See [`wrap_unchecked`] and [`bytes::wrap_unchecked`]."
@@ -18,9 +20,11 @@ macro_rules! impl_wrap {
         State,
         Heap,
         F: Fn(&Instant<&$text>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
-      > Action<$text, State, Heap> for $name<F>
+      > Action<$text> for Contextual<$name<F>, State, Heap>
     {
       type Value = Value;
+      type State = State;
+      type Heap = Heap;
 
       #[inline]
       fn exec(
@@ -28,7 +32,8 @@ macro_rules! impl_wrap {
         instant: &Instant<&$text>,
         ctx: Context<&mut State, &mut Heap>,
       ) -> Option<Output<Self::Value>> {
-        let output = (self.inner)(instant, ctx);
+        // TODO: is this correct?
+        let output = (self.inner.inner)(instant, ctx);
         $assert!(output
           .as_ref()
           .map_or(true, |output| instant.rest().validate(output.digested)));
@@ -67,8 +72,8 @@ pub const unsafe fn wrap_unchecked<
   F: Fn(&Instant<&str>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
 >(
   f: F,
-) -> Combinator<WrapUnchecked<F>> {
-  Combinator::new(WrapUnchecked::new(f))
+) -> Combinator<Contextual<WrapUnchecked<F>, State, Heap>> {
+  Combinator::new(Contextual::new(WrapUnchecked::new(f)))
 }
 
 /// Wrap a closure or function to create a [`Combinator`].
@@ -94,8 +99,8 @@ pub const fn wrap<
   F: Fn(&Instant<&str>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
 >(
   f: F,
-) -> Combinator<Wrap<F>> {
-  Combinator::new(Wrap::new(f))
+) -> Combinator<Contextual<Wrap<F>, State, Heap>> {
+  Combinator::new(Contextual::new(Wrap::new(f)))
 }
 
 pub mod bytes {
@@ -125,8 +130,8 @@ pub mod bytes {
     F: Fn(&Instant<&[u8]>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
   >(
     f: F,
-  ) -> Combinator<WrapUnchecked<F>> {
-    Combinator::new(WrapUnchecked::new(f))
+  ) -> Combinator<Contextual<WrapUnchecked<F>, State, Heap>> {
+    Combinator::new(Contextual::new(WrapUnchecked::new(f)))
   }
 
   /// Wrap a closure or function to create a [`Combinator`] for bytes.
@@ -152,8 +157,8 @@ pub mod bytes {
     F: Fn(&Instant<&[u8]>, Context<&mut State, &mut Heap>) -> Option<Output<Value>>,
   >(
     f: F,
-  ) -> Combinator<Wrap<F>> {
-    Combinator::new(Wrap::new(f))
+  ) -> Combinator<Contextual<Wrap<F>, State, Heap>> {
+    Combinator::new(Contextual::new(Wrap::new(f)))
   }
 }
 
@@ -164,7 +169,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, Value = ()>,
+    action: impl Action<Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: usize,
   ) where
@@ -195,7 +200,10 @@ mod tests {
     let _ = c.clone();
 
     // ensure the combinator is debuggable
-    assert_eq!(format!("{:?}", c), "Combinator { action: WrapUnchecked }");
+    assert_eq!(
+      format!("{:?}", c),
+      "Combinator { action: Contextual(WrapUnchecked) }"
+    );
   }
 
   #[test]
@@ -211,7 +219,10 @@ mod tests {
     let _ = c.clone();
 
     // ensure the combinator is debuggable
-    assert_eq!(format!("{:?}", c), "Combinator { action: WrapUnchecked }");
+    assert_eq!(
+      format!("{:?}", c),
+      "Combinator { action: Contextual(WrapUnchecked) }"
+    );
   }
 
   #[test]
@@ -244,7 +255,10 @@ mod tests {
     let _ = c.clone();
 
     // ensure the combinator is debuggable
-    assert_eq!(format!("{:?}", c), "Combinator { action: Wrap }");
+    assert_eq!(
+      format!("{:?}", c),
+      "Combinator { action: Contextual(Wrap) }"
+    );
   }
 
   #[test]
@@ -260,7 +274,10 @@ mod tests {
     let _ = c.clone();
 
     // ensure the combinator is debuggable
-    assert_eq!(format!("{:?}", c), "Combinator { action: Wrap }");
+    assert_eq!(
+      format!("{:?}", c),
+      "Combinator { action: Contextual(Wrap) }"
+    );
   }
 
   #[test]
@@ -293,7 +310,10 @@ mod tests {
     let _ = c.clone();
 
     // ensure the combinator is debuggable
-    assert_eq!(format!("{:?}", c), "Combinator { action: WrapUnchecked }");
+    assert_eq!(
+      format!("{:?}", c),
+      "Combinator { action: Contextual(WrapUnchecked) }"
+    );
   }
 
   #[test]
@@ -316,7 +336,10 @@ mod tests {
     let _ = c.clone();
 
     // ensure the combinator is debuggable
-    assert_eq!(format!("{:?}", c), "Combinator { action: Wrap }");
+    assert_eq!(
+      format!("{:?}", c),
+      "Combinator { action: Contextual(Wrap) }"
+    );
   }
 
   #[test]

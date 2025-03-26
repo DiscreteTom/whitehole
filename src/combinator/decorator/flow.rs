@@ -15,19 +15,19 @@ create_simple_decorator!(Boundary, "See [`Combinator::boundary`].");
 
 unsafe impl<
     Text: ?Sized,
-    State,
-    Heap,
-    T: Action<Text, State, Heap>,
-    D: Fn(&Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
-  > Action<Text, State, Heap> for When<T, D>
+    T: Action<Text>,
+    D: Fn(&Instant<&Text>, Context<&mut T::State, &mut T::Heap>) -> bool,
+  > Action<Text> for When<T, D>
 {
   type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    mut ctx: Context<&mut State, &mut Heap>,
+    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     if (self.inner)(instant, ctx.reborrow()) {
       self.action.exec(instant, ctx)
@@ -39,19 +39,19 @@ unsafe impl<
 
 unsafe impl<
     Text: ?Sized,
-    State,
-    Heap,
-    T: Action<Text, State, Heap>,
-    D: Fn(&Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
-  > Action<Text, State, Heap> for Prevent<T, D>
+    T: Action<Text>,
+    D: Fn(&Instant<&Text>, Context<&mut T::State, &mut T::Heap>) -> bool,
+  > Action<Text> for Prevent<T, D>
 {
   type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    mut ctx: Context<&mut State, &mut Heap>,
+    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     if !(self.inner)(instant, ctx.reborrow()) {
       self.action.exec(instant, ctx)
@@ -63,19 +63,19 @@ unsafe impl<
 
 unsafe impl<
     Text: ?Sized,
-    State,
-    Heap,
-    T: Action<Text, State, Heap>,
-    D: Fn(Accepted<&Text, &T::Value>, Context<&mut State, &mut Heap>) -> bool,
-  > Action<Text, State, Heap> for Reject<T, D>
+    T: Action<Text>,
+    D: Fn(Accepted<&Text, &T::Value>, Context<&mut T::State, &mut T::Heap>) -> bool,
+  > Action<Text> for Reject<T, D>
 {
   type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    mut ctx: Context<&mut State, &mut Heap>,
+    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
@@ -90,16 +90,16 @@ unsafe impl<
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap, Value: Default>>
-  Action<Text, State, Heap> for Optional<T>
-{
+unsafe impl<Text: ?Sized, T: Action<Text, Value: Default>> Action<Text> for Optional<T> {
   type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&Text>,
-    ctx: Context<&mut State, &mut Heap>,
+    ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     Some(self.action.exec(instant, ctx).unwrap_or_else(|| Output {
       value: Default::default(),
@@ -108,14 +108,16 @@ unsafe impl<Text: ?Sized, State, Heap, T: Action<Text, State, Heap, Value: Defau
   }
 }
 
-unsafe impl<State, Heap, T: Action<str, State, Heap>> Action<str, State, Heap> for Boundary<T> {
+unsafe impl<T: Action<str>> Action<str> for Boundary<T> {
   type Value = T::Value;
+  type State = T::State;
+  type Heap = T::Heap;
 
   #[inline]
   fn exec(
     &self,
     instant: &Instant<&str>,
-    mut ctx: Context<&mut State, &mut Heap>,
+    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
@@ -144,17 +146,12 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn when<
-    Text: ?Sized,
-    State,
-    Heap,
-    F: Fn(&Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
-  >(
+  pub fn when<Text: ?Sized, F: Fn(&Instant<&Text>, Context<&mut T::State, &mut T::Heap>) -> bool>(
     self,
     condition: F,
   ) -> Combinator<When<T, F>>
   where
-    T: Action<Text, State, Heap>,
+    T: Action<Text>,
   {
     Combinator::new(When::new(self.action, condition))
   }
@@ -174,15 +171,13 @@ impl<T> Combinator<T> {
   #[inline]
   pub fn prevent<
     Text: ?Sized,
-    State,
-    Heap,
-    F: Fn(&Instant<&Text>, Context<&mut State, &mut Heap>) -> bool,
+    F: Fn(&Instant<&Text>, Context<&mut T::State, &mut T::Heap>) -> bool,
   >(
     self,
     preventer: F,
   ) -> Combinator<Prevent<T, F>>
   where
-    T: Action<Text, State, Heap>,
+    T: Action<Text>,
   {
     Combinator::new(Prevent::new(self.action, preventer))
   }
@@ -199,15 +194,13 @@ impl<T> Combinator<T> {
   #[inline]
   pub fn reject<
     Text: ?Sized,
-    State,
-    Heap,
-    F: Fn(Accepted<&Text, &T::Value>, Context<&mut State, &mut Heap>) -> bool,
+    F: Fn(Accepted<&Text, &T::Value>, Context<&mut T::State, &mut T::Heap>) -> bool,
   >(
     self,
     rejecter: F,
   ) -> Combinator<Reject<T, F>>
   where
-    T: Action<Text, State, Heap>,
+    T: Action<Text>,
   {
     Combinator::new(Reject::new(self.action, rejecter))
   }
@@ -281,7 +274,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, bool, Value = ()>,
+    action: impl Action<Text, State = bool, Heap = (), Value = ()>,
     input: &Text,
     state: &mut bool,
     digested: Option<usize>,
@@ -302,26 +295,26 @@ mod tests {
     )
   }
 
-  fn accepter() -> Combinator<impl Action<str, bool, Value = ()>> {
+  fn accepter() -> Combinator<impl Action<str, State = bool, Heap = (), Value = ()>> {
     wrap(|instant, ctx| {
       *ctx.state = true;
       instant.accept(1)
     })
   }
-  fn accepter_bytes() -> Combinator<impl Action<[u8], bool, Value = ()>> {
+  fn accepter_bytes() -> Combinator<impl Action<[u8], State = bool, Heap = (), Value = ()>> {
     bytes::wrap(|instant, ctx| {
       *ctx.state = true;
       instant.accept(1)
     })
   }
 
-  fn rejecter() -> Combinator<impl Action<str, bool, Value = ()>> {
+  fn rejecter() -> Combinator<impl Action<str, State = bool, Heap = (), Value = ()>> {
     wrap(|_, ctx| {
       *ctx.state = true;
       None
     })
   }
-  fn rejecter_bytes() -> Combinator<impl Action<[u8], bool, Value = ()>> {
+  fn rejecter_bytes() -> Combinator<impl Action<[u8], State = bool, Heap = (), Value = ()>> {
     bytes::wrap(|_, ctx| {
       *ctx.state = true;
       None

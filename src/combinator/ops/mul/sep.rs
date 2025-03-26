@@ -10,14 +10,17 @@ use crate::{
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct NoSep;
 
-unsafe impl<Text: ?Sized, State, Heap> Action<Text, State, Heap> for NoSep {
+unsafe impl<Text: ?Sized> Action<Text> for NoSep {
   type Value = ();
+  // TODO: is this correct? should NoSep be generic?
+  type State = ();
+  type Heap = ();
 
   #[inline]
   fn exec(
     &self,
     _: &Instant<&Text>,
-    _: Context<&mut State, &mut Heap>,
+    _: Context<&mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     // just accept without digesting
     Some(Output {
@@ -108,7 +111,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, Value = ()>,
+    action: impl Action<Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: usize,
   ) where
@@ -160,7 +163,7 @@ mod tests {
 
   #[test]
   fn test_sep_with_eat() {
-    fn t(action: Combinator<impl Action>) {
+    fn t(action: Combinator<impl Action<State = (), Heap = ()>>) {
       assert!(action
         .exec(
           &Instant::new("true"),
@@ -180,7 +183,7 @@ mod tests {
         )
         .is_some());
     }
-    fn tb(action: Combinator<impl Action<[u8]>>) {
+    fn tb(action: Combinator<impl Action<[u8], State = (), Heap = ()>>) {
       assert!(action
         .exec(
           &Instant::new(b"true"),

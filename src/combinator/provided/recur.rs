@@ -10,7 +10,7 @@ use std::{cell::OnceCell, rc::Rc};
 /// Use `OnceCell` to initialize this later.
 /// Use `Rc` to make this clone-able.
 type RecurInner<Text, State, Heap, Value> =
-  Rc<OnceCell<Box<dyn Action<Text, State, Heap, Value = Value>>>>;
+  Rc<OnceCell<Box<dyn Action<Text, State = State, Heap = Heap, Value = Value>>>>;
 
 /// See [`recur`] and [`recur_unchecked`].
 ///
@@ -30,14 +30,14 @@ impl<Text: ?Sized, State, Heap, Value> RecurSetter<Text, State, Heap, Value> {
 
   /// Consume self, set the action implementor.
   #[inline]
-  pub fn set(self, action: Box<dyn Action<Text, State, Heap, Value = Value>>) {
+  pub fn set(self, action: Box<dyn Action<Text, State = State, Heap = Heap, Value = Value>>) {
     // we can use `ok` here because the setter will be consumed after this call
     self.inner.set(action).ok();
   }
 
   /// Consume self, set the action implementor by boxing the provided action.
   #[inline]
-  pub fn boxed(self, p: impl Action<Text, State, Heap, Value = Value> + 'static) {
+  pub fn boxed(self, p: impl Action<Text, State = State, Heap = Heap, Value = Value> + 'static) {
     self.set(Box::new(p));
   }
 }
@@ -69,10 +69,10 @@ impl<Text: ?Sized, State, Heap, Value> Clone for Recur<Text, State, Heap, Value>
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
-  for Recur<Text, State, Heap, Value>
-{
+unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text> for Recur<Text, State, Heap, Value> {
   type Value = Value;
+  type State = State;
+  type Heap = Heap;
 
   #[inline]
   fn exec(
@@ -152,10 +152,12 @@ impl<Text: ?Sized, State, Heap, Value> Clone for RecurUnchecked<Text, State, Hea
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text, State, Heap>
+unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text>
   for RecurUnchecked<Text, State, Heap, Value>
 {
   type Value = Value;
+  type State = State;
+  type Heap = Heap;
 
   #[inline]
   fn exec(
@@ -216,7 +218,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, Value = ()>,
+    action: impl Action<Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where
