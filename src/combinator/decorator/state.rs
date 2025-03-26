@@ -187,7 +187,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   #[derive(Debug, Default, PartialEq, Eq)]
-  struct State {
+  pub struct State {
     from: i32,
     to: i32,
   }
