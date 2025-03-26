@@ -167,8 +167,9 @@ macro_rules! create_combinator {
     }
 
     impl<T> $name<T> {
+      /// Create a new instance.
       #[inline]
-      const fn new(inner: T) -> Self {
+      pub const fn new(inner: T) -> Self {
         Self { inner }
       }
     }

@@ -12,7 +12,7 @@ pub struct Take {
 
 impl Take {
   #[inline]
-  const fn new(n: usize) -> Self {
+  pub const fn new(n: usize) -> Self {
     Self { n }
   }
 }

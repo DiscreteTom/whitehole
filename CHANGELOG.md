@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `!` operator overloading for `Combinator`.
 - Add `Contextual` and `Combinator::with_ctx`.
+- Add `new` for provided combinators.
 
 ### Changed
 
