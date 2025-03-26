@@ -623,21 +623,6 @@ mod tests {
     assert!(parser.next().is_some());
   }
 
-  // TODO
-  // #[test]
-  // fn str_in_heap() {
-  //   contextual!(i32, &str);
-
-  //   let text = "123".to_string();
-  //   let mut parser = Parser {
-  //     state: 123,
-  //     heap: text.as_str(),
-  //     instant: Instant::new(text.as_str()),
-  //     entry: eat(text.as_str()),
-  //   };
-  //   assert!(parser.next().is_some());
-  // }
-
   #[test]
   fn parser_iterator_in_for_loop() {
     contextual!(i32, i32);

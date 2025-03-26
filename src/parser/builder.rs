@@ -153,17 +153,4 @@ mod tests {
     assert!(p1.next().is_some());
     assert!(p2.next().is_none());
   }
-
-  // TODO
-  // #[test]
-  // fn str_in_heap() {
-  //   contextual!((), &str);
-
-  //   let text = "123".to_string();
-  //   let mut parser = Builder::new()
-  //     .heap(text.as_str())
-  //     .entry(eat(text.as_str()))
-  //     .build(text.as_str());
-  //   assert!(parser.next().is_some());
-  // }
 }
