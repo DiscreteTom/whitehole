@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `Input` back.
+- Add `Accepted::state` and `Accepted::heap`.
 - Add `!` operator overloading for `Combinator`.
 - Add `Contextual` and `contextual!`.
 - Add `new` for provided combinators.
@@ -16,10 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `State` and `Heap` are now associated types of `Action` instead of generic params.
+- `Action::exec` now only takes `Input` as the parameter.
 - All provided combinators will associate `State` and `Heap` as `()` instead of generic.
 - `wrap` and `wrap_unchecked` only accept non-contextual closures.
 - `Parser` now only takes `'text`, `Text` and the entry action as generic params.
 - Contextual combinators can't take non-static reference as the heap.
+- Combinator decorators with closure as the parameter type will accept `Input` or `Accepted` as the only parameter.
+
+### Removed
+
+- Remove `Context`. Use `Input` instead.
 
 ## [0.7.0] - 2025-02-16
 

@@ -122,7 +122,7 @@ pub use repeat::*;
 pub use sep::*;
 
 use crate::{
-  action::{Action, Context, Output},
+  action::{Action, Input, Output},
   combinator::Combinator,
   digest::Digest,
   instant::Instant,
@@ -185,8 +185,7 @@ where
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
+    mut input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let mut repeated = 0;
     let mut output = Output {
@@ -196,10 +195,10 @@ where
 
     let mut digested_with_sep = 0;
     while unsafe { self.rhs.validate(repeated) } {
-      let Some(value_output) = self.lhs.exec(
-        &unsafe { instant.to_digested_unchecked(digested_with_sep) },
-        ctx.reborrow(),
-      ) else {
+      let Some(value_output) = self
+        .lhs
+        .exec(input.reload(&unsafe { input.instant.to_digested_unchecked(digested_with_sep) }))
+      else {
         break;
       };
       repeated += 1;
@@ -208,10 +207,10 @@ where
       debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
       output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
 
-      let Some(sep_output) = self.sep.exec(
-        &unsafe { instant.to_digested_unchecked(output.digested) },
-        ctx.reborrow(),
-      ) else {
+      let Some(sep_output) = self
+        .sep
+        .exec(input.reload(&unsafe { input.instant.to_digested_unchecked(output.digested) }))
+      else {
         break;
       };
       // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize

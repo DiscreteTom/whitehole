@@ -1,5 +1,5 @@
 use crate::{
-  action::{Action, Context},
+  action::{Action, Input},
   combinator::{create_value_combinator, Combinator, Output},
   instant::Instant,
 };
@@ -14,13 +14,13 @@ unsafe impl Action<str> for Eat<char> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&str>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    instant
+    input
+      .instant
       .rest()
       .starts_with(self.inner)
-      .then(|| unsafe { instant.accept_unchecked(self.inner.len_utf8()) })
+      .then(|| unsafe { input.instant.accept_unchecked(self.inner.len_utf8()) })
   }
 }
 
@@ -32,13 +32,13 @@ unsafe impl Action<str> for Eat<String> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&str>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    instant
+    input
+      .instant
       .rest()
       .starts_with(&self.inner)
-      .then(|| unsafe { instant.accept_unchecked(self.inner.len()) })
+      .then(|| unsafe { input.instant.accept_unchecked(self.inner.len()) })
   }
 }
 
@@ -50,13 +50,13 @@ unsafe impl Action<str> for Eat<&str> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&str>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    instant
+    input
+      .instant
       .rest()
       .starts_with(self.inner)
-      .then(|| unsafe { instant.accept_unchecked(self.inner.len()) })
+      .then(|| unsafe { input.instant.accept_unchecked(self.inner.len()) })
   }
 }
 
@@ -68,14 +68,14 @@ unsafe impl Action<[u8]> for Eat<u8> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&[u8]>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    instant
+    input
+      .instant
       .rest()
       .first()
       .is_some_and(|&c| c == self.inner)
-      .then(|| unsafe { instant.accept_unchecked(1) })
+      .then(|| unsafe { input.instant.accept_unchecked(1) })
   }
 }
 
@@ -87,13 +87,13 @@ unsafe impl Action<[u8]> for Eat<&[u8]> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&[u8]>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    instant
+    input
+      .instant
       .rest()
       .starts_with(self.inner)
-      .then(|| unsafe { instant.accept_unchecked(self.inner.len()) })
+      .then(|| unsafe { input.instant.accept_unchecked(self.inner.len()) })
   }
 }
 
@@ -105,13 +105,13 @@ unsafe impl<const N: usize> Action<[u8]> for Eat<&[u8; N]> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&[u8]>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    instant
+    input
+      .instant
       .rest()
       .starts_with(self.inner)
-      .then(|| unsafe { instant.accept_unchecked(N) })
+      .then(|| unsafe { input.instant.accept_unchecked(N) })
   }
 }
 
@@ -123,13 +123,13 @@ unsafe impl Action<[u8]> for Eat<Vec<u8>> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&[u8]>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    instant
+    input
+      .instant
       .rest()
       .starts_with(&self.inner)
-      .then(|| unsafe { instant.accept_unchecked(self.inner.len()) })
+      .then(|| unsafe { input.instant.accept_unchecked(self.inner.len()) })
   }
 }
 
@@ -221,13 +221,11 @@ mod tests {
   {
     assert_eq!(
       action
-        .exec(
-          &Instant::new(input),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new(input),
+          state: &mut (),
+          heap: &mut ()
+        })
         .map(|o| o.digested),
       digested
     )

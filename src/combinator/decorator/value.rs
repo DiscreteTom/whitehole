@@ -2,8 +2,8 @@ use super::{
   create_closure_decorator, create_generic_value_decorator, create_simple_decorator, Accepted,
 };
 use crate::{
-  action::Context,
-  combinator::{Action, Combinator, Output},
+  action::{Action, Input, Output},
+  combinator::Combinator,
   instant::Instant,
   range::WithRange,
 };
@@ -26,12 +26,11 @@ unsafe impl<Text: ?Sized, NewValue, T: Action<Text>, D: Fn(T::Value) -> NewValue
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    ctx: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(instant, ctx)
+      .exec(input)
       .map(|output| output.map(&self.inner))
   }
 }
@@ -44,13 +43,9 @@ unsafe impl<Text: ?Sized, T: Action<Text>> Action<Text> for Tuple<T> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    ctx: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    self
-      .action
-      .exec(instant, ctx)
-      .map(|output| output.map(|v| (v,)))
+    self.action.exec(input).map(|output| output.map(|v| (v,)))
   }
 }
 
@@ -62,12 +57,11 @@ unsafe impl<Text: ?Sized, T: Action<Text>, D: Clone> Action<Text> for Bind<T, D>
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    ctx: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(instant, ctx)
+      .exec(input)
       .map(|output| output.map(|_| self.inner.clone()))
   }
 }
@@ -82,12 +76,11 @@ unsafe impl<Text: ?Sized, T: Action<Text>, NewValue, D: Fn() -> NewValue> Action
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    ctx: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .action
-      .exec(instant, ctx)
+      .exec(input)
       .map(|output| output.map(|_| (self.inner)()))
   }
 }
@@ -96,7 +89,7 @@ unsafe impl<
     Text: ?Sized,
     NewValue,
     T: Action<Text>,
-    D: Fn(Accepted<&Text, T::Value>, Context<&mut T::State, &mut T::Heap>) -> NewValue,
+    D: Fn(Accepted<&Text, T::Value, &mut T::State, &mut T::Heap>) -> NewValue,
   > Action<Text> for Select<T, D>
 {
   type Value = NewValue;
@@ -106,16 +99,17 @@ unsafe impl<
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
+    mut input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    self
-      .action
-      .exec(instant, ctx.reborrow())
-      .map(|output| Output {
-        digested: output.digested,
-        value: (self.inner)(Accepted::new(instant, output), ctx),
-      })
+    self.action.exec(input.reborrow()).map(|output| Output {
+      digested: output.digested,
+      value: (self.inner)(Accepted::new(
+        input.instant,
+        output,
+        input.state,
+        input.heap,
+      )),
+    })
   }
 }
 
@@ -127,11 +121,10 @@ unsafe impl<Text: ?Sized, T: Action<Text>> Action<Text> for Range<T> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    ctx: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    let start = instant.digested();
-    self.action.exec(instant, ctx).map(|output| {
+    let start = input.instant.digested();
+    self.action.exec(input).map(|output| {
       let digested = output.digested;
       debug_assert!(usize::MAX - start >= digested);
       output.map(|data| WithRange {
@@ -150,13 +143,9 @@ unsafe impl<Text: ?Sized, V, T: Action<Text, Value = (V,)>> Action<Text> for Pop
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    ctx: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    self
-      .action
-      .exec(instant, ctx)
-      .map(|output| output.map(|(v,)| v))
+    self.action.exec(input).map(|output| output.map(|(v,)| v))
   }
 }
 
@@ -257,14 +246,14 @@ impl<T> Combinator<T> {
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyValue(i32);
   /// # fn t(combinator: Combinator<impl Action>) {
-  /// combinator.select(|accept, _| MyValue(accept.content().parse().unwrap()))
+  /// combinator.select(|accept| MyValue(accept.content().parse().unwrap()))
   /// # ;}
   /// ```
   #[inline]
   pub fn select<
     Text: ?Sized,
     NewValue,
-    F: Fn(Accepted<&Text, T::Value>, Context<&mut T::State, &mut T::Heap>) -> NewValue,
+    F: Fn(Accepted<&Text, T::Value, &mut T::State, &mut T::Heap>) -> NewValue,
   >(
     self,
     selector: F,
@@ -304,13 +293,11 @@ mod tests {
   {
     assert_eq!(
       action
-        .exec(
-          &Instant::new(input),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new(input),
+          state: &mut (),
+          heap: &mut ()
+        })
         .unwrap(),
       Output { value, digested: 1 }
     )
@@ -360,12 +347,12 @@ mod tests {
   #[test]
   fn combinator_select() {
     helper(
-      take(1).select(|accept, _| if accept.content() == "1" { 1 } else { 2 }),
+      take(1).select(|accept| if accept.content() == "1" { 1 } else { 2 }),
       "123",
       1,
     );
     helper(
-      take(1).select(|accept, _| if accept.content() == b"1" { 1 } else { 2 }),
+      take(1).select(|accept| if accept.content() == b"1" { 1 } else { 2 }),
       b"123" as &[u8],
       1,
     );

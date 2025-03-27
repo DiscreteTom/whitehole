@@ -37,8 +37,8 @@
 //! ```
 
 use crate::{
-  action::Context,
-  combinator::{eat, Action, Combinator, Eat, Output},
+  action::{Action, Input, Output},
+  combinator::{eat, Combinator, Eat},
   instant::Instant,
 };
 use std::ops;
@@ -72,13 +72,12 @@ unsafe impl<
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
+    mut input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self
       .lhs
-      .exec(instant, ctx.reborrow())
-      .or_else(|| self.rhs.exec(instant, ctx))
+      .exec(input.reborrow())
+      .or_else(|| self.rhs.exec(input))
   }
 }
 
@@ -184,13 +183,11 @@ mod tests {
   {
     assert_eq!(
       action
-        .exec(
-          &Instant::new(input),
-          Context {
-            state,
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new(input),
+          state,
+          heap: &mut ()
+        })
         .map(|o| o.digested),
       digested
     )
@@ -200,8 +197,8 @@ mod tests {
   fn combinator_bit_or() {
     contextual!(i32, ());
 
-    let rejecter = || wrap(|_| None).prepare(|_, ctx| *ctx.state += 1);
-    let accepter = || wrap(|instant| instant.accept(1)).prepare(|_, ctx| *ctx.state += 1);
+    let rejecter = || wrap(|_| None).prepare(|input| *input.state += 1);
+    let accepter = || wrap(|instant| instant.accept(1)).prepare(|input| *input.state += 1);
 
     // reject then accept, both should increment the state
     let mut state = 0;

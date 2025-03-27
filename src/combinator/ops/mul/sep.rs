@@ -1,6 +1,6 @@
 use super::Mul;
 use crate::{
-  action::{Action, Context, Output},
+  action::{Action, Input, Output},
   combinator::Combinator,
   instant::Instant,
 };
@@ -19,8 +19,7 @@ unsafe impl<Text: ?Sized> Action<Text> for NoSep {
   #[inline]
   fn exec(
     &self,
-    _: &Instant<&Text>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    _: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     // just accept without digesting
     Some(Output {
@@ -119,13 +118,11 @@ mod tests {
   {
     assert_eq!(
       action
-        .exec(
-          &Instant::new(input),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new(input),
+          state: &mut (),
+          heap: &mut ()
+        })
         .map_or(0, |output| output.digested),
       digested
     )
@@ -149,13 +146,11 @@ mod tests {
       .fold(|| 0, |acc, v| acc + v)
       .sep(',');
     let output = combinator
-      .exec(
-        &Instant::new("a,a,a"),
-        Context {
-          state: &mut (),
-          heap: &mut (),
-        },
-      )
+      .exec(Input {
+        instant: &Instant::new("a,a,a"),
+        state: &mut (),
+        heap: &mut (),
+      })
       .unwrap();
     assert_eq!(output.value, 3);
     assert_eq!(output.digested, 5);
@@ -165,42 +160,34 @@ mod tests {
   fn test_sep_with_eat() {
     fn t(action: Combinator<impl Action<State = (), Heap = ()>>) {
       assert!(action
-        .exec(
-          &Instant::new("true"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new("true"),
+          state: &mut (),
+          heap: &mut ()
+        })
         .is_some());
       assert!(action
-        .exec(
-          &Instant::new("true,true"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new("true,true"),
+          state: &mut (),
+          heap: &mut ()
+        })
         .is_some());
     }
     fn tb(action: Combinator<impl Action<[u8], State = (), Heap = ()>>) {
       assert!(action
-        .exec(
-          &Instant::new(b"true"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new(b"true"),
+          state: &mut (),
+          heap: &mut ()
+        })
         .is_some());
       assert!(action
-        .exec(
-          &Instant::new(b"true,true"),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new(b"true,true"),
+          state: &mut (),
+          heap: &mut ()
+        })
         .is_some());
     }
     // with a char

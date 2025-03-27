@@ -1,7 +1,7 @@
 use super::{create_closure_decorator, Accepted};
 use crate::{
-  action::Context,
-  combinator::{Action, Combinator, Output},
+  action::{Action, Input, Output},
+  combinator::Combinator,
   instant::Instant,
 };
 
@@ -10,7 +10,7 @@ create_closure_decorator!(Then, "See [`Combinator::then`].");
 create_closure_decorator!(Catch, "See [`Combinator::catch`].");
 create_closure_decorator!(Finally, "See [`Combinator::finally`].");
 
-unsafe impl<Text: ?Sized, T: Action<Text>, D: Fn(&Instant<&Text>, Context<&mut T::State, &mut T::Heap>)>
+unsafe impl<Text: ?Sized, T: Action<Text>, D: Fn(Input<&Instant<&Text>, &mut T::State, &mut T::Heap>)>
   Action<Text> for Prepare<T, D>
 {
   type Value = T::Value;
@@ -20,18 +20,17 @@ unsafe impl<Text: ?Sized, T: Action<Text>, D: Fn(&Instant<&Text>, Context<&mut T
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
+    mut input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    (self.inner)(instant, ctx.reborrow());
-    self.action.exec(instant, ctx)
+    (self.inner)(input.reborrow());
+    self.action.exec(input)
   }
 }
 
 unsafe impl<
     Text: ?Sized,
     T: Action<Text>,
-    D: Fn(Accepted<&Text, &T::Value>, Context<&mut T::State, &mut T::Heap>),
+    D: Fn(Accepted<&Text, &T::Value, &mut T::State, &mut T::Heap>),
   > Action<Text> for Then<T, D>
 {
   type Value = T::Value;
@@ -41,16 +40,20 @@ unsafe impl<
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
+    mut input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    self.action.exec(instant, ctx.reborrow()).inspect(|output| {
-      (self.inner)(Accepted::new(instant, output.as_ref()), ctx);
+    self.action.exec(input.reborrow()).inspect(|output| {
+      (self.inner)(Accepted::new(
+        input.instant,
+        output.as_ref(),
+        input.state,
+        input.heap,
+      ));
     })
   }
 }
 
-unsafe impl<Text: ?Sized, T: Action<Text>, D: Fn(&Instant<&Text>, Context<&mut T::State, &mut T::Heap>)>
+unsafe impl<Text: ?Sized, T: Action<Text>, D: Fn(Input<&Instant<&Text>, &mut T::State, &mut T::Heap>)>
   Action<Text> for Catch<T, D>
 {
   type Value = T::Value;
@@ -60,18 +63,17 @@ unsafe impl<Text: ?Sized, T: Action<Text>, D: Fn(&Instant<&Text>, Context<&mut T
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
+    mut input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    let output = self.action.exec(instant, ctx.reborrow());
+    let output = self.action.exec(input.reborrow());
     if output.is_none() {
-      (self.inner)(instant, ctx);
+      (self.inner)(input);
     }
     output
   }
 }
 
-unsafe impl<Text: ?Sized, T: Action<Text>, D: Fn(&Instant<&Text>, Context<&mut T::State, &mut T::Heap>)>
+unsafe impl<Text: ?Sized, T: Action<Text>, D: Fn(Input<&Instant<&Text>, &mut T::State, &mut T::Heap>)>
   Action<Text> for Finally<T, D>
 {
   type Value = T::Value;
@@ -81,11 +83,10 @@ unsafe impl<Text: ?Sized, T: Action<Text>, D: Fn(&Instant<&Text>, Context<&mut T
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
+    mut input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    let output = self.action.exec(instant, ctx.reborrow());
-    (self.inner)(instant, ctx);
+    let output = self.action.exec(input.reborrow());
+    (self.inner)(input);
     output
   }
 }
@@ -98,11 +99,11 @@ impl<T> Combinator<T> {
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
   /// # fn t(combinator: Combinator<impl Action<str, MyState>>) {
-  /// combinator.prepare(|input, ctx| ctx.state.value += 1)
+  /// combinator.prepare(|input, ctx| input.state.value += 1)
   /// # ;}
   /// ```
   #[inline]
-  pub fn prepare<Text: ?Sized, F: Fn(&Instant<&Text>, Context<&mut T::State, &mut T::Heap>)>(
+  pub fn prepare<Text: ?Sized, F: Fn(Input<&Instant<&Text>, &mut T::State, &mut T::Heap>)>(
     self,
     modifier: F,
   ) -> Combinator<Prepare<T, F>>
@@ -119,14 +120,11 @@ impl<T> Combinator<T> {
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
   /// # fn t(combinator: Combinator<impl Action<str, MyState>>) {
-  /// combinator.then(|_, mut ctx| ctx.state.value += 1)
+  /// combinator.then(|_, mut ctx| input.state.value += 1)
   /// # ;}
   /// ```
   #[inline]
-  pub fn then<
-    Text: ?Sized,
-    F: Fn(Accepted<&Text, &T::Value>, Context<&mut T::State, &mut T::Heap>),
-  >(
+  pub fn then<Text: ?Sized, F: Fn(Accepted<&Text, &T::Value, &mut T::State, &mut T::Heap>)>(
     self,
     modifier: F,
   ) -> Combinator<Then<T, F>>
@@ -143,11 +141,11 @@ impl<T> Combinator<T> {
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
   /// # fn t(combinator: Combinator<impl Action<str, MyState>>) {
-  /// combinator.catch(|_, ctx| ctx.state.value += 1)
+  /// combinator.catch(|input| input.state.value += 1)
   /// # ;}
   /// ```
   #[inline]
-  pub fn catch<Text: ?Sized, F: Fn(&Instant<&Text>, Context<&mut T::State, &mut T::Heap>)>(
+  pub fn catch<Text: ?Sized, F: Fn(Input<&Instant<&Text>, &mut T::State, &mut T::Heap>)>(
     self,
     modifier: F,
   ) -> Combinator<Catch<T, F>>
@@ -165,11 +163,11 @@ impl<T> Combinator<T> {
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
   /// # fn t(combinator: Combinator<impl Action<str, MyState>>) {
-  /// combinator.finally(|_, ctx| ctx.state.value += 1)
+  /// combinator.finally(|input| input.state.value += 1)
   /// # ;}
   /// ```
   #[inline]
-  pub fn finally<Text: ?Sized, F: Fn(&Instant<&Text>, Context<&mut T::State, &mut T::Heap>)>(
+  pub fn finally<Text: ?Sized, F: Fn(Input<&Instant<&Text>, &mut T::State, &mut T::Heap>)>(
     self,
     modifier: F,
   ) -> Combinator<Finally<T, F>>
@@ -202,13 +200,11 @@ mod tests {
   {
     assert_eq!(
       action
-        .exec(
-          &Instant::new(input),
-          Context {
-            state,
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new(input),
+          state,
+          heap: &mut ()
+        })
         .map(|o| o.digested),
       digested
     )
@@ -217,17 +213,17 @@ mod tests {
   contextual!(State, ());
 
   fn accepter() -> Combinator<impl Action<str, State = State, Heap = (), Value = ()>> {
-    wrap(|instant| instant.accept(1)).prepare(|_, ctx| ctx.state.to = ctx.state.from)
+    wrap(|instant| instant.accept(1)).prepare(|input| input.state.to = input.state.from)
   }
   fn accepter_bytes() -> Combinator<impl Action<[u8], State = State, Heap = (), Value = ()>> {
-    bytes::wrap(|instant| instant.accept(1)).prepare(|_, ctx| ctx.state.to = ctx.state.from)
+    bytes::wrap(|instant| instant.accept(1)).prepare(|input| input.state.to = input.state.from)
   }
 
   fn rejecter() -> Combinator<impl Action<str, State = State, Heap = (), Value = ()>> {
-    wrap(|_| None).prepare(|_, ctx| ctx.state.to = ctx.state.from)
+    wrap(|_| None).prepare(|input| input.state.to = input.state.from)
   }
   fn rejecter_bytes() -> Combinator<impl Action<[u8], State = State, Heap = (), Value = ()>> {
-    bytes::wrap(|_| None).prepare(|_, ctx| ctx.state.to = ctx.state.from)
+    bytes::wrap(|_| None).prepare(|input| input.state.to = input.state.from)
   }
 
   #[test]
@@ -235,8 +231,8 @@ mod tests {
     // accepted
     let mut state = State::default();
     helper(
-      accepter().prepare(|_, ctx| {
-        ctx.state.from = 1;
+      accepter().prepare(|input| {
+        input.state.from = 1;
       }),
       "123",
       &mut state,
@@ -245,8 +241,8 @@ mod tests {
     assert_eq!(state, State { from: 1, to: 1 });
     let mut state = State::default();
     helper(
-      accepter_bytes().prepare(|_, ctx| {
-        ctx.state.from = 1;
+      accepter_bytes().prepare(|input| {
+        input.state.from = 1;
       }),
       b"123",
       &mut state,
@@ -257,8 +253,8 @@ mod tests {
     // rejected
     let mut state = State::default();
     helper(
-      rejecter().prepare(|_, ctx| {
-        ctx.state.from = 1;
+      rejecter().prepare(|input| {
+        input.state.from = 1;
       }),
       "123",
       &mut state,
@@ -267,8 +263,8 @@ mod tests {
     assert_eq!(state, State { from: 1, to: 1 });
     let mut state = State::default();
     helper(
-      rejecter_bytes().prepare(|_, ctx| {
-        ctx.state.from = 1;
+      rejecter_bytes().prepare(|input| {
+        input.state.from = 1;
       }),
       b"123",
       &mut state,
@@ -282,8 +278,8 @@ mod tests {
     // accepted
     let mut state = State::default();
     helper(
-      accepter().then(|_, ctx| {
-        ctx.state.from = 1;
+      accepter().then(|input| {
+        input.state.from = 1;
       }),
       "123",
       &mut state,
@@ -292,8 +288,8 @@ mod tests {
     assert_eq!(state, State { from: 1, to: 0 });
     let mut state = State::default();
     helper(
-      accepter_bytes().then(|_, ctx| {
-        ctx.state.from = 1;
+      accepter_bytes().then(|input| {
+        input.state.from = 1;
       }),
       b"123",
       &mut state,
@@ -304,8 +300,8 @@ mod tests {
     // rejected
     let mut state = State::default();
     helper(
-      rejecter().then(|_, ctx| {
-        ctx.state.from = 1;
+      rejecter().then(|input| {
+        input.state.from = 1;
       }),
       "123",
       &mut state,
@@ -314,8 +310,8 @@ mod tests {
     assert_eq!(state, State { from: 0, to: 0 });
     let mut state = State::default();
     helper(
-      rejecter_bytes().then(|_, ctx| {
-        ctx.state.from = 1;
+      rejecter_bytes().then(|input| {
+        input.state.from = 1;
       }),
       b"123",
       &mut state,
@@ -329,8 +325,8 @@ mod tests {
     // accepted
     let mut state = State::default();
     helper(
-      accepter().catch(|_, ctx| {
-        ctx.state.from = 1;
+      accepter().catch(|input| {
+        input.state.from = 1;
       }),
       "123",
       &mut state,
@@ -339,8 +335,8 @@ mod tests {
     assert_eq!(state, State { from: 0, to: 0 });
     let mut state = State::default();
     helper(
-      accepter_bytes().catch(|_, ctx| {
-        ctx.state.from = 1;
+      accepter_bytes().catch(|input| {
+        input.state.from = 1;
       }),
       b"123",
       &mut state,
@@ -351,8 +347,8 @@ mod tests {
     // rejected
     let mut state = State::default();
     helper(
-      rejecter().catch(|_, ctx| {
-        ctx.state.from = 1;
+      rejecter().catch(|input| {
+        input.state.from = 1;
       }),
       "123",
       &mut state,
@@ -361,8 +357,8 @@ mod tests {
     assert_eq!(state, State { from: 1, to: 0 });
     let mut state = State::default();
     helper(
-      rejecter_bytes().catch(|_, ctx| {
-        ctx.state.from = 1;
+      rejecter_bytes().catch(|input| {
+        input.state.from = 1;
       }),
       b"123",
       &mut state,
@@ -376,8 +372,8 @@ mod tests {
     // accepted
     let mut state = State::default();
     helper(
-      accepter().finally(|_, ctx| {
-        ctx.state.to = 1;
+      accepter().finally(|input| {
+        input.state.to = 1;
       }),
       "123",
       &mut state,
@@ -386,8 +382,8 @@ mod tests {
     assert_eq!(state, State { from: 0, to: 1 });
     let mut state = State::default();
     helper(
-      accepter_bytes().finally(|_, ctx| {
-        ctx.state.to = 1;
+      accepter_bytes().finally(|input| {
+        input.state.to = 1;
       }),
       b"123",
       &mut state,
@@ -398,8 +394,8 @@ mod tests {
     // rejected
     let mut state = State::default();
     helper(
-      rejecter().finally(|_, ctx| {
-        ctx.state.to = 1;
+      rejecter().finally(|input| {
+        input.state.to = 1;
       }),
       "123",
       &mut state,
@@ -408,8 +404,8 @@ mod tests {
     assert_eq!(state, State { from: 0, to: 1 });
     let mut state = State::default();
     helper(
-      rejecter_bytes().finally(|_, ctx| {
-        ctx.state.to = 1;
+      rejecter_bytes().finally(|input| {
+        input.state.to = 1;
       }),
       b"123",
       &mut state,

@@ -1,5 +1,5 @@
 use crate::{
-  action::{Action, Context, Output},
+  action::{Action, Input, Output},
   combinator::Combinator,
   digest::Digest,
   instant::Instant,
@@ -76,11 +76,11 @@ where
 }
 
 macro_rules! impl_log {
-  ($self:ident, $instant:ident, $ctx:ident, $rest_formatter:ident) => {{
-    let rest = $instant.rest();
+  ($self:ident, $input:ident, $rest_formatter:ident) => {{
+    let rest = $input.instant.rest();
     println!("{}", &format_input($self.name, $rest_formatter, rest));
     unsafe { INDENT_LEVEL += 1 };
-    let output = $self.action.exec($instant, $ctx);
+    let output = $self.action.exec($input);
     unsafe { INDENT_LEVEL -= 1 };
     println!("{}", &format_output($self.name, rest, &output));
     output
@@ -95,10 +95,9 @@ unsafe impl<T: Action<str>> Action<str> for Log<'_, T> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&str>,
-    ctx: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    impl_log!(self, instant, ctx, input_rest_str)
+    impl_log!(self, input, input_rest_str)
   }
 }
 
@@ -110,10 +109,9 @@ unsafe impl<T: Action<[u8]>> Action<[u8]> for Log<'_, T> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&[u8]>,
-    ctx: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    impl_log!(self, instant, ctx, input_rest_bytes)
+    impl_log!(self, input, input_rest_bytes)
   }
 }
 
@@ -149,13 +147,11 @@ mod tests {
   fn ensure_log_does_not_modify_output() {
     let c = take(1).bind(2).log("name");
     let output = c
-      .exec(
-        &Instant::new("1"),
-        Context {
-          state: &mut (),
-          heap: &mut (),
-        },
-      )
+      .exec(Input {
+        instant: &Instant::new("1"),
+        state: &mut (),
+        heap: &mut (),
+      })
       .unwrap();
     assert_eq!(output.digested, 1);
     assert_eq!(output.value, 2);
@@ -166,13 +162,11 @@ mod tests {
   fn ensure_log_can_be_used_with_bytes() {
     let c = take(1).bind(2).log("name");
     let output = c
-      .exec(
-        &Instant::new(b"1" as &[u8]),
-        Context {
-          state: &mut (),
-          heap: &mut (),
-        },
-      )
+      .exec(Input {
+        instant: &Instant::new(b"1" as &[u8]),
+        state: &mut (),
+        heap: &mut (),
+      })
       .unwrap();
     assert_eq!(output.digested, 1);
     assert_eq!(output.value, 2);

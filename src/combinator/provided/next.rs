@@ -1,5 +1,5 @@
 use crate::{
-  action::{Action, Context, Output},
+  action::{Action, Input, Output},
   combinator::{create_closure_combinator, Combinator},
   instant::Instant,
 };
@@ -14,14 +14,13 @@ unsafe impl<F: Fn(char) -> bool> Action<str> for Next<F> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&str>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    let next = instant.rest().chars().next()?;
+    let next = input.instant.rest().chars().next()?;
     if !(self.inner)(next) {
       return None;
     }
-    Some(unsafe { instant.accept_unchecked(next.len_utf8()) })
+    Some(unsafe { input.instant.accept_unchecked(next.len_utf8()) })
   }
 }
 
@@ -33,14 +32,13 @@ unsafe impl<F: Fn(u8) -> bool> Action<[u8]> for Next<F> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&[u8]>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    let &next = instant.rest().first()?;
+    let &next = input.instant.rest().first()?;
     if !(self.inner)(next) {
       return None;
     }
-    Some(unsafe { instant.accept_unchecked(1) })
+    Some(unsafe { input.instant.accept_unchecked(1) })
   }
 }
 
@@ -107,13 +105,11 @@ mod tests {
   {
     assert_eq!(
       action
-        .exec(
-          &Instant::new(input),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new(input),
+          state: &mut (),
+          heap: &mut ()
+        })
         .map(|o| o.digested),
       digested
     )

@@ -1,5 +1,5 @@
 use crate::{
-  action::{Action, Context, Output},
+  action::{Action, Input, Output},
   combinator::{create_closure_combinator, Combinator},
   digest::Digest,
   instant::Instant,
@@ -23,13 +23,13 @@ macro_rules! impl_wrap {
       #[inline]
       fn exec(
         &self,
-        instant: &Instant<&$text>,
-        _ctx: Context<&mut Self::State, &mut Self::Heap>,
+        input: Input<&Instant<&$text>, &mut Self::State, &mut Self::Heap>,
       ) -> Option<Output<Self::Value>> {
-        let output = (self.inner)(instant);
-        $assert!(output
-          .as_ref()
-          .map_or(true, |output| instant.rest().validate(output.digested)));
+        let output = (self.inner)(input.instant);
+        $assert!(output.as_ref().map_or(true, |output| input
+          .instant
+          .rest()
+          .validate(output.digested)));
         output
       }
     }
@@ -150,13 +150,11 @@ mod tests {
   {
     assert_eq!(
       action
-        .exec(
-          &Instant::new(input),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new(input),
+          state: &mut (),
+          heap: &mut ()
+        })
         .unwrap()
         .digested,
       digested

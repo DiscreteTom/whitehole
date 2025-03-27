@@ -10,19 +10,36 @@ use std::{
 /// You can't construct or modify this struct directly.
 /// This is to ensure the [`Instant`] and [`Output`] are consistent
 /// so we can skip some runtime checks.
-#[derive(Debug, Clone)]
-pub struct Accepted<'instant, TextRef, Value> {
+#[derive(Debug)]
+pub struct Accepted<'instant, TextRef, Value, StateRef, HeapRef> {
   instant: &'instant Instant<TextRef>,
   output: Output<Value>,
+
+  /// See [`Input::state`](crate::action::Input::state).
+  pub state: StateRef,
+  /// See [`Input::heap`](crate::action::Input::heap).
+  pub heap: HeapRef,
 }
 
-impl<'instant, TextRef, Value> Accepted<'instant, TextRef, Value> {
+impl<'instant, TextRef, Value, StateRef, HeapRef>
+  Accepted<'instant, TextRef, Value, StateRef, HeapRef>
+{
   /// Create a new instance.
   ///
   /// This is only used internally by the library.
   #[inline]
-  pub(super) const fn new(instant: &'instant Instant<TextRef>, output: Output<Value>) -> Self {
-    Accepted { instant, output }
+  pub(super) const fn new(
+    instant: &'instant Instant<TextRef>,
+    output: Output<Value>,
+    state: StateRef,
+    heap: HeapRef,
+  ) -> Self {
+    Accepted {
+      instant,
+      output,
+      state,
+      heap,
+    }
   }
 
   /// Get the [`Instant`] of this execution.
@@ -75,7 +92,9 @@ impl<'instant, TextRef, Value> Accepted<'instant, TextRef, Value> {
   }
 }
 
-impl<'text, Text: ?Sized + Digest, Value> Accepted<'_, &'text Text, Value> {
+impl<'text, Text: ?Sized + Digest, Value, StateRef, HeapRef>
+  Accepted<'_, &'text Text, Value, StateRef, HeapRef>
+{
   /// The text content accepted by this execution.
   #[inline]
   pub fn content(&self) -> &'text Text
@@ -110,6 +129,8 @@ mod tests {
           value: (),
           digested: 1,
         },
+        &mut (),
+        &mut (),
       )
     };
   }
@@ -122,14 +143,10 @@ mod tests {
           value: (),
           digested: 1,
         },
+        &mut (),
+        &mut (),
       )
     };
-  }
-
-  #[test]
-  fn make_sure_accepted_clone_able() {
-    let _ = ctx!().clone();
-    let _ = ctx_bytes!().clone();
   }
 
   #[test]

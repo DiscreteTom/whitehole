@@ -12,18 +12,18 @@
 //!
 //! [`Action`]s are stateless and immutable,
 //! but they can access external states to change their behavior.
-//! See [`Context::state`] and [`Context::heap`] for more information.
+//! See [`Input::state`] and [`Input::heap`] for more information.
 //!
 //! States are centrally managed by the parser,
 //! so it's easy to realize peeking and backtracking.
 
-mod context;
+mod input;
 mod output;
 
 use crate::instant::Instant;
 use std::rc::Rc;
 
-pub use context::*;
+pub use input::*;
 pub use output::*;
 
 /// The basic building block of a parser.
@@ -33,9 +33,9 @@ pub use output::*;
 pub unsafe trait Action<Text: ?Sized = str> {
   /// See [`Output::value`].
   type Value;
-  /// See [`Context::state`].
+  /// See [`Input::state`].
   type State;
-  /// See [`Context::heap`].
+  /// See [`Input::heap`].
   type Heap;
 
   /// Try to digest some bytes from the [`Instant::rest`],
@@ -44,8 +44,7 @@ pub unsafe trait Action<Text: ?Sized = str> {
   /// Return [`None`] to reject.
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    ctx: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>>;
 }
 
@@ -57,10 +56,9 @@ unsafe impl<Text: ?Sized, T: Action<Text> + ?Sized> Action<Text> for &T {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    ctx: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    (**self).exec(instant, ctx)
+    (**self).exec(input)
   }
 }
 
@@ -72,10 +70,9 @@ unsafe impl<Text: ?Sized, T: Action<Text> + ?Sized> Action<Text> for Box<T> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    ctx: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    self.as_ref().exec(instant, ctx)
+    self.as_ref().exec(input)
   }
 }
 
@@ -87,10 +84,9 @@ unsafe impl<Text: ?Sized, T: Action<Text> + ?Sized> Action<Text> for Rc<T> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    ctx: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    self.as_ref().exec(instant, ctx)
+    self.as_ref().exec(input)
   }
 }
 
@@ -101,24 +97,20 @@ mod tests {
 
   fn assert_str_action(t: impl Action<Value = (), State = (), Heap = ()>) {
     assert!(t
-      .exec(
-        &Instant::new("123"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
+      .exec(Input {
+        instant: &Instant::new("123"),
+        state: &mut (),
+        heap: &mut ()
+      })
       .is_some());
   }
   fn assert_bytes_action(t: impl Action<[u8], Value = (), State = (), Heap = ()>) {
     assert!(t
-      .exec(
-        &Instant::new(b"123"),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      )
+      .exec(Input {
+        instant: &Instant::new(b"123"),
+        state: &mut (),
+        heap: &mut ()
+      })
       .is_some());
   }
 

@@ -44,7 +44,7 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
 #[cfg(test)]
 mod tests {
   use crate::{
-    action::{Action, Context, Output},
+    action::{Action, Input, Output},
     combinator::wrap,
     digest::Digest,
     instant::Instant,
@@ -59,13 +59,11 @@ mod tests {
     RangeFrom<usize>: SliceIndex<Text, Output = Text>,
   {
     assert_eq!(
-      action.exec(
-        &Instant::new(input),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      ),
+      action.exec(Input {
+        instant: &Instant::new(input),
+        state: &mut (),
+        heap: &mut ()
+      }),
       expected
     )
   }

@@ -64,8 +64,8 @@ mod concat;
 pub use concat::*;
 
 use crate::{
-  action::Context,
-  combinator::{eat, Action, Combinator, Eat, Output},
+  action::{Action, Input, Output},
+  combinator::{eat, Combinator, Eat},
   digest::Digest,
   instant::Instant,
 };
@@ -105,16 +105,12 @@ where
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
+    mut input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    self.lhs.exec(instant, ctx.reborrow()).and_then(|output| {
+    self.lhs.exec(input.reborrow()).and_then(|output| {
       self
         .rhs
-        .exec(
-          &unsafe { instant.to_digested_unchecked(output.digested) },
-          ctx,
-        )
+        .exec(input.reload(&unsafe { input.instant.to_digested_unchecked(output.digested) }))
         .map(|rhs_output| Output {
           value: output.value.concat(rhs_output.value),
           digested: unsafe { output.digested.unchecked_add(rhs_output.digested) },
@@ -218,20 +214,18 @@ mod tests {
     RangeFrom<usize>: SliceIndex<Text, Output = Text>,
   {
     assert_eq!(
-      action.exec(
-        &Instant::new(input),
-        Context {
-          state: &mut (),
-          heap: &mut ()
-        }
-      ),
+      action.exec(Input {
+        instant: &Instant::new(input),
+        state: &mut (),
+        heap: &mut ()
+      }),
       output
     )
   }
 
   #[test]
   fn combinator_add() {
-    let rejecter = || take(0).reject(|_, _| true);
+    let rejecter = || take(0).reject(|_| true);
     let accepter_unit = || take(1);
     let accepter_int = || take(1).bind((123,));
 

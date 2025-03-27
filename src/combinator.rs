@@ -120,7 +120,7 @@ pub use decorator::*;
 pub use provided::*;
 
 use crate::{
-  action::{Action, Context, Output},
+  action::{Action, Input, Output},
   instant::Instant,
 };
 
@@ -151,10 +151,9 @@ unsafe impl<Text: ?Sized, T: Action<Text>> Action<Text> for Combinator<T> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    ctx: Context<&mut T::State, &mut T::Heap>,
+    input: Input<&Instant<&Text>, &mut T::State, &mut T::Heap>,
   ) -> Option<Output<T::Value>> {
-    self.action.exec(instant, ctx)
+    self.action.exec(input)
   }
 }
 

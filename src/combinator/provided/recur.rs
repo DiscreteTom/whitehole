@@ -1,5 +1,5 @@
 use crate::{
-  action::{Action, Context, Output},
+  action::{Action, Input, Output},
   combinator::Combinator,
   instant::Instant,
 };
@@ -77,10 +77,9 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text> for Recur<Text, State
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    ctx: Context<&mut State, &mut Heap>,
+    input: Input<&Instant<&Text>, &mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
-    self.inner.get().unwrap().exec(instant, ctx)
+    self.inner.get().unwrap().exec(input)
   }
 }
 
@@ -162,11 +161,10 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action<Text>
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    ctx: Context<&mut State, &mut Heap>,
+    input: Input<&Instant<&Text>, &mut State, &mut Heap>,
   ) -> Option<Output<Self::Value>> {
     debug_assert!(self.inner.get().is_some());
-    unsafe { self.inner.get().unwrap_unchecked() }.exec(instant, ctx)
+    unsafe { self.inner.get().unwrap_unchecked() }.exec(input)
   }
 }
 
@@ -226,13 +224,11 @@ mod tests {
   {
     assert_eq!(
       action
-        .exec(
-          &Instant::new(input),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new(input),
+          state: &mut (),
+          heap: &mut ()
+        })
         .map(|o| o.digested),
       digested
     )
@@ -262,13 +258,11 @@ mod tests {
   #[should_panic]
   fn test_recur_panic() {
     let (value, _) = recur::<_, _, _, ()>();
-    value().exec(
-      &Instant::new("a"),
-      Context {
-        state: &mut (),
-        heap: &mut (),
-      },
-    );
+    value().exec(Input {
+      instant: &Instant::new("a"),
+      state: &mut (),
+      heap: &mut (),
+    });
   }
 
   #[test]
@@ -295,12 +289,10 @@ mod tests {
   #[should_panic]
   fn test_recur_unchecked_panic() {
     let (value, _) = unsafe { recur_unchecked::<_, _, _, ()>() };
-    value().exec(
-      &Instant::new("a"),
-      Context {
-        state: &mut (),
-        heap: &mut (),
-      },
-    );
+    value().exec(Input {
+      instant: &Instant::new("a"),
+      state: &mut (),
+      heap: &mut (),
+    });
   }
 }

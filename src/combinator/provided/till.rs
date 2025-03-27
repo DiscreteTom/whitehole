@@ -1,5 +1,5 @@
 use crate::{
-  action::{Action, Context, Output},
+  action::{Action, Input, Output},
   combinator::{create_value_combinator, Combinator},
   digest::Digest,
   instant::Instant,
@@ -15,13 +15,13 @@ unsafe impl Action<str> for Till<&str> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&str>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    instant
-      .rest()
-      .find(self.inner)
-      .map(|i| unsafe { instant.accept_unchecked(i.unchecked_add(self.inner.len())) })
+    input.instant.rest().find(self.inner).map(|i| unsafe {
+      input
+        .instant
+        .accept_unchecked(i.unchecked_add(self.inner.len()))
+    })
   }
 }
 
@@ -33,13 +33,13 @@ unsafe impl Action<str> for Till<String> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&str>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    instant
-      .rest()
-      .find(&self.inner)
-      .map(|i| unsafe { instant.accept_unchecked(i.unchecked_add(self.inner.len())) })
+    input.instant.rest().find(&self.inner).map(|i| unsafe {
+      input
+        .instant
+        .accept_unchecked(i.unchecked_add(self.inner.len()))
+    })
   }
 }
 
@@ -51,13 +51,13 @@ unsafe impl Action<str> for Till<char> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&str>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    instant
-      .rest()
-      .find(self.inner)
-      .map(|i| unsafe { instant.accept_unchecked(i.unchecked_add(self.inner.len_utf8())) })
+    input.instant.rest().find(self.inner).map(|i| unsafe {
+      input
+        .instant
+        .accept_unchecked(i.unchecked_add(self.inner.len_utf8()))
+    })
   }
 }
 
@@ -69,15 +69,15 @@ unsafe impl Action<[u8]> for Till<u8> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&[u8]>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    instant
+    input
+      .instant
       .rest()
       .iter()
       .enumerate()
       .find(|(_, b)| **b == self.inner)
-      .map(|(i, _)| unsafe { instant.accept_unchecked(i.unchecked_add(1)) })
+      .map(|(i, _)| unsafe { input.instant.accept_unchecked(i.unchecked_add(1)) })
   }
 }
 
@@ -89,17 +89,21 @@ unsafe impl Action<[u8]> for Till<&[u8]> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&[u8]>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     // TODO: optimize
     if !self.inner.is_empty() {
-      instant
+      input
+        .instant
         .rest()
         .windows(self.inner.len())
         .enumerate()
         .find(|(_, window)| *window == self.inner)
-        .map(|(i, _)| unsafe { instant.accept_unchecked(i.unchecked_add(self.inner.len())) })
+        .map(|(i, _)| unsafe {
+          input
+            .instant
+            .accept_unchecked(i.unchecked_add(self.inner.len()))
+        })
     } else {
       // window length can't be zero so we need special handling
       Some(Output {
@@ -118,17 +122,17 @@ unsafe impl<const N: usize> Action<[u8]> for Till<&[u8; N]> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&[u8]>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     // TODO: optimize
     if N != 0 {
-      instant
+      input
+        .instant
         .rest()
         .windows(N)
         .enumerate()
         .find(|(_, window)| *window == self.inner)
-        .map(|(i, _)| unsafe { instant.accept_unchecked(i.unchecked_add(N)) })
+        .map(|(i, _)| unsafe { input.instant.accept_unchecked(i.unchecked_add(N)) })
     } else {
       // window length can't be zero so we need special handling
       Some(Output {
@@ -147,17 +151,21 @@ unsafe impl Action<[u8]> for Till<Vec<u8>> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&[u8]>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     // TODO: optimize
     if !self.inner.is_empty() {
-      instant
+      input
+        .instant
         .rest()
         .windows(self.inner.len())
         .enumerate()
         .find(|(_, window)| *window == self.inner)
-        .map(|(i, _)| unsafe { instant.accept_unchecked(i.unchecked_add(self.inner.len())) })
+        .map(|(i, _)| unsafe {
+          input
+            .instant
+            .accept_unchecked(i.unchecked_add(self.inner.len()))
+        })
     } else {
       // window length can't be zero so we need special handling
       Some(Output {
@@ -176,10 +184,14 @@ unsafe impl<Text: ?Sized + Digest> Action<Text> for Till<()> {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    unsafe { instant.accept_unchecked(instant.rest().as_bytes().len()) }.into()
+    unsafe {
+      input
+        .instant
+        .accept_unchecked(input.instant.rest().as_bytes().len())
+    }
+    .into()
   }
 }
 
@@ -245,13 +257,11 @@ mod tests {
   {
     assert_eq!(
       action
-        .exec(
-          &Instant::new(input),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new(input),
+          state: &mut (),
+          heap: &mut ()
+        })
         .map(|o| o.digested),
       digested
     )

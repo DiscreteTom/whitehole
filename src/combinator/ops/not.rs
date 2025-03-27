@@ -20,8 +20,8 @@
 //! ```
 
 use crate::{
-  action::Context,
-  combinator::{Action, Combinator, Output},
+  action::{Action, Input, Output},
+  combinator::Combinator,
   instant::Instant,
 };
 use std::ops;
@@ -48,10 +48,9 @@ unsafe impl<Text: ?Sized, T: Action<Text, Value: Default>> Action<Text> for Not<
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    mut ctx: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    if let Some(_) = self.action.exec(instant, ctx.reborrow()) {
+    if let Some(_) = self.action.exec(input) {
       None
     } else {
       Some(Output {
@@ -91,13 +90,11 @@ mod tests {
   {
     assert_eq!(
       action
-        .exec(
-          &Instant::new(input),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new(input),
+          state: &mut (),
+          heap: &mut ()
+        })
         .map(|o| o.digested),
       digested
     )
@@ -107,8 +104,8 @@ mod tests {
   fn test_not() {
     let accept = || take(1);
     let accept0 = || take(0);
-    let reject = || take(1).reject(|_, _| true);
-    let reject_b = || take(1).reject(|_, _| true);
+    let reject = || take(1).reject(|_| true);
+    let reject_b = || take(1).reject(|_| true);
 
     helper(!accept(), "1", None);
     helper(!accept0(), "1", None);

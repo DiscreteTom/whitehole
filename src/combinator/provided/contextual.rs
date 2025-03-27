@@ -1,5 +1,5 @@
 use crate::{
-  action::{Action, Context, Output},
+  action::{Action, Input, Output},
   instant::Instant,
 };
 use std::{fmt::Debug, marker::PhantomData};
@@ -50,16 +50,13 @@ unsafe impl<Text: ?Sized, T: Action<Text, State: Default, Heap: Default>, State,
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    _ctx: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    self.inner.exec(
-      instant,
-      Context {
-        state: &mut Default::default(),
-        heap: &mut Default::default(),
-      },
-    )
+    self.inner.exec(Input {
+      instant: input.instant,
+      state: &mut Default::default(),
+      heap: &mut Default::default(),
+    })
   }
 }
 
@@ -166,12 +163,10 @@ mod tests {
     contextual!(i32, i32);
 
     let action = eat('a');
-    action.exec(
-      &Instant::new("abc"),
-      Context {
-        state: &mut 0,
-        heap: &mut 0,
-      },
-    );
+    action.exec(Input {
+      instant: &Instant::new("abc"),
+      state: &mut 0,
+      heap: &mut 0,
+    });
   }
 }

@@ -1,5 +1,5 @@
 use crate::{
-  action::{Action, Context, Output},
+  action::{Action, Input, Output},
   combinator::Combinator,
   instant::Instant,
 };
@@ -25,12 +25,11 @@ unsafe impl Action<str> for Take {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&str>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     let mut digested: usize = 0;
     let mut count: usize = 0;
-    let mut chars = instant.rest().chars();
+    let mut chars = input.instant.rest().chars();
     while count < self.n {
       // no enough chars, try to digest more
       if let Some(c) = chars.next() {
@@ -43,7 +42,7 @@ unsafe impl Action<str> for Take {
       }
     }
     // enough chars
-    unsafe { instant.accept_unchecked(digested) }.into()
+    unsafe { input.instant.accept_unchecked(digested) }.into()
   }
 }
 
@@ -55,10 +54,9 @@ unsafe impl Action<[u8]> for Take {
   #[inline]
   fn exec(
     &self,
-    instant: &Instant<&[u8]>,
-    _: Context<&mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    instant.accept(self.n)
+    input.instant.accept(self.n)
   }
 }
 
@@ -102,13 +100,11 @@ mod tests {
   {
     assert_eq!(
       action
-        .exec(
-          &Instant::new(input),
-          Context {
-            state: &mut (),
-            heap: &mut ()
-          }
-        )
+        .exec(Input {
+          instant: &Instant::new(input),
+          state: &mut (),
+          heap: &mut ()
+        })
         .map(|o| o.digested),
       digested
     )
