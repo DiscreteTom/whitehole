@@ -6,15 +6,16 @@ use crate::{
 
 create_value_combinator!(Eat, "See [`eat`].");
 
-unsafe impl Action<str> for Eat<char> {
-  type Value = ();
+unsafe impl Action for Eat<char> {
+  type Text = str;
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     input
       .instant
@@ -24,15 +25,16 @@ unsafe impl Action<str> for Eat<char> {
   }
 }
 
-unsafe impl Action<str> for Eat<String> {
-  type Value = ();
+unsafe impl Action for Eat<String> {
+  type Text = str;
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     input
       .instant
@@ -42,15 +44,16 @@ unsafe impl Action<str> for Eat<String> {
   }
 }
 
-unsafe impl Action<str> for Eat<&str> {
-  type Value = ();
+unsafe impl Action for Eat<&str> {
+  type Text = str;
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     input
       .instant
@@ -127,7 +130,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, Value = (), State = (), Heap = ()>,
+    action: impl Action<Text = Text, Value = (), State = (), Heap = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where
@@ -165,7 +168,7 @@ mod tests {
 
   #[test]
   fn eat_into_combinator() {
-    fn test(c: Combinator<impl Action<Value = (), State = (), Heap = ()>>) {
+    fn test(c: Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>>) {
       helper(c, "a", Some(1));
     }
     test('a'.into());

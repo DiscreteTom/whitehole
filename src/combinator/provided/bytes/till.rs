@@ -1,21 +1,21 @@
 use crate::{
   action::{Action, Input, Output},
   combinator::{create_value_combinator, Combinator},
-  digest::Digest,
   instant::Instant,
 };
 
 create_value_combinator!(Till, "See [`till`].");
 
-unsafe impl Action<[u8]> for Till<u8> {
-  type Value = ();
+unsafe impl Action for Till<u8> {
+  type Text = [u8];
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     input
       .instant
@@ -27,15 +27,16 @@ unsafe impl Action<[u8]> for Till<u8> {
   }
 }
 
-unsafe impl Action<[u8]> for Till<&[u8]> {
-  type Value = ();
+unsafe impl Action for Till<&[u8]> {
+  type Text = [u8];
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     // TODO: optimize
     if !self.inner.is_empty() {
@@ -60,15 +61,16 @@ unsafe impl Action<[u8]> for Till<&[u8]> {
   }
 }
 
-unsafe impl<const N: usize> Action<[u8]> for Till<&[u8; N]> {
-  type Value = ();
+unsafe impl<const N: usize> Action for Till<&[u8; N]> {
+  type Text = [u8];
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     // TODO: optimize
     if N != 0 {
@@ -89,15 +91,16 @@ unsafe impl<const N: usize> Action<[u8]> for Till<&[u8; N]> {
   }
 }
 
-unsafe impl Action<[u8]> for Till<Vec<u8>> {
-  type Value = ();
+unsafe impl Action for Till<Vec<u8>> {
+  type Text = [u8];
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     // TODO: optimize
     if !self.inner.is_empty() {
@@ -122,24 +125,22 @@ unsafe impl Action<[u8]> for Till<Vec<u8>> {
   }
 }
 
-unsafe impl<Text: ?Sized + Digest> Action<Text> for Till<()> {
-  type Value = ();
+unsafe impl Action for Till<()> {
+  type Text = [u8];
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    unsafe {
-      input
-        .instant
-        .accept_unchecked(input.instant.rest().as_bytes().len())
-    }
-    .into()
+    unsafe { input.instant.accept_unchecked(input.instant.rest().len()) }.into()
   }
 }
+
+// TODO: merge dup code
 
 /// Return a combinator to match the provided pattern, eat all the bytes
 /// to the end of the first occurrence of the pattern (inclusive).
@@ -191,11 +192,11 @@ pub const fn till<T>(pattern: T) -> Combinator<Till<T>> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{action::Action, instant::Instant};
+  use crate::{action::Action, digest::Digest, instant::Instant};
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, State = (), Heap = (), Value = ()>,
+    action: impl Action<Text = Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where

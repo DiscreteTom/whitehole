@@ -135,7 +135,7 @@ use std::{
 /// An [`Action`] created by the `*` operator.
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
 #[derive(Debug, Clone, Copy)]
-pub struct Mul<Lhs, Rhs, Sep = NoSep, Init = fn(), Fold = fn((), ())> {
+pub struct Mul<Lhs, Rhs, Sep, Init = fn(), Fold = fn((), ())> {
   lhs: Lhs,
   rhs: Rhs,
   sep: Sep,
@@ -143,49 +143,56 @@ pub struct Mul<Lhs, Rhs, Sep = NoSep, Init = fn(), Fold = fn((), ())> {
   fold: Fold,
 }
 
-impl<Lhs, Rhs> Mul<Lhs, Rhs> {
-  #[inline]
-  const fn new(lhs: Lhs, rhs: Rhs) -> Self {
-    Self {
-      lhs,
-      rhs,
-      sep: NoSep,
-      init: || (),
-      fold: |_, _| (),
-    }
-  }
-}
+// TODO
+// impl<Lhs, Rhs> Mul<Lhs, Rhs> {
+//   #[inline]
+//   const fn new(lhs: Lhs, rhs: Rhs) -> Self {
+//     Self {
+//       lhs,
+//       rhs,
+//       sep: NoSep::new(),
+//       init: || (),
+//       fold: |_, _| (),
+//     }
+//   }
+// }
 
-impl<Lhs, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
-  type Output = Combinator<Mul<Lhs, Rhs>>;
+impl<Lhs: Action, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
+  type Output = Combinator<Mul<Lhs, Rhs, NoSep<Lhs::Text, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   #[inline]
   fn mul(self, rhs: Rhs) -> Self::Output {
-    Self::Output::new(Mul::new(self.action, rhs))
+    Self::Output::new(Mul {
+      lhs: self.action,
+      rhs,
+      sep: NoSep::new(),
+      init: || (),
+      fold: |_, _| (),
+    })
   }
 }
 
 unsafe impl<
-    Text: ?Sized + Digest,
-    Lhs: Action<Text>,
+    Lhs: Action<Text: Digest>,
     Rhs: Repeat,
-    Sep: Action<Text, State = Lhs::State, Heap = Lhs::Heap>,
+    Sep: Action<Text = Lhs::Text, State = Lhs::State, Heap = Lhs::Heap>,
     Acc,
     Init: Fn() -> Acc,
     Fold: Fn(Acc, Lhs::Value) -> Acc,
-  > Action<Text> for Mul<Lhs, Rhs, Sep, Init, Fold>
+  > Action for Mul<Lhs, Rhs, Sep, Init, Fold>
 where
-  RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  RangeFrom<usize>: SliceIndex<Lhs::Text, Output = Lhs::Text>,
 {
-  type Value = Acc;
+  type Text = Lhs::Text;
   type State = Lhs::State;
   type Heap = Lhs::Heap;
+  type Value = Acc;
 
   #[inline]
   fn exec(
     &self,
-    mut input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    mut input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let mut repeated = 0;
     let mut output = Output {

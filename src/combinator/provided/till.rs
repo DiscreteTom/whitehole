@@ -1,21 +1,21 @@
 use crate::{
   action::{Action, Input, Output},
   combinator::{create_value_combinator, Combinator},
-  digest::Digest,
   instant::Instant,
 };
 
 create_value_combinator!(Till, "See [`till`].");
 
-unsafe impl Action<str> for Till<&str> {
-  type Value = ();
+unsafe impl Action for Till<&str> {
+  type Text = str;
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     input.instant.rest().find(self.inner).map(|i| unsafe {
       input
@@ -25,15 +25,16 @@ unsafe impl Action<str> for Till<&str> {
   }
 }
 
-unsafe impl Action<str> for Till<String> {
-  type Value = ();
+unsafe impl Action for Till<String> {
+  type Text = str;
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     input.instant.rest().find(&self.inner).map(|i| unsafe {
       input
@@ -43,15 +44,16 @@ unsafe impl Action<str> for Till<String> {
   }
 }
 
-unsafe impl Action<str> for Till<char> {
-  type Value = ();
+unsafe impl Action for Till<char> {
+  type Text = str;
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     input.instant.rest().find(self.inner).map(|i| unsafe {
       input
@@ -61,15 +63,16 @@ unsafe impl Action<str> for Till<char> {
   }
 }
 
-unsafe impl<Text: ?Sized + Digest> Action<Text> for Till<()> {
-  type Value = ();
+unsafe impl Action for Till<()> {
+  type Text = str;
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     unsafe {
       input
@@ -130,11 +133,11 @@ pub const fn till<T>(pattern: T) -> Combinator<Till<T>> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{action::Action, instant::Instant};
+  use crate::{action::Action, digest::Digest, instant::Instant};
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, State = (), Heap = (), Value = ()>,
+    action: impl Action<Text = Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where

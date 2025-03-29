@@ -10,37 +10,36 @@ create_closure_decorator!(Then, "See [`Combinator::then`].");
 create_closure_decorator!(Catch, "See [`Combinator::catch`].");
 create_closure_decorator!(Finally, "See [`Combinator::finally`].");
 
-unsafe impl<Text: ?Sized, T: Action<Text>, D: Fn(Input<&Instant<&Text>, &mut T::State, &mut T::Heap>)>
-  Action<Text> for Prepare<T, D>
+unsafe impl<T: Action, D: Fn(Input<&Instant<&T::Text>, &mut T::State, &mut T::Heap>)> Action
+  for Prepare<T, D>
 {
-  type Value = T::Value;
+  type Text = T::Text;
   type State = T::State;
   type Heap = T::Heap;
+  type Value = T::Value;
 
   #[inline]
   fn exec(
     &self,
-    mut input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    mut input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     (self.inner)(input.reborrow());
     self.action.exec(input)
   }
 }
 
-unsafe impl<
-    Text: ?Sized,
-    T: Action<Text>,
-    D: Fn(Accepted<&Text, &T::Value, &mut T::State, &mut T::Heap>),
-  > Action<Text> for Then<T, D>
+unsafe impl<T: Action, D: Fn(Accepted<&T::Text, &T::Value, &mut T::State, &mut T::Heap>)> Action
+  for Then<T, D>
 {
-  type Value = T::Value;
+  type Text = T::Text;
   type State = T::State;
   type Heap = T::Heap;
+  type Value = T::Value;
 
   #[inline]
   fn exec(
     &self,
-    mut input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    mut input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).inspect(|output| {
       (self.inner)(Accepted::new(
@@ -53,17 +52,18 @@ unsafe impl<
   }
 }
 
-unsafe impl<Text: ?Sized, T: Action<Text>, D: Fn(Input<&Instant<&Text>, &mut T::State, &mut T::Heap>)>
-  Action<Text> for Catch<T, D>
+unsafe impl<T: Action, D: Fn(Input<&Instant<&T::Text>, &mut T::State, &mut T::Heap>)> Action
+  for Catch<T, D>
 {
-  type Value = T::Value;
+  type Text = T::Text;
   type State = T::State;
   type Heap = T::Heap;
+  type Value = T::Value;
 
   #[inline]
   fn exec(
     &self,
-    mut input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    mut input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let output = self.action.exec(input.reborrow());
     if output.is_none() {
@@ -73,17 +73,18 @@ unsafe impl<Text: ?Sized, T: Action<Text>, D: Fn(Input<&Instant<&Text>, &mut T::
   }
 }
 
-unsafe impl<Text: ?Sized, T: Action<Text>, D: Fn(Input<&Instant<&Text>, &mut T::State, &mut T::Heap>)>
-  Action<Text> for Finally<T, D>
+unsafe impl<T: Action, D: Fn(Input<&Instant<&T::Text>, &mut T::State, &mut T::Heap>)> Action
+  for Finally<T, D>
 {
-  type Value = T::Value;
+  type Text = T::Text;
   type State = T::State;
   type Heap = T::Heap;
+  type Value = T::Value;
 
   #[inline]
   fn exec(
     &self,
-    mut input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    mut input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let output = self.action.exec(input.reborrow());
     (self.inner)(input);
@@ -98,17 +99,17 @@ impl<T> Combinator<T> {
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: Combinator<impl Action<str, MyState>>) {
+  /// # fn t(combinator: Combinator<impl Action<Text=str, MyState>>) {
   /// combinator.prepare(|input, ctx| input.state.value += 1)
   /// # ;}
   /// ```
   #[inline]
-  pub fn prepare<Text: ?Sized, F: Fn(Input<&Instant<&Text>, &mut T::State, &mut T::Heap>)>(
+  pub fn prepare<F: Fn(Input<&Instant<&T::Text>, &mut T::State, &mut T::Heap>)>(
     self,
     modifier: F,
   ) -> Combinator<Prepare<T, F>>
   where
-    T: Action<Text>,
+    T: Action,
   {
     Combinator::new(Prepare::new(self.action, modifier))
   }
@@ -119,17 +120,17 @@ impl<T> Combinator<T> {
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: Combinator<impl Action<str, MyState>>) {
+  /// # fn t(combinator: Combinator<impl Action<Text=str, MyState>>) {
   /// combinator.then(|_, mut ctx| input.state.value += 1)
   /// # ;}
   /// ```
   #[inline]
-  pub fn then<Text: ?Sized, F: Fn(Accepted<&Text, &T::Value, &mut T::State, &mut T::Heap>)>(
+  pub fn then<F: Fn(Accepted<&T::Text, &T::Value, &mut T::State, &mut T::Heap>)>(
     self,
     modifier: F,
   ) -> Combinator<Then<T, F>>
   where
-    T: Action<Text>,
+    T: Action,
   {
     Combinator::new(Then::new(self.action, modifier))
   }
@@ -140,17 +141,17 @@ impl<T> Combinator<T> {
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: Combinator<impl Action<str, MyState>>) {
+  /// # fn t(combinator: Combinator<impl Action<Text=str, MyState>>) {
   /// combinator.catch(|input| input.state.value += 1)
   /// # ;}
   /// ```
   #[inline]
-  pub fn catch<Text: ?Sized, F: Fn(Input<&Instant<&Text>, &mut T::State, &mut T::Heap>)>(
+  pub fn catch<F: Fn(Input<&Instant<&T::Text>, &mut T::State, &mut T::Heap>)>(
     self,
     modifier: F,
   ) -> Combinator<Catch<T, F>>
   where
-    T: Action<Text>,
+    T: Action,
   {
     Combinator::new(Catch::new(self.action, modifier))
   }
@@ -162,17 +163,17 @@ impl<T> Combinator<T> {
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: Combinator<impl Action<str, MyState>>) {
+  /// # fn t(combinator: Combinator<impl Action<Text=str, MyState>>) {
   /// combinator.finally(|input| input.state.value += 1)
   /// # ;}
   /// ```
   #[inline]
-  pub fn finally<Text: ?Sized, F: Fn(Input<&Instant<&Text>, &mut T::State, &mut T::Heap>)>(
+  pub fn finally<F: Fn(Input<&Instant<&T::Text>, &mut T::State, &mut T::Heap>)>(
     self,
     modifier: F,
   ) -> Combinator<Finally<T, F>>
   where
-    T: Action<Text>,
+    T: Action,
   {
     Combinator::new(Finally::new(self.action, modifier))
   }
@@ -191,7 +192,7 @@ mod tests {
   }
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, State = State, Heap = (), Value = ()>,
+    action: impl Action<Text = Text, State = State, Heap = (), Value = ()>,
     input: &Text,
     state: &mut State,
     digested: Option<usize>,
@@ -212,17 +213,19 @@ mod tests {
 
   contextual!(State, ());
 
-  fn accepter() -> Combinator<impl Action<str, State = State, Heap = (), Value = ()>> {
+  fn accepter() -> Combinator<impl Action<Text = str, State = State, Heap = (), Value = ()>> {
     wrap(|instant| instant.accept(1)).prepare(|input| input.state.to = input.state.from)
   }
-  fn accepter_bytes() -> Combinator<impl Action<[u8], State = State, Heap = (), Value = ()>> {
+  fn accepter_bytes() -> Combinator<impl Action<Text = [u8], State = State, Heap = (), Value = ()>>
+  {
     bytes::wrap(|instant| instant.accept(1)).prepare(|input| input.state.to = input.state.from)
   }
 
-  fn rejecter() -> Combinator<impl Action<str, State = State, Heap = (), Value = ()>> {
+  fn rejecter() -> Combinator<impl Action<Text = str, State = State, Heap = (), Value = ()>> {
     wrap(|_| None).prepare(|input| input.state.to = input.state.from)
   }
-  fn rejecter_bytes() -> Combinator<impl Action<[u8], State = State, Heap = (), Value = ()>> {
+  fn rejecter_bytes() -> Combinator<impl Action<Text = [u8], State = State, Heap = (), Value = ()>>
+  {
     bytes::wrap(|_| None).prepare(|input| input.state.to = input.state.from)
   }
 

@@ -206,7 +206,7 @@ use std::{ops::RangeFrom, slice::SliceIndex};
 ///
 /// See the [module-level documentation](self) for more.
 #[derive(Debug)]
-pub struct Parser<'text, Text: ?Sized, T: Action<Text>> {
+pub struct Parser<'text, T: Action> {
   /// See [`Input::state`].
   /// You can mutate this directly if needed.
   pub state: T::State,
@@ -215,14 +215,12 @@ pub struct Parser<'text, Text: ?Sized, T: Action<Text>> {
   pub heap: T::Heap,
 
   /// See [`Self::instant`].
-  instant: Instant<&'text Text>,
+  instant: Instant<&'text T::Text>,
   /// See [`Self::entry`].
   entry: T,
 }
 
-impl<'text, Text: ?Sized, T: Action<Text, State: Clone, Heap: Clone> + Clone> Clone
-  for Parser<'text, Text, T>
-{
+impl<'text, T: Action<State: Clone, Heap: Clone> + Clone> Clone for Parser<'text, T> {
   fn clone(&self) -> Self {
     Parser {
       state: self.state.clone(),
@@ -234,7 +232,7 @@ impl<'text, Text: ?Sized, T: Action<Text, State: Clone, Heap: Clone> + Clone> Cl
 }
 
 // TODO: don't use Eat here
-impl Parser<'static, str, Eat<char>> {
+impl Parser<'static, Eat<char>> {
   /// Create a parser builder with default settings.
   #[inline]
   pub const fn builder() -> Builder<()> {
@@ -242,7 +240,7 @@ impl Parser<'static, str, Eat<char>> {
   }
 }
 
-impl<'text, Text: ?Sized, T: Action<Text>> Parser<'text, Text, T> {
+impl<'text, T: Action> Parser<'text, T> {
   /// The entry action.
   #[inline]
   pub const fn entry(&self) -> &T {
@@ -252,18 +250,18 @@ impl<'text, Text: ?Sized, T: Action<Text>> Parser<'text, Text, T> {
   /// See [`Instant`].
   /// You are not allowed to mutate this directly.
   #[inline]
-  pub const fn instant(&self) -> &Instant<&'text Text> {
+  pub const fn instant(&self) -> &Instant<&'text T::Text> {
     &self.instant
   }
 }
 
-impl<'text, Text: ?Sized, T: Action<Text>> Parser<'text, Text, T> {
+impl<'text, T: Action> Parser<'text, T> {
   /// Consume self, return a new instance with the same action and a new text.
   ///
   /// [`Self::instant`] and [`Self::state`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload(self, text: &Text) -> Parser<Text, T>
+  pub fn reload(self, text: &T::Text) -> Parser<T>
   where
     T::State: Default,
   {
@@ -276,7 +274,7 @@ impl<'text, Text: ?Sized, T: Action<Text>> Parser<'text, Text, T> {
   /// [`Self::instant`] will be reset to default.
   /// [`Self::heap`] won't change.
   #[inline]
-  pub fn reload_with(self, state: impl Into<Option<T::State>>, text: &Text) -> Parser<Text, T> {
+  pub fn reload_with(self, state: impl Into<Option<T::State>>, text: &T::Text) -> Parser<T> {
     Parser {
       entry: self.entry,
       heap: self.heap,
@@ -287,7 +285,7 @@ impl<'text, Text: ?Sized, T: Action<Text>> Parser<'text, Text, T> {
 
   /// Take a snapshot of the current [`Self::state`] and [`Self::instant`].
   #[inline]
-  pub fn snapshot(&self) -> Snapshot<&'text Text, T::State>
+  pub fn snapshot(&self) -> Snapshot<&'text T::Text, T::State>
   where
     T::State: Clone,
   {
@@ -299,7 +297,7 @@ impl<'text, Text: ?Sized, T: Action<Text>> Parser<'text, Text, T> {
 
   /// Restore [`Self::state`] and [`Self::instant`] from a [`Snapshot`].
   #[inline]
-  pub fn restore(&mut self, snapshot: Snapshot<&'text Text, T::State>) {
+  pub fn restore(&mut self, snapshot: Snapshot<&'text T::Text, T::State>) {
     self.state = snapshot.state;
     self.instant = snapshot.instant;
   }
@@ -315,9 +313,9 @@ impl<'text, Text: ?Sized, T: Action<Text>> Parser<'text, Text, T> {
   #[inline]
   pub unsafe fn digest_unchecked(&mut self, n: usize)
   where
-    Text: Digest,
+    T::Text: Digest,
     T::State: Default,
-    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+    RangeFrom<usize>: SliceIndex<T::Text, Output = T::Text>,
   {
     self.digest_with_unchecked(T::State::default(), n)
   }
@@ -328,8 +326,8 @@ impl<'text, Text: ?Sized, T: Action<Text>> Parser<'text, Text, T> {
   #[inline]
   pub unsafe fn digest_with_unchecked(&mut self, state: impl Into<Option<T::State>>, n: usize)
   where
-    Text: Digest,
-    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+    T::Text: Digest,
+    RangeFrom<usize>: SliceIndex<T::Text, Output = T::Text>,
   {
     self.instant.digest_unchecked(n);
     if let Some(state) = state.into() {
@@ -357,9 +355,9 @@ impl<'text, Text: ?Sized, T: Action<Text>> Parser<'text, Text, T> {
   }
 }
 
-impl<'text, Text: ?Sized + Digest, T: Action<Text>> Iterator for Parser<'text, Text, T>
+impl<'text, T: Action<Text: Digest>> Iterator for Parser<'text, T>
 where
-  RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  RangeFrom<usize>: SliceIndex<T::Text, Output = T::Text>,
 {
   type Item = Output<T::Value>;
 

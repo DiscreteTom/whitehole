@@ -30,13 +30,15 @@ pub use output::*;
 /// See the [module level documentation](crate::action) for more information.
 /// # Safety
 /// The [`Output`] of [`Action::exec`] should satisfy the requirement of [`Output::digested`].
-pub unsafe trait Action<Text: ?Sized = str> {
-  /// See [`Output::value`].
-  type Value;
+pub unsafe trait Action {
+  /// See [`Instant::text`].
+  type Text: ?Sized;
   /// See [`Input::state`].
   type State;
   /// See [`Input::heap`].
   type Heap;
+  /// See [`Output::value`].
+  type Value;
 
   /// Try to digest some bytes from the [`Instant::rest`],
   /// optionally change the state of the parsing,
@@ -44,47 +46,50 @@ pub unsafe trait Action<Text: ?Sized = str> {
   /// Return [`None`] to reject.
   fn exec(
     &self,
-    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>>;
 }
 
-unsafe impl<Text: ?Sized, T: Action<Text> + ?Sized> Action<Text> for &T {
-  type Value = T::Value;
+unsafe impl<T: Action + ?Sized> Action for &T {
+  type Text = T::Text;
   type State = T::State;
   type Heap = T::Heap;
+  type Value = T::Value;
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     (**self).exec(input)
   }
 }
 
-unsafe impl<Text: ?Sized, T: Action<Text> + ?Sized> Action<Text> for Box<T> {
-  type Value = T::Value;
+unsafe impl<T: Action + ?Sized> Action for Box<T> {
+  type Text = T::Text;
   type State = T::State;
   type Heap = T::Heap;
+  type Value = T::Value;
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self.as_ref().exec(input)
   }
 }
 
-unsafe impl<Text: ?Sized, T: Action<Text> + ?Sized> Action<Text> for Rc<T> {
-  type Value = T::Value;
+unsafe impl<T: Action + ?Sized> Action for Rc<T> {
+  type Text = T::Text;
   type State = T::State;
   type Heap = T::Heap;
+  type Value = T::Value;
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self.as_ref().exec(input)
   }
@@ -98,7 +103,7 @@ mod tests {
     instant::Instant,
   };
 
-  fn assert_str_action(t: impl Action<Value = (), State = (), Heap = ()>) {
+  fn assert_str_action(t: impl Action<Text = str, State = (), Heap = (), Value = ()>) {
     assert!(t
       .exec(Input {
         instant: &Instant::new("123"),
@@ -107,7 +112,7 @@ mod tests {
       })
       .is_some());
   }
-  fn assert_bytes_action(t: impl Action<[u8], Value = (), State = (), Heap = ()>) {
+  fn assert_bytes_action(t: impl Action<Text = [u8], State = (), Heap = (), Value = ()>) {
     assert!(t
       .exec(Input {
         instant: &Instant::new(b"123"),
@@ -125,8 +130,10 @@ mod tests {
 
   #[test]
   fn action_dyn_ref() {
-    assert_str_action(&take(1) as &dyn Action<State = (), Heap = (), Value = ()>);
-    assert_bytes_action(&bytes::take(1) as &dyn Action<[u8], State = (), Heap = (), Value = ()>);
+    assert_str_action(&take(1) as &dyn Action<Text = str, State = (), Heap = (), Value = ()>);
+    assert_bytes_action(
+      &bytes::take(1) as &dyn Action<Text = [u8], State = (), Heap = (), Value = ()>
+    );
   }
 
   #[test]
@@ -137,9 +144,11 @@ mod tests {
 
   #[test]
   fn boxed_dyn_action() {
-    assert_str_action(Box::new(take(1)) as Box<dyn Action<State = (), Heap = (), Value = ()>>);
+    assert_str_action(
+      Box::new(take(1)) as Box<dyn Action<Text = str, State = (), Heap = (), Value = ()>>
+    );
     assert_bytes_action(
-      Box::new(bytes::take(1)) as Box<dyn Action<[u8], State = (), Heap = (), Value = ()>>
+      Box::new(bytes::take(1)) as Box<dyn Action<Text = [u8], State = (), Heap = (), Value = ()>>
     );
   }
 
@@ -151,9 +160,11 @@ mod tests {
 
   #[test]
   fn rc_dyn_action() {
-    assert_str_action(Rc::new(take(1)) as Rc<dyn Action<State = (), Heap = (), Value = ()>>);
+    assert_str_action(
+      Rc::new(take(1)) as Rc<dyn Action<Text = str, State = (), Heap = (), Value = ()>>
+    );
     assert_bytes_action(
-      Rc::new(bytes::take(1)) as Rc<dyn Action<[u8], State = (), Heap = (), Value = ()>>
+      Rc::new(bytes::take(1)) as Rc<dyn Action<Text = [u8], State = (), Heap = (), Value = ()>>
     );
   }
 }

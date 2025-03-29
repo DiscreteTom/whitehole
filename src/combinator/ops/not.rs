@@ -40,15 +40,16 @@ impl<T> Not<T> {
   }
 }
 
-unsafe impl<Text: ?Sized, T: Action<Text, Value: Default>> Action<Text> for Not<T> {
-  type Value = T::Value;
+unsafe impl<T: Action<Value: Default>> Action for Not<T> {
+  type Text = T::Text;
   type State = T::State;
   type Heap = T::Heap;
+  type Value = T::Value;
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     if let Some(_) = self.action.exec(input) {
       None
@@ -75,14 +76,14 @@ impl<T> ops::Not for Combinator<T> {
 mod tests {
   use super::*;
   use crate::{
-    combinator::{eat, take},
+    combinator::{bytes, eat, take},
     digest::Digest,
     instant::Instant,
   };
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, State = (), Heap = (), Value = ()>,
+    action: impl Action<Text = Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where
@@ -103,9 +104,11 @@ mod tests {
   #[test]
   fn test_not() {
     let accept = || take(1);
+    let accept_b = || bytes::take(1);
     let accept0 = || take(0);
+    let accept0_b = || bytes::take(0);
     let reject = || take(1).reject(|_| true);
-    let reject_b = || take(1).reject(|_| true);
+    let reject_b = || bytes::take(1).reject(|_| true);
 
     helper(!accept(), "1", None);
     helper(!accept0(), "1", None);
@@ -128,18 +131,18 @@ mod tests {
     helper(!!accept0(), "", Some(0));
     helper(!!reject(), "", None);
 
-    helper(!accept(), b"1" as &[u8], None);
-    helper(!accept0(), b"1" as &[u8], None);
+    helper(!accept_b(), b"1" as &[u8], None);
+    helper(!accept0_b(), b"1" as &[u8], None);
     helper(!reject_b(), b"1" as &[u8], Some(0));
-    helper(!!accept(), b"1" as &[u8], Some(0));
-    helper(!!accept0(), b"1" as &[u8], Some(0));
+    helper(!!accept_b(), b"1" as &[u8], Some(0));
+    helper(!!accept0_b(), b"1" as &[u8], Some(0));
     helper(!!reject_b(), b"1" as &[u8], None);
 
-    helper(!accept(), b"" as &[u8], Some(0));
-    helper(!accept0(), b"" as &[u8], None);
+    helper(!accept_b(), b"" as &[u8], Some(0));
+    helper(!accept0_b(), b"" as &[u8], None);
     helper(!reject_b(), b"" as &[u8], Some(0));
-    helper(!!accept(), b"" as &[u8], None);
-    helper(!!accept0(), b"" as &[u8], Some(0));
+    helper(!!accept_b(), b"" as &[u8], None);
+    helper(!!accept0_b(), b"" as &[u8], Some(0));
     helper(!!reject_b(), b"" as &[u8], None);
 
     helper(!eat('a'), "a", None);

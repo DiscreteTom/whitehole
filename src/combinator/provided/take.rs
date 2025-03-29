@@ -17,15 +17,16 @@ impl Take {
   }
 }
 
-unsafe impl Action<str> for Take {
-  type Value = ();
+unsafe impl Action for Take {
+  type Text = str;
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     let mut digested: usize = 0;
     let mut count: usize = 0;
@@ -78,7 +79,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, State = (), Heap = (), Value = ()>,
+    action: impl Action<Text = Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where

@@ -65,7 +65,7 @@ pub use concat::*;
 
 use crate::{
   action::{Action, Input, Output},
-  combinator::{eat, Combinator, Eat},
+  combinator::{bytes, Combinator, Contextual, Eat},
   digest::Digest,
   instant::Instant,
 };
@@ -91,21 +91,21 @@ impl<Lhs, Rhs> Add<Lhs, Rhs> {
 }
 
 unsafe impl<
-    Text: ?Sized + Digest,
-    Lhs: Action<Text, Value: Concat<Rhs::Value>>,
-    Rhs: Action<Text, State = Lhs::State, Heap = Lhs::Heap>,
-  > Action<Text> for Add<Lhs, Rhs>
+    Lhs: Action<Text: Digest, Value: Concat<Rhs::Value>>,
+    Rhs: Action<Text = Lhs::Text, State = Lhs::State, Heap = Lhs::Heap>,
+  > Action for Add<Lhs, Rhs>
 where
-  RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  RangeFrom<usize>: SliceIndex<Lhs::Text, Output = Lhs::Text>,
 {
-  type Value = <Lhs::Value as Concat<Rhs::Value>>::Output;
+  type Text = Lhs::Text;
   type State = Lhs::State;
   type Heap = Lhs::Heap;
+  type Value = <Lhs::Value as Concat<Rhs::Value>>::Output;
 
   #[inline]
   fn exec(
     &self,
-    mut input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    mut input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self.lhs.exec(input.reborrow()).and_then(|output| {
       self
@@ -129,74 +129,179 @@ impl<Lhs, Rhs> ops::Add<Combinator<Rhs>> for Combinator<Lhs> {
   }
 }
 
-// TODO: what about contextual?
-impl<Lhs> ops::Add<char> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, Eat<char>>>;
+// TODO: comments, move to a better place
+pub trait ComposeLiteral<Rhs> {
+  type Output;
+
+  fn to(rhs: Rhs) -> Self::Output;
+}
+
+impl ComposeLiteral<char> for str {
+  type Output = Eat<char>;
+
+  #[inline]
+  fn to(rhs: char) -> Self::Output {
+    Eat::new(rhs)
+  }
+}
+
+impl ComposeLiteral<String> for str {
+  type Output = Eat<String>;
+
+  #[inline]
+  fn to(rhs: String) -> Self::Output {
+    Eat::new(rhs)
+  }
+}
+
+impl<'a> ComposeLiteral<&'a str> for str {
+  type Output = Eat<&'a str>;
+
+  #[inline]
+  fn to(rhs: &'a str) -> Self::Output {
+    Eat::new(rhs)
+  }
+}
+
+impl ComposeLiteral<u8> for [u8] {
+  type Output = bytes::Eat<u8>;
+
+  #[inline]
+  fn to(rhs: u8) -> Self::Output {
+    bytes::Eat::new(rhs)
+  }
+}
+
+impl ComposeLiteral<Vec<u8>> for [u8] {
+  type Output = bytes::Eat<Vec<u8>>;
+
+  #[inline]
+  fn to(rhs: Vec<u8>) -> Self::Output {
+    bytes::Eat::new(rhs)
+  }
+}
+
+impl<'a> ComposeLiteral<&'a [u8]> for [u8] {
+  type Output = bytes::Eat<&'a [u8]>;
+
+  #[inline]
+  fn to(rhs: &'a [u8]) -> Self::Output {
+    bytes::Eat::new(rhs)
+  }
+}
+
+impl<'a, const N: usize> ComposeLiteral<&'a [u8; N]> for [u8] {
+  type Output = bytes::Eat<&'a [u8; N]>;
+
+  #[inline]
+  fn to(rhs: &'a [u8; N]) -> Self::Output {
+    bytes::Eat::new(rhs)
+  }
+}
+
+impl<Lhs: Action<Text: ComposeLiteral<char>>> ops::Add<char> for Combinator<Lhs> {
+  type Output = Combinator<
+    Add<Lhs, Contextual<<Lhs::Text as ComposeLiteral<char>>::Output, Lhs::State, Lhs::Heap>>,
+  >;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
   fn add(self, rhs: char) -> Self::Output {
-    Self::Output::new(Add::new(self.action, eat(rhs).action))
+    Self::Output::new(Add::new(
+      self.action,
+      Contextual::new(<Lhs::Text as ComposeLiteral<char>>::to(rhs)),
+    ))
   }
 }
 
-impl<'a, Lhs> ops::Add<&'a str> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, Eat<&'a str>>>;
-
-  /// See [`ops::add`](crate::combinator::ops::add) for more information.
-  #[inline]
-  fn add(self, rhs: &'a str) -> Self::Output {
-    Self::Output::new(Add::new(self.action, eat(rhs).action))
-  }
-}
-
-impl<Lhs> ops::Add<String> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, Eat<String>>>;
+impl<Lhs: Action<Text: ComposeLiteral<String>>> ops::Add<String> for Combinator<Lhs> {
+  type Output = Combinator<
+    Add<Lhs, Contextual<<Lhs::Text as ComposeLiteral<String>>::Output, Lhs::State, Lhs::Heap>>,
+  >;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
   fn add(self, rhs: String) -> Self::Output {
-    Self::Output::new(Add::new(self.action, eat(rhs).action))
+    Self::Output::new(Add::new(
+      self.action,
+      Contextual::new(<Lhs::Text as ComposeLiteral<String>>::to(rhs)),
+    ))
   }
 }
 
-impl<Lhs> ops::Add<u8> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, Eat<u8>>>;
+impl<'a, Lhs: Action<Text: ComposeLiteral<&'a str>>> ops::Add<&'a str> for Combinator<Lhs> {
+  type Output = Combinator<
+    Add<Lhs, Contextual<<Lhs::Text as ComposeLiteral<&'a str>>::Output, Lhs::State, Lhs::Heap>>,
+  >;
+
+  /// See [`ops::add`](crate::combinator::ops::add) for more information.
+  #[inline]
+  fn add(self, rhs: &'a str) -> Self::Output {
+    Self::Output::new(Add::new(
+      self.action,
+      Contextual::new(<Lhs::Text as ComposeLiteral<&'a str>>::to(rhs)),
+    ))
+  }
+}
+
+impl<Lhs: Action<Text: ComposeLiteral<u8>>> ops::Add<u8> for Combinator<Lhs> {
+  type Output = Combinator<
+    Add<Lhs, Contextual<<Lhs::Text as ComposeLiteral<u8>>::Output, Lhs::State, Lhs::Heap>>,
+  >;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
   fn add(self, rhs: u8) -> Self::Output {
-    Self::Output::new(Add::new(self.action, eat(rhs).action))
+    Self::Output::new(Add::new(
+      self.action,
+      Contextual::new(<Lhs::Text as ComposeLiteral<u8>>::to(rhs)),
+    ))
   }
 }
 
-impl<'a, Lhs> ops::Add<&'a [u8]> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, Eat<&'a [u8]>>>;
-
-  /// See [`ops::add`](crate::combinator::ops::add) for more information.
-  #[inline]
-  fn add(self, rhs: &'a [u8]) -> Self::Output {
-    Self::Output::new(Add::new(self.action, eat(rhs).action))
-  }
-}
-
-impl<'a, const N: usize, Lhs> ops::Add<&'a [u8; N]> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, Eat<&'a [u8; N]>>>;
-
-  /// See [`ops::add`](crate::combinator::ops::add) for more information.
-  #[inline]
-  fn add(self, rhs: &'a [u8; N]) -> Self::Output {
-    Self::Output::new(Add::new(self.action, eat(rhs).action))
-  }
-}
-
-impl<Lhs> ops::Add<Vec<u8>> for Combinator<Lhs> {
-  type Output = Combinator<Add<Lhs, Eat<Vec<u8>>>>;
+impl<Lhs: Action<Text: ComposeLiteral<Vec<u8>>>> ops::Add<Vec<u8>> for Combinator<Lhs> {
+  type Output = Combinator<
+    Add<Lhs, Contextual<<Lhs::Text as ComposeLiteral<Vec<u8>>>::Output, Lhs::State, Lhs::Heap>>,
+  >;
 
   /// See [`ops::add`](crate::combinator::ops::add) for more information.
   #[inline]
   fn add(self, rhs: Vec<u8>) -> Self::Output {
-    Self::Output::new(Add::new(self.action, eat(rhs).action))
+    Self::Output::new(Add::new(
+      self.action,
+      Contextual::new(<Lhs::Text as ComposeLiteral<Vec<u8>>>::to(rhs)),
+    ))
+  }
+}
+
+impl<'a, Lhs: Action<Text: ComposeLiteral<&'a [u8]>>> ops::Add<&'a [u8]> for Combinator<Lhs> {
+  type Output = Combinator<
+    Add<Lhs, Contextual<<Lhs::Text as ComposeLiteral<&'a [u8]>>::Output, Lhs::State, Lhs::Heap>>,
+  >;
+  /// See [`ops::add`](crate::combinator::ops::add) for more information.
+  #[inline]
+  fn add(self, rhs: &'a [u8]) -> Self::Output {
+    Self::Output::new(Add::new(
+      self.action,
+      Contextual::new(<Lhs::Text as ComposeLiteral<&'a [u8]>>::to(rhs)),
+    ))
+  }
+}
+
+impl<'a, const N: usize, Lhs: Action<Text: ComposeLiteral<&'a [u8; N]>>> ops::Add<&'a [u8; N]>
+  for Combinator<Lhs>
+{
+  type Output = Combinator<
+    Add<Lhs, Contextual<<Lhs::Text as ComposeLiteral<&'a [u8; N]>>::Output, Lhs::State, Lhs::Heap>>,
+  >;
+
+  /// See [`ops::add`](crate::combinator::ops::add) for more information.
+  #[inline]
+  fn add(self, rhs: &'a [u8; N]) -> Self::Output {
+    Self::Output::new(Add::new(
+      self.action,
+      Contextual::new(<Lhs::Text as ComposeLiteral<&'a [u8; N]>>::to(rhs)),
+    ))
   }
 }
 
@@ -210,7 +315,7 @@ mod tests {
   use std::fmt::Debug;
 
   fn helper<Text: ?Sized + Digest, Value: PartialEq + Debug>(
-    action: impl Action<Text, State = (), Heap = (), Value = Value>,
+    action: impl Action<Text = Text, State = (), Heap = (), Value = Value>,
     input: &Text,
     output: Option<Output<Value>>,
   ) where
@@ -329,7 +434,7 @@ mod tests {
   #[test]
   fn combinator_add_u8_const_slice() {
     helper(
-      take(1) + b"2",
+      bytes::take(1) + b"2",
       b"123",
       Some(Output {
         digested: 2,
@@ -341,7 +446,7 @@ mod tests {
   #[test]
   fn combinator_add_vec_u8() {
     helper(
-      take(1) + vec![b'2'],
+      bytes::take(1) + vec![b'2'],
       b"123",
       Some(Output {
         digested: 2,

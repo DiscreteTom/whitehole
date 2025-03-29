@@ -143,15 +143,16 @@ impl<T> Combinator<T> {
   }
 }
 
-unsafe impl<Text: ?Sized, T: Action<Text>> Action<Text> for Combinator<T> {
-  type Value = T::Value;
+unsafe impl<T: Action> Action for Combinator<T> {
+  type Text = T::Text;
   type State = T::State;
   type Heap = T::Heap;
+  type Value = T::Value;
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&Text>, &mut T::State, &mut T::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut T::State, &mut T::Heap>,
   ) -> Option<Output<T::Value>> {
     self.action.exec(input)
   }

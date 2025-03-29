@@ -6,15 +6,16 @@ use crate::{
 
 create_closure_combinator!(Next, "See [`next`].");
 
-unsafe impl<F: Fn(char) -> bool> Action<str> for Next<F> {
-  type Value = ();
+unsafe impl<F: Fn(char) -> bool> Action for Next<F> {
+  type Text = str;
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let next = input.instant.rest().chars().next()?;
     if !(self.inner)(next) {
@@ -53,7 +54,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, State = (), Heap = (), Value = ()>,
+    action: impl Action<Text = Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where

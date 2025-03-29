@@ -6,15 +6,16 @@ use crate::{
 
 create_value_combinator!(Eat, "See [`eat`].");
 
-unsafe impl Action<[u8]> for Eat<u8> {
-  type Value = ();
+unsafe impl Action for Eat<u8> {
+  type Text = [u8];
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     input
       .instant
@@ -25,15 +26,16 @@ unsafe impl Action<[u8]> for Eat<u8> {
   }
 }
 
-unsafe impl Action<[u8]> for Eat<&[u8]> {
-  type Value = ();
+unsafe impl Action for Eat<&[u8]> {
+  type Text = [u8];
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     input
       .instant
@@ -43,15 +45,16 @@ unsafe impl Action<[u8]> for Eat<&[u8]> {
   }
 }
 
-unsafe impl<const N: usize> Action<[u8]> for Eat<&[u8; N]> {
-  type Value = ();
+unsafe impl<const N: usize> Action for Eat<&[u8; N]> {
+  type Text = [u8];
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     input
       .instant
@@ -61,15 +64,16 @@ unsafe impl<const N: usize> Action<[u8]> for Eat<&[u8; N]> {
   }
 }
 
-unsafe impl Action<[u8]> for Eat<Vec<u8>> {
-  type Value = ();
+unsafe impl Action for Eat<Vec<u8>> {
+  type Text = [u8];
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     input
       .instant
@@ -78,6 +82,8 @@ unsafe impl Action<[u8]> for Eat<Vec<u8>> {
       .then(|| unsafe { input.instant.accept_unchecked(self.inner.len()) })
   }
 }
+
+// TODO: merge dup code
 
 /// Returns a combinator to eat from the head of [`Instant::rest`] by the provided pattern.
 /// The combinator will reject if the pattern is not found.
@@ -103,10 +109,11 @@ unsafe impl Action<[u8]> for Eat<Vec<u8>> {
 /// For bytes (`&[u8]`):
 /// ```
 /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action<[u8]>>) {}
-/// # t(
+/// # fn t(_: Combinator<impl Action>) {}
+/// type Text = [u8];
 /// eat(b'a') // eat by a byte (u8)
 /// # );
+/// # t(
 /// # t(
 /// eat(b"true") // eat by &[u8] or &[u8; N]
 /// # );
@@ -153,7 +160,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, Value = (), State = (), Heap = ()>,
+    action: impl Action<Text = Text, Value = (), State = (), Heap = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where
@@ -192,7 +199,7 @@ mod tests {
 
   #[test]
   fn eat_into_combinator() {
-    fn test_bytes(c: Combinator<impl Action<[u8], Value = (), State = (), Heap = ()>>) {
+    fn test_bytes(c: Combinator<impl Action<Text = [u8], State = (), Heap = (), Value = ()>>) {
       helper(c, b"a", Some(1));
     }
     test_bytes(b'a'.into());

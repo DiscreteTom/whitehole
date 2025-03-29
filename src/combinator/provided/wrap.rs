@@ -13,17 +13,16 @@ create_closure_combinator!(Wrap, "See [`wrap`] and [`bytes::wrap`].");
 
 macro_rules! impl_wrap {
   ($name:ident, $assert:ident, $text:ty) => {
-    unsafe impl<Value, F: Fn(&Instant<&$text>) -> Option<Output<Value>>> Action<$text>
-      for $name<F>
-    {
-      type Value = Value;
+    unsafe impl<Value, F: Fn(&Instant<&$text>) -> Option<Output<Value>>> Action for $name<F> {
+      type Text = $text;
       type State = ();
       type Heap = ();
+      type Value = Value;
 
       #[inline]
       fn exec(
         &self,
-        input: Input<&Instant<&$text>, &mut Self::State, &mut Self::Heap>,
+        input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
       ) -> Option<Output<Self::Value>> {
         let output = (self.inner)(input.instant);
         $assert!(output.as_ref().map_or(true, |output| input
@@ -91,7 +90,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, State = (), Heap = (), Value = ()>,
+    action: impl Action<Text = Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: usize,
   ) where

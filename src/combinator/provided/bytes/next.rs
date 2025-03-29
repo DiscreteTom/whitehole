@@ -6,15 +6,16 @@ use crate::{
 
 create_closure_combinator!(Next, "See [`next`].");
 
-unsafe impl<F: Fn(u8) -> bool> Action<[u8]> for Next<F> {
-  type Value = ();
+unsafe impl<F: Fn(u8) -> bool> Action for Next<F> {
+  type Text = [u8];
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let &next = input.instant.rest().first()?;
     if !(self.inner)(next) {
@@ -23,6 +24,8 @@ unsafe impl<F: Fn(u8) -> bool> Action<[u8]> for Next<F> {
     Some(unsafe { input.instant.accept_unchecked(1) })
   }
 }
+
+// TODO: merge dup code
 
 /// Returns a combinator to match the next undigested byte by the condition.
 /// The combinator will reject if not matched.
@@ -53,7 +56,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, State = (), Heap = (), Value = ()>,
+    action: impl Action<Text = Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where

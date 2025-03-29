@@ -36,14 +36,23 @@ fn format_truncated(truncated: impl Debug, oversize: bool) -> String {
     format!("{:?}", truncated)
   }
 }
-fn input_rest_bytes(rest: &[u8]) -> String {
-  format_truncated(&rest[..rest.len().min(MAX_LEN)], rest.len() > MAX_LEN)
+
+trait FormatRest {
+  fn format_rest(&self) -> String;
 }
-fn input_rest_str(rest: &str) -> String {
-  format_truncated(
-    rest.chars().take(MAX_LEN).collect::<String>(),
-    rest.chars().count() > MAX_LEN,
-  )
+
+impl FormatRest for [u8] {
+  fn format_rest(&self) -> String {
+    format_truncated(&self[..self.len().min(MAX_LEN)], self.len() > MAX_LEN)
+  }
+}
+impl FormatRest for str {
+  fn format_rest(&self) -> String {
+    format_truncated(
+      self.chars().take(MAX_LEN).collect::<String>(),
+      self.chars().count() > MAX_LEN,
+    )
+  }
 }
 
 fn format_input<TextRef>(
@@ -75,43 +84,30 @@ where
   )
 }
 
-macro_rules! impl_log {
-  ($self:ident, $input:ident, $rest_formatter:ident) => {{
-    let rest = $input.instant.rest();
-    println!("{}", &format_input($self.name, $rest_formatter, rest));
+unsafe impl<T: Action<Text: FormatRest + Digest + Debug>> Action for Log<'_, T>
+where
+  RangeTo<usize>: SliceIndex<T::Text, Output = T::Text>,
+{
+  type Text = T::Text;
+  type State = T::State;
+  type Heap = T::Heap;
+  type Value = T::Value;
+
+  #[inline]
+  fn exec(
+    &self,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<Self::Value>> {
+    let rest = input.instant.rest();
+    println!(
+      "{}",
+      &format_input(self.name, <T::Text as FormatRest>::format_rest, rest)
+    );
     unsafe { INDENT_LEVEL += 1 };
-    let output = $self.action.exec($input);
+    let output = self.action.exec(input);
     unsafe { INDENT_LEVEL -= 1 };
-    println!("{}", &format_output($self.name, rest, &output));
+    println!("{}", &format_output(self.name, rest, &output));
     output
-  }};
-}
-
-unsafe impl<T: Action<str>> Action<str> for Log<'_, T> {
-  type Value = T::Value;
-  type State = T::State;
-  type Heap = T::Heap;
-
-  #[inline]
-  fn exec(
-    &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<Self::Value>> {
-    impl_log!(self, input, input_rest_str)
-  }
-}
-
-unsafe impl<T: Action<[u8]>> Action<[u8]> for Log<'_, T> {
-  type Value = T::Value;
-  type State = T::State;
-  type Heap = T::Heap;
-
-  #[inline]
-  fn exec(
-    &self,
-    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<Self::Value>> {
-    impl_log!(self, input, input_rest_bytes)
   }
 }
 
@@ -139,7 +135,10 @@ impl<T> Combinator<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{combinator::take, instant::Instant};
+  use crate::{
+    combinator::{bytes, take},
+    instant::Instant,
+  };
   use serial_test::serial;
 
   #[test]
@@ -160,7 +159,7 @@ mod tests {
   #[test]
   #[serial]
   fn ensure_log_can_be_used_with_bytes() {
-    let c = take(1).bind(2).log("name");
+    let c = bytes::take(1).bind(2).log("name");
     let output = c
       .exec(Input {
         instant: &Instant::new(b"1" as &[u8]),
@@ -177,7 +176,7 @@ mod tests {
   fn check_format_input() {
     unsafe { INDENT_LEVEL = 0 };
     assert_eq!(
-      format_input("name", input_rest_str, "123"),
+      format_input("name", <str as FormatRest>::format_rest, "123"),
       "(name) input: \"123\""
     );
   }
@@ -188,18 +187,18 @@ mod tests {
     unsafe { LOG_INDENTATION = "| " };
     unsafe { INDENT_LEVEL = 1 };
     assert_eq!(
-      format_input("name", input_rest_str, "123"),
+      format_input("name", <str as FormatRest>::format_rest, "123"),
       "| (name) input: \"123\""
     );
     unsafe { INDENT_LEVEL = 2 };
     assert_eq!(
-      format_input("name", input_rest_str, "123"),
+      format_input("name", <str as FormatRest>::format_rest, "123"),
       "| | (name) input: \"123\""
     );
     // custom indentation
     unsafe { LOG_INDENTATION = "  " };
     assert_eq!(
-      format_input("name", input_rest_str, "123"),
+      format_input("name", <str as FormatRest>::format_rest, "123"),
       "    (name) input: \"123\""
     );
   }
@@ -209,11 +208,11 @@ mod tests {
   fn check_format_input_truncated() {
     unsafe { INDENT_LEVEL = 0 };
     assert_eq!(
-      format_input("name", input_rest_str, &"1234567890".repeat(10)),
+      format_input("name", <str as FormatRest>::format_rest, &"1234567890".repeat(10)),
       "(name) input: \"1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890\""
     );
     assert_eq!(
-      format_input("name", input_rest_str, &"1234567890".repeat(11)),
+      format_input("name", <str as FormatRest>::format_rest, &"1234567890".repeat(11)),
       "(name) input: \"1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890\" (truncated)"
     );
   }
@@ -223,7 +222,7 @@ mod tests {
   fn check_format_input_bytes() {
     unsafe { INDENT_LEVEL = 0 };
     assert_eq!(
-      format_input("name", input_rest_bytes, b"123"),
+      format_input("name", <[u8] as FormatRest>::format_rest, b"123"),
       "(name) input: [49, 50, 51]"
     );
   }
@@ -234,18 +233,18 @@ mod tests {
     unsafe { LOG_INDENTATION = "| " };
     unsafe { INDENT_LEVEL = 1 };
     assert_eq!(
-      format_input("name", input_rest_bytes, b"123"),
+      format_input("name", <[u8] as FormatRest>::format_rest, b"123"),
       "| (name) input: [49, 50, 51]"
     );
     unsafe { INDENT_LEVEL = 2 };
     assert_eq!(
-      format_input("name", input_rest_bytes, b"123"),
+      format_input("name", <[u8] as FormatRest>::format_rest, b"123"),
       "| | (name) input: [49, 50, 51]"
     );
     // custom indentation
     unsafe { LOG_INDENTATION = "  " };
     assert_eq!(
-      format_input("name", input_rest_bytes, b"123"),
+      format_input("name", <[u8] as FormatRest>::format_rest, b"123"),
       "    (name) input: [49, 50, 51]"
     );
   }
@@ -255,11 +254,11 @@ mod tests {
   fn check_format_input_truncated_bytes() {
     unsafe { INDENT_LEVEL = 0 };
     assert_eq!(
-      format_input("name", input_rest_bytes, &b"1234567890".repeat(10)),
+      format_input("name", <[u8] as FormatRest>::format_rest, &b"1234567890".repeat(10)),
       "(name) input: [49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48]"
     );
     assert_eq!(
-      format_input("name", input_rest_bytes, &b"1234567890".repeat(11)),
+      format_input("name", <[u8] as FormatRest>::format_rest, &b"1234567890".repeat(11)),
       "(name) input: [49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48] (truncated)"
     );
   }

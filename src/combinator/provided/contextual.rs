@@ -40,17 +40,18 @@ impl<T: Debug, State, Heap> Debug for Contextual<T, State, Heap> {
   }
 }
 
-unsafe impl<Text: ?Sized, T: Action<Text, State: Default, Heap: Default>, State, Heap> Action<Text>
+unsafe impl<T: Action<State: Default, Heap: Default>, State, Heap> Action
   for Contextual<T, State, Heap>
 {
-  type Value = T::Value;
+  type Text = T::Text;
   type State = State;
   type Heap = Heap;
+  type Value = T::Value;
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self.inner.exec(Input {
       instant: input.instant,

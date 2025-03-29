@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use super::Mul;
 use crate::{
   action::{Action, Input, Output},
@@ -8,18 +10,31 @@ use crate::{
 /// A util struct to represent no separator.
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct NoSep;
+pub struct NoSep<Text: ?Sized, State, Heap> {
+  _text: PhantomData<Text>,
+  _phantom: PhantomData<(State, Heap)>,
+}
 
-unsafe impl<Text: ?Sized> Action<Text> for NoSep {
+impl<Text: ?Sized, State, Heap> NoSep<Text, State, Heap> {
+  #[inline]
+  pub const fn new() -> Self {
+    Self {
+      _text: PhantomData,
+      _phantom: PhantomData,
+    }
+  }
+}
+
+unsafe impl<Text: ?Sized, State, Heap> Action for NoSep<Text, State, Heap> {
+  type Text = Text;
+  type State = State;
+  type Heap = Heap;
   type Value = ();
-  // TODO: is this correct? should NoSep be generic?
-  type State = ();
-  type Heap = ();
 
   #[inline]
   fn exec(
     &self,
-    _: Input<&Instant<&Text>, &mut Self::State, &mut Self::Heap>,
+    _: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     // just accept without digesting
     Some(Output {
@@ -50,7 +65,7 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// ```
   /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
   /// # fn t(_: Combinator<impl Action>) {}
-  /// # fn tb(_: Combinator<impl Action<[u8]>>) {}
+  /// # fn tb(_: Combinator<impl Action<Text=[u8]>>) {}
   /// # t(
   /// (eat("true") * (1..)).sep(',') // with a char
   /// # );
@@ -114,7 +129,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, State = (), Heap = (), Value = ()>,
+    action: impl Action<Text = Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: usize,
   ) where
@@ -162,7 +177,7 @@ mod tests {
 
   #[test]
   fn test_sep_with_eat() {
-    fn t(action: Combinator<impl Action<State = (), Heap = ()>>) {
+    fn t(action: Combinator<impl Action<Text = str, State = (), Heap = ()>>) {
       assert!(action
         .exec(Input {
           instant: &Instant::new("true"),
@@ -178,7 +193,7 @@ mod tests {
         })
         .is_some());
     }
-    fn tb(action: Combinator<impl Action<[u8], State = (), Heap = ()>>) {
+    fn tb(action: Combinator<impl Action<Text = [u8], State = (), Heap = ()>>) {
       assert!(action
         .exec(Input {
           instant: &Instant::new(b"true"),

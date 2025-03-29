@@ -17,19 +17,22 @@ impl Take {
   }
 }
 
-unsafe impl Action<[u8]> for Take {
-  type Value = ();
+unsafe impl Action for Take {
+  type Text = [u8];
   type State = ();
   type Heap = ();
+  type Value = ();
 
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     input.instant.accept(self.n)
   }
 }
+
+// TODO: merge dup code
 
 /// Returns a combinator to take the next `n` undigested [`char`]s or bytes.
 ///
@@ -63,7 +66,7 @@ mod tests {
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
-    action: impl Action<Text, State = (), Heap = (), Value = ()>,
+    action: impl Action<Text = Text, State = (), Heap = (), Value = ()>,
     input: &Text,
     digested: Option<usize>,
   ) where
