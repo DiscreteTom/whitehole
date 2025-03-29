@@ -69,51 +69,55 @@ macro_rules! contextual {
       #[allow(unused_imports)]
       use super::*;
       use $crate::action::Output;
-      use $crate::combinator::{
-        Combinator, Contextual, Eat, Next, Take, Till, Wrap, WrapUnchecked,
-      };
+      use $crate::combinator::{Combinator, Contextual};
       use $crate::instant::Instant;
 
       /// Contextual version of [`eat`](whitehole::combinator::eat).
       #[inline]
-      pub const fn eat<T>(pattern: T) -> Combinator<Contextual<Eat<T>, $state, $heap>> {
-        Combinator::new(Contextual::new(Eat::new(pattern)))
+      pub const fn eat<T>(
+        pattern: T,
+      ) -> Combinator<Contextual<$crate::combinator::Eat<T>, $state, $heap>> {
+        Combinator::new(Contextual::new($crate::combinator::Eat::new(pattern)))
       }
 
       /// Contextual version of [`next`](whitehole::combinator::next).
       #[inline]
       pub const fn next<F: Fn(char) -> bool>(
         condition: F,
-      ) -> Combinator<Contextual<Next<F>, $state, $heap>> {
-        Combinator::new(Contextual::new(Next::new(condition)))
+      ) -> Combinator<Contextual<$crate::combinator::Next<F>, $state, $heap>> {
+        Combinator::new(Contextual::new($crate::combinator::Next::new(condition)))
       }
 
       /// Contextual version of [`take`](whitehole::combinator::take).
       #[inline]
-      pub const fn take(n: usize) -> Combinator<Contextual<Take, $state, $heap>> {
-        Combinator::new(Contextual::new(Take::new(n)))
+      pub const fn take(
+        n: usize,
+      ) -> Combinator<Contextual<$crate::combinator::Take, $state, $heap>> {
+        Combinator::new(Contextual::new($crate::combinator::Take::new(n)))
       }
 
       /// Contextual version of [`till`](whitehole::combinator::till).
       #[inline]
-      pub const fn till<T>(pattern: T) -> Combinator<Contextual<Till<T>, $state, $heap>> {
-        Combinator::new(Contextual::new(Till::new(pattern)))
+      pub const fn till<T>(
+        pattern: T,
+      ) -> Combinator<Contextual<$crate::combinator::Till<T>, $state, $heap>> {
+        Combinator::new(Contextual::new($crate::combinator::Till::new(pattern)))
       }
 
       /// Contextual version of [`wrap_unchecked`](whitehole::combinator::wrap_unchecked).
       #[inline]
       pub const unsafe fn wrap_unchecked<Value, F: Fn(&Instant<&str>) -> Option<Output<Value>>>(
         f: F,
-      ) -> Combinator<Contextual<WrapUnchecked<F>, $state, $heap>> {
-        Combinator::new(Contextual::new(WrapUnchecked::new(f)))
+      ) -> Combinator<Contextual<$crate::combinator::WrapUnchecked<F>, $state, $heap>> {
+        Combinator::new(Contextual::new($crate::combinator::WrapUnchecked::new(f)))
       }
 
       /// Contextual version of [`wrap`](whitehole::combinator::wrap).
       #[inline]
       pub const fn wrap<Value, F: Fn(&Instant<&str>) -> Option<Output<Value>>>(
         f: F,
-      ) -> Combinator<Contextual<Wrap<F>, $state, $heap>> {
-        Combinator::new(Contextual::new(Wrap::new(f)))
+      ) -> Combinator<Contextual<$crate::combinator::Wrap<F>, $state, $heap>> {
+        Combinator::new(Contextual::new($crate::combinator::Wrap::new(f)))
       }
 
       pub mod bytes {
@@ -123,8 +127,10 @@ macro_rules! contextual {
         #[inline]
         pub const fn next<F: Fn(u8) -> bool>(
           condition: F,
-        ) -> Combinator<Contextual<Next<F>, $state, $heap>> {
-          Combinator::new(Contextual::new(Next::new(condition)))
+        ) -> Combinator<Contextual<$crate::combinator::bytes::Next<F>, $state, $heap>> {
+          Combinator::new(Contextual::new($crate::combinator::bytes::Next::new(
+            condition,
+          )))
         }
 
         /// Contextual version of [`bytes::wrap_unchecked`](whitehole::combinator::bytes::wrap_unchecked).
@@ -134,16 +140,19 @@ macro_rules! contextual {
           F: Fn(&Instant<&[u8]>) -> Option<Output<Value>>,
         >(
           f: F,
-        ) -> Combinator<Contextual<WrapUnchecked<F>, $state, $heap>> {
-          Combinator::new(Contextual::new(WrapUnchecked::new(f)))
+        ) -> Combinator<Contextual<$crate::combinator::bytes::WrapUnchecked<F>, $state, $heap>>
+        {
+          Combinator::new(Contextual::new(
+            $crate::combinator::bytes::WrapUnchecked::new(f),
+          ))
         }
 
         /// Contextual version of [`bytes::wrap`](whitehole::combinator::bytes::wrap).
         #[inline]
         pub const fn wrap<Value, F: Fn(&Instant<&[u8]>) -> Option<Output<Value>>>(
           f: F,
-        ) -> Combinator<Contextual<Wrap<F>, $state, $heap>> {
-          Combinator::new(Contextual::new(Wrap::new(f)))
+        ) -> Combinator<Contextual<$crate::combinator::bytes::Wrap<F>, $state, $heap>> {
+          Combinator::new(Contextual::new($crate::combinator::bytes::Wrap::new(f)))
         }
       }
     }

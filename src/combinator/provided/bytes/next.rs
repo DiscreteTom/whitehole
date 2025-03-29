@@ -6,7 +6,7 @@ use crate::{
 
 create_closure_combinator!(Next, "See [`next`].");
 
-unsafe impl<F: Fn(char) -> bool> Action<str> for Next<F> {
+unsafe impl<F: Fn(u8) -> bool> Action<[u8]> for Next<F> {
   type Value = ();
   type State = ();
   type Heap = ();
@@ -14,35 +14,35 @@ unsafe impl<F: Fn(char) -> bool> Action<str> for Next<F> {
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    let next = input.instant.rest().chars().next()?;
+    let &next = input.instant.rest().first()?;
     if !(self.inner)(next) {
       return None;
     }
-    Some(unsafe { input.instant.accept_unchecked(next.len_utf8()) })
+    Some(unsafe { input.instant.accept_unchecked(1) })
   }
 }
 
-/// Returns a combinator to match the next undigested [`char`] by the condition.
+/// Returns a combinator to match the next undigested byte by the condition.
 /// The combinator will reject if not matched.
 ///
-/// For the bytes version, see [`bytes::next`].
+/// For the string version, see [`next`](super::next).
 /// # Examples
 /// ```
 /// # use whitehole::{combinator::{next, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action>) {}
+/// # fn t(_: Combinator<impl Action<[u8]>>) {}
 /// // match one ascii digit
 /// # t(
-/// next(|c| c.is_ascii_digit())
+/// next(|b| b.is_ascii_digit())
 /// # );
 /// // match one or more ascii digit
 /// # t(
-/// next(|c| c.is_ascii_digit()) * (1..)
+/// next(|b| b.is_ascii_digit()) * (1..)
 /// # );
 /// ```
 #[inline]
-pub const fn next<F: Fn(char) -> bool>(condition: F) -> Combinator<Next<F>> {
+pub const fn next<F: Fn(u8) -> bool>(condition: F) -> Combinator<Next<F>> {
   Combinator::new(Next::new(condition))
 }
 
@@ -72,16 +72,14 @@ mod tests {
   }
 
   #[test]
-  fn combinator_next() {
+  fn combinator_next_bytes() {
     // normal
-    helper(next(|c| c.is_ascii_digit()), "123", Some(1));
+    helper(next(|b| b.is_ascii_digit()), b"123", Some(1));
     // reject
-    helper(next(|c| c.is_ascii_alphabetic()), "123", None);
-    // utf8
-    helper(next(|_| true), "好", Some(3));
+    helper(next(|b| b.is_ascii_alphabetic()), b"123", None);
 
     // ensure the combinator is copyable and clone-able
-    let c = next(|c| c.is_ascii_digit());
+    let c = next(|b| b.is_ascii_digit());
     let _c = c;
     let _ = c.clone();
 
@@ -90,12 +88,10 @@ mod tests {
   }
 
   #[test]
-  fn one_or_more_next() {
+  fn one_or_more_next_bytes() {
     // normal
-    helper(next(|c| c.is_ascii_digit()) * (1..), "123", Some(3));
+    helper(next(|b| b.is_ascii_digit()) * (1..), b"123", Some(3));
     // reject
-    helper(next(|c| c.is_ascii_digit()) * (1..), "abc", None);
-    // utf8
-    helper(next(|_| true) * (1..), "好好好", Some(9));
+    helper(next(|b| b.is_ascii_digit()) * (1..), b"abc", None);
   }
 }
