@@ -21,7 +21,9 @@ const TEXT: &str = r#"
 }
 "#;
 
-fn print_all_with_range(entry: Combinator<impl Action<Value = ()>>) {
+fn print_all_with_range(
+  entry: Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>>,
+) {
   let mut parser = Parser::builder().entry(entry.range()).build(TEXT);
 
   for output in &mut parser {

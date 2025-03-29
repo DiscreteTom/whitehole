@@ -4,12 +4,12 @@ use whitehole::{
   combinator::{eat, next, Combinator},
 };
 
-pub fn whitespaces<State, Heap>() -> Combinator<impl Action<str, State, Heap, Value = ()>> {
+pub fn whitespaces() -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
   // Use `* (1..)` to repeat for one or more times.
   next(in_str!(" \t\r\n")) * (1..)
 }
 
-pub fn number<State, Heap>() -> Combinator<impl Action<str, State, Heap, Value = ()>> {
+pub fn number() -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
   // To re-use a combinator for multiple times, instead of wrapping the combinator in an Rc,
   // use a closure to generate the combinator for better runtime performance (via inlining).
   let digits = || next(|c| c.is_ascii_digit()) * (1..);
@@ -24,7 +24,7 @@ pub fn number<State, Heap>() -> Combinator<impl Action<str, State, Heap, Value =
   eat('-').optional() + integer + fraction.optional() + exponent.optional()
 }
 
-pub fn string<State, Heap>() -> Combinator<impl Action<str, State, Heap, Value = ()>> {
+pub fn string() -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
   let body_optional = {
     let escape = {
       let simple = next(in_str!("\"\\/bfnrt"));

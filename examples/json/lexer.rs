@@ -5,7 +5,7 @@ use whitehole::{
   combinator::{next, Combinator},
 };
 
-pub fn lexer_entry() -> Combinator<impl Action<Value = ()>> {
+pub fn lexer_entry() -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
   let boundary = next(in_str!("[]{}:,"));
 
   whitespaces() | boundary | number() | string() | "true" | "false" | "null"

@@ -1,11 +1,7 @@
 //! This example demonstrates how to use the stateful parser to parse JavaScript template strings.
 
 use in_str::in_str;
-use whitehole::{
-  action::Action,
-  combinator::{eat, next},
-  parser::Parser,
-};
+use whitehole::{action::Action, contextual, parser::Parser};
 
 // define a custom state to track the nested level of JavaScript template strings
 pub struct MyState {
@@ -24,7 +20,9 @@ fn nested(state: &mut MyState) -> bool {
   state.nested != 0
 }
 
-pub fn build_lexer(s: &str) -> Parser<impl Action<str, MyState>, &str, MyState> {
+contextual!(MyState, ());
+
+pub fn build_lexer(s: &str) -> Parser<impl Action<Text = str, State = MyState, Heap = ()>> {
   let body_optional = || {
     let escape = {
       let simple = next(in_str!("0'\"\\nrvtbf\u{000a}\u{000d}\u{2028}\u{2029}"));
@@ -45,7 +43,7 @@ pub fn build_lexer(s: &str) -> Parser<impl Action<str, MyState>, &str, MyState> 
   let whole_or_left = {
     let whole_end = eat('`');
     // if the template string is not closed, we need to increment the nested level
-    let left_end = eat("${").then(|_, ctx| inc(ctx.state));
+    let left_end = eat("${").then(|input| inc(input.state));
     eat('`') + body_optional() + (whole_end | left_end)
   };
 
@@ -53,19 +51,19 @@ pub fn build_lexer(s: &str) -> Parser<impl Action<str, MyState>, &str, MyState> 
   let middle_or_right = {
     let middle_end = eat("${");
     // if the template string is closed, we need to decrement the nested level
-    let right_end = eat('`').then(|_, ctx| dec(ctx.state));
+    let right_end = eat('`').then(|input| dec(input.state));
     eat('}') + body_optional() + (right_end | middle_end)
   }
   // if not in a template string, the "}" is a normal character instead of part of a template string,
   // this action shouldn't be executed
-  .prevent(|_, ctx| !nested(ctx.state));
+  .prevent(|input| !nested(input.state));
 
   // other characters that are not part of a template string
   let others = {
     // when not in a template string, all non-"`" characters are normal characters
-    let outside = (next(|c| c != '`') * (1..)).when(|_, ctx| !nested(ctx.state));
+    let outside = (next(|c| c != '`') * (1..)).when(|input| !nested(input.state));
     // when in a template string, besides "`", we also need to check for "}" to handle middle_or_right
-    let inside = (next(|c| c != '}' && c != '`') * (1..)).when(|_, ctx| nested(ctx.state));
+    let inside = (next(|c| c != '}' && c != '`') * (1..)).when(|input| nested(input.state));
     outside | inside
   };
 

@@ -8,7 +8,7 @@ use parser::{parser_entry_with_recur, parser_entry_with_static};
 use std::fs::read_to_string;
 use whitehole::{action::Action, combinator::Combinator, parser::Parser};
 
-fn process(entry: Combinator<impl Action<Value = ()>>, s: &str) {
+fn process(entry: Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>>, s: &str) {
   let mut parser = Parser::builder().entry(entry).build(s);
 
   // consume the whole input

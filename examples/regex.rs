@@ -5,10 +5,10 @@ use whitehole::{
 };
 
 /// Create a combinator from a regex.
-pub fn regex<State, Heap>(s: &str) -> Combinator<impl Action<str, State, Heap, Value = ()>> {
+pub fn regex(s: &str) -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
   let re = Regex::new(s).unwrap();
   unsafe {
-    wrap_unchecked(move |instant, _| {
+    wrap_unchecked(move |instant| {
       re.find(instant.rest())
         .map(|m| instant.accept_unchecked(m.len()))
     })

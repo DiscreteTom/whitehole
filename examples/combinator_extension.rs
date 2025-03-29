@@ -1,6 +1,6 @@
 use std::{fmt::Debug, ops::RangeTo, slice::SliceIndex};
 use whitehole::{
-  action::{Action, Context, Output},
+  action::{Action, Input, Output},
   combinator::{eat, Combinator},
   digest::Digest,
   instant::Instant,
@@ -11,18 +11,22 @@ use whitehole::{
 
 // The simpler way: return `impl`.
 
-trait SimpleCombinatorExt<T: Action<Text, State, Heap>, Text: ?Sized, State, Heap> {
+trait SimpleCombinatorExt<T: Action, Text: ?Sized> {
   /// Create a new combinator to print the range and content if accepted.
-  fn simple_print(self) -> Combinator<impl Action<Text, State, Heap, Value = T::Value>>;
+  fn simple_print(
+    self,
+  ) -> Combinator<impl Action<Text = Text, State = T::State, Heap = T::Heap, Value = T::Value>>;
 }
 
-impl<T: Action<Text, State, Heap>, Text: ?Sized + Debug + Digest, State, Heap>
-  SimpleCombinatorExt<T, Text, State, Heap> for Combinator<T>
+impl<T: Action<Text = Text>, Text: ?Sized + Debug + Digest> SimpleCombinatorExt<T, Text>
+  for Combinator<T>
 where
   RangeTo<usize>: SliceIndex<Text, Output = Text>,
 {
-  fn simple_print(self) -> Combinator<impl Action<Text, State, Heap, Value = T::Value>> {
-    self.then(|accept, _| {
+  fn simple_print(
+    self,
+  ) -> Combinator<impl Action<Text = Text, State = T::State, Heap = T::Heap, Value = T::Value>> {
+    self.then(|accept| {
       println!(
         "{}..{}: {:?}",
         accept.start(),
@@ -52,26 +56,27 @@ impl<T> CombinatorExt<T> for Combinator<T> {
   }
 }
 
-unsafe impl<Text: ?Sized + Debug + Digest, State, Heap, T: Action<Text, State, Heap>>
-  Action<Text, State, Heap> for Print<T>
+unsafe impl<T: Action<Text: Digest + Debug>> Action for Print<T>
 where
-  RangeTo<usize>: SliceIndex<Text, Output = Text>,
+  RangeTo<usize>: SliceIndex<T::Text, Output = T::Text>,
 {
+  type Text = T::Text;
+  type State = T::State;
+  type Heap = T::Heap;
   type Value = T::Value;
 
   fn exec(
     &self,
-    instant: &Instant<&Text>,
-    mut ctx: Context<&mut State, &mut Heap>,
+    mut input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    self.action.exec(instant, ctx.reborrow()).inspect(|output| {
-      let start = instant.digested();
+    self.action.exec(input.reborrow()).inspect(|output| {
+      let start = input.instant.digested();
       let end = start + output.digested;
       println!(
         "{}..{}: {:?}",
         start,
         end,
-        instant.rest().get(..output.digested)
+        input.instant.rest().get(..output.digested)
       );
     })
   }

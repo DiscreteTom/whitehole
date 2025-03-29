@@ -5,7 +5,7 @@ use whitehole::{
 };
 
 // see https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions
-fn build_entry() -> impl Action {
+fn build_entry() -> impl Action<Text = str, State = (), Heap = ()> {
   let letter = || next(|c| c.is_ascii_alphabetic());
   let positive_digit = || next(|c| matches!(c, '1'..='9'));
   let digit = || next(|c| c.is_ascii_digit());
@@ -18,7 +18,7 @@ fn build_entry() -> impl Action {
   let alphanumeric_identifier = || {
     (non_digit() + identifier_characters().optional())
       | (digit() + identifier_characters())
-        .reject(|accept, _| accept.content().chars().all(|c| c.is_ascii_digit()))
+        .reject(|accept| accept.content().chars().all(|c| c.is_ascii_digit()))
   };
 
   let build_identifier = || alphanumeric_identifier() | digits();

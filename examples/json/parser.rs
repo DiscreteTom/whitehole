@@ -1,19 +1,20 @@
 use crate::common::{number, string, whitespaces};
 use std::sync::LazyLock;
 use whitehole::{
-  action::Action,
+  action::{Action, Input},
   combinator::{eat, recur, wrap, Combinator},
 };
 
-fn wso() -> Combinator<impl Action<Value = ()>> {
+fn wso() -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
   whitespaces().optional()
 }
 
-fn sep() -> Combinator<impl Action<Value = ()>> {
+fn sep() -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
   eat(',') + wso()
 }
 
-pub fn parser_entry_with_recur() -> Combinator<impl Action<Value = ()>> {
+pub fn parser_entry_with_recur(
+) -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
   // `value` will indirectly recurse to itself, so we need to use `recur` to break the cycle.
   let (value, value_setter) = recur::<_, (), (), _>();
 
@@ -30,12 +31,13 @@ pub fn parser_entry_with_recur() -> Combinator<impl Action<Value = ()>> {
   whitespaces() | value()
 }
 
-pub fn parser_entry_with_static() -> Combinator<impl Action<Value = ()>> {
-  fn array() -> Combinator<impl Action<Value = ()>> {
+pub fn parser_entry_with_static(
+) -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
+  fn array() -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
     eat('[') + wso() + ((value() + wso()) * (..)).sep(sep()) + ']'
   }
 
-  fn object() -> Combinator<impl Action<Value = ()>> {
+  fn object() -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
     let object_item = string() + wso() + eat(':') + wso() + value();
     eat('{') + wso() + ((object_item + wso()) * (..)).sep(sep()) + '}'
   }
@@ -43,11 +45,20 @@ pub fn parser_entry_with_static() -> Combinator<impl Action<Value = ()>> {
   // `value` will indirectly recurse to itself, so we need special treatment.
   // Use `LazyLock` to create a static `Action` implementor,
   // use `Box<dyn>` to prevent recursive/infinite type.
-  fn value() -> Combinator<impl Action<Value = ()>> {
-    static VALUE: LazyLock<Box<dyn Action<Value = ()> + Send + Sync>> = LazyLock::new(|| {
+  fn value() -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
+    static VALUE: LazyLock<
+      Box<dyn Action<Text = str, State = (), Heap = (), Value = ()> + Send + Sync>,
+    > = LazyLock::new(|| {
       Box::new(array() | object() | number() | string() | "true" | "false" | "null")
     });
-    wrap(|instant, ctx| VALUE.exec(instant, ctx))
+    // TODO: simplify this
+    wrap(|instant| {
+      VALUE.exec(Input {
+        instant,
+        state: &mut (),
+        heap: &mut (),
+      })
+    })
   }
 
   whitespaces() | value()
