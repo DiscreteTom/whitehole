@@ -7,7 +7,7 @@ use crate::{
 
 create_value_combinator!(Till, "See [`till`].");
 
-unsafe impl Action<str> for Till<&str> {
+unsafe impl Action<[u8]> for Till<u8> {
   type Value = ();
   type State = ();
   type Heap = ();
@@ -15,17 +15,19 @@ unsafe impl Action<str> for Till<&str> {
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    input.instant.rest().find(self.inner).map(|i| unsafe {
-      input
-        .instant
-        .accept_unchecked(i.unchecked_add(self.inner.len()))
-    })
+    input
+      .instant
+      .rest()
+      .iter()
+      .enumerate()
+      .find(|(_, b)| **b == self.inner)
+      .map(|(i, _)| unsafe { input.instant.accept_unchecked(i.unchecked_add(1)) })
   }
 }
 
-unsafe impl Action<str> for Till<String> {
+unsafe impl Action<[u8]> for Till<&[u8]> {
   type Value = ();
   type State = ();
   type Heap = ();
@@ -33,17 +35,32 @@ unsafe impl Action<str> for Till<String> {
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    input.instant.rest().find(&self.inner).map(|i| unsafe {
+    // TODO: optimize
+    if !self.inner.is_empty() {
       input
         .instant
-        .accept_unchecked(i.unchecked_add(self.inner.len()))
-    })
+        .rest()
+        .windows(self.inner.len())
+        .enumerate()
+        .find(|(_, window)| *window == self.inner)
+        .map(|(i, _)| unsafe {
+          input
+            .instant
+            .accept_unchecked(i.unchecked_add(self.inner.len()))
+        })
+    } else {
+      // window length can't be zero so we need special handling
+      Some(Output {
+        digested: 0,
+        value: (),
+      })
+    }
   }
 }
 
-unsafe impl Action<str> for Till<char> {
+unsafe impl<const N: usize> Action<[u8]> for Till<&[u8; N]> {
   type Value = ();
   type State = ();
   type Heap = ();
@@ -51,13 +68,57 @@ unsafe impl Action<str> for Till<char> {
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    input.instant.rest().find(self.inner).map(|i| unsafe {
+    // TODO: optimize
+    if N != 0 {
       input
         .instant
-        .accept_unchecked(i.unchecked_add(self.inner.len_utf8()))
-    })
+        .rest()
+        .windows(N)
+        .enumerate()
+        .find(|(_, window)| *window == self.inner)
+        .map(|(i, _)| unsafe { input.instant.accept_unchecked(i.unchecked_add(N)) })
+    } else {
+      // window length can't be zero so we need special handling
+      Some(Output {
+        digested: 0,
+        value: (),
+      })
+    }
+  }
+}
+
+unsafe impl Action<[u8]> for Till<Vec<u8>> {
+  type Value = ();
+  type State = ();
+  type Heap = ();
+
+  #[inline]
+  fn exec(
+    &self,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<()>> {
+    // TODO: optimize
+    if !self.inner.is_empty() {
+      input
+        .instant
+        .rest()
+        .windows(self.inner.len())
+        .enumerate()
+        .find(|(_, window)| *window == self.inner)
+        .map(|(i, _)| unsafe {
+          input
+            .instant
+            .accept_unchecked(i.unchecked_add(self.inner.len()))
+        })
+    } else {
+      // window length can't be zero so we need special handling
+      Some(Output {
+        digested: 0,
+        value: (),
+      })
+    }
   }
 }
 
@@ -154,22 +215,27 @@ mod tests {
 
   #[test]
   fn test_till() {
-    // char
-    helper(till(';'), "123;456", Some(4));
-    helper(till(';'), "123456", None);
+    // u8
+    helper(till(b';'), b"123;456", Some(4));
+    helper(till(b';'), b"123456", None);
 
-    // &str
-    helper(till("end"), "123end456", Some(6));
-    helper(till("end"), "123456", None);
-    helper(till(""), "123456", Some(0));
+    // [u8, N]
+    helper(till(b"end"), b"123end456", Some(6));
+    helper(till(b"end"), b"123456", None);
+    helper(till(b""), b"123456", Some(0));
 
-    // String
-    helper(till("end".to_string()), "123end456", Some(6));
-    helper(till("end".to_string()), "123456", None);
-    helper(till("".to_string()), "123456", Some(0));
+    // &[u8]
+    helper(till("end".to_string().as_bytes()), b"123end456", Some(6));
+    helper(till("end".to_string().as_bytes()), b"123456", None);
+    helper(till("".to_string().as_bytes()), b"123456", Some(0));
+
+    // Vec<u8>
+    helper(till(vec![b'1', b'2', b'3']), b"123456", Some(3));
+    helper(till(vec![b'1', b'2', b'3']), b"456", None);
+    helper(till(vec![]), b"456", Some(0));
 
     // ()
-    helper(till(()), "123", Some(3));
-    helper(till(()), "", Some(0));
+    helper(till(()), b"123" as &[u8], Some(3));
+    helper(till(()), b"" as &[u8], Some(0));
   }
 }

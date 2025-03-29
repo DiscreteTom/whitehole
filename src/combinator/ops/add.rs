@@ -203,7 +203,10 @@ impl<Lhs> ops::Add<Vec<u8>> for Combinator<Lhs> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{combinator::take, instant::Instant};
+  use crate::{
+    combinator::{bytes, take},
+    instant::Instant,
+  };
   use std::fmt::Debug;
 
   fn helper<Text: ?Sized + Digest, Value: PartialEq + Debug>(
@@ -302,7 +305,7 @@ mod tests {
   #[test]
   fn combinator_add_u8() {
     helper(
-      take(1) + b'2',
+      bytes::take(1) + b'2',
       b"123",
       Some(Output {
         digested: 2,
@@ -314,7 +317,7 @@ mod tests {
   #[test]
   fn combinator_add_u8_slice() {
     helper(
-      take(1) + "2".as_bytes(),
+      bytes::take(1) + "2".as_bytes(),
       b"123",
       Some(Output {
         digested: 2,

@@ -234,7 +234,7 @@ impl<'text, Text: ?Sized, T: Action<Text, State: Clone, Heap: Clone> + Clone> Cl
 }
 
 // TODO: don't use Eat here
-impl Parser<'static, [u8], Eat<u8>> {
+impl Parser<'static, str, Eat<char>> {
   /// Create a parser builder with default settings.
   #[inline]
   pub const fn builder() -> Builder<()> {

@@ -17,7 +17,7 @@ impl Take {
   }
 }
 
-unsafe impl Action<str> for Take {
+unsafe impl Action<[u8]> for Take {
   type Value = ();
   type State = ();
   type Heap = ();
@@ -25,24 +25,9 @@ unsafe impl Action<str> for Take {
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
-    let mut digested: usize = 0;
-    let mut count: usize = 0;
-    let mut chars = input.instant.rest().chars();
-    while count < self.n {
-      // no enough chars, try to digest more
-      if let Some(c) = chars.next() {
-        digested = unsafe { digested.unchecked_add(c.len_utf8()) };
-        // SAFETY: count is always smaller than self which is a usize
-        count = unsafe { count.unchecked_add(1) };
-      } else {
-        // no enough chars, reject
-        return None;
-      }
-    }
-    // enough chars
-    unsafe { input.instant.accept_unchecked(digested) }.into()
+    input.instant.accept(self.n)
   }
 }
 
@@ -99,14 +84,11 @@ mod tests {
   #[test]
   fn test_take() {
     // normal
-    helper(take(3), "123456", Some(3));
+    helper(take(3), b"123456" as &[u8], Some(3));
     // reject
-    helper(take(7), "123456", None);
+    helper(take(7), b"123456", None);
     // 0 is always accepted
-    helper(take(0), "", Some(0));
-    helper(take(0), "123456", Some(0));
-    // take by chars not bytes for &str
-    helper(take(1), "好", Some(3));
-    helper(take(2), "好好", Some(6));
+    helper(take(0), b"", Some(0));
+    helper(take(0), b"123456", Some(0));
   }
 }

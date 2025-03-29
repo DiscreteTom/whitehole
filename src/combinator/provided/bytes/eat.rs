@@ -6,7 +6,7 @@ use crate::{
 
 create_value_combinator!(Eat, "See [`eat`].");
 
-unsafe impl Action<str> for Eat<char> {
+unsafe impl Action<[u8]> for Eat<u8> {
   type Value = ();
   type State = ();
   type Heap = ();
@@ -14,17 +14,36 @@ unsafe impl Action<str> for Eat<char> {
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<()>> {
+    input
+      .instant
+      .rest()
+      .first()
+      .is_some_and(|&c| c == self.inner)
+      .then(|| unsafe { input.instant.accept_unchecked(1) })
+  }
+}
+
+unsafe impl Action<[u8]> for Eat<&[u8]> {
+  type Value = ();
+  type State = ();
+  type Heap = ();
+
+  #[inline]
+  fn exec(
+    &self,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     input
       .instant
       .rest()
       .starts_with(self.inner)
-      .then(|| unsafe { input.instant.accept_unchecked(self.inner.len_utf8()) })
+      .then(|| unsafe { input.instant.accept_unchecked(self.inner.len()) })
   }
 }
 
-unsafe impl Action<str> for Eat<String> {
+unsafe impl<const N: usize> Action<[u8]> for Eat<&[u8; N]> {
   type Value = ();
   type State = ();
   type Heap = ();
@@ -32,30 +51,30 @@ unsafe impl Action<str> for Eat<String> {
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<()>> {
+    input
+      .instant
+      .rest()
+      .starts_with(self.inner)
+      .then(|| unsafe { input.instant.accept_unchecked(N) })
+  }
+}
+
+unsafe impl Action<[u8]> for Eat<Vec<u8>> {
+  type Value = ();
+  type State = ();
+  type Heap = ();
+
+  #[inline]
+  fn exec(
+    &self,
+    input: Input<&Instant<&[u8]>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     input
       .instant
       .rest()
       .starts_with(&self.inner)
-      .then(|| unsafe { input.instant.accept_unchecked(self.inner.len()) })
-  }
-}
-
-unsafe impl Action<str> for Eat<&str> {
-  type Value = ();
-  type State = ();
-  type Heap = ();
-
-  #[inline]
-  fn exec(
-    &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<()>> {
-    input
-      .instant
-      .rest()
-      .starts_with(self.inner)
       .then(|| unsafe { input.instant.accept_unchecked(self.inner.len()) })
   }
 }
@@ -110,12 +129,19 @@ macro_rules! impl_into_eat_combinator {
     }
   };
 }
-impl_into_eat_combinator!(char);
-impl_into_eat_combinator!(String);
 
-impl<'a> From<&'a str> for Combinator<Eat<&'a str>> {
+impl_into_eat_combinator!(u8);
+impl_into_eat_combinator!(Vec<u8>);
+
+impl<'a> From<&'a [u8]> for Combinator<Eat<&'a [u8]>> {
   #[inline]
-  fn from(v: &'a str) -> Self {
+  fn from(v: &'a [u8]) -> Self {
+    eat(v)
+  }
+}
+impl<'a, const N: usize> From<&'a [u8; N]> for Combinator<Eat<&'a [u8; N]>> {
+  #[inline]
+  fn from(v: &'a [u8; N]) -> Self {
     eat(v)
   }
 }
@@ -147,29 +173,31 @@ mod tests {
 
   #[test]
   fn combinator_eat() {
-    // normal char
-    helper(eat(';'), ";", Some(1));
-    // normal &str
-    helper(eat("123"), "123", Some(3));
-    // normal String
-    helper(eat("123".to_string()), "123", Some(3));
+    // normal u8
+    helper(eat(b';'), b";", Some(1));
+    // normal &[u8;N]
+    helper(eat(b";"), b";", Some(1));
+    // normal &[u8]
+    helper(eat("123".as_bytes()), b"123", Some(3));
+    // normal Vec<u8>
+    helper(eat(vec![b'1', b'2', b'3']), b"123", Some(3));
     // reject
-    helper(eat("123"), "abc", None);
-    helper(eat('1'), "abc", None);
-    // empty string is allowed and always accept
-    helper(eat(""), "123", Some(0));
-    helper(eat(""), "", Some(0));
-    helper(eat("".to_string()), "123", Some(0));
-    helper(eat("".to_string()), "", Some(0));
+    helper(eat(b""), b"123", Some(0));
+    helper(eat(b""), b"", Some(0));
+    helper(eat(b"" as &[u8]), b"123", Some(0));
+    helper(eat(b"" as &[u8]), b"", Some(0));
+    helper(eat(vec![]), b"123", Some(0));
+    helper(eat(vec![]), b"", Some(0));
   }
 
   #[test]
   fn eat_into_combinator() {
-    fn test(c: Combinator<impl Action<Value = (), State = (), Heap = ()>>) {
-      helper(c, "a", Some(1));
+    fn test_bytes(c: Combinator<impl Action<[u8], Value = (), State = (), Heap = ()>>) {
+      helper(c, b"a", Some(1));
     }
-    test('a'.into());
-    test("a".into());
-    test("a".to_string().into());
+    test_bytes(b'a'.into());
+    test_bytes(b"a".into());
+    test_bytes("a".as_bytes().into());
+    test_bytes(vec![b'a'].into());
   }
 }

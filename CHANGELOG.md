@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `!` operator overloading for `Combinator`.
 - Add `Contextual` and `contextual!`.
 - Add `new` for provided combinators.
-- Add `bytes::{Wrap, WrapUnchecked, Next}`.
+- Add combinator functions and structs for all bytes combinators.
 
 ### Changed
 

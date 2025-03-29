@@ -106,7 +106,11 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{combinator::eat, digest::Digest, instant::Instant};
+  use crate::{
+    combinator::{bytes, eat},
+    digest::Digest,
+    instant::Instant,
+  };
   use std::{ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
@@ -197,10 +201,10 @@ mod tests {
     // with a string
     t((eat("true") * (1..)).sep(",".to_string()));
     // with a u8
-    tb((eat(b"true") * (1..)).sep(b','));
+    tb((bytes::eat(b"true") * (1..)).sep(b','));
     // with a &[u8]
-    tb((eat(b"true") * (1..)).sep(b","));
+    tb((bytes::eat(b"true") * (1..)).sep(b","));
     // with a Vec<u8>
-    tb((eat(b"true") * (1..)).sep(vec![b',']));
+    tb((bytes::eat(b"true") * (1..)).sep(vec![b',']));
   }
 }

@@ -93,7 +93,10 @@ unsafe impl<Text: ?Sized, T: Action<Text> + ?Sized> Action<Text> for Rc<T> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{combinator::take, instant::Instant};
+  use crate::{
+    combinator::{bytes, take},
+    instant::Instant,
+  };
 
   fn assert_str_action(t: impl Action<Value = (), State = (), Heap = ()>) {
     assert!(t
@@ -117,38 +120,40 @@ mod tests {
   #[test]
   fn action_ref() {
     assert_str_action(&take(1));
-    assert_bytes_action(&take(1));
+    assert_bytes_action(&bytes::take(1));
   }
 
   #[test]
   fn action_dyn_ref() {
     assert_str_action(&take(1) as &dyn Action<State = (), Heap = (), Value = ()>);
-    assert_bytes_action(&take(1) as &dyn Action<[u8], State = (), Heap = (), Value = ()>);
+    assert_bytes_action(&bytes::take(1) as &dyn Action<[u8], State = (), Heap = (), Value = ()>);
   }
 
   #[test]
   fn boxed_action() {
     assert_str_action(Box::new(take(1)));
-    assert_bytes_action(Box::new(take(1)));
+    assert_bytes_action(Box::new(bytes::take(1)));
   }
 
   #[test]
   fn boxed_dyn_action() {
     assert_str_action(Box::new(take(1)) as Box<dyn Action<State = (), Heap = (), Value = ()>>);
     assert_bytes_action(
-      Box::new(take(1)) as Box<dyn Action<[u8], State = (), Heap = (), Value = ()>>
+      Box::new(bytes::take(1)) as Box<dyn Action<[u8], State = (), Heap = (), Value = ()>>
     );
   }
 
   #[test]
   fn rc_action() {
     assert_str_action(Rc::new(take(1)));
-    assert_bytes_action(Rc::new(take(1)));
+    assert_bytes_action(Rc::new(bytes::take(1)));
   }
 
   #[test]
   fn rc_dyn_action() {
     assert_str_action(Rc::new(take(1)) as Rc<dyn Action<State = (), Heap = (), Value = ()>>);
-    assert_bytes_action(Rc::new(take(1)) as Rc<dyn Action<[u8], State = (), Heap = (), Value = ()>>);
+    assert_bytes_action(
+      Rc::new(bytes::take(1)) as Rc<dyn Action<[u8], State = (), Heap = (), Value = ()>>
+    );
   }
 }

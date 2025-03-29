@@ -123,6 +123,16 @@ macro_rules! contextual {
       pub mod bytes {
         use super::*;
 
+        /// Contextual version of [`eat`](whitehole::combinator::bytes::eat).
+        #[inline]
+        pub const fn eat<T>(
+          pattern: T,
+        ) -> Combinator<Contextual<$crate::combinator::bytes::Eat<T>, $state, $heap>> {
+          Combinator::new(Contextual::new($crate::combinator::bytes::Eat::new(
+            pattern,
+          )))
+        }
+
         /// Contextual version of [`bytes::next`](whitehole::combinator::bytes::next).
         #[inline]
         pub const fn next<F: Fn(u8) -> bool>(
@@ -130,6 +140,24 @@ macro_rules! contextual {
         ) -> Combinator<Contextual<$crate::combinator::bytes::Next<F>, $state, $heap>> {
           Combinator::new(Contextual::new($crate::combinator::bytes::Next::new(
             condition,
+          )))
+        }
+
+        /// Contextual version of [`take`](whitehole::combinator::bytes::take).
+        #[inline]
+        pub const fn take(
+          n: usize,
+        ) -> Combinator<Contextual<$crate::combinator::bytes::Take, $state, $heap>> {
+          Combinator::new(Contextual::new($crate::combinator::bytes::Take::new(n)))
+        }
+
+        /// Contextual version of [`till`](whitehole::combinator::bytes::till).
+        #[inline]
+        pub const fn till<T>(
+          pattern: T,
+        ) -> Combinator<Contextual<$crate::combinator::bytes::Till<T>, $state, $heap>> {
+          Combinator::new(Contextual::new($crate::combinator::bytes::Till::new(
+            pattern,
           )))
         }
 
