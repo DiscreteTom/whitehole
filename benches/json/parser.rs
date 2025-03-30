@@ -1,7 +1,7 @@
 use crate::common::{number, string, whitespaces};
 use std::sync::LazyLock;
 use whitehole::{
-  action::{Action, Input},
+  action::Action,
   combinator::{eat, recur, wrap, Combinator},
 };
 
@@ -51,14 +51,7 @@ pub fn parser_entry_with_static(
     > = LazyLock::new(|| {
       Box::new(array() | object() | number() | string() | "true" | "false" | "null")
     });
-    // TODO: simplify this
-    wrap(|instant| {
-      VALUE.exec(Input {
-        instant,
-        state: &mut (),
-        heap: &mut (),
-      })
-    })
+    wrap(|input| VALUE.exec(input))
   }
 
   whitespaces() | value()

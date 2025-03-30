@@ -8,9 +8,9 @@ use whitehole::{
 pub fn regex(s: &str) -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
   let re = Regex::new(s).unwrap();
   unsafe {
-    wrap_unchecked(move |instant| {
-      re.find(instant.rest())
-        .map(|m| instant.accept_unchecked(m.len()))
+    wrap_unchecked(move |input| {
+      re.find(input.instant.rest())
+        .map(|m| input.instant.accept_unchecked(m.len()))
     })
   }
 }
