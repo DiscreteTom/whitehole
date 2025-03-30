@@ -55,8 +55,10 @@ unsafe impl<T: Action, D: Fn(Input<&Instant<&T::Text>, &mut T::State, &mut T::He
   }
 }
 
-unsafe impl<T: Action, D: Fn(Accepted<&T::Text, &T::Value, &mut T::State, &mut T::Heap>) -> bool>
-  Action for Reject<T, D>
+unsafe impl<
+    T: Action,
+    D: Fn(Accepted<&Instant<&T::Text>, &mut T::State, &mut T::Heap, &T::Value>) -> bool,
+  > Action for Reject<T, D>
 {
   type Text = T::Text;
   type State = T::State;
@@ -69,12 +71,9 @@ unsafe impl<T: Action, D: Fn(Accepted<&T::Text, &T::Value, &mut T::State, &mut T
     mut input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).and_then(|output| {
-      if (self.inner)(Accepted::new(
-        input.instant,
-        output.as_ref(),
-        input.state,
-        input.heap,
-      )) {
+      if (self.inner)(unsafe {
+        Accepted::new_unchecked(input.instant, output.as_ref(), input.state, input.heap)
+      }) {
         None
       } else {
         output.into()
@@ -180,7 +179,9 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn reject<F: Fn(Accepted<&T::Text, &T::Value, &mut T::State, &mut T::Heap>) -> bool>(
+  pub fn reject<
+    F: Fn(Accepted<&Instant<&T::Text>, &mut T::State, &mut T::Heap, &T::Value>) -> bool,
+  >(
     self,
     rejecter: F,
   ) -> Combinator<Reject<T, F>>

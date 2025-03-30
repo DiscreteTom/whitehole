@@ -28,8 +28,8 @@ unsafe impl<T: Action, D: Fn(Input<&Instant<&T::Text>, &mut T::State, &mut T::He
   }
 }
 
-unsafe impl<T: Action, D: Fn(Accepted<&T::Text, &T::Value, &mut T::State, &mut T::Heap>)> Action
-  for Then<T, D>
+unsafe impl<T: Action, D: Fn(Accepted<&Instant<&T::Text>, &mut T::State, &mut T::Heap, &T::Value>)>
+  Action for Then<T, D>
 {
   type Text = T::Text;
   type State = T::State;
@@ -42,12 +42,9 @@ unsafe impl<T: Action, D: Fn(Accepted<&T::Text, &T::Value, &mut T::State, &mut T
     mut input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).inspect(|output| {
-      (self.inner)(Accepted::new(
-        input.instant,
-        output.as_ref(),
-        input.state,
-        input.heap,
-      ));
+      (self.inner)(unsafe {
+        Accepted::new_unchecked(input.instant, output.as_ref(), input.state, input.heap)
+      });
     })
   }
 }
@@ -125,7 +122,7 @@ impl<T> Combinator<T> {
   /// # ;}
   /// ```
   #[inline]
-  pub fn then<F: Fn(Accepted<&T::Text, &T::Value, &mut T::State, &mut T::Heap>)>(
+  pub fn then<F: Fn(Accepted<&Instant<&T::Text>, &mut T::State, &mut T::Heap, &T::Value>)>(
     self,
     modifier: F,
   ) -> Combinator<Then<T, F>>

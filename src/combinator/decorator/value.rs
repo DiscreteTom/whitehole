@@ -88,7 +88,7 @@ unsafe impl<T: Action, NewValue, D: Fn() -> NewValue> Action for BindWith<T, D> 
 unsafe impl<
     NewValue,
     T: Action,
-    D: Fn(Accepted<&T::Text, T::Value, &mut T::State, &mut T::Heap>) -> NewValue,
+    D: Fn(Accepted<&Instant<&T::Text>, &mut T::State, &mut T::Heap, T::Value>) -> NewValue,
   > Action for Select<T, D>
 {
   type Text = T::Text;
@@ -103,12 +103,9 @@ unsafe impl<
   ) -> Option<Output<Self::Value>> {
     self.action.exec(input.reborrow()).map(|output| Output {
       digested: output.digested,
-      value: (self.inner)(Accepted::new(
-        input.instant,
-        output,
-        input.state,
-        input.heap,
-      )),
+      value: (self.inner)(unsafe {
+        Accepted::new_unchecked(input.instant, output, input.state, input.heap)
+      }),
     })
   }
 }
@@ -251,7 +248,7 @@ impl<T> Combinator<T> {
   #[inline]
   pub fn select<
     NewValue,
-    F: Fn(Accepted<&T::Text, T::Value, &mut T::State, &mut T::Heap>) -> NewValue,
+    F: Fn(Accepted<&Instant<&T::Text>, &mut T::State, &mut T::Heap, T::Value>) -> NewValue,
   >(
     self,
     selector: F,
