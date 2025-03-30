@@ -320,4 +320,14 @@ mod tests {
       "(name) output: None"
     );
   }
+
+  fn _ensure_debug() {
+    let _ = format!("{:?}", take(1).log("take"));
+  }
+
+  fn _ensure_clone_copy() {
+    let c = take(1).log("take");
+    let _c = c;
+    let _ = c.clone();
+  }
 }
