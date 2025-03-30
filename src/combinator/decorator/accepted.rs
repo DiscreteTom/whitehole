@@ -170,6 +170,22 @@ mod tests {
   }
 
   #[test]
+  #[should_panic]
+  fn accepted_new_unchecked_invalid_digested() {
+    unsafe {
+      Accepted::new_unchecked(
+        &Instant::new("0123").to_digested_unchecked(1),
+        Output {
+          value: (),
+          digested: 4,
+        },
+        &mut (),
+        &mut (),
+      )
+    };
+  }
+
+  #[test]
   fn test_accepted() {
     // getters
     assert_eq!(ctx!().instant().rest(), "123");
@@ -184,6 +200,9 @@ mod tests {
     // take
     assert_eq!(ctx!().take().digested, 1);
     assert_eq!(ctx!().take().map(|_| 1).value, 1);
+
+    // debug
+    let _ = format!("{:?}", ctx!());
   }
 
   #[test]
@@ -201,5 +220,8 @@ mod tests {
     // take
     assert_eq!(ctx_bytes!().take().digested, 1);
     assert_eq!(ctx_bytes!().take().map(|_| 1).value, 1);
+
+    // debug
+    let _ = format!("{:?}", ctx_bytes!());
   }
 }
