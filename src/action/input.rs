@@ -1,28 +1,15 @@
 /// The input of [`Action::exec`](crate::action::Action::exec).
+#[derive(Debug)]
 pub struct Input<InstantRef, StateRef, HeapRef> {
+  /// The immutable reference to the parser's current instant state.
   pub instant: InstantRef,
+
   /// The `&mut State`.
-  /// This is public, so you can mutate the `State` directly.
-  ///
-  /// With the `State`, you can construct stateful parsers,
-  /// while actions remain stateless and clone-able.
-  ///
-  /// All vars that control the flow of the parsing should be stored here.
-  /// This should be small and cheap to clone (maybe just a bunch of integers or booleans).
-  /// If a var only represents a resource (e.g. a chunk of memory, a channel, etc),
-  /// it should be stored in [`Self::heap`].
+  /// See [`Parser::state`](crate::parser::Parser::state).
   pub state: StateRef,
+
   /// The `&mut Heap`.
-  /// This is public, so you can mutate this directly.
-  ///
-  /// With the `Heap`, you can re-use allocated memory
-  /// across actions and parsings.
-  ///
-  /// All vars that doesn't count as a part of [`Self::state`] should be stored here.
-  /// If a var is used to control the flow of the parsing,
-  /// it should be treated as a state and stored in [`Self::state`].
-  /// If a var only represents a resource (e.g. a chunk of memory, a channel, etc),
-  /// it should be stored here.
+  /// See [`Parser::heap`](crate::parser::Parser::heap).
   pub heap: HeapRef,
 }
 

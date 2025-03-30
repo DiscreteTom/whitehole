@@ -1,4 +1,5 @@
-//! Manage [`Input::state`], [`Input::heap`] and the parsing progress.
+//! Manage the [`State`](Parser::state), [`Heap`](Parser::heap)
+//! and the [parsing progress](Parser::instant).
 //!
 //! # Build the Parser
 //!
@@ -202,16 +203,41 @@ use crate::{
 };
 use std::{ops::RangeFrom, slice::SliceIndex};
 
-/// Manage [`Input::state`], [`Input::heap`] and the parsing progress.
+/// Manage the [`State`](Parser::state), [`Heap`](Parser::heap)
+/// and the [parsing progress](Parser::instant).
 ///
 /// See the [module-level documentation](self) for more.
 #[derive(Debug)]
 pub struct Parser<'text, T: Action> {
-  /// See [`Input::state`].
-  /// You can mutate this directly if needed.
+  /// The state of a stateful parser.
+  ///
+  /// With this, you can construct stateful parsers,
+  /// while [`Action`]s remain stateless.
+  ///
+  /// All vars that control the flow of the parsing should be stored here.
+  /// This should be small and cheap to clone (maybe just a bunch of integers or booleans).
+  /// If a var only represents a resource (e.g. a chunk of memory, a channel, etc),
+  /// it should be stored in [`Self::heap`].
+  ///
+  /// This is public. You can mutate this directly if needed.
+  ///
+  /// You can access this in [`Action`]s via [`Input::state`].
   pub state: T::State,
-  /// See [`Input::heap`].
-  /// You can mutate this directly if needed.
+
+  /// The reusable heap.
+  ///
+  /// With this, you can reuse allocated memory
+  /// across actions and parsings.
+  ///
+  /// All vars that doesn't count as a part of [`Self::state`] should be stored here.
+  /// If a var is used to control the flow of the parsing,
+  /// it should be treated as a state and stored in [`Self::state`].
+  /// If a var only represents a resource (e.g. a chunk of memory, a channel, etc),
+  /// it should be stored here.
+  ///
+  /// This is public. You can mutate this directly if needed.
+  ///
+  /// You can access this in [`Action`]s via [`Input::heap`].
   pub heap: T::Heap,
 
   /// See [`Self::instant`].
