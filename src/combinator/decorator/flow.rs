@@ -110,7 +110,7 @@ unsafe impl<T: Action<Text = str>> Action for Boundary<T> {
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&str>, &mut Self::State, &mut Self::Heap>,
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let rest = input.instant.rest();
     self.action.exec(input).and_then(|output| {
@@ -124,7 +124,7 @@ unsafe impl<T: Action<Text = str>> Action for Boundary<T> {
 }
 
 impl<T> Combinator<T> {
-  /// Create a new combinator to check the [`Instant`] and [`Context`] before being executed.
+  /// Create a new combinator to check the [`Input`] before being executed.
   /// The combinator will be executed only if the `condition` returns `true`.
   ///
   /// This is the opposite of [`Combinator::prevent`].
@@ -133,7 +133,7 @@ impl<T> Combinator<T> {
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { execute: bool }
   /// # fn t(combinator: Combinator<impl Action<Text=str, MyState>>) {
-  /// combinator.when(|_, ctx| input.state.execute)
+  /// combinator.when(|input| input.state.execute)
   /// # ;}
   /// ```
   #[inline]
@@ -147,7 +147,7 @@ impl<T> Combinator<T> {
     Combinator::new(When::new(self.action, condition))
   }
 
-  /// Create a new combinator to check the [`Instant`] and [`Context`] before being executed.
+  /// Create a new combinator to check the [`Input`] before being executed.
   /// The combinator will reject if the `preventer` returns `true`.
   ///
   /// This is the opposite of [`Combinator::when`].
@@ -156,7 +156,7 @@ impl<T> Combinator<T> {
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { reject: bool }
   /// # fn t(combinator: Combinator<impl Action<Text=str, MyState>>) {
-  /// combinator.prevent(|_, ctx| input.state.reject)
+  /// combinator.prevent(|input| input.state.reject)
   /// # ;}
   /// ```
   #[inline]
@@ -170,13 +170,13 @@ impl<T> Combinator<T> {
     Combinator::new(Prevent::new(self.action, preventer))
   }
 
-  /// Create a new combinator to check the [`Instant`], [`Context`] and [`Output`] after being executed.
+  /// Create a new combinator to check the [`Accepted`] after being executed.
   /// The combinator will reject if the `rejecter` returns `true`.
   /// # Examples
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # fn t(combinator: Combinator<impl Action>) {
-  /// combinator.reject(|ctx, _| ctx.content() != "123")
+  /// combinator.reject(|accepted| accepted.content() != "123")
   /// # ;}
   /// ```
   #[inline]
@@ -194,8 +194,8 @@ impl<T> Combinator<T> {
 
   /// Make the combinator optional.
   ///
-  /// Under the hood, the combinator will be accepted
-  /// with the default value and zero digested if the original combinator rejects.
+  /// Under the hood, if the original combinator rejects, the new combinator will accept
+  /// with the default value and zero digested.
   ///
   /// This requires the `Value` to implement [`Default`],
   /// thus usually used before setting a custom value.
@@ -254,7 +254,7 @@ impl<T> Combinator<T> {
 mod tests {
   use super::*;
   use crate::{contextual, digest::Digest, instant::Instant};
-  use std::{ops::RangeFrom, slice::SliceIndex};
+  use std::{fmt::Debug, ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
     action: impl Action<Text = Text, State = bool, Heap = (), Value = ()>,
@@ -278,18 +278,34 @@ mod tests {
 
   contextual!(bool, ());
 
-  fn accepter() -> Combinator<impl Action<Text = str, State = bool, Heap = (), Value = ()>> {
-    wrap(|input| input.instant.accept(1)).prepare(|input| *input.state = true)
+  fn accepter(
+  ) -> Combinator<impl Action<Text = str, State = bool, Heap = (), Value = ()> + Debug + Copy> {
+    wrap(|input| {
+      *input.state = true;
+      input.instant.accept(1)
+    })
   }
-  fn accepter_bytes() -> Combinator<impl Action<Text = [u8], State = bool, Heap = (), Value = ()>> {
-    bytes::wrap(|input| input.instant.accept(1)).prepare(|input| *input.state = true)
+  fn accepter_bytes(
+  ) -> Combinator<impl Action<Text = [u8], State = bool, Heap = (), Value = ()> + Debug + Copy> {
+    bytes::wrap(|input| {
+      *input.state = true;
+      input.instant.accept(1)
+    })
   }
 
-  fn rejecter() -> Combinator<impl Action<Text = str, State = bool, Heap = (), Value = ()>> {
-    wrap(|_| None).prepare(|input| *input.state = true)
+  fn rejecter(
+  ) -> Combinator<impl Action<Text = str, State = bool, Heap = (), Value = ()> + Debug + Copy> {
+    wrap(|input| {
+      *input.state = true;
+      None
+    })
   }
-  fn rejecter_bytes() -> Combinator<impl Action<Text = [u8], State = bool, Heap = (), Value = ()>> {
-    bytes::wrap(|_| None).prepare(|input| *input.state = true)
+  fn rejecter_bytes(
+  ) -> Combinator<impl Action<Text = [u8], State = bool, Heap = (), Value = ()> + Debug + Copy> {
+    bytes::wrap(|input| {
+      *input.state = true;
+      None
+    })
   }
 
   #[test]
@@ -319,6 +335,13 @@ mod tests {
       Some(1),
     );
     assert!(executed);
+
+    // debug
+    let _ = format!("{:?}", accepter().when(|_| true));
+    // copy & clone
+    let c = accepter().when(|_| true);
+    let _c = c;
+    let _c = c.clone();
   }
 
   #[test]
@@ -348,6 +371,13 @@ mod tests {
       Some(1),
     );
     assert!(executed);
+
+    // debug
+    let _ = format!("{:?}", accepter().prevent(|_| true));
+    // copy & clone
+    let c = accepter().prevent(|_| true);
+    let _c = c;
+    let _c = c.clone();
   }
 
   #[test]
@@ -387,6 +417,13 @@ mod tests {
       None,
     );
     assert!(executed);
+
+    // debug
+    let _ = format!("{:?}", accepter().reject(|accept| accept.content() != "1"));
+    // copy & clone
+    let c = accepter().reject(|accept| accept.content() != "1");
+    let _c = c;
+    let _c = c.clone();
   }
 
   #[test]
@@ -406,6 +443,13 @@ mod tests {
     let mut executed = false;
     helper(rejecter_bytes().optional(), b"123", &mut executed, Some(0));
     assert!(executed);
+
+    // debug
+    let _ = format!("{:?}", accepter().optional());
+    // copy & clone
+    let c = accepter().optional();
+    let _c = c;
+    let _c = c.clone();
   }
 
   #[test]
@@ -443,5 +487,12 @@ mod tests {
     let mut executed = false;
     helper(accepter().boundary(), "1好", &mut executed, None);
     assert!(executed);
+
+    // debug
+    let _ = format!("{:?}", accepter().boundary());
+    // copy & clone
+    let c = accepter().boundary();
+    let _c = c;
+    let _c = c.clone();
   }
 }
