@@ -13,7 +13,6 @@ repository = "https://github.com/DiscreteTom/whitehole"
 criterion = { version = "0.5", features = ["html_reports"] }
 in_str = "0.1"
 regex = { version = "1.9.4" }
-serial_test = "3"
 
 [[bench]]
 name = "json"

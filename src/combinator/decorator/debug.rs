@@ -158,11 +158,8 @@ mod tests {
     combinator::{bytes, take},
     instant::Instant,
   };
-  // TODO: remove serial?
-  use serial_test::serial;
 
   #[test]
-  #[serial]
   fn ensure_log_does_not_modify_output() {
     let c = take(1).bind(2).log("name");
     let output = c
@@ -177,7 +174,6 @@ mod tests {
   }
 
   #[test]
-  #[serial]
   fn ensure_log_can_be_used_with_bytes() {
     let c = bytes::take(1).bind(2).log("name");
     let output = c
@@ -192,14 +188,12 @@ mod tests {
   }
 
   #[test]
-  #[serial]
   fn check_format_input() {
     INDENT_LEVEL.set(0);
     assert_eq!(format_input("name", "123"), "(name) input: \"123\"");
   }
 
   #[test]
-  #[serial]
   fn check_format_input_indent() {
     LOG_INDENTATION.set("| ");
     INDENT_LEVEL.set(1);
@@ -212,7 +206,6 @@ mod tests {
   }
 
   #[test]
-  #[serial]
   fn check_format_input_truncated() {
     INDENT_LEVEL.set(0);
     assert_eq!(
@@ -226,7 +219,6 @@ mod tests {
   }
 
   #[test]
-  #[serial]
   fn check_format_input_bytes() {
     INDENT_LEVEL.set(0);
     assert_eq!(
@@ -237,7 +229,6 @@ mod tests {
   }
 
   #[test]
-  #[serial]
   fn check_format_input_indent_bytes() {
     LOG_INDENTATION.set("| ");
     INDENT_LEVEL.set(1);
@@ -259,7 +250,6 @@ mod tests {
   }
 
   #[test]
-  #[serial]
   fn check_format_input_truncated_bytes() {
     INDENT_LEVEL.set(0);
     assert_eq!(
@@ -276,7 +266,6 @@ mod tests {
   }
 
   #[test]
-  #[serial]
   fn check_format_output() {
     INDENT_LEVEL.set(0);
     assert_eq!(
@@ -297,7 +286,6 @@ mod tests {
   }
 
   #[test]
-  #[serial]
   fn check_format_output_bytes() {
     INDENT_LEVEL.set(0);
     assert_eq!(
