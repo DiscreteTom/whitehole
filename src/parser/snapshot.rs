@@ -10,7 +10,7 @@ use super::Instant;
 ///
 /// Since `State` should be cheap to clone,
 /// this is also cheap to create or clone.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Snapshot<TextRef, State> {
   /// See [`Parser::state`](crate::parser::Parser::state).
   /// You can modify this if needed.
@@ -38,7 +38,6 @@ mod tests {
       state: (),
       instant: Instant::new(""),
     };
-    assert_eq!(s.instant(), &Instant::new(""));
 
     // ensure clone-able
     let _ = s.clone();

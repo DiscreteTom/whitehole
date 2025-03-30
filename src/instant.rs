@@ -7,7 +7,7 @@ use std::{ops::RangeFrom, slice::SliceIndex};
 /// The instantaneous state of a parser (a.k.a the "configuration" in the automata theory).
 ///
 /// This is cheap to clone.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Instant<TextRef> {
   /// See [`Self::text`].
   text: TextRef,
@@ -100,10 +100,9 @@ mod tests {
   }
 
   #[test]
-  fn instant_clone_eq() {
+  fn instant_clone() {
     let i = Instant::new("123");
-    let j = i.clone();
-    assert_eq!(i, j);
+    let _ = i.clone();
   }
 
   #[test]
