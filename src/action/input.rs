@@ -44,3 +44,20 @@ impl<Instant, State, Heap> Input<&Instant, &mut State, &mut Heap> {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::instant::Instant;
+
+  #[test]
+  fn ensure_input_debug() {
+    let instant = Instant::new("123");
+    let input = Input {
+      instant: &instant,
+      state: &mut (),
+      heap: &mut (),
+    };
+    let _ = format!("{:?}", input);
+  }
+}
