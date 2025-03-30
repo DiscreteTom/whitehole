@@ -31,59 +31,66 @@ thread_local! {
   static INDENT_LEVEL: Cell<usize> = const { Cell::new(0) };
 }
 
+#[inline]
 fn indentation() -> String {
   LOG_INDENTATION.get().repeat(INDENT_LEVEL.get())
 }
 
-fn format_truncated(truncated: impl Debug, oversize: bool) -> String {
-  if oversize {
-    format!("{:?} (truncated)", truncated)
+/// A trait to format the undigested text.
+/// # Safety
+/// The implementor must ensure the return value is valid according to [`Digest::validate`].
+pub unsafe trait FormatUndigested {
+  /// Return [`None`] if the text doesn't need to be truncated.
+  /// Otherwise, return the number of bytes after truncation.
+  fn truncated_len(&self) -> Option<usize>;
+}
+
+unsafe impl FormatUndigested for [u8] {
+  fn truncated_len(&self) -> Option<usize> {
+    let max = LOG_UNDIGESTED_MAX_LEN.get();
+    if self.len() <= max {
+      None
+    } else {
+      Some(max)
+    }
+  }
+}
+
+unsafe impl FormatUndigested for str {
+  fn truncated_len(&self) -> Option<usize> {
+    let max = LOG_UNDIGESTED_MAX_LEN.get();
+    let mut len = 0;
+    let mut chars = self.chars();
+    for _ in 0..max {
+      if let Some(c) = chars.next() {
+        len += c.len_utf8();
+      } else {
+        return None;
+      }
+    }
+    if chars.next().is_some() {
+      Some(len)
+    } else {
+      None
+    }
+  }
+}
+
+#[inline]
+fn format_input<Text: FormatUndigested + Digest + Debug + ?Sized>(name: &str, rest: &Text) -> String
+where
+  RangeTo<usize>: SliceIndex<Text, Output = Text>,
+{
+  let truncated = if let Some(len) = rest.truncated_len() {
+    format!("{:?} (truncated)", unsafe { rest.get_unchecked(..len) })
   } else {
-    format!("{:?}", truncated)
-  }
+    format!("{:?}", rest)
+  };
+
+  format!("{}({}) input: {}", &indentation(), name, truncated)
 }
 
-/// A trait to format the rest input text.
-pub trait FormatUndigested {
-  // TODO: redesign API
-
-  /// Format the rest input text to a string.
-  fn format_rest(&self) -> String;
-}
-
-impl FormatUndigested for [u8] {
-  fn format_rest(&self) -> String {
-    format_truncated(
-      &self[..self.len().min(LOG_UNDIGESTED_MAX_LEN.get())],
-      self.len() > LOG_UNDIGESTED_MAX_LEN.get(),
-    )
-  }
-}
-impl FormatUndigested for str {
-  fn format_rest(&self) -> String {
-    format_truncated(
-      self
-        .chars()
-        .take(LOG_UNDIGESTED_MAX_LEN.get())
-        .collect::<String>(),
-      self.chars().count() > LOG_UNDIGESTED_MAX_LEN.get(),
-    )
-  }
-}
-
-fn format_input<TextRef>(
-  name: &str,
-  rest_formatter: fn(TextRef) -> String,
-  rest: TextRef,
-) -> String {
-  format!(
-    "{}({}) input: {}",
-    &indentation(),
-    name,
-    rest_formatter(rest)
-  )
-}
-
+#[inline]
 fn format_output<Text: ?Sized + Digest + Debug, Value>(
   name: &str,
   rest: &Text,
@@ -115,10 +122,7 @@ where
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let rest = input.instant.rest();
-    println!(
-      "{}",
-      &format_input(self.name, <T::Text as FormatUndigested>::format_rest, rest)
-    );
+    println!("{}", &format_input(self.name, rest));
     INDENT_LEVEL.set(INDENT_LEVEL.get() + 1);
     let output = self.action.exec(input);
     INDENT_LEVEL.set(INDENT_LEVEL.get() - 1);
@@ -133,8 +137,7 @@ impl<T> Combinator<T> {
   ///
   /// For customization, see [`LOG_INDENTATION`] and [`LOG_UNDIGESTED_MAX_LEN`].
   /// # Caveats
-  /// This should NOT be used in multi-threaded environments
-  /// because it uses a global variable to store the indentation level.
+  /// Be careful in multi-threaded environments since this uses thread-local variables.
   /// # Examples
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
@@ -155,6 +158,7 @@ mod tests {
     combinator::{bytes, take},
     instant::Instant,
   };
+  // TODO: remove serial?
   use serial_test::serial;
 
   #[test]
@@ -191,10 +195,7 @@ mod tests {
   #[serial]
   fn check_format_input() {
     INDENT_LEVEL.set(0);
-    assert_eq!(
-      format_input("name", <str as FormatUndigested>::format_rest, "123"),
-      "(name) input: \"123\""
-    );
+    assert_eq!(format_input("name", "123"), "(name) input: \"123\"");
   }
 
   #[test]
@@ -202,21 +203,12 @@ mod tests {
   fn check_format_input_indent() {
     LOG_INDENTATION.set("| ");
     INDENT_LEVEL.set(1);
-    assert_eq!(
-      format_input("name", <str as FormatUndigested>::format_rest, "123"),
-      "| (name) input: \"123\""
-    );
+    assert_eq!(format_input("name", "123"), "| (name) input: \"123\"");
     INDENT_LEVEL.set(2);
-    assert_eq!(
-      format_input("name", <str as FormatUndigested>::format_rest, "123"),
-      "| | (name) input: \"123\""
-    );
+    assert_eq!(format_input("name", "123"), "| | (name) input: \"123\"");
     // custom indentation
     LOG_INDENTATION.set("  ");
-    assert_eq!(
-      format_input("name", <str as FormatUndigested>::format_rest, "123"),
-      "    (name) input: \"123\""
-    );
+    assert_eq!(format_input("name", "123"), "    (name) input: \"123\"");
   }
 
   #[test]
@@ -224,12 +216,12 @@ mod tests {
   fn check_format_input_truncated() {
     INDENT_LEVEL.set(0);
     assert_eq!(
-      format_input("name", <str as FormatUndigested>::format_rest, &"1234567890".repeat(10)),
-      "(name) input: \"1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890\""
+      format_input("name", "1234567890".repeat(10).as_str()),
+      format!("(name) input: {:?}", "1234567890".repeat(10))
     );
     assert_eq!(
-      format_input("name", <str as FormatUndigested>::format_rest, &"1234567890".repeat(11)),
-      "(name) input: \"1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890\" (truncated)"
+      format_input("name", "1234567890".repeat(11).as_str()),
+      format!("(name) input: {:?} (truncated)", "1234567890".repeat(10))
     );
   }
 
@@ -238,7 +230,8 @@ mod tests {
   fn check_format_input_bytes() {
     INDENT_LEVEL.set(0);
     assert_eq!(
-      format_input("name", <[u8] as FormatUndigested>::format_rest, b"123"),
+      format_input("name", b"123" as &[u8]),
+      // TODO: prettier format bytes
       "(name) input: [49, 50, 51]"
     );
   }
@@ -249,18 +242,18 @@ mod tests {
     LOG_INDENTATION.set("| ");
     INDENT_LEVEL.set(1);
     assert_eq!(
-      format_input("name", <[u8] as FormatUndigested>::format_rest, b"123"),
+      format_input("name", b"123" as &[u8]),
       "| (name) input: [49, 50, 51]"
     );
     INDENT_LEVEL.set(2);
     assert_eq!(
-      format_input("name", <[u8] as FormatUndigested>::format_rest, b"123"),
+      format_input("name", b"123" as &[u8]),
       "| | (name) input: [49, 50, 51]"
     );
     // custom indentation
     LOG_INDENTATION.set("  ");
     assert_eq!(
-      format_input("name", <[u8] as FormatUndigested>::format_rest, b"123"),
+      format_input("name", b"123" as &[u8]),
       "    (name) input: [49, 50, 51]"
     );
   }
@@ -270,12 +263,15 @@ mod tests {
   fn check_format_input_truncated_bytes() {
     INDENT_LEVEL.set(0);
     assert_eq!(
-      format_input("name", <[u8] as FormatUndigested>::format_rest, &b"1234567890".repeat(10)),
-      "(name) input: [49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48]"
+      format_input("name", b"1234567890".repeat(10).as_slice()),
+      format!("(name) input: {:?}", b"1234567890".repeat(10).as_slice())
     );
     assert_eq!(
-      format_input("name", <[u8] as FormatUndigested>::format_rest, &b"1234567890".repeat(11)),
-      "(name) input: [49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48] (truncated)"
+      format_input("name", b"1234567890".repeat(11).as_slice()),
+      format!(
+        "(name) input: {:?} (truncated)",
+        b"1234567890".repeat(10).as_slice()
+      )
     );
   }
 
