@@ -72,10 +72,11 @@ mod tests {
   fn combinator_mul_usize() {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     let accepter = || {
-      wrap(|instant| {
-        instant
+      wrap(|input| {
+        input
+          .instant
           .accept(1)
-          .map(|output| output.map(|_| instant.digested()))
+          .map(|output| output.map(|_| input.instant.digested()))
       })
     };
 
@@ -122,10 +123,11 @@ mod tests {
   fn combinator_mul_range() {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     let accepter = || {
-      wrap(|instant| {
-        instant
+      wrap(|input| {
+        input
+          .instant
           .accept(1)
-          .map(|output| output.map(|_| instant.digested()))
+          .map(|output| output.map(|_| input.instant.digested()))
       })
     };
 
@@ -174,10 +176,11 @@ mod tests {
   fn combinator_mul_range_from() {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     let accepter = || {
-      wrap(|instant| {
-        instant
+      wrap(|input| {
+        input
+          .instant
           .accept(1)
-          .map(|output| output.map(|_| instant.digested()))
+          .map(|output| output.map(|_| input.instant.digested()))
       })
     };
 
@@ -216,10 +219,11 @@ mod tests {
   fn combinator_mul_range_full() {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     let accepter = || {
-      wrap(|instant| {
-        instant
+      wrap(|input| {
+        input
+          .instant
           .accept(1)
-          .map(|output| output.map(|_| instant.digested()))
+          .map(|output| output.map(|_| input.instant.digested()))
       })
     };
 
@@ -248,10 +252,11 @@ mod tests {
   fn combinator_mul_range_inclusive() {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     let accepter = || {
-      wrap(|instant| {
-        instant
+      wrap(|input| {
+        input
+          .instant
           .accept(1)
-          .map(|output| output.map(|_| instant.digested()))
+          .map(|output| output.map(|_| input.instant.digested()))
       })
     };
 
@@ -300,10 +305,11 @@ mod tests {
   fn combinator_mul_range_to() {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     let accepter = || {
-      wrap(|instant| {
-        instant
+      wrap(|input| {
+        input
+          .instant
           .accept(1)
-          .map(|output| output.map(|_| instant.digested()))
+          .map(|output| output.map(|_| input.instant.digested()))
       })
     };
 
@@ -342,10 +348,11 @@ mod tests {
   fn combinator_mul_range_to_inclusive() {
     let rejecter = || wrap(|_| Option::<Output<()>>::None);
     let accepter = || {
-      wrap(|instant| {
-        instant
+      wrap(|input| {
+        input
+          .instant
           .accept(1)
-          .map(|output| output.map(|_| instant.digested()))
+          .map(|output| output.map(|_| input.instant.digested()))
       })
     };
 

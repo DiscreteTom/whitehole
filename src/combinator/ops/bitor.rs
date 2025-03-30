@@ -237,7 +237,7 @@ mod tests {
     contextual!(i32, ());
 
     let rejecter = || wrap(|_| None).prepare(|input| *input.state += 1);
-    let accepter = || wrap(|instant| instant.accept(1)).prepare(|input| *input.state += 1);
+    let accepter = || wrap(|input| input.instant.accept(1)).prepare(|input| *input.state += 1);
 
     // reject then accept, both should increment the state
     let mut state = 0;

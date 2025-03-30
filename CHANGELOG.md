@@ -21,10 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Text`, `State` and `Heap` are now associated types of `Action` instead of generic params.
 - `Action::exec` now only takes `Input` as the parameter.
 - All provided combinators will associate `State` and `Heap` as `()` instead of generic, and associate a `Text` type.
-- `wrap` and `wrap_unchecked` only accept non-contextual closures.
 - Contextual combinators can't take non-static reference as the heap.
 - Combinator decorators with closure as the parameter type will accept `Input` or `Accepted` as the only parameter.
 - `NoSep` is now generic.
+- `wrap` and `wrap_unchecked`'s return type will be wrapped in `Contextual`.
 - `Parser` now only takes `'text` and the entry action as generic params.
 
 ### Removed

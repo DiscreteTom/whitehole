@@ -69,7 +69,7 @@ macro_rules! contextual {
     mod _impl_contextual_combinators {
       #[allow(unused_imports)]
       use super::*;
-      use $crate::action::Output;
+      use $crate::action::{Input, Output};
       use $crate::combinator::{Combinator, Contextual};
       use $crate::instant::Instant;
 
@@ -107,7 +107,10 @@ macro_rules! contextual {
 
       /// Contextual version of [`wrap_unchecked`](whitehole::combinator::wrap_unchecked).
       #[inline]
-      pub const unsafe fn wrap_unchecked<Value, F: Fn(&Instant<&str>) -> Option<Output<Value>>>(
+      pub const unsafe fn wrap_unchecked<
+        Value,
+        F: Fn(Input<&Instant<&str>, &mut $state, &mut $heap>) -> Option<Output<Value>>,
+      >(
         f: F,
       ) -> Combinator<Contextual<$crate::combinator::WrapUnchecked<F>, $state, $heap>> {
         Combinator::new(Contextual::new($crate::combinator::WrapUnchecked::new(f)))
@@ -115,7 +118,10 @@ macro_rules! contextual {
 
       /// Contextual version of [`wrap`](whitehole::combinator::wrap).
       #[inline]
-      pub const fn wrap<Value, F: Fn(&Instant<&str>) -> Option<Output<Value>>>(
+      pub const fn wrap<
+        Value,
+        F: Fn(Input<&Instant<&str>, &mut $state, &mut $heap>) -> Option<Output<Value>>,
+      >(
         f: F,
       ) -> Combinator<Contextual<$crate::combinator::Wrap<F>, $state, $heap>> {
         Combinator::new(Contextual::new($crate::combinator::Wrap::new(f)))
@@ -166,7 +172,7 @@ macro_rules! contextual {
         #[inline]
         pub const unsafe fn wrap_unchecked<
           Value,
-          F: Fn(&Instant<&[u8]>) -> Option<Output<Value>>,
+          F: Fn(Input<&Instant<&[u8]>, &mut $state, &mut $heap>) -> Option<Output<Value>>,
         >(
           f: F,
         ) -> Combinator<Contextual<$crate::combinator::bytes::WrapUnchecked<F>, $state, $heap>>
@@ -178,7 +184,10 @@ macro_rules! contextual {
 
         /// Contextual version of [`bytes::wrap`](whitehole::combinator::bytes::wrap).
         #[inline]
-        pub const fn wrap<Value, F: Fn(&Instant<&[u8]>) -> Option<Output<Value>>>(
+        pub const fn wrap<
+          Value,
+          F: Fn(Input<&Instant<&[u8]>, &mut $state, &mut $heap>) -> Option<Output<Value>>,
+        >(
           f: F,
         ) -> Combinator<Contextual<$crate::combinator::bytes::Wrap<F>, $state, $heap>> {
           Combinator::new(Contextual::new($crate::combinator::bytes::Wrap::new(f)))

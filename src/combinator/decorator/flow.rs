@@ -277,10 +277,10 @@ mod tests {
   contextual!(bool, ());
 
   fn accepter() -> Combinator<impl Action<Text = str, State = bool, Heap = (), Value = ()>> {
-    wrap(|instant| instant.accept(1)).prepare(|input| *input.state = true)
+    wrap(|input| input.instant.accept(1)).prepare(|input| *input.state = true)
   }
   fn accepter_bytes() -> Combinator<impl Action<Text = [u8], State = bool, Heap = (), Value = ()>> {
-    bytes::wrap(|instant| instant.accept(1)).prepare(|input| *input.state = true)
+    bytes::wrap(|input| input.instant.accept(1)).prepare(|input| *input.state = true)
   }
 
   fn rejecter() -> Combinator<impl Action<Text = str, State = bool, Heap = (), Value = ()>> {

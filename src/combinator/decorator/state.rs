@@ -214,11 +214,11 @@ mod tests {
   contextual!(State, ());
 
   fn accepter() -> Combinator<impl Action<Text = str, State = State, Heap = (), Value = ()>> {
-    wrap(|instant| instant.accept(1)).prepare(|input| input.state.to = input.state.from)
+    wrap(|input| input.instant.accept(1)).prepare(|input| input.state.to = input.state.from)
   }
   fn accepter_bytes() -> Combinator<impl Action<Text = [u8], State = State, Heap = (), Value = ()>>
   {
-    bytes::wrap(|instant| instant.accept(1)).prepare(|input| input.state.to = input.state.from)
+    bytes::wrap(|input| input.instant.accept(1)).prepare(|input| input.state.to = input.state.from)
   }
 
   fn rejecter() -> Combinator<impl Action<Text = str, State = State, Heap = (), Value = ()>> {

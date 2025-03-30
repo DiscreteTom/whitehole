@@ -1,6 +1,6 @@
 use crate::{
   action::{Action, Input, Output},
-  combinator::{create_closure_combinator, Combinator},
+  combinator::{create_closure_combinator, Combinator, Contextual},
   digest::Digest,
   instant::Instant,
 };
@@ -13,10 +13,16 @@ create_closure_combinator!(Wrap, "See [`wrap`] and [`bytes::wrap`].");
 
 macro_rules! impl_wrap {
   ($name:ident, $assert:ident, $text:ty) => {
-    unsafe impl<Value, F: Fn(&Instant<&$text>) -> Option<Output<Value>>> Action for $name<F> {
+    unsafe impl<
+        State,
+        Heap,
+        Value,
+        F: Fn(Input<&Instant<&$text>, &mut State, &mut Heap>) -> Option<Output<Value>>,
+      > Action for Contextual<$name<F>, State, Heap>
+    {
       type Text = $text;
-      type State = ();
-      type Heap = ();
+      type State = State;
+      type Heap = Heap;
       type Value = Value;
 
       #[inline]
@@ -24,11 +30,11 @@ macro_rules! impl_wrap {
         &self,
         input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
       ) -> Option<Output<Self::Value>> {
-        let output = (self.inner)(input.instant);
-        $assert!(output.as_ref().map_or(true, |output| input
-          .instant
-          .rest()
-          .validate(output.digested)));
+        let instant = input.instant;
+        let output = (self.inner.inner)(input);
+        $assert!(output
+          .as_ref()
+          .map_or(true, |output| instant.rest().validate(output.digested)));
         output
       }
     }
@@ -37,6 +43,8 @@ macro_rules! impl_wrap {
 
 impl_wrap!(WrapUnchecked, debug_assert, str);
 impl_wrap!(Wrap, assert, str);
+
+// TODO: for non-contextual version, can we just return Combinator<Wrap>?
 
 /// Wrap a closure or function to create a [`Combinator`].
 ///
@@ -51,14 +59,17 @@ impl_wrap!(Wrap, assert, str);
 /// # use whitehole::action::{Output, Action};
 /// # fn t() -> Combinator<impl Action> {
 /// // eat the next character if it exists
-/// unsafe { wrap_unchecked(|instant| instant.rest().chars().next().and_then(|c| instant.accept(c.len_utf8()))) }
+/// unsafe { wrap_unchecked(|input| input.instant.rest().chars().next().and_then(|c| input.instant.accept(c.len_utf8()))) }
 /// # }
 /// ```
 #[inline]
-pub const unsafe fn wrap_unchecked<Value, F: Fn(&Instant<&str>) -> Option<Output<Value>>>(
+pub const unsafe fn wrap_unchecked<
+  Value,
+  F: Fn(Input<&Instant<&str>, &mut (), &mut ()>) -> Option<Output<Value>>,
+>(
   f: F,
-) -> Combinator<WrapUnchecked<F>> {
-  Combinator::new(WrapUnchecked::new(f))
+) -> Combinator<Contextual<WrapUnchecked<F>, (), ()>> {
+  Combinator::new(Contextual::new(WrapUnchecked::new(f)))
 }
 
 /// Wrap a closure or function to create a [`Combinator`].
@@ -73,14 +84,17 @@ pub const unsafe fn wrap_unchecked<Value, F: Fn(&Instant<&str>) -> Option<Output
 /// # use whitehole::action::{Output, Action};
 /// # fn t() -> Combinator<impl Action> {
 /// // eat the next character if it exists
-/// wrap(|instant| instant.rest().chars().next().and_then(|c| instant.accept(c.len_utf8())))
+/// wrap(|input| input.instant.rest().chars().next().and_then(|c| input.instant.accept(c.len_utf8())))
 /// # }
 /// ```
 #[inline]
-pub const fn wrap<Value, F: Fn(&Instant<&str>) -> Option<Output<Value>>>(
+pub const fn wrap<
+  Value,
+  F: Fn(Input<&Instant<&str>, &mut (), &mut ()>) -> Option<Output<Value>>,
+>(
   f: F,
-) -> Combinator<Wrap<F>> {
-  Combinator::new(Wrap::new(f))
+) -> Combinator<Contextual<Wrap<F>, (), ()>> {
+  Combinator::new(Contextual::new(Wrap::new(f)))
 }
 
 #[cfg(test)]
@@ -111,7 +125,7 @@ mod tests {
 
   #[test]
   fn combinator_wrap_unchecked() {
-    let c = unsafe { wrap_unchecked(|instant| instant.accept(1)) };
+    let c = unsafe { wrap_unchecked(|input| input.instant.accept(1)) };
     helper(c, "1", 1);
 
     // ensure the combinator is copyable and clone-able
@@ -119,13 +133,16 @@ mod tests {
     let _ = c.clone();
 
     // ensure the combinator is debuggable
-    assert_eq!(format!("{:?}", c), "Combinator { action: WrapUnchecked }");
+    assert_eq!(
+      format!("{:?}", c),
+      "Combinator { action: Contextual(WrapUnchecked) }"
+    );
   }
 
   #[test]
   fn combinator_wrap_unchecked_fn() {
-    fn action(instant: &Instant<&str>) -> Option<Output<()>> {
-      instant.accept(1)
+    fn action(input: Input<&Instant<&str>, &mut (), &mut ()>) -> Option<Output<()>> {
+      input.instant.accept(1)
     }
     let c = unsafe { wrap_unchecked(action) };
     helper(c, "1", 1);
@@ -135,14 +152,17 @@ mod tests {
     let _ = c.clone();
 
     // ensure the combinator is debuggable
-    assert_eq!(format!("{:?}", c), "Combinator { action: WrapUnchecked }");
+    assert_eq!(
+      format!("{:?}", c),
+      "Combinator { action: Contextual(WrapUnchecked) }"
+    );
   }
 
   #[test]
   #[should_panic]
   fn combinator_wrap_unchecked_overflow() {
     helper(
-      unsafe { wrap_unchecked(|instant| instant.accept_unchecked(4).into()) },
+      unsafe { wrap_unchecked(|input| input.instant.accept_unchecked(4).into()) },
       "1",
       0,
     );
@@ -152,7 +172,7 @@ mod tests {
   #[should_panic]
   fn combinator_wrap_unchecked_invalid_code_point() {
     helper(
-      unsafe { wrap_unchecked(|instant| instant.accept_unchecked(1).into()) },
+      unsafe { wrap_unchecked(|input| input.instant.accept_unchecked(1).into()) },
       "好",
       0,
     );
@@ -160,7 +180,7 @@ mod tests {
 
   #[test]
   fn combinator_wrap() {
-    let c = wrap(|instant| instant.accept(1));
+    let c = wrap(|input| input.instant.accept(1));
     helper(c, "1", 1);
 
     // ensure the combinator is copyable and clone-able
@@ -168,13 +188,16 @@ mod tests {
     let _ = c.clone();
 
     // ensure the combinator is debuggable
-    assert_eq!(format!("{:?}", c), "Combinator { action: Wrap }");
+    assert_eq!(
+      format!("{:?}", c),
+      "Combinator { action: Contextual(Wrap) }"
+    );
   }
 
   #[test]
   fn combinator_wrap_fn() {
-    fn action(instant: &Instant<&str>) -> Option<Output<()>> {
-      instant.accept(1)
+    fn action(input: Input<&Instant<&str>, &mut (), &mut ()>) -> Option<Output<()>> {
+      input.instant.accept(1)
     }
     let c = wrap(action);
     helper(c, "1", 1);
@@ -184,14 +207,17 @@ mod tests {
     let _ = c.clone();
 
     // ensure the combinator is debuggable
-    assert_eq!(format!("{:?}", c), "Combinator { action: Wrap }");
+    assert_eq!(
+      format!("{:?}", c),
+      "Combinator { action: Contextual(Wrap) }"
+    );
   }
 
   #[test]
   #[should_panic]
   fn combinator_wrap_overflow() {
     helper(
-      wrap(|instant| unsafe { instant.accept_unchecked(4) }.into()),
+      wrap(|input| unsafe { input.instant.accept_unchecked(4) }.into()),
       "1",
       0,
     );
@@ -201,7 +227,7 @@ mod tests {
   #[should_panic]
   fn combinator_wrap_invalid_code_point() {
     helper(
-      wrap(|instant| unsafe { instant.accept_unchecked(1) }.into()),
+      wrap(|input| unsafe { input.instant.accept_unchecked(1) }.into()),
       "好",
       0,
     );
