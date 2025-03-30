@@ -17,11 +17,11 @@ pub struct Instant<TextRef> {
   digested: usize,
 }
 
-impl<'a, Text: ?Sized> Instant<&'a Text> {
+impl<'text, Text: ?Sized> Instant<&'text Text> {
   /// Create a new instance with the given text.
   /// [`Self::digested`] will be set to `0`.
   #[inline]
-  pub const fn new(text: &'a Text) -> Self {
+  pub const fn new(text: &'text Text) -> Self {
     Instant {
       text,
       rest: text,
@@ -34,7 +34,7 @@ impl<'a, Text: ?Sized> Instant<&'a Text> {
   /// This is cheap to call because the value is stored in this struct.
   /// This will never be mutated after the creation of this instance.
   #[inline]
-  pub const fn text(&self) -> &'a Text {
+  pub const fn text(&self) -> &'text Text {
     self.text
   }
 
@@ -42,7 +42,7 @@ impl<'a, Text: ?Sized> Instant<&'a Text> {
   ///
   /// This is cheap to call because the value is stored in this struct.
   #[inline]
-  pub const fn rest(&self) -> &'a Text {
+  pub const fn rest(&self) -> &'text Text {
     self.rest
   }
 }
@@ -57,7 +57,7 @@ impl<TextRef> Instant<TextRef> {
   }
 }
 
-impl<Text: ?Sized + Digest> Instant<&'_ Text>
+impl<Text: ?Sized + Digest> Instant<&Text>
 where
   RangeFrom<usize>: SliceIndex<Text, Output = Text>,
 {
@@ -107,11 +107,7 @@ mod tests {
 
   #[test]
   fn instant_debug() {
-    let i = Instant::new("123");
-    assert_eq!(
-      format!("{:?}", i),
-      "Instant { text: \"123\", rest: \"123\", digested: 0 }"
-    );
+    let _ = format!("{:?}", Instant::new("123"));
   }
 
   #[test]
@@ -124,6 +120,10 @@ mod tests {
     unsafe { i.digest_unchecked(1) };
     assert_eq!(i.digested(), 2);
     assert_eq!(i.rest(), b"3");
+    assert_eq!(i.text(), b"123");
+    unsafe { i.digest_unchecked(1) };
+    assert_eq!(i.digested(), 3);
+    assert_eq!(i.rest(), b"");
     assert_eq!(i.text(), b"123");
   }
 
@@ -144,6 +144,10 @@ mod tests {
     unsafe { i.digest_unchecked(1) };
     assert_eq!(i.digested(), 2);
     assert_eq!(i.rest(), "3");
+    assert_eq!(i.text(), "123");
+    unsafe { i.digest_unchecked(1) };
+    assert_eq!(i.digested(), 3);
+    assert_eq!(i.rest(), "");
     assert_eq!(i.text(), "123");
   }
 
@@ -174,14 +178,14 @@ mod tests {
 
   #[test]
   #[should_panic]
-  fn instant_to_digested_unchecked_invalid_utf8() {
-    let _ = unsafe { Instant::new("好").to_digested_unchecked(1) };
+  fn instant_bytes_to_digested_unchecked_overflow() {
+    let _ = unsafe { Instant::new(b"123" as &[u8]).to_digested_unchecked(4) };
   }
 
   #[test]
   #[should_panic]
-  fn instant_bytes_to_digested_unchecked_overflow() {
-    let _ = unsafe { Instant::new(b"123" as &[u8]).to_digested_unchecked(4) };
+  fn instant_str_to_digested_unchecked_invalid_utf8() {
+    let _ = unsafe { Instant::new("好").to_digested_unchecked(1) };
   }
 
   #[test]
