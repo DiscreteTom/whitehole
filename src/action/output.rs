@@ -6,6 +6,7 @@ use crate::{digest::Digest, instant::Instant};
 pub struct Output<Value = ()> {
   /// The yielded value.
   pub value: Value,
+
   /// How many bytes are digested by this action.
   /// The value is validate by [`Digest::validate`].
   pub digested: usize,
@@ -144,5 +145,26 @@ mod tests {
     };
     assert_eq!(o.as_ref().digested, 1);
     assert_eq!(o.as_ref().value, &1);
+  }
+
+  #[test]
+  fn output_debug() {
+    let _ = format!(
+      "{:?}",
+      Output {
+        digested: 1,
+        value: 1
+      }
+    );
+  }
+
+  #[test]
+  fn output_clone_eq() {
+    let o = Output {
+      digested: 1,
+      value: 1,
+    };
+    let o2 = o.clone();
+    assert_eq!(o, o2);
   }
 }
