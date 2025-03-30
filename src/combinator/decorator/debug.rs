@@ -4,7 +4,7 @@ use crate::{
   digest::Digest,
   instant::Instant,
 };
-use std::{fmt::Debug, ops::RangeTo, slice::SliceIndex};
+use std::{cell::Cell, fmt::Debug, ops::RangeTo, slice::SliceIndex};
 
 /// See [`Combinator::log`].
 #[derive(Copy, Clone, Debug)]
@@ -20,15 +20,21 @@ impl<'a, T> Log<'a, T> {
   }
 }
 
-/// The indentation used in [`Combinator::log`].
-pub static mut LOG_INDENTATION: &str = "| ";
-static mut INDENT_LEVEL: usize = 0;
-#[allow(static_mut_refs)] // TODO: find a better way to do this
-fn indentation() -> String {
-  unsafe { LOG_INDENTATION.repeat(INDENT_LEVEL) }
+thread_local! {
+  /// The indentation used in [`Combinator::log`].
+  pub static LOG_INDENTATION: Cell<&str> = const { Cell::new("| ") };
+
+  /// The max length of the undigested text.
+  /// If the actual length is greater than this, it will be truncated.
+  pub static LOG_UNDIGESTED_MAX_LEN: Cell<usize> = const { Cell::new(100) };
+
+  static INDENT_LEVEL: Cell<usize> = const { Cell::new(0) };
 }
 
-const MAX_LEN: usize = 100;
+fn indentation() -> String {
+  LOG_INDENTATION.get().repeat(INDENT_LEVEL.get())
+}
+
 fn format_truncated(truncated: impl Debug, oversize: bool) -> String {
   if oversize {
     format!("{:?} (truncated)", truncated)
@@ -37,20 +43,30 @@ fn format_truncated(truncated: impl Debug, oversize: bool) -> String {
   }
 }
 
-trait FormatRest {
+/// A trait to format the rest input text.
+pub trait FormatUndigested {
+  // TODO: redesign API
+
+  /// Format the rest input text to a string.
   fn format_rest(&self) -> String;
 }
 
-impl FormatRest for [u8] {
-  fn format_rest(&self) -> String {
-    format_truncated(&self[..self.len().min(MAX_LEN)], self.len() > MAX_LEN)
-  }
-}
-impl FormatRest for str {
+impl FormatUndigested for [u8] {
   fn format_rest(&self) -> String {
     format_truncated(
-      self.chars().take(MAX_LEN).collect::<String>(),
-      self.chars().count() > MAX_LEN,
+      &self[..self.len().min(LOG_UNDIGESTED_MAX_LEN.get())],
+      self.len() > LOG_UNDIGESTED_MAX_LEN.get(),
+    )
+  }
+}
+impl FormatUndigested for str {
+  fn format_rest(&self) -> String {
+    format_truncated(
+      self
+        .chars()
+        .take(LOG_UNDIGESTED_MAX_LEN.get())
+        .collect::<String>(),
+      self.chars().count() > LOG_UNDIGESTED_MAX_LEN.get(),
     )
   }
 }
@@ -84,7 +100,7 @@ where
   )
 }
 
-unsafe impl<T: Action<Text: FormatRest + Digest + Debug>> Action for Log<'_, T>
+unsafe impl<T: Action<Text: FormatUndigested + Digest + Debug>> Action for Log<'_, T>
 where
   RangeTo<usize>: SliceIndex<T::Text, Output = T::Text>,
 {
@@ -101,11 +117,11 @@ where
     let rest = input.instant.rest();
     println!(
       "{}",
-      &format_input(self.name, <T::Text as FormatRest>::format_rest, rest)
+      &format_input(self.name, <T::Text as FormatUndigested>::format_rest, rest)
     );
-    unsafe { INDENT_LEVEL += 1 };
+    INDENT_LEVEL.set(INDENT_LEVEL.get() + 1);
     let output = self.action.exec(input);
-    unsafe { INDENT_LEVEL -= 1 };
+    INDENT_LEVEL.set(INDENT_LEVEL.get() - 1);
     println!("{}", &format_output(self.name, rest, &output));
     output
   }
@@ -174,9 +190,9 @@ mod tests {
   #[test]
   #[serial]
   fn check_format_input() {
-    unsafe { INDENT_LEVEL = 0 };
+    INDENT_LEVEL.set(0);
     assert_eq!(
-      format_input("name", <str as FormatRest>::format_rest, "123"),
+      format_input("name", <str as FormatUndigested>::format_rest, "123"),
       "(name) input: \"123\""
     );
   }
@@ -184,21 +200,21 @@ mod tests {
   #[test]
   #[serial]
   fn check_format_input_indent() {
-    unsafe { LOG_INDENTATION = "| " };
-    unsafe { INDENT_LEVEL = 1 };
+    LOG_INDENTATION.set("| ");
+    INDENT_LEVEL.set(1);
     assert_eq!(
-      format_input("name", <str as FormatRest>::format_rest, "123"),
+      format_input("name", <str as FormatUndigested>::format_rest, "123"),
       "| (name) input: \"123\""
     );
-    unsafe { INDENT_LEVEL = 2 };
+    INDENT_LEVEL.set(2);
     assert_eq!(
-      format_input("name", <str as FormatRest>::format_rest, "123"),
+      format_input("name", <str as FormatUndigested>::format_rest, "123"),
       "| | (name) input: \"123\""
     );
     // custom indentation
-    unsafe { LOG_INDENTATION = "  " };
+    LOG_INDENTATION.set("  ");
     assert_eq!(
-      format_input("name", <str as FormatRest>::format_rest, "123"),
+      format_input("name", <str as FormatUndigested>::format_rest, "123"),
       "    (name) input: \"123\""
     );
   }
@@ -206,13 +222,13 @@ mod tests {
   #[test]
   #[serial]
   fn check_format_input_truncated() {
-    unsafe { INDENT_LEVEL = 0 };
+    INDENT_LEVEL.set(0);
     assert_eq!(
-      format_input("name", <str as FormatRest>::format_rest, &"1234567890".repeat(10)),
+      format_input("name", <str as FormatUndigested>::format_rest, &"1234567890".repeat(10)),
       "(name) input: \"1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890\""
     );
     assert_eq!(
-      format_input("name", <str as FormatRest>::format_rest, &"1234567890".repeat(11)),
+      format_input("name", <str as FormatUndigested>::format_rest, &"1234567890".repeat(11)),
       "(name) input: \"1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890\" (truncated)"
     );
   }
@@ -220,9 +236,9 @@ mod tests {
   #[test]
   #[serial]
   fn check_format_input_bytes() {
-    unsafe { INDENT_LEVEL = 0 };
+    INDENT_LEVEL.set(0);
     assert_eq!(
-      format_input("name", <[u8] as FormatRest>::format_rest, b"123"),
+      format_input("name", <[u8] as FormatUndigested>::format_rest, b"123"),
       "(name) input: [49, 50, 51]"
     );
   }
@@ -230,21 +246,21 @@ mod tests {
   #[test]
   #[serial]
   fn check_format_input_indent_bytes() {
-    unsafe { LOG_INDENTATION = "| " };
-    unsafe { INDENT_LEVEL = 1 };
+    LOG_INDENTATION.set("| ");
+    INDENT_LEVEL.set(1);
     assert_eq!(
-      format_input("name", <[u8] as FormatRest>::format_rest, b"123"),
+      format_input("name", <[u8] as FormatUndigested>::format_rest, b"123"),
       "| (name) input: [49, 50, 51]"
     );
-    unsafe { INDENT_LEVEL = 2 };
+    INDENT_LEVEL.set(2);
     assert_eq!(
-      format_input("name", <[u8] as FormatRest>::format_rest, b"123"),
+      format_input("name", <[u8] as FormatUndigested>::format_rest, b"123"),
       "| | (name) input: [49, 50, 51]"
     );
     // custom indentation
-    unsafe { LOG_INDENTATION = "  " };
+    LOG_INDENTATION.set("  ");
     assert_eq!(
-      format_input("name", <[u8] as FormatRest>::format_rest, b"123"),
+      format_input("name", <[u8] as FormatUndigested>::format_rest, b"123"),
       "    (name) input: [49, 50, 51]"
     );
   }
@@ -252,13 +268,13 @@ mod tests {
   #[test]
   #[serial]
   fn check_format_input_truncated_bytes() {
-    unsafe { INDENT_LEVEL = 0 };
+    INDENT_LEVEL.set(0);
     assert_eq!(
-      format_input("name", <[u8] as FormatRest>::format_rest, &b"1234567890".repeat(10)),
+      format_input("name", <[u8] as FormatUndigested>::format_rest, &b"1234567890".repeat(10)),
       "(name) input: [49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48]"
     );
     assert_eq!(
-      format_input("name", <[u8] as FormatRest>::format_rest, &b"1234567890".repeat(11)),
+      format_input("name", <[u8] as FormatUndigested>::format_rest, &b"1234567890".repeat(11)),
       "(name) input: [49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48] (truncated)"
     );
   }
@@ -266,7 +282,7 @@ mod tests {
   #[test]
   #[serial]
   fn check_format_output() {
-    unsafe { INDENT_LEVEL = 0 };
+    INDENT_LEVEL.set(0);
     assert_eq!(
       format_output(
         "name",
@@ -287,7 +303,7 @@ mod tests {
   #[test]
   #[serial]
   fn check_format_output_bytes() {
-    unsafe { INDENT_LEVEL = 0 };
+    INDENT_LEVEL.set(0);
     assert_eq!(
       format_output(
         "name",

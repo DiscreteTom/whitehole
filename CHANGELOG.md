@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `new` for provided combinators.
 - Add combinator functions and structs for all bytes combinators.
 - Add `Accepted::new_unchecked`.
+- Add trait `FormatUndigested`.
+- Add `LOG_UNDIGESTED_MAX_LEN`.
 
 ### Changed
 
@@ -26,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Combinator decorators with closure as the parameter type will accept `Input` or `Accepted` as the only parameter.
 - `NoSep` is now generic.
 - `wrap` and `wrap_unchecked`'s return type will be wrapped in `Contextual`.
+- `LOG_INDENTATION` is now a thread local.
 - `Parser` now only takes `'text` and the entry action as generic params.
 
 ### Removed
