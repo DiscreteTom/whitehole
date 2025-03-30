@@ -1,7 +1,8 @@
 /// The input of [`Action::exec`](crate::action::Action::exec).
 #[derive(Debug)]
 pub struct Input<InstantRef, StateRef, HeapRef> {
-  /// The immutable reference to the parser's current instant state.
+  /// The `&Instant`.
+  /// See [`Parser::instant`](crate::parser::Parser::instant).
   pub instant: InstantRef,
 
   /// The `&mut State`.
