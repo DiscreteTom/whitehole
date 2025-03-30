@@ -4,6 +4,7 @@ use super::{create_closure_decorator, create_simple_decorator, Accepted};
 use crate::{
   action::Input,
   combinator::{Action, Combinator, Output},
+  digest::Digest,
   instant::Instant,
 };
 
@@ -56,7 +57,7 @@ unsafe impl<T: Action, D: Fn(Input<&Instant<&T::Text>, &mut T::State, &mut T::He
 }
 
 unsafe impl<
-    T: Action,
+    T: Action<Text: Digest>,
     D: Fn(Accepted<&Instant<&T::Text>, &mut T::State, &mut T::Heap, &T::Value>) -> bool,
   > Action for Reject<T, D>
 {

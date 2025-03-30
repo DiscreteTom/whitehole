@@ -4,6 +4,7 @@ use super::{
 use crate::{
   action::{Action, Input, Output},
   combinator::Combinator,
+  digest::Digest,
   instant::Instant,
   range::WithRange,
 };
@@ -87,7 +88,7 @@ unsafe impl<T: Action, NewValue, D: Fn() -> NewValue> Action for BindWith<T, D> 
 
 unsafe impl<
     NewValue,
-    T: Action,
+    T: Action<Text: Digest>,
     D: Fn(Accepted<&Instant<&T::Text>, &mut T::State, &mut T::Heap, T::Value>) -> NewValue,
   > Action for Select<T, D>
 {

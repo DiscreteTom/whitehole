@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Contextual` and `contextual!`.
 - Add `new` for provided combinators.
 - Add combinator functions and structs for all bytes combinators.
+- Add `Accepted::new_unchecked`.
 
 ### Changed
 

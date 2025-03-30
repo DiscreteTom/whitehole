@@ -2,6 +2,7 @@ use super::{create_closure_decorator, Accepted};
 use crate::{
   action::{Action, Input, Output},
   combinator::Combinator,
+  digest::Digest,
   instant::Instant,
 };
 
@@ -28,8 +29,10 @@ unsafe impl<T: Action, D: Fn(Input<&Instant<&T::Text>, &mut T::State, &mut T::He
   }
 }
 
-unsafe impl<T: Action, D: Fn(Accepted<&Instant<&T::Text>, &mut T::State, &mut T::Heap, &T::Value>)>
-  Action for Then<T, D>
+unsafe impl<
+    T: Action<Text: Digest>,
+    D: Fn(Accepted<&Instant<&T::Text>, &mut T::State, &mut T::Heap, &T::Value>),
+  > Action for Then<T, D>
 {
   type Text = T::Text;
   type State = T::State;
