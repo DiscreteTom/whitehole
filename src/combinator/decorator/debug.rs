@@ -131,7 +131,7 @@ impl<T> Combinator<T> {
   /// Create a new combinator to print the input text
   /// and the digested text by the action.
   ///
-  /// The indentation can be customized by [`LOG_INDENTATION`].
+  /// For customization, see [`LOG_INDENTATION`] and [`LOG_UNDIGESTED_MAX_LEN`].
   /// # Caveats
   /// This should NOT be used in multi-threaded environments
   /// because it uses a global variable to store the indentation level.
