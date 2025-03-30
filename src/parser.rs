@@ -221,7 +221,8 @@ pub struct Parser<'text, T: Action> {
   ///
   /// This is public. You can mutate this directly if needed.
   ///
-  /// You can access this in [`Action`]s via [`Input::state`].
+  /// You can access this in [`Action`]s via [`Input::state`]
+  /// and [`Accepted::state`](crate::combinator::Accepted::state).
   pub state: T::State,
 
   /// The reusable heap.
@@ -237,7 +238,8 @@ pub struct Parser<'text, T: Action> {
   ///
   /// This is public. You can mutate this directly if needed.
   ///
-  /// You can access this in [`Action`]s via [`Input::heap`].
+  /// You can access this in [`Action`]s via [`Input::heap`]
+  /// and [`Accepted::heap`](crate::combinator::Accepted::heap).
   pub heap: T::Heap,
 
   /// See [`Self::instant`].
