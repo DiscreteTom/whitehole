@@ -240,10 +240,9 @@ impl<T> Combinator<T> {
   /// You can consume the original [`Output`] in the `selector`.
   /// # Examples
   /// ```
-  /// # use whitehole::{action::Action, combinator::Combinator};
-  /// # struct MyValue(i32);
-  /// # fn t(combinator: Combinator<impl Action>) {
-  /// combinator.select(|accept| MyValue(accept.content().parse().unwrap()))
+  /// # use whitehole::{combinator::{Combinator, Take}};
+  /// # fn t(combinator: Combinator<Take>) {
+  /// combinator.select(|accepted| accepted.content().parse::<i32>().unwrap())
   /// # ;}
   /// ```
   #[inline]
@@ -306,24 +305,52 @@ mod tests {
   fn combinator_map() {
     helper(take(1).map(Some), "123", Some(()));
     helper(bytes::take(1).map(Some), b"123" as &[u8], Some(()));
+
+    // debug
+    let _ = format!("{:?}", take(1).map(Some));
+    // copy & clone
+    let c = take(1).map(Some);
+    let _c = c;
+    let _c = c.clone();
   }
 
   #[test]
   fn combinator_tuple() {
     helper(take(1).bind(1).tuple(), "123", (1,));
     helper(bytes::take(1).bind(1).tuple(), b"123" as &[u8], (1,));
+
+    // debug
+    let _ = format!("{:?}", take(1).tuple());
+    // copy & clone
+    let c = take(1).tuple();
+    let _c = c;
+    let _c = c.clone();
   }
 
   #[test]
   fn combinator_pop() {
     helper(take(1).bind(1).tuple().pop(), "123", 1);
     helper(bytes::take(1).bind(1).tuple().pop(), b"123" as &[u8], 1);
+
+    // debug
+    let _ = format!("{:?}", take(1).tuple().pop());
+    // copy & clone
+    let c = take(1).tuple().pop();
+    let _c = c;
+    let _c = c.clone();
   }
 
   #[test]
   fn combinator_bind() {
     helper(take(1).bind(123), "123", 123);
     helper(bytes::take(1).bind(123), b"123" as &[u8], 123);
+
+    // debug
+    let _ = format!("{:?}", take(1).bind(123));
+    // copy & clone
+    let c = take(1).bind(123);
+    let _c = c;
+    let _c = c.clone();
   }
 
   #[test]
@@ -331,15 +358,12 @@ mod tests {
     helper(take(1).bind_with(|| 123), "123", 123);
     helper(bytes::take(1).bind_with(|| 123), b"123" as &[u8], 123);
 
-    // make sure copy-able and clone-able
-    let a = take(1).bind_with(|| 0i32);
-    let _ = a;
-    let _ = a.clone();
-
-    assert_eq!(
-      format!("{:?}", a),
-      "Combinator { action: BindWith { action: Take { n: 1 } } }"
-    );
+    // debug
+    let _ = format!("{:?}", take(1).bind_with(|| 0i32));
+    // copy & clone
+    let c = take(1).bind_with(|| 0i32);
+    let _c = c;
+    let _c = c.clone();
   }
 
   #[test]
@@ -354,6 +378,13 @@ mod tests {
       b"123" as &[u8],
       1,
     );
+
+    // debug
+    let _ = format!("{:?}", take(1).select(|_| 0i32));
+    // copy & clone
+    let c = take(1).select(|_| 0i32);
+    let _c = c;
+    let _c = c.clone();
   }
 
   #[test]
@@ -374,5 +405,12 @@ mod tests {
         range: 0..1,
       },
     );
+
+    // debug
+    let _ = format!("{:?}", take(1).range());
+    // copy & clone
+    let c = take(1).range();
+    let _c = c;
+    let _c = c.clone();
   }
 }

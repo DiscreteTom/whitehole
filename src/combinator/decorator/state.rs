@@ -93,14 +93,14 @@ unsafe impl<T: Action, D: Fn(Input<&Instant<&T::Text>, &mut T::State, &mut T::He
 }
 
 impl<T> Combinator<T> {
-  /// Create a new combinator to modify [`Context::state`] and [`Context::heap`]
+  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
   /// before being executed.
   /// # Examples
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
   /// # fn t(combinator: Combinator<impl Action<Text=str, MyState>>) {
-  /// combinator.prepare(|input, ctx| input.state.value += 1)
+  /// combinator.prepare(|input| input.state.value += 1)
   /// # ;}
   /// ```
   #[inline]
@@ -114,14 +114,14 @@ impl<T> Combinator<T> {
     Combinator::new(Prepare::new(self.action, modifier))
   }
 
-  /// Create a new combinator to modify [`Context::state`] and [`Context::heap`]
+  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
   /// after being accepted.
   /// # Examples
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
   /// # fn t(combinator: Combinator<impl Action<Text=str, MyState>>) {
-  /// combinator.then(|_, mut ctx| input.state.value += 1)
+  /// combinator.then(|input| input.state.value += 1)
   /// # ;}
   /// ```
   #[inline]
@@ -135,7 +135,7 @@ impl<T> Combinator<T> {
     Combinator::new(Then::new(self.action, modifier))
   }
 
-  /// Create a new combinator to modify [`Context::state`] and [`Context::heap`]
+  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
   /// after being rejected.
   /// # Examples
   /// ```
@@ -156,7 +156,7 @@ impl<T> Combinator<T> {
     Combinator::new(Catch::new(self.action, modifier))
   }
 
-  /// Create a new combinator to modify [`Context::state`] and [`Context::heap`]
+  /// Create a new combinator to modify [`Input::state`] and [`Input::heap`]
   /// after the combinator is executed,
   /// no matter whether it is accepted or rejected.
   /// # Examples
@@ -183,7 +183,7 @@ impl<T> Combinator<T> {
 mod tests {
   use super::*;
   use crate::{contextual, digest::Digest, instant::Instant};
-  use std::{ops::RangeFrom, slice::SliceIndex};
+  use std::{fmt::Debug, ops::RangeFrom, slice::SliceIndex};
 
   #[derive(Debug, Default, PartialEq, Eq)]
   pub struct State {
@@ -213,20 +213,34 @@ mod tests {
 
   contextual!(State, ());
 
-  fn accepter() -> Combinator<impl Action<Text = str, State = State, Heap = (), Value = ()>> {
-    wrap(|input| input.instant.accept(1)).prepare(|input| input.state.to = input.state.from)
+  fn accepter(
+  ) -> Combinator<impl Action<Text = str, State = State, Heap = (), Value = ()> + Debug + Copy> {
+    wrap(|input| {
+      input.state.to = input.state.from;
+      input.instant.accept(1)
+    })
   }
-  fn accepter_bytes() -> Combinator<impl Action<Text = [u8], State = State, Heap = (), Value = ()>>
-  {
-    bytes::wrap(|input| input.instant.accept(1)).prepare(|input| input.state.to = input.state.from)
+  fn accepter_bytes(
+  ) -> Combinator<impl Action<Text = [u8], State = State, Heap = (), Value = ()> + Debug + Copy> {
+    bytes::wrap(|input| {
+      input.state.to = input.state.from;
+      input.instant.accept(1)
+    })
   }
 
-  fn rejecter() -> Combinator<impl Action<Text = str, State = State, Heap = (), Value = ()>> {
-    wrap(|_| None).prepare(|input| input.state.to = input.state.from)
+  fn rejecter(
+  ) -> Combinator<impl Action<Text = str, State = State, Heap = (), Value = ()> + Debug + Copy> {
+    wrap(|input| {
+      input.state.to = input.state.from;
+      None
+    })
   }
-  fn rejecter_bytes() -> Combinator<impl Action<Text = [u8], State = State, Heap = (), Value = ()>>
-  {
-    bytes::wrap(|_| None).prepare(|input| input.state.to = input.state.from)
+  fn rejecter_bytes(
+  ) -> Combinator<impl Action<Text = [u8], State = State, Heap = (), Value = ()> + Debug + Copy> {
+    bytes::wrap(|input| {
+      input.state.to = input.state.from;
+      None
+    })
   }
 
   #[test]
@@ -274,6 +288,13 @@ mod tests {
       None,
     );
     assert_eq!(state, State { from: 1, to: 1 });
+
+    // debug
+    let _ = format!("{:?}", accepter().prepare(|_| {}));
+    // copy & clone
+    let c = accepter().prepare(|_| {});
+    let _c = c;
+    let _c = c.clone();
   }
 
   #[test]
@@ -321,6 +342,13 @@ mod tests {
       None,
     );
     assert_eq!(state, State { from: 0, to: 0 });
+
+    // debug
+    let _ = format!("{:?}", accepter().then(|_| {}));
+    // copy & clone
+    let c = accepter().then(|_| {});
+    let _c = c;
+    let _c = c.clone();
   }
 
   #[test]
@@ -368,6 +396,13 @@ mod tests {
       None,
     );
     assert_eq!(state, State { from: 1, to: 0 });
+
+    // debug
+    let _ = format!("{:?}", accepter().catch(|_| {}));
+    // copy & clone
+    let c = accepter().catch(|_| {});
+    let _c = c;
+    let _c = c.clone();
   }
 
   #[test]
@@ -415,5 +450,12 @@ mod tests {
       None,
     );
     assert_eq!(state, State { from: 0, to: 1 });
+
+    // debug
+    let _ = format!("{:?}", accepter().finally(|_| {}));
+    // copy & clone
+    let c = accepter().finally(|_| {});
+    let _c = c;
+    let _c = c.clone();
   }
 }
