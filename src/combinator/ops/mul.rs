@@ -202,10 +202,9 @@ where
 
     let mut digested_with_sep = 0;
     while unsafe { self.rhs.validate(repeated) } {
-      let Some(value_output) = self
-        .lhs
-        .exec(input.reload(&unsafe { input.instant.to_digested_unchecked(digested_with_sep) }))
-      else {
+      let Some(value_output) = self.lhs.exec(
+        input.reborrow_with(&unsafe { input.instant.to_digested_unchecked(digested_with_sep) }),
+      ) else {
         break;
       };
       repeated += 1;
@@ -214,10 +213,9 @@ where
       debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
       output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
 
-      let Some(sep_output) = self
-        .sep
-        .exec(input.reload(&unsafe { input.instant.to_digested_unchecked(output.digested) }))
-      else {
+      let Some(sep_output) = self.sep.exec(
+        input.reborrow_with(&unsafe { input.instant.to_digested_unchecked(output.digested) }),
+      ) else {
         break;
       };
       // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize

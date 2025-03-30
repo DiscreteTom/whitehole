@@ -110,7 +110,7 @@ where
     self.lhs.exec(input.reborrow()).and_then(|output| {
       self
         .rhs
-        .exec(input.reload(&unsafe { input.instant.to_digested_unchecked(output.digested) }))
+        .exec(input.reborrow_with(&unsafe { input.instant.to_digested_unchecked(output.digested) }))
         .map(|rhs_output| Output {
           value: output.value.concat(rhs_output.value),
           digested: unsafe { output.digested.unchecked_add(rhs_output.digested) },

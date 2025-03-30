@@ -28,13 +28,12 @@ impl<Instant, State, Heap> Input<&Instant, &mut State, &mut Heap> {
     }
   }
 
-  // TODO: better name
   /// Re-borrow [`Self::state`] and [`Self::heap`] to construct a new instance
   /// with a new `Instant`.
   ///
   /// This is cheap to call.
   #[inline]
-  pub const fn reload<'a>(
+  pub const fn reborrow_with<'a>(
     &mut self,
     instant: &'a Instant,
   ) -> Input<&'a Instant, &mut State, &mut Heap> {
