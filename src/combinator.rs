@@ -116,6 +116,7 @@ mod provided;
 
 pub mod ops;
 
+pub use crate::contextual;
 pub use decorator::*;
 pub use provided::*;
 
