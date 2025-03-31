@@ -218,20 +218,27 @@ macro_rules! contextual {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::instant::Instant;
 
-  #[test]
-  fn test_contextual() {
+  fn _test_contextual() {
     contextual!(i32, i32);
 
-    let action = eat('a');
-    action.exec(Input {
-      instant: &Instant::new("abc"),
-      state: &mut 0,
-      heap: &mut 0,
-    });
+    fn helper<Text: ?Sized>(_: impl Action<Text = Text, State = i32, Heap = i32>) {}
+
+    helper(eat('a'));
+    helper(take(1));
+    helper(next(|_| true));
+    helper(till('a'));
+    helper(wrap(|input| input.instant.accept(0)));
+    helper(unsafe { wrap_unchecked(|input| input.instant.accept(0)) });
+    helper(bytes::eat(b'a'));
+    helper(bytes::take(1));
+    helper(bytes::next(|_| true));
+    helper(bytes::till(b'a'));
+    helper(bytes::wrap(|input| input.instant.accept(0)));
+    helper(unsafe { bytes::wrap_unchecked(|input| input.instant.accept(0)) });
 
     // debug
+    let action = take(1);
     let _ = format!("{:?}", action);
     // copy & clone
     let _c = action;
