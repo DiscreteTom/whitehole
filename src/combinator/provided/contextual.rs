@@ -4,8 +4,9 @@ use crate::{
 };
 use std::{fmt::Debug, marker::PhantomData};
 
-// TODO: more comments
-/// Overwrite original [`Action`]'s `State` and `Heap` with new ones.
+/// Provide context information (`State` and `Heap`) to the original non-contextual action.
+///
+/// See [`contextual`].
 pub struct Contextual<T, State, Heap> {
   pub action: T,
   _phantom: PhantomData<(State, Heap)>,
@@ -40,9 +41,7 @@ impl<T: Debug, State, Heap> Debug for Contextual<T, State, Heap> {
   }
 }
 
-unsafe impl<T: Action<State: Default, Heap: Default>, State, Heap> Action
-  for Contextual<T, State, Heap>
-{
+unsafe impl<T: Action<State = (), Heap = ()>, State, Heap> Action for Contextual<T, State, Heap> {
   type Text = T::Text;
   type State = State;
   type Heap = Heap;
@@ -55,13 +54,29 @@ unsafe impl<T: Action<State: Default, Heap: Default>, State, Heap> Action
   ) -> Option<Output<Self::Value>> {
     self.action.exec(Input {
       instant: input.instant,
-      state: &mut Default::default(),
-      heap: &mut Default::default(),
+      state: &mut (),
+      heap: &mut (),
     })
   }
 }
 
 /// Generate contextual combinators.
+/// # Examples
+/// ```
+/// use whitehole::combinator::contextual;
+/// # #[derive(Debug)]
+/// # pub struct MyState;
+/// # pub struct MyHeap;
+///
+/// // Generate contextual combinators with `MyState` and `MyHeap` as the state and heap types.
+/// contextual!(MyState, MyHeap);
+///
+/// // Use string combinators
+/// let _ = take(1);
+///
+/// // Use byte combinators
+/// let _ = bytes::take(1);
+/// ```
 #[macro_export]
 macro_rules! contextual {
   ($state:ty, $heap:ty) => {
@@ -215,5 +230,11 @@ mod tests {
       state: &mut 0,
       heap: &mut 0,
     });
+
+    // debug
+    let _ = format!("{:?}", action);
+    // copy & clone
+    let _c = action;
+    let _c = action.clone();
   }
 }
