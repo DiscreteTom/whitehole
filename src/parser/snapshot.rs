@@ -1,6 +1,6 @@
 use super::Instant;
 
-/// The snapshot of [`Parser`](crate::parser::Parser).
+/// The snapshot of a [`Parser`](crate::parser::Parser).
 ///
 /// This can be created by [`Parser::snapshot`](crate::parser::Parser::snapshot)
 /// and used by [`Parser::restore`](crate::parser::Parser::restore).
@@ -32,13 +32,14 @@ impl<TextRef, State> Snapshot<TextRef, State> {
 mod tests {
   use super::*;
 
-  #[test]
-  fn test_snapshot() {
+  fn _test_snapshot() {
     let s = Snapshot {
       state: (),
       instant: Instant::new(""),
     };
 
+    // debug
+    let _ = format!("{:?}", s);
     // ensure clone-able
     let _ = s.clone();
   }
