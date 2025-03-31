@@ -16,7 +16,7 @@ unsafe impl Action for Eat<char> {
   fn exec(
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<()>> {
+  ) -> Option<Output<Self::Value>> {
     input
       .instant
       .rest()
@@ -35,7 +35,7 @@ unsafe impl Action for Eat<String> {
   fn exec(
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<()>> {
+  ) -> Option<Output<Self::Value>> {
     input
       .instant
       .rest()
@@ -54,7 +54,7 @@ unsafe impl Action for Eat<&str> {
   fn exec(
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<()>> {
+  ) -> Option<Output<Self::Value>> {
     input
       .instant
       .rest()

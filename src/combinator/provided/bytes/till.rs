@@ -16,7 +16,7 @@ unsafe impl Action for Till<u8> {
   fn exec(
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<()>> {
+  ) -> Option<Output<Self::Value>> {
     input
       .instant
       .rest()
@@ -37,7 +37,7 @@ unsafe impl Action for Till<&[u8]> {
   fn exec(
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<()>> {
+  ) -> Option<Output<Self::Value>> {
     // TODO: optimize
     if !self.inner.is_empty() {
       input
@@ -71,7 +71,7 @@ unsafe impl<const N: usize> Action for Till<&[u8; N]> {
   fn exec(
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<()>> {
+  ) -> Option<Output<Self::Value>> {
     // TODO: optimize
     if N != 0 {
       input
@@ -101,7 +101,7 @@ unsafe impl Action for Till<Vec<u8>> {
   fn exec(
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<()>> {
+  ) -> Option<Output<Self::Value>> {
     // TODO: optimize
     if !self.inner.is_empty() {
       input
@@ -135,7 +135,7 @@ unsafe impl Action for Till<()> {
   fn exec(
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<()>> {
+  ) -> Option<Output<Self::Value>> {
     unsafe { input.instant.accept_unchecked(input.instant.rest().len()) }.into()
   }
 }

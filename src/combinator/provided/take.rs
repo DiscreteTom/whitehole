@@ -28,7 +28,7 @@ unsafe impl Action for Take {
   fn exec(
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<()>> {
+  ) -> Option<Output<Self::Value>> {
     let mut digested: usize = 0;
     let mut chars = input.instant.rest().chars();
     for _ in 0..self.n {

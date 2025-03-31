@@ -172,8 +172,8 @@ unsafe impl<T: Action> Action for Combinator<T> {
   #[inline]
   fn exec(
     &self,
-    input: Input<&Instant<&Self::Text>, &mut T::State, &mut T::Heap>,
-  ) -> Option<Output<T::Value>> {
+    input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<Self::Value>> {
     self.action.exec(input)
   }
 }

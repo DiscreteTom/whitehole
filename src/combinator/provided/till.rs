@@ -16,7 +16,7 @@ unsafe impl Action for Till<&str> {
   fn exec(
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<()>> {
+  ) -> Option<Output<Self::Value>> {
     input.instant.rest().find(self.inner).map(|i| unsafe {
       input
         .instant
@@ -35,7 +35,7 @@ unsafe impl Action for Till<String> {
   fn exec(
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<()>> {
+  ) -> Option<Output<Self::Value>> {
     input.instant.rest().find(&self.inner).map(|i| unsafe {
       input
         .instant
@@ -54,7 +54,7 @@ unsafe impl Action for Till<char> {
   fn exec(
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<()>> {
+  ) -> Option<Output<Self::Value>> {
     input.instant.rest().find(self.inner).map(|i| unsafe {
       input
         .instant
@@ -73,7 +73,7 @@ unsafe impl Action for Till<()> {
   fn exec(
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
-  ) -> Option<Output<()>> {
+  ) -> Option<Output<Self::Value>> {
     unsafe {
       input
         .instant
