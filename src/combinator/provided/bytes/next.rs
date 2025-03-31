@@ -25,12 +25,8 @@ unsafe impl<F: Fn(u8) -> bool> Action for Next<F> {
   }
 }
 
-// TODO: merge dup code
-
 /// Returns a combinator to match the next undigested byte by the condition.
 /// The combinator will reject if not matched.
-///
-/// For the string version, see [`next`](super::next).
 /// # Examples
 /// ```
 /// # use whitehole::{combinator::{next, Combinator}, action::Action};

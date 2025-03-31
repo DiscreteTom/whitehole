@@ -27,8 +27,6 @@ unsafe impl<F: Fn(char) -> bool> Action for Next<F> {
 
 /// Returns a combinator to match the next undigested [`char`] by the condition.
 /// The combinator will reject if not matched.
-///
-/// For the bytes version, see [`bytes::next`].
 /// # Examples
 /// ```
 /// # use whitehole::{combinator::{next, Combinator}, action::Action};

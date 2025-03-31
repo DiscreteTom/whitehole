@@ -5,11 +5,8 @@ use crate::{
   instant::Instant,
 };
 
-create_closure_combinator!(
-  WrapUnchecked,
-  "See [`wrap_unchecked`] and [`bytes::wrap_unchecked`]."
-);
-create_closure_combinator!(Wrap, "See [`wrap`] and [`bytes::wrap`].");
+create_closure_combinator!(WrapUnchecked, "See [`wrap_unchecked`].");
+create_closure_combinator!(Wrap, "See [`wrap`].");
 
 macro_rules! impl_wrap {
   ($name:ident, $assert:ident, $text:ty) => {
@@ -47,8 +44,6 @@ impl_wrap!(Wrap, assert, str);
 // TODO: for non-contextual version, can we just return Combinator<Wrap>?
 
 /// Wrap a closure or function to create a [`Combinator`].
-///
-/// For the bytes version, see [`bytes::wrap_unchecked`].
 /// # Safety
 /// The returned [`Output`] should satisfy the requirement of [`Output::digested`].
 /// This will be checked using [`debug_assert!`].
@@ -58,8 +53,8 @@ impl_wrap!(Wrap, assert, str);
 /// # use whitehole::combinator::{wrap_unchecked, Combinator};
 /// # use whitehole::action::{Output, Action};
 /// # fn t() -> Combinator<impl Action> {
-/// // eat the next character if it exists
-/// unsafe { wrap_unchecked(|input| input.instant.rest().chars().next().and_then(|c| input.instant.accept(c.len_utf8()))) }
+/// // accept with 0 bytes digested
+/// unsafe { wrap_unchecked(|input| input.instant.accept(0)) }
 /// # }
 /// ```
 #[inline]
@@ -73,8 +68,6 @@ pub const unsafe fn wrap_unchecked<
 }
 
 /// Wrap a closure or function to create a [`Combinator`].
-///
-/// For the bytes version, see [`bytes::wrap`].
 /// # Panics
 /// The returned [`Output`] should satisfy the requirement of [`Output::digested`],
 /// otherwise the combinator will panic when executed.
@@ -83,8 +76,8 @@ pub const unsafe fn wrap_unchecked<
 /// # use whitehole::combinator::{wrap, Combinator};
 /// # use whitehole::action::{Output, Action};
 /// # fn t() -> Combinator<impl Action> {
-/// // eat the next character if it exists
-/// wrap(|input| input.instant.rest().chars().next().and_then(|c| input.instant.accept(c.len_utf8())))
+/// // accept with 0 bytes digested
+/// wrap(|input| input.instant.accept(0))
 /// # }
 /// ```
 #[inline]
@@ -185,7 +178,7 @@ mod tests {
 
     // ensure the combinator is copyable and clone-able
     let _c = c;
-    let _ = c.clone();
+    let _c = c.clone();
 
     // ensure the combinator is debuggable
     assert_eq!(

@@ -70,7 +70,6 @@ unsafe impl Action for Eat<&str> {
 /// even when [`Instant::rest`] is empty.
 /// Be careful with infinite loops.
 /// # Examples
-/// For string (`&str`):
 /// ```
 /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
 /// # fn t(_: Combinator<impl Action>) {}
@@ -82,20 +81,6 @@ unsafe impl Action for Eat<&str> {
 /// # );
 /// # t(
 /// eat("true".to_string()) // eat by String
-/// # );
-/// ```
-/// For bytes (`&[u8]`):
-/// ```
-/// # use whitehole::{combinator::{eat, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action<[u8]>>) {}
-/// # t(
-/// eat(b'a') // eat by a byte (u8)
-/// # );
-/// # t(
-/// eat(b"true") // eat by &[u8] or &[u8; N]
-/// # );
-/// # t(
-/// eat(vec![b'a']) // eat by Vec<u8>
 /// # );
 /// ```
 #[inline]
@@ -174,5 +159,15 @@ mod tests {
     test('a'.into());
     test("a".into());
     test("a".to_string().into());
+  }
+
+  fn _eat_debug() {
+    let _ = format!("{:?}", eat('a'));
+  }
+
+  fn _eat_clone_copy() {
+    let c = eat('a');
+    let _c = c;
+    let _c = c.clone();
   }
 }

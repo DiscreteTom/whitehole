@@ -11,6 +11,7 @@ pub struct Take {
 }
 
 impl Take {
+  /// Create a new instance.
   #[inline]
   pub const fn new(n: usize) -> Self {
     Self { n }
@@ -43,24 +44,15 @@ unsafe impl Action for Take {
   }
 }
 
-/// Returns a combinator to take the next `n` undigested [`char`]s or bytes.
+/// Returns a combinator to take the next `n` undigested [`char`]s.
 ///
 /// `0` is allowed but be careful with infinite loops.
 /// # Examples
-/// For string (`&str`):
 /// ```
 /// # use whitehole::{combinator::{take, Combinator}, action::Action};
 /// # fn t(_: Combinator<impl Action>) {}
 /// # t(
 /// take(10) // take 10 chars
-/// # );
-/// ```
-/// For bytes (`&[u8]`):
-/// ```
-/// # use whitehole::{combinator::{take, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action<[u8]>>) {}
-/// # t(
-/// take(10) // take 10 bytes
 /// # );
 /// ```
 #[inline]
@@ -105,5 +97,15 @@ mod tests {
     // take by chars not bytes for &str
     helper(take(1), "好", Some(3));
     helper(take(2), "好好", Some(6));
+  }
+
+  fn _take_debug() {
+    let _ = format!("{:?}", take(0));
+  }
+
+  fn _take_clone_copy() {
+    let c = take(0);
+    let _c = c;
+    let _c = c.clone();
   }
 }

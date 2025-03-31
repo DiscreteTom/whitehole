@@ -5,11 +5,8 @@ use crate::{
   instant::Instant,
 };
 
-create_closure_combinator!(
-  WrapUnchecked,
-  "See [`wrap_unchecked`] and [`wrap_unchecked`]."
-);
-create_closure_combinator!(Wrap, "See [`wrap`] and [`wrap`].");
+create_closure_combinator!(WrapUnchecked, "See [`wrap_unchecked`].");
+create_closure_combinator!(Wrap, "See [`wrap`].");
 
 macro_rules! impl_wrap {
   ($name:ident, $assert:ident, $text:ty) => {
@@ -47,8 +44,6 @@ impl_wrap!(Wrap, assert, [u8]);
 // TODO: for non-contextual version, can we just return Combinator<Wrap>?
 
 /// Wrap a closure or function to create a [`Combinator`] for bytes.
-///
-/// For the string version, see [`wrap_unchecked`](super::wrap_unchecked).
 /// # Safety
 /// The returned [`Output`] should satisfy the requirement of [`Output::digested`].
 /// This will be checked using [`debug_assert!`].
@@ -72,11 +67,7 @@ pub const unsafe fn wrap_unchecked<
   Combinator::new(Contextual::new(WrapUnchecked::new(f)))
 }
 
-// TODO: merge dup code
-
 /// Wrap a closure or function to create a [`Combinator`] for bytes.
-///
-/// For the string version, see [`wrap`](super::wrap).
 /// # Panics
 /// The returned [`Output`] should satisfy the requirement of [`Output::digested`],
 /// otherwise the combinator will panic when executed.
@@ -132,7 +123,7 @@ mod tests {
 
     // ensure the combinator is copyable and clone-able
     let _c = c;
-    let _ = c.clone();
+    let _c = c.clone();
 
     // ensure the combinator is debuggable
     assert_eq!(

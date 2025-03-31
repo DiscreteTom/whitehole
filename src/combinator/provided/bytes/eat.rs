@@ -83,8 +83,6 @@ unsafe impl Action for Eat<Vec<u8>> {
   }
 }
 
-// TODO: merge dup code
-
 /// Returns a combinator to eat from the head of [`Instant::rest`] by the provided pattern.
 /// The combinator will reject if the pattern is not found.
 /// # Caveats
@@ -92,28 +90,12 @@ unsafe impl Action for Eat<Vec<u8>> {
 /// even when [`Instant::rest`] is empty.
 /// Be careful with infinite loops.
 /// # Examples
-/// For string (`&str`):
 /// ```
 /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
 /// # fn t(_: Combinator<impl Action>) {}
 /// # t(
-/// eat('a') // eat by char
-/// # );
-/// # t(
-/// eat("true") // eat by &str
-/// # );
-/// # t(
-/// eat("true".to_string()) // eat by String
-/// # );
-/// ```
-/// For bytes (`&[u8]`):
-/// ```
-/// # use whitehole::{combinator::{eat, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action>) {}
-/// type Text = [u8];
 /// eat(b'a') // eat by a byte (u8)
 /// # );
-/// # t(
 /// # t(
 /// eat(b"true") // eat by &[u8] or &[u8; N]
 /// # );
@@ -206,5 +188,15 @@ mod tests {
     test_bytes(b"a".into());
     test_bytes("a".as_bytes().into());
     test_bytes(vec![b'a'].into());
+  }
+
+  fn _eat_debug() {
+    let _ = format!("{:?}", eat(b'a'));
+  }
+
+  fn _eat_clone_copy() {
+    let c = eat(b'a');
+    let _c = c;
+    let _c = c.clone();
   }
 }
