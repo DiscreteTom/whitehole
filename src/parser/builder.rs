@@ -3,8 +3,19 @@ use crate::action::Action;
 
 /// A builder for [`Parser`].
 /// # Examples
+/// ## Basics
 /// ```
 /// use whitehole::{parser::Parser, combinator::eat};
+///
+/// Parser::builder()
+///   // Set the entry action
+///   .entry(eat("hello ") + "world")
+///   // Build the parser
+///   .build("hello world");
+/// ```
+/// ## Contextual
+/// ```
+/// use whitehole::{parser::Parser, combinator::contextual};
 ///
 /// # struct MyState;
 /// # impl MyState {
@@ -14,14 +25,17 @@ use crate::action::Action;
 /// # impl MyHeap {
 /// #   fn new() -> Self { MyHeap }
 /// # }
+/// // Generate contextual combinators
+/// contextual!(MyState, MyHeap);
+///
 /// Parser::builder()
-///   // optional
+///   // Set the state
 ///   .state(MyState::new())
-///   // optional
+///   // Set the heap
 ///   .heap(MyHeap::new())
-///   // set the entry action
+///   // Set the entry action
 ///   .entry(eat("hello ") + "world")
-///   // build the parser
+///   // Build the parser
 ///   .build("hello world");
 /// ```
 #[derive(Debug, Clone, Copy)]
@@ -73,10 +87,7 @@ impl<T, State, Heap> Builder<T, State, Heap> {
 
   /// Set [`Parser::entry`].
   #[inline]
-  pub fn entry<Entry: Action<State = State, Heap = Heap>>(
-    self,
-    entry: Entry,
-  ) -> Builder<Entry, State, Heap> {
+  pub fn entry<Entry>(self, entry: Entry) -> Builder<Entry, State, Heap> {
     Builder {
       entry,
       state: self.state,
@@ -127,7 +138,7 @@ mod tests {
     let mut parser = Builder::default()
       .state(1)
       .heap(1)
-      .entry((eat("hello ") + eat("world")).then(|input| {
+      .entry((eat("hello ") + "world").then(|input| {
         *input.state = 1;
         *input.heap = 1;
       }))
