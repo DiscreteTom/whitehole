@@ -28,7 +28,7 @@ macro_rules! impl_wrap {
         input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
       ) -> Option<Output<Self::Value>> {
         let instant = input.instant;
-        let output = (self.inner.inner)(input);
+        let output = (self.action.inner)(input);
         $assert!(output
           .as_ref()
           .map_or(true, |output| instant.rest().validate(output.digested)));

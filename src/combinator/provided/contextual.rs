@@ -7,7 +7,7 @@ use std::{fmt::Debug, marker::PhantomData};
 // TODO: more comments
 /// Overwrite original [`Action`]'s `State` and `Heap` with new ones.
 pub struct Contextual<T, State, Heap> {
-  pub inner: T,
+  pub action: T,
   _phantom: PhantomData<(State, Heap)>,
 }
 
@@ -16,7 +16,7 @@ impl<T, State, Heap> Contextual<T, State, Heap> {
   #[inline]
   pub const fn new(inner: T) -> Self {
     Self {
-      inner,
+      action: inner,
       _phantom: PhantomData,
     }
   }
@@ -26,7 +26,7 @@ impl<T: Clone, State, Heap> Clone for Contextual<T, State, Heap> {
   #[inline]
   fn clone(&self) -> Self {
     Self {
-      inner: self.inner.clone(),
+      action: self.action.clone(),
       _phantom: PhantomData,
     }
   }
@@ -36,7 +36,7 @@ impl<T: Copy, State, Heap> Copy for Contextual<T, State, Heap> {}
 
 impl<T: Debug, State, Heap> Debug for Contextual<T, State, Heap> {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_tuple("Contextual").field(&self.inner).finish()
+    f.debug_tuple("Contextual").field(&self.action).finish()
   }
 }
 
@@ -53,7 +53,7 @@ unsafe impl<T: Action<State: Default, Heap: Default>, State, Heap> Action
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    self.inner.exec(Input {
+    self.action.exec(Input {
       instant: input.instant,
       state: &mut Default::default(),
       heap: &mut Default::default(),
