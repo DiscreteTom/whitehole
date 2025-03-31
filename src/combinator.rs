@@ -1,4 +1,4 @@
-//! [`Combinator`] is a wrapper around [`Action`] to provide decorators and operator overloads.
+//! [`Combinator`] is a wrapper around an [`Action`] to provide decorators and operator overloads.
 //! # Provided Combinators
 //! To get started, you can use the provided combinators like [`eat`],
 //! which will eat the provided pattern from the rest of the input text:
@@ -10,18 +10,18 @@
 //! # );
 //! ```
 //! To save the memory of your brain, we have very limited number of provided combinators.
-//! Here is the full list:
+//! Here are them all:
 //! - [`eat`]: eat a pattern.
-//! - [`take`]: take the next `n` chars or bytes.
-//! - [`next`]: eat the next character by a predicate.
 //! - [`till`]: eat until a pattern, inclusive.
+//! - [`next`]: eat the next char or byte by a predicate.
+//! - [`take`]: take the next `n` chars or bytes.
 //! - [`wrap`]: wrap a closure as a combinator.
 //! - [`recur`]: create a recursive combinator.
 //!
-//! Tips:
-//! - Some of them may have faster `unsafe` variants named with suffix `_unchecked`.
-//! - Some of them can be used in both string and bytes context.
-//!   Some may have specific variants for bytes under the [`bytes`] module.
+//! Tips: Some of the provided combinators may have faster `unsafe` variants
+//! named with suffix `_unchecked`.
+//!
+//! To parse bytes, see the [`bytes`] module for the provided combinators with the same name.
 //! # Composition
 //! Use `+` and `|` to compose multiple combinators
 //! for more complex tasks:
@@ -47,7 +47,7 @@
 //! # t(
 //! eat("true") * 2
 //! # );
-//! // equals to
+//! // similar to
 //! # t(
 //! eat("true") + "true"
 //! # );
@@ -85,31 +85,50 @@
 //! - [`Combinator::log`] to print debug information.
 //! ## Flow Control
 //! - [`Combinator::optional`] to make a combinator optional.
-//! - [`Combinator::boundary`] to require a word boundary after the action is accepted.
 //! - [`Combinator::when`] to conditionally execute the combinator.
 //! - [`Combinator::prevent`] to conditionally reject the combinator before it is executed.
 //! - [`Combinator::reject`] to conditionally reject the combinator after it is executed.
+//! - [`Combinator::boundary`] to require a word boundary after the action is accepted.
 //! ## Value Transformation
 //! You can set [`Output::value`] to distinguish different output types
 //! or carrying additional data.
 //!
 //! Related decorators:
 //! - [`Combinator::map`] to convert the value to a new value.
-//! - [`Combinator::tuple`] to wrap the value in an one-element tuple.
-//! - [`Combinator::pop`] to unwrap the value from the one-element tuple.
 //! - [`Combinator::bind`] to set the value to a provided clone-able value.
 //! - [`Combinator::bind_with`] to set the value with a provided factory.
 //! - [`Combinator::select`] to calculate the value with a closure.
+//! - [`Combinator::tuple`] to wrap the value in an one-element tuple.
+//! - [`Combinator::pop`] to unwrap the value from the one-element tuple.
 //! - [`Combinator::range`] to wrap the value in a [`WithRange`](crate::range::WithRange) struct.
 //! ## State Manipulation
 //! [`Combinator`]s are stateless, but you can access external states
-//! via [`Context::state`] to realize stateful parsing.
+//! via [`Input::state`] to realize stateful parsing.
 //!
 //! Related decorators:
 //! - [`Combinator::prepare`] to modify states before being executed.
 //! - [`Combinator::then`] to modify states after being accepted.
 //! - [`Combinator::catch`] to modify states after being rejected.
 //! - [`Combinator::finally`] to modify states after being executed.
+//! # Contextual
+//! By default and for simplicity, all combinators are non-contextual,
+//! which means the `State` and `Heap` types are `()`.
+//!
+//! To specify the `State` and `Heap` types, you can use the [`contextual`] macro,
+//! which will override all provided combinators to be contextual.
+//! ```
+//! # use whitehole::{combinator::{contextual, Combinator}, action::Action};
+//! # pub struct MyState { value: i32 }
+//! # pub struct MyHeap;
+//! # fn t(_: Combinator<impl Action>) {}
+//! // Override all provided combinators to be contextual
+//! contextual!(MyState, MyHeap);
+//! # t(
+//! // Access the state and heap in the combinator
+//! eat("true").prepare(|input| input.state.value = 1)
+//! # );
+//! ```
+//! See [`contextual`] for more information.
 
 mod decorator;
 mod provided;
