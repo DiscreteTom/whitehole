@@ -1,6 +1,6 @@
 use crate::{
   action::{Action, Input},
-  combinator::{create_value_combinator, Combinator, Output},
+  combinator::{create_value_combinator, provided::impl_into_eat_combinator, Combinator, Output},
   instant::Instant,
 };
 
@@ -106,17 +106,6 @@ unsafe impl Action for Eat<Vec<u8>> {
 #[inline]
 pub const fn eat<T>(pattern: T) -> Combinator<Eat<T>> {
   Combinator::new(Eat::new(pattern))
-}
-
-macro_rules! impl_into_eat_combinator {
-  ($inner:ty) => {
-    impl From<$inner> for Combinator<Eat<$inner>> {
-      #[inline]
-      fn from(v: $inner) -> Self {
-        eat(v)
-      }
-    }
-  };
 }
 
 impl_into_eat_combinator!(u8);

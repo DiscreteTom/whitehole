@@ -98,6 +98,7 @@ macro_rules! impl_into_eat_combinator {
     }
   };
 }
+pub(super) use impl_into_eat_combinator;
 impl_into_eat_combinator!(char);
 impl_into_eat_combinator!(String);
 

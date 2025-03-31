@@ -1,42 +1,12 @@
 use crate::{
   action::{Action, Input, Output},
-  combinator::{create_closure_combinator, Combinator, Contextual},
+  combinator::{create_closure_combinator, provided::impl_wrap, Combinator, Contextual},
   digest::Digest,
   instant::Instant,
 };
 
 create_closure_combinator!(WrapUnchecked, "See [`wrap_unchecked`].");
 create_closure_combinator!(Wrap, "See [`wrap`].");
-
-macro_rules! impl_wrap {
-  ($name:ident, $assert:ident, $text:ty) => {
-    unsafe impl<
-        State,
-        Heap,
-        Value,
-        F: Fn(Input<&Instant<&$text>, &mut State, &mut Heap>) -> Option<Output<Value>>,
-      > Action for Contextual<$name<F>, State, Heap>
-    {
-      type Text = $text;
-      type State = State;
-      type Heap = Heap;
-      type Value = Value;
-
-      #[inline]
-      fn exec(
-        &self,
-        input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
-      ) -> Option<Output<Self::Value>> {
-        let instant = input.instant;
-        let output = (self.action.inner)(input);
-        $assert!(output
-          .as_ref()
-          .map_or(true, |output| instant.rest().validate(output.digested)));
-        output
-      }
-    }
-  };
-}
 
 impl_wrap!(WrapUnchecked, debug_assert, [u8]);
 impl_wrap!(Wrap, assert, [u8]);

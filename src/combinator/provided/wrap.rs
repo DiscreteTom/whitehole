@@ -37,6 +37,7 @@ macro_rules! impl_wrap {
     }
   };
 }
+pub(super) use impl_wrap;
 
 impl_wrap!(WrapUnchecked, debug_assert, str);
 impl_wrap!(Wrap, assert, str);
