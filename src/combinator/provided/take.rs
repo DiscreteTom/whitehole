@@ -29,14 +29,10 @@ unsafe impl Action for Take {
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<()>> {
     let mut digested: usize = 0;
-    let mut count: usize = 0;
     let mut chars = input.instant.rest().chars();
-    while count < self.n {
-      // no enough chars, try to digest more
+    for _ in 0..self.n {
       if let Some(c) = chars.next() {
         digested = unsafe { digested.unchecked_add(c.len_utf8()) };
-        // SAFETY: count is always smaller than self which is a usize
-        count = unsafe { count.unchecked_add(1) };
       } else {
         // no enough chars, reject
         return None;
