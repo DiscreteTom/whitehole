@@ -1,6 +1,6 @@
 use crate::{
   action::{Action, Input, Output},
-  combinator::{create_closure_combinator, Combinator, Contextual},
+  combinator::{provided::create_closure_combinator, Combinator, Contextual},
   digest::Digest,
   instant::Instant,
 };

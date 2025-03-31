@@ -1,6 +1,6 @@
 use crate::{
   action::{Action, Input, Output},
-  combinator::{create_value_combinator, Combinator},
+  combinator::{provided::create_value_combinator, Combinator},
   instant::Instant,
 };
 
