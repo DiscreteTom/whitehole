@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Accepted::new_unchecked`.
 - Add trait `FormatUndigested`.
 - Add `LOG_UNDIGESTED_MAX_LEN`.
+- Make `Parser::instant` and `Parser::entry` public.
+- Make `Snapshot::instant` public.
 
 ### Changed
 
@@ -35,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Remove `Context`. Use `Input` instead.
 - Remove the implementation of `PartialEq` and `Eq` for `Snapshot` and `Instant` to prevent unintended string comparison.
+- Remove `Parser::instant()` and `Parser::entry()`. Use `Parser::instant` and `Parser::entry` instead.
+- Remove `Parser::digest_unchecked` and `Parser::digest_with_unchecked`. Use `Parser::instant` instead.
+- Remove `Snapshot::instant()`. Use `Snapshot::instant` instead.
 
 ## [0.7.0] - 2025-02-16
 
