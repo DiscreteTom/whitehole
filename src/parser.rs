@@ -199,7 +199,7 @@ pub use snapshot::*;
 
 use crate::{
   action::{Action, Input, Output},
-  combinator::Eat,
+  combinator::Take,
   digest::Digest,
   instant::Instant,
 };
@@ -264,8 +264,7 @@ impl<'text, T: Action<State: Clone, Heap: Clone> + Clone> Clone for Parser<'text
   }
 }
 
-// TODO: don't use Eat here
-impl Parser<'static, Eat<char>> {
+impl Parser<'static, Take> {
   /// Create a parser builder with default settings.
   #[inline]
   pub const fn builder() -> Builder<()> {
