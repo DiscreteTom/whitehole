@@ -14,7 +14,7 @@ fn process(entry: Combinator<impl Action<Text = str, State = (), Heap = (), Valu
   // consume the whole input
   for _ in &mut parser {}
 
-  let rest = parser.instant().rest();
+  let rest = parser.instant.rest();
   if !rest.is_empty() {
     panic!(
       "failed to consume the whole input, remaining: {:?}",

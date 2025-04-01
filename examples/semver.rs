@@ -46,7 +46,7 @@ fn build_entry() -> impl Action<Text = str, State = (), Heap = ()> {
 /// Return `Some(rest)` if accepted.
 fn helper(input: &str) -> Option<&str> {
   let mut parser = Parser::builder().entry(build_entry()).build(input);
-  parser.next().map(|_| parser.instant().rest())
+  parser.next().map(|_| parser.instant.rest())
 }
 
 fn accept(input: &str) {

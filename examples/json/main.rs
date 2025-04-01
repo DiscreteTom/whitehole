@@ -35,7 +35,7 @@ fn print_all_with_range(
     );
   }
 
-  let rest = parser.instant().rest();
+  let rest = parser.instant.rest();
   if !rest.is_empty() {
     panic!(
       "failed to consume the whole input, remaining: {:?}",
