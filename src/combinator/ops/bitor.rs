@@ -36,10 +36,9 @@
 //! # );
 //! ```
 
-use super::ComposeLiteral;
 use crate::{
   action::{Action, Input, Output},
-  combinator::{Combinator, Contextual},
+  combinator::{bytes, Combinator, Contextual, Eat},
   instant::Instant,
 };
 use std::ops;
@@ -57,6 +56,16 @@ impl<Lhs, Rhs> BitOr<Lhs, Rhs> {
   #[inline]
   const fn new(lhs: Lhs, rhs: Rhs) -> Self {
     Self { lhs, rhs }
+  }
+}
+
+impl<Lhs, Rhs> ops::BitOr<Combinator<Rhs>> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Rhs>>;
+
+  /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
+  #[inline]
+  fn bitor(self, rhs: Combinator<Rhs>) -> Self::Output {
+    Self::Output::new(BitOr::new(self.action, rhs.action))
   }
 }
 
@@ -82,121 +91,83 @@ unsafe impl<
   }
 }
 
-impl<Lhs, Rhs> ops::BitOr<Combinator<Rhs>> for Combinator<Lhs> {
-  type Output = Combinator<BitOr<Lhs, Rhs>>;
-
-  /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
-  #[inline]
-  fn bitor(self, rhs: Combinator<Rhs>) -> Self::Output {
-    Self::Output::new(BitOr::new(self.action, rhs.action))
-  }
-}
-
-impl<Lhs: Action<Text: ComposeLiteral<char>>> ops::BitOr<char> for Combinator<Lhs> {
-  type Output = Combinator<
-    BitOr<Lhs, Contextual<<Lhs::Text as ComposeLiteral<char>>::Output, Lhs::State, Lhs::Heap>>,
-  >;
+impl<Lhs: Action<Text = str>> ops::BitOr<char> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Contextual<Eat<char>, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: char) -> Self::Output {
-    Self::Output::new(BitOr::new(
-      self.action,
-      Contextual::new(<Lhs::Text as ComposeLiteral<char>>::to(rhs)),
-    ))
+    Self::Output::new(BitOr::new(self.action, Contextual::new(Eat::new(rhs))))
   }
 }
 
-impl<Lhs: Action<Text: ComposeLiteral<String>>> ops::BitOr<String> for Combinator<Lhs> {
-  type Output = Combinator<
-    BitOr<Lhs, Contextual<<Lhs::Text as ComposeLiteral<String>>::Output, Lhs::State, Lhs::Heap>>,
-  >;
+impl<Lhs: Action<Text = str>> ops::BitOr<String> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Contextual<Eat<String>, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: String) -> Self::Output {
-    Self::Output::new(BitOr::new(
-      self.action,
-      Contextual::new(<Lhs::Text as ComposeLiteral<String>>::to(rhs)),
-    ))
+    Self::Output::new(BitOr::new(self.action, Contextual::new(Eat::new(rhs))))
   }
 }
 
-impl<'a, Lhs: Action<Text: ComposeLiteral<&'a str>>> ops::BitOr<&'a str> for Combinator<Lhs> {
-  type Output = Combinator<
-    BitOr<Lhs, Contextual<<Lhs::Text as ComposeLiteral<&'a str>>::Output, Lhs::State, Lhs::Heap>>,
-  >;
+impl<'a, Lhs: Action<Text = str>> ops::BitOr<&'a str> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Contextual<Eat<&'a str>, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: &'a str) -> Self::Output {
-    Self::Output::new(BitOr::new(
-      self.action,
-      Contextual::new(<Lhs::Text as ComposeLiteral<&'a str>>::to(rhs)),
-    ))
+    Self::Output::new(BitOr::new(self.action, Contextual::new(Eat::new(rhs))))
   }
 }
 
-impl<Lhs: Action<Text: ComposeLiteral<u8>>> ops::BitOr<u8> for Combinator<Lhs> {
-  type Output = Combinator<
-    BitOr<Lhs, Contextual<<Lhs::Text as ComposeLiteral<u8>>::Output, Lhs::State, Lhs::Heap>>,
-  >;
+impl<Lhs: Action<Text = [u8]>> ops::BitOr<u8> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Contextual<bytes::Eat<u8>, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: u8) -> Self::Output {
     Self::Output::new(BitOr::new(
       self.action,
-      Contextual::new(<Lhs::Text as ComposeLiteral<u8>>::to(rhs)),
+      Contextual::new(bytes::Eat::new(rhs)),
     ))
   }
 }
 
-impl<Lhs: Action<Text: ComposeLiteral<Vec<u8>>>> ops::BitOr<Vec<u8>> for Combinator<Lhs> {
-  type Output = Combinator<
-    BitOr<Lhs, Contextual<<Lhs::Text as ComposeLiteral<Vec<u8>>>::Output, Lhs::State, Lhs::Heap>>,
-  >;
+impl<Lhs: Action<Text = [u8]>> ops::BitOr<Vec<u8>> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Contextual<bytes::Eat<Vec<u8>>, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: Vec<u8>) -> Self::Output {
     Self::Output::new(BitOr::new(
       self.action,
-      Contextual::new(<Lhs::Text as ComposeLiteral<Vec<u8>>>::to(rhs)),
+      Contextual::new(bytes::Eat::new(rhs)),
     ))
   }
 }
 
-impl<'a, Lhs: Action<Text: ComposeLiteral<&'a [u8]>>> ops::BitOr<&'a [u8]> for Combinator<Lhs> {
-  type Output = Combinator<
-    BitOr<Lhs, Contextual<<Lhs::Text as ComposeLiteral<&'a [u8]>>::Output, Lhs::State, Lhs::Heap>>,
-  >;
+impl<'a, Lhs: Action<Text = [u8]>> ops::BitOr<&'a [u8]> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Contextual<bytes::Eat<&'a [u8]>, Lhs::State, Lhs::Heap>>>;
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: &'a [u8]) -> Self::Output {
     Self::Output::new(BitOr::new(
       self.action,
-      Contextual::new(<Lhs::Text as ComposeLiteral<&'a [u8]>>::to(rhs)),
+      Contextual::new(bytes::Eat::new(rhs)),
     ))
   }
 }
 
-impl<'a, const N: usize, Lhs: Action<Text: ComposeLiteral<&'a [u8; N]>>> ops::BitOr<&'a [u8; N]>
-  for Combinator<Lhs>
-{
-  type Output = Combinator<
-    BitOr<
-      Lhs,
-      Contextual<<Lhs::Text as ComposeLiteral<&'a [u8; N]>>::Output, Lhs::State, Lhs::Heap>,
-    >,
-  >;
+impl<'a, const N: usize, Lhs: Action<Text = [u8]>> ops::BitOr<&'a [u8; N]> for Combinator<Lhs> {
+  type Output = Combinator<BitOr<Lhs, Contextual<bytes::Eat<&'a [u8; N]>, Lhs::State, Lhs::Heap>>>;
 
   /// See [`ops::bitor`](crate::combinator::ops::bitor) for more information.
   #[inline]
   fn bitor(self, rhs: &'a [u8; N]) -> Self::Output {
     Self::Output::new(BitOr::new(
       self.action,
-      Contextual::new(<Lhs::Text as ComposeLiteral<&'a [u8; N]>>::to(rhs)),
+      Contextual::new(bytes::Eat::new(rhs)),
     ))
   }
 }
@@ -290,5 +261,19 @@ mod tests {
   fn combinator_bit_or_vec_u8() {
     let rejecter = || bytes::wrap(|_| Option::<Output<()>>::None);
     helper(rejecter() | vec![b'1'], b"1", &mut (), Some(1));
+  }
+
+  fn _with_contextual() {
+    contextual!(i32, i32);
+
+    fn validate(_: impl Action<State = i32, Heap = i32>) {}
+
+    validate(take(1) | 'a'); // char
+    validate(take(1) | "a"); // &str
+    validate(take(1) | "a".to_string()); // String
+    validate(bytes::take(1) | b'a'); // u8
+    validate(bytes::take(1) | b"a"); // &[u8]
+    validate(bytes::take(1) | b"a".as_bytes()); // &[u8]
+    validate(bytes::take(1) | b"a".to_vec()); // Vec<u8>
   }
 }
