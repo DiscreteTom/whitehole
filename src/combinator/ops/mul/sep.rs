@@ -47,20 +47,16 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// # Examples
   /// ```
   /// # use whitehole::{combinator::eat, parser::Parser};
-  /// // eat `true` for 1 or more times, separated by `,` with optional spaces
-  /// let entry = {
-  ///   let ws = || eat(' ') * (..);
-  ///   (eat("true") * (1..)).sep(ws() + eat(',') + ws())
-  /// };
+  /// // eat `true` for 1 or more times, separated by `,`
+  /// let entry = (eat("true") * (1..)).sep(eat(','));
   /// assert_eq!(Parser::builder().entry(&entry).build("true").next().unwrap().digested, 4);
   /// assert_eq!(Parser::builder().entry(&entry).build("true,true").next().unwrap().digested, 9);
-  /// assert_eq!(Parser::builder().entry(&entry).build("true , true").next().unwrap().digested, 11);
   /// ```
   /// Tips: you can use [`char`], `&str`, [`String`], [`u8`], `&[u8]` and [`Vec<u8>`] as the shorthand
   /// for [`eat`](crate::combinator::eat) in the separator.
   /// ```
-  /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
-  /// # fn t(_: Combinator<impl Action>) {}
+  /// # use whitehole::{combinator::{eat, bytes, Combinator}, action::Action};
+  /// # fn t(_: Combinator<impl Action<Text=str>>) {}
   /// # fn tb(_: Combinator<impl Action<Text=[u8]>>) {}
   /// # t(
   /// (eat("true") * (1..)).sep(',') // with a char
@@ -72,16 +68,25 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   /// (eat("true") * (1..)).sep(",".to_string()) // with a string
   /// # );
   /// # tb(
-  /// (eat(b"true") * (1..)).sep(b',') // with a u8
+  /// (bytes::eat(b"true") * (1..)).sep(b',') // with a u8
   /// # );
   /// # tb(
-  /// (eat(b"true") * (1..)).sep(b",") // with a &[u8]
+  /// (bytes::eat(b"true") * (1..)).sep(b",") // with a &[u8]
   /// # );
   /// # tb(
-  /// (eat(b"true") * (1..)).sep(vec![b',']) // with a Vec<u8>
+  /// (bytes::eat(b"true") * (1..)).sep(vec![b',']) // with a Vec<u8>
   /// # );
   /// ```
-  /// You can use [`Combinator::sep`] with [`Combinator::fold`] in any order after `*`,
+  /// You can use [`Combinator::sep`] with array accumulator.
+  /// ```
+  /// # use whitehole::{combinator::eat, parser::Parser};
+  /// let entry = (eat('a').bind(1) * [0; 3]).sep(',');
+  /// assert_eq!(
+  ///   Parser::builder().entry(entry).build("a,a,a").next().unwrap().value,
+  ///   [1, 1, 1]
+  /// );
+  /// ```
+  /// You can also use [`Combinator::sep`] with [`Combinator::fold`] in any order after `*`,
   /// since they are actually builder methods for [`Combinator<Mul>`].
   /// ```
   /// # use whitehole::{combinator::eat, parser::Parser};
