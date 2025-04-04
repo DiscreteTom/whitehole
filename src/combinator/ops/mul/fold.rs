@@ -12,7 +12,7 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
   ///   // accept one ascii digit at a time
   ///   next(|c| c.is_ascii_digit())
   ///     // convert the char to a number
-  ///     .select(|accept, _| accept.instant().rest().chars().next().unwrap() as usize - '0' as usize)
+  ///     .select(|accepted| (accepted.content().as_bytes()[0] - b'0') as usize)
   ///     // repeat for 1 or more times
   ///     * (1..)
   /// }
