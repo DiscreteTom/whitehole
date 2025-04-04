@@ -1,34 +1,30 @@
-use std::marker::PhantomData;
-
 use super::Mul;
 use crate::{
   action::{Action, Input, Output},
   combinator::Combinator,
   instant::Instant,
 };
+use std::marker::PhantomData;
 
 /// A util struct to represent no separator.
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct NoSep<Text: ?Sized, State, Heap> {
-  _text: PhantomData<Text>,
-  _phantom: PhantomData<(State, Heap)>,
+#[derive(Debug)]
+pub struct NoSep<Lhs> {
+  _lhs: PhantomData<Lhs>,
 }
 
-impl<Text: ?Sized, State, Heap> NoSep<Text, State, Heap> {
+impl<Lhs> NoSep<Lhs> {
+  /// Create a new instance.
   #[inline]
   pub const fn new() -> Self {
-    Self {
-      _text: PhantomData,
-      _phantom: PhantomData,
-    }
+    Self { _lhs: PhantomData }
   }
 }
 
-unsafe impl<Text: ?Sized, State, Heap> Action for NoSep<Text, State, Heap> {
-  type Text = Text;
-  type State = State;
-  type Heap = Heap;
+unsafe impl<Lhs: Action> Action for NoSep<Lhs> {
+  type Text = Lhs::Text;
+  type State = Lhs::State;
+  type Heap = Lhs::Heap;
   type Value = ();
 
   #[inline]

@@ -172,7 +172,7 @@ use std::{
 /// An [`Action`] created by the `*` operator.
 /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
 #[derive(Debug, Clone, Copy)]
-pub struct Mul<Lhs, Rhs, Sep, Init = fn(), Fold = fn((), ())> {
+pub struct Mul<Lhs, Rhs, Sep = NoSep<Lhs>, Init = fn(), Fold = fn((), ())> {
   lhs: Lhs,
   rhs: Rhs,
   sep: Sep,
@@ -180,49 +180,36 @@ pub struct Mul<Lhs, Rhs, Sep, Init = fn(), Fold = fn((), ())> {
   fold: Fold,
 }
 
-// TODO
-// impl<Lhs, Rhs> Mul<Lhs, Rhs> {
-//   #[inline]
-//   const fn new(lhs: Lhs, rhs: Rhs) -> Self {
-//     Self {
-//       lhs,
-//       rhs,
-//       sep: NoSep::new(),
-//       init: || (),
-//       fold: |_, _| (),
-//     }
-//   }
-// }
+impl<Lhs, Rhs> Mul<Lhs, Rhs> {
+  #[inline]
+  const fn new(lhs: Lhs, rhs: Rhs) -> Self {
+    Self {
+      lhs,
+      rhs,
+      sep: NoSep::new(),
+      init: || (),
+      fold: |_, _| (),
+    }
+  }
+}
 
 impl<Lhs: Action, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
-  type Output = Combinator<Mul<Lhs, Rhs, NoSep<Lhs::Text, Lhs::State, Lhs::Heap>>>;
+  type Output = Combinator<Mul<Lhs, Rhs, NoSep<Lhs>>>;
 
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   #[inline]
   fn mul(self, rhs: Rhs) -> Self::Output {
-    Self::Output::new(Mul {
-      lhs: self.action,
-      rhs,
-      sep: NoSep::new(),
-      init: || (),
-      fold: |_, _| (),
-    })
+    Self::Output::new(Mul::new(self.action, rhs))
   }
 }
 
 impl<Lhs: Action, const N: usize> ops::Mul<[Lhs::Value; N]> for Combinator<Lhs> {
-  type Output = Combinator<Mul<Lhs, [Lhs::Value; N], NoSep<Lhs::Text, Lhs::State, Lhs::Heap>>>;
+  type Output = Combinator<Mul<Lhs, [Lhs::Value; N], NoSep<Lhs>>>;
 
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   #[inline]
   fn mul(self, rhs: [Lhs::Value; N]) -> Self::Output {
-    Self::Output::new(Mul {
-      lhs: self.action,
-      rhs,
-      sep: NoSep::new(),
-      init: || (),
-      fold: |_, _| (),
-    })
+    Self::Output::new(Mul::new(self.action, rhs))
   }
 }
 
