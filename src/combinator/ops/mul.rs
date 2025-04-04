@@ -16,7 +16,7 @@
 //! # t(
 //! eat("true") * 2
 //! # );
-//! // equals to
+//! // similar to
 //! # t(
 //! eat("true") + "true"
 //! # );
@@ -49,7 +49,29 @@
 //! eat("true") * (..=0)
 //! # );
 //! ```
-//! # Fold values
+//! # Accumulate values
+//! ## To an array
+//! If the repetition value is known at compile time,
+//! you can use `*` to accumulate the values to an array of the same size as the repetition value.
+//! ```
+//! # use whitehole::{combinator::next, parser::Parser};
+//! let entry = {
+//!   // accept one ascii digit at a time
+//!   next(|c| c.is_ascii_digit())
+//!     // convert the char to a number
+//!     .select(|accepted| accepted.instant().rest().chars().next().unwrap() as usize - '0' as usize)
+//!     // repeat for 3 times, accumulate the values to an array
+//!     * [0; 3]
+//! }
+//!
+//! // parse "123"
+//! assert_eq!(
+//!   Parser::builder().entry(entry).build("123").next().unwrap().value,
+//!   [1, 2, 3]
+//! )
+//! ```
+//! The initial value of the array doesn't matter,
+//! since it will be initialized by [`std::mem::zeroed`] and replaced by actual values during parsing.
 //! ## Ad-hoc accumulator
 //! You can use [`Combinator::fold`]
 //! to specify an ad-hoc accumulator after performing `*`.
@@ -72,7 +94,7 @@
 //!   123
 //! )
 //! ```
-//! ## Fold to heap
+//! ## To heap
 //! If your accumulator requires heap allocation,
 //! each time the combinator is executed, the accumulator will be re-allocated and dropped.
 //! That's not efficient.
@@ -128,6 +150,7 @@ use crate::{
   instant::Instant,
 };
 use std::{
+  mem::zeroed,
   ops::{self, RangeFrom},
   slice::SliceIndex,
 };
@@ -163,6 +186,22 @@ impl<Lhs: Action, Rhs: Repeat> ops::Mul<Rhs> for Combinator<Lhs> {
   /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
   #[inline]
   fn mul(self, rhs: Rhs) -> Self::Output {
+    Self::Output::new(Mul {
+      lhs: self.action,
+      rhs,
+      sep: NoSep::new(),
+      init: || (),
+      fold: |_, _| (),
+    })
+  }
+}
+
+impl<Lhs: Action, const N: usize> ops::Mul<[Lhs::Value; N]> for Combinator<Lhs> {
+  type Output = Combinator<Mul<Lhs, [Lhs::Value; N], NoSep<Lhs::Text, Lhs::State, Lhs::Heap>>>;
+
+  /// See [`ops::mul`](crate::combinator::ops::mul) for more information.
+  #[inline]
+  fn mul(self, rhs: [Lhs::Value; N]) -> Self::Output {
     Self::Output::new(Mul {
       lhs: self.action,
       rhs,
@@ -224,5 +263,58 @@ where
     }
 
     self.rhs.accept(repeated).then_some(output)
+  }
+}
+
+unsafe impl<
+    Lhs: Action<Text: Digest>,
+    const N: usize,
+    Sep: Action<Text = Lhs::Text, State = Lhs::State, Heap = Lhs::Heap>,
+  > Action for Mul<Lhs, [Lhs::Value; N], Sep>
+where
+  RangeFrom<usize>: SliceIndex<Lhs::Text, Output = Lhs::Text>,
+{
+  type Text = Lhs::Text;
+  type State = Lhs::State;
+  type Heap = Lhs::Heap;
+  type Value = [Lhs::Value; N];
+
+  #[inline]
+  fn exec(
+    &self,
+    mut input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
+  ) -> Option<Output<Self::Value>> {
+    let mut output: Output<[<Lhs as Action>::Value; N]> = Output {
+      value: unsafe { zeroed() },
+      digested: 0,
+    };
+
+    let mut digested_with_sep = 0;
+    for i in 0..N {
+      let value_output = self.lhs.exec(
+        input.reborrow_with(&unsafe { input.instant.to_digested_unchecked(digested_with_sep) }),
+      )?;
+      // SAFETY: `i` must be in `0..N`
+      debug_assert!(i < N);
+      *unsafe { output.value.get_unchecked_mut(i) } = value_output.value;
+      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
+      debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
+      output.digested = unsafe { digested_with_sep.unchecked_add(value_output.digested) };
+
+      // SAFETY: `i` must be smaller than `N` and `N` is a valid usize
+      if unsafe { i.unchecked_add(1) } == N {
+        // skip the last separator if `N` is reached
+        break;
+      }
+
+      let sep_output = self.sep.exec(
+        input.reborrow_with(&unsafe { input.instant.to_digested_unchecked(output.digested) }),
+      )?;
+      // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
+      debug_assert!(usize::MAX - output.digested > sep_output.digested);
+      digested_with_sep = unsafe { output.digested.unchecked_add(sep_output.digested) };
+    }
+
+    Some(output)
   }
 }

@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Accepted::new_unchecked`.
 - Add trait `FormatUndigested`.
 - Add `LOG_UNDIGESTED_MAX_LEN`.
+- Add `combinator * [0; len]` syntax to accumulate values to an array.
 - Make `Parser::instant` and `Parser::entry` public.
 - Make `Snapshot::instant` public.
 
