@@ -72,7 +72,7 @@ unsafe impl Action for Eat<&str> {
 /// # Examples
 /// ```
 /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action>) {}
+/// # fn t(_: Combinator<impl Action<Text = str>>) {}
 /// # t(
 /// eat('a') // eat by char
 /// # );

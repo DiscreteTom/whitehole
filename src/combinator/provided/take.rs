@@ -50,7 +50,7 @@ unsafe impl Action for Take {
 /// # Examples
 /// ```
 /// # use whitehole::{combinator::{take, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action>) {}
+/// # fn t(_: Combinator<impl Action<Text = str>>) {}
 /// # t(
 /// take(10) // take 10 chars
 /// # );

@@ -7,8 +7,8 @@
 //! # Basics
 //! ```
 //! # use whitehole::{combinator::{eat, Combinator}, action::Action};
-//! # fn t(_: Combinator<impl Action>) {}
-//! # fn tb(_: Combinator<impl Action<[u8]>>) {}
+//! # fn t(_: Combinator<impl Action<Text = str>>) {}
+//! # fn tb(_: Combinator<impl Action<Text = [u8]>>) {}
 //! // match "true" or "false"
 //! # t(
 //! eat("true") | eat("false")

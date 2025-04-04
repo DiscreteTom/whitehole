@@ -95,7 +95,7 @@ unsafe impl Action for Eat<Vec<u8>> {
 /// # Examples
 /// ```
 /// # use whitehole::{combinator::{eat, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action>) {}
+/// # fn t(_: Combinator<impl Action<Text = str>>) {}
 /// # t(
 /// eat(b'a') // eat by a byte (u8)
 /// # );

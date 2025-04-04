@@ -94,7 +94,7 @@ unsafe impl Action for Till<()> {
 /// For string (`&str`):
 /// ```
 /// # use whitehole::{combinator::{till, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action>) {}
+/// # fn t(_: Combinator<impl Action<Text = str>>) {}
 /// # t(
 /// till(';') // with char
 /// # );

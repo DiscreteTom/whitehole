@@ -6,8 +6,7 @@
 //! # Basics
 //! ```
 //! # use whitehole::{combinator::{eat, take, Combinator}, action::Action};
-//! # fn t(_: Combinator<impl Action>) {}
-//! # fn tb(_: Combinator<impl Action<[u8]>>) {}
+//! # fn t(_: Combinator<impl Action<Text = str>>) {}
 //! // reject if the next char is 'a', otherwise accept with 0 digested
 //! // (negative lookahead)
 //! # t(

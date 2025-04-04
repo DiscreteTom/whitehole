@@ -4,7 +4,7 @@
 //! which will eat the provided pattern from the rest of the input text:
 //! ```
 //! # use whitehole::{combinator::{eat, Combinator}, action::Action};
-//! # fn t(_: Combinator<impl Action>) {}
+//! # fn t(_: Combinator<impl Action<Text = str>>) {}
 //! # t(
 //! eat("true")
 //! # );
@@ -27,7 +27,7 @@
 //! for more complex tasks:
 //! ```
 //! # use whitehole::{combinator::{eat, Combinator}, action::Action};
-//! # fn t(_: Combinator<impl Action>) {}
+//! # fn t(_: Combinator<impl Action<Text = str>>) {}
 //! // match "true" then match "false"
 //! # t(
 //! eat("true") + eat("false")
@@ -42,7 +42,7 @@
 //! Use `*` to repeat a combinator:
 //! ```
 //! # use whitehole::{combinator::{eat, Combinator}, action::Action};
-//! # fn t(_: Combinator<impl Action>) {}
+//! # fn t(_: Combinator<impl Action<Text = str>>) {}
 //! // repeat the combinator for 2 times
 //! # t(
 //! eat("true") * 2
@@ -66,7 +66,7 @@
 //! Use `!` for negative lookahead:
 //! ```
 //! # use whitehole::{combinator::{eat, Combinator}, action::Action};
-//! # fn t(_: Combinator<impl Action>) {}
+//! # fn t(_: Combinator<impl Action<Text = str>>) {}
 //! // reject if the next char is 'a', otherwise accept with 0 digested
 //! // (negative lookahead)
 //! # t(
@@ -120,7 +120,7 @@
 //! # use whitehole::{combinator::{contextual, Combinator}, action::Action};
 //! # pub struct MyState { value: i32 }
 //! # pub struct MyHeap;
-//! # fn t(_: Combinator<impl Action>) {}
+//! # fn t(_: Combinator<impl Action<Text = str>>) {}
 //! // Override all provided combinators to be contextual
 //! contextual!(MyState, MyHeap);
 //! # t(

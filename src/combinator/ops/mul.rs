@@ -11,7 +11,7 @@
 //! Use `*` to repeat a combinator:
 //! ```
 //! # use whitehole::{combinator::{eat, Combinator}, action::Action};
-//! # fn t(_: Combinator<impl Action>) {}
+//! # fn t(_: Combinator<impl Action<Text = str>>) {}
 //! // repeat the combinator for 2 times
 //! # t(
 //! eat("true") * 2

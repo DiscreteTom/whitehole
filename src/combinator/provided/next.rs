@@ -30,7 +30,7 @@ unsafe impl<F: Fn(char) -> bool> Action for Next<F> {
 /// # Examples
 /// ```
 /// # use whitehole::{combinator::{next, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action>) {}
+/// # fn t(_: Combinator<impl Action<Text = str>>) {}
 /// // match one ascii digit
 /// # t(
 /// next(|c| c.is_ascii_digit())
