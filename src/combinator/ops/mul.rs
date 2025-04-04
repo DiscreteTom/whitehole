@@ -320,3 +320,96 @@ where
     Some(output)
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use crate::{
+    action::{Action, Input, Output},
+    combinator::{bytes, take},
+    digest::Digest,
+    instant::Instant,
+  };
+  use std::{fmt::Debug, ops::RangeFrom, slice::SliceIndex};
+
+  fn helper<Text: ?Sized + Digest, Value: PartialEq + Debug>(
+    action: impl Action<Text = Text, State = (), Heap = (), Value = Value>,
+    input: &Text,
+    expected: Option<Output<Value>>,
+  ) where
+    RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+  {
+    assert_eq!(
+      action.exec(Input {
+        instant: &Instant::new(input),
+        state: &mut (),
+        heap: &mut ()
+      }),
+      expected
+    )
+  }
+
+  #[test]
+  fn combinator_mul_array() {
+    let accepter = || {
+      take(1).select(|accepted| {
+        accepted.instant().rest().chars().next().unwrap() as usize - '0' as usize
+      })
+    };
+    let accepter_b = || bytes::take(1).select(|accepted| accepted.instant().rest()[0] - b'0');
+    let rejecter = || accepter().reject(|_| true);
+    let rejecter_b = || accepter_b().reject(|_| true);
+
+    // normal
+    helper(
+      accepter() * [0; 3],
+      "123",
+      Some(Output {
+        value: [1, 2, 3],
+        digested: 3,
+      }),
+    );
+    helper(
+      accepter_b() * [0; 3],
+      b"123",
+      Some(Output {
+        value: [1, 2, 3],
+        digested: 3,
+      }),
+    );
+
+    // reject if not enough repetitions
+    helper(accepter() * [0; 3], "12", None);
+    helper(accepter_b() * [0; 3], b"12", None);
+
+    // reject with rejector
+    helper(rejecter() * [0; 3], "123", None);
+    helper(rejecter_b() * [0; 3], b"123", None);
+
+    // repeat for 0 times will always accept with 0 bytes digested
+    helper(
+      accepter() * [0; 0],
+      "123",
+      Some(Output {
+        value: [],
+        digested: 0,
+      }),
+    );
+    helper(
+      accepter_b() * [0; 0],
+      b"123",
+      Some(Output {
+        value: [],
+        digested: 0,
+      }),
+    );
+    // even with rejecter
+    helper(
+      rejecter_b() * [0; 0],
+      b"123",
+      Some(Output {
+        value: [],
+        digested: 0,
+      }),
+    );
+  }
+}

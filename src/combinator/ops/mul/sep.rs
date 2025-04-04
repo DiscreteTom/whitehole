@@ -122,11 +122,11 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
 mod tests {
   use super::*;
   use crate::{
-    combinator::{bytes, eat},
+    combinator::{bytes, eat, take},
     digest::Digest,
     instant::Instant,
   };
-  use std::{ops::RangeFrom, slice::SliceIndex};
+  use std::{fmt::Debug, ops::RangeFrom, slice::SliceIndex};
 
   fn helper<Text: ?Sized + Digest>(
     action: impl Action<Text = Text, State = (), Heap = (), Value = ()>,
@@ -221,5 +221,109 @@ mod tests {
     tb((bytes::eat(b"true") * (1..)).sep(b","));
     // with a Vec<u8>
     tb((bytes::eat(b"true") * (1..)).sep(vec![b',']));
+  }
+
+  #[test]
+  fn test_sep_with_array_accumulator() {
+    fn helper<Text: ?Sized + Digest, Value: PartialEq + Debug>(
+      action: impl Action<Text = Text, State = (), Heap = (), Value = Value>,
+      input: &Text,
+      expected: Option<Output<Value>>,
+    ) where
+      RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+    {
+      assert_eq!(
+        action.exec(Input {
+          instant: &Instant::new(input),
+          state: &mut (),
+          heap: &mut ()
+        }),
+        expected
+      )
+    }
+
+    let accepter = || {
+      take(1).select(|accepted| {
+        accepted.instant().rest().chars().next().unwrap() as usize - '0' as usize
+      })
+    };
+    let accepter_b = || bytes::take(1).select(|accepted| accepted.instant().rest()[0] - b'0');
+    let rejecter = || accepter().reject(|_| true);
+    let rejecter_b = || accepter_b().reject(|_| true);
+
+    // normal
+    helper(
+      (accepter() * [0; 3]).sep(','),
+      "1,2,3",
+      Some(Output {
+        value: [1, 2, 3],
+        digested: 5,
+      }),
+    );
+    helper(
+      (accepter_b() * [0; 3]).sep(b','),
+      b"1,2,3",
+      Some(Output {
+        value: [1, 2, 3],
+        digested: 5,
+      }),
+    );
+
+    // with additional sep
+    helper(
+      (accepter() * [0; 3]).sep(','),
+      "1,2,3,",
+      Some(Output {
+        value: [1, 2, 3],
+        digested: 5,
+      }),
+    );
+    helper(
+      (accepter_b() * [0; 3]).sep(b','),
+      b"1,2,3,",
+      Some(Output {
+        value: [1, 2, 3],
+        digested: 5,
+      }),
+    );
+
+    // reject if missing/invalid sep
+    helper((accepter() * [0; 3]).sep(','), "123", None);
+    helper((accepter_b() * [0; 3]).sep(b','), b"123", None);
+
+    // reject if not enough repetitions
+    helper((accepter() * [0; 3]).sep(','), "1,2", None);
+    helper((accepter_b() * [0; 3]).sep(b','), b"1,2", None);
+
+    // reject with rejector
+    helper((rejecter() * [0; 3]).sep(','), "1,2,3", None);
+    helper((rejecter_b() * [0; 3]).sep(b','), b"1,2,3", None);
+
+    // repeat for 0 times will always accept with 0 bytes digested
+    helper(
+      (accepter() * [0; 0]).sep(','),
+      "1,2,3",
+      Some(Output {
+        value: [],
+        digested: 0,
+      }),
+    );
+    helper(
+      (accepter_b() * [0; 0]).sep(b','),
+      b"1,2,3",
+      Some(Output {
+        value: [],
+        digested: 0,
+      }),
+    );
+    // even with rejecter
+    helper(
+      (rejecter_b() * [0; 0]).sep(b','),
+      b"1,2,3",
+      Some(Output {
+        value: [],
+        digested: 0,
+      }),
+    );
   }
 }
