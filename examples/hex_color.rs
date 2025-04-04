@@ -8,7 +8,7 @@ fn main() {
     // Repeat a combinator with `*`.
     (next(|c| c.is_ascii_hexdigit()) * 2)
       // Convert the matched content to `u8`.
-      .select(|accept| u8::from_str_radix(accept.content(), 16).unwrap())
+      .select(|accepted| u8::from_str_radix(accepted.content(), 16).unwrap())
       // Wrap `u8` to `(u8,)`, this is required by `+` below.
       .tuple()
   };
@@ -29,7 +29,7 @@ fn with_log() {
   let double_hex = || {
     (next(|c| c.is_ascii_hexdigit()).log("hex") * 2)
       .log("double_hex")
-      .select(|accept| u8::from_str_radix(accept.content(), 16).unwrap())
+      .select(|accepted| u8::from_str_radix(accepted.content(), 16).unwrap())
       .tuple()
   };
 
@@ -45,21 +45,16 @@ fn with_log() {
 fn with_breakpoint() {
   let double_hex = || {
     (next(|c| c.is_ascii_hexdigit()) * 2)
-      .select(|accept| u8::from_str_radix(accept.content(), 16).unwrap())
+      .select(|accepted| u8::from_str_radix(accepted.content(), 16).unwrap())
       .tuple()
   };
   // wrap the original combinator
   let double_hex = || {
     use whitehole::{action::Action, combinator::wrap};
     let c = double_hex();
-    wrap(move |instant| {
+    wrap(move |input| {
       // set a breakpoint here
-      // TODO: simplify this
-      c.exec(Input {
-        instant,
-        state: &mut (),
-        heap: &mut (),
-      })
+      c.exec(input)
     })
   };
 

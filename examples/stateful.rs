@@ -83,10 +83,10 @@ mod tests {
   fn test_js_template_str_lexer() {
     let mut lexer = build_lexer("`begin${ `${ `123` }` }end`");
     while lexer.next().is_some() {}
-    assert_eq!(lexer.instant().rest(), "");
+    assert_eq!(lexer.instant.rest(), "");
 
     let mut lexer = build_lexer("`begin${ 123 }middle${ 456 }end`");
     while lexer.next().is_some() {}
-    assert_eq!(lexer.instant().rest(), "");
+    assert_eq!(lexer.instant.rest(), "");
   }
 }

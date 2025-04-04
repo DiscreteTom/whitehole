@@ -31,7 +31,11 @@ mod tests {
   use super::*;
   use whitehole::{action::Action, parser::Parser};
 
-  fn helper(action: impl Action<Value = ()>, input: &str, digested: usize) {
+  fn helper(
+    action: impl Action<Text = str, State = (), Heap = (), Value = ()>,
+    input: &str,
+    digested: usize,
+  ) {
     assert_eq!(
       Parser::builder()
         .entry(action)
