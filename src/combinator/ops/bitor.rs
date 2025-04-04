@@ -272,7 +272,7 @@ mod tests {
     validate(take(1) | "a"); // &str
     validate(take(1) | "a".to_string()); // String
     validate(bytes::take(1) | b'a'); // u8
-    validate(bytes::take(1) | b"a"); // &[u8]
+    validate(bytes::take(1) | b"a"); // &[u8; N]
     validate(bytes::take(1) | b"a".as_bytes()); // &[u8]
     validate(bytes::take(1) | b"a".to_vec()); // Vec<u8>
   }
