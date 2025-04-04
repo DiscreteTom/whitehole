@@ -49,20 +49,20 @@
 //! eat("true") * (..=0)
 //! # );
 //! ```
-//! # Accumulate values
-//! ## To an array
+//! # Accumulate Values
+//! ## To an Array
 //! If the repetition value is known at compile time,
-//! you can use `*` to accumulate the values to an array of the same size as the repetition value.
+//! you can use `* [v; len]` to accumulate the values to an array.
 //! ```
 //! # use whitehole::{combinator::next, parser::Parser};
 //! let entry = {
 //!   // accept one ascii digit at a time
 //!   next(|c| c.is_ascii_digit())
 //!     // convert the char to a number
-//!     .select(|accepted| accepted.instant().rest().chars().next().unwrap() as usize - '0' as usize)
+//!     .select(|accepted| accepted.content().as_bytes()[0] - b'0')
 //!     // repeat for 3 times, accumulate the values to an array
 //!     * [0; 3]
-//! }
+//! };
 //!
 //! // parse "123"
 //! assert_eq!(
@@ -71,8 +71,9 @@
 //! )
 //! ```
 //! The initial value of the array doesn't matter,
-//! since it will be initialized by [`std::mem::zeroed`] and replaced by actual values during parsing.
-//! ## Ad-hoc accumulator
+//! since the output value will be initialized by [`std::mem::zeroed`]
+//! and filled by actual values during parsing.
+//! ## Ad-hoc Accumulator
 //! You can use [`Combinator::fold`]
 //! to specify an ad-hoc accumulator after performing `*`.
 //! ```
@@ -81,7 +82,7 @@
 //!   // accept one ascii digit at a time
 //!   next(|c| c.is_ascii_digit())
 //!     // convert the char to a number
-//!     .select(|accept, _| accept.instant().rest().chars().next().unwrap() as usize - '0' as usize)
+//!     .select(|accepted| accepted.content().as_bytes()[0] - b'0')
 //!     // repeat for 1 or more times
 //!     * (1..)
 //! }
@@ -94,21 +95,25 @@
 //!   123
 //! )
 //! ```
-//! ## To heap
+//! ## To the Heap
 //! If your accumulator requires heap allocation,
 //! each time the combinator is executed, the accumulator will be re-allocated and dropped.
 //! That's not efficient.
 //!
 //! To optimize the performance,
-//! you can fold the values to [`Context::heap`] to prevent re-allocation.
+//! you can fold the values to [`Parser::heap`](crate::parser::Parser::heap) to prevent re-allocation.
 //! ```
-//! # use whitehole::{combinator::take, parser::Parser};
+//! # use whitehole::{combinator::contextual, parser::Parser};
+//!
+//! // generate contextual combinators
+//! contextual!(Vec<i32>, ());
+//!
 //! let entry = {
-//!   // eat one char, accumulate some value in `ctx.heap`
-//!   take(1).then(|_, ctx| Vec::push(ctx.heap, 1))
+//!   // eat one char, accumulate some value in the heap
+//!   take(1).then(|accepted| accepted.heap.push(1))
 //!     // repeat for 1 or more times
 //!     * (1..)
-//! }.prepare(|_, ctx| ctx.heap.clear()); // clear the vec before executing this combinator
+//! }.prepare(|input| input.heap.clear()); // clear the vec before executing this combinator
 //!
 //! // create a re-usable heap
 //! let mut parser = Parser::builder().heap(vec![]).entry(entry).build("123");
@@ -133,6 +138,15 @@
 //! assert_eq!(
 //!   Parser::builder().entry(entry).build("a,a,a").next().unwrap().value,
 //!   3
+//! );
+//! ```
+//! Or with array accumulator
+//! ```
+//! # use whitehole::{combinator::eat, parser::Parser};
+//! let entry = (eat('a').bind(1) * [0; 3]).sep(',');
+//! assert_eq!(
+//!   Parser::builder().entry(entry).build("a,a,a").next().unwrap().value,
+//!   [1, 1, 1]
 //! );
 //! ```
 //! See [`Combinator::sep`] for more information.
@@ -298,6 +312,7 @@ where
       )?;
       // SAFETY: `i` must be in `0..N`
       debug_assert!(i < N);
+      // TODO: what if the Value is Drop?
       *unsafe { output.value.get_unchecked_mut(i) } = value_output.value;
       // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
       debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
@@ -350,12 +365,8 @@ mod tests {
 
   #[test]
   fn combinator_mul_array() {
-    let accepter = || {
-      take(1).select(|accepted| {
-        accepted.instant().rest().chars().next().unwrap() as usize - '0' as usize
-      })
-    };
-    let accepter_b = || bytes::take(1).select(|accepted| accepted.instant().rest()[0] - b'0');
+    let accepter = || take(1).select(|accepted| accepted.content().as_bytes()[0] - b'0');
+    let accepter_b = || bytes::take(1).select(|accepted| accepted.content()[0] - b'0');
     let rejecter = || accepter().reject(|_| true);
     let rejecter_b = || accepter_b().reject(|_| true);
 
