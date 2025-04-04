@@ -346,10 +346,10 @@ mod tests {
   };
   use std::{fmt::Debug, ops::RangeFrom, slice::SliceIndex};
 
-  fn helper<Text: ?Sized + Digest, Value: PartialEq + Debug>(
-    action: impl Action<Text = Text, State = (), Heap = (), Value = Value>,
+  fn helper<Text: ?Sized + Digest>(
+    action: impl Action<Text = Text, State = (), Heap = (), Value = ()>,
     input: &Text,
-    expected: Option<Output<Value>>,
+    expected: Option<usize>,
   ) where
     RangeFrom<usize>: SliceIndex<Text, Output = Text>,
   {
@@ -359,12 +359,201 @@ mod tests {
         state: &mut (),
         heap: &mut ()
       }),
-      expected
+      expected.map(|digested| Output {
+        value: (),
+        digested,
+      })
     )
   }
 
   #[test]
+  fn combinator_mul_usize() {
+    let accepter = || take(1);
+    let accepter_b = || bytes::take(1);
+    let rejecter = || take(0).reject(|_| true);
+    let rejecter_b = || bytes::take(0).reject(|_| true);
+
+    // normal
+    helper(accepter() * 3, "1234", Some(3));
+    helper(accepter_b() * 3, b"1234", Some(3));
+
+    // reject if not enough repetitions
+    helper(accepter() * 3, "12", None);
+    helper(accepter_b() * 3, b"12", None);
+
+    // reject with rejector
+    helper(rejecter() * 3, "123", None);
+    helper(rejecter_b() * 3, b"123", None);
+
+    // repeat for 0 times will always accept with 0 bytes digested
+    helper(accepter() * 0, "123", Some(0));
+    helper(accepter_b() * 0, b"123", Some(0));
+    // even with rejecter
+    helper(rejecter() * 0, "123", Some(0));
+    helper(rejecter_b() * 0, b"123", Some(0));
+  }
+
+  #[test]
+  fn combinator_mul_range() {
+    let accepter = || take(1);
+    let accepter_b = || bytes::take(1);
+    let rejecter = || take(0).reject(|_| true);
+    let rejecter_b = || bytes::take(0).reject(|_| true);
+
+    // normal
+    helper(accepter() * (2..4), "1234", Some(3));
+    helper(accepter_b() * (2..4), b"1234", Some(3));
+
+    // reject if not enough repetitions
+    helper(accepter() * (2..4), "1", None);
+    helper(accepter_b() * (2..4), b"1", None);
+
+    // reject with rejector
+    helper(rejecter() * (2..4), "123", None);
+    helper(rejecter_b() * (2..4), b"123", None);
+
+    // repeat for 0 times will always accept with 0 bytes digested
+    helper(accepter() * (0..1), "123", Some(0));
+    helper(accepter_b() * (0..1), b"123", Some(0));
+    // even with rejecter
+    helper(rejecter() * (0..1), "123", Some(0));
+    helper(rejecter_b() * (0..1), b"123", Some(0));
+  }
+
+  #[test]
+  fn combinator_mul_range_from() {
+    let accepter = || take(1);
+    let accepter_b = || bytes::take(1);
+    let rejecter = || take(0).reject(|_| true);
+    let rejecter_b = || bytes::take(0).reject(|_| true);
+
+    // normal
+    helper(accepter() * (2..), "1234", Some(4));
+    helper(accepter_b() * (2..), b"1234", Some(4));
+
+    // reject if not enough repetitions
+    helper(accepter() * (2..), "1", None);
+    helper(accepter_b() * (2..), b"1", None);
+
+    // reject with rejector
+    helper(rejecter() * (2..), "123", None);
+    helper(rejecter_b() * (2..), b"123", None);
+
+    // repeat for 0 times will always accept with 0 bytes digested
+    // even with rejecter
+    helper(rejecter() * (0..), "123", Some(0));
+    helper(rejecter_b() * (0..), b"123", Some(0));
+  }
+
+  #[test]
+  fn combinator_mul_range_full() {
+    let accepter = || take(1);
+    let accepter_b = || bytes::take(1);
+    let rejecter = || take(0).reject(|_| true);
+    let rejecter_b = || bytes::take(0).reject(|_| true);
+
+    // normal
+    helper(accepter() * (..), "1234", Some(4));
+    helper(accepter_b() * (..), b"1234", Some(4));
+
+    // repeat for 0 times will always accept with 0 bytes digested
+    // even with rejecter
+    helper(rejecter() * (..), "123", Some(0));
+    helper(rejecter_b() * (..), b"123", Some(0));
+  }
+
+  #[test]
+  fn combinator_mul_range_inclusive() {
+    let accepter = || take(1);
+    let accepter_b = || bytes::take(1);
+    let rejecter = || take(0).reject(|_| true);
+    let rejecter_b = || bytes::take(0).reject(|_| true);
+
+    // normal
+    helper(accepter() * (2..=3), "1234", Some(3));
+    helper(accepter_b() * (2..=3), b"1234", Some(3));
+
+    // reject if not enough repetitions
+    helper(accepter() * (2..=3), "1", None);
+    helper(accepter_b() * (2..=3), b"1", None);
+
+    // reject with rejector
+    helper(rejecter() * (2..=3), "123", None);
+    helper(rejecter_b() * (2..=3), b"123", None);
+
+    // repeat for 0 times will always accept with 0 bytes digested
+    helper(accepter() * (0..=0), "123", Some(0));
+    helper(accepter_b() * (0..=0), b"123", Some(0));
+    // even with rejecter
+    helper(rejecter() * (0..=0), "123", Some(0));
+    helper(rejecter_b() * (0..=0), b"123", Some(0));
+  }
+
+  #[test]
+  fn combinator_mul_range_to() {
+    let accepter = || take(1);
+    let accepter_b = || bytes::take(1);
+    let rejecter = || take(0).reject(|_| true);
+    let rejecter_b = || bytes::take(0).reject(|_| true);
+
+    // normal
+    helper(accepter() * (..4), "1234", Some(3));
+    helper(accepter_b() * (..4), b"1234", Some(3));
+
+    // repeat for 0 times will always accept with 0 bytes digested
+    helper(accepter() * (..1), "123", Some(0));
+    helper(accepter_b() * (..1), b"123", Some(0));
+    // even with rejecter
+    helper(rejecter() * (..1), "123", Some(0));
+    helper(rejecter_b() * (..1), b"123", Some(0));
+  }
+
+  #[test]
+  fn combinator_mul_range_to_inclusive() {
+    let accepter = || take(1);
+    let accepter_b = || bytes::take(1);
+    let rejecter = || take(0).reject(|_| true);
+    let rejecter_b = || bytes::take(0).reject(|_| true);
+
+    // normal
+    helper(accepter() * (2..=3), "1234", Some(3));
+    helper(accepter_b() * (2..=3), b"1234", Some(3));
+
+    // reject if not enough repetitions
+    helper(accepter() * (2..=3), "1", None);
+    helper(accepter_b() * (2..=3), b"1", None);
+
+    // reject with rejector
+    helper(rejecter() * (2..=3), "123", None);
+    helper(rejecter_b() * (2..=3), b"123", None);
+
+    // repeat for 0 times will always accept with 0 bytes digested
+    helper(accepter() * (0..=0), "123", Some(0));
+    helper(accepter_b() * (0..=0), b"123", Some(0));
+    // even with rejecter
+    helper(rejecter() * (0..=0), "123", Some(0));
+    helper(rejecter_b() * (0..=0), b"123", Some(0));
+  }
+
+  #[test]
   fn combinator_mul_array() {
+    fn helper<Text: ?Sized + Digest, Value: PartialEq + Debug>(
+      action: impl Action<Text = Text, State = (), Heap = (), Value = Value>,
+      input: &Text,
+      expected: Option<Output<Value>>,
+    ) where
+      RangeFrom<usize>: SliceIndex<Text, Output = Text>,
+    {
+      assert_eq!(
+        action.exec(Input {
+          instant: &Instant::new(input),
+          state: &mut (),
+          heap: &mut ()
+        }),
+        expected
+      )
+    }
+
     let accepter = || take(1).select(|accepted| accepted.content().as_bytes()[0] - b'0');
     let accepter_b = || bytes::take(1).select(|accepted| accepted.content()[0] - b'0');
     let rejecter = || accepter().reject(|_| true);
