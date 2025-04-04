@@ -285,6 +285,8 @@ where
     mut input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let mut output: Output<[<Lhs as Action>::Value; N]> = Output {
+      // SAFETY: if N is not 0, the zeroed value will be override by actual values,
+      // and if N is 0, the zeroed value will be a valid empty slice.
       value: unsafe { zeroed() },
       digested: 0,
     };
