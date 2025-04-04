@@ -44,346 +44,145 @@ impl<Lhs, Rhs, Sep, Init, Fold> Combinator<Mul<Lhs, Rhs, Sep, Init, Fold>> {
 #[cfg(test)]
 mod tests {
   use crate::{
-    action::{Action, Input, Output},
-    combinator::wrap,
+    action::{Action, Input},
+    combinator::{bytes, take, Bind, Combinator, Take},
     digest::Digest,
     instant::Instant,
   };
-  use std::{fmt::Debug, ops::RangeFrom, slice::SliceIndex};
+  use std::{ops::RangeFrom, slice::SliceIndex};
 
-  fn helper<Text: ?Sized + Digest, Value: PartialEq + Debug>(
-    action: impl Action<Text = Text, State = (), Heap = (), Value = Value>,
+  fn helper<Text: ?Sized + Digest>(
+    action: impl Action<Text = Text, State = (), Heap = (), Value = i32>,
     input: &Text,
-    expected: Option<Output<Value>>,
+    value: i32,
   ) where
     RangeFrom<usize>: SliceIndex<Text, Output = Text>,
   {
     assert_eq!(
-      action.exec(Input {
-        instant: &Instant::new(input),
-        state: &mut (),
-        heap: &mut ()
-      }),
-      expected
+      action
+        .exec(Input {
+          instant: &Instant::new(input),
+          state: &mut (),
+          heap: &mut ()
+        })
+        .unwrap()
+        .value,
+      value
     )
   }
 
-  #[test]
-  fn combinator_mul_usize() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter = || {
-      wrap(|input| {
-        input
-          .instant
-          .accept(1)
-          .map(|output| output.map(|_| input.instant.digested()))
-      })
-    };
+  fn accepter() -> Combinator<Bind<Take, i32>> {
+    take(1).bind(1)
+  }
 
-    // repeat a rejecter will reject
-    helper(rejecter() * 3, "123", None);
+  fn rejecter() -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = i32>> {
+    accepter().reject(|_| true)
+  }
 
-    // repeat rejecter 0 times will accept
-    let n = 0;
-    helper(
-      rejecter() * n,
-      "123",
-      Some(Output {
-        value: (),
-        digested: 0,
-      }),
-    );
+  fn accepter_b() -> Combinator<Bind<bytes::Take, i32>> {
+    bytes::take(1).bind(1)
+  }
 
-    // repeat an accepter 0 times will accept
-    let n = 0;
-    helper(
-      (accepter() * n).fold(|| 0, |acc, v| acc + v),
-      "123",
-      Some(Output {
-        value: 0,
-        digested: 0,
-      }),
-    );
+  fn rejecter_b() -> Combinator<impl Action<Text = [u8], State = (), Heap = (), Value = i32>> {
+    accepter_b().reject(|_| true)
+  }
 
-    // normal, apply the folded value and sum the digested
-    helper(
-      (accepter() * 3).fold(|| 0, |acc, v| acc + v),
-      "123",
-      Some(Output {
-        value: 3,
-        digested: 3,
-      }),
-    );
+  fn init() -> i32 {
+    0
+  }
 
-    // overflow, reject
-    helper((accepter() * 4).fold(|| 0, |acc, v| acc + v), "123", None);
+  fn fold(acc: i32, v: i32) -> i32 {
+    acc + v
   }
 
   #[test]
-  fn combinator_mul_range() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter = || {
-      wrap(|input| {
-        input
-          .instant
-          .accept(1)
-          .map(|output| output.map(|_| input.instant.digested()))
-      })
-    };
+  fn combinator_mul_usize_fold() {
+    // normal
+    helper((accepter() * 3).fold(init, fold), "123", 3);
+    helper((accepter_b() * 3).fold(init, fold), b"123", 3);
 
-    // repeat a rejecter will reject
-    helper(rejecter() * (1..2), "123", None);
-
-    // repeat rejecter 0 times will accept
+    // repeat for 0 times will accept with init value
+    helper((accepter() * 0).fold(init, fold), "123", 0);
+    helper((accepter_b() * 0).fold(init, fold), b"123", 0);
+    helper((accepter().reject(|_| true) * 0).fold(init, fold), "123", 0);
     helper(
-      rejecter() * (0..2),
-      "123",
-      Some(Output {
-        value: (),
-        digested: 0,
-      }),
-    );
-
-    // repeat an accepter 0 times will accept
-    helper(
-      (accepter() * (0..1)).fold(|| 0, |acc, v| acc + v),
-      "123",
-      Some(Output {
-        value: 0,
-        digested: 0,
-      }),
-    );
-
-    // normal, apply the folded value and sum the digested
-    helper(
-      (accepter() * (0..3)).fold(|| 0, |acc, v| acc + v),
-      "123",
-      Some(Output {
-        value: 1,
-        digested: 2,
-      }),
-    );
-
-    // too few, reject
-    helper(
-      (accepter() * (4..6)).fold(|| 0, |acc, v| acc + v),
-      "123",
-      None,
+      (accepter_b().reject(|_| true) * 0).fold(init, fold),
+      b"123",
+      0,
     );
   }
 
   #[test]
-  fn combinator_mul_range_from() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter = || {
-      wrap(|input| {
-        input
-          .instant
-          .accept(1)
-          .map(|output| output.map(|_| input.instant.digested()))
-      })
-    };
+  fn combinator_mul_range_fold() {
+    // normal
+    helper((accepter() * (2..4)).fold(init, fold), "123", 3);
+    helper((accepter_b() * (2..4)).fold(init, fold), b"123", 3);
 
-    // repeat a rejecter will reject
-    helper(rejecter() * (1..), "123", None);
-
-    // repeat rejecter 0 times will accept
-    helper(
-      rejecter() * (0..),
-      "123",
-      Some(Output {
-        value: (),
-        digested: 0,
-      }),
-    );
-
-    // normal, apply the folded value and sum the digested
-    helper(
-      (accepter() * (0..)).fold(|| 0, |acc, v| acc + v),
-      "123",
-      Some(Output {
-        value: 3,
-        digested: 3,
-      }),
-    );
-
-    // too few, reject
-    helper(
-      (accepter() * (4..)).fold(|| 0, |acc, v| acc + v),
-      "123",
-      None,
-    );
+    // repeat for 0 times will accept with init value
+    helper((accepter() * (0..1)).fold(init, fold), "123", 0);
+    helper((accepter_b() * (0..1)).fold(init, fold), b"123", 0);
+    helper((rejecter() * (0..1)).fold(init, fold), "123", 0);
+    helper((rejecter_b() * (0..1)).fold(init, fold), b"123", 0);
   }
 
   #[test]
-  fn combinator_mul_range_full() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter = || {
-      wrap(|input| {
-        input
-          .instant
-          .accept(1)
-          .map(|output| output.map(|_| input.instant.digested()))
-      })
-    };
+  fn combinator_mul_range_from_fold() {
+    // normal
+    helper((accepter() * (2..)).fold(init, fold), "123", 3);
+    helper((accepter_b() * (2..)).fold(init, fold), b"123", 3);
 
-    // repeat rejecter 0 times will accept
-    helper(
-      rejecter() * (..),
-      "123",
-      Some(Output {
-        value: (),
-        digested: 0,
-      }),
-    );
-
-    // normal, apply the folded value and sum the digested
-    helper(
-      (accepter() * (..)).fold(|| 0, |acc, v| acc + v),
-      "123",
-      Some(Output {
-        value: 3,
-        digested: 3,
-      }),
-    );
+    // repeat for 0 times will accept with init value
+    helper((rejecter() * (0..)).fold(init, fold), "123", 0);
+    helper((rejecter_b() * (0..)).fold(init, fold), b"123", 0);
   }
 
   #[test]
-  fn combinator_mul_range_inclusive() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter = || {
-      wrap(|input| {
-        input
-          .instant
-          .accept(1)
-          .map(|output| output.map(|_| input.instant.digested()))
-      })
-    };
+  fn combinator_mul_range_full_fold() {
+    // normal
+    helper((accepter() * (..)).fold(init, fold), "123", 3);
+    helper((accepter_b() * (..)).fold(init, fold), b"123", 3);
 
-    // repeat a rejecter will reject
-    helper(rejecter() * (1..=3), "123", None);
-
-    // repeat rejecter 0 times will accept
-    helper(
-      rejecter() * (0..=2),
-      "123",
-      Some(Output {
-        value: (),
-        digested: 0,
-      }),
-    );
-
-    // repeat an accepter 0 times will accept
-    helper(
-      (accepter() * (0..=0)).fold(|| 0, |acc, v| acc + v),
-      "123",
-      Some(Output {
-        value: 0,
-        digested: 0,
-      }),
-    );
-
-    // normal, apply the folded value and sum the digested
-    helper(
-      (accepter() * (0..=3)).fold(|| 0, |acc, v| acc + v),
-      "123",
-      Some(Output {
-        value: 3,
-        digested: 3,
-      }),
-    );
-
-    // too few, reject
-    helper(
-      (accepter() * (4..=6)).fold(|| 0, |acc, v| acc + v),
-      "123",
-      None,
-    );
+    // repeat for 0 times will accept with init value
+    helper((rejecter() * (..)).fold(init, fold), "123", 0);
+    helper((rejecter_b() * (..)).fold(init, fold), b"123", 0);
   }
 
   #[test]
-  fn combinator_mul_range_to() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter = || {
-      wrap(|input| {
-        input
-          .instant
-          .accept(1)
-          .map(|output| output.map(|_| input.instant.digested()))
-      })
-    };
+  fn combinator_mul_range_inclusive_fold() {
+    // normal
+    helper((accepter() * (2..=3)).fold(init, fold), "123", 3);
+    helper((accepter_b() * (2..=3)).fold(init, fold), b"123", 3);
 
-    // repeat rejecter 0 times will accept
-    helper(
-      rejecter() * (..2),
-      "123",
-      Some(Output {
-        value: (),
-        digested: 0,
-      }),
-    );
-
-    // repeat an accepter 0 times will accept
-    helper(
-      (accepter() * (..1)).fold(|| 0, |acc, v| acc + v),
-      "123",
-      Some(Output {
-        value: 0,
-        digested: 0,
-      }),
-    );
-
-    // normal, apply the folded value and sum the digested
-    helper(
-      (accepter() * (..3)).fold(|| 0, |acc, v| acc + v),
-      "123",
-      Some(Output {
-        value: 1,
-        digested: 2,
-      }),
-    );
+    // repeat for 0 times will accept with init value
+    helper((accepter() * (0..=0)).fold(init, fold), "123", 0);
+    helper((accepter_b() * (0..=0)).fold(init, fold), b"123", 0);
+    helper((rejecter() * (0..=0)).fold(init, fold), "123", 0);
+    helper((rejecter_b() * (0..=0)).fold(init, fold), b"123", 0);
   }
 
   #[test]
-  fn combinator_mul_range_to_inclusive() {
-    let rejecter = || wrap(|_| Option::<Output<()>>::None);
-    let accepter = || {
-      wrap(|input| {
-        input
-          .instant
-          .accept(1)
-          .map(|output| output.map(|_| input.instant.digested()))
-      })
-    };
+  fn combinator_mul_range_to_fold() {
+    // normal
+    helper((accepter() * (..4)).fold(init, fold), "123", 3);
+    helper((accepter_b() * (..4)).fold(init, fold), b"123", 3);
 
-    // repeat rejecter 0 times will accept
-    helper(
-      rejecter() * (..=2),
-      "123",
-      Some(Output {
-        value: (),
-        digested: 0,
-      }),
-    );
+    // repeat for 0 times will accept with init value
+    helper((accepter() * (..1)).fold(init, fold), "123", 0);
+    helper((accepter_b() * (..1)).fold(init, fold), b"123", 0);
+    helper((rejecter() * (..1)).fold(init, fold), "123", 0);
+    helper((rejecter_b() * (..1)).fold(init, fold), b"123", 0);
+  }
 
-    // repeat an accepter 0 times will accept
-    helper(
-      (accepter() * (..=0)).fold(|| 0, |acc, v| acc + v),
-      "123",
-      Some(Output {
-        value: 0,
-        digested: 0,
-      }),
-    );
+  #[test]
+  fn combinator_mul_range_to_inclusive_fold() {
+    // normal
+    helper((accepter() * (2..=3)).fold(init, fold), "123", 3);
+    helper((accepter_b() * (2..=3)).fold(init, fold), b"123", 3);
 
-    // normal, apply the folded value and sum the digested
-    helper(
-      (accepter() * (..=3)).fold(|| 0, |acc, v| acc + v),
-      "123",
-      Some(Output {
-        value: 3,
-        digested: 3,
-      }),
-    );
+    // repeat for 0 times will accept with init value
+    helper((accepter() * (0..=0)).fold(init, fold), "123", 0);
+    helper((accepter_b() * (0..=0)).fold(init, fold), b"123", 0);
+    helper((rejecter() * (0..=0)).fold(init, fold), "123", 0);
+    helper((rejecter_b() * (0..=0)).fold(init, fold), b"123", 0);
   }
 }
