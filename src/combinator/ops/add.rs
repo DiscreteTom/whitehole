@@ -7,7 +7,7 @@
 //! or reject if any of the combinators rejects.
 //! # Basics
 //! ```
-//! # use whitehole::{combinator::{eat, Combinator}, action::Action};
+//! # use whitehole::{combinator::{eat, bytes, Combinator}, action::Action};
 //! # fn t(_: Combinator<impl Action<Text = str>>) {}
 //! # fn tb(_: Combinator<impl Action<Text = [u8]>>) {}
 //! // match "123" then match "456"
@@ -27,13 +27,13 @@
 //! eat("true") + "false".to_string()
 //! # );
 //! # tb(
-//! eat(b"true") + b'a'
+//! bytes::eat(b"true") + b'a'
 //! # );
 //! # tb(
-//! eat(b"true") + b"false"
+//! bytes::eat(b"true") + b"false"
 //! # );
 //! # tb(
-//! eat(b"true") + b"false".to_vec()
+//! bytes::eat(b"true") + b"false".to_vec()
 //! # );
 //! ```
 //! # Concat Values
@@ -43,7 +43,7 @@
 //! # use whitehole::{combinator::{next, eat}, action::Action, parser::Parser};
 //! let integer = || {
 //!   (next(|c| c.is_ascii_digit()) * (1..)) // eat one or more digits
-//!     .select(|accept, _| accept.content().parse::<usize>().unwrap()) // parse the digits
+//!     .select(|accepted| accepted.content().parse::<usize>().unwrap()) // parse the digits
 //!     .tuple() // wrap the parsed digits in a tuple
 //! };
 //! let dot = eat('.'); // the value is `()`
@@ -63,9 +63,10 @@ mod concat;
 
 pub use concat::*;
 
+use super::ComposeLiteral;
 use crate::{
   action::{Action, Input, Output},
-  combinator::{bytes, Combinator, Contextual, Eat},
+  combinator::{Combinator, Contextual},
   digest::Digest,
   instant::Instant,
 };
@@ -126,76 +127,6 @@ impl<Lhs, Rhs> ops::Add<Combinator<Rhs>> for Combinator<Lhs> {
   #[inline]
   fn add(self, rhs: Combinator<Rhs>) -> Self::Output {
     Self::Output::new(Add::new(self.action, rhs.action))
-  }
-}
-
-// TODO: comments, move to a better place
-pub trait ComposeLiteral<Rhs> {
-  type Output;
-
-  fn to(rhs: Rhs) -> Self::Output;
-}
-
-impl ComposeLiteral<char> for str {
-  type Output = Eat<char>;
-
-  #[inline]
-  fn to(rhs: char) -> Self::Output {
-    Eat::new(rhs)
-  }
-}
-
-impl ComposeLiteral<String> for str {
-  type Output = Eat<String>;
-
-  #[inline]
-  fn to(rhs: String) -> Self::Output {
-    Eat::new(rhs)
-  }
-}
-
-impl<'a> ComposeLiteral<&'a str> for str {
-  type Output = Eat<&'a str>;
-
-  #[inline]
-  fn to(rhs: &'a str) -> Self::Output {
-    Eat::new(rhs)
-  }
-}
-
-impl ComposeLiteral<u8> for [u8] {
-  type Output = bytes::Eat<u8>;
-
-  #[inline]
-  fn to(rhs: u8) -> Self::Output {
-    bytes::Eat::new(rhs)
-  }
-}
-
-impl ComposeLiteral<Vec<u8>> for [u8] {
-  type Output = bytes::Eat<Vec<u8>>;
-
-  #[inline]
-  fn to(rhs: Vec<u8>) -> Self::Output {
-    bytes::Eat::new(rhs)
-  }
-}
-
-impl<'a> ComposeLiteral<&'a [u8]> for [u8] {
-  type Output = bytes::Eat<&'a [u8]>;
-
-  #[inline]
-  fn to(rhs: &'a [u8]) -> Self::Output {
-    bytes::Eat::new(rhs)
-  }
-}
-
-impl<'a, const N: usize> ComposeLiteral<&'a [u8; N]> for [u8] {
-  type Output = bytes::Eat<&'a [u8; N]>;
-
-  #[inline]
-  fn to(rhs: &'a [u8; N]) -> Self::Output {
-    bytes::Eat::new(rhs)
   }
 }
 

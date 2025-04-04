@@ -36,7 +36,7 @@
 //! # );
 //! ```
 
-use super::add::ComposeLiteral;
+use super::ComposeLiteral;
 use crate::{
   action::{Action, Input, Output},
   combinator::{Combinator, Contextual},
