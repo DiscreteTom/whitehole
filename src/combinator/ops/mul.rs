@@ -82,7 +82,7 @@
 //!   // accept one ascii digit at a time
 //!   next(|c| c.is_ascii_digit())
 //!     // convert the char to a number
-//!     .select(|accepted| accepted.content().as_bytes()[0] - b'0')
+//!     .select(|accepted| (accepted.content().as_bytes()[0] - b'0') as usize)
 //!     // repeat for 1 or more times
 //!     * (1..)
 //! }
@@ -106,7 +106,7 @@
 //! # use whitehole::{combinator::contextual, parser::Parser};
 //!
 //! // generate contextual combinators
-//! contextual!(Vec<i32>, ());
+//! contextual!((), Vec<i32>);
 //!
 //! let entry = {
 //!   // eat one char, accumulate some value in the heap

@@ -23,11 +23,11 @@ impl_wrap!(Wrap, assert, [u8]);
 /// For the checked version, see [`wrap`].
 /// # Examples
 /// ```
-/// # use whitehole::combinator::{wrap_unchecked, Combinator};
+/// # use whitehole::combinator::{bytes, Combinator};
 /// # use whitehole::action::{Output, Action};
-/// # fn t() -> Combinator<impl Action<[u8]>> {
+/// # fn t() -> Combinator<impl Action<Text=[u8]>> {
 /// // eat the next byte if it exists
-/// unsafe { wrap_unchecked(|input| input.instant.accept(1)) }
+/// unsafe { bytes::wrap_unchecked(|input| input.instant.accept(1)) }
 /// # }
 /// ```
 #[inline]
@@ -46,11 +46,11 @@ pub const unsafe fn wrap_unchecked<
 /// otherwise the combinator will panic when executed.
 /// # Examples
 /// ```
-/// # use whitehole::combinator::{wrap, Combinator};
+/// # use whitehole::combinator::{bytes, Combinator};
 /// # use whitehole::action::{Output, Action};
-/// # fn t() -> Combinator<impl Action<[u8]>> {
+/// # fn t() -> Combinator<impl Action<Text=[u8]>> {
 /// // eat the next byte if it exists
-/// wrap(|input| input.instant.accept(1))
+/// bytes::wrap(|input| input.instant.accept(1))
 /// # }
 /// ```
 #[inline]

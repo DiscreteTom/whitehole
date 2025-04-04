@@ -153,6 +153,7 @@
 //!
 //! contextual!(Expected, ());
 //!
+//! # fn main() {
 //! let whitespaces = || (eat(' ') | '\n') * (1..);
 //! let identifier = || eat("a"); // just a dummy identifier
 //! let number = || next(|c| c.is_ascii_digit());
@@ -184,6 +185,7 @@
 //! assert_eq!(parser.next().unwrap().digested, 3); // " \n "
 //! assert_eq!(parser.next().unwrap().digested, 5); // "a=1/2"
 //! assert!(parser.next().is_none());
+//! # }
 //! ```
 //!
 //! For non-state data, you can use [`Parser::heap`] which is also accessible by actions.

@@ -71,11 +71,13 @@ unsafe impl<T: Action<State = (), Heap = ()>, State, Heap> Action for Contextual
 /// // Generate contextual combinators with `MyState` and `MyHeap` as the state and heap types.
 /// contextual!(MyState, MyHeap);
 ///
+/// # fn main() {
 /// // Use string combinators
 /// let _ = take(1);
 ///
 /// // Use byte combinators
 /// let _ = bytes::take(1);
+/// # }
 /// ```
 #[macro_export]
 macro_rules! contextual {

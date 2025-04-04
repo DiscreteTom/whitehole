@@ -99,7 +99,7 @@ impl<T> Combinator<T> {
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: Combinator<impl Action<Text=str, MyState>>) {
+  /// # fn t(combinator: Combinator<impl Action<Text=str, State=MyState>>) {
   /// combinator.prepare(|input| input.state.value += 1)
   /// # ;}
   /// ```
@@ -120,7 +120,7 @@ impl<T> Combinator<T> {
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: Combinator<impl Action<Text=str, MyState>>) {
+  /// # fn t(combinator: Combinator<impl Action<Text=str, State=MyState>>) {
   /// combinator.then(|input| input.state.value += 1)
   /// # ;}
   /// ```
@@ -141,7 +141,7 @@ impl<T> Combinator<T> {
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: Combinator<impl Action<Text=str, MyState>>) {
+  /// # fn t(combinator: Combinator<impl Action<Text=str, State=MyState>>) {
   /// combinator.catch(|input| input.state.value += 1)
   /// # ;}
   /// ```
@@ -163,7 +163,7 @@ impl<T> Combinator<T> {
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { value: i32 }
-  /// # fn t(combinator: Combinator<impl Action<Text=str, MyState>>) {
+  /// # fn t(combinator: Combinator<impl Action<Text=str, State=MyState>>) {
   /// combinator.finally(|input| input.state.value += 1)
   /// # ;}
   /// ```

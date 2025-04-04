@@ -94,16 +94,16 @@ unsafe impl Action for Eat<Vec<u8>> {
 /// Be careful with infinite loops.
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::{eat, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action<Text = str>>) {}
+/// # use whitehole::{combinator::{bytes, Combinator}, action::Action};
+/// # fn t(_: Combinator<impl Action<Text = [u8]>>) {}
 /// # t(
-/// eat(b'a') // eat by a byte (u8)
+/// bytes::eat(b'a') // eat by a byte (u8)
 /// # );
 /// # t(
-/// eat(b"true") // eat by &[u8] or &[u8; N]
+/// bytes::eat(b"true") // eat by &[u8] or &[u8; N]
 /// # );
 /// # t(
-/// eat(vec![b'a']) // eat by Vec<u8>
+/// bytes::eat(vec![b'a']) // eat by Vec<u8>
 /// # );
 /// ```
 #[inline]

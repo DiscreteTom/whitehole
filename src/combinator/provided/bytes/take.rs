@@ -38,10 +38,10 @@ unsafe impl Action for Take {
 /// `0` is allowed but be careful with infinite loops.
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::{take, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action<[u8]>>) {}
+/// # use whitehole::{combinator::{bytes, Combinator}, action::Action};
+/// # fn t(_: Combinator<impl Action<Text=[u8]>>) {}
 /// # t(
-/// take(10) // take 10 bytes
+/// bytes::take(10) // take 10 bytes
 /// # );
 /// ```
 #[inline]

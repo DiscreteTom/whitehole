@@ -28,6 +28,7 @@ use crate::action::Action;
 /// // Generate contextual combinators
 /// contextual!(MyState, MyHeap);
 ///
+/// # fn main() {
 /// Parser::builder()
 ///   // Set the state
 ///   .state(MyState::new())
@@ -37,6 +38,7 @@ use crate::action::Action;
 ///   .entry(eat("hello ") + "world")
 ///   // Build the parser
 ///   .build("hello world");
+/// # }
 /// ```
 #[derive(Debug, Clone, Copy)]
 pub struct Builder<T, State = (), Heap = ()> {

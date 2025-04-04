@@ -123,10 +123,12 @@
 //! # fn t(_: Combinator<impl Action<Text = str>>) {}
 //! // Override all provided combinators to be contextual
 //! contextual!(MyState, MyHeap);
+//! # fn main() {
 //! # t(
 //! // Access the state and heap in the combinator
 //! eat("true").prepare(|input| input.state.value = 1)
 //! # );
+//! # }
 //! ```
 //! See [`contextual`] for more information.
 

@@ -29,15 +29,15 @@ unsafe impl<F: Fn(u8) -> bool> Action for Next<F> {
 /// The combinator will reject if not matched.
 /// # Examples
 /// ```
-/// # use whitehole::{combinator::{next, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action<[u8]>>) {}
+/// # use whitehole::{combinator::{bytes, Combinator}, action::Action};
+/// # fn t(_: Combinator<impl Action<Text=[u8]>>) {}
 /// // match one ascii digit
 /// # t(
-/// next(|b| b.is_ascii_digit())
+/// bytes::next(|b| b.is_ascii_digit())
 /// # );
 /// // match one or more ascii digit
 /// # t(
-/// next(|b| b.is_ascii_digit()) * (1..)
+/// bytes::next(|b| b.is_ascii_digit()) * (1..)
 /// # );
 /// ```
 #[inline]

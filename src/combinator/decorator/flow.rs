@@ -132,7 +132,7 @@ impl<T> Combinator<T> {
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { execute: bool }
-  /// # fn t(combinator: Combinator<impl Action<Text=str, MyState>>) {
+  /// # fn t(combinator: Combinator<impl Action<Text=str, State=MyState>>) {
   /// combinator.when(|input| input.state.execute)
   /// # ;}
   /// ```
@@ -155,7 +155,7 @@ impl<T> Combinator<T> {
   /// ```
   /// # use whitehole::{action::Action, combinator::Combinator};
   /// # struct MyState { reject: bool }
-  /// # fn t(combinator: Combinator<impl Action<Text=str, MyState>>) {
+  /// # fn t(combinator: Combinator<impl Action<Text=str, State=MyState>>) {
   /// combinator.prevent(|input| input.state.reject)
   /// # ;}
   /// ```
@@ -174,8 +174,8 @@ impl<T> Combinator<T> {
   /// The combinator will reject if the `rejecter` returns `true`.
   /// # Examples
   /// ```
-  /// # use whitehole::{action::Action, combinator::Combinator};
-  /// # fn t(combinator: Combinator<impl Action>) {
+  /// # use whitehole::{action::Action, digest::Digest, combinator::Combinator};
+  /// # fn t(combinator: Combinator<impl Action<Text=str>>) {
   /// combinator.reject(|accepted| accepted.content() != "123")
   /// # ;}
   /// ```

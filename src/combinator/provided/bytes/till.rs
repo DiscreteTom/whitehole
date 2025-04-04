@@ -150,38 +150,20 @@ unsafe impl Action for Till<()> {
 /// `()` will accept 0 bytes when [`Instant::rest`] is empty.
 /// Be careful with infinite loops.
 /// # Examples
-/// For string (`&str`):
 /// ```
-/// # use whitehole::{combinator::{till, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action<Text = str>>) {}
+/// # use whitehole::{combinator::{bytes, Combinator}, action::Action};
+/// # fn t(_: Combinator<impl Action<Text=[u8]>>) {}
 /// # t(
-/// till(';') // with char
+/// bytes::till(b';') // with u8
 /// # );
 /// # t(
-/// till("end") // with &str
+/// bytes::till(b"end") // with &[u8] or &[u8; N]
 /// # );
 /// # t(
-/// till("end".to_string()) // with String
+/// bytes::till(vec![b'a']) // with Vec<u8>
 /// # );
 /// # t(
-/// till(()) // with (), eat till the end
-/// # );
-/// ```
-/// For bytes (`&[u8]`):
-/// ```
-/// # use whitehole::{combinator::{till, Combinator}, action::Action};
-/// # fn t(_: Combinator<impl Action<[u8]>>) {}
-/// # t(
-/// till(b';') // with u8
-/// # );
-/// # t(
-/// till(b"end") // with &[u8] or &[u8; N]
-/// # );
-/// # t(
-/// till(vec![b'a']) // with Vec<u8>
-/// # );
-/// # t(
-/// till(()) // with (), eat till the end
+/// bytes::till(()) // with (), eat till the end
 /// # );
 /// ```
 #[inline]

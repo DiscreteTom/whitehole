@@ -6,7 +6,7 @@
 //! The new combinator will reject if both of the combinators reject.
 //! # Basics
 //! ```
-//! # use whitehole::{combinator::{eat, Combinator}, action::Action};
+//! # use whitehole::{combinator::{eat, bytes, Combinator}, action::Action};
 //! # fn t(_: Combinator<impl Action<Text = str>>) {}
 //! # fn tb(_: Combinator<impl Action<Text = [u8]>>) {}
 //! // match "true" or "false"
@@ -26,13 +26,13 @@
 //! eat("true") | "false".to_string()
 //! # );
 //! # tb(
-//! eat(b"true") | b'a'
+//! bytes::eat(b"true") | b'a'
 //! # );
 //! # tb(
-//! eat(b"true") | b"false"
+//! bytes::eat(b"true") | b"false"
 //! # );
 //! # tb(
-//! eat(b"true") | b"false".to_vec()
+//! bytes::eat(b"true") | b"false".to_vec()
 //! # );
 //! ```
 
