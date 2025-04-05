@@ -6,89 +6,142 @@ use crate::{
 use core::fmt;
 use std::{cell::OnceCell, rc::Rc};
 
-/// Use `Box<dyn>` to prevent recursive/infinite type.
-/// Use `OnceCell` to initialize this later.
-/// Use `Rc` to make this clone-able.
-type RecurInner<Text, State, Heap, Value> =
-  Rc<OnceCell<Box<dyn Action<Text = Text, State = State, Heap = Heap, Value = Value>>>>;
+macro_rules! create_recur {
+  ($text:ty) => {
+    /// Use `Box<dyn>` to prevent recursive/infinite type.
+    /// Use `OnceCell` to initialize this later.
+    /// Use `Rc` to make this clone-able.
+    pub type RecurInner<State, Heap, Value> =
+      Rc<OnceCell<Box<dyn Action<Text = $text, State = State, Heap = Heap, Value = Value>>>>;
 
-/// See [`recur`] and [`recur_unchecked`].
-///
-/// You can't construct this directly.
-/// This is not [`Clone`] because you can only set the action implementor once.
-/// This must be used to set the action implementor before the action is executed.
-#[must_use = "This must be used to set the action implementor before the action is executed."]
-pub struct RecurSetter<Text: ?Sized = str, State = (), Heap = (), Value = ()> {
-  inner: RecurInner<Text, State, Heap, Value>,
-}
-
-impl<Text: ?Sized, State, Heap, Value> RecurSetter<Text, State, Heap, Value> {
-  #[inline]
-  const fn new(inner: RecurInner<Text, State, Heap, Value>) -> Self {
-    Self { inner }
-  }
-
-  /// Consume self, set the action implementor.
-  #[inline]
-  pub fn set(
-    self,
-    action: Box<dyn Action<Text = Text, State = State, Heap = Heap, Value = Value>>,
-  ) {
-    // we can use `ok` here because the setter will be consumed after this call
-    self.inner.set(action).ok();
-  }
-
-  /// Consume self, set the action implementor by boxing the provided action.
-  #[inline]
-  pub fn boxed(
-    self,
-    p: impl Action<Text = Text, State = State, Heap = Heap, Value = Value> + 'static,
-  ) {
-    self.set(Box::new(p));
-  }
-}
-
-/// See [`recur`].
-pub struct Recur<Text: ?Sized = str, State = (), Heap = (), Value = ()> {
-  inner: RecurInner<Text, State, Heap, Value>,
-}
-
-impl<Text: ?Sized, State, Heap, Value> Recur<Text, State, Heap, Value> {
-  #[inline]
-  const fn new(inner: RecurInner<Text, State, Heap, Value>) -> Self {
-    Self { inner }
-  }
-}
-
-impl<Text: ?Sized, State, Heap, Value> fmt::Debug for Recur<Text, State, Heap, Value> {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    f.debug_struct("Recur").finish()
-  }
-}
-
-impl<Text: ?Sized, State, Heap, Value> Clone for Recur<Text, State, Heap, Value> {
-  #[inline]
-  fn clone(&self) -> Self {
-    Self {
-      inner: self.inner.clone(),
+    /// See [`recur`] and [`recur_unchecked`].
+    ///
+    /// You can't construct this directly.
+    /// This is not [`Clone`] because you can only set the action implementor once.
+    /// This must be used to set the action implementor before the action is executed.
+    #[must_use = "This must be used to set the action implementor before the action is executed."]
+    pub struct RecurSetter<State = (), Heap = (), Value = ()> {
+      inner: RecurInner<State, Heap, Value>,
     }
-  }
-}
 
-unsafe impl<Text: ?Sized, State, Heap, Value> Action for Recur<Text, State, Heap, Value> {
-  type Text = Text;
-  type State = State;
-  type Heap = Heap;
-  type Value = Value;
+    impl<State, Heap, Value> RecurSetter<State, Heap, Value> {
+      /// Create a new instance.
+      #[inline]
+      pub const fn new(inner: RecurInner<State, Heap, Value>) -> Self {
+        Self { inner }
+      }
 
-  #[inline]
-  fn exec(
-    &self,
-    input: Input<&Instant<&Self::Text>, &mut State, &mut Heap>,
-  ) -> Option<Output<Self::Value>> {
-    self.inner.get().unwrap().exec(input)
-  }
+      /// Consume self, set the action implementor.
+      #[inline]
+      pub fn set(
+        self,
+        action: Box<dyn Action<Text = $text, State = State, Heap = Heap, Value = Value>>,
+      ) {
+        // we can use `ok` here because the setter will be consumed after this call
+        self.inner.set(action).ok();
+      }
+
+      /// Consume self, set the action implementor by boxing the provided action.
+      #[inline]
+      pub fn boxed(
+        self,
+        p: impl Action<Text = $text, State = State, Heap = Heap, Value = Value> + 'static,
+      ) {
+        self.set(Box::new(p));
+      }
+    }
+
+    /// See [`recur`].
+    pub struct Recur<State = (), Heap = (), Value = ()> {
+      inner: RecurInner<State, Heap, Value>,
+    }
+
+    impl<State, Heap, Value> Recur<State, Heap, Value> {
+      /// Create a new instance.
+      #[inline]
+      pub const fn new(inner: RecurInner<State, Heap, Value>) -> Self {
+        Self { inner }
+      }
+    }
+
+    impl<State, Heap, Value> fmt::Debug for Recur<State, Heap, Value> {
+      fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Recur").finish()
+      }
+    }
+
+    impl<State, Heap, Value> Clone for Recur<State, Heap, Value> {
+      #[inline]
+      fn clone(&self) -> Self {
+        Self {
+          inner: self.inner.clone(),
+        }
+      }
+    }
+
+    unsafe impl<State, Heap, Value> Action for Recur<State, Heap, Value> {
+      type Text = $text;
+      type State = State;
+      type Heap = Heap;
+      type Value = Value;
+
+      #[inline]
+      fn exec(
+        &self,
+        input: Input<&Instant<&Self::Text>, &mut State, &mut Heap>,
+      ) -> Option<Output<Self::Value>> {
+        self.inner.get().unwrap().exec(input)
+      }
+    }
+
+    /// See [`recur_unchecked`].
+    pub struct RecurUnchecked<State = (), Heap = (), Value = ()> {
+      inner: RecurInner<State, Heap, Value>,
+    }
+
+    impl<State, Heap, Value> RecurUnchecked<State, Heap, Value> {
+      /// Create a new instance.
+      #[inline]
+      pub const fn new(inner: RecurInner<State, Heap, Value>) -> Self {
+        Self { inner }
+      }
+    }
+
+    impl<State, Heap, Value> fmt::Debug for RecurUnchecked<State, Heap, Value> {
+      fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RecurUnchecked").finish()
+      }
+    }
+
+    impl<State, Heap, Value> Clone for RecurUnchecked<State, Heap, Value> {
+      #[inline]
+      fn clone(&self) -> Self {
+        Self {
+          inner: self.inner.clone(),
+        }
+      }
+    }
+
+    unsafe impl<State, Heap, Value> Action for RecurUnchecked<State, Heap, Value> {
+      type Text = $text;
+      type State = State;
+      type Heap = Heap;
+      type Value = Value;
+
+      #[inline]
+      fn exec(
+        &self,
+        input: Input<&Instant<&Self::Text>, &mut State, &mut Heap>,
+      ) -> Option<Output<Self::Value>> {
+        debug_assert!(self.inner.get().is_some());
+        unsafe { self.inner.get().unwrap_unchecked() }.exec(input)
+      }
+    }
+  };
 }
+pub(super) use create_recur;
+
+create_recur!(str);
 
 /// Create a recursive action. Return the getter and setter.
 /// # Caveats
@@ -121,57 +174,14 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action for Recur<Text, State, Heap
 /// assert_eq!(Parser::builder().entry(value()).build("[[a],[]]").next().unwrap().digested, 8);
 /// ```
 #[allow(clippy::type_complexity)]
-pub fn recur<Text: ?Sized, State, Heap, Value>() -> (
-  impl Fn() -> Combinator<Recur<Text, State, Heap, Value>>,
-  RecurSetter<Text, State, Heap, Value>,
+pub fn recur<Value>() -> (
+  impl Fn() -> Combinator<Recur<(), (), Value>>,
+  RecurSetter<(), (), Value>,
 ) {
   let inner = Rc::new(OnceCell::new());
   let setter = RecurSetter::new(inner.clone());
   let getter = move || Combinator::new(Recur::new(inner.clone()));
   (getter, setter)
-}
-
-/// See [`recur_unchecked`].
-pub struct RecurUnchecked<Text: ?Sized = str, State = (), Heap = (), Value = ()> {
-  inner: RecurInner<Text, State, Heap, Value>,
-}
-
-impl<Text: ?Sized, State, Heap, Value> RecurUnchecked<Text, State, Heap, Value> {
-  #[inline]
-  const fn new(inner: RecurInner<Text, State, Heap, Value>) -> Self {
-    Self { inner }
-  }
-}
-
-impl<Text: ?Sized, State, Heap, Value> fmt::Debug for RecurUnchecked<Text, State, Heap, Value> {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    f.debug_struct("RecurUnchecked").finish()
-  }
-}
-
-impl<Text: ?Sized, State, Heap, Value> Clone for RecurUnchecked<Text, State, Heap, Value> {
-  #[inline]
-  fn clone(&self) -> Self {
-    Self {
-      inner: self.inner.clone(),
-    }
-  }
-}
-
-unsafe impl<Text: ?Sized, State, Heap, Value> Action for RecurUnchecked<Text, State, Heap, Value> {
-  type Text = Text;
-  type State = State;
-  type Heap = Heap;
-  type Value = Value;
-
-  #[inline]
-  fn exec(
-    &self,
-    input: Input<&Instant<&Text>, &mut State, &mut Heap>,
-  ) -> Option<Output<Self::Value>> {
-    debug_assert!(self.inner.get().is_some());
-    unsafe { self.inner.get().unwrap_unchecked() }.exec(input)
-  }
 }
 
 /// Create a recursive action. Return the getter and setter.
@@ -205,9 +215,9 @@ unsafe impl<Text: ?Sized, State, Heap, Value> Action for RecurUnchecked<Text, St
 /// assert_eq!(Parser::builder().entry(value()).build("[[a],[]]").next().unwrap().digested, 8);
 /// ```
 #[allow(clippy::type_complexity)]
-pub unsafe fn recur_unchecked<Text: ?Sized, State, Heap, Value>() -> (
-  impl Fn() -> Combinator<RecurUnchecked<Text, State, Heap, Value>>,
-  RecurSetter<Text, State, Heap, Value>,
+pub unsafe fn recur_unchecked<Value>() -> (
+  impl Fn() -> Combinator<RecurUnchecked<(), (), Value>>,
+  RecurSetter<(), (), Value>,
 ) {
   let inner = Rc::new(OnceCell::new());
   let setter = RecurSetter::new(inner.clone());
@@ -263,7 +273,7 @@ mod tests {
   #[test]
   #[should_panic]
   fn test_recur_panic() {
-    let (value, _) = recur::<_, _, _, ()>();
+    let (value, _) = recur::<()>();
     value().exec(Input {
       instant: &Instant::new("a"),
       state: &mut (),
@@ -294,7 +304,7 @@ mod tests {
   #[test]
   #[should_panic]
   fn test_recur_unchecked_panic() {
-    let (value, _) = unsafe { recur_unchecked::<_, _, _, ()>() };
+    let (value, _) = unsafe { recur_unchecked::<()>() };
     value().exec(Input {
       instant: &Instant::new("a"),
       state: &mut (),

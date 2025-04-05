@@ -86,6 +86,7 @@ macro_rules! contextual {
     mod _impl_contextual_combinators {
       #[allow(unused_imports)]
       use super::*;
+      use std::{cell::OnceCell, rc::Rc};
       use $crate::action::{Input, Output};
       use $crate::combinator::{Combinator, Contextual};
       use $crate::instant::Instant;
@@ -142,6 +143,29 @@ macro_rules! contextual {
         f: F,
       ) -> Combinator<Contextual<$crate::combinator::Wrap<F>, $state, $heap>> {
         Combinator::new(Contextual::new($crate::combinator::Wrap::new(f)))
+      }
+
+      /// Contextual version of [`recur`](whitehole::combinator::recur).
+      pub fn recur<Value>() -> (
+        impl Fn() -> Combinator<$crate::combinator::Recur<$state, $heap, Value>>,
+        $crate::combinator::RecurSetter<$state, $heap, Value>,
+      ) {
+        let inner = Rc::new(OnceCell::new());
+        let setter = $crate::combinator::RecurSetter::new(inner.clone());
+        let getter = move || Combinator::new($crate::combinator::Recur::new(inner.clone()));
+        (getter, setter)
+      }
+
+      /// Contextual version of [`recur_unchecked`](whitehole::combinator::recur_unchecked).
+      pub unsafe fn recur_unchecked<Value>() -> (
+        impl Fn() -> Combinator<$crate::combinator::RecurUnchecked<$state, $heap, Value>>,
+        $crate::combinator::RecurSetter<$state, $heap, Value>,
+      ) {
+        let inner = Rc::new(OnceCell::new());
+        let setter = $crate::combinator::RecurSetter::new(inner.clone());
+        let getter =
+          move || Combinator::new($crate::combinator::RecurUnchecked::new(inner.clone()));
+        (getter, setter)
       }
 
       pub mod bytes {
@@ -209,11 +233,36 @@ macro_rules! contextual {
         ) -> Combinator<Contextual<$crate::combinator::bytes::Wrap<F>, $state, $heap>> {
           Combinator::new(Contextual::new($crate::combinator::bytes::Wrap::new(f)))
         }
+
+        /// Contextual version of [`bytes::recur`](whitehole::combinator::bytes::recur).
+        pub fn recur<Value>() -> (
+          impl Fn() -> Combinator<$crate::combinator::bytes::Recur<$state, $heap, Value>>,
+          $crate::combinator::bytes::RecurSetter<$state, $heap, Value>,
+        ) {
+          let inner = Rc::new(OnceCell::new());
+          let setter = $crate::combinator::bytes::RecurSetter::new(inner.clone());
+          let getter =
+            move || Combinator::new($crate::combinator::bytes::Recur::new(inner.clone()));
+          (getter, setter)
+        }
+
+        /// Contextual version of [`bytes::recur_unchecked`](whitehole::combinator::bytes::recur_unchecked).
+        pub unsafe fn recur_unchecked<Value>() -> (
+          impl Fn() -> Combinator<$crate::combinator::bytes::RecurUnchecked<$state, $heap, Value>>,
+          $crate::combinator::bytes::RecurSetter<$state, $heap, Value>,
+        ) {
+          let inner = Rc::new(OnceCell::new());
+          let setter = $crate::combinator::bytes::RecurSetter::new(inner.clone());
+          let getter = move || {
+            Combinator::new($crate::combinator::bytes::RecurUnchecked::new(
+              inner.clone(),
+            ))
+          };
+          (getter, setter)
+        }
       }
     }
     pub use _impl_contextual_combinators::*;
-
-    // TODO: recur
   };
 }
 
@@ -232,12 +281,16 @@ mod tests {
     helper(till('a'));
     helper(wrap(|input| input.instant.accept(0)));
     helper(unsafe { wrap_unchecked(|input| input.instant.accept(0)) });
+    helper(recur::<()>().0());
+    helper(unsafe { recur_unchecked::<()>() }.0());
     helper(bytes::eat(b'a'));
     helper(bytes::take(1));
     helper(bytes::next(|_| true));
     helper(bytes::till(b'a'));
     helper(bytes::wrap(|input| input.instant.accept(0)));
     helper(unsafe { bytes::wrap_unchecked(|input| input.instant.accept(0)) });
+    helper(bytes::recur::<()>().0());
+    helper(unsafe { bytes::recur_unchecked::<()>() }.0());
 
     // debug
     let action = take(1);
