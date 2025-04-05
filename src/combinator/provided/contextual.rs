@@ -270,7 +270,8 @@ macro_rules! contextual {
 mod tests {
   use super::*;
 
-  fn _test_contextual() {
+  #[test]
+  fn test_contextual() {
     contextual!(i32, i32);
 
     fn helper<Text: ?Sized>(_: impl Action<Text = Text, State = i32, Heap = i32>) {}

@@ -156,6 +156,11 @@ mod tests {
   }
 
   #[test]
+  fn no_sep_default() {
+    let _ = NoSep::<()>::default();
+  }
+
+  #[test]
   fn combinator_mul_with_sep() {
     let one_or_more = || (eat('a') * (1..)).sep(',');
 
