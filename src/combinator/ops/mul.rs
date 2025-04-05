@@ -51,7 +51,7 @@
 //! ```
 //! # Accumulate Values
 //! ## To an Array
-//! If the repetition value is known at compile time,
+//! If the repetition value is known at compile time and the `Value` type is `Clone`,
 //! you can use `* [v; len]` to accumulate the values to an array.
 //! ```
 //! # use whitehole::{combinator::next, parser::Parser};
@@ -70,9 +70,6 @@
 //!   [1, 2, 3]
 //! )
 //! ```
-//! The initial value of the array doesn't matter,
-//! since the output value will be initialized by [`std::mem::zeroed`]
-//! and filled by actual values during parsing.
 //! ## Ad-hoc Accumulator
 //! You can use [`Combinator::fold`]
 //! to specify an ad-hoc accumulator after performing `*`.
@@ -164,7 +161,6 @@ use crate::{
   instant::Instant,
 };
 use std::{
-  mem::zeroed,
   ops::{self, RangeFrom},
   slice::SliceIndex,
 };
@@ -268,7 +264,7 @@ where
 }
 
 unsafe impl<
-    Lhs: Action<Text: Digest>,
+    Lhs: Action<Text: Digest, Value: Clone>,
     const N: usize,
     Sep: Action<Text = Lhs::Text, State = Lhs::State, Heap = Lhs::Heap>,
   > Action for Mul<Lhs, [Lhs::Value; N], Sep>
@@ -286,9 +282,9 @@ where
     mut input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
     let mut output: Output<[<Lhs as Action>::Value; N]> = Output {
-      // SAFETY: if N is not 0, the zeroed value will be override by actual values,
-      // and if N is 0, the zeroed value will be a valid empty slice.
-      value: unsafe { zeroed() },
+      // don't use `mem::zeroed` to initialize the array
+      // since the Lhs::Value may implement Drop and causing UB when the array is dropped but not fully filled
+      value: self.rhs.clone(),
       digested: 0,
     };
 
@@ -299,7 +295,6 @@ where
       )?;
       // SAFETY: `i` must be in `0..N`
       debug_assert!(i < N);
-      // TODO: what if the Value is Drop?
       *unsafe { output.value.get_unchecked_mut(i) } = value_output.value;
       // SAFETY: since `slice::len` is usize, so `output.digested` must be a valid usize
       debug_assert!(usize::MAX - digested_with_sep > value_output.digested);
