@@ -16,7 +16,7 @@ fn sep() -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()
 pub fn parser_entry_with_recur(
 ) -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
   // `value` will indirectly recurse to itself, so we need to use `recur` to break the cycle.
-  let (value, value_setter) = recur::<_, (), (), _>();
+  let (value, value_setter) = recur();
 
   // We can use `value` in `array` and `object` before it is defined.
   let array = || eat('[') + wso() + ((value() + wso()) * (..)).sep(sep()) + ']';
