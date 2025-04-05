@@ -236,7 +236,9 @@ impl<T> Combinator<T> {
 
   /// Create a new combinator to set [`Output::value`] by the `selector`.
   ///
-  /// Use this if you need to calculate the value based on the [`Instant`], [`Context`] and [`Output`].
+  /// Use this if you need to calculate the value based on the [`Instant`],
+  /// [`Parser::state`](crate::parser::Parser::state),
+  /// [`Parser::heap`](crate::parser::Parser::heap) and [`Output`].
   /// You can consume the original [`Output`] in the `selector`.
   /// # Examples
   /// ```

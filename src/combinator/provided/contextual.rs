@@ -6,7 +6,7 @@ use std::{fmt::Debug, marker::PhantomData};
 
 /// Provide context information (`State` and `Heap`) to the original non-contextual action.
 ///
-/// See [`contextual`].
+/// See [`contextual`](crate::combinator::contextual).
 pub struct Contextual<T, State, Heap> {
   pub action: T,
   _phantom: PhantomData<(State, Heap)>,
