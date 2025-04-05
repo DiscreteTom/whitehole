@@ -205,7 +205,7 @@ pub struct Parser<'text, T: Action> {
   pub entry: T,
 }
 
-impl<'text, T: Action<State: Clone, Heap: Clone> + Clone> Clone for Parser<'text, T> {
+impl<T: Action<State: Clone, Heap: Clone> + Clone> Clone for Parser<'_, T> {
   fn clone(&self) -> Self {
     Parser {
       state: self.state.clone(),
@@ -291,7 +291,7 @@ impl<'text, T: Action> Parser<'text, T> {
   }
 }
 
-impl<'text, T: Action<Text: Digest>> Iterator for Parser<'text, T>
+impl<T: Action<Text: Digest>> Iterator for Parser<'_, T>
 where
   RangeFrom<usize>: SliceIndex<T::Text, Output = T::Text>,
 {

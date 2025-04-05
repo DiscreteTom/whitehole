@@ -50,7 +50,7 @@ unsafe impl<T: Action<Value: Default>> Action for Not<T> {
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    if let Some(_) = self.action.exec(input) {
+    if self.action.exec(input).is_some() {
       None
     } else {
       Some(Output {

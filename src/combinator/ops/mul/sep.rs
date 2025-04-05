@@ -21,6 +21,13 @@ impl<Lhs> NoSep<Lhs> {
   }
 }
 
+impl<Lhs> Default for NoSep<Lhs> {
+  #[inline]
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 unsafe impl<Lhs: Action> Action for NoSep<Lhs> {
   type Text = Lhs::Text;
   type State = Lhs::State;

@@ -74,12 +74,7 @@ unsafe impl Action for Till<()> {
     &self,
     input: Input<&Instant<&Self::Text>, &mut Self::State, &mut Self::Heap>,
   ) -> Option<Output<Self::Value>> {
-    unsafe {
-      input
-        .instant
-        .accept_unchecked(input.instant.rest().as_bytes().len())
-    }
-    .into()
+    unsafe { input.instant.accept_unchecked(input.instant.rest().len()) }.into()
   }
 }
 
