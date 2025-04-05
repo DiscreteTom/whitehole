@@ -117,7 +117,7 @@ unsafe impl<T: Action<Text = str>> Action for Boundary<T> {
       unsafe { rest.get_unchecked(output.digested..) }
         .chars()
         .next()
-        .map_or(true, |c| !c.is_alphanumeric() && c != '_')
+        .is_none_or(|c| !c.is_alphanumeric() && c != '_')
         .then_some(output)
     })
   }
