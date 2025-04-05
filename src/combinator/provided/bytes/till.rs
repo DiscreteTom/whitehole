@@ -140,8 +140,6 @@ unsafe impl Action for Till<()> {
   }
 }
 
-// TODO: merge dup code
-
 /// Return a combinator to match the provided pattern, eat all the bytes
 /// to the end of the first occurrence of the pattern (inclusive).
 /// # Caveats
