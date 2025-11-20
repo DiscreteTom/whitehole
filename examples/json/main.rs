@@ -4,7 +4,7 @@ mod parser;
 
 use crate::{
   lexer::lexer_entry,
-  parser::{parser_entry_with_recur, parser_entry_with_static},
+  parser::{parser_entry_with_new_recur, parser_entry_with_recur, parser_entry_with_static},
 };
 use whitehole::{action::Action, combinator::Combinator, parser::Parser};
 
@@ -53,6 +53,9 @@ fn main() {
 
   println!("\nparser with static:");
   print_all_with_range(parser_entry_with_static());
+
+  println!("\nparser with new recur:");
+  print_all_with_range(parser_entry_with_new_recur());
 }
 
 #[cfg(test)]
@@ -68,5 +71,6 @@ mod tests {
   fn test_json_parser() {
     print_all_with_range(parser_entry_with_recur());
     print_all_with_range(parser_entry_with_static());
+    print_all_with_range(parser_entry_with_new_recur());
   }
 }

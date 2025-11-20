@@ -4,7 +4,7 @@ mod parser;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use lexer::lexer_entry;
-use parser::{parser_entry_with_recur, parser_entry_with_static};
+use parser::{parser_entry_with_new_recur, parser_entry_with_recur, parser_entry_with_static};
 use std::fs::read_to_string;
 use whitehole::{action::Action, combinator::Combinator, parser::Parser};
 
@@ -68,9 +68,16 @@ fn parse_json_with_static(c: &mut Criterion) {
   bench_with("parse_json_with_static", parse_with_static, c);
 }
 
+fn parse_json_with_new_recur(c: &mut Criterion) {
+  fn parse_with_new_recur(s: &str) {
+    process(parser_entry_with_new_recur(), s);
+  }
+  bench_with("parse_json_with_new_recur", parse_with_new_recur, c);
+}
+
 criterion_group! {
   name = benches;
   config = Criterion::default();
-  targets = lex_json, parse_json_with_recur, parse_json_with_static
+  targets = lex_json, parse_json_with_recur, parse_json_with_static, parse_json_with_new_recur
 }
 criterion_main!(benches);
