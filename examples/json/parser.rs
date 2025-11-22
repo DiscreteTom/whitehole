@@ -64,8 +64,8 @@ pub fn parser_entry_with_new_recur(
     let array = eat('[') + wso() + ((value() + wso()) * (..)).sep(sep()) + ']';
     let object = {
       let object_item = string() + wso() + eat(':') + wso() + value();
-
-      eat('{') + wso() + ((object_item + wso()) * (..)).sep(sep()) + '}'};
+      eat('{') + wso() + ((object_item + wso()) * (..)).sep(sep()) + '}'
+    };
     let value = array() | object() | number() | string() | "true" | "false" | "null";
   }
 
