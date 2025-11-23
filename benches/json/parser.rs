@@ -3,15 +3,12 @@ use std::sync::LazyLock;
 use whitehole::{
   action::Action,
   combinator::{eat, recur, wrap, Combinator},
-  new_recur,
+  combinators, entry,
 };
 
-fn wso() -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
-  whitespaces().optional()
-}
-
-fn sep() -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
-  eat(',') + wso()
+combinators! {
+  let wso = || whitespaces().optional();
+  let sep = || eat(',') + wso();
 }
 
 pub fn parser_entry_with_recur(
@@ -58,14 +55,15 @@ pub fn parser_entry_with_static(
   whitespaces() | value()
 }
 
-pub fn parser_entry_with_new_recur(
+pub fn parser_entry_with_entry(
 ) -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
-  new_recur! {
-    let array = eat('[') + wso() + ((value() + wso()) * (..)).sep(sep()) + ']';
-    let object = {      let object_item = string() + wso() + eat(':') + wso() + value();
-
-      eat('{') + wso() + ((object_item + wso()) * (..)).sep(sep()) + '}'};
-    let value = array() | object() | number() | string() | "true" | "false" | "null";
+  entry! {
+    let array = || eat('[') + wso() + ((value() + wso()) * (..)).sep(sep()) + ']';
+    let object = || {
+      let object_item = string() + wso() + eat(':') + wso() + value();
+      eat('{') + wso() + ((object_item + wso()) * (..)).sep(sep()) + '}'
+    };
+    let value = || array() | object() | number() | string() | "true" | "false" | "null";
   }
 
   whitespaces() | value()

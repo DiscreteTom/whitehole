@@ -3,10 +3,12 @@ use in_str::in_str;
 use whitehole::{
   action::Action,
   combinator::{next, Combinator},
+  entry,
 };
 
-pub fn lexer_entry() -> Combinator<impl Action<Text = str, State = (), Heap = (), Value = ()>> {
-  let boundary = next(in_str!("[]{}:,"));
-
-  whitespaces() | boundary | number() | string() | "true" | "false" | "null"
+entry! {
+  let lexer_entry = || {
+    let boundary = next(in_str!("[]{}:,"));
+    whitespaces() | boundary | number() | string() | "true" | "false" | "null"
+  };
 }

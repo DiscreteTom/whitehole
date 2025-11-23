@@ -132,6 +132,7 @@
 //! ```
 //! See [`contextual`] for more information.
 
+mod combinators;
 mod decorator;
 mod provided;
 
